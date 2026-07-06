@@ -1,3 +1,4 @@
+
 package com.revenuecat.purchases.google.usecase
 
 import com.android.billingclient.api.BillingClient
@@ -11,10 +12,10 @@ import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.google.buildQueryPurchaseHistoryParams
-import com.revenuecat.purchases.google.extensions.toHumanReadableDescription
-import com.revenuecat.purchases.google.extensions.toStoreTransaction
+import com.revenuecat.purchases.common.toHumanReadableDescription
+import com.revenuecat.purchases.google.buildQueryPurchasesParams
 import com.revenuecat.purchases.google.toRevenueCatProductType
+import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
@@ -22,14 +23,20 @@ import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Duration
 
+internal data class QueryPurchaseHistoryUseCaseParams
 @OptIn(InternalRevenueCatAPI::class)
-internal data class QueryPurchaseHistoryUseCaseParams(
+constructor(
     val dateProvider: DateProvider = DefaultDateProvider(),
     val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     @BillingClient.ProductType val productType: String,
     override val appInBackground: Boolean,
 ) : UseCaseParams
 
+/**
+ * Use case to query the purchase history from Google Play Billing.
+ * This doesn't actually return the purchase history, since the purchase history API was removed in
+ * Billing Library 8.0.0. We keep the name for historical parity with the previous billing client versions.
+ */
 @OptIn(InternalRevenueCatAPI::class)
 internal class QueryPurchaseHistoryUseCase(
     private val useCaseParams: QueryPurchaseHistoryUseCaseParams,
@@ -47,8 +54,8 @@ internal class QueryPurchaseHistoryUseCase(
             val hasResponded = AtomicBoolean(false)
             val requestStartTime = useCaseParams.dateProvider.now
 
-            useCaseParams.productType.buildQueryPurchaseHistoryParams()?.let { queryPurchaseHistoryParams ->
-                queryPurchaseHistoryAsync(queryPurchaseHistoryParams) { billingResult, purchaseHistory ->
+            useCaseParams.productType.buildQueryPurchasesParams()?.let { queryPurchasesParams ->
+                queryPurchasesAsync(queryPurchasesParams) { billingResult, activePurchases ->
                     if (hasResponded.getAndSet(true)) {
                         log(LogIntent.GOOGLE_ERROR) {
                             RestoreStrings.EXTRA_QUERY_PURCHASE_HISTORY_RESPONSE.format(billingResult.responseCode)
@@ -59,7 +66,7 @@ internal class QueryPurchaseHistoryUseCase(
                             billingResult,
                             requestStartTime,
                         )
-                        purchaseHistory.takeUnless { it.isNullOrEmpty() }?.forEach {
+                        activePurchases.takeUnless { it.isEmpty() }?.forEach {
                             log(LogIntent.RC_PURCHASE_SUCCESS) {
                                 RestoreStrings.PURCHASE_HISTORY_RETRIEVED
                                     .format(it.toHumanReadableDescription())
@@ -67,7 +74,7 @@ internal class QueryPurchaseHistoryUseCase(
                         } ?: log(LogIntent.DEBUG) { RestoreStrings.PURCHASE_HISTORY_EMPTY }
                         processResult(
                             billingResult,
-                            purchaseHistory?.map {
+                            activePurchases.map {
                                 it.toStoreTransaction(useCaseParams.productType.toRevenueCatProductType())
                             },
                         )

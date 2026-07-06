@@ -29,18 +29,6 @@ android {
         // Applications don't need this, so we default to the "defaults" flavor.
         missingDimensionStrategy("apis", "defaults")
 
-        flavorDimensions += "billingclient"
-
-        productFlavors {
-            create("bc8") {
-                dimension = "billingclient"
-                isDefault = true
-            }
-            create("bc7") {
-                dimension = "billingclient"
-            }
-        }
-
         buildConfigField(
             "String",
             "SUPPORTED_STORES",
