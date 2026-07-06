@@ -338,6 +338,71 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         }
     }
 
+    @Test
+    fun `performRequest does not rewind healthy API sources on a later request`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        assert(!endpoint.supportsFallbackBaseURLs)
+
+        // Three sources so that after a single failover there is still a healthy current source (source 2),
+        // i.e. the list is not exhausted, so the next request's rearm must be a no-op.
+        val apiSourceServer2 = MockWebServer()
+        val apiSourceServer3 = MockWebServer()
+        val provider = FakeAPISourceProvider(
+            listOf(
+                server.url("/").toString(),
+                apiSourceServer2.url("/").toString(),
+                apiSourceServer3.url("/").toString(),
+            ),
+        )
+        val client = createClient(appConfig = createAppConfig(proxyURL = null), apiSourceProvider = provider)
+
+        try {
+            // First request fails over from source 1 to source 2, which succeeds and stays current.
+            enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.ERROR))
+            enqueue(
+                endpoint.getPath(),
+                expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS),
+                server = apiSourceServer2,
+            )
+
+            val firstResult = client.performRequest(
+                URL(AppConfig.baseUrlString),
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+            )
+            assertThat(firstResult.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+            assertThat(provider.reportedUrls).containsExactly(server.url("/").toString())
+
+            // The next request must resume from source 2 without rewinding to source 1: while a healthy
+            // source remains, the start-of-request rearm leaves failover progress untouched.
+            enqueue(
+                endpoint.getPath(),
+                expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS),
+                server = apiSourceServer2,
+            )
+
+            val secondResult = client.performRequest(
+                URL(AppConfig.baseUrlString),
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+            )
+
+            assertThat(secondResult.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+            // Source 1 was only hit on the first request; source 2 served both the failover and the next request.
+            assertThat(server.requestCount).isEqualTo(1)
+            assertThat(apiSourceServer2.requestCount).isEqualTo(2)
+            // The rearm did not rewind the list, so no further source was reported unhealthy.
+            assertThat(provider.reportedUrls).containsExactly(server.url("/").toString())
+        } finally {
+            apiSourceServer2.shutdown()
+            apiSourceServer3.shutdown()
+        }
+    }
+
     /**
      * An [APISourceProvider] that walks [urls] in order, recording the sources reported unhealthy.
      * Mirrors the real provider's token-based advancement so stale reports are ignored.
