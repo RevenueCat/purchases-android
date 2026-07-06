@@ -249,6 +249,10 @@ jobs:
       build_type:
         type: string
         description: "Build type: debug or release"
+      module_prefix:
+        type: string
+        default: ""
+        description: "Optional Gradle module path to scope the test task to, e.g. ':purchases:'. Empty runs the task across all modules."
       run_kover:
         type: boolean
         default: false
@@ -263,7 +267,7 @@ jobs:
           command: |
             FLAVOR_CAPITALIZED=$(echo << parameters.flavor >> | sed 's/\b\(.\)/\u\1/')
             BUILD_TYPE_CAPITALIZED=$(echo << parameters.build_type >> | sed 's/\b\(.\)/\u\1/')
-            TASK="test${FLAVOR_CAPITALIZED}${BUILD_TYPE_CAPITALIZED}UnitTest"
+            TASK="<< parameters.module_prefix >>test${FLAVOR_CAPITALIZED}${BUILD_TYPE_CAPITALIZED}UnitTest"
             ./gradlew $TASK --parallel --no-daemon
       - when:
           condition: << parameters.run_kover >>
@@ -1007,6 +1011,7 @@ workflows:
       - test:
           name: test_cec_<< matrix.build_type >>
           flavor: "customEntitlementComputation"
+          module_prefix: ":purchases:"
           requires:
             - prepare-tests
           matrix:
