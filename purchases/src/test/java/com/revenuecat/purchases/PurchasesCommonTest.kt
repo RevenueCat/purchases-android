@@ -2955,6 +2955,28 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         }
     }
 
+    @Test
+    fun `syncAttributesAndOfferingsIfNeeded does not refresh remote config when rate limited`() {
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, captureLambda())
+        } answers { lambda<() -> Unit>().captured.invoke() }
+        every {
+            mockOfferingsManager.getOfferings(appUserId, false, any(), any(), any())
+        } just Runs
+
+        val callback = object : SyncAttributesAndOfferingsCallback {
+            override fun onSuccess(offerings: Offerings) {}
+            override fun onError(error: PurchasesError) {}
+        }
+        // The rate limiter allows 5 calls per minute; the 6th takes the rate-limited early-return branch,
+        // which serves cached offerings and must not force a remote config refresh.
+        repeat(6) { purchases.purchasesOrchestrator.syncAttributesAndOfferingsIfNeeded(callback) }
+
+        verify(exactly = 5) {
+            mockRemoteConfigManager.refreshRemoteConfig(false, appUserId)
+        }
+    }
+
     // endregion
 
     @Test

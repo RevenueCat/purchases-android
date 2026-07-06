@@ -69,6 +69,38 @@ class RemoteConfigDiskCacheTest {
     }
 
     @Test
+    fun `read serves the in-memory snapshot without re-reading the file`() {
+        val config = PersistedRemoteConfigurationState(domain = "app", manifest = "v1.0.")
+        diskCache.write(config)
+
+        // Remove the backing file: a read must still answer from the snapshot, proving no file re-read.
+        File(File(File(testFolder, "RevenueCat"), "remote_config"), "remote_config.json").delete()
+
+        assertThat(diskCache.read()).isEqualTo(config)
+    }
+
+    @Test
+    fun `a fresh instance reads the state from disk`() {
+        val config = PersistedRemoteConfigurationState(domain = "app", manifest = "v1.0.")
+        diskCache.write(config)
+
+        // A new instance has no snapshot, so this proves the write actually reached the file.
+        assertThat(RemoteConfigDiskCache(applicationContext).read()).isEqualTo(config)
+    }
+
+    @Test
+    fun `read caches a miss so the file is not re-checked every call`() {
+        assertThat(diskCache.read()).isNull()
+
+        // A file appearing behind the cache's back is not picked up: the cache is the file's sole writer,
+        // and the cached miss stands until a write() or clear() through this instance.
+        RemoteConfigDiskCache(applicationContext)
+            .write(PersistedRemoteConfigurationState(domain = "app", manifest = "v1.0."))
+
+        assertThat(diskCache.read()).isNull()
+    }
+
+    @Test
     fun `write returns true on a successful persist`() {
         val persisted = diskCache.write(PersistedRemoteConfigurationState(domain = "app", manifest = "v1.0."))
 
@@ -160,6 +192,35 @@ class RemoteConfigDiskCacheTest {
         diskCache.clear()
 
         assertThat(diskCache.read()).isNull()
+    }
+
+    @Test
+    fun `read tolerates unknown keys in the persisted file for forward-compatibility`() {
+        // A file written by a future SDK version may carry extra fields; they must not fail the read.
+        val file = File(File(File(testFolder, "RevenueCat"), "remote_config"), "remote_config.json")
+        file.parentFile!!.mkdirs()
+        // The persisted format uses the Kotlin property names (e.g. `activeTopics`), unlike the wire format.
+        // language=json
+        file.writeText(
+            """
+            {
+              "domain": "app",
+              "manifest": "v1.0.",
+              "activeTopics": ["sources"],
+              "future_field": { "nested": true },
+              "topics": { "sources": { "api": { "url": "https://api.revenuecat.com", "future_key": 1 } } }
+            }
+            """.trimIndent(),
+        )
+
+        val read = diskCache.read()
+
+        assertThat(read).isNotNull
+        assertThat(read!!.domain).isEqualTo("app")
+        assertThat(read.manifest).isEqualTo("v1.0.")
+        assertThat(read.activeTopics).containsExactly("sources")
+        // Unknown item keys survive as metadata (the ConfigItem serializer keeps non-reserved keys).
+        assertThat(read.topics.getValue("sources").getValue("api").metadata).containsKey("future_key")
     }
 
     @Test
