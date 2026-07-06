@@ -107,11 +107,6 @@ import com.revenuecat.purchases.utils.Result
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
 import java.net.URL
 import java.util.Collections
 import java.util.Date
@@ -172,8 +167,6 @@ internal class PurchasesOrchestrator(
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
-
-    private val uiConfigScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     internal var state: PurchasesState
         get() = purchasesStateCache.purchasesState
@@ -628,41 +621,22 @@ internal class PurchasesOrchestrator(
     fun workflowIdForOfferingId(offeringId: String): String? =
         workflowManager?.workflowIdForOfferingId(offeringId)
 
-    fun getUiConfig(
-        onSuccess: (UiConfig) -> Unit,
-        onError: (PurchasesError) -> Unit,
-    ) {
-        if (appConfig.uiPreviewMode) {
-            dispatch {
-                onError(
-                    PurchasesError(
-                        PurchasesErrorCode.ConfigurationError,
-                        "UI config cannot be fetched in UI preview mode.",
-                    ),
-                )
+    suspend fun getUiConfig(): UiConfig {
+        val provider = uiConfigProvider
+        if (appConfig.uiPreviewMode || provider == null) {
+            val message = if (appConfig.uiPreviewMode) {
+                "UI config cannot be fetched in UI preview mode."
+            } else {
+                "UI config is not enabled."
             }
-            return
+            throw PurchasesException(PurchasesError(PurchasesErrorCode.ConfigurationError, message))
         }
-        if (uiConfigProvider == null) {
-            dispatch {
-                onError(
-                    PurchasesError(
-                        PurchasesErrorCode.ConfigurationError,
-                        "UI config is not enabled.",
-                    ),
-                )
-            }
-            return
-        }
-        uiConfigScope.launch {
-            try {
-                val uiConfig = uiConfigProvider.getUiConfig()
-                dispatch { onSuccess(uiConfig) }
-            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                dispatch {
-                    onError(PurchasesError(PurchasesErrorCode.UnknownError, "Failed to fetch UI config: ${e.message}"))
-                }
-            }
+        return try {
+            provider.getUiConfig()
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            throw PurchasesException(
+                PurchasesError(PurchasesErrorCode.UnknownError, "Failed to fetch UI config: ${e.message}"),
+            ).apply { initCause(e) }
         }
     }
 
@@ -899,7 +873,6 @@ internal class PurchasesOrchestrator(
         }
         this.backend.close()
         this.remoteConfigManager?.close()
-        this.uiConfigScope.cancel()
         this.workflowManager?.close()
 
         billing.close()

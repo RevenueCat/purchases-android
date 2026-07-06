@@ -5,7 +5,6 @@
 
 package com.revenuecat.purchases
 
-import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
@@ -53,17 +52,16 @@ import io.mockk.verify
 import io.mockk.verifyAll
 import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import org.robolectric.Shadows.shadowOf
 import java.util.Collections.emptyList
 import java.util.Date
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.runBlocking
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -77,7 +75,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     private val subPurchaseToken = "token_sub"
 
     private val initiationSource = PostReceiptInitiationSource.PURCHASE
-    private val defaultTimeout = 2000L
 
     @After
     fun removeMocks() {
@@ -2927,65 +2924,29 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val expected = UiConfig()
         coEvery { mockUiConfigProvider.getUiConfig() } returns expected
 
-        var received: UiConfig? = null
-        var receivedError: PurchasesError? = null
-        val latch = CountDownLatch(1)
-        purchases.purchasesOrchestrator.getUiConfig(
-            onSuccess = { received = it; latch.countDown() },
-            onError = { receivedError = it; latch.countDown() },
-        )
+        val received = runBlocking { purchases.purchasesOrchestrator.getUiConfig() }
 
-        awaitMainLooperCallback(latch)
         assertThat(received).isEqualTo(expected)
-        assertThat(receivedError).isNull()
     }
 
     @Test
-    fun `getUiConfig delivers a failure as an error to the caller`() {
+    fun `getUiConfig propagates a provider failure as a PurchasesException`() {
         coEvery { mockUiConfigProvider.getUiConfig() } throws RuntimeException("boom")
 
-        var received: UiConfig? = null
-        var receivedError: PurchasesError? = null
-        val latch = CountDownLatch(1)
-        purchases.purchasesOrchestrator.getUiConfig(
-            onSuccess = { received = it; latch.countDown() },
-            onError = { receivedError = it; latch.countDown() },
-        )
-
-        awaitMainLooperCallback(latch)
-        assertThat(receivedError).isNotNull
-        assertThat(received).isNull()
-    }
-
-    /**
-     * `getUiConfig` delivers through `uiConfigScope` (a real `Dispatchers.IO` coroutine), then posts the
-     * callback to the main-thread handler. Robolectric's main looper is paused by default, so the posted
-     * callback sits queued until idled; poll-idle it while waiting on [latch] so we pick the callback up as
-     * soon as the background coroutine posts it, instead of guessing a fixed delay.
-     */
-    private fun awaitMainLooperCallback(latch: CountDownLatch) {
-        val deadline = System.currentTimeMillis() + defaultTimeout
-        while (latch.count > 0 && System.currentTimeMillis() < deadline) {
-            shadowOf(Looper.getMainLooper()).idle()
-            latch.await(10, TimeUnit.MILLISECONDS)
-        }
-        assertThat(latch.await(0, TimeUnit.MILLISECONDS)).isTrue()
+        assertThatExceptionOfType(PurchasesException::class.java)
+            .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getUiConfig() } }
+            .extracting { it.code }
+            .isEqualTo(PurchasesErrorCode.UnknownError)
     }
 
     @Test
-    fun `getUiConfig returns ConfigurationError and never calls the provider when uiPreviewMode is true`() {
+    fun `getUiConfig throws ConfigurationError and never calls the provider when uiPreviewMode is true`() {
         buildPurchases(anonymous = true, uiPreviewMode = true)
 
-        var received: UiConfig? = null
-        var receivedError: PurchasesError? = null
-        purchases.purchasesOrchestrator.getUiConfig(
-            onSuccess = { received = it },
-            onError = { receivedError = it },
-        )
-
-        assertThat(receivedError).isNotNull
-        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
-        assertThat(received).isNull()
+        assertThatExceptionOfType(PurchasesException::class.java)
+            .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getUiConfig() } }
+            .extracting { it.code }
+            .isEqualTo(PurchasesErrorCode.ConfigurationError)
         coVerify(exactly = 0) {
             mockUiConfigProvider.getUiConfig()
         }
