@@ -77,11 +77,6 @@ internal class FileHelper(
 
     private fun openBufferedReader(filePath: String, contentBlock: ((BufferedReader) -> Unit)) {
         val file = getFileInFilesDir(filePath)
-        // Guard against a TOCTOU race: callers (e.g. EventsFileHelper.readFile) check
-        // fileIsEmpty() before calling here, but a concurrent flush/rotate can delete
-        // the file between that check and FileInputStream(file), producing an uncaught
-        // FileNotFoundException on the SDK background thread that crashes the process.
-        // Treat a missing file as empty — the same semantics fileIsEmpty() uses.
         try {
             FileInputStream(file).use { fileInputStream ->
                 InputStreamReader(fileInputStream).use { inputStreamReader ->
