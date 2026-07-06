@@ -1213,3 +1213,219 @@ private fun LoadedPaywallComponents_Preview_TransparentFooter() {
         modifier = Modifier.fillMaxSize(),
     )
 }
+
+/**
+ * A small, vertically centered body with a sticky footer. The body must center within the space
+ * *above* the footer (matching the pre-overlap behavior), not the whole screen.
+ */
+@Suppress("LongMethod", "MagicNumber")
+@Preview(name = "CenteredBodyFooter", showSystemUi = true)
+@Composable
+private fun LoadedPaywallComponents_Preview_CenteredBodyFooter() {
+    val textColor = ColorScheme(light = ColorInfo.Hex(Color(0xFF272727).toArgb()))
+    val backgroundColor = ColorScheme(light = ColorInfo.Hex(Color(0xFFFDFDFD).toArgb()))
+    val footerColor = ColorScheme(light = ColorInfo.Hex(Color(0x99057C5B).toArgb()))
+    val ctaTextColor = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))
+    val ctaBackgroundColor = ColorScheme(light = ColorInfo.Hex(Color(0xFF0A3D2E).toArgb()))
+
+    val data = PaywallComponentsData(
+        id = "preview_centered_body_footer",
+        templateName = "template",
+        assetBaseURL = URL("https://assets.pawwalls.com"),
+        componentsConfig = ComponentsConfig(
+            base = PaywallComponentsConfig(
+                stack = StackComponent(
+                    components = listOf(
+                        TextComponent(
+                            text = LocalizationKey("title"),
+                            color = textColor,
+                            fontWeight = FontWeight.BOLD,
+                            fontSize = 28,
+                            horizontalAlignment = CENTER,
+                            size = Size(width = Fill, height = Fit),
+                            margin = Padding(top = 0.0, bottom = 12.0, leading = 32.0, trailing = 32.0),
+                        ),
+                        TextComponent(
+                            text = LocalizationKey("subtitle"),
+                            color = textColor,
+                            horizontalAlignment = CENTER,
+                            size = Size(width = Fill, height = Fit),
+                            margin = Padding(top = 0.0, bottom = 0.0, leading = 32.0, trailing = 32.0),
+                        ),
+                    ),
+                    dimension = Vertical(alignment = CENTER, distribution = FlexDistribution.CENTER),
+                    size = Size(width = Fill, height = Fill),
+                ),
+                background = Background.Color(backgroundColor),
+                stickyFooter = StickyFooterComponent(
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(
+                                    TextComponent(
+                                        text = LocalizationKey("cta"),
+                                        color = ctaTextColor,
+                                        fontWeight = FontWeight.BOLD,
+                                    ),
+                                ),
+                                dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
+                                size = Size(width = Fill, height = Fit),
+                                backgroundColor = ctaBackgroundColor,
+                                padding = Padding(top = 16.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
+                                shape = Shape.Pill,
+                            ),
+                        ),
+                        dimension = Vertical(alignment = CENTER, distribution = START),
+                        size = Size(width = Fill, height = Fit),
+                        backgroundColor = footerColor,
+                        padding = Padding(top = 16.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
+                    ),
+                ),
+            ),
+        ),
+        componentsLocalizations = mapOf(
+            LocaleId("en_US") to mapOf(
+                LocalizationKey("title") to LocalizationData.Text("Centered body"),
+                LocalizationKey("subtitle") to LocalizationData.Text("This should be centered above the footer"),
+                LocalizationKey("cta") to LocalizationData.Text("Continue"),
+            ),
+        ),
+        defaultLocaleIdentifier = LocaleId("en_US"),
+    )
+    val offering = Offering(
+        identifier = "centered_body_footer",
+        serverDescription = "Centered body with footer",
+        metadata = emptyMap(),
+        availablePackages = listOf(TestData.Packages.monthly),
+        paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
+    )
+    val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
+    val state = offering.toComponentsPaywallState(
+        validationResult = validated,
+        storefrontCountryCode = "US",
+        dateProvider = { Date(MILLIS_2025_01_25) },
+        purchases = MockPurchasesType(),
+    )
+
+    LoadedPaywallComponents(
+        state = state,
+        clickHandler = { },
+        modifier = Modifier.fillMaxSize(),
+    )
+}
+
+/**
+ * A sticky footer taller than half the screen. Content occupies the reduced region above it and the
+ * footer fills the rest without clipping the layout.
+ */
+@Suppress("LongMethod", "MagicNumber")
+@Preview(name = "LargeFooter", showSystemUi = true)
+@Composable
+private fun LoadedPaywallComponents_Preview_LargeFooter() {
+    val textColor = ColorScheme(light = ColorInfo.Hex(Color(0xFF272727).toArgb()))
+    val backgroundColor = ColorScheme(light = ColorInfo.Hex(Color(0xFFFDFDFD).toArgb()))
+    val footerColor = ColorScheme(light = ColorInfo.Hex(Color(0xFF057C5B).toArgb()))
+    val ctaTextColor = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))
+    val ctaBackgroundColor = ColorScheme(light = ColorInfo.Hex(Color(0xFF0A3D2E).toArgb()))
+
+    val footerRows = (1..8).map { index ->
+        TextComponent(
+            text = LocalizationKey("footer-line-$index"),
+            color = ctaTextColor,
+            horizontalAlignment = CENTER,
+            size = Size(width = Fill, height = Fit),
+            margin = Padding(top = 6.0, bottom = 6.0, leading = 0.0, trailing = 0.0),
+        )
+    }
+
+    val data = PaywallComponentsData(
+        id = "preview_large_footer",
+        templateName = "template",
+        assetBaseURL = URL("https://assets.pawwalls.com"),
+        componentsConfig = ComponentsConfig(
+            base = PaywallComponentsConfig(
+                stack = StackComponent(
+                    components = listOf(
+                        TextComponent(
+                            text = LocalizationKey("title"),
+                            color = textColor,
+                            fontWeight = FontWeight.BOLD,
+                            fontSize = 28,
+                            horizontalAlignment = LEADING,
+                            size = Size(width = Fill, height = Fit),
+                            margin = Padding(top = 0.0, bottom = 12.0, leading = 0.0, trailing = 0.0),
+                        ),
+                        TextComponent(
+                            text = LocalizationKey("subtitle"),
+                            color = textColor,
+                            horizontalAlignment = LEADING,
+                            size = Size(width = Fill, height = Fit),
+                        ),
+                    ),
+                    dimension = Vertical(alignment = LEADING, distribution = START),
+                    size = Size(width = Fill, height = Fill),
+                    padding = Padding(top = 32.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
+                ),
+                background = Background.Color(backgroundColor),
+                stickyFooter = StickyFooterComponent(
+                    stack = StackComponent(
+                        components = footerRows + StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("cta"),
+                                    color = ctaTextColor,
+                                    fontWeight = FontWeight.BOLD,
+                                ),
+                            ),
+                            dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
+                            size = Size(width = Fill, height = Fit),
+                            backgroundColor = ctaBackgroundColor,
+                            padding = Padding(top = 16.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
+                            margin = Padding(top = 16.0, bottom = 0.0, leading = 0.0, trailing = 0.0),
+                            shape = Shape.Pill,
+                        ),
+                        dimension = Vertical(alignment = CENTER, distribution = FlexDistribution.CENTER),
+                        // Fixed height guarantees the footer is taller than half of a phone screen.
+                        size = Size(width = Fill, height = Fixed(520u)),
+                        backgroundColor = footerColor,
+                        padding = Padding(top = 24.0, bottom = 24.0, leading = 32.0, trailing = 32.0),
+                    ),
+                ),
+            ),
+        ),
+        componentsLocalizations = mapOf(
+            LocaleId("en_US") to (
+                mapOf(
+                    LocalizationKey("title") to LocalizationData.Text("Big footer"),
+                    LocalizationKey("subtitle") to LocalizationData.Text(
+                        "The footer below is taller than half the screen.",
+                    ),
+                    LocalizationKey("cta") to LocalizationData.Text("Continue"),
+                ) + (1..8).associate { index ->
+                    LocalizationKey("footer-line-$index") to LocalizationData.Text("Footer line $index")
+                }
+                ),
+        ),
+        defaultLocaleIdentifier = LocaleId("en_US"),
+    )
+    val offering = Offering(
+        identifier = "large_footer",
+        serverDescription = "Footer taller than half the screen",
+        metadata = emptyMap(),
+        availablePackages = listOf(TestData.Packages.monthly),
+        paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
+    )
+    val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
+    val state = offering.toComponentsPaywallState(
+        validationResult = validated,
+        storefrontCountryCode = "US",
+        dateProvider = { Date(MILLIS_2025_01_25) },
+        purchases = MockPurchasesType(),
+    )
+
+    LoadedPaywallComponents(
+        state = state,
+        clickHandler = { },
+        modifier = Modifier.fillMaxSize(),
+    )
+}
