@@ -186,27 +186,6 @@ internal class HTTPClient(
         fun canUseFallback(): Boolean =
             endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
 
-        fun performRequestToFallbackURL(): HTTPResult {
-            val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
-            log(LogIntent.DEBUG) {
-                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(
-                    endpoint.getPath(useFallback = true),
-                    fallbackBaseURL,
-                )
-            }
-            return performRequest(
-                fallbackBaseURL,
-                endpoint,
-                body,
-                postFieldsToSign,
-                requestHeaders,
-                refreshETag,
-                fallbackBaseURLs,
-                fallbackURLIndex + 1,
-                isInitialAttempt = false,
-            )
-        }
-
         // On a transient failure, reports the current API source unhealthy and retries against the next one.
         // Returns null when API-source failover doesn't apply or the sources are exhausted, so the caller
         // falls through to the endpoint fallback-host phase.
@@ -230,6 +209,27 @@ internal class HTTPClient(
                     isInitialAttempt = false,
                 )
             }
+        }
+
+        fun performRequestToFallbackURL(): HTTPResult {
+            val fallbackBaseURL = fallbackBaseURLs[fallbackURLIndex]
+            log(LogIntent.DEBUG) {
+                NetworkStrings.RETRYING_CALL_WITH_FALLBACK_URL.format(
+                    endpoint.getPath(useFallback = true),
+                    fallbackBaseURL,
+                )
+            }
+            return performRequest(
+                fallbackBaseURL,
+                endpoint,
+                body,
+                postFieldsToSign,
+                requestHeaders,
+                refreshETag,
+                fallbackBaseURLs,
+                fallbackURLIndex + 1,
+                isInitialAttempt = false,
+            )
         }
 
         var callSuccessful = false
