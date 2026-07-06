@@ -13,18 +13,6 @@ plugins {
 android {
     namespace = "com.revenuecat.purchases.ui.revenuecatui"
 
-    // billingclient dimension is added for bc7/bc8 support
-    flavorDimensions += "billingclient"
-    productFlavors {
-        create("bc8") {
-            dimension = "billingclient"
-            isDefault = true
-        }
-        create("bc7") {
-            dimension = "billingclient"
-        }
-    }
-
     buildTypes {
         getByName("debug") {
             buildConfigField("String", "PROJECT_DIR", "\"$projectDir\"")
@@ -149,10 +137,7 @@ dependencies {
 
 tasks.dokkaHtmlPartial.configure {
     dokkaSourceSets {
-        named("defaultsBc7") {
-            suppress.set(true)
-        }
-        named("defaultsBc8") {
+        named("defaults") {
             dependsOn("main")
         }
         named("main") {
