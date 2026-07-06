@@ -320,8 +320,8 @@ internal class HTTPClient(
         val eligible = !isFallbackAttempt &&
             endpoint.usesAPISources &&
             baseURL.toString() == AppConfig.baseUrlString
-        if (!eligible) return null
-        val provider = apiSourceProvider ?: return null
+        val provider = apiSourceProvider
+        if (!eligible || provider == null) return null
         if (rearmExhaustedSources) provider.restartAPISourcesIfExhausted()
         return provider.currentAPISource()
     }
