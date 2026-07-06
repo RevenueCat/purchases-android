@@ -79,7 +79,7 @@ class WorkflowEventTest {
         assertThat(stored).isInstanceOf(BackendStoredEvent.Workflows::class.java)
         val backend = (stored as BackendStoredEvent.Workflows).event
         assertThat(backend.id).isEqualTo(id.toString())
-        assertThat(backend.eventName).isEqualTo("workflows_step_started")
+        assertThat(backend.eventName).isEqualTo("workflow_step_started")
         assertThat(backend.timestampMs).isEqualTo(date.time)
         assertThat(backend.appUserID).isEqualTo("user_42")
         assertThat(backend.properties.workflowId).isEqualTo("wfl_abc")
@@ -102,7 +102,7 @@ class WorkflowEventTest {
         )
 
         val stored = event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows
-        assertThat(stored.event.eventName).isEqualTo("workflows_step_completed")
+        assertThat(stored.event.eventName).isEqualTo("workflow_step_completed")
         assertThat(stored.event.properties.traceId).isEqualTo("trace_session_1")
         assertThat(stored.event.properties.toStepId).isEqualTo("step-2")
         assertThat(stored.event.properties.fromStepId).isNull()
@@ -128,7 +128,7 @@ class WorkflowEventTest {
     }
 
     @Test
-    fun `Close converts to BackendStoredEvent_Workflows with workflows_close name and no step-transition fields`() {
+    fun `Close converts to BackendStoredEvent_Workflows with workflow_close name and no step-transition fields`() {
         val id = UUID.fromString("00000000-0000-0000-0000-000000000002")
         val date = Date(1717000000000L)
         val event = WorkflowEvent.Close(
@@ -142,7 +142,7 @@ class WorkflowEventTest {
 
         val stored = event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows
         assertThat(stored.event.id).isEqualTo(id.toString())
-        assertThat(stored.event.eventName).isEqualTo("workflows_close")
+        assertThat(stored.event.eventName).isEqualTo("workflow_close")
         assertThat(stored.event.timestampMs).isEqualTo(date.time)
         assertThat(stored.event.appUserID).isEqualTo("user_42")
         assertThat(stored.event.properties.workflowId).isEqualTo("wfl_abc")
@@ -150,7 +150,7 @@ class WorkflowEventTest {
         assertThat(stored.event.properties.traceId).isEqualTo("trace_session_1")
         assertThat(stored.event.properties.isFirstStep).isFalse
         assertThat(stored.event.properties.isLastStep).isTrue
-        // workflows_close is not a step transition: no from/to step or entry reason.
+        // workflow_close is not a step transition: no from/to step or entry reason.
         assertThat(stored.event.properties.fromStepId).isNull()
         assertThat(stored.event.properties.toStepId).isNull()
         assertThat(stored.event.properties.entryReason).isNull()
@@ -172,7 +172,7 @@ class WorkflowEventTest {
                 id = "evt_id",
                 version = BackendEvent.WORKFLOW_EVENT_SCHEMA_VERSION,
                 type = BackendEvent.WORKFLOW_EVENT_TYPE,
-                eventName = "workflows_step_started",
+                eventName = "workflow_step_started",
                 timestampMs = 1L,
                 appUserID = "u",
                 context = BackendEvent.Workflows.Context(

@@ -14,22 +14,19 @@ This file provides guidance to AI coding agents when working with code in this r
 
 # Run only backend integration tests
 # (requires BACKEND_INTEGRATION_API_KEY and BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY in local.properties; tests self-skip if not set)
-./gradlew :purchases:testDefaultsBc8DebugUnitTest --tests "com.revenuecat.purchases.backend_integration_tests.*"
+./gradlew :purchases:testDefaultsDebugUnitTest --tests "com.revenuecat.purchases.backend_integration_tests.*"
 
-# Run unit tests for specific modules (flavor format: {apis}{billingclient}{buildType})
-./gradlew :purchases:testDefaultsBc8DebugUnitTest
-./gradlew :purchases:testDefaultsBc7DebugUnitTest
-./gradlew :ui:revenuecatui:testDefaultsBc8DebugUnitTest
-./gradlew :ui:revenuecatui:testDefaultsBc7DebugUnitTest
+# Run unit tests for specific modules (flavor format: {apis}{buildType})
+./gradlew :purchases:testDefaultsDebugUnitTest
+./gradlew :purchases:testCustomEntitlementComputationDebugUnitTest
+./gradlew :ui:revenuecatui:testDefaultsDebugUnitTest
 
 # Run Android instrumentation tests
 ./gradlew connectedAndroidTest
 
 # Run instrumentation tests for specific modules
-./gradlew :purchases:connectedDefaultsBc8DebugAndroidTest
-./gradlew :purchases:connectedDefaultsBc7DebugAndroidTest
-./gradlew :ui:revenuecatui:connectedDefaultsBc8DebugAndroidTest
-./gradlew :ui:revenuecatui:connectedDefaultsBc7DebugAndroidTest
+./gradlew :purchases:connectedDefaultsDebugAndroidTest
+./gradlew :ui:revenuecatui:connectedDefaultsDebugAndroidTest
 
 # Run integration tests (requires device/emulator)
 ./gradlew :integration-tests:connectedDebugAndroidTest
@@ -102,11 +99,10 @@ This is a multi-module Android project with clear separation of concerns:
 - **Main Components**: `PaywallViewModel`, `CustomerCenterViewModel`
 
 ### Product Flavors
-The `purchases` module has 2 flavor dimensions:
+The `purchases` module has 1 flavor dimension:
 - **`apis`**: `defaults` (standard) or `customEntitlementComputation` (custom entitlement computation variant)
-- **`billingclient`**: `bc8` (default, Billing Client 8) or `bc7` (Billing Client 7)
 
-Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitlementComputationBc7Release`.
+Variant names combine the flavor and build type, e.g. `defaultsDebug`, `customEntitlementComputationRelease`.
 
 ### API Annotations
 - **`@InternalRevenueCatAPI`** - APIs that are public only to be accessible by other modules or hybrid SDKs, not intended for external developer use
@@ -166,7 +162,7 @@ Variant names combine both dimensions, e.g. `defaultsBc8Debug`, `customEntitleme
 ### Gradle Structure
 - **Multi-module**: Uses `include()` statements in `settings.gradle.kts`
 - **Version Catalogs**: Centralized dependency management in `gradle/libs.versions.toml`
-- **Flavors**: Support for different API variants and billing client versions
+- **Flavors**: Support for different API variants (`defaults` / `customEntitlementComputation`)
 - **Build Types**: Debug and release configurations
 
 ### Target Specifications
