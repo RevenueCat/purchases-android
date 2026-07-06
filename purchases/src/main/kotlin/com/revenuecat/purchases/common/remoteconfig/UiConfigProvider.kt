@@ -7,11 +7,11 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 
 /**
- * The topic-specific front door for `ui_config`: three independently-updated parts — `app`, `localizations`,
- * `variable_config` — that together deserialize as one [UiConfig], the same shape the legacy offerings response
- * sends pre-assembled in a single JSON object. Each part is inline item metadata (no blob), so it's read straight
- * off the topic's item index. A part with no body (topic absent or item absent) is simply omitted, so [UiConfig]'s
- * own field defaults fill the gap.
+ * The topic-specific front door for `ui_config`: four independently-updated parts — `app`, `localizations`,
+ * `variable_config`, `custom_variables` — that together deserialize as one [UiConfig], the same shape the legacy
+ * offerings response sends pre-assembled in a single JSON object. Each part is inline item metadata (no blob), so
+ * it's read straight off the topic's item index. A part with no body (topic absent or item absent) is simply
+ * omitted, so [UiConfig]'s own field defaults fill the gap.
  */
 @OptIn(InternalRevenueCatAPI::class)
 internal class UiConfigProvider(
@@ -25,6 +25,6 @@ internal class UiConfigProvider(
     }
 
     private companion object {
-        private val PART_KEYS = listOf("app", "localizations", "variable_config")
+        private val PART_KEYS = listOf("app", "localizations", "variable_config", "custom_variables")
     }
 }
