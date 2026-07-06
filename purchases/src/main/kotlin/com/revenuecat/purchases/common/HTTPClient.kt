@@ -171,7 +171,7 @@ internal class HTTPClient(
     ): HTTPResult {
         val isMainBackend = fallbackURLIndex == 0
 
-        val apiSourceHandle = currentApiSourceHandle(endpoint, baseURL, isFallbackAttempt = fallbackURLIndex > 0)
+        val apiSourceHandle = currentApiSourceHandle(endpoint, baseURL, isFallbackAttempt = !isMainBackend)
         val requestBaseURL = apiSourceHandle?.url?.let { runCatching { URL(it) }.getOrNull() } ?: baseURL
 
         fun canUseFallback(): Boolean =
