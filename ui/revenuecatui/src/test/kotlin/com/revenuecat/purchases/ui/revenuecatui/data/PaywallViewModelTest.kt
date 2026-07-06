@@ -234,6 +234,7 @@ class PaywallViewModelTest {
         every { purchases.preferredUILocaleOverride } returns null
         every { purchases.useWorkflows } returns false
         every { purchases.workflowIdForOfferingId(any()) } returns null
+        coEvery { purchases.awaitGetUiConfig() } returns UiConfig()
 
         every { listener.onPurchaseStarted(any()) } just runs
         every { listener.onPurchaseCompleted(any(), any()) } just runs
@@ -3077,7 +3078,7 @@ class PaywallViewModelTest {
             purchases,
             PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
                 .setListener(listener)
-                .injectedWorkflow(WorkflowDataResult(workflow, null), defaultOffering)
+                .injectedWorkflow(WorkflowDataResult(workflow, null), defaultOffering, UiConfig())
                 .build(),
             TestData.Constants.currentColorScheme,
             isDarkMode = false,

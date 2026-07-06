@@ -275,7 +275,13 @@ internal class PurchasesFactory(
 
             val workflowsCache = if (appConfig.useWorkflows) WorkflowsCache(deviceCache = cache) else null
 
-            val remoteConfigManager = if (BuildConfig.ENABLE_REMOTE_CONFIG && !appConfig.customEntitlementComputation) {
+            // useWorkflows implies the config layer: workflow rendering reads ui_config from `/v1/config`, so
+            // the manager must exist whenever workflows are on, not only when the standalone flag is set.
+            // Neither flag applies to the customEntitlementComputation flavor, which doesn't serve paywalls
+            // this way.
+            val remoteConfigManager = if (
+                (BuildConfig.ENABLE_REMOTE_CONFIG || appConfig.useWorkflows) && !appConfig.customEntitlementComputation
+            ) {
                 RemoteConfigManager(
                     backend = backend,
                     diskCache = RemoteConfigDiskCache(contextForStorage),
