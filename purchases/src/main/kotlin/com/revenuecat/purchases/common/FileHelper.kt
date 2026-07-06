@@ -75,6 +75,7 @@ internal class FileHelper(
         return !file.exists() || file.length() == 0L
     }
 
+    @Suppress("NestedBlockDepth")
     private fun openBufferedReader(filePath: String, contentBlock: ((BufferedReader) -> Unit)) {
         val file = getFileInFilesDir(filePath)
         try {
@@ -85,7 +86,7 @@ internal class FileHelper(
                     }
                 }
             }
-        } catch (e: FileNotFoundException) {
+        } catch (_: FileNotFoundException) {
             debugLog { "FileHelper: file not found when trying to read: $filePath. Treating as empty." }
         }
     }
