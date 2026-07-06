@@ -248,6 +248,25 @@ class RemoteConfigurationTest {
     }
 
     @Test
+    fun `fails to parse a non-object topic item with a SerializationException, not an uncaught error`() {
+        // A topic item must be a JSON object. The custom ConfigItemSerializer must surface anything else as
+        // a SerializationException (a recoverable parse failure to the manager), never the IllegalStateException
+        // the .jsonObject accessor throws, which would escape the manager's catch and crash the app.
+        // language=json
+        val payload = """
+            {
+              "domain": "app",
+              "manifest": "v1.1710002100.sources:etag1",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "api": "not-an-object" } }
+            }
+        """
+
+        assertThatThrownBy { RemoteConfiguration.parse(payload.trimIndent().toByteArray()) }
+            .isInstanceOf(SerializationException::class.java)
+    }
+
+    @Test
     fun `fails to parse when a field has the wrong type`() {
         // manifest must be a string, not an object.
         // language=json

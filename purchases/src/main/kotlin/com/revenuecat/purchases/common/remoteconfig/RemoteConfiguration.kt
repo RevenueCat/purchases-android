@@ -4,6 +4,7 @@ import com.revenuecat.purchases.common.JsonProvider
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -16,7 +17,6 @@ import kotlinx.serialization.json.JsonEncoder
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
-import kotlinx.serialization.json.jsonObject
 import java.nio.ByteBuffer
 import java.security.MessageDigest
 
@@ -155,8 +155,10 @@ internal object ConfigItemSerializer : KSerializer<RemoteConfiguration.ConfigIte
 
     override fun deserialize(decoder: Decoder): RemoteConfiguration.ConfigItem {
         val jsonDecoder = decoder as? JsonDecoder
-            ?: error("ConfigItem can only be deserialized from JSON.")
-        val obj = jsonDecoder.decodeJsonElement().jsonObject
+            ?: throw SerializationException("ConfigItem can only be deserialized from JSON.")
+        val element = jsonDecoder.decodeJsonElement()
+        val obj = element as? JsonObject
+            ?: throw SerializationException("ConfigItem must be a JSON object, but was: $element.")
         val blobRef = (obj[BLOB_REF_KEY] as? JsonPrimitive)?.takeIf { it.isString }?.content
         val prefetch = (obj[PREFETCH_KEY] as? JsonPrimitive)?.booleanOrNull ?: false
         val metadata = JsonObject(obj.filterKeys { it != BLOB_REF_KEY && it != PREFETCH_KEY })
@@ -165,7 +167,7 @@ internal object ConfigItemSerializer : KSerializer<RemoteConfiguration.ConfigIte
 
     override fun serialize(encoder: Encoder, value: RemoteConfiguration.ConfigItem) {
         val jsonEncoder = encoder as? JsonEncoder
-            ?: error("ConfigItem can only be serialized to JSON.")
+            ?: throw SerializationException("ConfigItem can only be serialized to JSON.")
         val merged = buildMap<String, JsonElement> {
             putAll(value.metadata)
             value.blobRef?.let { put(BLOB_REF_KEY, JsonPrimitive(it)) }
