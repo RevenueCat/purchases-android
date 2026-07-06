@@ -1276,7 +1276,7 @@ class PaywallViewModelWorkflowTest {
     fun `closePaywall fires Close even on a non-paywall step that suppresses paywall events`() {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
-        // step-1 is a context (non-paywall) step: paywall_close is suppressed, but workflows_close
+        // step-1 is a context (non-paywall) step: paywall_close is suppressed, but workflow_close
         // is a workflow-level abandonment signal and must still fire.
         val (result, offerings) = makeContextPackageWorkflow()
 
@@ -1385,7 +1385,7 @@ class PaywallViewModelWorkflowTest {
         vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
         captured.clear()
 
-        // A close after the purchase completed is not an abandonment, so no workflows_close.
+        // A close after the purchase completed is not an abandonment, so no workflow_close.
         vm.closePaywall(result = null)
 
         assertThat(captured.filterIsInstance<WorkflowEvent.Close>()).isEmpty()
@@ -1409,7 +1409,7 @@ class PaywallViewModelWorkflowTest {
         // Premise: the purchase-completed gate alone would not have suppressed Close here.
         assertThat(vm.purchaseCompleted.value).isFalse
 
-        // A successful restore is a natural exit, not an abandonment, so no workflows_close.
+        // A successful restore is a natural exit, not an abandonment, so no workflow_close.
         vm.closePaywall(result = null)
 
         assertThat(captured.filterIsInstance<WorkflowEvent.Close>()).isEmpty()
@@ -1433,7 +1433,7 @@ class PaywallViewModelWorkflowTest {
 
         // A refresh re-presents the SAME open session (e.g. updateOptions -> presentWorkflow ->
         // startWorkflowPresentation). The user has NOT dismissed, so the restore completion must survive
-        // and still suppress workflows_close on the eventual manual dismiss.
+        // and still suppress workflow_close on the eventual manual dismiss.
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
         advanceUntilIdle()
         captured.clear()
@@ -1475,7 +1475,7 @@ class PaywallViewModelWorkflowTest {
         advanceUntilIdle()
 
         // The same ViewModel later presents a NEW workflow session. _purchaseCompleted stays true (sticky),
-        // but this session had no purchase, so abandoning it must still emit workflows_close.
+        // but this session had no purchase, so abandoning it must still emit workflow_close.
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
         advanceUntilIdle()
         captured.clear()
@@ -1504,7 +1504,7 @@ class PaywallViewModelWorkflowTest {
         advanceUntilIdle()
 
         // The same ViewModel later presents a NEW workflow session with no purchase, so abandoning it
-        // must still emit workflows_close (the completion must not stick past the dismiss).
+        // must still emit workflow_close (the completion must not stick past the dismiss).
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null)
         advanceUntilIdle()
         captured.clear()
