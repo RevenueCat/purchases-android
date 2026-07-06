@@ -44,14 +44,18 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.ui.revenuecatui.OriginalTemplatePaywallFooter
+import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialog
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessageHandler
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
 import com.revenuecat.purchases.ui.revenuecatui.fonts.CustomFontProvider
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
+
+private const val TAG = "PaywallTester"
 
 private class TestAppPurchaseLogicSuspend : PurchaseLogic {
 
@@ -127,6 +131,16 @@ fun PaywallsScreen(
         }
     }
 
+    val webViewMessageHandler = remember {
+        PaywallWebViewMessageHandler { message, _ ->
+            Log.d(
+                TAG,
+                "web_view message: type=${message.type} componentId=${message.componentId} " +
+                    "error=${message.error}",
+            )
+        }
+    }
+
     LazyColumn(
         modifier = modifier.testTag("paywall_screen"),
     ) {
@@ -144,6 +158,11 @@ fun PaywallsScreen(
                         displayPaywallState = DisplayPaywallState.FullScreen(
                             offering,
                             purchaseLogic = myAppPurchaseLogic,
+                            webViewMessageHandler = if (template == SamplePaywalls.SampleTemplate.COMPONENTS_WEB_VIEW) {
+                                webViewMessageHandler
+                            } else {
+                                null
+                            },
                         )
                     },
                     emoji = "\uD83D\uDCF1",
@@ -207,15 +226,32 @@ fun PaywallsScreen(
 
 @Composable
 private fun FullScreenDialog(currentState: DisplayPaywallState.FullScreen, onDismiss: () -> Unit) {
-    PaywallDialog(
-        PaywallDialogOptions.Builder()
-            .setDismissRequest(onDismiss)
-            .setOffering(currentState.offering)
-            .setFontProvider(currentState.fontProvider)
-            .setCustomVariables(CustomVariablesHolder.customVariables)
-            .setCustomPurchaseLogic(currentState.purchaseLogic)
-            .build(),
-    )
+    val paywallOptions = PaywallOptions.Builder(onDismiss)
+        .setOffering(currentState.offering)
+        .setFontProvider(currentState.fontProvider)
+        .setCustomVariables(CustomVariablesHolder.customVariables)
+        .setPurchaseLogic(currentState.purchaseLogic)
+        .setWebViewMessageHandler(currentState.webViewMessageHandler)
+        .build()
+
+    if (currentState.webViewMessageHandler != null) {
+        Dialog(
+            onDismissRequest = onDismiss,
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            Paywall(paywallOptions)
+        }
+    } else {
+        PaywallDialog(
+            PaywallDialogOptions.Builder()
+                .setDismissRequest(onDismiss)
+                .setOffering(currentState.offering)
+                .setFontProvider(currentState.fontProvider)
+                .setCustomVariables(CustomVariablesHolder.customVariables)
+                .setCustomPurchaseLogic(currentState.purchaseLogic)
+                .build(),
+        )
+    }
 }
 
 @Composable
@@ -251,6 +287,7 @@ private sealed class DisplayPaywallState {
         val offering: Offering? = null,
         val fontProvider: FontProvider? = null,
         var purchaseLogic: PurchaseLogic? = null,
+        val webViewMessageHandler: PaywallWebViewMessageHandler? = null,
     ) : DisplayPaywallState()
 
     data class Footer(

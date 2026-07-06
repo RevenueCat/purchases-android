@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.paywallstester.paywalls.tabsWithButtons
 import com.revenuecat.paywallstester.paywalls.tabsWithToggle
+import com.revenuecat.paywallstester.paywalls.webViewSample
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
@@ -85,6 +86,7 @@ class SamplePaywallsLoader {
         )
     }
 
+    @Suppress("CyclomaticComplexMethod")
     private fun paywallForTemplate(template: SamplePaywalls.SampleTemplate): SampleData {
         return when (template) {
             SamplePaywalls.SampleTemplate.TEMPLATE_1 -> SamplePaywalls.template1()
@@ -101,6 +103,7 @@ class SamplePaywallsLoader {
 
             SamplePaywalls.SampleTemplate.TABS_BUTTONS -> tabsWithButtons()
             SamplePaywalls.SampleTemplate.TABS_TOGGLE -> tabsWithToggle()
+            SamplePaywalls.SampleTemplate.COMPONENTS_WEB_VIEW -> webViewSample()
             SamplePaywalls.SampleTemplate.UNRECOGNIZED_TEMPLATE -> SamplePaywalls.unrecognizedTemplate()
         }
     }
@@ -128,6 +131,7 @@ object SamplePaywalls {
         COMPONENTS_BLESS_GOOGLE_FONT("#11: Components - bless. - Google font"),
         TABS_BUTTONS("#12: Tabs - buttons"),
         TABS_TOGGLE("#13 Tabs - toggle"),
+        COMPONENTS_WEB_VIEW("#14: Components - web_view"),
         UNRECOGNIZED_TEMPLATE("Default template"),
     }
 
