@@ -37,6 +37,9 @@ internal class WebViewJavaScriptBridgeTest {
         handler: PaywallWebViewMessageHandler? = PaywallWebViewMessageHandler { message, _ -> received.add(message) },
         locale: String = "en-US",
         navigateTo: URL? = expectedUrl,
+        sizeToContentWidth: Boolean = false,
+        sizeToContentHeight: Boolean = false,
+        onContentResize: (widthCssPx: Int?, heightCssPx: Int?) -> Unit = { _, _ -> },
     ): WebViewJavaScriptBridge {
         val bridge = WebViewJavaScriptBridge(
             webView = webView,
@@ -44,6 +47,9 @@ internal class WebViewJavaScriptBridgeTest {
             expectedUrl = expectedUrl,
             locale = locale,
             messageHandler = handler,
+            sizeToContentWidth = sizeToContentWidth,
+            sizeToContentHeight = sizeToContentHeight,
+            onContentResize = onContentResize,
         )
         bridge.attach()
         navigateTo?.let { webView.loadUrl(it.toString()) }
@@ -424,5 +430,41 @@ internal class WebViewJavaScriptBridgeTest {
         bridge.release()
 
         assertThat(shadowWebView.getJavascriptInterface("rcWebComponents")).isNull()
+    }
+
+    @Test
+    fun `sends fit message after init when height is fit`() {
+        val bridge = bridge(sizeToContentHeight = true)
+        connect(bridge)
+
+        val script = shadowWebView.lastEvaluatedJavascript
+        assertThat(script).contains("\"type\":\"fit\"")
+        assertThat(script).contains("\"height\":true")
+        assertThat(script).doesNotContain("\"width\":true")
+    }
+
+    @Test
+    fun `reports content resize from inbound resize message`() {
+        var reportedWidth: Int? = null
+        var reportedHeight: Int? = null
+        val bridge = bridge(
+            handler = null,
+            onContentResize = { widthCssPx, heightCssPx ->
+                reportedWidth = widthCssPx
+                reportedHeight = heightCssPx
+            },
+        )
+        connect(bridge)
+        bridge.postMessage(
+            appMessage(
+                type = WebViewMessageType.RESIZE,
+                payload = """{"width":320,"height":480}""",
+            ),
+        )
+        idleMainLooper()
+
+        assertThat(reportedWidth).isEqualTo(320)
+        assertThat(reportedHeight).isEqualTo(480)
+        assertThat(received).isEmpty()
     }
 }
