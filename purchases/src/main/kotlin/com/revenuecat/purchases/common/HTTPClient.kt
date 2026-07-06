@@ -171,9 +171,6 @@ internal class HTTPClient(
     ): HTTPResult {
         val isMainBackend = fallbackURLIndex == 0
 
-        // Resolve the API base host from the source provider on the main attempt; endpoint fallback-host
-        // attempts (fallbackURLIndex > 0) keep using their fallback base URL. The handle is captured so the
-        // exact source that built the URL is the one reported unhealthy if the request fails.
         val apiSourceHandle = currentApiSourceHandle(endpoint, baseURL, isFallbackAttempt = fallbackURLIndex > 0)
         val requestBaseURL = apiSourceHandle?.url?.let { runCatching { URL(it) }.getOrNull() } ?: baseURL
 
