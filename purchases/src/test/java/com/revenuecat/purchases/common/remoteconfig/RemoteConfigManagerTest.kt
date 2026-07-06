@@ -51,6 +51,7 @@ class RemoteConfigManagerTest {
     private lateinit var backend: Backend
     private lateinit var diskCache: RemoteConfigDiskCache
     private lateinit var blobStore: RemoteConfigBlobStore
+    private lateinit var topicStore: RemoteConfigTopicStore
     private lateinit var sourceProvider: RemoteConfigSourceProvider
     private lateinit var blobFetcher: RemoteConfigBlobFetcher
     private lateinit var manager: RemoteConfigManager
@@ -76,6 +77,7 @@ class RemoteConfigManagerTest {
         backend = mockk()
         diskCache = mockk(relaxed = true)
         blobStore = mockk(relaxed = true)
+        topicStore = RemoteConfigTopicStore { diskCache.read()?.topics?.get(it.wireName) }
         sourceProvider = mockk(relaxed = true)
         blobFetcher = mockk(relaxed = true)
         manager = RemoteConfigManager(
@@ -84,6 +86,7 @@ class RemoteConfigManagerTest {
             blobStore,
             dateProvider = dateProvider,
             scope = testScope,
+            topicStore = topicStore,
             sourceProvider = sourceProvider,
             blobFetcher = blobFetcher,
         )
@@ -1200,6 +1203,7 @@ class RemoteConfigManagerTest {
             dateProvider = dateProvider,
             scope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
             ioDispatcher = Dispatchers.IO,
+            topicStore = topicStore,
             sourceProvider = sourceProvider,
             blobFetcher = blobFetcher,
             appUserIDProvider = { TEST_APP_USER_ID },
@@ -1246,6 +1250,7 @@ class RemoteConfigManagerTest {
             dateProvider = dateProvider,
             scope = CoroutineScope(dispatcher),
             ioDispatcher = dispatcher,
+            topicStore = topicStore,
             sourceProvider = sourceProvider,
             blobFetcher = blobFetcher,
             appUserIDProvider = appUserIDProvider,
