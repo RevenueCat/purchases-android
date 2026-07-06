@@ -213,7 +213,7 @@ internal sealed class Endpoint(
     /**
      * Whether this endpoint resolves its base host from the API source provider (the main-API host
      * list, with failover) rather than the app's static base URL. Endpoints hosted elsewhere
-     * (diagnostics, events, web billing) opt out.
+     * (diagnostics, events) opt out.
      */
     val usesAPISources: Boolean
         get() = when (this) {
@@ -233,11 +233,11 @@ internal sealed class Endpoint(
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
             is GetRewardVerification,
+            is WebBillingGetProducts,
             ->
                 true
             PostDiagnostics,
             PostEvents,
-            is WebBillingGetProducts,
             ->
                 false
         }

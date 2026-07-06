@@ -337,6 +337,7 @@ class EndpointTest {
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies("test-user-id"),
             Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
+            Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
         )
         for (endpoint in mainApiEndpoints) {
             assertThat(endpoint.usesAPISources)
@@ -350,7 +351,6 @@ class EndpointTest {
         val nonApiEndpoints = listOf(
             Endpoint.PostDiagnostics,
             Endpoint.PostEvents,
-            Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
         )
         for (endpoint in nonApiEndpoints) {
             assertThat(endpoint.usesAPISources)
