@@ -1095,7 +1095,7 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `batch blobData resolves multiple blob-backed items keyed by item key`() = runTest {
+    fun `mergeItemsBlobData merges multiple items' JSON objects and decodes into a single object`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",
             activeTopics = listOf("workflows"),
@@ -1110,18 +1110,66 @@ class RemoteConfigManagerTest {
         )
         coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
         coEvery { blobFetcher.ensureDownloaded(REF_TAMPERED) } returns true
-        every { blobStore.read(REF_VALID) } returns byteArrayOf(4, 2)
-        every { blobStore.read(REF_TAMPERED) } returns byteArrayOf(7)
+        // Each item contributes part of the object; merged they form the full MergedBlob.
+        every { blobStore.read(REF_VALID) } returns """{"a":"x"}""".toByteArray()
+        every { blobStore.read(REF_TAMPERED) } returns """{"b":"y"}""".toByteArray()
 
-        val result = readManager().blobData(RemoteConfigTopic.Workflows, listOf("wf1", "wf2")) { it }
+        val result = readManager().mergeItemsBlobData<MergedBlob>(RemoteConfigTopic.Workflows, listOf("wf1", "wf2"))
 
-        assertThat(result.keys).containsExactlyInAnyOrder("wf1", "wf2")
-        assertThat(result["wf1"]).isEqualTo(byteArrayOf(4, 2))
-        assertThat(result["wf2"]).isEqualTo(byteArrayOf(7))
+        assertThat(result).isEqualTo(MergedBlob(a = "x", b = "y"))
     }
 
     @Test
-    fun `batch blobData keeps null entries for unresolvable items alongside resolved ones`() = runTest {
+    fun `mergeItemsBlobData lets a later item override an earlier item on a key collision`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(
+                    mapOf(
+                        "wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID),
+                        "wf2" to RemoteConfiguration.ConfigItem(blobRef = REF_TAMPERED),
+                    ),
+                ),
+            ),
+        )
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
+        coEvery { blobFetcher.ensureDownloaded(REF_TAMPERED) } returns true
+        every { blobStore.read(REF_VALID) } returns """{"a":"first","b":"y"}""".toByteArray()
+        every { blobStore.read(REF_TAMPERED) } returns """{"a":"second"}""".toByteArray()
+
+        // wf2 comes after wf1, so its "a" wins.
+        val result = readManager().mergeItemsBlobData<MergedBlob>(RemoteConfigTopic.Workflows, listOf("wf1", "wf2"))
+
+        assertThat(result).isEqualTo(MergedBlob(a = "second", b = "y"))
+    }
+
+    @Test
+    fun `mergeItemsBlobData returns null when an item's blob cannot be fetched`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(
+                    mapOf(
+                        "wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID),
+                        "wf2" to RemoteConfiguration.ConfigItem(blobRef = REF_TAMPERED),
+                    ),
+                ),
+            ),
+        )
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
+        coEvery { blobFetcher.ensureDownloaded(REF_TAMPERED) } returns false
+        every { blobStore.read(REF_VALID) } returns """{"a":"x"}""".toByteArray()
+
+        // All-or-nothing: one unresolved item nulls out the whole call, even though wf1 resolved.
+        val result = readManager().mergeItemsBlobData<MergedBlob>(RemoteConfigTopic.Workflows, listOf("wf1", "wf2"))
+
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `mergeItemsBlobData returns null for an item without a blob ref`() = runTest {
         val metadata = buildJsonObject { put("offering_id", "offer_123") }
         every { diskCache.read() } returns persisted(
             manifest = "m",
@@ -1130,31 +1178,22 @@ class RemoteConfigManagerTest {
                 "workflows" to ConfigTopic(
                     mapOf(
                         "wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID),
-                        // Fetch fails for this one.
-                        "wf2" to RemoteConfiguration.ConfigItem(blobRef = REF_TAMPERED),
                         // No blob ref: inline-only, no payload.
-                        "wf3" to RemoteConfiguration.ConfigItem(metadata = metadata),
+                        "wf2" to RemoteConfiguration.ConfigItem(metadata = metadata),
                     ),
                 ),
             ),
         )
         coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
-        coEvery { blobFetcher.ensureDownloaded(REF_TAMPERED) } returns false
-        every { blobStore.read(REF_VALID) } returns byteArrayOf(1)
+        every { blobStore.read(REF_VALID) } returns """{"a":"x"}""".toByteArray()
 
-        val result = readManager().blobData(
-            RemoteConfigTopic.Workflows,
-            listOf("wf1", "wf2", "wf3"),
-        ) { it }
+        val result = readManager().mergeItemsBlobData<MergedBlob>(RemoteConfigTopic.Workflows, listOf("wf1", "wf2"))
 
-        assertThat(result.keys).containsExactlyInAnyOrder("wf1", "wf2", "wf3")
-        assertThat(result["wf1"]).isEqualTo(byteArrayOf(1))
-        assertThat(result["wf2"]).isNull()
-        assertThat(result["wf3"]).isNull()
+        assertThat(result).isNull()
     }
 
     @Test
-    fun `batch blobData warns when one or more items cannot be resolved`() {
+    fun `mergeItemsBlobData warns and returns null when one or more items cannot be resolved`() {
         every { diskCache.read() } returns persisted(
             manifest = "m",
             activeTopics = listOf("workflows"),
@@ -1169,20 +1208,20 @@ class RemoteConfigManagerTest {
         )
         coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
         coEvery { blobFetcher.ensureDownloaded(REF_TAMPERED) } returns false
-        every { blobStore.read(REF_VALID) } returns byteArrayOf(1)
+        every { blobStore.read(REF_VALID) } returns """{"a":"x"}""".toByteArray()
 
         assertWarnLog(
             "Could not resolve remote config blob(s) for 1 of 2 requested item(s) in " +
-                "topic 'workflows': [wf2].",
+                "topic 'workflows': [wf2]. Returning null.",
         ) {
             runTest {
-                readManager().blobData(RemoteConfigTopic.Workflows, listOf("wf1", "wf2")) { it }
+                readManager().mergeItemsBlobData<MergedBlob>(RemoteConfigTopic.Workflows, listOf("wf1", "wf2"))
             }
         }
     }
 
     @Test
-    fun `reified batch blobData deserializes each present blob`() = runTest {
+    fun `mergeItemsBlobData returns null once the endpoint is disabled without touching the network`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",
             activeTopics = listOf("workflows"),
@@ -1195,73 +1234,36 @@ class RemoteConfigManagerTest {
                 ),
             ),
         )
-        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
-        coEvery { blobFetcher.ensureDownloaded(REF_TAMPERED) } returns true
-        every { blobStore.read(REF_VALID) } returns """{"id":"wf-1"}""".toByteArray()
-        every { blobStore.read(REF_TAMPERED) } returns """{"id":"wf-2"}""".toByteArray()
+        val manager = readManager()
+        // A 4xx disables the endpoint for the session.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+        )
 
-        val result = readManager().blobData<TestBlob>(RemoteConfigTopic.Workflows, listOf("wf1", "wf2"))
+        val result = manager.mergeItemsBlobData<MergedBlob>(RemoteConfigTopic.Workflows, listOf("wf1", "wf2"))
 
-        assertThat(result).isEqualTo(mapOf("wf1" to TestBlob(id = "wf-1"), "wf2" to TestBlob(id = "wf-2")))
+        assertThat(result).isNull()
+        coVerify(exactly = 0) { blobFetcher.ensureDownloaded(any<String>()) }
     }
 
     @Test
-    fun `batch blobData returns all-null entries once the endpoint is disabled without touching the network`() =
-        runTest {
-            every { diskCache.read() } returns persisted(
-                manifest = "m",
-                activeTopics = listOf("workflows"),
-                topics = mapOf(
-                    "workflows" to ConfigTopic(
-                        mapOf(
-                            "wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID),
-                            "wf2" to RemoteConfiguration.ConfigItem(blobRef = REF_TAMPERED),
-                        ),
-                    ),
-                ),
-            )
-            val manager = readManager()
-            // A 4xx disables the endpoint for the session.
-            manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
-            onError.invoke(
-                PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
-                GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
-            )
-
-            val result = manager.blobData(RemoteConfigTopic.Workflows, listOf("wf1", "wf2")) { it }
-
-            assertThat(result.keys).containsExactlyInAnyOrder("wf1", "wf2")
-            assertThat(result.values).containsOnlyNulls()
-            coVerify(exactly = 0) { blobFetcher.ensureDownloaded(any<String>()) }
-        }
-
-    @Test
-    fun `batch blobData returns an empty map for empty item keys without triggering a sync`() = runTest {
-        every { diskCache.read() } returns null
-
-        val result = readManager(appUserIDProvider = { TEST_APP_USER_ID })
-            .blobData(RemoteConfigTopic.Workflows, emptyList()) { it }
-
-        assertThat(result).isEmpty()
-        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
-    }
-
-    @Test
-    fun `batch blobData triggers a single shared sync for multiple uncached items`() = runTest {
+    fun `mergeItemsBlobData triggers a single shared sync for multiple uncached items then decodes`() = runTest {
         var state: PersistedRemoteConfigurationState? = null
         every { diskCache.read() } answers { state }
         every { diskCache.write(any()) } answers { state = firstArg(); true }
         coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
         coEvery { blobFetcher.ensureDownloaded(REF_TAMPERED) } returns true
-        every { blobStore.read(REF_VALID) } returns byteArrayOf(4, 2)
-        every { blobStore.read(REF_TAMPERED) } returns byteArrayOf(7)
+        every { blobStore.read(REF_VALID) } returns """{"a":"x"}""".toByteArray()
+        every { blobStore.read(REF_TAMPERED) } returns """{"b":"y"}""".toByteArray()
         val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
 
-        // Nothing cached and nothing in flight: the batch read fans out, but the concurrent per-key waits
+        // Nothing cached and nothing in flight: the read fans out, but the concurrent per-item waits
         // collapse onto a single shared on-demand sync.
-        var result: Map<String, ByteArray?> = emptyMap()
+        var result: MergedBlob? = null
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
-            result = manager.blobData(RemoteConfigTopic.Workflows, listOf("wf1", "wf2")) { it }
+            result = manager.mergeItemsBlobData<MergedBlob>(RemoteConfigTopic.Workflows, listOf("wf1", "wf2"))
         }
         verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
         assertThat(read.isActive).isTrue()
@@ -1282,8 +1284,7 @@ class RemoteConfigManagerTest {
         onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
 
         assertThat(read.isCompleted).isTrue()
-        assertThat(result["wf1"]).isEqualTo(byteArrayOf(4, 2))
-        assertThat(result["wf2"]).isEqualTo(byteArrayOf(7))
+        assertThat(result).isEqualTo(MergedBlob(a = "x", b = "y"))
     }
 
     @Test
@@ -1490,6 +1491,10 @@ class RemoteConfigManagerTest {
 
     @Serializable
     private data class TestBlob(val id: String)
+
+    // A single object assembled from data spread across multiple items in a topic.
+    @Serializable
+    private data class MergedBlob(val a: String, val b: String)
 
     private companion object {
         private const val TEST_APP_USER_ID = "test-app-user-id"

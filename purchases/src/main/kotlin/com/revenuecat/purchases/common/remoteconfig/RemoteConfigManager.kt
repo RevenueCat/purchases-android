@@ -26,6 +26,9 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -375,54 +378,71 @@ internal class RemoteConfigManager(
     }
 
     /**
-     * The resolved blob payloads for [itemKeys] in [topic], each parsed from JSON into [T], keyed by item key.
-     * The batch counterpart of the single-key reified overload: every requested key is present in the result,
-     * mapping to `null` when that item is unknown, has no `blob_ref`, its blob can't be resolved, or its bytes
-     * don't deserialize into [T]. Duplicate keys collapse to one entry; an empty [itemKeys] returns an empty
-     * map. [T] must be a concrete `@Serializable` type; parsing uses the shared [JsonProvider.defaultJson]. For
-     * non-JSON payloads use the `transform` batch overload, which documents the resolution and waiting rules.
-     */
-    suspend inline fun <reified T> blobData(topic: RemoteConfigTopic, itemKeys: Collection<String>): Map<String, T?> =
-        blobData(topic, itemKeys) { bytes ->
-            try {
-                JsonProvider.defaultJson.decodeFromString<T>(bytes.decodeToString())
-            } catch (e: SerializationException) {
-                errorLog(e) { "Failed to parse remote config blob as JSON." }
-                null
-            }
-        }
-
-    /**
-     * Resolves the blob payload bytes for each key in [itemKeys] within [topic] **concurrently** and maps each
-     * through [transform], keyed by item key. The batch counterpart of the single-key `transform` overload:
-     * every requested key is present in the result, mapping to `null` when that item is unknown or its blob
-     * can't be resolved. Duplicate keys collapse to one entry; an empty [itemKeys] returns an empty map.
+     * Resolves the blobs for every key in [itemKeys] within [topic] **concurrently**, merges each (parsed as a
+     * JSON object) into one combined JSON object, and decodes that into a single [T]. Use this when a single
+     * logical object is assembled from data spread across several items in a topic (e.g. item `a` carries
+     * `{"x":...}` and item `b` carries `{"y":...}`, together decoding into `T(x, y)`).
      *
-     * Each key resolves through the same path as the single-key overload (see its KDoc for the `blob_ref`,
-     * on-demand fetch, and waiting rules), so the per-item semantics are identical — this only fans them out.
-     * The fan-out is safe: a shared in-flight `/v1/config` refresh is deduped across all keys, and the blob
-     * fetcher dedupes concurrent downloads of the same ref. When the endpoint is [isDisabled] (the 4xx session
-     * kill-switch) every key resolves to `null` without any read. Runs on [ioDispatcher].
+     * This is **all-or-nothing**: if any requested item is unknown, has no `blob_ref`, or its blob can't be
+     * resolved, the call returns `null` (a partial object is never produced) and warn-logs the missing keys.
+     * It also returns `null` if any resolved blob isn't valid JSON, isn't a JSON object, or the merged object
+     * doesn't deserialize into [T]. On a key collision the later item in [itemKeys] wins. Duplicate keys are
+     * de-duplicated; [T] must be a concrete `@Serializable` type and parsing uses [JsonProvider.defaultJson].
+     *
+     * Each item resolves through the same path as the single-key [blobData] (see its KDoc for the `blob_ref`,
+     * on-demand fetch, and waiting rules) — this only fans them out. The fan-out is safe: a shared in-flight
+     * `/v1/config` refresh is deduped across all keys, and the blob fetcher dedupes concurrent downloads of the
+     * same ref. When the endpoint is [isDisabled] (the 4xx session kill-switch) every item resolves to `null`,
+     * so the call returns `null` without any read. Runs on [ioDispatcher].
      */
-    suspend fun <T> blobData(
-        topic: RemoteConfigTopic,
-        itemKeys: Collection<String>,
-        transform: (ByteArray) -> T?,
-    ): Map<String, T?> = withContext(ioDispatcher) {
-        coroutineScope {
-            itemKeys.distinct()
-                .associateWith { key -> async { resolveBlobBytes(topic, key)?.let(transform) } }
-                .mapValues { (_, deferred) -> deferred.await() }
-        }.also { resolved ->
-            val unresolved = resolved.filterValues { it == null }.keys
-            if (unresolved.isNotEmpty()) {
-                warnLog {
-                    "Could not resolve remote config blob(s) for ${unresolved.size} of ${resolved.size} " +
-                        "requested item(s) in topic '${topic.wireName}': $unresolved."
-                }
-            }
+    suspend inline fun <reified T> mergeItemsBlobData(topic: RemoteConfigTopic, itemKeys: Collection<String>): T? {
+        val merged = mergedBlobObject(topic, itemKeys) ?: return null
+        return try {
+            JsonProvider.defaultJson.decodeFromJsonElement<T>(merged)
+        } catch (e: SerializationException) {
+            errorLog(e) { "Failed to decode merged remote config blobs from topic '${topic.wireName}' as JSON." }
+            null
         }
     }
+
+    /**
+     * Resolves every item in [itemKeys] concurrently and merges each blob (parsed as a JSON object) into one
+     * combined object, or `null` if any item can't be resolved or any resolved blob isn't a JSON object. The
+     * non-inline worker behind [mergeItemsBlobData]; kept non-`private` so the reified `inline` function can
+     * call it. Runs on [ioDispatcher].
+     */
+    suspend fun mergedBlobObject(topic: RemoteConfigTopic, itemKeys: Collection<String>): JsonObject? =
+        withContext(ioDispatcher) {
+            val keys = itemKeys.distinct()
+            val resolved = coroutineScope {
+                keys.associateWith { key -> async { resolveBlobBytes(topic, key) } }
+                    .mapValues { (_, deferred) -> deferred.await() }
+            }
+            val missing = resolved.filterValues { it == null }.keys
+            if (missing.isNotEmpty()) {
+                warnLog {
+                    "Could not resolve remote config blob(s) for ${missing.size} of ${resolved.size} " +
+                        "requested item(s) in topic '${topic.wireName}': $missing. Returning null."
+                }
+                return@withContext null
+            }
+            val merged = LinkedHashMap<String, JsonElement>()
+            for (key in keys) {
+                val element = try {
+                    JsonProvider.defaultJson.parseToJsonElement(resolved.getValue(key)!!.decodeToString())
+                } catch (e: SerializationException) {
+                    errorLog(e) { "Remote config blob for item '$key' in topic '${topic.wireName}' is not valid JSON." }
+                    return@withContext null
+                }
+                if (element !is JsonObject) {
+                    errorLog { "Remote config blob for item '$key' in topic '${topic.wireName}' is not a JSON object." }
+                    return@withContext null
+                }
+                // Later items in itemKeys override earlier ones on a key collision.
+                merged.putAll(element)
+            }
+            JsonObject(merged)
+        }
 
     /**
      * Resolves an item's referenced-blob bytes, or `null` when the endpoint is [isDisabled], the item is
