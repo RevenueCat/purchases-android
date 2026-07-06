@@ -39,11 +39,17 @@ internal data class RemoteConfigSourceHandle(
     val url: String get() = source.url
 }
 
-/** Used by the networking layer to resolve the API base host. */
+/** Used by the networking layer to resolve the API base host and drive failover across API sources. */
 internal interface APISourceProvider {
 
     /** The current healthy API base source, or null once every API source has been reported unhealthy. */
     fun currentAPISource(): RemoteConfigSourceHandle?
+
+    /**
+     * Reports the given API source as unhealthy so the next [currentAPISource] advances past it.
+     * No-op if [handle] is no longer the current source (stale/concurrent reports are ignored).
+     */
+    fun reportUnhealthy(handle: RemoteConfigSourceHandle)
 }
 
 internal interface RemoteConfigSourceProvider : APISourceProvider {
@@ -54,7 +60,7 @@ internal interface RemoteConfigSourceProvider : APISourceProvider {
     override fun currentAPISource(): RemoteConfigSourceHandle? = getCurrent(RemoteConfigSourceHandle.Purpose.API)
 
     /** Falls back to the next source for the handle's purpose. No-op if [handle] is no longer current. */
-    fun reportUnhealthy(handle: RemoteConfigSourceHandle)
+    override fun reportUnhealthy(handle: RemoteConfigSourceHandle)
 
     /** Rewinds the given purpose to its first source, e.g. to start fresh on a new fetch cycle. */
     fun restart(purpose: RemoteConfigSourceHandle.Purpose)

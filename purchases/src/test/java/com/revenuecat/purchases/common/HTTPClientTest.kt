@@ -139,7 +139,159 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         apiSourceServer.shutdown()
     }
 
-    /** A minimal [APISourceProvider] whose current API source is the first of [urls]. */
+    // endregion
+
+    // region API source failover
+
+    @Test
+    fun `performRequest fails over to the next API source on a server error`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        // GetCustomerInfo does not support endpoint fallback URLs, so this isolates API-source failover.
+        assert(!endpoint.supportsFallbackBaseURLs)
+
+        val apiSourceServer2 = MockWebServer()
+        val provider = FakeAPISourceProvider(
+            listOf(server.url("/").toString(), apiSourceServer2.url("/").toString()),
+        )
+        val client = createClient(appConfig = createAppConfig(proxyURL = null), apiSourceProvider = provider)
+
+        enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.ERROR))
+        enqueue(
+            endpoint.getPath(),
+            expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS),
+            server = apiSourceServer2,
+        )
+
+        try {
+            val result = client.performRequest(
+                URL(AppConfig.baseUrlString),
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+            )
+
+            assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+            assertThat(server.requestCount).isEqualTo(1)
+            assertThat(apiSourceServer2.requestCount).isEqualTo(1)
+            assertThat(provider.reportedUrls).containsExactly(server.url("/").toString())
+        } finally {
+            apiSourceServer2.shutdown()
+        }
+    }
+
+    @Test
+    fun `performRequest fails over to the next API source on a connection error`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        assert(!endpoint.supportsFallbackBaseURLs)
+
+        val downApiSourceServer = MockWebServer()
+        val downApiSourceUrl = downApiSourceServer.url("/").toString()
+        // Shut the first source down so the client hits an IOException when connecting to it.
+        downApiSourceServer.shutdown()
+
+        val provider = FakeAPISourceProvider(listOf(downApiSourceUrl, server.url("/").toString()))
+        val client = createClient(appConfig = createAppConfig(proxyURL = null), apiSourceProvider = provider)
+
+        enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS))
+
+        val result = client.performRequest(
+            URL(AppConfig.baseUrlString),
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+        assertThat(server.requestCount).isEqualTo(1)
+        assertThat(provider.reportedUrls).containsExactly(downApiSourceUrl)
+    }
+
+    @Test
+    fun `performRequest does not fail over to the next API source on a client error`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+
+        val apiSourceServer2 = MockWebServer()
+        val provider = FakeAPISourceProvider(
+            listOf(server.url("/").toString(), apiSourceServer2.url("/").toString()),
+        )
+        val client = createClient(appConfig = createAppConfig(proxyURL = null), apiSourceProvider = provider)
+
+        enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.BAD_REQUEST))
+
+        try {
+            val result = client.performRequest(
+                URL(AppConfig.baseUrlString),
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+            )
+
+            assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.BAD_REQUEST)
+            assertThat(server.requestCount).isEqualTo(1)
+            assertThat(apiSourceServer2.requestCount).isEqualTo(0)
+            assertThat(provider.reportedUrls).isEmpty()
+        } finally {
+            apiSourceServer2.shutdown()
+        }
+    }
+
+    @Test
+    fun `performRequest falls back to the endpoint fallback host after exhausting API sources`() {
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val apiSourceServer2 = MockWebServer()
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+
+        val provider = FakeAPISourceProvider(
+            listOf(server.url("/").toString(), apiSourceServer2.url("/").toString()),
+        )
+        val client = createClient(appConfig = createAppConfig(proxyURL = null), apiSourceProvider = provider)
+
+        val payload = """{"offerings": [], "current_offering_id": null}"""
+        enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.ERROR))
+        enqueue(
+            endpoint.getPath(),
+            expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.ERROR),
+            server = apiSourceServer2,
+        )
+        enqueue(
+            endpoint.getPath(useFallback = true),
+            expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, payload),
+            server = fallbackServer,
+            isFallbackURL = true,
+        )
+
+        try {
+            val result = client.performRequest(
+                URL(AppConfig.baseUrlString),
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+                fallbackBaseURLs = listOf(fallbackBaseURL),
+            )
+
+            assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+            assertThat(server.requestCount).isEqualTo(1)
+            assertThat(apiSourceServer2.requestCount).isEqualTo(1)
+            assertThat(fallbackServer.requestCount).isEqualTo(1)
+            assertThat(provider.reportedUrls)
+                .containsExactly(server.url("/").toString(), apiSourceServer2.url("/").toString())
+        } finally {
+            apiSourceServer2.shutdown()
+            fallbackServer.shutdown()
+        }
+    }
+
+    /**
+     * An [APISourceProvider] that walks [urls] in order, recording the sources reported unhealthy.
+     * Mirrors the real provider's token-based advancement so stale reports are ignored.
+     */
     private class FakeAPISourceProvider(urls: List<String>) : APISourceProvider {
         private val handles = urls.mapIndexed { index, url ->
             RemoteConfigSourceHandle(
@@ -148,8 +300,17 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 token = index,
             )
         }
+        private var index = 0
+        val reportedUrls = mutableListOf<String>()
 
-        override fun currentAPISource(): RemoteConfigSourceHandle? = handles.firstOrNull()
+        override fun currentAPISource(): RemoteConfigSourceHandle? = handles.getOrNull(index)
+
+        override fun reportUnhealthy(handle: RemoteConfigSourceHandle) {
+            if (handle.token == index) {
+                reportedUrls.add(handle.url)
+                index++
+            }
+        }
     }
 
     // endregion

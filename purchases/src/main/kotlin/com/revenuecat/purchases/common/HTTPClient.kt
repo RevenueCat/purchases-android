@@ -25,6 +25,7 @@ import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.remoteconfig.APISourceProvider
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
@@ -168,6 +169,14 @@ internal class HTTPClient(
         fallbackBaseURLs: List<URL> = emptyList(),
         fallbackURLIndex: Int = 0,
     ): HTTPResult {
+        val isMainBackend = fallbackURLIndex == 0
+
+        // Resolve the API base host from the source provider on the main attempt; endpoint fallback-host
+        // attempts (fallbackURLIndex > 0) keep using their fallback base URL. The handle is captured so the
+        // exact source that built the URL is the one reported unhealthy if the request fails.
+        val apiSourceHandle = currentApiSourceHandle(endpoint, baseURL, isFallbackAttempt = fallbackURLIndex > 0)
+        val requestBaseURL = apiSourceHandle?.url?.let { runCatching { URL(it) }.getOrNull() } ?: baseURL
+
         fun canUseFallback(): Boolean =
             endpoint.supportsFallbackBaseURLs && fallbackURLIndex in fallbackBaseURLs.indices
 
@@ -191,11 +200,29 @@ internal class HTTPClient(
             )
         }
 
-        val isMainBackend = fallbackURLIndex == 0
-
-        // Resolve the API base host from the source provider on the main attempt; endpoint fallback-host
-        // attempts (fallbackURLIndex > 0) keep using their fallback base URL.
-        val requestBaseURL = apiSourceURL(endpoint, baseURL, isFallbackAttempt = fallbackURLIndex > 0) ?: baseURL
+        // On a transient failure, reports the current API source unhealthy and retries against the next one.
+        // Returns null when API-source failover doesn't apply or the sources are exhausted, so the caller
+        // falls through to the endpoint fallback-host phase.
+        fun retryWithNextApiSourceOrNull(): HTTPResult? {
+            val provider = apiSourceProvider
+            if (provider == null || apiSourceHandle == null) return null
+            provider.reportUnhealthy(apiSourceHandle)
+            return provider.currentAPISource()?.let {
+                log(LogIntent.DEBUG) {
+                    NetworkStrings.RETRYING_CALL_WITH_NEXT_API_SOURCE.format(endpoint.getPath())
+                }
+                performRequest(
+                    baseURL,
+                    endpoint,
+                    body,
+                    postFieldsToSign,
+                    requestHeaders,
+                    refreshETag,
+                    fallbackBaseURLs,
+                    fallbackURLIndex,
+                )
+            }
+        }
 
         var callSuccessful = false
         val requestStartTime = dateProvider.now
@@ -220,7 +247,10 @@ internal class HTTPClient(
             }
         } catch (e: IOException) {
             exceptionHit = e
-            if (e is SocketTimeoutException && isMainBackend && canUseFallback()) {
+            val apiSourceRetry = retryWithNextApiSourceOrNull()
+            if (apiSourceRetry != null) {
+                callResult = apiSourceRetry
+            } else if (e is SocketTimeoutException && isMainBackend && canUseFallback()) {
                 requestResult = HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
                 callResult = performRequestToFallbackURL()
             } else if (canUseFallback()) {
@@ -253,28 +283,32 @@ internal class HTTPClient(
                 fallbackBaseURLs,
                 fallbackURLIndex,
             )
-        } else if (RCHTTPStatusCodes.isServerError(callResult.responseCode) && canUseFallback()) {
-            // Handle server errors with fallback URLs
-            callResult = performRequestToFallbackURL()
+        } else if (RCHTTPStatusCodes.isServerError(callResult.responseCode)) {
+            // Server error: fail over to the next API source first, then to the endpoint fallback URLs.
+            callResult = retryWithNextApiSourceOrNull()
+                ?: if (canUseFallback()) performRequestToFallbackURL() else callResult
         }
         return callResult
     }
 
     /**
-     * The API base URL to use for [endpoint], or null to keep using [baseURL].
+     * The current API source to target for [endpoint], or null to keep using [baseURL].
      *
      * API sources apply only when this is not an endpoint fallback-host attempt, the endpoint opts in via
      * [Endpoint.usesAPISources], and [baseURL] is still the default host (a proxy or an overridden base URL
      * pins the host and bypasses API sources).
      */
-    private fun apiSourceURL(endpoint: Endpoint, baseURL: URL, isFallbackAttempt: Boolean): URL? {
+    private fun currentApiSourceHandle(
+        endpoint: Endpoint,
+        baseURL: URL,
+        isFallbackAttempt: Boolean,
+    ): RemoteConfigSourceHandle? {
         // A proxy or an overridden base URL pins the host (baseURL differs from the default); endpoint
         // fallback-host attempts and opted-out endpoints keep the provided base URL as well.
         val eligible = !isFallbackAttempt &&
             endpoint.usesAPISources &&
             baseURL.toString() == AppConfig.baseUrlString
-        if (!eligible) return null
-        return apiSourceProvider?.currentAPISource()?.url?.let { runCatching { URL(it) }.getOrNull() }
+        return if (eligible) apiSourceProvider?.currentAPISource() else null
     }
 
     @Suppress("ThrowsCount", "LongParameterList", "LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth")
