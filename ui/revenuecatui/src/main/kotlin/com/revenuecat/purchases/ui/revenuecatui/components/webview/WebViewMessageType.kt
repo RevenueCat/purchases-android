@@ -20,8 +20,13 @@ internal object WebViewMessageType {
  * generic `payload` key.
  */
 internal object WebViewMessageField {
+    const val CHANNEL = "channel"
+    const val PROTOCOL_VERSION = "protocol_version"
+    const val KIND = "kind"
     const val TYPE = "type"
     const val COMPONENT_ID = "component_id"
+    const val ID = "id"
+    const val PAYLOAD = "payload"
     const val RESPONSES = "responses"
     const val ERROR = "error"
     const val VARIABLES = "variables"
