@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.common.uiconfig
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.LogHandler
+import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -11,6 +13,8 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -18,6 +22,26 @@ internal class UiConfigProviderTest {
 
     private val manager = mockk<RemoteConfigManager>()
     private val provider = UiConfigProvider(manager)
+
+    // This is a plain JUnit test (no Robolectric), so the default log handler's android.util.Log calls aren't
+    // mocked. Swap in a no-op handler so the malformed-blob path can log without blowing up.
+    private val originalLogHandler = currentLogHandler
+
+    @Before
+    fun setUp() {
+        currentLogHandler = object : LogHandler {
+            override fun v(tag: String, msg: String) {}
+            override fun d(tag: String, msg: String) {}
+            override fun i(tag: String, msg: String) {}
+            override fun w(tag: String, msg: String) {}
+            override fun e(tag: String, msg: String, throwable: Throwable?) {}
+        }
+    }
+
+    @After
+    fun tearDown() {
+        currentLogHandler = originalLogHandler
+    }
 
     @Test
     fun `getUiConfig assembles all four blob-ref parts into one UiConfig`() = runTest {
@@ -84,10 +108,28 @@ internal class UiConfigProviderTest {
         assertThat(uiConfig.customVariables).isEmpty()
     }
 
+    @Test
+    fun `getUiConfig defaults localizations to empty when its blob is malformed`() = runTest {
+        // A localizations blob that isn't the expected locale->map shape must default to empty, not throw out
+        // of the provider — matching how the reified blobData overload swallows malformed data for other parts.
+        stubBlobRaw("localizations", """["not", "an", "object"]""")
+        coEvery { manager.blobData<Any>(RemoteConfigTopic.UiConfig, "app", any()) } returns null
+        coEvery { manager.blobData<Any>(RemoteConfigTopic.UiConfig, "variable_config", any()) } returns null
+        coEvery { manager.blobData<Any>(RemoteConfigTopic.UiConfig, "custom_variables", any()) } returns null
+
+        val uiConfig = provider.getUiConfig()
+
+        assertThat(uiConfig.localizations).isEmpty()
+    }
+
     // Each part is decoded by blobData's transform overload. Stubbing that overload to actually run the
     // transform against the part's real bytes exercises each field's real serializer, exactly as production does.
     private fun stubBlob(key: String, content: kotlinx.serialization.json.JsonObjectBuilder.() -> Unit) {
-        val bytes = buildJsonObject(content).toString().encodeToByteArray()
+        stubBlobRaw(key, buildJsonObject(content).toString())
+    }
+
+    private fun stubBlobRaw(key: String, json: String) {
+        val bytes = json.encodeToByteArray()
         coEvery {
             manager.blobData(RemoteConfigTopic.UiConfig, key, any<(ByteArray) -> Any?>())
         } answers {

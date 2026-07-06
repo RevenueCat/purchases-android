@@ -2930,13 +2930,13 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun `getUiConfig propagates a provider failure as a PurchasesException`() {
-        coEvery { mockUiConfigProvider.getUiConfig() } throws RuntimeException("boom")
+    fun `getUiConfig propagates a provider failure to the caller without wrapping it`() {
+        val failure = RuntimeException("boom")
+        coEvery { mockUiConfigProvider.getUiConfig() } throws failure
 
-        assertThatExceptionOfType(PurchasesException::class.java)
+        assertThatExceptionOfType(RuntimeException::class.java)
             .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getUiConfig() } }
-            .extracting { it.code }
-            .isEqualTo(PurchasesErrorCode.UnknownError)
+            .isSameAs(failure)
     }
 
     @Test

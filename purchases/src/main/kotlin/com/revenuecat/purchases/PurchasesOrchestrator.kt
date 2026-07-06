@@ -631,13 +631,7 @@ internal class PurchasesOrchestrator(
             }
             throw PurchasesException(PurchasesError(PurchasesErrorCode.ConfigurationError, message))
         }
-        return try {
-            provider.getUiConfig()
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            throw PurchasesException(
-                PurchasesError(PurchasesErrorCode.UnknownError, "Failed to fetch UI config: ${e.message}"),
-            ).apply { initCause(e) }
-        }
+        return provider.getUiConfig()
     }
 
     fun getProducts(
