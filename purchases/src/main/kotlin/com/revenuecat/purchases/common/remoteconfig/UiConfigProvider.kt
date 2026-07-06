@@ -9,9 +9,10 @@ import kotlinx.serialization.json.decodeFromJsonElement
 /**
  * The topic-specific front door for `ui_config`: four independently-updated parts — `app`, `localizations`,
  * `variable_config`, `custom_variables` — that together deserialize as one [UiConfig], the same shape the legacy
- * offerings response sends pre-assembled in a single JSON object. Each part is inline item metadata (no blob), so
- * it's read straight off the topic's item index. A part with no body (topic absent or item absent) is simply
- * omitted, so [UiConfig]'s own field defaults fill the gap.
+ * offerings response sends pre-assembled in a single JSON object. Each part is its own blob-ref item under the
+ * topic (not inline metadata), resolved through [RemoteConfigManager.blobData]. A part with no resolvable blob
+ * (topic absent, item absent, or blob unresolvable) is simply omitted, so [UiConfig]'s own field defaults fill
+ * the gap.
  */
 @OptIn(InternalRevenueCatAPI::class)
 internal class UiConfigProvider(
@@ -19,8 +20,9 @@ internal class UiConfigProvider(
 ) {
 
     suspend fun getUiConfig(): UiConfig {
-        val topic = manager.topic(RemoteConfigTopic.UiConfig)
-        val parts = PART_KEYS.mapNotNull { key -> topic?.get(key)?.let { key to it.metadata } }.toMap()
+        val parts = PART_KEYS.mapNotNull { key ->
+            manager.blobData<JsonObject>(RemoteConfigTopic.UiConfig, key)?.let { key to it }
+        }.toMap()
         return JsonTools.json.decodeFromJsonElement(JsonObject(parts))
     }
 

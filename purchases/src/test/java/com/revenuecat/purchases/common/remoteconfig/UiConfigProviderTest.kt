@@ -6,7 +6,6 @@ import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationK
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.assertj.core.api.Assertions.assertThat
@@ -19,42 +18,30 @@ internal class UiConfigProviderTest {
     private val provider = UiConfigProvider(manager)
 
     @Test
-    fun `getUiConfig assembles all four topic parts into one UiConfig`() = runTest {
-        val topic = ConfigTopic(
-            mapOf(
-                "app" to RemoteConfiguration.ConfigItem(
-                    metadata = buildJsonObject {
-                        put("colors", buildJsonObject {})
-                        put("fonts", buildJsonObject {})
-                    },
-                ),
-                "localizations" to RemoteConfiguration.ConfigItem(
-                    metadata = buildJsonObject {
-                        put("en_US", buildJsonObject { put("day", "Day") })
-                    },
-                ),
-                "variable_config" to RemoteConfiguration.ConfigItem(
-                    metadata = buildJsonObject {
-                        put("variable_compatibility_map", buildJsonObject { put("old_var", "new_var") })
-                        put("function_compatibility_map", buildJsonObject {})
-                    },
-                ),
-                // The part this test exists to guard: dropped from PART_KEYS in an earlier revision, which
-                // silently discarded custom_variables from every ui_config read.
-                "custom_variables" to RemoteConfiguration.ConfigItem(
-                    metadata = buildJsonObject {
-                        put(
-                            "user_name",
-                            buildJsonObject {
-                                put("type", "string")
-                                put("default_value", "Friend")
-                            },
-                        )
-                    },
-                ),
-            ),
-        )
-        coEvery { manager.topic(RemoteConfigTopic.UiConfig) } returns topic
+    fun `getUiConfig assembles all four blob-ref parts into one UiConfig`() = runTest {
+        // Production serves every ui_config part (app, localizations, variable_config, custom_variables) as
+        // its own blob-ref item under the topic — never as inline item metadata. An earlier revision read
+        // item.metadata directly, which silently produced an all-defaults UiConfig against real backend data.
+        stubBlob("app") {
+            put("colors", buildJsonObject {})
+            put("fonts", buildJsonObject {})
+        }
+        stubBlob("localizations") {
+            put("en_US", buildJsonObject { put("day", "Day") })
+        }
+        stubBlob("variable_config") {
+            put("variable_compatibility_map", buildJsonObject { put("old_var", "new_var") })
+            put("function_compatibility_map", buildJsonObject {})
+        }
+        stubBlob("custom_variables") {
+            put(
+                "user_name",
+                buildJsonObject {
+                    put("type", "string")
+                    put("default_value", "Friend")
+                },
+            )
+        }
 
         val uiConfig = provider.getUiConfig()
 
@@ -67,8 +54,10 @@ internal class UiConfigProviderTest {
     }
 
     @Test
-    fun `getUiConfig defaults every field when the ui_config topic is absent`() = runTest {
-        coEvery { manager.topic(RemoteConfigTopic.UiConfig) } returns null
+    fun `getUiConfig defaults every field when no part's blob resolves`() = runTest {
+        coEvery {
+            manager.blobData<Any>(RemoteConfigTopic.UiConfig, any(), any())
+        } returns null
 
         val uiConfig = provider.getUiConfig()
 
@@ -76,16 +65,26 @@ internal class UiConfigProviderTest {
     }
 
     @Test
-    fun `getUiConfig defaults custom_variables to empty when its topic item is absent`() = runTest {
-        val topic = ConfigTopic(
-            mapOf(
-                "app" to RemoteConfiguration.ConfigItem(metadata = JsonObject(emptyMap())),
-            ),
-        )
-        coEvery { manager.topic(RemoteConfigTopic.UiConfig) } returns topic
+    fun `getUiConfig defaults custom_variables to empty when only its blob is unresolved`() = runTest {
+        stubBlob("app") {}
+        coEvery {
+            manager.blobData<Any>(RemoteConfigTopic.UiConfig, "custom_variables", any())
+        } returns null
+        coEvery {
+            manager.blobData<Any>(RemoteConfigTopic.UiConfig, "localizations", any())
+        } returns null
+        coEvery {
+            manager.blobData<Any>(RemoteConfigTopic.UiConfig, "variable_config", any())
+        } returns null
 
         val uiConfig = provider.getUiConfig()
 
         assertThat(uiConfig.customVariables).isEmpty()
+    }
+
+    private fun stubBlob(key: String, content: kotlinx.serialization.json.JsonObjectBuilder.() -> Unit) {
+        coEvery {
+            manager.blobData<Any>(RemoteConfigTopic.UiConfig, key, any())
+        } returns buildJsonObject(content)
     }
 }
