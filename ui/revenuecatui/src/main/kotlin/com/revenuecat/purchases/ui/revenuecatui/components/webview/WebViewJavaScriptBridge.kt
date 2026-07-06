@@ -21,20 +21,18 @@ import java.net.URL
  * code. One bridge is created per rendered `web_view`.
  *
  * ## Transport
- * This implementation uses [WebView.addJavascriptInterface] (the project does not depend on
- * `androidx.webkit`). Exactly one native method is exposed — [postMessage] — under the private object
- * name [NATIVE_OBJECT_NAME]. A small document-start shim (see [injectBridgeScript]) then exposes the
- * stable public surface `window.RevenueCatWebView.postMessage(message)`, accepting either an object
- * (serialized to JSON) or a JSON string, without overwriting an existing bridge.
+ * Implements the native Android host contract from `workflow-web-components-sdk`:
+ * - JS → native: `window.rcWebComponents.postMessage(jsonString)` via [addJavascriptInterface]
+ * - native → JS: `window.__rcWebComponentsReceive(data)` via [WebView.evaluateJavascript]
+ * - Wire format: `{ channel: "rc-web-components", kind, protocol_version, component_id, … }`
+ *
+ * The content SDK (`window.RC`) auto-detects Android when [NATIVE_OBJECT_NAME] is present and runs
+ * the same connect/init handshake as on web. No document-start shim is injected.
  *
  * Because `addJavascriptInterface` provides no platform origin scoping, the bridge enforces the origin
  * itself: before delivering any inbound message it verifies the WebView's current URL still has the
  * same origin (scheme + host + port) as the resolved component URL, rejecting messages received after
  * navigation to an unexpected origin.
- *
- * ## Native → web
- * Native messages are delivered by invoking `window.__revenueCatReceiveMessage(message)` via
- * [WebView.evaluateJavascript], preserving the flat protocol envelope.
  *
  * ## Lifecycle & threading
  * The bridge holds only a [WeakReference] to the [WebView] (no Activity/Context), and stops delivering
@@ -48,11 +46,13 @@ internal class WebViewJavaScriptBridge(
     expectedUrl: URL,
     locale: String,
     messageHandler: PaywallWebViewMessageHandler?,
+    protocolVersion: Int = WebViewEnvelope.DEFAULT_PROTOCOL_VERSION,
     private val mainHandler: Handler = Handler(Looper.getMainLooper()),
 ) : PaywallWebViewController {
 
     private val webViewRef = WeakReference(webView)
     private val expectedOrigin: String? = expectedUrl.toOriginOrNull()
+    private val protocolVersion: Int = protocolVersion
 
     // Refreshed from the latest paywall state on every recomposition via update().
     @Volatile private var locale: String = locale
@@ -61,22 +61,14 @@ internal class WebViewJavaScriptBridge(
 
     @Volatile private var released: Boolean = false
 
+    @Volatile private var channelOpen: Boolean = false
+
     /**
      * Registers the native interface on the WebView. Call once, when the WebView is created.
      */
     @MainThread
     fun attach() {
-        webViewRef.get()?.addJavascriptInterface(this, NATIVE_OBJECT_NAME)
-    }
-
-    /**
-     * Injects the `window.RevenueCatWebView` shim. Call from `WebViewClient.onPageStarted` so the
-     * surface is available before the page's own scripts run.
-     */
-    @MainThread
-    fun injectBridgeScript() {
-        if (released) return
-        webViewRef.get()?.evaluateJavascript(BRIDGE_SCRIPT, null)
+        webViewRef.get()?.addJavascriptInterface(this, WebViewEnvelope.NATIVE_OBJECT_NAME)
     }
 
     /**
@@ -98,12 +90,13 @@ internal class WebViewJavaScriptBridge(
     @MainThread
     fun release() {
         released = true
-        webViewRef.get()?.removeJavascriptInterface(NATIVE_OBJECT_NAME)
+        channelOpen = false
+        webViewRef.get()?.removeJavascriptInterface(WebViewEnvelope.NATIVE_OBJECT_NAME)
     }
 
     /**
-     * Entry point for the injected `window.RevenueCatWebView`. Invoked on a binder thread; we hop to
-     * the main thread before touching the WebView or validating the message.
+     * Entry point for `window.rcWebComponents.postMessage`. Invoked on a binder thread; we hop to the
+     * main thread before touching the WebView or validating the message.
      */
     @JavascriptInterface
     fun postMessage(json: String) {
@@ -117,53 +110,144 @@ internal class WebViewJavaScriptBridge(
         if (released) return
         val webView = webViewRef.get() ?: return
 
-        if (!isCurrentOriginExpected(webView)) {
-            Logger.w("Dropping inbound web view message: current origin does not match the resolved component origin.")
+        if (json.toByteArray(Charsets.UTF_8).size > WebViewMessageParser.MAX_PAYLOAD_BYTES) {
+            Logger.w("Dropping inbound web view message: payload exceeds ${WebViewMessageParser.MAX_PAYLOAD_BYTES} bytes.")
             return
         }
 
-        val message = WebViewMessageParser.parse(json, expectedComponentId = componentId) ?: return
+        val envelope = WebViewEnvelope.parse(json) ?: run {
+            Logger.w("Dropping inbound web view message: not a valid transport envelope.")
+            return
+        }
 
-        // On a request for variables, the SDK first sends its managed system variables, then invokes
-        // the app handler so the app may add more under `custom`.
-        if (message.type == WebViewMessageType.REQUEST_VARIABLES) {
-            postMessage(
-                componentId = componentId,
-                type = WebViewMessageType.VARIABLES,
-                variables = PaywallWebViewVariablesProvider.sdkManagedVariables(locale = locale),
+        when (envelope.kind) {
+            WebViewEnvelope.KIND_CONNECT -> {
+                if (!isOriginTrusted(webView, allowBeforeNavigation = true)) {
+                    Logger.w(
+                        "Dropping inbound web view connect: current origin does not match the resolved component origin.",
+                    )
+                    return
+                }
+                handleConnect(envelope)
+            }
+            WebViewEnvelope.KIND_MESSAGE,
+            WebViewEnvelope.KIND_REQUEST,
+            -> {
+                if (!isOriginTrusted(webView, allowBeforeNavigation = false)) {
+                    Logger.w(
+                        "Dropping inbound web view message: current origin does not match the resolved component origin.",
+                    )
+                    return
+                }
+                handleAppFrame(json)
+            }
+            else -> Unit
+        }
+    }
+
+    @MainThread
+    private fun handleConnect(envelope: WebViewEnvelope.Parsed) {
+        if (channelOpen || released) return
+
+        if (envelope.protocolVersion != protocolVersion) {
+            deliverEnvelope(
+                WebViewEnvelope.build(
+                    kind = WebViewEnvelope.KIND_REJECT,
+                    protocolVersion = protocolVersion,
+                    componentId = "",
+                    error = "Unsupported protocol_version ${envelope.protocolVersion}; " +
+                        "native host supports $protocolVersion",
+                ),
             )
+            return
+        }
+
+        channelOpen = true
+        deliverEnvelope(
+            WebViewEnvelope.build(
+                kind = WebViewEnvelope.KIND_INIT,
+                protocolVersion = protocolVersion,
+                componentId = componentId,
+            ),
+        )
+    }
+
+    @MainThread
+    private fun handleAppFrame(rawJson: String) {
+        if (!channelOpen) return
+
+        val parsed = WebViewMessageParser.parse(
+            rawJson = rawJson,
+            expectedComponentId = componentId,
+        ) ?: return
+
+        val message = parsed.message
+
+        if (message.type == WebViewMessageType.REQUEST_VARIABLES) {
+            val variables = PaywallWebViewVariablesProvider.sdkManagedVariables(locale = locale)
+            val requestId = parsed.requestId
+            if (requestId != null) {
+                deliverEnvelope(
+                    WebViewEnvelope.build(
+                        kind = WebViewEnvelope.KIND_RESPONSE,
+                        protocolVersion = protocolVersion,
+                        componentId = componentId,
+                        type = parsed.requestType,
+                        id = requestId,
+                        payload = variables.toJsonObject(),
+                    ),
+                )
+            } else {
+                postVariablesMessage(componentId = componentId, variables = variables)
+            }
         }
 
         messageHandler?.onMessage(message, this)
     }
 
     override fun postVariables(componentId: String, variables: Map<String, PaywallWebViewValue>) {
-        postMessage(
+        postVariablesMessage(
             componentId = componentId,
-            type = WebViewMessageType.VARIABLES,
             variables = PaywallWebViewVariablesProvider.sanitizeAppProvidedVariables(variables),
         )
     }
 
     override fun postMessage(componentId: String, type: String, variables: Map<String, PaywallWebViewValue>) {
-        // The payload is delivered under the `variables` key, following the web view protocol envelope
-        // `{ "type", "component_id", "variables" }` (matches the other RevenueCat SDK platforms).
-        val envelope = JSONObject().apply {
-            put(WebViewMessageField.TYPE, type)
-            put(WebViewMessageField.COMPONENT_ID, componentId)
-            put(WebViewMessageField.VARIABLES, variables.toJsonObject())
-        }
-        deliverToWebView(envelope)
+        postAppMessage(
+            componentId = componentId,
+            type = type,
+            payload = variables.toJsonObject(),
+        )
     }
 
-    private fun deliverToWebView(envelope: JSONObject) {
+    private fun postVariablesMessage(componentId: String, variables: Map<String, PaywallWebViewValue>) {
+        postAppMessage(
+            componentId = componentId,
+            type = WebViewMessageType.VARIABLES,
+            payload = variables.toJsonObject(),
+        )
+    }
+
+    private fun postAppMessage(componentId: String, type: String, payload: JSONObject) {
+        if (!channelOpen) return
+        deliverEnvelope(
+            WebViewEnvelope.build(
+                kind = WebViewEnvelope.KIND_MESSAGE,
+                protocolVersion = protocolVersion,
+                componentId = componentId,
+                type = type,
+                payload = payload,
+            ),
+        )
+    }
+
+    private fun deliverEnvelope(envelope: JSONObject) {
         runOnMainThread {
             if (released) return@runOnMainThread
             val webView = webViewRef.get() ?: return@runOnMainThread
-            // Symmetric with the inbound guard: never deliver into content that navigated to a
-            // different origin (https navigation to any host is allowed), so SDK envelopes such as
-            // `rc:variables` can't leak across an origin boundary.
-            if (!isCurrentOriginExpected(webView)) {
+            val kind = envelope.optString(WebViewMessageField.KIND)
+            val allowBeforeNavigation = kind in HANDSHAKE_OUTBOUND_KINDS
+            if (!isOriginTrusted(webView, allowBeforeNavigation = allowBeforeNavigation)) {
                 Logger.w(
                     "Dropping outbound web view message: current origin does not match the resolved component origin.",
                 )
@@ -171,7 +255,9 @@ internal class WebViewJavaScriptBridge(
             }
             val payload = envelope.toString().escapeForJavaScript()
             webView.evaluateJavascript(
-                "if (window.$RECEIVE_FUNCTION) { window.$RECEIVE_FUNCTION($payload); }",
+                "if (window.${WebViewEnvelope.RECEIVE_FUNCTION}) { " +
+                    "window.${WebViewEnvelope.RECEIVE_FUNCTION}($payload); " +
+                    "}",
                 null,
             )
         }
@@ -179,13 +265,18 @@ internal class WebViewJavaScriptBridge(
 
     /**
      * Whether the WebView's current URL still has the same origin (scheme + host + port) as the
-     * resolved component URL. Both inbound and outbound messaging are gated on this so messages never
-     * cross an origin boundary after a navigation to an unexpected origin.
+     * resolved component URL. When [allowBeforeNavigation] is true and the WebView has not committed
+     * a URL yet, the expected origin is trusted so the connect/init handshake can complete before
+     * the first navigation.
      */
     @MainThread
-    private fun isCurrentOriginExpected(webView: WebView): Boolean {
+    private fun isOriginTrusted(webView: WebView, allowBeforeNavigation: Boolean): Boolean {
+        if (expectedOrigin == null) return false
         val currentOrigin = webView.url?.let { runCatching { URL(it).toOriginOrNull() }.getOrNull() }
-        return expectedOrigin != null && currentOrigin != null && currentOrigin == expectedOrigin
+        return when {
+            currentOrigin == null -> allowBeforeNavigation
+            else -> currentOrigin == expectedOrigin
+        }
     }
 
     private fun runOnMainThread(block: () -> Unit) {
@@ -197,26 +288,10 @@ internal class WebViewJavaScriptBridge(
     }
 
     private companion object {
-        // Private native object name. The public surface (window.RevenueCatWebView) is created by the
-        // injected shim below; this avoids exposing the raw native interface to web content directly.
-        const val NATIVE_OBJECT_NAME = "__RevenueCatNativeBridge"
-        const val PUBLIC_OBJECT_NAME = "RevenueCatWebView"
-        const val RECEIVE_FUNCTION = "__revenueCatReceiveMessage"
-
-        val BRIDGE_SCRIPT = """
-            (function() {
-                if (window.$PUBLIC_OBJECT_NAME) { return; }
-                var nativeBridge = window.$NATIVE_OBJECT_NAME;
-                if (!nativeBridge) { return; }
-                window.$PUBLIC_OBJECT_NAME = {
-                    postMessage: function(message) {
-                        nativeBridge.postMessage(
-                            typeof message === 'string' ? message : JSON.stringify(message)
-                        );
-                    }
-                };
-            })();
-        """.trimIndent()
+        private val HANDSHAKE_OUTBOUND_KINDS: Set<String> = setOf(
+            WebViewEnvelope.KIND_INIT,
+            WebViewEnvelope.KIND_REJECT,
+        )
 
         /**
          * JSON is a subset of JS object-literal syntax, but the U+2028/U+2029 separators are valid in
@@ -234,8 +309,6 @@ internal class WebViewJavaScriptBridge(
  */
 private fun URL.toOriginOrNull(): String? {
     val host = host?.takeIf { it.isNotBlank() } ?: return null
-    // Normalize the default port so e.g. `https://host` and `https://host:443` compare as the same
-    // origin: an explicit default port and an omitted one must not cause spurious message drops.
     val effectivePort = if (port == -1) defaultPort else port
     val portSuffix = if (effectivePort == -1) "" else ":$effectivePort"
     return "$protocol://$host$portSuffix"

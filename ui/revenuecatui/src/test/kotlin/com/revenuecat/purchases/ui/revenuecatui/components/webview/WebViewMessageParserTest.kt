@@ -13,29 +13,33 @@ internal class WebViewMessageParserTest {
 
     @Test
     fun `parses rc step-loaded`() {
-        val message = parse("""{"type":"rc:step-loaded","component_id":"promo_web_view"}""")
+        val parsed = parse(
+            envelope(
+                kind = WebViewEnvelope.KIND_MESSAGE,
+                type = WebViewMessageType.STEP_LOADED,
+            ),
+        )
 
-        assertThat(message).isNotNull
-        assertThat(message!!.type).isEqualTo("rc:step-loaded")
+        assertThat(parsed).isNotNull
+        val message = parsed!!.message
+        assertThat(message.type).isEqualTo("rc:step-loaded")
         assertThat(message.componentId).isEqualTo("promo_web_view")
         assertThat(message.responses).isNull()
         assertThat(message.error).isNull()
     }
 
     @Test
-    fun `parses rc step-complete with responses`() {
-        val message = parse(
-            """
-            {
-              "type":"rc:step-complete",
-              "component_id":"promo_web_view",
-              "responses":{"selected_plan":"annual","accepted_terms":true,"count":3}
-            }
-            """.trimIndent(),
+    fun `parses rc step-complete with responses in payload`() {
+        val parsed = parse(
+            envelope(
+                kind = WebViewEnvelope.KIND_MESSAGE,
+                type = WebViewMessageType.STEP_COMPLETE,
+                payload = """{"responses":{"selected_plan":"annual","accepted_terms":true,"count":3}}""",
+            ),
         )
 
-        assertThat(message).isNotNull
-        val responses = message!!.responses
+        assertThat(parsed).isNotNull
+        val responses = parsed!!.message.responses
         assertThat(responses).isNotNull
         assertThat(responses!!["selected_plan"]).isEqualTo(PaywallWebViewValue.String("annual"))
         assertThat(responses["accepted_terms"]).isEqualTo(PaywallWebViewValue.Boolean(true))
@@ -44,63 +48,150 @@ internal class WebViewMessageParserTest {
 
     @Test
     fun `parses rc step-complete without responses as empty map`() {
-        val message = parse("""{"type":"rc:step-complete","component_id":"promo_web_view"}""")
+        val parsed = parse(
+            envelope(
+                kind = WebViewEnvelope.KIND_MESSAGE,
+                type = WebViewMessageType.STEP_COMPLETE,
+            ),
+        )
 
-        assertThat(message).isNotNull
-        assertThat(message!!.responses).isEmpty()
+        assertThat(parsed).isNotNull
+        assertThat(parsed!!.message.responses).isEmpty()
     }
 
     @Test
-    fun `parses rc request-variables`() {
-        val message = parse("""{"type":"rc:request-variables","component_id":"promo_web_view"}""")
+    fun `parses rc request-variables as message`() {
+        val parsed = parse(
+            envelope(
+                kind = WebViewEnvelope.KIND_MESSAGE,
+                type = WebViewMessageType.REQUEST_VARIABLES,
+            ),
+        )
 
-        assertThat(message).isNotNull
-        assertThat(message!!.type).isEqualTo("rc:request-variables")
+        assertThat(parsed).isNotNull
+        assertThat(parsed!!.message.type).isEqualTo("rc:request-variables")
+        assertThat(parsed.requestId).isNull()
     }
 
     @Test
-    fun `parses rc error`() {
-        val message = parse("""{"type":"rc:error","component_id":"promo_web_view","error":"Boom"}""")
+    fun `parses rc request-variables as transport request`() {
+        val parsed = parse(
+            envelope(
+                kind = WebViewEnvelope.KIND_REQUEST,
+                type = WebViewMessageType.REQUEST_VARIABLES,
+                id = "req-1",
+            ),
+        )
 
-        assertThat(message).isNotNull
-        assertThat(message!!.error).isEqualTo("Boom")
+        assertThat(parsed).isNotNull
+        assertThat(parsed!!.message.type).isEqualTo("rc:request-variables")
+        assertThat(parsed.requestId).isEqualTo("req-1")
+    }
+
+    @Test
+    fun `parses rc error from payload`() {
+        val parsed = parse(
+            envelope(
+                kind = WebViewEnvelope.KIND_MESSAGE,
+                type = WebViewMessageType.ERROR,
+                payload = """{"error":"Boom"}""",
+            ),
+        )
+
+        assertThat(parsed).isNotNull
+        assertThat(parsed!!.message.error).isEqualTo("Boom")
     }
 
     @Test
     fun `rejects message without type`() {
-        assertThat(parse("""{"component_id":"promo_web_view"}""")).isNull()
+        assertThat(
+            parse(
+                """{"channel":"rc-web-components","protocol_version":1,"kind":"message","component_id":"promo_web_view"}""",
+            ),
+        ).isNull()
     }
 
     @Test
     fun `rejects message with non-string type`() {
-        assertThat(parse("""{"type":123,"component_id":"promo_web_view"}""")).isNull()
+        assertThat(
+            parse(
+                """
+                {"channel":"rc-web-components","protocol_version":1,"kind":"message","component_id":"promo_web_view","type":123}
+                """.trimIndent(),
+            ),
+        ).isNull()
     }
 
     @Test
     fun `rejects message without component_id`() {
-        assertThat(parse("""{"type":"rc:step-loaded"}""")).isNull()
+        assertThat(
+            parse(
+                """
+                {"channel":"rc-web-components","protocol_version":1,"kind":"message","type":"rc:step-loaded"}
+                """.trimIndent(),
+            ),
+        ).isNull()
     }
 
     @Test
     fun `rejects message with wrong component_id`() {
-        assertThat(parse("""{"type":"rc:step-loaded","component_id":"other_web_view"}""")).isNull()
+        assertThat(
+            envelope(
+                kind = WebViewEnvelope.KIND_MESSAGE,
+                type = WebViewMessageType.STEP_LOADED,
+                componentId = "other_web_view",
+            ).let(::parse),
+        ).isNull()
     }
 
     @Test
     fun `rejects rc step-complete with non-object responses`() {
         assertThat(
-            parse("""{"type":"rc:step-complete","component_id":"promo_web_view","responses":"nope"}"""),
+            parse(
+                envelope(
+                    kind = WebViewEnvelope.KIND_MESSAGE,
+                    type = WebViewMessageType.STEP_COMPLETE,
+                    payload = """{"responses":"nope"}""",
+                ),
+            ),
+        ).isNull()
+    }
+
+    @Test
+    fun `rejects rc step-complete payload with transport fields and no responses object`() {
+        assertThat(
+            parse(
+                envelope(
+                    kind = WebViewEnvelope.KIND_MESSAGE,
+                    type = WebViewMessageType.STEP_COMPLETE,
+                    payload = """{"type":"rc:step-complete","selected_plan":"annual"}""",
+                ),
+            ),
         ).isNull()
     }
 
     @Test
     fun `rejects rc error without error string`() {
-        assertThat(parse("""{"type":"rc:error","component_id":"promo_web_view"}""")).isNull()
+        assertThat(
+            parse(
+                envelope(
+                    kind = WebViewEnvelope.KIND_MESSAGE,
+                    type = WebViewMessageType.ERROR,
+                ),
+            ),
+        ).isNull()
     }
 
     @Test
     fun `drops unknown message types`() {
-        assertThat(parse("""{"type":"rc:something-new","component_id":"promo_web_view"}""")).isNull()
+        assertThat(
+            parse(
+                envelope(
+                    kind = WebViewEnvelope.KIND_MESSAGE,
+                    type = "rc:something-new",
+                ),
+            ),
+        ).isNull()
     }
 
     @Test
@@ -116,39 +207,69 @@ internal class WebViewMessageParserTest {
     @Test
     fun `rejects oversized payload`() {
         val hugeValue = "x".repeat(WebViewMessageParser.MAX_PAYLOAD_BYTES + 1)
-        val raw = """{"type":"rc:error","component_id":"promo_web_view","error":"$hugeValue"}"""
+        val raw = envelope(
+            kind = WebViewEnvelope.KIND_MESSAGE,
+            type = WebViewMessageType.ERROR,
+            payload = """{"error":"$hugeValue"}""",
+        )
         assertThat(parse(raw)).isNull()
     }
 
     @Test
     fun `rejects excessively nested responses`() {
-        // Build responses nested deeper than MAX_NESTING_DEPTH.
         val depth = WebViewMessageParser.MAX_NESTING_DEPTH + 2
         val opening = "{\"a\":".repeat(depth)
         val closing = "}".repeat(depth)
         val nested = opening + "1" + closing
-        val raw = """{"type":"rc:step-complete","component_id":"promo_web_view","responses":$nested}"""
+        val raw = envelope(
+            kind = WebViewEnvelope.KIND_MESSAGE,
+            type = WebViewMessageType.STEP_COMPLETE,
+            payload = """{"responses":$nested}""",
+        )
         assertThat(parse(raw)).isNull()
     }
 
     @Test
     fun `accepts null and nested json-compatible values in responses`() {
-        val message = parse(
-            """
-            {
-              "type":"rc:step-complete",
-              "component_id":"promo_web_view",
-              "responses":{"maybe":null,"list":[1,"two",false],"obj":{"k":"v"}}
-            }
-            """.trimIndent(),
+        val parsed = parse(
+            envelope(
+                kind = WebViewEnvelope.KIND_MESSAGE,
+                type = WebViewMessageType.STEP_COMPLETE,
+                payload = """{"responses":{"maybe":null,"list":[1,"two",false],"obj":{"k":"v"}}}""",
+            ),
         )
 
-        assertThat(message).isNotNull
-        val responses = message!!.responses!!
+        assertThat(parsed).isNotNull
+        val responses = parsed!!.message.responses!!
         assertThat(responses["maybe"]).isEqualTo(PaywallWebViewValue.Null)
         assertThat(responses["list"]).isInstanceOf(PaywallWebViewValue.Array::class.java)
         assertThat(responses["obj"]).isInstanceOf(PaywallWebViewValue.Object::class.java)
     }
 
+    @Test
+    fun `ignores handshake frames`() {
+        assertThat(
+            parse(
+                """
+                {"channel":"rc-web-components","protocol_version":1,"kind":"connect","component_id":""}
+                """.trimIndent(),
+            ),
+        ).isNull()
+    }
+
     private fun parse(raw: String) = WebViewMessageParser.parse(raw, expectedComponentId = componentId)
+
+    private fun envelope(
+        kind: String,
+        type: String,
+        componentId: String = this.componentId,
+        payload: String? = null,
+        id: String? = null,
+    ): String {
+        val payloadField = payload?.let { ""","payload":$it""" } ?: ""
+        val idField = id?.let { ""","id":"$it"""" } ?: ""
+        return """
+            {"channel":"rc-web-components","protocol_version":1,"kind":"$kind","component_id":"$componentId","type":"$type"$payloadField$idField}
+            """.trimIndent()
+    }
 }

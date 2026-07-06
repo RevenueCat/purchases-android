@@ -11,97 +11,142 @@ import org.json.JSONObject
  * Parses and validates raw JSON strings received from a `web_view` component into typed
  * [PaywallWebViewMessage]s before they reach app code.
  *
- * Validation rules (see the RevenueCat `web_view` postMessage protocol):
- * - The payload must not exceed [MAX_PAYLOAD_BYTES] and must not nest deeper than [MAX_NESTING_DEPTH].
- * - The body must be a JSON object with a non-empty string `type` and a string `component_id`.
- * - `component_id` must equal the expected component id; otherwise the message is rejected.
- * - `rc:step-complete` may carry a `responses` JSON object of JSON-compatible values.
- * - `rc:error` must carry a string `error`.
- * - `rc:step-loaded` and `rc:request-variables` require no extra fields.
- * - Unknown message types are dropped for v1.
+ * Payloads use the `workflow-web-components-sdk` transport envelope (`channel`,
+ * `protocol_version`, `kind`, `component_id`, …). App-level messages arrive as `kind`
+ * `message` or `request` with a `type` such as `rc:step-loaded`.
  *
- * Returns `null` for any payload that is too large, malformed, fails validation, targets a different
- * component, or has an unknown type.
+ * Returns `null` for handshake frames, transport errors, malformed payloads, wrong
+ * `component_id`, or unknown app message types.
  */
 internal object WebViewMessageParser {
 
     const val MAX_PAYLOAD_BYTES: Int = 65_536
     const val MAX_NESTING_DEPTH: Int = 16
 
+    data class ParsedAppMessage(
+        val message: PaywallWebViewMessage,
+        /** Set when the inbound frame is a transport `request` that expects a `response`. */
+        val requestId: String? = null,
+        val requestType: String? = null,
+    )
+
     @Suppress("ReturnCount")
-    fun parse(rawJson: String, expectedComponentId: String): PaywallWebViewMessage? {
+    fun parse(rawJson: String, expectedComponentId: String): ParsedAppMessage? {
         if (rawJson.toByteArray(Charsets.UTF_8).size > MAX_PAYLOAD_BYTES) {
             Logger.w("Dropping web view message: payload exceeds $MAX_PAYLOAD_BYTES bytes.")
             return null
         }
 
-        val json = try {
-            JSONObject(rawJson)
-        } catch (@Suppress("SwallowedException") e: org.json.JSONException) {
-            Logger.w("Dropping web view message: body is not a JSON object.")
+        val envelope = WebViewEnvelope.parse(rawJson) ?: run {
+            Logger.w("Dropping web view message: not a valid transport envelope.")
             return null
         }
 
-        val type = (json.opt(WebViewMessageField.TYPE) as? String)?.takeIf { it.isNotEmpty() }
+        return when (envelope.kind) {
+            WebViewEnvelope.KIND_MESSAGE,
+            WebViewEnvelope.KIND_REQUEST,
+            -> parseAppMessage(envelope, expectedComponentId)
+
+            else -> null
+        }
+    }
+
+    @Suppress("ReturnCount")
+    private fun parseAppMessage(
+        envelope: WebViewEnvelope.Parsed,
+        expectedComponentId: String,
+    ): ParsedAppMessage? {
+        if (envelope.componentId != expectedComponentId) {
+            Logger.w("Dropping web view message: 'component_id' does not match the rendered web_view.")
+            return null
+        }
+
+        val type = envelope.type?.takeIf { it.isNotEmpty() }
         if (type == null) {
             Logger.w("Dropping web view message: missing or non-string 'type'.")
             return null
         }
 
-        val componentId = json.opt(WebViewMessageField.COMPONENT_ID) as? String
-        if (componentId == null) {
-            Logger.w("Dropping web view message: missing or non-string 'component_id'.")
-            return null
-        }
-        if (componentId != expectedComponentId) {
-            Logger.w("Dropping web view message: 'component_id' does not match the rendered web_view.")
-            return null
-        }
-
-        return when (type) {
+        val message = when (type) {
             WebViewMessageType.STEP_LOADED,
             WebViewMessageType.REQUEST_VARIABLES,
-            -> PaywallWebViewMessage(componentId = componentId, type = type)
+            -> PaywallWebViewMessage(componentId = envelope.componentId, type = type)
 
             WebViewMessageType.STEP_COMPLETE -> {
-                val responses = parseResponses(json) ?: return null
-                PaywallWebViewMessage(componentId = componentId, type = type, responses = responses.value)
+                val responses = parseResponses(envelope.payload) ?: return null
+                PaywallWebViewMessage(
+                    componentId = envelope.componentId,
+                    type = type,
+                    responses = responses.value,
+                )
             }
 
             WebViewMessageType.ERROR -> {
-                val error = json.opt(WebViewMessageField.ERROR) as? String
-                if (error == null) {
-                    Logger.w("Dropping web view message: 'rc:error' requires a string 'error'.")
-                    return null
-                }
-                PaywallWebViewMessage(componentId = componentId, type = type, error = error)
+                val error = parseError(envelope) ?: return null
+                PaywallWebViewMessage(componentId = envelope.componentId, type = type, error = error)
             }
 
             else -> {
-                // Unknown message types are dropped for protocol_version 1.
                 Logger.d("Dropping web view message: unknown type '$type'.")
-                null
+                return null
             }
         }
+
+        val requestId = if (envelope.kind == WebViewEnvelope.KIND_REQUEST) envelope.id else null
+        if (envelope.kind == WebViewEnvelope.KIND_REQUEST && requestId == null) {
+            Logger.w("Dropping web view message: transport request is missing 'id'.")
+            return null
+        }
+
+        return ParsedAppMessage(
+            message = message,
+            requestId = requestId,
+            requestType = type,
+        )
+    }
+
+    private fun parseError(envelope: WebViewEnvelope.Parsed): String? {
+        val payloadError = envelope.payload?.opt(WebViewMessageField.ERROR) as? String
+        val error = payloadError ?: envelope.error
+        if (error == null) {
+            Logger.w("Dropping web view message: 'rc:error' requires a string 'error'.")
+            return null
+        }
+        return error
     }
 
     /**
-     * Parses the optional `responses` object of a `rc:step-complete` message. Returns an empty object
-     * when absent, or `null` when present but malformed (not a JSON object, non-JSON values, or too
-     * deeply nested), which causes the whole message to be rejected.
+     * Parses the `responses` object for a `rc:step-complete` message. The responses may live under
+     * `payload.responses` or directly in `payload` when the content sends only response fields.
      */
     private class ParsedResponses(val value: Map<String, PaywallWebViewValue>)
 
     @Suppress("ReturnCount")
-    private fun parseResponses(json: JSONObject): ParsedResponses? {
-        if (!json.has(WebViewMessageField.RESPONSES) || json.isNull(WebViewMessageField.RESPONSES)) {
+    private fun parseResponses(payload: JSONObject?): ParsedResponses? {
+        if (payload == null || payload.length() == 0) {
             return ParsedResponses(emptyMap())
         }
-        val responsesJson = json.opt(WebViewMessageField.RESPONSES) as? JSONObject
+
+        val responsesJson = when {
+            payload.has(WebViewMessageField.RESPONSES) && !payload.isNull(WebViewMessageField.RESPONSES) ->
+                payload.opt(WebViewMessageField.RESPONSES) as? JSONObject
+
+            payload.keys().asSequence().any { it in STEP_COMPLETE_RESERVED_PAYLOAD_KEYS } -> {
+                Logger.w(
+                    "Dropping web view message: 'rc:step-complete' payload contains transport fields " +
+                        "without a 'responses' object.",
+                )
+                return null
+            }
+
+            else -> payload
+        }
+
         if (responsesJson == null) {
             Logger.w("Dropping web view message: 'responses' must be a JSON object.")
             return null
         }
+
         val converted = PaywallWebViewValue.fromJson(responsesJson, MAX_NESTING_DEPTH)
         if (converted !is PaywallWebViewValue.Object) {
             Logger.w("Dropping web view message: 'responses' contains non-JSON values or is too deeply nested.")
@@ -109,4 +154,15 @@ internal object WebViewMessageParser {
         }
         return ParsedResponses(converted.value)
     }
+
+    private val STEP_COMPLETE_RESERVED_PAYLOAD_KEYS: Set<String> = setOf(
+        WebViewMessageField.CHANNEL,
+        WebViewMessageField.PROTOCOL_VERSION,
+        WebViewMessageField.KIND,
+        WebViewMessageField.TYPE,
+        WebViewMessageField.COMPONENT_ID,
+        WebViewMessageField.ID,
+        WebViewMessageField.ERROR,
+        WebViewMessageField.VARIABLES,
+    )
 }
