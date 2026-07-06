@@ -268,8 +268,6 @@ internal class HTTPClient(
      * pins the host and bypasses API sources).
      */
     private fun apiSourceURL(endpoint: Endpoint, baseURL: URL, isFallbackAttempt: Boolean): URL? {
-        // A proxy or an overridden base URL pins the host (baseURL differs from the default); endpoint
-        // fallback-host attempts and opted-out endpoints keep the provided base URL as well.
         val eligible = !isFallbackAttempt &&
             endpoint.usesAPISources &&
             baseURL.toString() == AppConfig.baseUrlString
