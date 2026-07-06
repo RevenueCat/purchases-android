@@ -51,6 +51,7 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.pendingTransactionsForPrepaidPlansEnabled).isFalse
         assertThat(purchasesConfiguration.automaticDeviceIdentifierCollectionEnabled).isTrue
         assertThat(purchasesConfiguration.preferredUILocaleOverride).isNull()
+        assertThat(purchasesConfiguration.iamEnabled).isFalse
     }
 
     @Test
@@ -171,5 +172,12 @@ class PurchasesConfigurationTest {
     fun `PurchasesConfiguration sets galaxyBillingMode correctly`() {
         val purchasesConfiguration = builder.galaxyBillingMode(GalaxyBillingMode.TEST).build()
         assertThat(purchasesConfiguration.galaxyBillingMode).isEqualTo(GalaxyBillingMode.TEST)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `PurchasesConfiguration sets iamEnabled correctly`() {
+        val purchasesConfiguration = builder.iamEnabled(true).build()
+        assertThat(purchasesConfiguration.iamEnabled).isTrue
     }
 }
