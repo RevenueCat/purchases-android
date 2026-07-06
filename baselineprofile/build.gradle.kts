@@ -22,7 +22,6 @@ android {
         targetSdk = 34
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         missingDimensionStrategy("apis", "defaults")
-        missingDimensionStrategy("billingclient", "bc8")
         testInstrumentationRunnerArguments["androidx.benchmark.suppressErrors"] = "EMULATOR"
     }
 

@@ -115,7 +115,7 @@ class RCContainerBackwardsCompatTest {
      *
      * Kept `@Ignore`d so it never runs in CI. To (re)generate after an intentional format change:
      * temporarily remove the `@Ignore`, run
-     * `./gradlew :purchases:testDefaultsBc8DebugUnitTest --tests "*RCContainerBackwardsCompatTest*"`,
+     * `./gradlew :purchases:testDefaultsDebugUnitTest --tests "*RCContainerBackwardsCompatTest*"`,
      * re-add `@Ignore`, then commit the resulting `.bin` files.
      */
     @Ignore("Run manually to regenerate the committed fixtures, then re-ignore.")
