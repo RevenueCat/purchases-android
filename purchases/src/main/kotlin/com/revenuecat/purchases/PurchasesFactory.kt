@@ -204,9 +204,6 @@ internal class PurchasesFactory(
             val localeProvider = DefaultLocaleProvider()
 
             val remoteConfigEnabled = BuildConfig.ENABLE_REMOTE_CONFIG && !appConfig.customEntitlementComputation
-            // The disk cache is only created when remote config is enabled, but the API source provider is
-            // always created: even with remote config disabled it resolves the API base host (falling back to
-            // its embedded defaults), so requests always go through the API source list.
             val remoteConfigDiskCache = if (remoteConfigEnabled) RemoteConfigDiskCache(contextForStorage) else null
             val remoteConfigTopicStore = RemoteConfigTopicStore {
                 remoteConfigDiskCache?.read()?.topics?.get(it.wireName)
