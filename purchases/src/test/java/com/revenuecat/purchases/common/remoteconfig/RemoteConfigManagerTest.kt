@@ -1146,6 +1146,77 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `mergeItemsBlobData returns null when a resolved blob is not valid JSON`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(
+                    mapOf(
+                        "wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID),
+                        "wf2" to RemoteConfiguration.ConfigItem(blobRef = REF_TAMPERED),
+                    ),
+                ),
+            ),
+        )
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
+        coEvery { blobFetcher.ensureDownloaded(REF_TAMPERED) } returns true
+        every { blobStore.read(REF_VALID) } returns """{"value":"x"}""".toByteArray()
+        // wf2's blob is not parseable JSON, so the whole merge fails.
+        every { blobStore.read(REF_TAMPERED) } returns "not json".toByteArray()
+
+        val result = readManager().mergeItemsBlobData<MergedBlob>(RemoteConfigTopic.Workflows, listOf("wf1", "wf2"))
+
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `mergeItemsBlobData returns null when the merged object does not deserialize into T`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(
+                    mapOf(
+                        "wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID),
+                        "wf2" to RemoteConfiguration.ConfigItem(blobRef = REF_TAMPERED),
+                    ),
+                ),
+            ),
+        )
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
+        coEvery { blobFetcher.ensureDownloaded(REF_TAMPERED) } returns true
+        // Both blobs are valid JSON, but wf2 is missing Section's required "value" field, so the merged
+        // {"wf1": {"value":"x"}, "wf2": {"nope":true}} can't decode into MergedBlob.
+        every { blobStore.read(REF_VALID) } returns """{"value":"x"}""".toByteArray()
+        every { blobStore.read(REF_TAMPERED) } returns """{"nope":true}""".toByteArray()
+
+        val result = readManager().mergeItemsBlobData<MergedBlob>(RemoteConfigTopic.Workflows, listOf("wf1", "wf2"))
+
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `mergeItemsBlobData returns null for an empty key list without touching the network`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(
+                    mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID)),
+                ),
+            ),
+        )
+
+        // Even though OptionalBlob would decode from an empty object, an empty key list is a no-op → null.
+        val result = readManager().mergeItemsBlobData<OptionalBlob>(RemoteConfigTopic.Workflows, emptyList())
+
+        assertThat(result).isNull()
+        coVerify(exactly = 0) { blobFetcher.ensureDownloaded(any<String>()) }
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `mergeItemsBlobData warns and returns null when one or more items cannot be resolved`() {
         every { diskCache.read() } returns persisted(
             manifest = "m",

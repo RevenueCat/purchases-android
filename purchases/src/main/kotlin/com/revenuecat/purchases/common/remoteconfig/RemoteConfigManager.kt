@@ -387,14 +387,14 @@ internal class RemoteConfigManager(
      * This is **all-or-nothing**: if any requested item is unknown, has no `blob_ref`, or its blob can't be
      * resolved, the call returns `null` (a partial object is never produced) and warn-logs the missing keys.
      * It also returns `null` if any resolved blob isn't valid JSON, or the merged object doesn't deserialize
-     * into [T]. Duplicate keys are de-duplicated; [T] must be a concrete `@Serializable` type and parsing uses
-     * [JsonProvider.defaultJson].
+     * into [T]. Duplicate keys are de-duplicated; an empty [itemKeys] returns `null` without any read; [T] must
+     * be a concrete `@Serializable` type and parsing uses [JsonProvider.defaultJson].
      *
      * Each item resolves through the same path as the single-key [blobData] (see its KDoc for the `blob_ref`,
      * on-demand fetch, and waiting rules) — this only fans them out. The fan-out is safe: a shared in-flight
      * `/v1/config` refresh is deduped across all keys, and the blob fetcher dedupes concurrent downloads of the
      * same ref. When the endpoint is [isDisabled] (the 4xx session kill-switch) the call returns `null`
-     * immediately without any read (including for an empty [itemKeys]). Runs on [ioDispatcher].
+     * immediately without any read. Runs on [ioDispatcher].
      */
     suspend inline fun <reified T> mergeItemsBlobData(topic: RemoteConfigTopic, itemKeys: Collection<String>): T? =
         mergeItemsBlobData(topic, itemKeys) { merged ->
@@ -434,6 +434,10 @@ internal class RemoteConfigManager(
             return null
         }
         val keys = itemKeys.distinct()
+        if (keys.isEmpty()) {
+            verboseLog { "No item keys requested for merged remote config read in topic '${topic.wireName}'." }
+            return null
+        }
         val resolved = coroutineScope {
             keys.associateWith { key -> async { resolveBlobBytes(topic, key) } }
                 .mapValues { (_, deferred) -> deferred.await() }
