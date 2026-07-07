@@ -23,7 +23,7 @@ internal object WebViewMessageParser {
     const val MAX_PAYLOAD_BYTES: Int = 65_536
     const val MAX_NESTING_DEPTH: Int = 16
 
-    data class ParsedAppMessage(
+    internal data class ParsedAppMessage(
         val message: PaywallWebViewMessage,
         /** Set when the inbound frame is a transport `request` that expects a `response`. */
         val requestId: String? = null,

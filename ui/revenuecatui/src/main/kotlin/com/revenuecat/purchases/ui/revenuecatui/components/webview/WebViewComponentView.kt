@@ -20,8 +20,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
-import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
@@ -33,7 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteract
 
 @JvmSynthetic
 @Composable
-@Suppress("LongMethod")
+@Suppress("LongMethod", "ReturnCount")
 internal fun WebViewComponentView(
     style: WebViewComponentStyle,
     state: PaywallState.Loaded.Components,

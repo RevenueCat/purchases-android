@@ -114,7 +114,10 @@ internal class WebViewJavaScriptBridge(
         val webView = webViewRef.get() ?: return
 
         if (json.toByteArray(Charsets.UTF_8).size > WebViewMessageParser.MAX_PAYLOAD_BYTES) {
-            Logger.w("Dropping inbound web view message: payload exceeds ${WebViewMessageParser.MAX_PAYLOAD_BYTES} bytes.")
+            Logger.w(
+                "Dropping inbound web view message: payload exceeds " +
+                    "${WebViewMessageParser.MAX_PAYLOAD_BYTES} bytes.",
+            )
             return
         }
 
@@ -127,7 +130,8 @@ internal class WebViewJavaScriptBridge(
             WebViewEnvelope.KIND_CONNECT -> {
                 if (!isOriginTrusted(webView, allowBeforeNavigation = true)) {
                     Logger.w(
-                        "Dropping inbound web view connect: current origin does not match the resolved component origin.",
+                        "Dropping inbound web view connect: current origin does not match the " +
+                            "resolved component origin.",
                     )
                     return
                 }
@@ -138,7 +142,8 @@ internal class WebViewJavaScriptBridge(
             -> {
                 if (!isOriginTrusted(webView, allowBeforeNavigation = false)) {
                     Logger.w(
-                        "Dropping inbound web view message: current origin does not match the resolved component origin.",
+                        "Dropping inbound web view message: current origin does not match the " +
+                            "resolved component origin.",
                     )
                     return
                 }
@@ -194,6 +199,7 @@ internal class WebViewJavaScriptBridge(
     }
 
     @MainThread
+    @Suppress("ReturnCount")
     private fun handleAppFrame(rawJson: String) {
         if (!channelOpen) return
 

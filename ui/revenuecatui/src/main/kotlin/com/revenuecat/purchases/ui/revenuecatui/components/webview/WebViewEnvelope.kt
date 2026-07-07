@@ -36,7 +36,7 @@ internal object WebViewEnvelope {
         KIND_ERROR,
     )
 
-    data class Parsed(
+    internal data class Parsed(
         val kind: String,
         val protocolVersion: Int,
         val componentId: String,
@@ -46,7 +46,7 @@ internal object WebViewEnvelope {
         val error: String?,
     )
 
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "CyclomaticComplexMethod")
     fun parse(rawJson: String): Parsed? {
         val json = try {
             JSONObject(rawJson)
@@ -90,6 +90,7 @@ internal object WebViewEnvelope {
         )
     }
 
+    @Suppress("LongParameterList")
     fun build(
         kind: String,
         protocolVersion: Int,
