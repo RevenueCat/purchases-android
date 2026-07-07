@@ -6,6 +6,7 @@ import androidx.compose.runtime.Stable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
@@ -60,6 +61,7 @@ public class PaywallOptions internal constructor(
      */
     public val customVariables: Map<String, CustomVariableValue> = emptyMap(),
     internal val injectedWorkflow: WorkflowDataResult? = null,
+    internal val injectedWorkflowUiConfig: UiConfig = UiConfig(),
 ) {
     public companion object {
         private const val hashMultiplier = 31
@@ -76,6 +78,7 @@ public class PaywallOptions internal constructor(
         dismissRequestWithExitOffering = builder.dismissRequestWithExitOffering,
         customVariables = builder.customVariables,
         injectedWorkflow = builder.injectedWorkflow,
+        injectedWorkflowUiConfig = builder.injectedWorkflowUiConfig,
     )
 
     // Only key fields that affect the paywall's identity and rendering logic are used in hashCode.
@@ -87,6 +90,7 @@ public class PaywallOptions internal constructor(
         result = hashMultiplier * result + mode.hashCode()
         result = hashMultiplier * result + customVariables.hashCode()
         result = hashMultiplier * result + injectedWorkflow.hashCode()
+        result = hashMultiplier * result + injectedWorkflowUiConfig.hashCode()
         return result
     }
 
@@ -103,6 +107,7 @@ public class PaywallOptions internal constructor(
             this.mode != other.mode -> false
             this.customVariables != other.customVariables -> false
             this.injectedWorkflow != other.injectedWorkflow -> false
+            this.injectedWorkflowUiConfig != other.injectedWorkflowUiConfig -> false
             else -> this.dismissRequest == other.dismissRequest
         }
     }
@@ -118,6 +123,7 @@ public class PaywallOptions internal constructor(
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = this.dismissRequestWithExitOffering,
         customVariables: Map<String, CustomVariableValue> = this.customVariables,
         injectedWorkflow: WorkflowDataResult? = this.injectedWorkflow,
+        injectedWorkflowUiConfig: UiConfig = this.injectedWorkflowUiConfig,
     ): PaywallOptions = PaywallOptions(
         offeringSelection = offeringSelection,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
@@ -129,6 +135,7 @@ public class PaywallOptions internal constructor(
         dismissRequestWithExitOffering = dismissRequestWithExitOffering,
         customVariables = customVariables,
         injectedWorkflow = injectedWorkflow,
+        injectedWorkflowUiConfig = injectedWorkflowUiConfig,
     )
 
     @Suppress("TooManyFunctions")
@@ -144,6 +151,7 @@ public class PaywallOptions internal constructor(
         internal var dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null
         internal var customVariables: Map<String, CustomVariableValue> = emptyMap()
         internal var injectedWorkflow: WorkflowDataResult? = null
+        internal var injectedWorkflowUiConfig: UiConfig = UiConfig()
 
         public fun setOffering(offering: Offering?): Builder = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
@@ -213,11 +221,17 @@ public class PaywallOptions internal constructor(
          * The workflow's screens resolve their packages from [offering]; pass the single
          * offering the workflow references (prefer single-offering workflows in preview), or
          * null for workflows without an associated offering. This sets the offering for you,
-         * so there's no need to also call [setOffering].
+         * so there's no need to also call [setOffering]. Optionally pass [uiConfig] to style the
+         * injected workflow, since it no longer ships with its own `ui_config`.
          */
         @InternalRevenueCatAPI
-        public fun injectedWorkflow(workflow: WorkflowDataResult, offering: Offering?): Builder = apply {
+        public fun injectedWorkflow(
+            workflow: WorkflowDataResult,
+            offering: Offering?,
+            uiConfig: UiConfig = UiConfig(),
+        ): Builder = apply {
             this.injectedWorkflow = workflow
+            this.injectedWorkflowUiConfig = uiConfig
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
                 ?: OfferingSelection.None
         }
