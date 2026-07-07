@@ -7,7 +7,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 
 @Immutable
 internal data class WebViewComponentStyle(
-    val urlTemplate: String,
+    val url: String,
     override val visible: Boolean,
     override val size: Size,
 ) : ComponentStyle

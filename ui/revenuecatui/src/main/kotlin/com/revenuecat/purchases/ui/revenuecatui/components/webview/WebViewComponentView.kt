@@ -18,6 +18,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 
 @JvmSynthetic
 @Composable
+@Suppress("UnusedParameter")
 internal fun WebViewComponentView(
     style: WebViewComponentStyle,
     state: PaywallState.Loaded.Components,
@@ -25,11 +26,8 @@ internal fun WebViewComponentView(
 ) {
     if (!style.visible) return
 
-    // Key on state.locale (a derivedState over the paywall's mutable locale) as well: a locale change
-    // mutates the same PaywallState instance in place, so without it the resolved URL — and the
-    // key(resolvedUrl) below — would stay stale for a locale-dependent template.
-    val resolvedUrl = remember(style.urlTemplate, state, state.locale) {
-        WebViewUrlResolver.resolve(style.urlTemplate, state)
+    val resolvedUrl = remember(style.url) {
+        WebViewUrlResolver.resolve(style.url)
     }
     // The web view URL is missing or did not resolve to a valid HTTPS URL with a host. web_view
     // availability is gated by SDK version on the frontend, so a delivered web_view is expected to
@@ -39,13 +37,13 @@ internal fun WebViewComponentView(
     // Key on the resolved URL so the WebView is created (and the page loaded) exactly once per intended
     // URL. We deliberately do NOT reload on every recomposition: in-page navigation changes WebView.url,
     // and reloading whenever it differs from resolvedUrl would reset a multi-step web flow. The WebView
-    // is only recreated when the SDK-resolved URL itself changes (e.g. a locale-dependent template).
+    // is only recreated when the SDK-resolved URL itself changes.
     key(resolvedUrl) {
         AndroidView(
             factory = { context ->
                 WebView(context).apply {
                     configure()
-                    loadUrl(resolvedUrl.toString())
+                    loadUrl(resolvedUrl)
                 }
             },
             onRelease = { webView ->

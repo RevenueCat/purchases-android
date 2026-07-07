@@ -586,7 +586,7 @@ internal class StyleFactory(
     ): Result<WebViewComponentStyle, NonEmptyList<PaywallValidationError>> =
         Result.Success(
             WebViewComponentStyle(
-                urlTemplate = component.url,
+                url = component.url,
                 visible = component.visible ?: DEFAULT_VISIBILITY,
                 size = component.size,
             ),

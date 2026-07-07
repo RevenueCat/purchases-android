@@ -133,7 +133,7 @@ class StyleFactoryTests {
 
         assertThat(result).isInstanceOf(Result.Success::class.java)
         val style = (result as Result.Success).value.componentStyle as WebViewComponentStyle
-        assertThat(style.urlTemplate).isEqualTo("https://paywalls.revenuecat.com/{{ custom.animal }}.html")
+        assertThat(style.url).isEqualTo("https://paywalls.revenuecat.com/{{ custom.animal }}.html")
         assertThat(style.visible).isFalse()
         assertThat(style.size).isEqualTo(size)
     }
