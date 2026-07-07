@@ -3,10 +3,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 /**
- * Fixed Content-Security-Policy used to isolate Paywalls V2 `web_view` content from external sources
- * (v1 behavior, applied whenever the component declares a `protocol_version`). The bundle must be
- * fully self-contained: it may use its own packaged and inlined resources, but cannot reach any
- * external origin.
+ * Fixed Content-Security-Policy used to isolate Paywalls V2 `web_view` content from external sources.
+ * The bundle must be fully self-contained: it may use its own packaged and inlined resources, but
+ * cannot reach any external origin.
  *
  * - `img-src 'self' data:` / `font-src 'self' data:`: same-origin and inlined (`data:`) images/fonts
  *   are allowed (self-contained bundles routinely inline assets); remote images/fonts are blocked.
@@ -31,19 +30,22 @@ internal const val WEB_VIEW_CONTENT_SECURITY_POLICY: String =
 
 /**
  * Builds the document-start script that installs [policy] as a `<meta http-equiv>` Content-Security-
- * Policy. Injected from `WebViewClient.onPageStarted` (before the page's own scripts run) and inserted
- * as the first child of `<head>` so it precedes any resource-loading markup. The install is idempotent
- * via a window flag, so re-injection on redirects is a no-op.
+ * Policy. Injected from `WebViewClient.onPageStarted` (before the page's own scripts run) and retried
+ * from `onPageFinished` when `<head>` was not yet available. The meta is inserted as the first child
+ * of `<head>` so it precedes resource-loading markup. The install is idempotent via a window flag that
+ * is set only after a successful `<head>` insertion (CSP metas outside `<head>` are ignored by
+ * browsers).
  */
 internal fun contentSecurityPolicyMetaScript(policy: String = WEB_VIEW_CONTENT_SECURITY_POLICY): String =
     """
     (function() {
         if (window.__revenueCatCspInstalled) { return; }
+        var head = document.head || document.getElementsByTagName('head')[0];
+        if (!head) { return; }
         window.__revenueCatCspInstalled = true;
         var meta = document.createElement('meta');
         meta.setAttribute('http-equiv', 'Content-Security-Policy');
         meta.setAttribute('content', "${policy.escapeForMetaContent()}");
-        var head = document.head || document.getElementsByTagName('head')[0] || document.documentElement;
         if (head.firstChild) { head.insertBefore(meta, head.firstChild); } else { head.appendChild(meta); }
     })();
     """.trimIndent()

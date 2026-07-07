@@ -37,21 +37,32 @@ class WebViewContentSecurityPolicyTest {
     }
 
     @Test
-    fun `meta script installs the policy as an http-equiv meta element`() {
+    fun `meta script installs the policy as an http-equiv meta element in head`() {
         val script = contentSecurityPolicyMetaScript("default-src 'self'")
 
         assertThat(script).contains("http-equiv")
         assertThat(script).contains("Content-Security-Policy")
         assertThat(script).contains("default-src 'self'")
-        // Inserted before any other markup so it precedes resource-loading elements.
         assertThat(script).contains("insertBefore")
+        assertThat(script).contains("document.head")
     }
 
     @Test
-    fun `meta script is idempotent via a window flag`() {
+    fun `meta script does not set installed flag when head is missing`() {
+        val script = contentSecurityPolicyMetaScript()
+
+        assertThat(script).contains("if (!head) { return; }")
+        assertThat(script).doesNotContain("document.documentElement")
+    }
+
+    @Test
+    fun `meta script is idempotent via a window flag set only after head insertion`() {
         val script = contentSecurityPolicyMetaScript()
 
         assertThat(script).contains("__revenueCatCspInstalled")
+        assertThat(script).contains("if (!head) { return; }")
+        assertThat(script.indexOf("window.__revenueCatCspInstalled = true"))
+            .isGreaterThan(script.indexOf("if (!head)"))
     }
 
     @Test

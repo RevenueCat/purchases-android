@@ -11,9 +11,8 @@ internal data class WebViewComponentStyle(
     override val visible: Boolean,
     override val size: Size,
     /**
-     * The schema-declared `protocol_version`. When present, the SDK isolates the web content from
-     * external sources by enforcing a fixed Content-Security-Policy. `null` for legacy/partial configs
-     * that omit it, in which case no policy is enforced.
+     * The schema-declared `protocol_version`. The backend always sends this field (required, strictly 1).
+     * When absent in legacy configs it is treated as 1. Content-Security-Policy is always applied.
      */
     val protocolVersion: Int? = null,
 ) : ComponentStyle
