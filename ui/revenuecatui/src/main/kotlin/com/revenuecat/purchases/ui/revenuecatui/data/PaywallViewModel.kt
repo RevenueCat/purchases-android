@@ -849,9 +849,10 @@ internal class PaywallViewModelImpl(
     }
 
     private suspend fun presentWorkflow(offering: Offering, preloadedOfferings: Offerings?) {
-        // Prefer the configured workflow id, which aligns with the prefetch cache key. Fall back to
-        // the offering id, which the backend lazily converts into a workflow for paywalls not yet
-        // converted to a workflow.
+        // Resolve the offering to its configured workflow id, which aligns with the prefetch cache key.
+        // An offering with no configured workflow resolves to null and falls through as its own id;
+        // getWorkflow then reports it unavailable, since the config path has no backend lazy
+        // offering→workflow conversion.
         val workflowIdentifier = purchases.workflowIdForOfferingId(offering.identifier) ?: offering.identifier
         coroutineScope {
             val workflowDeferred = async { purchases.awaitGetWorkflow(workflowIdentifier) }
