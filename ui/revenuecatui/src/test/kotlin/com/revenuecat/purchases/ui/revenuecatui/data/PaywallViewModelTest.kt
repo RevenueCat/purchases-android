@@ -37,7 +37,6 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
-import com.revenuecat.purchases.common.workflows.WorkflowDataResult
 import com.revenuecat.purchases.common.workflows.WorkflowScreen
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTrigger
@@ -234,6 +233,7 @@ class PaywallViewModelTest {
         every { purchases.preferredUILocaleOverride } returns null
         every { purchases.useWorkflows } returns false
         every { purchases.workflowIdForOfferingId(any()) } returns null
+        coEvery { purchases.awaitGetUiConfig() } returns UiConfig()
 
         every { listener.onPurchaseStarted(any()) } just runs
         every { listener.onPurchaseCompleted(any(), any()) } just runs
@@ -1427,7 +1427,7 @@ class PaywallViewModelTest {
             uiConfig = UiConfig(),
         )
         every { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns "wfl-test"
-        coEvery { purchases.awaitGetWorkflow("wfl-test") } returns WorkflowDataResult(workflow, null)
+        coEvery { purchases.awaitGetWorkflow("wfl-test") } returns workflow
 
         val model = PaywallViewModelImpl(
             MockResourceProvider(),
@@ -1486,7 +1486,7 @@ class PaywallViewModelTest {
             uiConfig = UiConfig(),
         )
         every { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns "wfl-test"
-        coEvery { purchases.awaitGetWorkflow("wfl-test") } returns WorkflowDataResult(workflow, null)
+        coEvery { purchases.awaitGetWorkflow("wfl-test") } returns workflow
 
         val model = PaywallViewModelImpl(
             MockResourceProvider(),
@@ -3077,7 +3077,7 @@ class PaywallViewModelTest {
             purchases,
             PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
                 .setListener(listener)
-                .injectedWorkflow(WorkflowDataResult(workflow, null), defaultOffering)
+                .injectedWorkflow(workflow, defaultOffering, UiConfig())
                 .build(),
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
@@ -3158,7 +3158,7 @@ class PaywallViewModelTest {
             screens = mapOf("screen-1" to workflowScreen),
             uiConfig = UiConfig(),
         )
-        coEvery { purchases.awaitGetWorkflow(workflowId) } returns WorkflowDataResult(workflow, null)
+        coEvery { purchases.awaitGetWorkflow(workflowId) } returns workflow
 
         val model = PaywallViewModelImpl(
             MockResourceProvider(),
@@ -3208,7 +3208,7 @@ class PaywallViewModelTest {
             screens = mapOf("screen-1" to workflowScreen),
             uiConfig = UiConfig(),
         )
-        coEvery { purchases.awaitGetWorkflow(offeringWithWPL.identifier) } returns WorkflowDataResult(workflow, null)
+        coEvery { purchases.awaitGetWorkflow(offeringWithWPL.identifier) } returns workflow
 
         val model = PaywallViewModelImpl(
             MockResourceProvider(),

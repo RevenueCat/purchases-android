@@ -67,7 +67,7 @@ internal class WorkflowManager(
         appUserID: String,
         workflowOrOfferingId: String,
         appInBackground: Boolean,
-        onSuccess: (WorkflowDataResult) -> Unit,
+        onSuccess: (PublishedWorkflow) -> Unit,
         onError: (PurchasesError) -> Unit,
         callbackDispatcher: Dispatcher? = null,
         persistEnvelopeOnResolve: Boolean = false,
@@ -145,7 +145,7 @@ internal class WorkflowManager(
         callbackDispatcher: Dispatcher?,
         persistEnvelopeOnResolve: Boolean,
         offeringIdToRecordOnResolve: String?,
-        onSuccess: (WorkflowDataResult) -> Unit,
+        onSuccess: (PublishedWorkflow) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         val onSuccessHandler: (WorkflowDetailResponse) -> Unit = { response ->
@@ -163,7 +163,7 @@ internal class WorkflowManager(
                 }
                 cacheResolvedWorkflow(result, response, persistEnvelopeOnResolve, offeringIdToRecordOnResolve)
                 scope.launch {
-                    runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(result.workflow) }
+                    runCatching { workflowAssetPreDownloader.preDownloadWorkflowAssets(result) }
                         .onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
                 }
                 onSuccess(result)
@@ -216,12 +216,12 @@ internal class WorkflowManager(
      * the next render refetches.
      */
     private fun cacheResolvedWorkflow(
-        result: WorkflowDataResult,
+        result: PublishedWorkflow,
         response: WorkflowDetailResponse,
         persistEnvelopeOnResolve: Boolean,
         offeringIdToRecordOnResolve: String?,
     ) {
-        val resolvedWorkflowId = result.workflow.id
+        val resolvedWorkflowId = result.id
         if (resolvedWorkflowId.isEmpty()) {
             errorLog { "Workflow resolved with an empty id; serving it without caching." }
             return
@@ -251,7 +251,7 @@ internal class WorkflowManager(
     private suspend fun resolveDiskFallback(
         workflowId: String,
         networkError: PurchasesError,
-        onSuccess: (WorkflowDataResult) -> Unit,
+        onSuccess: (PublishedWorkflow) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         val envelope = workflowsCache.cachedWorkflowDetailEnvelopeFromDisk(workflowId)

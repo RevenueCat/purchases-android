@@ -40,6 +40,7 @@ import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetc
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDiskCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
@@ -274,7 +275,13 @@ internal class PurchasesFactory(
 
             val workflowsCache = if (appConfig.useWorkflows) WorkflowsCache(deviceCache = cache) else null
 
-            val remoteConfigManager = if (BuildConfig.ENABLE_REMOTE_CONFIG && !appConfig.customEntitlementComputation) {
+            // useWorkflows implies the config layer: workflow rendering reads ui_config from `/v1/config`, so
+            // the manager must exist whenever workflows are on, not only when the standalone flag is set.
+            // Neither flag applies to the customEntitlementComputation flavor, which doesn't serve paywalls
+            // this way.
+            val remoteConfigManager = if (
+                (BuildConfig.ENABLE_REMOTE_CONFIG || appConfig.useWorkflows) && !appConfig.customEntitlementComputation
+            ) {
                 RemoteConfigManager(
                     backend = backend,
                     diskCache = RemoteConfigDiskCache(contextForStorage),
@@ -285,6 +292,8 @@ internal class PurchasesFactory(
             } else {
                 null
             }
+
+            val uiConfigProvider = remoteConfigManager?.let { UiConfigProvider(it) }
 
             val identityManager = IdentityManager(
                 cache,
@@ -492,6 +501,7 @@ internal class PurchasesFactory(
                 workflowManager = workflowManager,
                 fileRepository = fileRepository,
                 remoteConfigManager = remoteConfigManager,
+                uiConfigProvider = uiConfigProvider,
             )
 
             return Purchases(purchasesOrchestrator)

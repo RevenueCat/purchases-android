@@ -50,9 +50,10 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
-import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
@@ -162,6 +163,7 @@ internal class PurchasesOrchestrator(
     private val backupManager: BackupManager = BackupManager(application),
     val fileRepository: FileRepository = DefaultFileRepository(application),
     private val remoteConfigManager: RemoteConfigManager? = null,
+    private val uiConfigProvider: UiConfigProvider? = null,
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
@@ -576,7 +578,7 @@ internal class PurchasesOrchestrator(
 
     fun getWorkflow(
         workflowId: String,
-        onSuccess: (WorkflowDataResult) -> Unit,
+        onSuccess: (PublishedWorkflow) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         // Deliver every outcome through dispatch so the callback always lands on the main thread,
@@ -618,6 +620,19 @@ internal class PurchasesOrchestrator(
 
     fun workflowIdForOfferingId(offeringId: String): String? =
         workflowManager?.workflowIdForOfferingId(offeringId)
+
+    suspend fun getUiConfig(): UiConfig {
+        val provider = uiConfigProvider
+        if (appConfig.uiPreviewMode || provider == null) {
+            val message = if (appConfig.uiPreviewMode) {
+                "UI config cannot be fetched in UI preview mode."
+            } else {
+                "UI config is not enabled."
+            }
+            throw PurchasesException(PurchasesError(PurchasesErrorCode.ConfigurationError, message))
+        }
+        return provider.getUiConfig()
+    }
 
     fun getProducts(
         productIds: List<String>,

@@ -22,7 +22,7 @@ import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
-import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
@@ -417,13 +417,18 @@ public class Purchases internal constructor(
     @Throws(PurchasesException::class)
     public suspend fun awaitGetWorkflow(
         workflowId: String,
-    ): WorkflowDataResult = suspendCoroutine { continuation ->
+    ): PublishedWorkflow = suspendCoroutine { continuation ->
         purchasesOrchestrator.getWorkflow(
             workflowId = workflowId,
             onSuccess = continuation::resume,
             onError = { continuation.resumeWithException(PurchasesException(it)) },
         )
     }
+
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    @Throws(PurchasesException::class)
+    public suspend fun awaitGetUiConfig(): UiConfig = purchasesOrchestrator.getUiConfig()
 
     @InternalRevenueCatAPI
     public fun workflowIdForOfferingId(offeringId: String): String? =
