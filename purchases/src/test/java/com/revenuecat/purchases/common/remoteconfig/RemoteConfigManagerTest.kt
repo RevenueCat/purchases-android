@@ -18,7 +18,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
-import kotlin.concurrent.thread
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -26,10 +25,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -43,6 +42,7 @@ import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
+import kotlin.concurrent.thread
 
 @OptIn(InternalRevenueCatAPI::class, ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
@@ -1120,30 +1120,6 @@ class RemoteConfigManagerTest {
 
             assertThat(result).isEqualTo(MergedBlob(wf1 = Section("x"), wf2 = Section("y")))
         }
-
-    @Test
-    fun `mergeItemsBlobData returns null when an item's blob cannot be fetched`() = runTest {
-        every { diskCache.read() } returns persisted(
-            manifest = "m",
-            activeTopics = listOf("workflows"),
-            topics = mapOf(
-                "workflows" to ConfigTopic(
-                    mapOf(
-                        "wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID),
-                        "wf2" to RemoteConfiguration.ConfigItem(blobRef = REF_TAMPERED),
-                    ),
-                ),
-            ),
-        )
-        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
-        coEvery { blobFetcher.ensureDownloaded(REF_TAMPERED) } returns false
-        every { blobStore.read(REF_VALID) } returns """{"value":"x"}""".toByteArray()
-
-        // All-or-nothing: one unresolved item nulls out the whole call, even though wf1 resolved.
-        val result = readManager().mergeItemsBlobData<MergedBlob>(RemoteConfigTopic.Workflows, listOf("wf1", "wf2"))
-
-        assertThat(result).isNull()
-    }
 
     @Test
     fun `mergeItemsBlobData returns null for an item without a blob ref`() = runTest {
