@@ -57,9 +57,7 @@ internal fun Modifier.background(
                 .drawImageBehind(
                     painter = background.painter,
                     contentScale = background.contentScale,
-                    // Center the image so that when it's scaled to cover (Crop/fill) and overflows the
-                    // container, it's cropped equally on all sides and the middle stays visible.
-                    alignment = Alignment.Center,
+                    alignment = Alignment.TopCenter,
                 )
         is BackgroundStyle.Video ->
             // Video backgrounds are handled specially - they need to be rendered
@@ -69,7 +67,7 @@ internal fun Modifier.background(
 
 /**
  * Draws [painter] behind the content, scaled by [contentScale] and positioned by [alignment] within
- * the node's already-measured bounds, then draws the content on top. Unlike [Modifier.paint] this is
+ * the node's already-measured bounds, then draws the content on top. Unlike `Modifier.paint` this is
  * a pure draw modifier: it never contributes to layout, so the background can never resize the
  * element it decorates. The drawing logic mirrors `PainterModifier.draw`; clipping to the desired
  * shape is expected to be applied by the caller (see [background]).
