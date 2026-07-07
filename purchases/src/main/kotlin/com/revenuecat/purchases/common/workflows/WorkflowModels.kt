@@ -167,7 +167,6 @@ public data class WorkflowExitOffer(
 @InternalRevenueCatAPI
 public data class WorkflowDataResult(
     val workflow: PublishedWorkflow,
-    val enrolledVariants: Map<String, String>?,
 )
 
 @Serializable
@@ -185,8 +184,6 @@ internal data class WorkflowDetailResponse(
     val data: PublishedWorkflow? = null,
     val url: String? = null,
     val hash: String? = null,
-    @SerialName("enrolled_variants")
-    val enrolledVariants: Map<String, String>? = null,
 )
 
 @Serializable

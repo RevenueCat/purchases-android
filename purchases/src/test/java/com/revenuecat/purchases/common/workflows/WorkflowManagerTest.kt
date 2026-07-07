@@ -81,7 +81,6 @@ class WorkflowManagerTest {
         )
         val expectedResult = WorkflowDataResult(
             workflow = response.data!!,
-            enrolledVariants = null,
         )
         coEvery { mockResolver.resolve(response) } returns expectedResult
 
@@ -245,7 +244,6 @@ class WorkflowManagerTest {
         )
         val expectedResult = WorkflowDataResult(
             workflow = response.data!!,
-            enrolledVariants = null,
         )
         coEvery { mockResolver.resolve(response) } returns expectedResult
         every {
@@ -318,7 +316,7 @@ class WorkflowManagerTest {
             url = "https://cdn/wf_1.json",
             hash = "h",
         )
-        val expectedResult = WorkflowDataResult(workflow = workflowMock(), enrolledVariants = null)
+        val expectedResult = WorkflowDataResult(workflow = workflowMock())
         coEvery { mockResolver.resolve(envelope) } returns expectedResult
 
         // Disk holds one envelope for wf_1
@@ -374,7 +372,7 @@ class WorkflowManagerTest {
             url = "https://cdn/wf.json",
             hash = "h",
         )
-        val recovered = WorkflowDataResult(workflow = workflowMock(workflowId), enrolledVariants = null)
+        val recovered = WorkflowDataResult(workflow = workflowMock(workflowId))
         coEvery { mockResolver.resolve(envelope) } returns recovered
         every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
             """{"$workflowId":{"action":"use_cdn","url":"https://cdn/wf.json","hash":"h"}}"""
@@ -417,7 +415,7 @@ class WorkflowManagerTest {
             url = "https://cdn/wf.json",
             hash = "h",
         )
-        val recovered = WorkflowDataResult(workflow = workflowMock(resolvedWorkflowId), enrolledVariants = null)
+        val recovered = WorkflowDataResult(workflow = workflowMock(resolvedWorkflowId))
         coEvery { mockResolver.resolve(envelope) } returns recovered
         every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
             """{"$requestedWorkflowId":{"action":"use_cdn","url":"https://cdn/wf.json","hash":"h"}}"""
@@ -573,7 +571,7 @@ class WorkflowManagerTest {
     @Test
     fun `getWorkflow caches result on success`() {
         val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = workflowMock())
-        val expectedResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+        val expectedResult = WorkflowDataResult(workflow = response.data!!)
         coEvery { mockResolver.resolve(response) } returns expectedResult
 
         val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
@@ -601,7 +599,7 @@ class WorkflowManagerTest {
     @Test
     fun `getWorkflow returns cached result without calling backend when cache is fresh`() {
         val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = workflowMock())
-        val expectedResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+        val expectedResult = WorkflowDataResult(workflow = response.data!!)
         coEvery { mockResolver.resolve(response) } returns expectedResult
 
         val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
@@ -649,8 +647,8 @@ class WorkflowManagerTest {
     @Test
     fun `getWorkflow refreshes in the background and still re-fetches when cache is stale`() {
         val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = workflowMock())
-        val firstResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
-        val secondResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+        val firstResult = WorkflowDataResult(workflow = response.data!!)
+        val secondResult = WorkflowDataResult(workflow = response.data!!)
 
         val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
         every {
@@ -702,8 +700,8 @@ class WorkflowManagerTest {
     @Test
     fun `getWorkflow stale hit serves the cached value and refreshes the cache in the background`() {
         val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = workflowMock())
-        val staleResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
-        val refreshedResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+        val staleResult = WorkflowDataResult(workflow = response.data!!)
+        val refreshedResult = WorkflowDataResult(workflow = response.data!!)
 
         val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
         every {
@@ -758,7 +756,7 @@ class WorkflowManagerTest {
     @Test
     fun `getWorkflow stale hit does not surface a failing background refresh to the caller`() {
         val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = workflowMock())
-        val staleResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+        val staleResult = WorkflowDataResult(workflow = response.data!!)
         coEvery { mockResolver.resolve(response) } returns staleResult
 
         // First backend call succeeds (populates the cache); the second fails (background refresh).
@@ -818,7 +816,7 @@ class WorkflowManagerTest {
         // older prefetched envelope over a newer on-demand value) is bounded and self-healing, closed
         // by the on-demand envelope persistence + LRU follow-up.
         val inlineResponse = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = workflowMock())
-        val staleResult = WorkflowDataResult(workflow = inlineResponse.data!!, enrolledVariants = null)
+        val staleResult = WorkflowDataResult(workflow = inlineResponse.data!!)
         coEvery { mockResolver.resolve(inlineResponse) } returns staleResult
 
         // A distinct value persisted on disk, which the failed refresh should recover and re-pin.
@@ -827,7 +825,7 @@ class WorkflowManagerTest {
             url = "https://cdn/wf_1.json",
             hash = "h",
         )
-        val diskResult = WorkflowDataResult(workflow = workflowMock(), enrolledVariants = null)
+        val diskResult = WorkflowDataResult(workflow = workflowMock())
         coEvery { mockResolver.resolve(diskEnvelope) } returns diskResult
         every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
             """{"wf_1":{"action":"use_cdn","url":"https://cdn/wf_1.json","hash":"h"}}"""
@@ -907,8 +905,8 @@ class WorkflowManagerTest {
     @Test
     fun `getWorkflow with staleWhileRevalidate false blocks on the refetch instead of serving stale`() {
         val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = workflowMock())
-        val staleResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
-        val refreshedResult = WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+        val staleResult = WorkflowDataResult(workflow = response.data!!)
+        val refreshedResult = WorkflowDataResult(workflow = response.data!!)
 
         val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
         every {
@@ -961,7 +959,7 @@ class WorkflowManagerTest {
         val mockWorkflow = mockk<PublishedWorkflow>()
         every { mockWorkflow.id } returns realWorkflowId
         val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockWorkflow)
-        val expectedResult = WorkflowDataResult(workflow = mockWorkflow, enrolledVariants = null)
+        val expectedResult = WorkflowDataResult(workflow = mockWorkflow)
         coEvery { mockResolver.resolve(response) } returns expectedResult
 
         val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
@@ -1020,7 +1018,7 @@ class WorkflowManagerTest {
         // ask must resolve through the map and hit the cached entry instead of firing a fresh fetch.
         val offeringId = "my-offering"
         val workflowId = "wfl-real-id"
-        val prefetched = WorkflowDataResult(workflow = mockk(relaxed = true), enrolledVariants = null)
+        val prefetched = WorkflowDataResult(workflow = mockk(relaxed = true))
         workflowsCache.cacheWorkflowsListInMemory(
             WorkflowsListResponse(workflows = emptyList()),
             mapOf(offeringId to workflowId),
@@ -1057,7 +1055,7 @@ class WorkflowManagerTest {
             data = workflowMock(resolvedWorkflowId),
         )
         coEvery { mockResolver.resolve(response) } returns
-            WorkflowDataResult(workflow = response.data!!, enrolledVariants = null)
+            WorkflowDataResult(workflow = response.data!!)
 
         val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
         every {
@@ -1111,7 +1109,7 @@ class WorkflowManagerTest {
         val mockWorkflow = mockk<PublishedWorkflow>()
         every { mockWorkflow.id } returns ""
         val response = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockWorkflow)
-        val expectedResult = WorkflowDataResult(workflow = mockWorkflow, enrolledVariants = null)
+        val expectedResult = WorkflowDataResult(workflow = mockWorkflow)
         coEvery { mockResolver.resolve(response) } returns expectedResult
 
         val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
@@ -1216,7 +1214,7 @@ class WorkflowManagerTest {
         )
         val envelope = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk(relaxed = true))
         coEvery { mockResolver.resolve(envelope) } returns
-            WorkflowDataResult(workflow = envelope.data!!, enrolledVariants = null)
+            WorkflowDataResult(workflow = envelope.data!!)
         every {
             mockBackend.getWorkflows(any(), any(), type = any(), onSuccess = any(), onError = any())
         } answers {
@@ -1267,7 +1265,7 @@ class WorkflowManagerTest {
             ),
         )
         val envelope = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = workflowMock())
-        val expectedResult = WorkflowDataResult(workflow = envelope.data!!, enrolledVariants = null)
+        val expectedResult = WorkflowDataResult(workflow = envelope.data!!)
         coEvery { mockResolver.resolve(envelope) } returns expectedResult
         every {
             mockBackend.getWorkflow(
@@ -1955,7 +1953,7 @@ class WorkflowManagerTest {
             hash = "h",
         )
         coEvery { mockResolver.resolve(envelope) } returns
-            WorkflowDataResult(workflow = workflowMock(), enrolledVariants = null)
+            WorkflowDataResult(workflow = workflowMock())
 
         val listResponse = WorkflowsListResponse(
             workflows = listOf(
@@ -1991,7 +1989,7 @@ class WorkflowManagerTest {
     fun `prefetch persists the envelope even when the workflow is already cached but stale`() {
         // Seed the detail cache at t=0 so the workflow is present but will be stale at prefetch time.
         every { mockDateProvider.now } returns Date(0)
-        workflowsCache.cacheWorkflow("wf_1", WorkflowDataResult(workflow = mockk(relaxed = true), enrolledVariants = null))
+        workflowsCache.cacheWorkflow("wf_1", WorkflowDataResult(workflow = mockk(relaxed = true)))
 
         // Advance past the 5-minute TTL: the prefetch now sees a stale-but-present cache entry.
         // With SWR disabled on the prefetch path it must still do a real fetch and persist, not serve stale.
@@ -2003,7 +2001,7 @@ class WorkflowManagerTest {
             hash = "h",
         )
         coEvery { mockResolver.resolve(envelope) } returns
-            WorkflowDataResult(workflow = workflowMock(), enrolledVariants = null)
+            WorkflowDataResult(workflow = workflowMock())
 
         val listResponse = WorkflowsListResponse(
             workflows = listOf(
@@ -2050,7 +2048,7 @@ class WorkflowManagerTest {
     fun `on-demand getWorkflow does not persist the envelope`() {
         val envelope = WorkflowDetailResponse(action = WorkflowResponseAction.INLINE, data = mockk(relaxed = true))
         coEvery { mockResolver.resolve(envelope) } returns
-            WorkflowDataResult(workflow = envelope.data!!, enrolledVariants = null)
+            WorkflowDataResult(workflow = envelope.data!!)
 
         val successSlot = slot<(WorkflowDetailResponse) -> Unit>()
         every {
@@ -2117,7 +2115,7 @@ class WorkflowManagerTest {
             url = "https://cdn/wf_1.json",
             hash = "h",
         )
-        val resolved = WorkflowDataResult(workflow = workflowMock(), enrolledVariants = null)
+        val resolved = WorkflowDataResult(workflow = workflowMock())
         coEvery { mockResolver.resolve(envelope) } returns resolved
         // Persisting blows up at the DeviceCache layer.
         every { mockDeviceCache.cacheWorkflowDetailEnvelopes(any()) } throws IOException("disk full")
@@ -2174,7 +2172,7 @@ class WorkflowManagerTest {
             url = "https://cdn/wf_1.json",
             hash = "h",
         )
-        val diskResult = WorkflowDataResult(workflow = workflowMock(), enrolledVariants = null)
+        val diskResult = WorkflowDataResult(workflow = workflowMock())
         coEvery { mockResolver.resolve(diskEnvelope) } returns diskResult
         every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
             """{"wf_1":{"action":"use_cdn","url":"https://cdn/wf_1.json","hash":"h"}}"""
@@ -2226,7 +2224,7 @@ class WorkflowManagerTest {
         every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
             """{"wf_1":{"action":"use_cdn","url":"https://cdn/wf_1.json","hash":"h"}}"""
 
-        val restored = WorkflowDataResult(workflow = mockk(relaxed = true), enrolledVariants = mapOf("e" to "v"))
+        val restored = WorkflowDataResult(workflow = mockk(relaxed = true))
         coEvery {
             mockResolver.resolve(
                 WorkflowDetailResponse(action = WorkflowResponseAction.USE_CDN, url = "https://cdn/wf_1.json", hash = "h"),
@@ -2260,7 +2258,7 @@ class WorkflowManagerTest {
         every { mockDeviceCache.getWorkflowDetailEnvelopesCache() } returns
             """{"wf_ok":{"action":"use_cdn","url":"u_ok","hash":"h"},"wf_bad":{"action":"use_cdn","url":"u_bad","hash":"h"}}"""
 
-        val okResult = WorkflowDataResult(workflow = mockk(relaxed = true), enrolledVariants = null)
+        val okResult = WorkflowDataResult(workflow = mockk(relaxed = true))
         coEvery {
             mockResolver.resolve(WorkflowDetailResponse(action = WorkflowResponseAction.USE_CDN, url = "u_ok", hash = "h"))
         } returns okResult

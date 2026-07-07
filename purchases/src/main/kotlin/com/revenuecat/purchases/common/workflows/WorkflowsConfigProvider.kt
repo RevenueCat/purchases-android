@@ -50,9 +50,7 @@ internal class WorkflowsConfigProvider(
         return try {
             val workflow = WorkflowJsonParser.parsePublishedWorkflow(body.decodeToString())
             debugLog { "Parsed workflow '$workflowId' (${workflow.steps.size} step(s))" }
-            // enrolled_variants is out of scope for this spike; it does not fit the topic-dedup model and is
-            // being designed separately.
-            WorkflowDataResult(workflow = workflow, enrolledVariants = null)
+            WorkflowDataResult(workflow = workflow)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             errorLog(e) { "Failed to parse workflow '$workflowId' body." }
             null

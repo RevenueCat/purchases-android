@@ -193,7 +193,7 @@ class PaywallViewModelWorkflowTest {
             webCheckoutURL = null,
         )
         val offerings = Offerings(offering, mapOf(offeringId to offering))
-        return WorkflowDataResult(workflow = wfl, enrolledVariants = null) to offerings
+        return WorkflowDataResult(workflow = wfl) to offerings
     }
 
     private fun screenTypeMetadata(vararg types: String): JsonObject =
@@ -244,7 +244,7 @@ class PaywallViewModelWorkflowTest {
             webCheckoutURL = null,
         )
         val offerings = Offerings(offering, mapOf(offeringId to offering))
-        return WorkflowDataResult(workflow = wfl, enrolledVariants = null) to offerings
+        return WorkflowDataResult(workflow = wfl) to offerings
     }
 
     // Workflow rendering no longer reads `workflow.uiConfig`: startWorkflowPresentationFromResult now takes it
@@ -263,7 +263,7 @@ class PaywallViewModelWorkflowTest {
         metadata = emptyMap(),
         singleStepFallbackId = "step-1",
     )
-    private val fetchResult = WorkflowDataResult(workflow = workflow, enrolledVariants = null)
+    private val fetchResult = WorkflowDataResult(workflow = workflow)
 
     private val testOffering = Offering(
         identifier = offeringId,
@@ -316,7 +316,6 @@ class PaywallViewModelWorkflowTest {
     )
     private val fetchResultWithExitOffer = WorkflowDataResult(
         workflow = workflowWithExitOffer,
-        enrolledVariants = null,
     )
 
     private val singleStep = WorkflowStep(
@@ -339,7 +338,6 @@ class PaywallViewModelWorkflowTest {
     )
     private val singleStepFetchResultWithExitOffer = WorkflowDataResult(
         workflow = singleStepWorkflowWithExitOffer,
-        enrolledVariants = null,
     )
 
     // Exit offer is on step-1's screen, not step-2's (the terminal step). Without
@@ -359,7 +357,6 @@ class PaywallViewModelWorkflowTest {
     )
     private val fetchResultWithFallback = WorkflowDataResult(
         workflow = workflowWithFallbackPointingToFirstStep,
-        enrolledVariants = null,
     )
 
     // An offering with no packages — validateStep passes but calculateState returns PaywallState.Error.
@@ -440,7 +437,7 @@ class PaywallViewModelWorkflowTest {
         uiConfig = UiConfig(),
         metadata = emptyMap(),
     )
-    private val fetchResultFailingInitial = WorkflowDataResult(workflow = workflowFailingInitial, enrolledVariants = null)
+    private val fetchResultFailingInitial = WorkflowDataResult(workflow = workflowFailingInitial)
 
     private val workflowToError = PublishedWorkflow(
         id = "wfl-to-error",
@@ -451,7 +448,7 @@ class PaywallViewModelWorkflowTest {
         uiConfig = UiConfig(),
         metadata = emptyMap(),
     )
-    private val fetchResultToError = WorkflowDataResult(workflow = workflowToError, enrolledVariants = null)
+    private val fetchResultToError = WorkflowDataResult(workflow = workflowToError)
 
 
     @Before
@@ -835,7 +832,7 @@ class PaywallViewModelWorkflowTest {
             webCheckoutURL = null,
         )
         val threeStepOfferings = Offerings(threeStepOffering, mapOf(threeStepOfferingId to threeStepOffering))
-        val wflResult = WorkflowDataResult(workflow = threeStepWorkflow, enrolledVariants = null)
+        val wflResult = WorkflowDataResult(workflow = threeStepWorkflow)
 
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(wflResult, threeStepOfferings, null, uiConfig)
@@ -1155,7 +1152,7 @@ class PaywallViewModelWorkflowTest {
 
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(
-            WorkflowDataResult(workflowWithFailingInitialAndSuccessfulFallback, enrolledVariants = null),
+            WorkflowDataResult(workflowWithFailingInitialAndSuccessfulFallback),
             testOfferingsWithEmpty,
             null,
             uiConfig,
@@ -1737,7 +1734,6 @@ class PaywallViewModelWorkflowTest {
                 singleStepFallbackId = "step-1",
                 steps = sharedScreenSteps,
             ),
-            enrolledVariants = null,
         )
         val step2Result = WorkflowDataResult(
             workflow = workflow.copy(
@@ -1745,7 +1741,6 @@ class PaywallViewModelWorkflowTest {
                 singleStepFallbackId = "step-2",
                 steps = sharedScreenSteps,
             ),
-            enrolledVariants = null,
         )
 
         vm.startWorkflowPresentationFromResult(step1Result, testOfferings, null, uiConfig)
@@ -1788,7 +1783,6 @@ class PaywallViewModelWorkflowTest {
                 singleStepFallbackId = "step-1",
                 steps = sharedScreenSteps,
             ),
-            enrolledVariants = null,
         )
         val step2Result = WorkflowDataResult(
             workflow = workflow.copy(
@@ -1796,7 +1790,6 @@ class PaywallViewModelWorkflowTest {
                 singleStepFallbackId = "step-2",
                 steps = sharedScreenSteps,
             ),
-            enrolledVariants = null,
         )
 
         vm.startWorkflowPresentationFromResult(step1Result, testOfferings, null, uiConfig)
@@ -1992,7 +1985,6 @@ class PaywallViewModelWorkflowTest {
                 screens = mapOf(screenId1 to makeScreen(screenId1)),
                 singleStepFallbackId = "step-only",
             ),
-            enrolledVariants = null,
         )
     }
 
@@ -2070,7 +2062,6 @@ class PaywallViewModelWorkflowTest {
         // non-fallback initial step.
         val untaggedMultiStep = WorkflowDataResult(
             workflow = workflow.copy(singleStepFallbackId = "step-2"),
-            enrolledVariants = null,
         )
         vm.startWorkflowPresentationFromResult(untaggedMultiStep, testOfferings, null, uiConfig)
         vm.trackPaywallImpressionIfNeeded()

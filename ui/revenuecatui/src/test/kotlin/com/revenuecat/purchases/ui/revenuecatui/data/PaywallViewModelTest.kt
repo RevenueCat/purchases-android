@@ -1428,7 +1428,7 @@ class PaywallViewModelTest {
             uiConfig = UiConfig(),
         )
         every { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns "wfl-test"
-        coEvery { purchases.awaitGetWorkflow("wfl-test") } returns WorkflowDataResult(workflow, null)
+        coEvery { purchases.awaitGetWorkflow("wfl-test") } returns WorkflowDataResult(workflow)
 
         val model = PaywallViewModelImpl(
             MockResourceProvider(),
@@ -1487,7 +1487,7 @@ class PaywallViewModelTest {
             uiConfig = UiConfig(),
         )
         every { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns "wfl-test"
-        coEvery { purchases.awaitGetWorkflow("wfl-test") } returns WorkflowDataResult(workflow, null)
+        coEvery { purchases.awaitGetWorkflow("wfl-test") } returns WorkflowDataResult(workflow)
 
         val model = PaywallViewModelImpl(
             MockResourceProvider(),
@@ -3078,7 +3078,7 @@ class PaywallViewModelTest {
             purchases,
             PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
                 .setListener(listener)
-                .injectedWorkflow(WorkflowDataResult(workflow, null), defaultOffering, UiConfig())
+                .injectedWorkflow(WorkflowDataResult(workflow), defaultOffering, UiConfig())
                 .build(),
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
@@ -3159,7 +3159,7 @@ class PaywallViewModelTest {
             screens = mapOf("screen-1" to workflowScreen),
             uiConfig = UiConfig(),
         )
-        coEvery { purchases.awaitGetWorkflow(workflowId) } returns WorkflowDataResult(workflow, null)
+        coEvery { purchases.awaitGetWorkflow(workflowId) } returns WorkflowDataResult(workflow)
 
         val model = PaywallViewModelImpl(
             MockResourceProvider(),
@@ -3209,7 +3209,7 @@ class PaywallViewModelTest {
             screens = mapOf("screen-1" to workflowScreen),
             uiConfig = UiConfig(),
         )
-        coEvery { purchases.awaitGetWorkflow(offeringWithWPL.identifier) } returns WorkflowDataResult(workflow, null)
+        coEvery { purchases.awaitGetWorkflow(offeringWithWPL.identifier) } returns WorkflowDataResult(workflow)
 
         val model = PaywallViewModelImpl(
             MockResourceProvider(),

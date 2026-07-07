@@ -245,7 +245,6 @@ class WorkflowsCacheTest {
             action = WorkflowResponseAction.USE_CDN,
             url = url,
             hash = hash,
-            enrolledVariants = mapOf("exp" to "variant_a"),
         )
 
     @Test
@@ -283,8 +282,8 @@ class WorkflowsCacheTest {
         val envelopes = workflowsCache.cachedWorkflowDetailEnvelopesFromDisk()
 
         assertThat(envelopes).containsKey("wf_1")
+        // The persisted payload includes enrolled_variants (written by an older SDK); it parses and is ignored.
         assertThat(envelopes!!.getValue("wf_1").url).isEqualTo("https://cdn/x.json")
-        assertThat(envelopes.getValue("wf_1").enrolledVariants).isEqualTo(mapOf("e" to "v"))
     }
 
     @Test

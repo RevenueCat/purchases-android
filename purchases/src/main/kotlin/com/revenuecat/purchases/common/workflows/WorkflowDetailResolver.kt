@@ -29,9 +29,6 @@ internal class WorkflowDetailResolver(
                 WorkflowJsonParser.parsePublishedWorkflow(json)
             }
         }
-        return WorkflowDataResult(
-            workflow = workflow,
-            enrolledVariants = response.enrolledVariants,
-        )
+        return WorkflowDataResult(workflow = workflow)
     }
 }

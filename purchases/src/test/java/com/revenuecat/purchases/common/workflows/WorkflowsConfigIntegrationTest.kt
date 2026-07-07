@@ -123,8 +123,6 @@ class WorkflowsConfigIntegrationTest {
         val result = provider.getWorkflow("wf-1")
         assertThat(result).isNotNull
         assertThat(result!!.workflow.id).isEqualTo("wf-1")
-        // enrolled_variants is intentionally out of scope for the config-topic path (see WorkflowsConfigProvider).
-        assertThat(result.enrolledVariants).isNull()
         // The body arrived inline, so neither prefetch nor the read touches the downloader.
         assertThat(downloadCount).isZero()
     }

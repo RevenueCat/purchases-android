@@ -2841,7 +2841,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `getWorkflow delivers the manager success result to the caller`() {
-        val expected = WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
+        val expected = WorkflowDataResult(workflow = mockk())
         val successSlot = slot<(WorkflowDataResult) -> Unit>()
         every {
             mockWorkflowManager.getWorkflow(
