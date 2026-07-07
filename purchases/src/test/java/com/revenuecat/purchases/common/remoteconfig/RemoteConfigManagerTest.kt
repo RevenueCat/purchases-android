@@ -847,6 +847,34 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `on-demand sync uses the bound user even if identity changes between resolving it and capturing the epoch`() =
+        runTest {
+            // The tightest form of the race: the identity change lands *after* the read resolves its (stale)
+            // user but *before* refreshRemoteConfig captures the epoch. Simulated by a provider that clears the
+            // cache for the new user and then returns the old one. Because refreshRemoteConfig snapshots the user
+            // together with the epoch under the lock, the request must carry the newly bound user, not the stale
+            // provider value — otherwise the old user's response would persist under the post-clear epoch.
+            every { diskCache.read() } returns null
+
+            lateinit var manager: RemoteConfigManager
+            manager = readManager(
+                appUserIDProvider = {
+                    manager.clearCache("new-user")
+                    "old-user"
+                },
+            )
+
+            val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+                manager.topic(RemoteConfigTopic.Workflows)
+            }
+            verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+            assertThat(capturedAppUserID).isEqualTo("new-user")
+
+            onSuccess.invoke(null, VerificationResult.VERIFIED)
+            assertThat(read.isCompleted).isTrue()
+        }
+
+    @Test
     fun `an on-demand sync before any identity change syncs for the bootstrap provider user`() = runTest {
         // No clearCache() yet, so no identity is bound: the cold read falls back to the provider (the device
         // cache), which is accurate in this pre-first-change window since no transition is racing.
