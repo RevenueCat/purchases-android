@@ -24,6 +24,7 @@ private class PaywallDialogOptionsAPI {
             .setListener(listener)
             .setShouldDisplayDismissButton(true)
             .setFontProvider(fontProvider)
+            .setWebViewMessageHandler(null)
             .build()
         val shouldDisplayBlock2 = options.shouldDisplayBlock
         val offering2: Offering? = options.offering
