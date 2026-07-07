@@ -68,7 +68,7 @@ public open class PurchasesConfiguration(builder: Builder) {
         this.iamEnabled = builder.iamEnabled
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     internal fun copy(
         appUserID: String? = this.appUserID,
         service: ExecutorService? = this.service,
@@ -333,11 +333,8 @@ public open class PurchasesConfiguration(builder: Builder) {
         /**
          * Enabling this instructs the SDK to prefer using token-based user sessions
          * for communicating with the server. Default is disabled.
-         *
-         * @warning This function is marked as [ExperimentalPreviewRevenueCatPurchasesAPI] and may change in the
-         * future.
          */
-        @ExperimentalPreviewRevenueCatPurchasesAPI
+        @InternalRevenueCatAPI
         public fun iamEnabled(iamEnabled: Boolean): Builder = apply {
             this.iamEnabled = iamEnabled
         }

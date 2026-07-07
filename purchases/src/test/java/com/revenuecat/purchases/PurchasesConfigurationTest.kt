@@ -174,7 +174,7 @@ class PurchasesConfigurationTest {
         assertThat(purchasesConfiguration.galaxyBillingMode).isEqualTo(GalaxyBillingMode.TEST)
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `PurchasesConfiguration sets iamEnabled correctly`() {
         val purchasesConfiguration = builder.iamEnabled(true).build()
