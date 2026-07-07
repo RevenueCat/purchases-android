@@ -39,10 +39,10 @@ internal class WorkflowsConfigProvider(
     }
 
     /**
-     * Resolves [workflowId] into a [WorkflowDataResult], or `null` when the item is unknown, its body can be
+     * Resolves [workflowId] into a [PublishedWorkflow], or `null` when the item is unknown, its body can be
      * neither read nor downloaded, or the body fails to parse.
      */
-    suspend fun getWorkflow(workflowId: String): WorkflowDataResult? {
+    suspend fun getWorkflow(workflowId: String): PublishedWorkflow? {
         val body = manager.blobData(RemoteConfigTopic.Workflows, workflowId) { it } ?: run {
             errorLog { "Workflow '$workflowId' is unavailable from remote config." }
             return null
@@ -50,7 +50,7 @@ internal class WorkflowsConfigProvider(
         return try {
             val workflow = WorkflowJsonParser.parsePublishedWorkflow(body.decodeToString())
             debugLog { "Parsed workflow '$workflowId' (${workflow.steps.size} step(s))" }
-            WorkflowDataResult(workflow = workflow)
+            workflow
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             errorLog(e) { "Failed to parse workflow '$workflowId' body." }
             null

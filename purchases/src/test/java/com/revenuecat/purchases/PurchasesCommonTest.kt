@@ -11,7 +11,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.ReplaceProductInfo
-import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
@@ -2841,8 +2841,8 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `getWorkflow delivers the manager success result to the caller`() {
-        val expected = WorkflowDataResult(workflow = mockk())
-        val successSlot = slot<(WorkflowDataResult) -> Unit>()
+        val expected = mockk<PublishedWorkflow>()
+        val successSlot = slot<(PublishedWorkflow) -> Unit>()
         every {
             mockWorkflowManager.getWorkflow(
                 appUserID = appUserId,
@@ -2854,7 +2854,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             )
         } answers { successSlot.captured(expected) }
 
-        var received: WorkflowDataResult? = null
+        var received: PublishedWorkflow? = null
         var receivedError: PurchasesError? = null
         purchases.purchasesOrchestrator.getWorkflow(
             workflowId = "wf_1",
@@ -2882,7 +2882,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             )
         } answers { errorSlot.captured(expectedError) }
 
-        var received: WorkflowDataResult? = null
+        var received: PublishedWorkflow? = null
         var receivedError: PurchasesError? = null
         purchases.purchasesOrchestrator.getWorkflow(
             workflowId = "wf_1",
@@ -2899,7 +2899,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     fun `getWorkflow returns ConfigurationError and never calls manager when uiPreviewMode is true`() {
         buildPurchases(anonymous = true, uiPreviewMode = true)
 
-        var received: WorkflowDataResult? = null
+        var received: PublishedWorkflow? = null
         var receivedError: PurchasesError? = null
         purchases.purchasesOrchestrator.getWorkflow(
             workflowId = "wf_1",

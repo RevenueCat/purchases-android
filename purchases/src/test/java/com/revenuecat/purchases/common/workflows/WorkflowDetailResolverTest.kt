@@ -57,7 +57,7 @@ class WorkflowDetailResolverTest {
             data = inlineWorkflow(),
         )
         val result = resolver.resolve(response)
-        assertThat(result.workflow.id).isEqualTo("wf_1")
+        assertThat(result.id).isEqualTo("wf_1")
     }
 
     @Test
@@ -82,7 +82,7 @@ class WorkflowDetailResolverTest {
             url = "https://cdn.example.com/wf.json",
         )
         val result = resolver.resolve(response)
-        assertThat(result.workflow.id).isEqualTo("wf_1")
+        assertThat(result.id).isEqualTo("wf_1")
     }
 
     @Test

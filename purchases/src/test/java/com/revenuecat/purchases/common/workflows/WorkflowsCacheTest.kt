@@ -50,7 +50,7 @@ class WorkflowsCacheTest {
 
     @Test
     fun `cachedWorkflow returns cached value after cacheWorkflow`() {
-        val result = mockk<WorkflowDataResult>()
+        val result = mockk<PublishedWorkflow>()
         workflowsCache.cacheWorkflow("wf_1", result)
         assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(result)
     }
@@ -374,8 +374,8 @@ class WorkflowsCacheTest {
 
     @Test
     fun `different workflowIds are cached independently`() {
-        val first = mockk<WorkflowDataResult>()
-        val second = mockk<WorkflowDataResult>()
+        val first = mockk<PublishedWorkflow>()
+        val second = mockk<PublishedWorkflow>()
         workflowsCache.cacheWorkflow("wf_1", first)
         currentDate = currentDate.add(6.minutes)
         workflowsCache.cacheWorkflow("wf_2", second)

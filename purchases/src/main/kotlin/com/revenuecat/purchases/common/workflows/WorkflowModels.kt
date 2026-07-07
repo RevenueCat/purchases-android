@@ -164,11 +164,6 @@ public data class WorkflowExitOffer(
     val stepId: String,
 )
 
-@InternalRevenueCatAPI
-public data class WorkflowDataResult(
-    val workflow: PublishedWorkflow,
-)
-
 @Serializable
 internal enum class WorkflowResponseAction {
     @SerialName("inline")

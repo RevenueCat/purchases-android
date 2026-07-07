@@ -53,7 +53,7 @@ import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeK
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
-import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
@@ -578,7 +578,7 @@ internal class PurchasesOrchestrator(
 
     fun getWorkflow(
         workflowId: String,
-        onSuccess: (WorkflowDataResult) -> Unit,
+        onSuccess: (PublishedWorkflow) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         // Deliver every outcome through dispatch so the callback always lands on the main thread,

@@ -21,7 +21,7 @@ import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.common.events.FeatureEvent
-import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
@@ -68,7 +68,7 @@ internal interface PurchasesType {
     suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult
 
     @Throws(PurchasesException::class)
-    suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult
+    suspend fun awaitGetWorkflow(workflowId: String): PublishedWorkflow
 
     @Throws(PurchasesException::class)
     suspend fun awaitGetUiConfig(): UiConfig
@@ -146,7 +146,7 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     }
 
     @Throws(PurchasesException::class)
-    override suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult {
+    override suspend fun awaitGetWorkflow(workflowId: String): PublishedWorkflow {
         return purchases.awaitGetWorkflow(workflowId)
     }
 

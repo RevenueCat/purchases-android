@@ -122,7 +122,7 @@ class WorkflowsConfigIntegrationTest {
         assertThat(provider.workflowIdForOfferingId("premium_annual")).isEqualTo("wf-1")
         val result = provider.getWorkflow("wf-1")
         assertThat(result).isNotNull
-        assertThat(result!!.workflow.id).isEqualTo("wf-1")
+        assertThat(result!!.id).isEqualTo("wf-1")
         // The body arrived inline, so neither prefetch nor the read touches the downloader.
         assertThat(downloadCount).isZero()
     }
@@ -175,7 +175,7 @@ class WorkflowsConfigIntegrationTest {
         // First read misses the blob store and pulls the body on demand.
         val result = provider.getWorkflow("wf-1")
         assertThat(result).isNotNull
-        assertThat(result!!.workflow.id).isEqualTo("wf-1")
+        assertThat(result!!.id).isEqualTo("wf-1")
         assertThat(downloadCount).isEqualTo(1)
 
         // A second read is served from the store — no further download.
