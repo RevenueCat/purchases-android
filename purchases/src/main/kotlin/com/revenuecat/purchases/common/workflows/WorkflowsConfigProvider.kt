@@ -7,6 +7,7 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
+import com.revenuecat.purchases.common.verboseLog
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -23,12 +24,12 @@ internal class WorkflowsConfigProvider(
 
     suspend fun workflowIdForOfferingId(offeringId: String): String? {
         val topic = manager.topic(RemoteConfigTopic.Workflows)
-        debugLog { "workflows topic ${if (topic == null) "is absent" else "has ${topic.size} item(s)"}" }
+        verboseLog { "workflows topic ${if (topic == null) "is absent" else "has ${topic.size} item(s)"}" }
         val workflowId = topic
             ?.entries
             ?.firstOrNull { (_, item) -> item.metadata.stringOrNull(KEY_OFFERING_IDENTIFIER) == offeringId }
             ?.key
-        debugLog {
+        verboseLog {
             if (workflowId != null) {
                 "Resolved offering '$offeringId' to workflow '$workflowId'"
             } else {
