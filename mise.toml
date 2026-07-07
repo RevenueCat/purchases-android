@@ -1,5 +1,6 @@
 [settings]
 lockfile = true
+experimental = true
 
 [tools]
 java = ["liberica-21.0.6", "liberica-17.0.6"]
