@@ -9,7 +9,7 @@ import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.events.FeatureEvent
-import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
@@ -62,7 +62,7 @@ internal class MockPurchasesType(
         // No-op for mock - return success to simulate success
         return CreateSupportTicketResult(success = true)
     }
-    override suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult {
+    override suspend fun awaitGetWorkflow(workflowId: String): PublishedWorkflow {
         throw NotImplementedError("Mock implementation for previews only")
     }
 

@@ -7,7 +7,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.UiConfig
-import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import dev.drewhamilton.poko.Poko
@@ -60,7 +60,7 @@ public class PaywallOptions internal constructor(
      * `{{ $custom.key }}` placeholders in the paywall configuration.
      */
     public val customVariables: Map<String, CustomVariableValue> = emptyMap(),
-    internal val injectedWorkflow: WorkflowDataResult? = null,
+    internal val injectedWorkflow: PublishedWorkflow? = null,
     internal val injectedWorkflowUiConfig: UiConfig = UiConfig(),
 ) {
     public companion object {
@@ -122,7 +122,7 @@ public class PaywallOptions internal constructor(
         dismissRequest: () -> Unit = this.dismissRequest,
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = this.dismissRequestWithExitOffering,
         customVariables: Map<String, CustomVariableValue> = this.customVariables,
-        injectedWorkflow: WorkflowDataResult? = this.injectedWorkflow,
+        injectedWorkflow: PublishedWorkflow? = this.injectedWorkflow,
         injectedWorkflowUiConfig: UiConfig = this.injectedWorkflowUiConfig,
     ): PaywallOptions = PaywallOptions(
         offeringSelection = offeringSelection,
@@ -150,7 +150,7 @@ public class PaywallOptions internal constructor(
         internal var mode: PaywallMode = PaywallMode.default
         internal var dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null
         internal var customVariables: Map<String, CustomVariableValue> = emptyMap()
-        internal var injectedWorkflow: WorkflowDataResult? = null
+        internal var injectedWorkflow: PublishedWorkflow? = null
         internal var injectedWorkflowUiConfig: UiConfig = UiConfig()
 
         public fun setOffering(offering: Offering?): Builder = apply {
@@ -226,7 +226,7 @@ public class PaywallOptions internal constructor(
          */
         @InternalRevenueCatAPI
         public fun injectedWorkflow(
-            workflow: WorkflowDataResult,
+            workflow: PublishedWorkflow,
             offering: Offering?,
             uiConfig: UiConfig = UiConfig(),
         ): Builder = apply {
