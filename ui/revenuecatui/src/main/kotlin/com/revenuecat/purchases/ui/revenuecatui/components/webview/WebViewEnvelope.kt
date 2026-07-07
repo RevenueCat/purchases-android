@@ -46,8 +46,22 @@ internal object WebViewEnvelope {
         val error: String?,
     )
 
+    /**
+     * Coarse structural depth budget for a whole inbound frame: the envelope object itself plus a
+     * payload tree of at most [WebViewMessageParser.MAX_NESTING_DEPTH] levels. The precise per-tree
+     * limit is still enforced during [PaywallWebViewValue][
+     * com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue] conversion; this scan exists only
+     * to stop hostile input before recursion happens.
+     */
+    private val MAX_FRAME_DEPTH: Int = WebViewMessageParser.MAX_NESTING_DEPTH + 1
+
     @Suppress("ReturnCount", "CyclomaticComplexMethod")
     fun parse(rawJson: String): Parsed? {
+        // Enforce the nesting budget BEFORE org.json parses: JSONTokener recurses per nesting
+        // level, and tens of thousands of levels fit inside the 64 KiB frame limit, so a hostile
+        // deeply-nested frame could otherwise overflow the stack before any post-parse check runs.
+        if (exceedsMaxDepth(rawJson)) return null
+
         val json = try {
             JSONObject(rawJson)
         } catch (@Suppress("SwallowedException") _: org.json.JSONException) {
@@ -88,6 +102,40 @@ internal object WebViewEnvelope {
             payload = payload,
             error = error,
         )
+    }
+
+    /**
+     * Non-recursive scan of the raw JSON characters, tracking `{`/`[` nesting outside string
+     * literals (honoring `\` escapes). Returns `true` when the depth exceeds [MAX_FRAME_DEPTH].
+     */
+    @Suppress("LoopWithTooManyJumpStatements")
+    fun exceedsMaxDepth(rawJson: String): Boolean {
+        var depth = 0
+        var inString = false
+        var escaped = false
+
+        for (char in rawJson) {
+            if (inString) {
+                when {
+                    escaped -> escaped = false
+                    char == '\\' -> escaped = true
+                    char == '"' -> inString = false
+                }
+                continue
+            }
+
+            when (char) {
+                '"' -> inString = true
+                '{', '[' -> {
+                    depth += 1
+                    if (depth > MAX_FRAME_DEPTH) return true
+                }
+                '}', ']' -> depth -= 1
+                else -> Unit
+            }
+        }
+
+        return false
     }
 
     @Suppress("LongParameterList")

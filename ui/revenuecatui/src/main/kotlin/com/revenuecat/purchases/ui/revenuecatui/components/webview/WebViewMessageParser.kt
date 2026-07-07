@@ -42,6 +42,14 @@ internal object WebViewMessageParser {
             return null
         }
 
+        return parse(envelope, expectedComponentId)
+    }
+
+    /**
+     * Parses an already-validated transport envelope (size/structure checks done by the caller)
+     * into a typed app message. Avoids re-parsing the raw JSON a second time.
+     */
+    fun parse(envelope: WebViewEnvelope.Parsed, expectedComponentId: String): ParsedAppMessage? {
         return when (envelope.kind) {
             WebViewEnvelope.KIND_MESSAGE,
             WebViewEnvelope.KIND_REQUEST,

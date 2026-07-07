@@ -492,6 +492,8 @@ internal class WebViewJavaScriptBridgeTest {
         var reportedHeight: Int? = null
         val bridge = bridge(
             handler = null,
+            sizeToContentWidth = true,
+            sizeToContentHeight = true,
             onContentResize = { widthCssPx, heightCssPx ->
                 reportedWidth = widthCssPx
                 reportedHeight = heightCssPx
@@ -508,6 +510,124 @@ internal class WebViewJavaScriptBridgeTest {
 
         assertThat(reportedWidth).isEqualTo(320)
         assertThat(reportedHeight).isEqualTo(480)
+        assertThat(received).isEmpty()
+    }
+
+    @Test
+    fun `resize ignores non-fit axes`() {
+        val resizes = mutableListOf<Pair<Int?, Int?>>()
+        val bridge = bridge(
+            handler = null,
+            sizeToContentWidth = false,
+            sizeToContentHeight = true,
+            onContentResize = { widthCssPx, heightCssPx -> resizes.add(widthCssPx to heightCssPx) },
+        )
+        connect(bridge)
+        bridge.postMessage(
+            appMessage(type = WebViewMessageType.RESIZE, payload = """{"width":400,"height":500}"""),
+        )
+        idleMainLooper()
+
+        assertThat(resizes).containsExactly(null to 500)
+    }
+
+    @Test
+    fun `resize clamps oversized values and drops invalid values per axis`() {
+        val resizes = mutableListOf<Pair<Int?, Int?>>()
+        val bridge = bridge(
+            handler = null,
+            sizeToContentWidth = true,
+            sizeToContentHeight = true,
+            onContentResize = { widthCssPx, heightCssPx -> resizes.add(widthCssPx to heightCssPx) },
+        )
+        connect(bridge)
+        // Invalid width (negative) with a valid, oversized height: height still applies, clamped.
+        bridge.postMessage(
+            appMessage(type = WebViewMessageType.RESIZE, payload = """{"width":-1,"height":99999}"""),
+        )
+        idleMainLooper()
+
+        assertThat(resizes).containsExactly(null to 10_000)
+    }
+
+    @Test
+    fun `resize applies a per-axis change threshold`() {
+        val resizes = mutableListOf<Pair<Int?, Int?>>()
+        val bridge = bridge(
+            handler = null,
+            sizeToContentWidth = true,
+            sizeToContentHeight = true,
+            onContentResize = { widthCssPx, heightCssPx -> resizes.add(widthCssPx to heightCssPx) },
+        )
+        connect(bridge)
+        bridge.postMessage(
+            appMessage(type = WebViewMessageType.RESIZE, payload = """{"width":200,"height":300}"""),
+        )
+        // Same values re-reported: below the 1px threshold on both axes, no callback at all.
+        bridge.postMessage(
+            appMessage(type = WebViewMessageType.RESIZE, payload = """{"width":200,"height":300}"""),
+        )
+        // One axis changes: only that axis is delivered.
+        bridge.postMessage(
+            appMessage(type = WebViewMessageType.RESIZE, payload = """{"width":200,"height":301}"""),
+        )
+        idleMainLooper()
+
+        assertThat(resizes).containsExactly(200 to 300, null to 301)
+    }
+
+    @Test
+    fun `handles resize sent as a transport request without forwarding to the app handler`() {
+        var reportedHeight: Int? = null
+        val bridge = bridge(
+            sizeToContentHeight = true,
+            onContentResize = { _, heightCssPx -> reportedHeight = heightCssPx },
+        )
+        connect(bridge)
+        bridge.postMessage(
+            appMessage(
+                type = WebViewMessageType.RESIZE,
+                payload = """{"height":250}""",
+                kind = WebViewEnvelope.KIND_REQUEST,
+                id = "resize-1",
+            ),
+        )
+        idleMainLooper()
+
+        assertThat(reportedHeight).isEqualTo(250)
+        assertThat(received).isEmpty()
+    }
+
+    @Test
+    fun `drops any transport request without an id`() {
+        val bridge = bridge()
+        connect(bridge)
+
+        bridge.postMessage(
+            appMessage(type = WebViewMessageType.STEP_LOADED, kind = WebViewEnvelope.KIND_REQUEST),
+        )
+        bridge.postMessage(
+            appMessage(type = WebViewMessageType.REQUEST_VARIABLES, kind = WebViewEnvelope.KIND_REQUEST),
+        )
+        idleMainLooper()
+
+        assertThat(received).isEmpty()
+        // No auto-reply was sent for the id-less variables request.
+        assertThat(shadowWebView.lastEvaluatedJavascript).doesNotContain("rc:variables")
+    }
+
+    @Test
+    fun `rejects hostile deeply nested frames without crashing`() {
+        val bridge = bridge()
+        connect(bridge)
+
+        val depth = 30_000
+        val nested = "[".repeat(depth) + "]".repeat(depth)
+        bridge.postMessage(
+            appMessage(type = WebViewMessageType.STEP_COMPLETE, payload = """{"responses":{"deep":$nested}}"""),
+        )
+        idleMainLooper()
+
         assertThat(received).isEmpty()
     }
 }

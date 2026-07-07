@@ -49,7 +49,6 @@ internal class WebViewJavaScriptBridge(
     expectedUrl: String,
     locale: String,
     messageHandler: PaywallWebViewMessageHandler?,
-    protocolVersion: Int = WebViewEnvelope.DEFAULT_PROTOCOL_VERSION,
     private val sizeToContentWidth: Boolean = false,
     private val sizeToContentHeight: Boolean = false,
     private val onContentResize: (widthCssPx: Int?, heightCssPx: Int?) -> Unit = { _, _ -> },
@@ -58,7 +57,12 @@ internal class WebViewJavaScriptBridge(
 
     private val webViewRef = WeakReference(webView)
     private val expectedOrigin: String? = expectedUrl.toOriginOrNull()
-    private val protocolVersion: Int = protocolVersion
+
+    // The single protocol version this SDK build implements. Deliberately NOT the schema's
+    // `protocol_version`: the envelope version is the wire+SDK major the CONTENT speaks, and the
+    // host must never accept a handshake for a version it cannot service, even if a future schema
+    // declares one.
+    private val protocolVersion: Int = WebViewEnvelope.DEFAULT_PROTOCOL_VERSION
 
     // Refreshed from the latest paywall state on every recomposition via update().
     @Volatile private var locale: String = locale
@@ -68,6 +72,10 @@ internal class WebViewJavaScriptBridge(
     @Volatile private var released: Boolean = false
 
     @Volatile private var channelOpen: Boolean = false
+
+    // Last content sizes applied per fit axis (main thread only), for the resize apply-threshold.
+    private var lastAppliedWidthCssPx: Int? = null
+    private var lastAppliedHeightCssPx: Int? = null
 
     /**
      * Registers the native interface on the WebView. Call once, when the WebView is created.
@@ -152,7 +160,7 @@ internal class WebViewJavaScriptBridge(
                     )
                     return
                 }
-                handleAppFrame(json)
+                handleAppFrame(envelope)
             }
             else -> Unit
         }
@@ -205,17 +213,24 @@ internal class WebViewJavaScriptBridge(
 
     @MainThread
     @Suppress("ReturnCount")
-    private fun handleAppFrame(rawJson: String) {
+    private fun handleAppFrame(envelope: WebViewEnvelope.Parsed) {
         if (!channelOpen) return
 
-        val transport = WebViewEnvelope.parse(rawJson) ?: return
-        if (transport.kind == WebViewEnvelope.KIND_MESSAGE && transport.type == WebViewMessageType.RESIZE) {
-            handleResize(transport)
+        // Any transport `request` without a correlation `id` is undeliverable — drop it before
+        // any handling, matching iOS and the web host.
+        if (envelope.kind == WebViewEnvelope.KIND_REQUEST && envelope.id == null) {
+            Logger.w("Dropping inbound web view message: transport request is missing 'id'.")
+            return
+        }
+
+        // `resize` is SDK-internal regardless of kind; it never reaches the app handler.
+        if (envelope.type == WebViewMessageType.RESIZE) {
+            handleResize(envelope)
             return
         }
 
         val parsed = WebViewMessageParser.parse(
-            rawJson = rawJson,
+            envelope = envelope,
             expectedComponentId = componentId,
         ) ?: return
 
@@ -247,9 +262,34 @@ internal class WebViewJavaScriptBridge(
     private fun handleResize(envelope: WebViewEnvelope.Parsed) {
         if (envelope.componentId != componentId) return
         val payload = envelope.payload ?: return
-        val width = payload.optInt("width").takeIf { payload.has("width") }
-        val height = payload.optInt("height").takeIf { payload.has("height") }
-        onContentResize(width, height)
+
+        val width = applyResize(
+            reported = payload.resizeDimension("width").takeIf { sizeToContentWidth },
+            lastApplied = lastAppliedWidthCssPx,
+        )?.also { lastAppliedWidthCssPx = it }
+        val height = applyResize(
+            reported = payload.resizeDimension("height").takeIf { sizeToContentHeight },
+            lastApplied = lastAppliedHeightCssPx,
+        )?.also { lastAppliedHeightCssPx = it }
+
+        if (width != null || height != null) {
+            onContentResize(width, height)
+        }
+    }
+
+    /**
+     * Returns the value to apply for one axis, or `null` when there is nothing new to apply:
+     * missing/invalid report, non-fit axis, or a change smaller than [RESIZE_APPLY_THRESHOLD_CSS_PX]
+     * against the last applied value (guards report/apply feedback loops — HTML content's reported
+     * width often just echoes the imposed viewport width).
+     */
+    @Suppress("ReturnCount")
+    private fun applyResize(reported: Int?, lastApplied: Int?): Int? {
+        if (reported == null) return null
+        if (lastApplied != null && kotlin.math.abs(reported - lastApplied) < RESIZE_APPLY_THRESHOLD_CSS_PX) {
+            return null
+        }
+        return reported
     }
 
     override fun postVariables(componentId: String, variables: Map<String, PaywallWebViewValue>) {
@@ -344,6 +384,21 @@ internal class WebViewJavaScriptBridge(
             WebViewEnvelope.KIND_REJECT,
         )
 
+        /** Cap a content-reported dimension so a buggy/hostile bundle can't blow up layout. */
+        private const val MAX_RESIZE_CSS_PX = 10_000.0
+
+        /** Minimum per-axis change (CSS px) before a new report is applied. */
+        private const val RESIZE_APPLY_THRESHOLD_CSS_PX = 1
+
+        /** A validated, clamped resize dimension, or `null` when absent, non-finite, or not positive. */
+        @Suppress("ReturnCount")
+        fun JSONObject.resizeDimension(key: String): Int? {
+            if (!has(key)) return null
+            val value = optDouble(key)
+            if (!value.isFinite() || value <= 0) return null
+            return value.coerceAtMost(MAX_RESIZE_CSS_PX).toInt()
+        }
+
         /**
          * JSON is a subset of JS object-literal syntax, but the U+2028/U+2029 separators are valid in
          * JSON strings yet terminate JS statements. Escape them so the payload is safe to embed.
@@ -375,4 +430,24 @@ internal fun String.toOriginOrNull(): String? {
         else -> ":$effectivePort"
     }
     return "$scheme://$host$portSuffix"
+}
+
+/**
+ * Navigation policy for `web_view` content, applied from `shouldOverrideUrlLoading`:
+ *
+ * - Any non-HTTPS navigation is blocked (any frame).
+ * - Main-frame navigation is additionally restricted to the resolved component URL's origin
+ *   (same-origin different-path navigation stays allowed). This makes cross-origin message races
+ *   structurally impossible; the bridge's per-message origin check remains as defense in depth.
+ * - Cross-origin sub-frame loads are left to the Content-Security-Policy.
+ */
+@Suppress("ReturnCount")
+internal fun shouldBlockWebViewNavigation(
+    url: String?,
+    isMainFrame: Boolean,
+    expectedOrigin: String?,
+): Boolean {
+    val origin = url?.toOriginOrNull() ?: return true
+    if (!origin.startsWith("https://")) return true
+    return isMainFrame && origin != expectedOrigin
 }

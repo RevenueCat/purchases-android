@@ -49,12 +49,40 @@ internal class PaywallWebViewValueTest {
     }
 
     @Test
-    fun `toJsonRepresentation keeps non-finite numbers as doubles`() {
-        // Infinity/NaN are not whole numbers, so they must not be collapsed to Long.
+    fun `toJsonRepresentation serializes non-finite numbers as JSON null`() {
+        // JSON cannot represent NaN/infinity and org.json's put() throws for them; one bad number
+        // must never destroy an otherwise-valid outbound message.
         assertThat(PaywallWebViewValue.Number(Double.POSITIVE_INFINITY).toJsonRepresentation())
-            .isEqualTo(Double.POSITIVE_INFINITY)
+            .isEqualTo(JSONObject.NULL)
+        assertThat(PaywallWebViewValue.Number(Double.NEGATIVE_INFINITY).toJsonRepresentation())
+            .isEqualTo(JSONObject.NULL)
         assertThat(PaywallWebViewValue.Number(Double.NaN).toJsonRepresentation())
-            .isEqualTo(Double.NaN)
+            .isEqualTo(JSONObject.NULL)
+    }
+
+    @Test
+    fun `a map containing non-finite numbers serializes without throwing`() {
+        val json = mapOf(
+            "bad" to PaywallWebViewValue.Number(Double.NaN),
+            "good" to PaywallWebViewValue.String("kept"),
+        ).toJsonObject()
+
+        assertThat(json.isNull("bad")).isTrue()
+        assertThat(json.getString("good")).isEqualTo("kept")
+    }
+
+    @Test
+    fun `number equality and hashCode are mutually consistent for edge values`() {
+        // Double.equals semantics: NaN equals NaN; -0.0 does not equal 0.0. Both agree with hashCode.
+        val nan1 = PaywallWebViewValue.Number(Double.NaN)
+        val nan2 = PaywallWebViewValue.Number(Double.NaN)
+        assertThat(nan1).isEqualTo(nan2)
+        assertThat(nan1.hashCode()).isEqualTo(nan2.hashCode())
+
+        val negativeZero = PaywallWebViewValue.Number(-0.0)
+        val positiveZero = PaywallWebViewValue.Number(0.0)
+        assertThat(negativeZero).isNotEqualTo(positiveZero)
+        assertThat(negativeZero.hashCode()).isNotEqualTo(positiveZero.hashCode())
     }
 
     @Test

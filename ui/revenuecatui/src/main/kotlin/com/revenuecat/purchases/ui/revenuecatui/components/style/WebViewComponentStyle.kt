@@ -17,8 +17,11 @@ internal data class WebViewComponentStyle(
      */
     val componentId: String? = null,
     /**
-     * The schema-declared `protocol_version`. The backend always sends this field (required, strictly 1).
-     * When absent in legacy configs it is treated as 1. Content-Security-Policy is always applied.
+     * The schema-declared `protocol_version`, decoded and preserved for future use. NOT the host's
+     * capability: the bridge always advertises [WebViewEnvelope.DEFAULT_PROTOCOL_VERSION][
+     * com.revenuecat.purchases.ui.revenuecatui.components.webview.WebViewEnvelope.DEFAULT_PROTOCOL_VERSION]
+     * (the single version this SDK build implements) during the handshake, regardless of this value.
+     * Content-Security-Policy is always applied.
      */
     val protocolVersion: Int? = null,
     val fallbackStackComponentStyle: StackComponentStyle? = null,

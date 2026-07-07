@@ -27,13 +27,17 @@ public abstract class PaywallWebViewValue internal constructor() {
 
     /**
      * A numeric value (integer or decimal). Stored as a [Double].
+     *
+     * Non-finite values (`NaN`, infinities) cannot be represented in JSON and serialize as JSON
+     * `null` when sent into the web view. Equality follows [Double.equals] semantics (consistent
+     * with [hashCode]): `NaN` equals `NaN`, and `-0.0` does not equal `0.0`.
      */
     public class Number(public val value: kotlin.Double) : PaywallWebViewValue() {
         public constructor(value: kotlin.Int) : this(value.toDouble())
         public constructor(value: kotlin.Long) : this(value.toDouble())
         public constructor(value: kotlin.Float) : this(value.toDouble())
 
-        override fun equals(other: Any?): kotlin.Boolean = other is Number && value == other.value
+        override fun equals(other: Any?): kotlin.Boolean = other is Number && value.equals(other.value)
         override fun hashCode(): Int = value.hashCode()
         override fun toString(): kotlin.String = "PaywallWebViewValue.Number(value=$value)"
     }
@@ -115,12 +119,17 @@ public abstract class PaywallWebViewValue internal constructor() {
 /**
  * Converts this value into a representation accepted by [JSONObject]/[JSONArray] when serializing a
  * message to send into the web view. Whole numbers are emitted as integers (e.g. `100`, not `100.0`).
+ * Non-finite numbers serialize as JSON `null`: JSON cannot represent them, `org.json`'s `put` throws
+ * for them, and one bad number must never destroy an otherwise-valid outbound message.
  */
 internal fun PaywallWebViewValue.toJsonRepresentation(): Any = when (this) {
     is PaywallWebViewValue.String -> value
     is PaywallWebViewValue.Boolean -> value
-    is PaywallWebViewValue.Number ->
-        if (value % 1.0 == 0.0 && !value.isInfinite()) value.toLong() else value
+    is PaywallWebViewValue.Number -> when {
+        !value.isFinite() -> JSONObject.NULL
+        value % 1.0 == 0.0 -> value.toLong()
+        else -> value
+    }
     is PaywallWebViewValue.Object -> JSONObject().apply {
         value.forEach { (key, child) -> put(key, child.toJsonRepresentation()) }
     }

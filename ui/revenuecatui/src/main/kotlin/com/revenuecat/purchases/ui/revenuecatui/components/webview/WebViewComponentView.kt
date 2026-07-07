@@ -88,7 +88,6 @@ internal fun WebViewComponentView(
                             expectedUrl = resolvedUrl,
                             locale = locale,
                             messageHandler = messageHandler,
-                            protocolVersion = style.protocolVersion ?: WebViewEnvelope.DEFAULT_PROTOCOL_VERSION,
                             sizeToContentWidth = sizeToContentWidth,
                             sizeToContentHeight = sizeToContentHeight,
                             onContentResize = { widthCssPx, heightCssPx ->
@@ -99,6 +98,7 @@ internal fun WebViewComponentView(
                     }
                     bridgeHolder.bridge = bridge
                     configure(
+                        expectedOrigin = resolvedUrl.toOriginOrNull(),
                         onMainFrameLoadFailed = { loadFailed = true },
                     )
                     loadUrl(resolvedUrl)
@@ -122,18 +122,27 @@ internal fun WebViewComponentView(
     }
 }
 
-private fun webViewEffectiveSize(
+/**
+ * Placeholder sizes for a `fit` axis until the content reports its size over the bridge — a
+ * WebView has no meaningful intrinsic size, so `fit` would otherwise collapse. 100 (height)
+ * matches the iOS implementation; 300 (width) matches the web implementation's
+ * `FIT_FALLBACK_SIZE_PX`.
+ */
+internal const val FIT_PLACEHOLDER_HEIGHT: UInt = 100u
+internal const val FIT_PLACEHOLDER_WIDTH: UInt = 300u
+
+internal fun webViewEffectiveSize(
     declaredSize: Size,
     contentWidthCssPx: Int,
     contentHeightCssPx: Int,
 ): Size {
-    val width = when (val declaredWidth = declaredSize.width) {
-        is Fit -> if (contentWidthCssPx > 0) Fixed(contentWidthCssPx.toUInt()) else declaredWidth
-        else -> declaredWidth
+    val width = when (declaredSize.width) {
+        is Fit -> Fixed(if (contentWidthCssPx > 0) contentWidthCssPx.toUInt() else FIT_PLACEHOLDER_WIDTH)
+        else -> declaredSize.width
     }
-    val height = when (val declaredHeight = declaredSize.height) {
-        is Fit -> if (contentHeightCssPx > 0) Fixed(contentHeightCssPx.toUInt()) else declaredHeight
-        else -> declaredHeight
+    val height = when (declaredSize.height) {
+        is Fit -> Fixed(if (contentHeightCssPx > 0) contentHeightCssPx.toUInt() else FIT_PLACEHOLDER_HEIGHT)
+        else -> declaredSize.height
     }
     return Size(width = width, height = height)
 }
@@ -144,6 +153,7 @@ private class WebViewBridgeHolder {
 }
 
 private fun WebView.configure(
+    expectedOrigin: String?,
     onMainFrameLoadFailed: () -> Unit,
 ) {
     setBackgroundColor(Color.TRANSPARENT)
@@ -170,7 +180,11 @@ private fun WebView.configure(
         }
 
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-            return request.url.scheme != HTTPS_SCHEME
+            return shouldBlockWebViewNavigation(
+                url = request.url?.toString(),
+                isMainFrame = request.isForMainFrame,
+                expectedOrigin = expectedOrigin,
+            )
         }
 
         override fun onReceivedError(
@@ -195,5 +209,4 @@ private fun WebView.configure(
     }
 }
 
-private const val HTTPS_SCHEME = "https"
 private const val HTTP_ERROR_STATUS_MIN = 400

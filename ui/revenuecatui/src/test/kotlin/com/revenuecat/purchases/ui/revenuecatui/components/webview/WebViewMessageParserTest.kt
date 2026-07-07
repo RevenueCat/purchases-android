@@ -247,6 +247,38 @@ internal class WebViewMessageParserTest {
     }
 
     @Test
+    fun `accepts frame depth 17 before recursive parsing`() {
+        val depth = WebViewMessageParser.MAX_NESTING_DEPTH + 1
+
+        assertThat(WebViewEnvelope.exceedsMaxDepth(nestedArray(depth))).isFalse()
+    }
+
+    @Test
+    fun `rejects frame depth 18 before recursive parsing`() {
+        val depth = WebViewMessageParser.MAX_NESTING_DEPTH + 2
+
+        assertThat(WebViewEnvelope.exceedsMaxDepth(nestedArray(depth))).isTrue()
+    }
+
+    @Test
+    fun `rejects a hostile deeply nested frame before recursive parsing`() {
+        // ~30k nesting levels fit inside the 64 KiB frame limit; the pre-parse structural scan
+        // must reject this before org.json's recursive tokenizer ever runs (stack-overflow guard).
+        val depth = 30_000
+        val nested = "[".repeat(depth) + "]".repeat(depth)
+
+        val parsed = parse(
+            envelope(
+                kind = WebViewEnvelope.KIND_MESSAGE,
+                type = WebViewMessageType.STEP_COMPLETE,
+                payload = """{"responses":{"deep":$nested}}""",
+            ),
+        )
+
+        assertThat(parsed).isNull()
+    }
+
+    @Test
     fun `ignores handshake frames`() {
         assertThat(
             parse(
@@ -258,6 +290,8 @@ internal class WebViewMessageParserTest {
     }
 
     private fun parse(raw: String) = WebViewMessageParser.parse(raw, expectedComponentId = componentId)
+
+    private fun nestedArray(depth: Int): String = "[".repeat(depth) + "0" + "]".repeat(depth)
 
     private fun envelope(
         kind: String,
