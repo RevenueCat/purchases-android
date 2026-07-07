@@ -1168,7 +1168,14 @@ internal class PaywallViewModelImpl(
     ) {
         val cached = workflowStepStateCache[step.id]
         val newState = cached
-            ?: computeStateForStep(step, workflow, uiConfig, offerings, presentedOfferingContext, currentWorkflowStateStore)
+            ?: computeStateForStep(
+                step,
+                workflow,
+                uiConfig,
+                offerings,
+                presentedOfferingContext,
+                currentWorkflowStateStore,
+            )
         if (cached == null && newState is PaywallState.Loaded.Components) {
             workflowStepStateCache[step.id] = newState
         }
