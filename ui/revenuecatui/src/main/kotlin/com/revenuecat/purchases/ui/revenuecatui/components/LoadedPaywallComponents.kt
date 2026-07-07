@@ -208,6 +208,12 @@ internal fun PaywallComponentsScaffold(
  * heights in the same pass. The header is placed at the top and the footer pinned to the bottom, both
  * drawn on top of the main content.
  *
+ * Only the heights of the overlays this layout owns are written to [state]: [state.headerHeightPx]
+ * [PaywallState.Loaded.Components.headerHeightPx] only when [hasHeader], and [state.footerHeightPx]
+ * [PaywallState.Loaded.Components.footerHeightPx] only when [hasFooter]. This lets a nested
+ * OverlayLayout (workflow steps render one inside the scaffold's, sharing the same state) avoid
+ * clobbering a height already set by the outer layout.
+ *
  * Children (in emission order): index 0 = main scrollable content, then the optional header overlay
  * (present when [hasHeader]), then the optional footer overlay (present when [hasFooter]).
  */
@@ -234,8 +240,13 @@ internal fun OverlayLayout(
         // Store overlay heights so child Modifier.layout blocks can read them in this same pass.
         // Header: both hero (ZLayer reads it) and non-hero (headerTopPadding reads it) cases need this.
         // Footer: footerBottomPadding reads it to reserve bottom clearance.
-        state.headerHeightPx = headerPlaceable?.height ?: 0
-        state.footerHeightPx = footerPlaceable?.height ?: 0
+        //
+        // Only publish the height of an overlay this layout actually owns. A nested OverlayLayout
+        // (workflow steps render one inside the scaffold's, sharing the same state) must not clobber a
+        // height set by the outer layout: e.g. an inner layout with hasHeader = false wiping
+        // headerHeightPx to 0 would collapse the step's header clearance.
+        if (hasHeader) state.headerHeightPx = headerPlaceable?.height ?: 0
+        if (hasFooter) state.footerHeightPx = footerPlaceable?.height ?: 0
 
         // Measure main content. Its inner Modifier.layout blocks can now read the stored heights.
         val mainPlaceable = measurables[0].measure(constraints)

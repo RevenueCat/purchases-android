@@ -7,6 +7,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
@@ -34,11 +35,15 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
+import com.revenuecat.purchases.ui.revenuecatui.components.LoadedWorkflowPaywall
 import com.revenuecat.purchases.ui.revenuecatui.components.MILLIS_2025_01_25
 import com.revenuecat.purchases.ui.revenuecatui.components.previewUiConfig
 import com.revenuecat.purchases.ui.revenuecatui.components.validatePaywallComponentsDataOrNullForPreviews
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowPaywallUiState
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
 import org.junit.Test
@@ -70,6 +75,11 @@ internal class OverlappingFooterSnapshotTest(testConfig: TestConfig) : BasePapar
     @Test
     fun largeFooterTallerThanHalfScreen() {
         screenshotTest { LargeFooterPaywall() }
+    }
+
+    @Test
+    fun workflowStepWithHeaderAndFooterReservesHeaderClearance() {
+        screenshotTest { WorkflowHeaderFooterPaywall() }
     }
 
     /**
@@ -224,12 +234,101 @@ internal class OverlappingFooterSnapshotTest(testConfig: TestConfig) : BasePapar
         )
     }
 
+    /**
+     * A workflow step that has BOTH a (non-hero) header and a sticky footer. The step renders its own
+     * OverlayLayout nested inside the scaffold's, sharing the same state. Regression guard: the inner
+     * layout must not wipe the header height, so the body keeps its header clearance (title sits below
+     * the header bar, not under it) while still reserving footer clearance at the bottom.
+     */
+    @Composable
+    private fun WorkflowHeaderFooterPaywall() {
+        val featureRows = (1..20).map { index ->
+            TextComponent(
+                text = LocalizationKey("feature-$index"),
+                color = textColor,
+                horizontalAlignment = LEADING,
+                size = Size(width = Fill, height = Fit),
+                margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
+            )
+        }
+
+        val state = buildComponentsState(
+            rootStack = StackComponent(
+                components = listOf(
+                    TextComponent(
+                        text = LocalizationKey("title"),
+                        color = textColor,
+                        fontWeight = FontWeight.BOLD,
+                        fontSize = 28,
+                        horizontalAlignment = LEADING,
+                        size = Size(width = Fill, height = Fit),
+                        margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 0.0),
+                    ),
+                ) + featureRows,
+                dimension = Vertical(alignment = LEADING, distribution = START),
+                size = Size(width = Fill, height = Fill),
+                padding = Padding(top = 32.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
+            ),
+            footerStack = ctaFooterStack(backgroundColor = translucentFooterColor),
+            header = HeaderComponent(
+                stack = StackComponent(
+                    components = listOf(
+                        TextComponent(
+                            text = LocalizationKey("header"),
+                            color = ctaTextColor,
+                            fontWeight = FontWeight.BOLD,
+                            fontSize = 20,
+                            horizontalAlignment = CENTER,
+                            size = Size(width = Fill, height = Fit),
+                        ),
+                    ),
+                    dimension = Vertical(alignment = CENTER, distribution = FlexDistribution.CENTER),
+                    size = Size(width = Fill, height = Fit),
+                    backgroundColor = solidFooterColor,
+                    padding = Padding(top = 24.0, bottom = 24.0, leading = 16.0, trailing = 16.0),
+                ),
+            ),
+            localizations = mapOf(
+                LocalizationKey("header") to LocalizationData.Text("Header"),
+                LocalizationKey("title") to LocalizationData.Text("Unlock everything"),
+                LocalizationKey("cta") to LocalizationData.Text("Continue"),
+            ) + (1..20).associate { index ->
+                LocalizationKey("feature-$index") to LocalizationData.Text("✓ Premium feature number $index")
+            },
+        )
+
+        LoadedWorkflowPaywall(
+            workflowState = WorkflowPaywallUiState(
+                currentStepId = "step",
+                stepStates = mapOf("step" to state),
+            ),
+            onTransitionComplete = { },
+            clickHandler = { },
+            componentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
+
     @Composable
     private fun ComponentPaywall(
         rootStack: StackComponent,
         footerStack: StackComponent,
         localizations: Map<LocalizationKey, LocalizationData>,
     ) {
+        LoadedPaywallComponents(
+            state = buildComponentsState(rootStack = rootStack, footerStack = footerStack, localizations = localizations),
+            clickHandler = { },
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
+
+    @Composable
+    private fun buildComponentsState(
+        rootStack: StackComponent,
+        footerStack: StackComponent,
+        localizations: Map<LocalizationKey, LocalizationData>,
+        header: HeaderComponent? = null,
+    ): PaywallState.Loaded.Components {
         val data = PaywallComponentsData(
             id = "snapshot_overlapping_footer",
             templateName = "template",
@@ -239,6 +338,7 @@ internal class OverlappingFooterSnapshotTest(testConfig: TestConfig) : BasePapar
                     stack = rootStack,
                     background = Background.Color(backgroundColor),
                     stickyFooter = StickyFooterComponent(stack = footerStack),
+                    header = header,
                 ),
             ),
             componentsLocalizations = mapOf(LocaleId("en_US") to localizations),
@@ -252,17 +352,11 @@ internal class OverlappingFooterSnapshotTest(testConfig: TestConfig) : BasePapar
             paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
         )
         val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
-        val state = offering.toComponentsPaywallState(
+        return offering.toComponentsPaywallState(
             validationResult = validated,
             storefrontCountryCode = "US",
             dateProvider = { Date(MILLIS_2025_01_25) },
             purchases = MockPurchasesType(),
-        )
-
-        LoadedPaywallComponents(
-            state = state,
-            clickHandler = { },
-            modifier = Modifier.fillMaxSize(),
         )
     }
 
