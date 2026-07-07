@@ -2,16 +2,23 @@ package com.revenuecat.purchases.common.uiconfig
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogHandler
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
+import io.mockk.CapturingSlot
 import io.mockk.coEvery
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -24,7 +31,7 @@ internal class UiConfigProviderTest {
     private val provider = UiConfigProvider(manager)
 
     // This is a plain JUnit test (no Robolectric), so the default log handler's android.util.Log calls aren't
-    // mocked. Swap in a no-op handler so the malformed-blob path can log without blowing up.
+    // mocked. Swap in a no-op handler so the undecodable-merge path can log without blowing up.
     private val originalLogHandler = currentLogHandler
 
     @Before
@@ -44,33 +51,36 @@ internal class UiConfigProviderTest {
     }
 
     @Test
-    fun `getUiConfig assembles all four blob-ref parts into one UiConfig`() = runTest {
+    fun `getUiConfig decodes the merged four-part object into one UiConfig`() = runTest {
         // Production serves every ui_config part (app, localizations, variable_config, custom_variables) as
         // its own blob-ref item under the topic — never as inline item metadata. An earlier revision read
         // item.metadata directly, which silently produced an all-defaults UiConfig against real backend data.
-        stubBlob("app") {
-            put("colors", buildJsonObject {})
-            put("fonts", buildJsonObject {})
-        }
-        stubBlob("localizations") {
-            put("en_US", buildJsonObject { put("day", "Day") })
-        }
-        stubBlob("variable_config") {
-            put("variable_compatibility_map", buildJsonObject { put("old_var", "new_var") })
-            put("function_compatibility_map", buildJsonObject {})
-        }
-        stubBlob("custom_variables") {
-            put(
-                "user_name",
-                buildJsonObject {
-                    put("type", "string")
-                    put("default_value", "Friend")
-                },
-            )
-        }
+        val requestedKeys = stubMergedRead(
+            buildJsonObject {
+                putJsonObject("app") {
+                    put("colors", buildJsonObject {})
+                    put("fonts", buildJsonObject {})
+                }
+                putJsonObject("localizations") {
+                    putJsonObject("en_US") { put("day", "Day") }
+                }
+                putJsonObject("variable_config") {
+                    putJsonObject("variable_compatibility_map") { put("old_var", "new_var") }
+                    put("function_compatibility_map", buildJsonObject {})
+                }
+                putJsonObject("custom_variables") {
+                    putJsonObject("user_name") {
+                        put("type", "string")
+                        put("default_value", "Friend")
+                    }
+                }
+            },
+        )
 
         val uiConfig = provider.getUiConfig()
 
+        assertThat(requestedKeys.captured)
+            .containsExactly("app", "localizations", "variable_config", "custom_variables")
         assertThat(uiConfig.localizations)
             .isEqualTo(mapOf(LocaleId("en_US") to mapOf(VariableLocalizationKey.DAY to "Day")))
         assertThat(uiConfig.variableConfig.variableCompatibilityMap).isEqualTo(mapOf("old_var" to "new_var"))
@@ -80,60 +90,47 @@ internal class UiConfigProviderTest {
     }
 
     @Test
-    fun `getUiConfig defaults every field when no part's blob resolves`() = runTest {
+    fun `getUiConfig returns an all-defaults UiConfig when the merged read returns null`() = runTest {
+        // mergeItemsBlobData is all-or-nothing: any unresolvable part nulls the whole merge, so the provider
+        // falls back to a fully-default UiConfig rather than a partially-populated one.
         coEvery {
-            manager.blobData<Any>(RemoteConfigTopic.UiConfig, any(), any())
+            manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())
         } returns null
 
         val uiConfig = provider.getUiConfig()
 
-        assertThat(uiConfig).isEqualTo(com.revenuecat.purchases.UiConfig())
+        assertThat(uiConfig).isEqualTo(UiConfig())
     }
 
     @Test
-    fun `getUiConfig defaults custom_variables to empty when only its blob is unresolved`() = runTest {
-        stubBlob("app") {}
-        coEvery {
-            manager.blobData<Any>(RemoteConfigTopic.UiConfig, "custom_variables", any())
-        } returns null
-        coEvery {
-            manager.blobData<Any>(RemoteConfigTopic.UiConfig, "localizations", any())
-        } returns null
-        coEvery {
-            manager.blobData<Any>(RemoteConfigTopic.UiConfig, "variable_config", any())
-        } returns null
+    fun `getUiConfig returns an all-defaults UiConfig when the merged object doesn't decode`() = runTest {
+        // A localizations part that isn't the expected locale->map shape makes the whole merged object
+        // undecodable; the reified mergeItemsBlobData swallows that to null instead of throwing out of the
+        // provider, so the caller gets a default UiConfig.
+        stubMergedRead(
+            buildJsonObject {
+                put("app", buildJsonObject {})
+                putJsonArray("localizations") { add(JsonPrimitive("not an object")) }
+                put("variable_config", buildJsonObject {})
+                put("custom_variables", buildJsonObject {})
+            },
+        )
 
         val uiConfig = provider.getUiConfig()
 
-        assertThat(uiConfig.customVariables).isEmpty()
+        assertThat(uiConfig).isEqualTo(UiConfig())
     }
 
-    @Test
-    fun `getUiConfig defaults localizations to empty when its blob is malformed`() = runTest {
-        // A localizations blob that isn't the expected locale->map shape must default to empty, not throw out
-        // of the provider — matching how the reified blobData overload swallows malformed data for other parts.
-        stubBlobRaw("localizations", """["not", "an", "object"]""")
-        coEvery { manager.blobData<Any>(RemoteConfigTopic.UiConfig, "app", any()) } returns null
-        coEvery { manager.blobData<Any>(RemoteConfigTopic.UiConfig, "variable_config", any()) } returns null
-        coEvery { manager.blobData<Any>(RemoteConfigTopic.UiConfig, "custom_variables", any()) } returns null
-
-        val uiConfig = provider.getUiConfig()
-
-        assertThat(uiConfig.localizations).isEmpty()
-    }
-
-    // Each part is decoded by blobData's transform overload. Stubbing that overload to actually run the
-    // transform against the part's real bytes exercises each field's real serializer, exactly as production does.
-    private fun stubBlob(key: String, content: kotlinx.serialization.json.JsonObjectBuilder.() -> Unit) {
-        stubBlobRaw(key, buildJsonObject(content).toString())
-    }
-
-    private fun stubBlobRaw(key: String, json: String) {
-        val bytes = json.encodeToByteArray()
+    // The provider calls the reified mergeItemsBlobData overload, which compiles down to the transform
+    // overload. Stubbing that overload to run the provided transform against [merged] exercises the real
+    // UiConfig decode — including each field's real serializer — exactly as production does.
+    private fun stubMergedRead(merged: JsonObject): CapturingSlot<Collection<String>> {
+        val keys = slot<Collection<String>>()
         coEvery {
-            manager.blobData(RemoteConfigTopic.UiConfig, key, any<(ByteArray) -> Any?>())
+            manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, capture(keys), any<(JsonObject) -> UiConfig?>())
         } answers {
-            thirdArg<(ByteArray) -> Any?>().invoke(bytes)
+            thirdArg<(JsonObject) -> UiConfig?>().invoke(merged)
         }
+        return keys
     }
 }
