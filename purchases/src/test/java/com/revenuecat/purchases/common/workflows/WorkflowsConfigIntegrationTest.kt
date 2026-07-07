@@ -128,6 +128,28 @@ class WorkflowsConfigIntegrationTest {
     }
 
     @Test
+    fun `duplicate offering_identifier resolves to the last entry`() = runTest(testDispatcher) {
+        val config = """
+            {
+              "domain": "app",
+              "manifest": "v1.workflows:etag1",
+              "active_topics": ["workflows"],
+              "topics": {
+                "workflows": {
+                  "wf-1": { "blob_ref": "$INLINE_REF", "offering_identifier": "premium_annual" },
+                  "wf-2": { "blob_ref": "$INLINE_REF", "offering_identifier": "premium_annual" }
+                }
+              }
+            }
+        """.trimIndent()
+
+        sync(config)
+
+        // Matches the old workflows-list map: last entry wins (and a warning is logged).
+        assertThat(provider.workflowIdForOfferingId("premium_annual")).isEqualTo("wf-2")
+    }
+
+    @Test
     fun `a prefetch-marked workflow is downloaded during the sync, before any read`() = runTest(testDispatcher) {
         val workflowJson = JsonTools.json.encodeToString(PublishedWorkflow.serializer(), minimalWorkflow("wf-1"))
         val ref = refOf(workflowJson.toByteArray())

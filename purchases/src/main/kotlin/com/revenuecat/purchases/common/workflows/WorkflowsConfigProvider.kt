@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.common.warnLog
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -25,10 +26,15 @@ internal class WorkflowsConfigProvider(
     suspend fun workflowIdForOfferingId(offeringId: String): String? {
         val topic = manager.topic(RemoteConfigTopic.Workflows)
         verboseLog { "workflows topic ${if (topic == null) "is absent" else "has ${topic.size} item(s)"}" }
-        val workflowId = topic
+        val matches = topic
             ?.entries
-            ?.firstOrNull { (_, item) -> item.metadata.stringOrNull(KEY_OFFERING_IDENTIFIER) == offeringId }
-            ?.key
+            ?.filter { (_, item) -> item.metadata.stringOrNull(KEY_OFFERING_IDENTIFIER) == offeringId }
+            .orEmpty()
+        if (matches.size > 1) {
+            warnLog { "Duplicate offering_identifier '$offeringId' in workflows topic: ${matches.map { it.key }}" }
+        }
+        // Last entry wins on duplicates.
+        val workflowId = matches.lastOrNull()?.key
         verboseLog {
             if (workflowId != null) {
                 "Resolved offering '$offeringId' to workflow '$workflowId'"
