@@ -36,11 +36,10 @@ public interface PaywallWebViewController {
 
     /**
      * Sends a `rc:variables` message into the web view targeting [componentId]. The SDK already replies
-     * with SDK-managed variables (such as `locale`); use this to provide additional values, typically
-     * nested under the `custom` key.
-     *
-     * Reserved SDK-managed top-level keys cannot be overwritten; provide app-specific values under
-     * `custom`.
+     * with SDK-managed variables (such as `locale`); use this to provide additional values. The flat
+     * [variables] map is sent as the transport envelope's `payload` field (not nested under a
+     * `variables` key). Reserved SDK-managed top-level keys cannot be overwritten; provide
+     * app-specific values under `custom`.
      */
     public fun postVariables(
         componentId: String,
@@ -48,9 +47,9 @@ public interface PaywallWebViewController {
     )
 
     /**
-     * Sends a message of the given [type] into the web view targeting [componentId], following the web
-     * view protocol envelope `{ "type", "component_id", "variables" }`. [variables] is delivered under
-     * the `variables` key. Use [postVariables] for the common `rc:variables` case.
+     * Sends a message of the given [type] into the web view targeting [componentId]. The flat
+     * [variables] map is sent as the transport envelope's `payload` field (not nested under a
+     * `variables` key). Use [postVariables] for the common `rc:variables` case.
      */
     public fun postMessage(
         componentId: String,

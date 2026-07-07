@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.webkit.JavascriptInterface
@@ -14,7 +15,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.toJsonObject
 import org.json.JSONObject
 import java.lang.ref.WeakReference
-import java.net.URL
+import java.util.Locale
 
 /**
  * Installs and drives the bidirectional bridge between a Paywalls V2 `web_view` component and native
@@ -30,20 +31,22 @@ import java.net.URL
  * the same connect/init handshake as on web. No document-start shim is injected.
  *
  * Because `addJavascriptInterface` provides no platform origin scoping, the bridge enforces the origin
- * itself: before delivering any inbound message it verifies the WebView's current URL still has the
- * same origin (scheme + host + port) as the resolved component URL, rejecting messages received after
- * navigation to an unexpected origin.
+ * itself: before delivering any inbound or outbound message it verifies the WebView's current URL still
+ * has the same origin (scheme + host + port) as the resolved component URL, rejecting messages received
+ * after navigation to an unexpected origin. Origin is always re-checked on the main thread at delivery
+ * time.
  *
  * ## Lifecycle & threading
  * The bridge holds only a [WeakReference] to the [WebView] (no Activity/Context), and stops delivering
  * messages once [release] is called. Inbound JavaScript callbacks arrive on a binder thread and are
  * hopped onto the main thread; app callbacks and all WebView interactions happen on the main thread.
+ * Outbound [WebView.evaluateJavascript] calls queued before [release] are dropped when they run.
  */
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class WebViewJavaScriptBridge(
     webView: WebView,
     private val componentId: String,
-    expectedUrl: URL,
+    expectedUrl: String,
     locale: String,
     messageHandler: PaywallWebViewMessageHandler?,
     protocolVersion: Int = WebViewEnvelope.DEFAULT_PROTOCOL_VERSION,
@@ -103,8 +106,10 @@ internal class WebViewJavaScriptBridge(
      */
     @JavascriptInterface
     fun postMessage(json: String) {
-        if (released) return
-        mainHandler.post { handleInboundMessage(json) }
+        mainHandler.post {
+            if (released) return@post
+            handleInboundMessage(json)
+        }
     }
 
     @MainThread
@@ -314,7 +319,7 @@ internal class WebViewJavaScriptBridge(
     @MainThread
     private fun isOriginTrusted(webView: WebView, allowBeforeNavigation: Boolean): Boolean {
         if (expectedOrigin == null) return false
-        val currentOrigin = webView.url?.let { runCatching { URL(it).toOriginOrNull() }.getOrNull() }
+        val currentOrigin = webView.url?.toOriginOrNull()
         return when {
             currentOrigin == null -> allowBeforeNavigation
             else -> currentOrigin == expectedOrigin
@@ -323,9 +328,13 @@ internal class WebViewJavaScriptBridge(
 
     private fun runOnMainThread(block: () -> Unit) {
         if (Looper.myLooper() == Looper.getMainLooper()) {
+            if (released) return
             block()
         } else {
-            mainHandler.post(block)
+            mainHandler.post {
+                if (released) return@post
+                block()
+            }
         }
     }
 
@@ -345,13 +354,25 @@ internal class WebViewJavaScriptBridge(
 }
 
 /**
- * The origin of this URL as `scheme://host[:port]`, or `null` if it lacks a host. Only HTTPS URLs are
- * expected here (the resolver already enforces this), but the origin string includes the scheme so a
- * scheme change would also be detected.
+ * The origin of this URL as `scheme://host[:port]`, or `null` if it lacks a host. Host comparison is
+ * case-insensitive. Default ports (443 for https, 80 for http) are omitted.
  */
-private fun URL.toOriginOrNull(): String? {
-    val host = host?.takeIf { it.isNotBlank() } ?: return null
-    val effectivePort = if (port == -1) defaultPort else port
-    val portSuffix = if (effectivePort == -1) "" else ":$effectivePort"
-    return "$protocol://$host$portSuffix"
+@Suppress("ReturnCount", "MagicNumber")
+internal fun String.toOriginOrNull(): String? {
+    val uri = Uri.parse(this)
+    val scheme = uri.scheme?.lowercase(Locale.US) ?: return null
+    val host = uri.host?.takeIf { it.isNotBlank() }?.lowercase(Locale.US) ?: return null
+    val effectivePort = when {
+        uri.port != -1 -> uri.port
+        scheme == "https" -> 443
+        scheme == "http" -> 80
+        else -> -1
+    }
+    val portSuffix = when {
+        effectivePort == -1 -> ""
+        scheme == "https" && effectivePort == 443 -> ""
+        scheme == "http" && effectivePort == 80 -> ""
+        else -> ":$effectivePort"
+    }
+    return "$scheme://$host$portSuffix"
 }

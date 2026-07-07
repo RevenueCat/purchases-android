@@ -14,13 +14,12 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.shadows.ShadowWebView
-import java.net.URL
 
 @RunWith(RobolectricTestRunner::class)
 internal class WebViewJavaScriptBridgeTest {
 
     private val componentId = "promo_web_view"
-    private val expectedUrl = URL("https://assets.example.com/promo/index.html")
+    private val expectedUrl = "https://assets.example.com/promo/index.html"
 
     private lateinit var webView: WebView
     private lateinit var shadowWebView: ShadowWebView
@@ -36,7 +35,7 @@ internal class WebViewJavaScriptBridgeTest {
     private fun bridge(
         handler: PaywallWebViewMessageHandler? = PaywallWebViewMessageHandler { message, _ -> received.add(message) },
         locale: String = "en-US",
-        navigateTo: URL? = expectedUrl,
+        navigateTo: String? = expectedUrl,
         sizeToContentWidth: Boolean = false,
         sizeToContentHeight: Boolean = false,
         onContentResize: (widthCssPx: Int?, heightCssPx: Int?) -> Unit = { _, _ -> },
@@ -52,7 +51,7 @@ internal class WebViewJavaScriptBridgeTest {
             onContentResize = onContentResize,
         )
         bridge.attach()
-        navigateTo?.let { webView.loadUrl(it.toString()) }
+        navigateTo?.let { webView.loadUrl(it) }
         return bridge
     }
 
@@ -252,8 +251,52 @@ internal class WebViewJavaScriptBridgeTest {
     }
 
     @Test
+    fun `does not execute queued outbound evaluateJavascript after release`() {
+        val bridge = bridge()
+        connect(bridge)
+        val background = Thread {
+            bridge.postMessage(
+                componentId = componentId,
+                type = "rc:queued",
+                variables = mapOf("foo" to PaywallWebViewValue.String("bar")),
+            )
+        }
+        background.start()
+        background.join()
+        bridge.release()
+        idleMainLooper()
+
+        assertThat(shadowWebView.lastEvaluatedJavascript).doesNotContain("rc:queued")
+    }
+
+    @Test
+    fun `re-validates origin at main-thread delivery after navigation race`() {
+        val bridge = bridge()
+        connect(bridge)
+        webView.loadUrl("https://evil.example.org/phish.html")
+        val background = Thread {
+            bridge.postMessage(appMessage(WebViewMessageType.STEP_LOADED))
+        }
+        background.start()
+        background.join()
+        idleMainLooper()
+
+        assertThat(received).isEmpty()
+    }
+
+    @Test
+    fun `treats host comparison as case insensitive`() {
+        val bridge = bridge(navigateTo = "https://Assets.Example.COM/promo/index.html")
+        connect(bridge)
+        bridge.postMessage(appMessage(WebViewMessageType.STEP_LOADED))
+        idleMainLooper()
+
+        assertThat(received).hasSize(1)
+    }
+
+    @Test
     fun `rejects messages after navigation to an unexpected origin`() {
-        val bridge = bridge(navigateTo = URL("https://evil.example.org/phish.html"))
+        val bridge = bridge(navigateTo = "https://evil.example.org/phish.html")
         connect(bridge)
         bridge.postMessage(appMessage(WebViewMessageType.STEP_LOADED))
         idleMainLooper()
@@ -263,7 +306,7 @@ internal class WebViewJavaScriptBridgeTest {
 
     @Test
     fun `allows messages from the same origin on a different path`() {
-        val bridge = bridge(navigateTo = URL("https://assets.example.com/promo/step-two.html"))
+        val bridge = bridge(navigateTo = "https://assets.example.com/promo/step-two.html")
         connect(bridge)
         bridge.postMessage(appMessage(WebViewMessageType.STEP_LOADED))
         idleMainLooper()
@@ -273,7 +316,7 @@ internal class WebViewJavaScriptBridgeTest {
 
     @Test
     fun `does not deliver outbound messages after navigation to an unexpected origin`() {
-        val bridge = bridge(navigateTo = URL("https://evil.example.org/phish.html"))
+        val bridge = bridge(navigateTo = "https://evil.example.org/phish.html")
         connect(bridge)
         bridge.postMessage(
             componentId = componentId,
@@ -287,7 +330,7 @@ internal class WebViewJavaScriptBridgeTest {
 
     @Test
     fun `treats the default https port as the same origin`() {
-        val bridge = bridge(navigateTo = URL("https://assets.example.com:443/promo/index.html"))
+        val bridge = bridge(navigateTo = "https://assets.example.com:443/promo/index.html")
         connect(bridge)
         bridge.postMessage(
             componentId = componentId,

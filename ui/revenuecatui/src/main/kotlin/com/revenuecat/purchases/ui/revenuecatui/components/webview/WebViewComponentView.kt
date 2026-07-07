@@ -28,7 +28,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentV
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
-import java.net.URL
 
 @JvmSynthetic
 @Composable
@@ -85,7 +84,7 @@ internal fun WebViewComponentView(
                         WebViewJavaScriptBridge(
                             webView = this,
                             componentId = id,
-                            expectedUrl = URL(resolvedUrl),
+                            expectedUrl = resolvedUrl,
                             locale = locale,
                             messageHandler = null,
                             protocolVersion = style.protocolVersion ?: WebViewEnvelope.DEFAULT_PROTOCOL_VERSION,
