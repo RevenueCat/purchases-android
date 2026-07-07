@@ -5,6 +5,9 @@ package com.revenuecat.purchases.common.workflows
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
+import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,6 +29,8 @@ import kotlinx.coroutines.launch
  */
 internal class WorkflowManager(
     private val workflowsConfigProvider: WorkflowsConfigProvider,
+    private val uiConfigProvider: UiConfigProvider,
+    private val workflowAssetPreDownloader: WorkflowAssetPreDownloader,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
 
@@ -55,7 +60,20 @@ internal class WorkflowManager(
                         "Workflow '$workflowId' is unavailable from remote config.",
                     ),
                 )
-                else -> onSuccess(result)
+                else -> {
+                    // Warm the workflow's images and ui_config fonts in parallel with delivery, like the old
+                    // fetch path did on resolve; a prewarm failure must never fail the read itself. The fonts
+                    // now come from the ui_config topic rather than a uiConfig embedded in the workflow body.
+                    scope.launch {
+                        runCatching {
+                            workflowAssetPreDownloader.preDownloadWorkflowAssets(
+                                result,
+                                uiConfigProvider.getUiConfig(),
+                            )
+                        }.onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
+                    }
+                    onSuccess(result)
+                }
             }
         }
     }

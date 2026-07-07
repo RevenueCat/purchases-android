@@ -64,6 +64,7 @@ import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.PaywallComponentsImagePreDownloader
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
+import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
@@ -388,7 +389,14 @@ internal class PurchasesFactory(
             // WorkflowsConfigProvider. Lifecycle (foreground refresh, identity clearCache, teardown) is driven
             // through remoteConfigManager, which the orchestrator and IdentityManager already own.
             val workflowManager = if (appConfig.useWorkflows && remoteConfigManager != null) {
-                WorkflowManager(WorkflowsConfigProvider(remoteConfigManager))
+                WorkflowManager(
+                    WorkflowsConfigProvider(remoteConfigManager),
+                    UiConfigProvider(remoteConfigManager),
+                    WorkflowAssetPreDownloader(
+                        paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
+                        offeringFontPreDownloader = offeringFontPreDownloader,
+                    ),
+                )
             } else {
                 null
             }

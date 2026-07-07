@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.networking.RCContainer
@@ -21,6 +22,7 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -224,7 +226,7 @@ class WorkflowsConfigIntegrationTest {
         sync(config)
 
         // WorkflowManager is kept as the consumer-facing seam; only its data source moved to the config layer.
-        val workflowManager = WorkflowManager(workflowsConfigProvider = provider, scope = testScope)
+        val workflowManager = workflowManagerWith(provider)
 
         var delivered: PublishedWorkflow? = null
         var error: PurchasesError? = null
@@ -254,7 +256,7 @@ class WorkflowsConfigIntegrationTest {
             """.trimIndent()
             sync(config)
 
-            val workflowManager = WorkflowManager(workflowsConfigProvider = provider, scope = testScope)
+            val workflowManager = workflowManagerWith(provider)
             var completed = false
             workflowManager.awaitWorkflowsReady { completed = true }
 
@@ -263,6 +265,15 @@ class WorkflowsConfigIntegrationTest {
             // another one; this is what keeps OfferingsManager's gate cheap on a warm cache.
             verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
         }
+
+    // Asset prewarming is out of scope here (covered by WorkflowManagerTest), so the manager gets a stubbed
+    // ui-config provider and a no-op pre-downloader.
+    private fun workflowManagerWith(provider: WorkflowsConfigProvider) = WorkflowManager(
+        workflowsConfigProvider = provider,
+        uiConfigProvider = mockk { coEvery { getUiConfig() } returns UiConfig() },
+        workflowAssetPreDownloader = mockk(relaxed = true),
+        scope = testScope,
+    )
 
     private fun sync(configJson: String, vararg blobs: Pair<String, String>) {
         manager.refreshRemoteConfig(appInBackground = false, appUserID = "user-1")
