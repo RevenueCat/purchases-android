@@ -26,17 +26,15 @@ dependencies {
     detektPlugins(libs.detekt.compose)
     detektPlugins(libs.detekt.libraries)
     detektPlugins(project(":detekt-rules"))
-
-    dokka(project(":purchases"))
-    dokka(project(":ui:revenuecatui"))
-    dokka(project(":ui:debugview"))
-    dokka(project(":feature:amazon"))
-    dokka(project(":feature:admob"))
-    dokka(project(":feature:galaxy"))
 }
 
-tasks.named<Delete>("clean") {
-    delete(rootProject.layout.buildDirectory)
+// Aggregate docs from every module that applies the Dokka plugin (currently done by revenuecat-public-library),
+// so new library modules are documented without having to remember to list them here.
+val dokkaPluginId = libs.plugins.dokka.get().pluginId
+subprojects {
+    plugins.withId(dokkaPluginId) {
+        rootProject.dependencies.add("dokka", project)
+    }
 }
 
 dokka {

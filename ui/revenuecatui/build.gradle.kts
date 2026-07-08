@@ -1,4 +1,3 @@
-import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -138,32 +137,19 @@ dependencies {
 
 dokka {
     dokkaSourceSets {
-        configureEach {
-            when (name) {
-                "defaults" -> {
-                    dependentSourceSets.add(
-                        dokkaSourceSets.named("main").flatMap { it.sourceSetId }.get(),
-                    )
-                }
-                "main" -> {
-                    reportUndocumented.set(true)
-                    documentedVisibilities(VisibilityModifier.Public)
-                    skipDeprecated.set(true)
+        named("defaults") {
+            dependentSourceSets.addLater(dokkaSourceSets.named("main").flatMap { it.sourceSetId })
+        }
+        named("main") {
+            reportUndocumented.set(true)
+            skipDeprecated.set(true)
 
-                    externalDocumentationLinks.register("android") {
-                        url("https://developer.android.com/reference/")
-                        packageListUrl("https://developer.android.com/reference/package-list")
-                    }
-                    sourceLink {
-                        localDirectory.set(
-                            file("src/main/kotlin"),
-                        )
-                        remoteUrl(
-                            "https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin",
-                        )
-                        remoteLineSuffix.set("#L")
-                    }
-                }
+            externalDocumentationLinks.register("android") {
+                url("https://developer.android.com/reference/")
+            }
+            sourceLink {
+                localDirectory.set(file("src/main/kotlin"))
+                remoteUrl("https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin")
             }
         }
     }
