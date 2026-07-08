@@ -815,6 +815,11 @@ internal class PaywallViewModelImpl(
                 // paywall /offerings already delivered so the app still shows something; rethrow
                 // (→ PaywallState.Error) only when there is nothing to fall back to.
                 if (selectedOffering.paywallComponents == null) throw e
+                // A prior render on this ViewModel may have been a successful workflow, leaving
+                // _workflowState non-null. InternalPaywall renders the workflow UI whenever workflowState
+                // is non-null, so without clearing it the stale workflow would mask the offerings fallback
+                // we're about to set via updatePaywallState.
+                clearWorkflowState()
                 Logger.w(
                     "Paywalls: Failed to fetch workflow for offering '${selectedOffering.identifier}' " +
                         "(${e.message}). Falling back to the offerings-provided paywall.",
