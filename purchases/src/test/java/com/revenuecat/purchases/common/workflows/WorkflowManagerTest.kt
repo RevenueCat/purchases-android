@@ -25,7 +25,7 @@ import org.junit.Test
 
 /**
  * [WorkflowManager] is now a thin adapter over [WorkflowsConfigProvider], so these tests exercise the
- * consumer-facing seam (`getWorkflow`/`workflowIdForOfferingId`/`onWorkflowsReady`) against a mocked
+ * consumer-facing seam (`getWorkflow`/`workflowIdForOfferingId`/`onPaywallConfigReady`) against a mocked
  * provider. The provider's own behavior (topic reads, blob resolution) is covered by
  * [WorkflowsConfigIntegrationTest].
  */
@@ -178,16 +178,31 @@ class WorkflowManagerTest {
     }
 
     @Test
-    fun `onWorkflowsReady invokes onComplete after the provider syncs`() {
+    fun `onPaywallConfigReady invokes onComplete after the workflows topic syncs and ui_config resolves`() {
         val mockProvider = mockk<WorkflowsConfigProvider>()
         coEvery { mockProvider.awaitReady() } just Runs
         val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = testScope)
 
         var completed = false
-        manager.onWorkflowsReady { completed = true }
+        manager.onPaywallConfigReady { completed = true }
         testScope.testScheduler.advanceUntilIdle()
 
         assertThat(completed).isTrue()
         coVerify(exactly = 1) { mockProvider.awaitReady() }
+        coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
+    }
+
+    @Test
+    fun `onPaywallConfigReady still completes when ui_config resolution fails`() {
+        val mockProvider = mockk<WorkflowsConfigProvider>()
+        coEvery { mockProvider.awaitReady() } just Runs
+        coEvery { mockUiConfigProvider.getUiConfig() } throws RuntimeException("boom")
+        val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = testScope)
+
+        var completed = false
+        manager.onPaywallConfigReady { completed = true }
+        testScope.testScheduler.advanceUntilIdle()
+
+        assertThat(completed).isTrue()
     }
 }

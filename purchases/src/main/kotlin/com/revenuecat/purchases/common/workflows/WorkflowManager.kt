@@ -12,6 +12,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 /**
@@ -82,15 +83,32 @@ internal class WorkflowManager(
         workflowsConfigProvider.workflowIdForOfferingId(offeringId)
 
     /**
-     * Invokes [onComplete] once the workflows topic is synced — the config-topic replacement for the
-     * old `getWorkflowsList(onComplete=)` gate `OfferingsManager` used to preserve the guarantee that
-     * `getOfferings` doesn't return until workflow data is ready to be queried. It is not a `suspend`
-     * function: it launches the wait on [scope] and calls back, so a callback-based caller can gate on
-     * it without owning a coroutine scope.
+     * Invokes [onComplete] once the config-endpoint paywall data `getOfferings` depends on is ready — the
+     * config-topic replacement for the old `getWorkflowsList(onComplete=)` gate `OfferingsManager` used to
+     * preserve the guarantee that `getOfferings` doesn't return until that data is ready to be queried.
+     *
+     * "Ready" means, resolved concurrently:
+     * - the workflows topic is synced, so [workflowIdForOfferingId] resolves; and
+     * - the `ui_config` body is resolved, so a workflow render — and, once `ui_config`/paywall components stop
+     *   shipping inline in `/offerings` and move to the config endpoint, the offering itself — has its styling
+     *   in hand without a further round-trip. [UiConfigProvider.getUiConfig] is best-effort (it falls back to a
+     *   default `UiConfig`), so it can never fail the gate.
+     *
+     * It is not a `suspend` function: it launches the wait on [scope] and calls back, so a callback-based
+     * caller can gate on it without owning a coroutine scope.
      */
-    fun onWorkflowsReady(onComplete: () -> Unit) {
+    fun onPaywallConfigReady(onComplete: () -> Unit) {
         scope.launch {
-            workflowsConfigProvider.awaitReady()
+            coroutineScope {
+                launch { workflowsConfigProvider.awaitReady() }
+                launch {
+                    // Best-effort: resolving ui_config must never fail (or hang) the gate. getUiConfig()
+                    // already falls back to a default UiConfig on a parse miss; guard the unexpected too so a
+                    // ui_config error can't stop getOfferings from returning.
+                    runCatching { uiConfigProvider.getUiConfig() }
+                        .onFailure { errorLog(it) { "Failed to resolve ui_config while readying paywall config" } }
+                }
+            }
             onComplete()
         }
     }

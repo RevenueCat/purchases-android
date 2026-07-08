@@ -158,7 +158,7 @@ internal class OfferingsManager(
             null,
         )
         val dispatchSuccess = { dispatch { onSuccess?.invoke(cachedOfferings) } }
-        workflowManager?.onWorkflowsReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
+        workflowManager?.onPaywallConfigReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
         if (isCacheStale) {
             log(LogIntent.DEBUG) {
                 if (appInBackground) {
@@ -262,7 +262,7 @@ internal class OfferingsManager(
                 offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                 offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
                 val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
-                workflowManager?.onWorkflowsReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
+                workflowManager?.onPaywallConfigReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
             },
         )
     }

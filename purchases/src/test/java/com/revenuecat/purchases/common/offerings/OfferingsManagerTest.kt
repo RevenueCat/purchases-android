@@ -64,7 +64,7 @@ class OfferingsManagerTest {
             every { preDownloadOfferingFontsIfNeeded(any()) } just Runs
         }
         mockWorkflowManager = mockk(relaxed = true)
-        every { mockWorkflowManager.onWorkflowsReady(onComplete = any()) } answers {
+        every { mockWorkflowManager.onPaywallConfigReady(onComplete = any()) } answers {
             firstArg<() -> Unit>().invoke()
         }
 
@@ -994,11 +994,11 @@ class OfferingsManagerTest {
     }
 
     @Test
-    fun `getOfferings does not call onSuccess until onWorkflowsReady completes`() {
+    fun `getOfferings does not call onSuccess until onPaywallConfigReady completes`() {
         val mockWorkflowManager = mockk<WorkflowManager>()
         val onCompleteSlot = slot<() -> Unit>()
         every {
-            mockWorkflowManager.onWorkflowsReady(onComplete = capture(onCompleteSlot))
+            mockWorkflowManager.onPaywallConfigReady(onComplete = capture(onCompleteSlot))
         } just Runs
 
         val managerWithWorkflow = OfferingsManager(
@@ -1031,11 +1031,11 @@ class OfferingsManagerTest {
     }
 
     @Test
-    fun `vendCachedOfferingsAndMaybeRefresh does not call onSuccess until onWorkflowsReady completes`() {
+    fun `vendCachedOfferingsAndMaybeRefresh does not call onSuccess until onPaywallConfigReady completes`() {
         val mockWorkflowManager = mockk<WorkflowManager>()
         val onCompleteSlot = slot<() -> Unit>()
         every {
-            mockWorkflowManager.onWorkflowsReady(onComplete = capture(onCompleteSlot))
+            mockWorkflowManager.onPaywallConfigReady(onComplete = capture(onCompleteSlot))
         } just Runs
 
         val managerWithWorkflow = OfferingsManager(
