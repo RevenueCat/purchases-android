@@ -431,7 +431,8 @@ public class Purchases internal constructor(
     public suspend fun awaitGetUiConfig(): UiConfig = purchasesOrchestrator.getUiConfig()
 
     @InternalRevenueCatAPI
-    public fun workflowIdForOfferingId(offeringId: String): String? =
+    @JvmSynthetic
+    public suspend fun workflowIdForOfferingId(offeringId: String): String? =
         purchasesOrchestrator.workflowIdForOfferingId(offeringId)
 
     /**
