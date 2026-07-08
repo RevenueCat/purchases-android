@@ -14,7 +14,6 @@ import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
-import com.revenuecat.purchases.common.workflows.WorkflowsCache
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.utils.SyncDispatcher
@@ -43,7 +42,6 @@ class IdentityManagerTests {
     private lateinit var mockSubscriberAttributesCache: SubscriberAttributesCache
     private lateinit var mockSubscriberAttributesManager: SubscriberAttributesManager
     private lateinit var mockOfferingsCache: OfferingsCache
-    private lateinit var mockWorkflowsCache: WorkflowsCache
     private lateinit var mockRemoteConfigManager: RemoteConfigManager
     private lateinit var mockBackend: Backend
     private lateinit var mockOfflineEntitlementsManager: OfflineEntitlementsManager
@@ -76,9 +74,6 @@ class IdentityManagerTests {
         }
         mockSubscriberAttributesManager = mockk()
         mockOfferingsCache = mockk<OfferingsCache>().apply {
-            every { clearCache() } just Runs
-        }
-        mockWorkflowsCache = mockk<WorkflowsCache>().apply {
             every { clearCache() } just Runs
         }
         mockRemoteConfigManager = mockk<RemoteConfigManager>().apply {
@@ -255,7 +250,6 @@ class IdentityManagerTests {
             mockSubscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
         }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
-        verify(exactly = 1) { mockWorkflowsCache.clearCache() }
         verify(exactly = 1) { mockRemoteConfigManager.clearCache(newAppUserID) }
     }
 
@@ -411,7 +405,6 @@ class IdentityManagerTests {
             )
         }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
-        verify(exactly = 1) { mockWorkflowsCache.clearCache() }
         // logOut resets to a freshly generated anonymous ID, so match any user.
         verify(exactly = 1) { mockRemoteConfigManager.clearCache(any()) }
     }
@@ -638,7 +631,6 @@ class IdentityManagerTests {
 
         verify(exactly = 1) { mockDeviceCache.clearCachesForAppUserID(oldAppUserID) }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
-        verify(exactly = 1) { mockWorkflowsCache.clearCache() }
         verify(exactly = 1) { mockRemoteConfigManager.clearCache(newAppUserID) }
         verify(exactly = 1) {
             mockSubscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
@@ -771,7 +763,6 @@ class IdentityManagerTests {
             )
         }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
-        verify(exactly = 1) { mockWorkflowsCache.clearCache() }
         verify(exactly = 1) { mockRemoteConfigManager.clearCache(newAppUserId) }
         verify(exactly = 1) { mockDeviceCache.clearCustomerInfoCache(newAppUserId) }
         verify(exactly = 1) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
@@ -811,7 +802,6 @@ class IdentityManagerTests {
             )
         }
         verify(exactly = 0) { mockOfferingsCache.clearCache() }
-        verify(exactly = 0) { mockWorkflowsCache.clearCache() }
         verify(exactly = 0) { mockRemoteConfigManager.clearCache(any()) }
         verify(exactly = 0) { mockDeviceCache.clearCustomerInfoCache(newAppUserId) }
         verify(exactly = 0) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
@@ -906,7 +896,6 @@ class IdentityManagerTests {
         subscriberAttributesCache: SubscriberAttributesCache = mockSubscriberAttributesCache,
         subscriberAttributesManager: SubscriberAttributesManager = mockSubscriberAttributesManager,
         offeringsCache: OfferingsCache = mockOfferingsCache,
-        workflowsCache: WorkflowsCache = mockWorkflowsCache,
         remoteConfigManager: RemoteConfigManager = mockRemoteConfigManager,
         backend: Backend = mockBackend,
         offlineEntitlementsManager: OfflineEntitlementsManager = mockOfflineEntitlementsManager,
@@ -917,7 +906,6 @@ class IdentityManagerTests {
             subscriberAttributesCache,
             subscriberAttributesManager,
             offeringsCache,
-            workflowsCache,
             remoteConfigManager,
             backend,
             offlineEntitlementsManager,

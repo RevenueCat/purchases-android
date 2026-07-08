@@ -65,8 +65,6 @@ class DeviceCacheTest {
     private val productEntitlementMappingLastUpdatedCacheKey = "com.revenuecat.purchases.api_key.productEntitlementMappingLastUpdated"
     private val productEntitlementMappingCacheKey = "com.revenuecat.purchases.api_key.productEntitlementMapping"
     private val offeringsResponseCacheKey = "com.revenuecat.purchases.api_key.offeringsResponse"
-    private val workflowsListResponseCacheKey = "com.revenuecat.purchases.api_key.workflowsListResponse"
-    private val workflowDetailEnvelopesCacheKey = "com.revenuecat.purchases.api_key.workflowDetailEnvelopes"
 
     private val slotForPutLong = slot<Long>()
 
@@ -720,64 +718,6 @@ class DeviceCacheTest {
     }
 
     // endregion offerings response
-
-    // region workflows list response
-
-    @Test
-    fun `getWorkflowsListResponseCache returns null when nothing is cached`() {
-        every { mockPrefs.getString(workflowsListResponseCacheKey, null) } returns null
-        assertThat(cache.getWorkflowsListResponseCache()).isNull()
-    }
-
-    @Test
-    fun `cacheWorkflowsListResponse stores string in preferences`() {
-        val payload = """{"workflows":[]}"""
-        cache.cacheWorkflowsListResponse(payload)
-        verifyAll {
-            mockEditor.putString(workflowsListResponseCacheKey, payload)
-            mockEditor.apply()
-        }
-    }
-
-    @Test
-    fun `clearWorkflowsListResponseCache removes key from preferences`() {
-        cache.clearWorkflowsListResponseCache()
-        verifyAll {
-            mockEditor.remove(workflowsListResponseCacheKey)
-            mockEditor.apply()
-        }
-    }
-
-    // endregion workflows list response
-
-    // region workflow detail envelopes
-
-    @Test
-    fun `getWorkflowDetailEnvelopesCache returns null when nothing is cached`() {
-        every { mockPrefs.getString(workflowDetailEnvelopesCacheKey, null) } returns null
-        assertThat(cache.getWorkflowDetailEnvelopesCache()).isNull()
-    }
-
-    @Test
-    fun `cacheWorkflowDetailEnvelopes stores string in preferences`() {
-        val payload = """{"wf_1":{"action":"use_cdn","url":"https://cdn/x.json","hash":"h"}}"""
-        cache.cacheWorkflowDetailEnvelopes(payload)
-        verifyAll {
-            mockEditor.putString(workflowDetailEnvelopesCacheKey, payload)
-            mockEditor.apply()
-        }
-    }
-
-    @Test
-    fun `clearWorkflowDetailEnvelopesCache removes key from preferences`() {
-        cache.clearWorkflowDetailEnvelopesCache()
-        verifyAll {
-            mockEditor.remove(workflowDetailEnvelopesCacheKey)
-            mockEditor.apply()
-        }
-    }
-
-    // endregion workflow detail envelopes
 
     // region storefront
 
