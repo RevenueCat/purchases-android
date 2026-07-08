@@ -1,3 +1,4 @@
+import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -135,31 +136,27 @@ dependencies {
     baselineProfile(project(":baselineprofile"))
 }
 
-tasks.dokkaHtmlPartial.configure {
+dokka {
     dokkaSourceSets {
-        named("defaults") {
-            dependsOn("main")
-        }
-        named("main") {
-            reportUndocumented.set(true)
-            includeNonPublic.set(false)
-            skipDeprecated.set(true)
+        configureEach {
+            if (name == "main") {
+                reportUndocumented.set(true)
+                documentedVisibilities(VisibilityModifier.Public)
+                skipDeprecated.set(true)
 
-            externalDocumentationLink {
-                url.set(
-                    uri("https://developer.android.com/reference/package-list").toURL(),
-                )
-            }
-            sourceLink {
-                localDirectory.set(
-                    file("src/main/kotlin"),
-                )
-                remoteUrl.set(
-                    uri(
+                externalDocumentationLinks.register("android") {
+                    url("https://developer.android.com/reference/")
+                    packageListUrl("https://developer.android.com/reference/package-list")
+                }
+                sourceLink {
+                    localDirectory.set(
+                        file("src/main/kotlin"),
+                    )
+                    remoteUrl(
                         "https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin",
-                    ).toURL(),
-                )
-                remoteLineSuffix.set("#L")
+                    )
+                    remoteLineSuffix.set("#L")
+                }
             }
         }
     }

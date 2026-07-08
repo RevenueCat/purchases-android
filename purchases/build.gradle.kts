@@ -1,3 +1,4 @@
+import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import java.io.FileInputStream
 import java.util.Properties
@@ -243,74 +244,65 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
-tasks.dokkaHtmlPartial.configure {
+dokka {
     dokkaSourceSets {
-        named("customEntitlementComputation") {
-            suppress.set(true)
-        }
-        named("defaults") {
-            dependsOn("main")
-            reportUndocumented.set(true)
-            includeNonPublic.set(false)
-            skipDeprecated.set(true)
-            externalDocumentationLink {
-                url.set(
-                    uri("https://developer.android.com/reference/package-list").toURL(),
-                )
-            }
-            sourceLink {
-                localDirectory.set(
-                    file("src/main/kotlin"),
-                )
-                remoteUrl.set(
-                    uri("https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin").toURL(),
-                )
-                remoteLineSuffix.set("#L")
-            }
-            sourceLink {
-                localDirectory.set(
-                    file("src/main/java"),
-                )
-                remoteUrl.set(
-                    uri("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java").toURL(),
-                )
-                remoteLineSuffix.set("#L")
-            }
-        }
-        named("main") {
-            reportUndocumented.set(true)
-            includeNonPublic.set(false)
-            skipDeprecated.set(true)
+        configureEach {
+            when (name) {
+                "customEntitlementComputation" -> suppress.set(true)
+                "defaults" -> {
+                    reportUndocumented.set(true)
+                    documentedVisibilities(VisibilityModifier.Public)
+                    skipDeprecated.set(true)
+                    externalDocumentationLinks.register("android") {
+                        url("https://developer.android.com/reference/")
+                        packageListUrl("https://developer.android.com/reference/package-list")
+                    }
+                    sourceLink {
+                        localDirectory.set(
+                            file("src/main/kotlin"),
+                        )
+                        remoteUrl("https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin")
+                        remoteLineSuffix.set("#L")
+                    }
+                    sourceLink {
+                        localDirectory.set(
+                            file("src/main/java"),
+                        )
+                        remoteUrl("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java")
+                        remoteLineSuffix.set("#L")
+                    }
+                }
+                "main" -> {
+                    reportUndocumented.set(true)
+                    documentedVisibilities(VisibilityModifier.Public)
+                    skipDeprecated.set(true)
 
-            // This package exclusively contains symbols annotated with @InternalRevenueCatAPI, for which no
-            // documentation is generated due to our dokka-hide-internal plugin. However, by default Dokka still
-            // generates an empty page for the package. This avoids that.
-            perPackageOption {
-                matchingRegex.set("com\\.revenuecat\\.purchases\\.paywalls\\.components.*")
-                suppress.set(true)
-            }
-            externalDocumentationLink {
-                url.set(
-                    uri("https://developer.android.com/reference/package-list").toURL(),
-                )
-            }
-            sourceLink {
-                localDirectory.set(
-                    file("src/main/kotlin"),
-                )
-                remoteUrl.set(
-                    uri(
-                        "https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin",
-                    ).toURL(),
-                )
-                remoteLineSuffix.set("#L")
-            }
-            sourceLink {
-                localDirectory.set(file("src/main/java"))
-                remoteUrl.set(
-                    uri("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java").toURL(),
-                )
-                remoteLineSuffix.set("#L")
+                    // This package exclusively contains symbols annotated with @InternalRevenueCatAPI, for which no
+                    // documentation is generated due to our dokka-hide-internal plugin. However, by default Dokka still
+                    // generates an empty page for the package. This avoids that.
+                    perPackageOption {
+                        matchingRegex.set("com\\.revenuecat\\.purchases\\.paywalls\\.components.*")
+                        suppress.set(true)
+                    }
+                    externalDocumentationLinks.register("android") {
+                        url("https://developer.android.com/reference/")
+                        packageListUrl("https://developer.android.com/reference/package-list")
+                    }
+                    sourceLink {
+                        localDirectory.set(
+                            file("src/main/kotlin"),
+                        )
+                        remoteUrl(
+                            "https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin",
+                        )
+                        remoteLineSuffix.set("#L")
+                    }
+                    sourceLink {
+                        localDirectory.set(file("src/main/java"))
+                        remoteUrl("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java")
+                        remoteLineSuffix.set("#L")
+                    }
+                }
             }
         }
     }

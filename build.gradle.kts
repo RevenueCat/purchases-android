@@ -1,4 +1,5 @@
 plugins {
+    base
     alias(libs.plugins.mavenPublish) apply false
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
@@ -25,10 +26,24 @@ dependencies {
     detektPlugins(libs.detekt.compose)
     detektPlugins(libs.detekt.libraries)
     detektPlugins(project(":detekt-rules"))
+
+    dokka(project(":purchases"))
+    dokka(project(":ui:revenuecatui"))
+    dokka(project(":ui:debugview"))
+    dokka(project(":feature:amazon"))
+    dokka(project(":feature:admob"))
+    dokka(project(":feature:galaxy"))
 }
 
-tasks.register<Delete>("clean") {
+tasks.named<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
+}
+
+dokka {
+    dokkaPublications.html {
+        outputDirectory.set(file("docs/${project.property("VERSION_NAME")}"))
+        includes.from("README.md")
+    }
 }
 
 tasks.register<io.gitlab.arturbosch.detekt.Detekt>("detektAll") {
@@ -69,9 +84,4 @@ tasks.register<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>("detektAllB
         "**/testDefaults/**/*.kt",
         "**/testCustomEntitlementComputation/**/*.kt",
     )
-}
-
-tasks.named<org.jetbrains.dokka.gradle.DokkaMultiModuleTask>("dokkaHtmlMultiModule") {
-    outputDirectory.set(file("docs/${project.property("VERSION_NAME")}"))
-    includes.from("README.md")
 }
