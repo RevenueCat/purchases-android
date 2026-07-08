@@ -158,8 +158,7 @@ internal class OfferingsManager(
             null,
         )
         val dispatchSuccess = { dispatch { onSuccess?.invoke(cachedOfferings) } }
-        workflowManager?.getWorkflowsList(appUserID, appInBackground, onComplete = dispatchSuccess)
-            ?: dispatchSuccess()
+        workflowManager?.onPaywallConfigReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
         if (isCacheStale) {
             log(LogIntent.DEBUG) {
                 if (appInBackground) {
@@ -200,8 +199,6 @@ internal class OfferingsManager(
             appInBackground,
             { body, originalDataSource ->
                 createAndCacheOfferings(
-                    appUserID = appUserID,
-                    appInBackground = appInBackground,
                     offeringsJSON = body,
                     originalDataSource = originalDataSource,
                     loadedFromDiskCache = false,
@@ -228,8 +225,6 @@ internal class OfferingsManager(
                                 }
                             } ?: HTTPResponseOriginalSource.MAIN
                             createAndCacheOfferings(
-                                appUserID = appUserID,
-                                appInBackground = appInBackground,
                                 offeringsJSON = cachedOfferingsResponse,
                                 originalDataSource = originalDataSource,
                                 loadedFromDiskCache = true,
@@ -247,8 +242,6 @@ internal class OfferingsManager(
     }
 
     private fun createAndCacheOfferings(
-        appUserID: String,
-        appInBackground: Boolean,
         offeringsJSON: JSONObject,
         originalDataSource: HTTPResponseOriginalSource,
         loadedFromDiskCache: Boolean,
@@ -269,13 +262,7 @@ internal class OfferingsManager(
                 offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                 offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
                 val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
-                workflowManager?.getWorkflowsList(
-                    appUserID,
-                    appInBackground,
-                    // Refetch workflows only when these offerings are fresh from the network.
-                    forceRefresh = !loadedFromDiskCache,
-                    onComplete = dispatchSuccess,
-                ) ?: dispatchSuccess()
+                workflowManager?.onPaywallConfigReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
             },
         )
     }

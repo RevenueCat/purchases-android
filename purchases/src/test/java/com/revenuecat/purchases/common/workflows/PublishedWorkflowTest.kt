@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -82,7 +81,6 @@ class PublishedWorkflowTest {
         initialStepId = "step-1",
         steps = steps,
         screens = screens,
-        uiConfig = UiConfig(),
         singleStepFallbackId = singleStepFallbackId,
     )
 
