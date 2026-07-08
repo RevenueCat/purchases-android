@@ -82,11 +82,13 @@ internal class WorkflowManager(
         workflowsConfigProvider.workflowIdForOfferingId(offeringId)
 
     /**
-     * Ensures the workflows topic is synced before invoking [onComplete] — the config-topic replacement for the
+     * Invokes [onComplete] once the workflows topic is synced — the config-topic replacement for the
      * old `getWorkflowsList(onComplete=)` gate `OfferingsManager` used to preserve the guarantee that
-     * `getOfferings` doesn't return until workflow data is ready to be queried.
+     * `getOfferings` doesn't return until workflow data is ready to be queried. It is not a `suspend`
+     * function: it launches the wait on [scope] and calls back, so a callback-based caller can gate on
+     * it without owning a coroutine scope.
      */
-    fun awaitWorkflowsReady(onComplete: () -> Unit) {
+    fun onWorkflowsReady(onComplete: () -> Unit) {
         scope.launch {
             workflowsConfigProvider.awaitReady()
             onComplete()

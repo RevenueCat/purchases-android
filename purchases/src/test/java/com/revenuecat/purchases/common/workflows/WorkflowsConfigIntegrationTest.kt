@@ -242,7 +242,7 @@ class WorkflowsConfigIntegrationTest {
     }
 
     @Test
-    fun `awaitWorkflowsReady completes once the topic is committed, without forcing a second sync`() =
+    fun `onWorkflowsReady completes once the topic is committed, without forcing a second sync`() =
         runTest(testDispatcher) {
             val config = """
                 {
@@ -258,10 +258,10 @@ class WorkflowsConfigIntegrationTest {
 
             val workflowManager = workflowManagerWith(provider)
             var completed = false
-            workflowManager.awaitWorkflowsReady { completed = true }
+            workflowManager.onWorkflowsReady { completed = true }
 
             assertThat(completed).isTrue()
-            // The topic was already committed by the sync() above — awaitWorkflowsReady must not trigger
+            // The topic was already committed by the sync() above — onWorkflowsReady must not trigger
             // another one; this is what keeps OfferingsManager's gate cheap on a warm cache.
             verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
         }

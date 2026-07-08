@@ -66,7 +66,7 @@ internal class WorkflowsConfigProvider(
 
     /**
      * Forces the `workflows` topic to be synced (or confirms it already is), discarding the result. Used by
-     * [WorkflowManager.awaitWorkflowsReady] so `OfferingsManager` can gate its `onSuccess` callback on
+     * [WorkflowManager.onWorkflowsReady] so `OfferingsManager` can gate its `onSuccess` callback on
      * workflow data being ready, the way it used to gate on the old `getWorkflowsList` fetch — cheap on a warm
      * cache since [RemoteConfigManager.topic] returns immediately once a topic is committed.
      */

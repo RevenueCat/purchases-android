@@ -25,7 +25,7 @@ import org.junit.Test
 
 /**
  * [WorkflowManager] is now a thin adapter over [WorkflowsConfigProvider], so these tests exercise the
- * consumer-facing seam (`getWorkflow`/`workflowIdForOfferingId`/`awaitWorkflowsReady`) against a mocked
+ * consumer-facing seam (`getWorkflow`/`workflowIdForOfferingId`/`onWorkflowsReady`) against a mocked
  * provider. The provider's own behavior (topic reads, blob resolution) is covered by
  * [WorkflowsConfigIntegrationTest].
  */
@@ -178,13 +178,13 @@ class WorkflowManagerTest {
     }
 
     @Test
-    fun `awaitWorkflowsReady invokes onComplete after the provider syncs`() {
+    fun `onWorkflowsReady invokes onComplete after the provider syncs`() {
         val mockProvider = mockk<WorkflowsConfigProvider>()
         coEvery { mockProvider.awaitReady() } just Runs
         val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = testScope)
 
         var completed = false
-        manager.awaitWorkflowsReady { completed = true }
+        manager.onWorkflowsReady { completed = true }
         testScope.testScheduler.advanceUntilIdle()
 
         assertThat(completed).isTrue()
