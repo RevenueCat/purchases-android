@@ -139,23 +139,30 @@ dependencies {
 dokka {
     dokkaSourceSets {
         configureEach {
-            if (name == "main") {
-                reportUndocumented.set(true)
-                documentedVisibilities(VisibilityModifier.Public)
-                skipDeprecated.set(true)
-
-                externalDocumentationLinks.register("android") {
-                    url("https://developer.android.com/reference/")
-                    packageListUrl("https://developer.android.com/reference/package-list")
+            when (name) {
+                "defaults" -> {
+                    dependentSourceSets.add(
+                        dokkaSourceSets.named("main").flatMap { it.sourceSetId }.get(),
+                    )
                 }
-                sourceLink {
-                    localDirectory.set(
-                        file("src/main/kotlin"),
-                    )
-                    remoteUrl(
-                        "https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin",
-                    )
-                    remoteLineSuffix.set("#L")
+                "main" -> {
+                    reportUndocumented.set(true)
+                    documentedVisibilities(VisibilityModifier.Public)
+                    skipDeprecated.set(true)
+
+                    externalDocumentationLinks.register("android") {
+                        url("https://developer.android.com/reference/")
+                        packageListUrl("https://developer.android.com/reference/package-list")
+                    }
+                    sourceLink {
+                        localDirectory.set(
+                            file("src/main/kotlin"),
+                        )
+                        remoteUrl(
+                            "https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin",
+                        )
+                        remoteLineSuffix.set("#L")
+                    }
                 }
             }
         }

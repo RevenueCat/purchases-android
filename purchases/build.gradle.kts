@@ -250,6 +250,9 @@ dokka {
             when (name) {
                 "customEntitlementComputation" -> suppress.set(true)
                 "defaults" -> {
+                    dependentSourceSets.add(
+                        dokkaSourceSets.named("main").flatMap { it.sourceSetId }.get(),
+                    )
                     reportUndocumented.set(true)
                     documentedVisibilities(VisibilityModifier.Public)
                     skipDeprecated.set(true)
