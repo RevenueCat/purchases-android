@@ -205,4 +205,19 @@ class WorkflowManagerTest {
 
         assertThat(completed).isTrue()
     }
+
+    @Test
+    fun `onPaywallConfigReady still completes when the workflows sync fails`() {
+        val mockProvider = mockk<WorkflowsConfigProvider>()
+        coEvery { mockProvider.awaitReady() } throws RuntimeException("boom")
+        val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = testScope)
+
+        var completed = false
+        manager.onPaywallConfigReady { completed = true }
+        testScope.testScheduler.advanceUntilIdle()
+
+        assertThat(completed).isTrue()
+        // A failure to ready one step must not cancel the other.
+        coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
+    }
 }

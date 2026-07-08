@@ -8,6 +8,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -91,8 +92,13 @@ internal class WorkflowManager(
      * - the workflows topic is synced, so [workflowIdForOfferingId] resolves; and
      * - the `ui_config` body is resolved, so a workflow render — and, once `ui_config`/paywall components stop
      *   shipping inline in `/offerings` and move to the config endpoint, the offering itself — has its styling
-     *   in hand without a further round-trip. [UiConfigProvider.getUiConfig] is best-effort (it falls back to a
-     *   default `UiConfig`), so it can never fail the gate.
+     *   in hand without a further round-trip.
+     *
+     * Both steps are best-effort: a failure to ready either one is swallowed (logged) and never propagates,
+     * so [onComplete] always runs and `getOfferings` can never be stranded waiting on it — if config data
+     * couldn't be readied, the render path fetches it on demand or falls back. The only thing that skips
+     * [onComplete] is coroutine cancellation (teardown / identity change), which must not fire a spurious
+     * success. A failure in one step also does not cancel the other.
      *
      * It is not a `suspend` function: it launches the wait on [scope] and calls back, so a callback-based
      * caller can gate on it without owning a coroutine scope.
@@ -100,16 +106,25 @@ internal class WorkflowManager(
     fun onPaywallConfigReady(onComplete: () -> Unit) {
         scope.launch {
             coroutineScope {
-                launch { workflowsConfigProvider.awaitReady() }
-                launch {
-                    // Best-effort: resolving ui_config must never fail (or hang) the gate. getUiConfig()
-                    // already falls back to a default UiConfig on a parse miss; guard the unexpected too so a
-                    // ui_config error can't stop getOfferings from returning.
-                    runCatching { uiConfigProvider.getUiConfig() }
-                        .onFailure { errorLog(it) { "Failed to resolve ui_config while readying paywall config" } }
-                }
+                launch { awaitBestEffort("workflows topic") { workflowsConfigProvider.awaitReady() } }
+                launch { awaitBestEffort("ui_config") { uiConfigProvider.getUiConfig() } }
             }
             onComplete()
+        }
+    }
+
+    /**
+     * Runs a best-effort readiness step: swallows and logs any failure so it can't strand the gate, but lets
+     * [kotlinx.coroutines.CancellationException] propagate so real cancellation still tears the gate down
+     * instead of being reported as a completed step. (Plain `runCatching` would swallow cancellation too.)
+     */
+    private suspend fun awaitBestEffort(what: String, block: suspend () -> Unit) {
+        try {
+            block()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            errorLog(e) { "Failed to ready $what before getOfferings; proceeding without it." }
         }
     }
 }
