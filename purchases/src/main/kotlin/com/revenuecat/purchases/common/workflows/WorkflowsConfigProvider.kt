@@ -59,13 +59,15 @@ internal class WorkflowsConfigProvider(
     }
 
     /**
-     * Forces the `workflows` topic to be synced (or confirms it already is), discarding the result. Used by
+     * Forces the `workflows` topic to be synced (or confirms it already is) **and** waits for its
+     * `prefetch`-marked workflow blobs to finish caching, discarding the result. Used by
      * [WorkflowManager.awaitWorkflowsReady] so `OfferingsManager` can gate its `onSuccess` callback on
      * workflow data being ready, the way it used to gate on the old `getWorkflowsList` fetch — cheap on a warm
-     * cache since [RemoteConfigManager.topic] returns immediately once a topic is committed.
+     * cache since [RemoteConfigManager.awaitTopicAndPrefetchBlobsReady] returns immediately once the topic is
+     * committed and its prefetch blobs are cached.
      */
     suspend fun awaitReady() {
-        manager.topic(RemoteConfigTopic.Workflows)
+        manager.awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.Workflows)
     }
 
     private companion object {

@@ -553,6 +553,73 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `awaitTopicAndPrefetchBlobsReady waits on prefetch-marked item blobs and returns the topic`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(
+                    mapOf(
+                        "wf-prefetch" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID, prefetch = true),
+                        // On-demand item: not prefetch, so its blob is not awaited here.
+                        "wf-ondemand" to RemoteConfiguration.ConfigItem(blobRef = REF_UNWANTED),
+                    ),
+                ),
+            ),
+        )
+        coEvery { blobFetcher.ensureDownloaded(any<List<String>>()) } returns true
+
+        val topic = readManager().awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.Workflows)
+
+        assertThat(topic).isNotNull
+        assertThat(topic!!.keys).containsExactlyInAnyOrder("wf-prefetch", "wf-ondemand")
+        // Only the prefetch-marked item's blob is awaited; the on-demand item's is left for a lazy blobData read.
+        coVerify(exactly = 1) { blobFetcher.ensureDownloaded(listOf(REF_VALID)) }
+    }
+
+    @Test
+    fun `awaitTopicAndPrefetchBlobsReady returns the topic without touching the fetcher when nothing is prefetch`() =
+        runTest {
+            every { diskCache.read() } returns persisted(
+                manifest = "m",
+                activeTopics = listOf("workflows"),
+                topics = mapOf(
+                    "workflows" to ConfigTopic(
+                        mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID)),
+                    ),
+                ),
+            )
+
+            val topic = readManager().awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.Workflows)
+
+            assertThat(topic).isNotNull
+            coVerify(exactly = 0) { blobFetcher.ensureDownloaded(any<List<String>>()) }
+        }
+
+    @Test
+    fun `awaitTopicAndPrefetchBlobsReady returns null and skips the fetcher once the endpoint is disabled`() =
+        runTest {
+            every { diskCache.read() } returns persisted(
+                manifest = "m",
+                activeTopics = listOf("workflows"),
+                topics = mapOf(
+                    "workflows" to ConfigTopic(
+                        mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID, prefetch = true)),
+                    ),
+                ),
+            )
+            val manager = readManager()
+            manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+            onError.invoke(
+                PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+                GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+            )
+
+            assertThat(manager.awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.Workflows)).isNull()
+            coVerify(exactly = 0) { blobFetcher.ensureDownloaded(any<List<String>>()) }
+        }
+
+    @Test
     fun `a retryable error does not disable the endpoint`() {
         every { diskCache.read() } returns null
 
