@@ -3,7 +3,6 @@
 package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.ExitOffers
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -141,7 +140,6 @@ public data class PublishedWorkflow(
     @SerialName("initial_step_id") val initialStepId: String,
     val steps: Map<String, WorkflowStep>,
     val screens: Map<String, WorkflowScreen>,
-    @SerialName("ui_config") val uiConfig: UiConfig,
     @Serializable(with = JsonObjectToMapSerializer::class)
     val metadata: Map<String, @Contextual Any> = emptyMap(),
     val hash: String? = null,

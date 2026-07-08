@@ -610,15 +610,13 @@ internal class PurchasesOrchestrator(
             return
         }
         workflowManager.getWorkflow(
-            appUserID = identityManager.currentAppUserID,
             workflowOrOfferingId = workflowId,
-            appInBackground = state.appInBackground,
             onSuccess = { dispatch { onSuccess(it) } },
             onError = { dispatch { onError(it) } },
         )
     }
 
-    fun workflowIdForOfferingId(offeringId: String): String? =
+    suspend fun workflowIdForOfferingId(offeringId: String): String? =
         workflowManager?.workflowIdForOfferingId(offeringId)
 
     suspend fun getUiConfig(): UiConfig {

@@ -800,14 +800,31 @@ internal class PaywallViewModelImpl(
         val resolvedOfferingSelection = resolveOfferingSelection(offeringSelection)
         val selectedOffering = resolvedOfferingSelection.selectedOffering
 
-        // When workflows are enabled, every non-legacy paywall is served through the /workflows
-        // endpoint. `offering.paywall == null` is the durable marker of a non-legacy (workflow)
+        // When workflows are enabled, every non-legacy paywall is served through the workflows
+        // path. `offering.paywall == null` is the durable marker of a non-legacy (workflow)
         // paywall: a legacy v1 paywall always carries `offering.paywall`, and that field stays
         // even after `paywallComponents` is removed and all V2 paywalls move to workflows. We
         // deliberately do NOT gate on `paywallComponents`, which is going away.
         if (useWorkflowsEndpoint && selectedOffering != null && selectedOffering.paywall == null) {
-            presentWorkflow(selectedOffering, resolvedOfferingSelection.offeringsForExitOfferLookup)
-            return
+            try {
+                presentWorkflow(selectedOffering, resolvedOfferingSelection.offeringsForExitOfferLookup)
+                return
+            } catch (e: PurchasesException) {
+                // The workflow could not be served — the config endpoint is disabled for the session
+                // (4xx kill switch), unreachable, or the offering has no workflow yet. Degrade to the
+                // paywall /offerings already delivered so the app still shows something; rethrow
+                // (→ PaywallState.Error) only when there is nothing to fall back to.
+                if (selectedOffering.paywallComponents == null) throw e
+                // A prior render on this ViewModel may have been a successful workflow, leaving
+                // _workflowState non-null. InternalPaywall renders the workflow UI whenever workflowState
+                // is non-null, so without clearing it the stale workflow would mask the offerings fallback
+                // we're about to set via updatePaywallState.
+                clearWorkflowState()
+                Logger.w(
+                    "Paywalls: Failed to fetch workflow for offering '${selectedOffering.identifier}' " +
+                        "(${e.message}). Falling back to the offerings-provided paywall.",
+                )
+            }
         }
 
         val exitOfferingId = selectedOffering?.paywallComponents?.data?.exitOffers?.dismiss?.offeringId
@@ -849,9 +866,10 @@ internal class PaywallViewModelImpl(
     }
 
     private suspend fun presentWorkflow(offering: Offering, preloadedOfferings: Offerings?) {
-        // Prefer the configured workflow id, which aligns with the prefetch cache key. Fall back to
-        // the offering id, which the backend lazily converts into a workflow for paywalls not yet
-        // converted to a workflow.
+        // Resolve the offering to its configured workflow id, which aligns with the prefetch cache key.
+        // An offering with no configured workflow resolves to null and falls through as its own id;
+        // getWorkflow then reports it unavailable, since the config path has no backend lazy
+        // offering→workflow conversion.
         val workflowIdentifier = purchases.workflowIdForOfferingId(offering.identifier) ?: offering.identifier
         coroutineScope {
             val workflowDeferred = async { purchases.awaitGetWorkflow(workflowIdentifier) }

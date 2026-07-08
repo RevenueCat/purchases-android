@@ -29,6 +29,7 @@ internal data class ButtonComponentStyle(
         object NavigateBack : Action
         object WorkflowTrigger : Action
         object CloseWorkflow : Action
+        object NoOp : Action
 
         @get:JvmSynthetic
         val description: String
