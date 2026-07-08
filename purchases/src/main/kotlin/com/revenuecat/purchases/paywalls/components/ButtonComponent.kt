@@ -94,11 +94,11 @@ public class ButtonComponent(
         @Serializable
         @Immutable
         public data class Sheet(
-            @get:JvmSynthetic public val id: String,
-            @get:JvmSynthetic public val name: String?,
-            @get:JvmSynthetic public val stack: StackComponent,
-            @get:JvmSynthetic @SerialName("background_blur") public val backgroundBlur: Boolean,
-            @get:JvmSynthetic public val size: Size?,
+            @get:JvmSynthetic public val id: String = "",
+            @get:JvmSynthetic public val name: String? = null,
+            @get:JvmSynthetic public val stack: StackComponent? = null,
+            @get:JvmSynthetic @SerialName("background_blur") public val backgroundBlur: Boolean = false,
+            @get:JvmSynthetic public val size: Size? = null,
         ) : Destination
     }
 
@@ -256,10 +256,7 @@ private class ActionSurrogate(
                         )
                     }
 
-                    DestinationSurrogate.sheet -> {
-                        checkNotNull(sheet) { "`sheet` cannot be null when `destination` is `sheet`." }
-                        sheet
-                    }
+                    DestinationSurrogate.sheet -> sheet ?: Destination.Sheet()
 
                     DestinationSurrogate.unknown -> Destination.Unknown
 

@@ -58,6 +58,7 @@ internal class ButtonComponentState(
             is ButtonComponentStyle.Action.NavigateBack -> PaywallAction.External.NavigateBack
             is ButtonComponentStyle.Action.CloseWorkflow -> PaywallAction.External.CloseWorkflow
             is ButtonComponentStyle.Action.NavigateTo -> toPaywallAction(localeId)
+            is ButtonComponentStyle.Action.NoOp -> null
 
             is ButtonComponentStyle.Action.PurchasePackage ->
                 PaywallAction.External.PurchasePackage(

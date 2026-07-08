@@ -478,7 +478,7 @@ internal fun PaywallComponent.containsUnsupportedCondition(): Boolean = when (th
     is ButtonComponent -> stack.containsUnsupportedCondition() ||
         (action as? ButtonComponent.Action.NavigateTo)?.destination.let { destination ->
             when (destination) {
-                is ButtonComponent.Destination.Sheet -> destination.stack.containsUnsupportedCondition()
+                is ButtonComponent.Destination.Sheet -> destination.stack?.containsUnsupportedCondition() ?: false
                 is ButtonComponent.Destination.CustomerCenter,
                 is ButtonComponent.Destination.PrivacyPolicy,
                 is ButtonComponent.Destination.Terms,
