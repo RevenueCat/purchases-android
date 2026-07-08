@@ -3222,6 +3222,137 @@ class PaywallViewModelTest {
         coVerify(exactly = 1) { purchases.awaitGetWorkflow(offeringWithWPL.identifier) }
     }
 
+    @Test
+    fun `when useWorkflows is true and the workflow fetch fails, falls back to the offerings-provided paywall`() {
+        // The config endpoint may be disabled for the session (4xx kill switch) or unreachable, or the
+        // offering may have no workflow yet. The offering still carries the paywall /offerings delivered,
+        // so the paywall renders through the regular components path instead of erroring.
+        coEvery { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns null
+        coEvery { purchases.awaitGetWorkflow(offeringWithWPL.identifier) } throws PurchasesException(
+            PurchasesError(PurchasesErrorCode.UnknownError, "Workflow is unavailable from remote config."),
+        )
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithWPL)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            useWorkflowsEndpoint = true,
+        )
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        coVerify(exactly = 1) { purchases.awaitGetWorkflow(offeringWithWPL.identifier) }
+    }
+
+    @Test
+    fun `when useWorkflows is true and the workflow fetch fails with no fallback paywall, surfaces the error`() {
+        val offeringWithoutPaywallData = Offering(
+            identifier = "offering-no-paywall-data",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = null,
+            webCheckoutURL = null,
+        )
+        coEvery { purchases.workflowIdForOfferingId(offeringWithoutPaywallData.identifier) } returns null
+        coEvery { purchases.awaitGetWorkflow(offeringWithoutPaywallData.identifier) } throws PurchasesException(
+            PurchasesError(PurchasesErrorCode.UnknownError, "Workflow is unavailable from remote config."),
+        )
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithoutPaywallData)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            useWorkflowsEndpoint = true,
+        )
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Error::class.java)
+    }
+
+    @Test
+    fun `when a prior workflow succeeded, a later fallback clears the stale workflow state`() {
+        // A prior successful workflow leaves _workflowState non-null. When a later presentation on the
+        // same ViewModel falls back to the offerings paywall, that stale workflow state must be cleared —
+        // InternalPaywall renders the workflow UI whenever workflowState != null, so otherwise the old
+        // workflow would keep showing instead of the fallback components.
+        val workflowScreen = WorkflowScreen(
+            templateName = "template",
+            revision = 0,
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            offeringIdentifier = defaultOffering.identifier,
+        )
+        val workflow = PublishedWorkflow(
+            id = "wfl-test",
+            displayName = "Test Workflow",
+            initialStepId = "step-1",
+            steps = mapOf("step-1" to WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")),
+            screens = mapOf("screen-1" to workflowScreen),
+        )
+        coEvery { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns "wfl-test"
+        coEvery { purchases.awaitGetWorkflow("wfl-test") } returns workflow
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithWPL)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            useWorkflowsEndpoint = true,
+        )
+
+        // The workflow loaded — this is the state InternalPaywall would render.
+        assertThat(model.workflowState.value).isNotNull()
+
+        // Re-present a different offering whose workflow can't be served but that carries a fallback paywall.
+        val fallbackOffering = Offering(
+            identifier = "offering-fallback",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+            webCheckoutURL = null,
+        )
+        coEvery { purchases.workflowIdForOfferingId(fallbackOffering.identifier) } returns null
+        coEvery { purchases.awaitGetWorkflow(fallbackOffering.identifier) } throws PurchasesException(
+            PurchasesError(PurchasesErrorCode.UnknownError, "Workflow is unavailable from remote config."),
+        )
+
+        model.updateOptions(
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(fallbackOffering)
+                .build(),
+        )
+
+        // Fallback rendered as components AND the stale workflow state was cleared.
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        assertThat(model.workflowState.value).isNull()
+    }
+
     private fun create(
         offering: Offering? = null,
         customPurchaseLogic: PaywallPurchaseLogic? = null,
