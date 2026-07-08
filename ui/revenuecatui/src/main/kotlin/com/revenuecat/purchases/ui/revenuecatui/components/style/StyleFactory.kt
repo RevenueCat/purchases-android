@@ -830,10 +830,14 @@ internal class StyleFactory(
                 destination.method,
                 componentInteractionValue = "navigate_to_url",
             )
-            is ButtonComponent.Destination.Sheet ->
-                // A content-less sheet is handled as a no-op before we get here, so `stack` is non-null;
-                // the elvis is only to satisfy the type system.
-                destination.stack?.let { rawStack ->
+            is ButtonComponent.Destination.Sheet -> {
+                val rawStack = destination.stack
+                if (rawStack == null) {
+                    // Unreachable: a content-less sheet is mapped to NoOp before reaching here. Log in
+                    // case that invariant ever breaks, and hide the button rather than crash.
+                    Logger.e("Sheet destination reached convertDestination without a stack.")
+                    Result.Success(null)
+                } else {
                     createStackComponentStyle(rawStack)
                         .map { it.applyBottomWindowInsetsIfNecessary(shouldApply = true) }
                         .map { it.applyHorizontalWindowInsetsIfNecessary(shouldApply = true) }
@@ -846,7 +850,8 @@ internal class StyleFactory(
                                 size = destination.size,
                             )
                         }
-                } ?: Result.Success(null)
+                }
+            }
             // Returning null here, which will result in this button being hidden.
             is ButtonComponent.Destination.Unknown,
             -> Result.Success(null)
