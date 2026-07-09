@@ -39,39 +39,25 @@ internal data class RemoteConfigSourceHandle(
     val url: String get() = source.url
 }
 
-/** Used by the networking layer to resolve the API base host and drive failover across API sources. */
-internal interface APISourceProvider {
+internal interface RemoteConfigSourceProvider {
+
+    /** The current healthy source for [purpose], or null once all of its sources are reported unhealthy. */
+    fun getCurrent(purpose: RemoteConfigSourceHandle.Purpose): RemoteConfigSourceHandle?
 
     /** The current healthy API base source, or null once every API source has been reported unhealthy. */
-    fun currentAPISource(): RemoteConfigSourceHandle?
-
-    /**
-     * Reports the given API source as unhealthy so the next [currentAPISource] advances past it.
-     * No-op if [handle] is no longer the current source (stale/concurrent reports are ignored).
-     */
-    fun reportUnhealthy(handle: RemoteConfigSourceHandle)
+    fun currentAPISource(): RemoteConfigSourceHandle? = getCurrent(RemoteConfigSourceHandle.Purpose.API)
 
     /**
      * Rewinds the API sources to the first one, but only if every API source has been reported
      * unhealthy. Lets a new request start over instead of being permanently stuck with no source
      * after a transient outage burned through the whole list. No-op while any source is still healthy.
      */
-    fun restartAPISourcesIfExhausted()
-}
-
-internal interface RemoteConfigSourceProvider : APISourceProvider {
-
-    /** The current healthy source for [purpose], or null once all of its sources are reported unhealthy. */
-    fun getCurrent(purpose: RemoteConfigSourceHandle.Purpose): RemoteConfigSourceHandle?
-
-    override fun currentAPISource(): RemoteConfigSourceHandle? = getCurrent(RemoteConfigSourceHandle.Purpose.API)
-
-    override fun restartAPISourcesIfExhausted() {
+    fun restartAPISourcesIfExhausted() {
         restartIfExhausted(RemoteConfigSourceHandle.Purpose.API)
     }
 
     /** Falls back to the next source for the handle's purpose. No-op if [handle] is no longer current. */
-    override fun reportUnhealthy(handle: RemoteConfigSourceHandle)
+    fun reportUnhealthy(handle: RemoteConfigSourceHandle)
 
     /** Rewinds the given purpose to its first source, e.g. to start fresh on a new fetch cycle. */
     fun restart(purpose: RemoteConfigSourceHandle.Purpose)

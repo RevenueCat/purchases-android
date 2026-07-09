@@ -16,9 +16,9 @@ import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
-import com.revenuecat.purchases.common.remoteconfig.APISourceProvider
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSource
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.Runs
 import io.mockk.every
@@ -548,10 +548,10 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     /**
-     * An [APISourceProvider] that walks [urls] in order, recording the sources reported unhealthy.
+     * A [RemoteConfigSourceProvider] that walks [urls] in order, recording the sources reported unhealthy.
      * Mirrors the real provider's token-based advancement so stale reports are ignored.
      */
-    private class FakeAPISourceProvider(urls: List<String>) : APISourceProvider {
+    private class FakeAPISourceProvider(urls: List<String>) : RemoteConfigSourceProvider {
         private val handles = urls.mapIndexed { index, url ->
             RemoteConfigSourceHandle(
                 purpose = RemoteConfigSourceHandle.Purpose.API,
@@ -562,7 +562,8 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         private var index = 0
         val reportedUrls = mutableListOf<String>()
 
-        override fun currentAPISource(): RemoteConfigSourceHandle? = handles.getOrNull(index)
+        override fun getCurrent(purpose: RemoteConfigSourceHandle.Purpose): RemoteConfigSourceHandle? =
+            handles.getOrNull(index)
 
         override fun reportUnhealthy(handle: RemoteConfigSourceHandle) {
             if (handle.token == index) {
@@ -571,8 +572,14 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             }
         }
 
-        override fun restartAPISourcesIfExhausted() {
-            if (currentAPISource() == null) index = 0
+        override fun restart(purpose: RemoteConfigSourceHandle.Purpose) {
+            index = 0
+        }
+
+        override fun restartIfExhausted(purpose: RemoteConfigSourceHandle.Purpose): Boolean {
+            if (getCurrent(purpose) != null) return false
+            index = 0
+            return true
         }
     }
 
