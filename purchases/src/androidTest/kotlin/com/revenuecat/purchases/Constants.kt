@@ -8,6 +8,12 @@ object Constants {
     val proxyUrl: String get() = args.getString("TEST_PROXY_URL") ?: ""
 
     /**
+     * A `test_`-prefixed API key used by the getOfferings benchmark so the SDK resolves products through
+     * the simulated store instead of Google Play Billing. Empty when not configured (benchmark self-skips).
+     */
+    val testStoreApiKey: String get() = args.getString("TEST_STORE_REVENUECAT_API_KEY") ?: ""
+
+    /**
      * The currently active environment config. Set by [BasePurchasesIntegrationTest]
      * before each test based on the test's [BasePurchasesIntegrationTest.environmentConfig].
      *

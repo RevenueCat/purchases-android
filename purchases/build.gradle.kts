@@ -96,6 +96,11 @@ android {
         // Shared
         testInstrumentationRunnerArguments["TEST_PROXY_URL"] = resolveProperty("TEST_PROXY_URL")
 
+        // Test store key (test_-prefixed) used by the getOfferings benchmark. No backend environment
+        // of its own; it hits production and resolves products via the simulated store.
+        testInstrumentationRunnerArguments["TEST_STORE_REVENUECAT_API_KEY"] =
+            resolveProperty("TEST_STORE_REVENUECAT_API_KEY")
+
         // Optional package filter for running a subset of tests (used by CI).
         // e.g. -PTEST_PACKAGE_FILTER=com.revenuecat.purchases.integration.production
         val testPackageFilter = resolveProperty("TEST_PACKAGE_FILTER")
