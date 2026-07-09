@@ -13,7 +13,7 @@ import org.junit.Test
 
 internal class UiConfigTests {
 
-    private val emptyApp = UiConfig.AppConfig(colors = emptyMap(), fonts = emptyMap())
+    private val emptyAppConfig = UiConfig.AppConfig(colors = emptyMap(), fonts = emptyMap())
     private val emptyVariableConfig = UiConfig.VariableConfig(
         variableCompatibilityMap = emptyMap(),
         functionCompatibilityMap = emptyMap(),
@@ -237,7 +237,7 @@ internal class UiConfigTests {
             }
             """.trimIndent()
         val expected = UiConfig(
-            app = emptyApp,
+            app = emptyAppConfig,
             variableConfig = emptyVariableConfig,
             localizations = mapOf(
                 LocaleId("en_US") to mapOf(
@@ -319,7 +319,7 @@ internal class UiConfigTests {
             }
             """.trimIndent()
         val expected = UiConfig(
-            app = emptyApp,
+            app = emptyAppConfig,
             variableConfig = emptyVariableConfig,
             localizations = mapOf(
                 LocaleId("en_US") to VariableLocalizationKey.values().associateWith { key -> key.name },
@@ -436,7 +436,7 @@ internal class UiConfigTests {
             }
             """.trimIndent()
         val expected = UiConfig(
-            app = emptyApp,
+            app = emptyAppConfig,
             localizations = emptyMap(),
             variableConfig = emptyVariableConfig,
             customVariables = emptyMap(),
