@@ -50,12 +50,6 @@ android {
             value = (localProperties["ENABLE_EXTRA_REQUEST_LOGGING"] as? String ?: "false"),
         )
 
-        buildConfigField(
-            type = "boolean",
-            name = "ENABLE_REMOTE_CONFIG",
-            value = (localProperties["ENABLE_REMOTE_CONFIG"] as? String ?: "false"),
-        )
-
         packagingOptions.resources.excludes.addAll(
             listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md"),
         )

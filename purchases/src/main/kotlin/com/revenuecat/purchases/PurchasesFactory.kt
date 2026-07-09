@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
-import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -266,11 +265,9 @@ internal class PurchasesFactory(
             )
 
             // useWorkflows implies the config layer: workflows are served from `/v1/config`, so the manager
-            // must exist whenever workflows are on, not only when the standalone flag is set. Neither flag
-            // applies to the customEntitlementComputation flavor, which doesn't serve paywalls this way.
-            val remoteConfigManager = if (
-                (BuildConfig.ENABLE_REMOTE_CONFIG || appConfig.useWorkflows) && !appConfig.customEntitlementComputation
-            ) {
+            // must exist whenever workflows are on. Not applicable to the customEntitlementComputation flavor,
+            // which doesn't serve paywalls this way.
+            val remoteConfigManager = if (appConfig.useWorkflows && !appConfig.customEntitlementComputation) {
                 RemoteConfigManager(
                     backend = backend,
                     diskCache = RemoteConfigDiskCache(contextForStorage),
