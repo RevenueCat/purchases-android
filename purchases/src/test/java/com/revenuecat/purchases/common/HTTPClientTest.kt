@@ -16,9 +16,9 @@ import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
-import com.revenuecat.purchases.common.remoteconfig.APISourceProvider
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSource
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.Runs
 import io.mockk.every
@@ -209,8 +209,8 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
     }
 
-    /** A minimal [APISourceProvider] whose current API source is the first of [urls]. */
-    private class FakeAPISourceProvider(urls: List<String>) : APISourceProvider {
+    /** A minimal [RemoteConfigSourceProvider] whose current API source is the first of [urls]. */
+    private class FakeAPISourceProvider(urls: List<String>) : RemoteConfigSourceProvider {
         private val handles = urls.mapIndexed { index, url ->
             RemoteConfigSourceHandle(
                 purpose = RemoteConfigSourceHandle.Purpose.API,
@@ -219,7 +219,14 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             )
         }
 
-        override fun currentAPISource(): RemoteConfigSourceHandle? = handles.firstOrNull()
+        override fun getCurrent(purpose: RemoteConfigSourceHandle.Purpose): RemoteConfigSourceHandle? =
+            handles.firstOrNull()
+
+        override fun reportUnhealthy(handle: RemoteConfigSourceHandle) = Unit
+
+        override fun restart(purpose: RemoteConfigSourceHandle.Purpose) = Unit
+
+        override fun restartIfExhausted(purpose: RemoteConfigSourceHandle.Purpose): Boolean = false
     }
 
     // endregion
