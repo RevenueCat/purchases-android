@@ -43,8 +43,8 @@ public class UiConfig(
     @SerialName("variable_config")
     @get:JvmSynthetic
     public val variableConfig: VariableConfig,
-    // `custom_variables` intentionally falls back to an empty map when the key is absent from the response. If the
-    // key is present it must decode correctly, like all the other (required) fields.
+    // `custom_variables` was added after the other fields, so the key may be absent from older responses; fall back
+    // to an empty dictionary in that case.
     @SerialName("custom_variables")
     @get:JvmSynthetic
     public val customVariables: Map<String, CustomVariableDefinition> = emptyMap(),
