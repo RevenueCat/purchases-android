@@ -57,20 +57,7 @@ class WorkflowDetailResolverTest {
             data = inlineWorkflow(),
         )
         val result = resolver.resolve(response)
-        assertThat(result.workflow.id).isEqualTo("wf_1")
-        assertThat(result.enrolledVariants).isNull()
-    }
-
-    @Test
-    fun `inline with enrolled_variants passes them through`() = runTest {
-        val resolver = createResolver()
-        val response = WorkflowDetailResponse(
-            action = WorkflowResponseAction.INLINE,
-            data = inlineWorkflow(),
-            enrolledVariants = mapOf("exp_1" to "variant_a"),
-        )
-        val result = resolver.resolve(response)
-        assertThat(result.enrolledVariants).isEqualTo(mapOf("exp_1" to "variant_a"))
+        assertThat(result.id).isEqualTo("wf_1")
     }
 
     @Test
@@ -95,19 +82,7 @@ class WorkflowDetailResolverTest {
             url = "https://cdn.example.com/wf.json",
         )
         val result = resolver.resolve(response)
-        assertThat(result.workflow.id).isEqualTo("wf_1")
-    }
-
-    @Test
-    fun `use_cdn with enrolled_variants passes them through`() = runTest {
-        val resolver = createResolver { _, _ -> minimalWorkflowJson }
-        val response = WorkflowDetailResponse(
-            action = WorkflowResponseAction.USE_CDN,
-            url = "https://cdn.example.com/wf.json",
-            enrolledVariants = mapOf("x" to "y"),
-        )
-        val result = resolver.resolve(response)
-        assertThat(result.enrolledVariants).isEqualTo(mapOf("x" to "y"))
+        assertThat(result.id).isEqualTo("wf_1")
     }
 
     @Test

@@ -61,14 +61,14 @@ class WorkflowAssetPreDownloaderTest {
             screens = mapOf(
                 "screen_1" to createScreen(screenConfig, localizations),
             ),
-            uiConfig = UiConfig(
-                app = UiConfig.AppConfig(
-                    fonts = mapOf(FontAlias("font_1") to font),
-                ),
+        )
+        val uiConfig = UiConfig(
+            app = UiConfig.AppConfig(
+                fonts = mapOf(FontAlias("font_1") to font),
             ),
         )
 
-        preDownloader.preDownloadWorkflowAssets(workflow)
+        preDownloader.preDownloadWorkflowAssets(workflow, uiConfig)
 
         val fontsSlot = slot<Collection<UiConfig.AppConfig.FontsConfig>>()
         verify(exactly = 1) {
@@ -85,8 +85,8 @@ class WorkflowAssetPreDownloaderTest {
             screens = mapOf("screen_1" to createScreen(screenConfig)),
         )
 
-        preDownloader.preDownloadWorkflowAssets(workflow)
-        preDownloader.preDownloadWorkflowAssets(workflow)
+        preDownloader.preDownloadWorkflowAssets(workflow, UiConfig())
+        preDownloader.preDownloadWorkflowAssets(workflow, UiConfig())
 
         val fontsSlot = slot<Collection<UiConfig.AppConfig.FontsConfig>>()
         verify(exactly = 1) {
@@ -98,7 +98,6 @@ class WorkflowAssetPreDownloaderTest {
 
     private fun createWorkflow(
         screens: Map<String, WorkflowScreen>,
-        uiConfig: UiConfig = UiConfig(),
     ): PublishedWorkflow {
         return PublishedWorkflow(
             id = "workflow_1",
@@ -106,7 +105,6 @@ class WorkflowAssetPreDownloaderTest {
             initialStepId = "step_1",
             steps = emptyMap(),
             screens = screens,
-            uiConfig = uiConfig,
         )
     }
 

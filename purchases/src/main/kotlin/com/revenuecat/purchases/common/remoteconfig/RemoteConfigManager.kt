@@ -19,11 +19,16 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -46,7 +51,10 @@ import java.util.concurrent.atomic.AtomicInteger
  * The `200` path runs on [scope]: persistence is synchronous, but the launch lets [clearCache] cancel the
  * in-flight parse/persist. Blob prefetch runs on the fetcher's own worker pool (not [scope]). Identity changes
  * call [clearCache], which bumps an epoch so a late `/v1/config` response (its HTTP request cannot be
- * socket-cancelled) is dropped instead of persisting over the freshly wiped cache.
+ * socket-cancelled) is dropped instead of persisting over the freshly wiped cache. [clearCache] also rebinds
+ * the current app user atomically with that bump, so a cold on-demand read triggered right after an identity
+ * change never fetches for the previous user (the cached app user ID the [appUserIDProvider] reads can still
+ * lag the change for a window).
  *
  * Overlapping refreshes are deduped: only one [refreshRemoteConfig] runs at a time. A call made while one is
  * already in flight is skipped (the backend collapses concurrent requests but still fires every callback, which
@@ -87,6 +95,13 @@ internal class RemoteConfigManager(
     @Volatile
     private var lastRefreshedAt: Date? = null
 
+    // The app user a cold on-demand read should sync for, rebound by clearCache() under [cacheLock] atomically
+    // with the epoch bump, so it can never lag the identity change the way [appUserIDProvider] (backed by the
+    // device cache) can. Null until the first identity change; awaitConfigForRead() falls back to the provider
+    // for that pre-first-change bootstrap window, where it is accurate and no transition is racing.
+    @Volatile
+    private var currentAppUserID: String? = null
+
     // Completion signal for the single in-flight refresh, so a read that finds no cached data can wait for the
     // refresh already in progress instead of failing. Created under [cacheLock] when a refresh starts, completed
     // (never cancelled, so waiting reads never throw) at every terminal point and by clearCache(); null when no
@@ -120,16 +135,24 @@ internal class RemoteConfigManager(
             return
         }
         val requestEpoch: Int
+        val requestAppUserID: String
         // Acquire the in-flight guard and capture the epoch together under the lock that also guards
         // clearCache()'s epoch bump + guard release. Otherwise an identity change could slip its bump
         // between getAndSet(true) and epoch.get(), stranding this request with a stale epoch: its
         // callbacks would drop on the mismatch and never release the guard, freezing all future syncs.
+        // The user is snapshotted here too, so the (user, epoch) pair the request carries is consistent:
+        // any clearCache() that would change the user also bumps the epoch under this same lock, so it
+        // either lands fully before this capture (we see its new user) or after (the epoch mismatch drops
+        // our response) — never a stale user paired with the post-clear epoch. currentAppUserID (bound by
+        // clearCache) wins; the passed appUserID is only the pre-first-identity-change bootstrap fallback.
+        // Read only in-memory state under the lock — never appUserIDProvider(), which can re-enter clearCache().
         synchronized(cacheLock) {
             if (isRefreshing.getAndSet(true)) {
                 debugLog { "Remote config refresh already in progress. Skipping." }
                 return
             }
             requestEpoch = epoch.get()
+            requestAppUserID = currentAppUserID ?: appUserID
             refreshCompletion = CompletableDeferred()
         }
         val persisted = diskCache.read()
@@ -137,7 +160,7 @@ internal class RemoteConfigManager(
         logRefreshStart(persisted, appInBackground)
         backend.getRemoteConfig(
             appInBackground = appInBackground,
-            appUserID = appUserID,
+            appUserID = requestAppUserID,
             domain = persisted?.domain ?: DEFAULT_DOMAIN,
             // Opaque manifest replayed verbatim; null on the first run when nothing is persisted yet.
             manifest = persisted?.manifest,
@@ -213,12 +236,18 @@ internal class RemoteConfigManager(
     }
 
     /**
-     * Wipes the cache on an identity change so configuration never bleeds across users (offerings-parity).
+     * Wipes the cache on an identity change so configuration never bleeds across users (offerings-parity), and
+     * rebinds [currentAppUserID] to [appUserID] atomically with the epoch bump. Binding the new identity here —
+     * rather than reading it back through [appUserIDProvider] — closes the window where a cold on-demand read
+     * could sync for the previous user: the device-cache-backed provider can still return the old user until the
+     * caller finishes caching the new one, but the epoch is already bumped, so that stale-user response would not
+     * be dropped and would repopulate the freshly wiped cache for the wrong user.
      */
-    fun clearCache() {
+    fun clearCache(appUserID: String) {
         scope.coroutineContext.cancelChildren()
         synchronized(cacheLock) {
             epoch.incrementAndGet()
+            currentAppUserID = appUserID
             isRefreshing.set(false)
             lastRefreshedAt = null
             completeRefresh()
@@ -267,7 +296,10 @@ internal class RemoteConfigManager(
      *   user is known yet, in which case it gives up without a network call.
      *
      * The on-demand sync is issued as foreground (`appInBackground = false`): a read is blocking on the result,
-     * so it wants the un-jittered, prompt request.
+     * so it wants the un-jittered, prompt request. The user it syncs for is snapshotted atomically with the
+     * epoch inside [refreshRemoteConfig] (the identity [clearCache] bound wins); the value resolved here is only
+     * the pre-first-identity-change bootstrap and the "is any user known" gate, so a read racing an identity
+     * change can never fetch and persist the previous user's config.
      */
     private suspend fun awaitConfigForRead() {
         if (awaitInFlightRefresh()) {
@@ -275,7 +307,9 @@ internal class RemoteConfigManager(
             return
         }
         // Nothing in flight: trigger a sync on demand, unless the endpoint is disabled or no user is known yet.
-        val appUserID = appUserIDProvider()?.takeIf { it.isNotBlank() }
+        // This value is only the bootstrap fallback + the "user known" gate; refreshRemoteConfig re-resolves the
+        // effective user under the lock (preferring the clearCache-bound [currentAppUserID]) when it runs.
+        val appUserID = (currentAppUserID ?: appUserIDProvider())?.takeIf { it.isNotBlank() }
         if (!disabled && appUserID != null) {
             verboseLog { "Cold remote config read triggering an on-demand sync." }
             refreshRemoteConfig(appInBackground = false, appUserID = appUserID)
@@ -368,6 +402,93 @@ internal class RemoteConfigManager(
         transform: (ByteArray) -> T?,
     ): T? = withContext(ioDispatcher) {
         resolveBlobBytes(topic, itemKey)?.let(transform)
+    }
+
+    /**
+     * Resolves the blobs for every key in [itemKeys] within [topic] **concurrently**, builds a single JSON
+     * object mapping **each item key to that item's parsed blob JSON**, and decodes it into a single [T]. Use
+     * this to assemble one object from several items in a topic: given items `wf1 -> {"a":...}` and
+     * `wf2 -> {"b":...}`, the merged object is `{"wf1": {"a":...}, "wf2": {"b":...}}`, so [T] declares a field
+     * per item key.
+     *
+     * This is **all-or-nothing**: if any requested item is unknown, has no `blob_ref`, or its blob can't be
+     * resolved, the call returns `null` (a partial object is never produced) and warn-logs the missing keys.
+     * It also returns `null` if any resolved blob isn't valid JSON, or the merged object doesn't deserialize
+     * into [T]. Duplicate keys are de-duplicated; an empty [itemKeys] returns `null` without any read; [T] must
+     * be a concrete `@Serializable` type and parsing uses [JsonProvider.defaultJson].
+     *
+     * Each item resolves through the same path as the single-key [blobData] (see its KDoc for the `blob_ref`,
+     * on-demand fetch, and waiting rules) — this only fans them out. The fan-out is safe: a shared in-flight
+     * `/v1/config` refresh is deduped across all keys, and the blob fetcher dedupes concurrent downloads of the
+     * same ref. When the endpoint is [isDisabled] (the 4xx session kill-switch) the call returns `null`
+     * immediately without any read. Runs on [ioDispatcher].
+     */
+    suspend inline fun <reified T> mergeItemsBlobData(topic: RemoteConfigTopic, itemKeys: Collection<String>): T? =
+        mergeItemsBlobData(topic, itemKeys) { merged ->
+            try {
+                JsonProvider.defaultJson.decodeFromJsonElement<T>(merged)
+            } catch (e: SerializationException) {
+                errorLog(e) { "Failed to decode merged remote config blobs from topic '${topic.wireName}' as JSON." }
+                null
+            }
+        }
+
+    /**
+     * Resolves + merges the [itemKeys] blobs (see the reified [mergeItemsBlobData] for the merge shape and rules)
+     * and maps the resulting keyed JSON object through [transform] — resolution, merge, and [transform] all run
+     * on [ioDispatcher] so JSON decoding never runs on the caller's thread. Returns `null` when the merged
+     * object can't be built (any item unresolvable or non-JSON). The non-inline worker behind the reified
+     * overload; kept non-`private` so the `inline` function can call it.
+     */
+    suspend fun <T> mergeItemsBlobData(
+        topic: RemoteConfigTopic,
+        itemKeys: Collection<String>,
+        transform: (JsonObject) -> T?,
+    ): T? = withContext(ioDispatcher) {
+        mergedBlobObject(topic, itemKeys)?.let(transform)
+    }
+
+    /**
+     * Resolves every item in [itemKeys] concurrently and builds a JSON object keyed by item key, each mapping
+     * to that item's parsed blob JSON, or `null` if any item can't be resolved or any resolved blob isn't valid
+     * JSON. Assumes it is already running on [ioDispatcher] (its only caller wraps it), so it doesn't switch
+     * context itself.
+     */
+    @Suppress("ReturnCount")
+    private suspend fun mergedBlobObject(topic: RemoteConfigTopic, itemKeys: Collection<String>): JsonObject? {
+        if (disabled) {
+            verboseLog { "Remote config disabled (4xx); skipping merged read for topic '${topic.wireName}'." }
+            return null
+        }
+        val keys = itemKeys.distinct()
+        if (keys.isEmpty()) {
+            verboseLog { "No item keys requested for merged remote config read in topic '${topic.wireName}'." }
+            return null
+        }
+        val resolved = coroutineScope {
+            keys.associateWith { key -> async { resolveBlobBytes(topic, key) } }
+                .mapValues { (_, deferred) -> deferred.await() }
+        }
+        val missing = resolved.filterValues { it == null }.keys
+        if (missing.isNotEmpty()) {
+            warnLog {
+                "Could not resolve remote config blob(s) for ${missing.size} of ${resolved.size} " +
+                    "requested item(s) in topic '${topic.wireName}': $missing. Returning null."
+            }
+            return null
+        }
+        val merged = LinkedHashMap<String, JsonElement>()
+        for (key in keys) {
+            val element = try {
+                JsonProvider.defaultJson.parseToJsonElement(resolved.getValue(key)!!.decodeToString())
+            } catch (e: SerializationException) {
+                errorLog(e) { "Remote config blob for item '$key' in topic '${topic.wireName}' is not valid JSON." }
+                return null
+            }
+            // Nest each item's blob JSON under its item key.
+            merged[key] = element
+        }
+        return JsonObject(merged)
     }
 
     /**

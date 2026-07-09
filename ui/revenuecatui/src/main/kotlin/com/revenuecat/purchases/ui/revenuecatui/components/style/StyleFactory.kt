@@ -726,8 +726,16 @@ internal class StyleFactory(
         return when (action) {
             is ButtonComponent.Action.NavigateBack -> Result.Success(ButtonComponentStyle.Action.NavigateBack)
             is ButtonComponent.Action.RestorePurchases -> Result.Success(ButtonComponentStyle.Action.RestorePurchases)
-            is ButtonComponent.Action.NavigateTo -> convertDestination(action.destination)
-                .map { destination -> destination?.let { ButtonComponentStyle.Action.NavigateTo(it) } }
+            is ButtonComponent.Action.NavigateTo -> {
+                val destination = action.destination
+                // A sheet destination with no inline content: render the button, no-op on tap (web parity).
+                if (destination is ButtonComponent.Destination.Sheet && destination.stack == null) {
+                    Result.Success(ButtonComponentStyle.Action.NoOp)
+                } else {
+                    convertDestination(destination)
+                        .map { converted -> converted?.let { ButtonComponentStyle.Action.NavigateTo(it) } }
+                }
+            }
             is ButtonComponent.Action.WorkflowTrigger -> Result.Success(ButtonComponentStyle.Action.WorkflowTrigger)
             is ButtonComponent.Action.CloseWorkflow -> Result.Success(ButtonComponentStyle.Action.CloseWorkflow)
             // Returning null here, which will result in this button being hidden.
@@ -822,19 +830,28 @@ internal class StyleFactory(
                 destination.method,
                 componentInteractionValue = "navigate_to_url",
             )
-            is ButtonComponent.Destination.Sheet ->
-                createStackComponentStyle(destination.stack)
-                    .map { it.applyBottomWindowInsetsIfNecessary(shouldApply = true) }
-                    .map { it.applyHorizontalWindowInsetsIfNecessary(shouldApply = true) }
-                    .map { stackComponentStyle ->
-                        ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
-                            id = destination.id,
-                            name = destination.name,
-                            stack = stackComponentStyle,
-                            backgroundBlur = destination.backgroundBlur,
-                            size = destination.size,
-                        )
-                    }
+            is ButtonComponent.Destination.Sheet -> {
+                val rawStack = destination.stack
+                if (rawStack == null) {
+                    // Unreachable: a content-less sheet is mapped to NoOp before reaching here. Log in
+                    // case that invariant ever breaks, and hide the button rather than crash.
+                    Logger.e("Sheet destination reached convertDestination without a stack.")
+                    Result.Success(null)
+                } else {
+                    createStackComponentStyle(rawStack)
+                        .map { it.applyBottomWindowInsetsIfNecessary(shouldApply = true) }
+                        .map { it.applyHorizontalWindowInsetsIfNecessary(shouldApply = true) }
+                        .map { stackComponentStyle ->
+                            ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
+                                id = destination.id,
+                                name = destination.name,
+                                stack = stackComponentStyle,
+                                backgroundBlur = destination.backgroundBlur,
+                                size = destination.size,
+                            )
+                        }
+                }
+            }
             // Returning null here, which will result in this button being hidden.
             is ButtonComponent.Destination.Unknown,
             -> Result.Success(null)

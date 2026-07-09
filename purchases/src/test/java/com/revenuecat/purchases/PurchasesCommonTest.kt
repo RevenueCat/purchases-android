@@ -11,7 +11,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.ReplaceProductInfo
-import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
@@ -41,6 +41,8 @@ import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
 import io.mockk.Runs
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -50,6 +52,7 @@ import io.mockk.verify
 import io.mockk.verifyAll
 import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Test
@@ -58,6 +61,7 @@ import org.robolectric.annotation.Config
 import java.util.Collections.emptyList
 import java.util.Date
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.runBlocking
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -2837,20 +2841,17 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `getWorkflow delivers the manager success result to the caller`() {
-        val expected = WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
-        val successSlot = slot<(WorkflowDataResult) -> Unit>()
+        val expected = mockk<PublishedWorkflow>()
+        val successSlot = slot<(PublishedWorkflow) -> Unit>()
         every {
             mockWorkflowManager.getWorkflow(
-                appUserID = appUserId,
                 workflowOrOfferingId = "wf_1",
-                appInBackground = any(),
                 onSuccess = capture(successSlot),
                 onError = any(),
-                callbackDispatcher = any(),
             )
         } answers { successSlot.captured(expected) }
 
-        var received: WorkflowDataResult? = null
+        var received: PublishedWorkflow? = null
         var receivedError: PurchasesError? = null
         purchases.purchasesOrchestrator.getWorkflow(
             workflowId = "wf_1",
@@ -2869,16 +2870,13 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val errorSlot = slot<(PurchasesError) -> Unit>()
         every {
             mockWorkflowManager.getWorkflow(
-                appUserID = appUserId,
                 workflowOrOfferingId = "wf_1",
-                appInBackground = any(),
                 onSuccess = any(),
                 onError = capture(errorSlot),
-                callbackDispatcher = any(),
             )
         } answers { errorSlot.captured(expectedError) }
 
-        var received: WorkflowDataResult? = null
+        var received: PublishedWorkflow? = null
         var receivedError: PurchasesError? = null
         purchases.purchasesOrchestrator.getWorkflow(
             workflowId = "wf_1",
@@ -2895,7 +2893,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     fun `getWorkflow returns ConfigurationError and never calls manager when uiPreviewMode is true`() {
         buildPurchases(anonymous = true, uiPreviewMode = true)
 
-        var received: WorkflowDataResult? = null
+        var received: PublishedWorkflow? = null
         var receivedError: PurchasesError? = null
         purchases.purchasesOrchestrator.getWorkflow(
             workflowId = "wf_1",
@@ -2907,7 +2905,44 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
         assertThat(received).isNull()
         verify(exactly = 0) {
-            mockWorkflowManager.getWorkflow(any(), any(), any(), any(), any(), any())
+            mockWorkflowManager.getWorkflow(any(), any(), any())
+        }
+    }
+
+    // endregion
+
+    // region getUiConfig
+
+    @Test
+    fun `getUiConfig delivers the provider's result to the caller`() {
+        val expected = UiConfig()
+        coEvery { mockUiConfigProvider.getUiConfig() } returns expected
+
+        val received = runBlocking { purchases.purchasesOrchestrator.getUiConfig() }
+
+        assertThat(received).isEqualTo(expected)
+    }
+
+    @Test
+    fun `getUiConfig propagates a provider failure to the caller without wrapping it`() {
+        val failure = RuntimeException("boom")
+        coEvery { mockUiConfigProvider.getUiConfig() } throws failure
+
+        assertThatExceptionOfType(RuntimeException::class.java)
+            .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getUiConfig() } }
+            .isSameAs(failure)
+    }
+
+    @Test
+    fun `getUiConfig throws ConfigurationError and never calls the provider when uiPreviewMode is true`() {
+        buildPurchases(anonymous = true, uiPreviewMode = true)
+
+        assertThatExceptionOfType(PurchasesException::class.java)
+            .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getUiConfig() } }
+            .extracting { it.code }
+            .isEqualTo(PurchasesErrorCode.ConfigurationError)
+        coVerify(exactly = 0) {
+            mockUiConfigProvider.getUiConfig()
         }
     }
 
