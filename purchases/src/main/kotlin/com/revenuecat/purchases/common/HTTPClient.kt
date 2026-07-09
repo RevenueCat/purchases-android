@@ -218,16 +218,17 @@ internal class HTTPClient(
             }
         } catch (e: IOException) {
             exceptionHit = e
-            if (e is SocketTimeoutException && isMainBackend && canUseFallback()) {
-                requestResult = HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
-                callResult = performRequestToFallbackURL()
-            } else if (canUseFallback()) {
+            // Record a timeout for any main-source attempt that timed out, regardless of fallback-URL support.
+            if (e is SocketTimeoutException && isMainBackend) {
+                requestResult = HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT
+            }
+            if (canUseFallback()) {
                 callResult = performRequestToFallbackURL()
             } else {
                 throw e
             }
         } finally {
-            timeoutManager.recordRequestResult(requestResult)
+            timeoutManager.recordRequestResult(requestBaseURL.host, requestResult)
 
             trackHttpRequestPerformedIfNeeded(
                 requestBaseURL,
@@ -330,8 +331,10 @@ internal class HTTPClient(
             }
 
             val timeout = timeoutManager.getTimeoutForRequest(
+                host = fullURL.host,
                 isFallback = isFallbackURL,
-                fallbackAvailable = endpoint.supportsFallbackBaseURLs && appConfig.fallbackBaseURLs.isNotEmpty(),
+                endpointSupportsFallbackURLs = endpoint.supportsFallbackBaseURLs,
+                isProxied = appConfig.hasProxyURL,
             )
 
             connection = getConnection(httpRequest, timeout)

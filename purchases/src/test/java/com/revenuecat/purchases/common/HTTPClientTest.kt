@@ -1321,16 +1321,18 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         val appConfig = createAppConfig()
         val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
+        val host = baseURL.host
 
         // Create app config with main backend URL
         client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
 
         // Record a timeout first to verify it gets reset
-        timeoutManager.recordRequestResult(
-            HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
-        )
-        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
-            .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
+        timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
+        assertThat(
+            timeoutManager.getTimeoutForRequest(
+                host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+            )
+        ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
         // Setup successful response
         enqueue(
@@ -1339,7 +1341,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         )
 
         verify(exactly = 0) {
-            timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND)
+            timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND)
         }
 
         // Perform request to main backend
@@ -1352,29 +1354,36 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             fallbackBaseURLs = emptyList(),
         )
 
-        // Verify timeout was reset
+        // Verify the successful main-source response cleared this host's timeout entry
         assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
-        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
-            .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
+        assertThat(
+            timeoutManager.getTimeoutForRequest(
+                host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+            )
+        ).isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         verify(exactly = 1) {
-            timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND)
+            timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND)
         }
     }
 
     @Test
-    fun `HTTPClient records TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT when timeout occurs on main backend with fallback`() {
+    fun `HTTPClient records MAIN_SOURCE_TIMED_OUT when timeout occurs on main source with fallback`() {
         val endpoint = Endpoint.GetOfferings("test_user_id")
         assert(endpoint.supportsFallbackBaseURLs)
 
         val appConfig = createAppConfig()
         val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
+        val host = "10.255.255.255"
 
         // Create app config with main backend URL
         client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
 
-        // Initially timeout should be default
-        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
-            .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
+        // Initially timeout should be the base tier
+        assertThat(
+            timeoutManager.getTimeoutForRequest(
+                host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+            )
+        ).isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
         // Setup fallback server response
         val fallbackServer = MockWebServer()
@@ -1406,13 +1415,13 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         )
 
         verify(exactly = 0) {
-            timeoutManager.recordRequestResult(any())
+            timeoutManager.recordRequestResult(host, any())
         }
 
         try {
-            // Perform request - should timeout on main backend and use fallback
+            // Perform request - should timeout on main source and use fallback
             val result = client.performRequest(
-                URL("http://10.255.255.255/"), // Unroutable IP to force connection timeout
+                URL("http://$host/"), // Unroutable IP to force connection timeout
                 endpoint,
                 body = null,
                 postFieldsToSign = null,
@@ -1420,14 +1429,15 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 fallbackBaseURLs = listOf(fallbackBaseURL),
             )
 
-            // Verify HTTPClient recorded TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+            // Verify HTTPClient recorded MAIN_SOURCE_TIMED_OUT for the main-source host
             assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
-            assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
-                .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
-            verify(exactly = 1) {
-                timeoutManager.recordRequestResult(
-                    HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+            assertThat(
+                timeoutManager.getTimeoutForRequest(
+                    host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
                 )
+            ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
+            verify(exactly = 1) {
+                timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
             }
         } finally {
             fallbackServer.shutdown()
@@ -1435,18 +1445,22 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
-    fun `HTTPClient records OTHER_RESULT when timeout occurs on main backend with endpoint not supporting fallback`() {
+    fun `HTTPClient records MAIN_SOURCE_TIMED_OUT when timeout occurs on main source with endpoint not supporting fallback`() {
         val endpoint = Endpoint.LogIn
 
         val appConfig = createAppConfig()
         val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
+        val host = "10.255.255.255"
 
         // Create app config with main backend URL
         client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
 
-        // Initially timeout should be default
-        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = false))
-            .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
+        // Initially timeout should be the no-fallback base tier
+        assertThat(
+            timeoutManager.getTimeoutForRequest(
+                host = host, isFallback = false, endpointSupportsFallbackURLs = false, isProxied = false,
+            )
+        ).isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
         enqueue(
             endpoint.getPath(),
@@ -1454,13 +1468,13 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         )
 
         verify(exactly = 0) {
-            timeoutManager.recordRequestResult(any())
+            timeoutManager.recordRequestResult(host, any())
         }
 
-        // Perform request - should timeout on main backend and not use fallback
+        // Perform request - should timeout on main source and not use fallback
         assertThatThrownBy {
             client.performRequest(
-                URL("http://10.255.255.255/"), // Unroutable IP to force connection timeout
+                URL("http://$host/"), // Unroutable IP to force connection timeout
                 endpoint,
                 body = null,
                 postFieldsToSign = null,
@@ -1469,14 +1483,21 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             )
         }.isInstanceOf(SocketTimeoutException::class.java)
 
-        // Verify HTTPClient recorded OTHER_RESULT (not timeout for fallback endpoint)
-        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = false))
-            .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
-        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
-            .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
+        // The timeout is now recorded even though the endpoint has no fallback support, so
+        // subsequent main-source requests to this host use the reduced tiers.
         verify(exactly = 1) {
-            timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.OTHER_RESULT)
+            timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
         }
+        assertThat(
+            timeoutManager.getTimeoutForRequest(
+                host = host, isFallback = false, endpointSupportsFallbackURLs = false, isProxied = false,
+            )
+        ).isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
+        assertThat(
+            timeoutManager.getTimeoutForRequest(
+                host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+            )
+        ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
     }
 
     @Test
@@ -1485,16 +1506,18 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         val appConfig = createAppConfig()
         val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
+        val host = baseURL.host
 
         // Create app config with main backend URL
         client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
 
         // Record a timeout first
-        timeoutManager.recordRequestResult(
-            HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
-        )
-        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
-            .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
+        timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
+        assertThat(
+            timeoutManager.getTimeoutForRequest(
+                host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+            )
+        ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
         // Setup error response (non-timeout error)
         enqueue(
@@ -1503,7 +1526,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         )
 
         verify(exactly = 0) {
-            timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.OTHER_RESULT)
+            timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.OTHER_RESULT)
         }
 
         // Perform request - should record OTHER_RESULT for non-successful response
@@ -1516,12 +1539,15 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             fallbackBaseURLs = emptyList(),
         )
 
-        // Verify HTTPClient recorded OTHER_RESULT and did NOT reset timeout
+        // Verify HTTPClient recorded OTHER_RESULT and did NOT reset the timeout
         assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.NOT_FOUND)
-        assertThat(timeoutManager.getTimeoutForRequest(isFallback = false, fallbackAvailable = true))
-            .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
+        assertThat(
+            timeoutManager.getTimeoutForRequest(
+                host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+            )
+        ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         verify(exactly = 1) {
-            timeoutManager.recordRequestResult(HTTPTimeoutManager.RequestResult.OTHER_RESULT)
+            timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.OTHER_RESULT)
         }
     }
 
