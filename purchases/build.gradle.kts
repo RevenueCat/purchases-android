@@ -102,6 +102,16 @@ android {
         // Shared
         testInstrumentationRunnerArguments["TEST_PROXY_URL"] = resolveProperty("TEST_PROXY_URL")
 
+        // Offerings startup performance harness (perftests package). The perf test self-skips when
+        // PERF_TEST_API_KEY is not set. See scripts/perf/README.md.
+        testInstrumentationRunnerArguments["PERF_TEST_API_KEY"] = resolveProperty("PERF_TEST_API_KEY")
+        testInstrumentationRunnerArguments["PERF_TEST_SCENARIO"] = resolveProperty("PERF_TEST_SCENARIO")
+        testInstrumentationRunnerArguments["PERF_TEST_CACHE_MODE"] = resolveProperty("PERF_TEST_CACHE_MODE")
+        testInstrumentationRunnerArguments["PERF_TEST_ITERATIONS"] = resolveProperty("PERF_TEST_ITERATIONS")
+        testInstrumentationRunnerArguments["PERF_TEST_NETWORK_LABEL"] = resolveProperty("PERF_TEST_NETWORK_LABEL")
+        testInstrumentationRunnerArguments["PERF_TEST_PROJECT_LABEL"] = resolveProperty("PERF_TEST_PROJECT_LABEL")
+        testInstrumentationRunnerArguments["PERF_TEST_BASE_PLAN_IDS"] = resolveProperty("PERF_TEST_BASE_PLAN_IDS")
+
         // Optional package filter for running a subset of tests (used by CI).
         // e.g. -PTEST_PACKAGE_FILTER=com.revenuecat.purchases.integration.production
         val testPackageFilter = resolveProperty("TEST_PACKAGE_FILTER")

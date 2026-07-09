@@ -71,6 +71,19 @@
 #CUSTOM_ENTITLEMENT_COMPUTATION_ACTIVE_ENTITLEMENT_IDS_TO_VERIFY=entitlement1,entitlement2
 
 ## ──────────────────────────────────────────────
+## Offerings Startup Performance Harness (instrumentation)
+## The perf test self-skips when PERF_TEST_API_KEY is not set.
+## See scripts/perf/README.md for scenarios, cache modes, and the driver script.
+## ──────────────────────────────────────────────
+#PERF_TEST_API_KEY=your_perf_project_key
+#PERF_TEST_SCENARIO=workflows
+#PERF_TEST_CACHE_MODE=cold
+#PERF_TEST_ITERATIONS=10
+#PERF_TEST_NETWORK_LABEL=ideal
+#PERF_TEST_PROJECT_LABEL=large-copy
+#PERF_TEST_BASE_PLAN_IDS=monthly,annual
+
+## ──────────────────────────────────────────────
 ## Debug flags
 ## ──────────────────────────────────────────────
 #ENABLE_EXTRA_REQUEST_LOGGING=true
