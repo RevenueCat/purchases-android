@@ -218,6 +218,12 @@ internal class HTTPClient(
                 requestResult = HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
                 callResult = performRequestToFallbackURL()
             } else if (canUseFallback()) {
+                // Unlike iOS, we keep failing over on every connection-level IOException here, including ones
+                // that may be caused by the device being offline. iOS suppresses the host switch on device
+                // connectivity errors, but Android has no equivalent signal at this layer: a device with no
+                // connectivity and a host whose DNS fails both surface as UnknownHostException, and telling
+                // them apart requires a ConnectivityManager check (ACCESS_NETWORK_STATE), which the SDK does
+                // not currently have. Gating this reliably is deferred to a follow-up; see the PR description.
                 callResult = performRequestToFallbackURL()
             } else {
                 throw e
