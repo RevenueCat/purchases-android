@@ -63,6 +63,24 @@ internal class WorkflowManager(
                     ),
                 )
                 else -> {
+                    val uiConfig = try {
+                        uiConfigProvider.getUiConfig()
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                        errorLog(e) { "Failed to load ui_config for workflow '$workflowId'." }
+                        null
+                    }
+                    if (uiConfig == null) {
+                        onError(
+                            PurchasesError(
+                                PurchasesErrorCode.UnknownError,
+                                "Workflow '$workflowId' resolved, but its UI config is unavailable.",
+                            ),
+                        )
+                        return@launch
+                    }
+
                     // Warm the workflow's images and ui_config fonts in parallel with delivery, like the old
                     // fetch path did on resolve; a prewarm failure must never fail the read itself. The fonts
                     // now come from the ui_config topic rather than a uiConfig embedded in the workflow body.
@@ -70,7 +88,7 @@ internal class WorkflowManager(
                         runCatching {
                             workflowAssetPreDownloader.preDownloadWorkflowAssets(
                                 result,
-                                uiConfigProvider.getUiConfig(),
+                                uiConfig,
                             )
                         }.onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
                     }
@@ -96,9 +114,9 @@ internal class WorkflowManager(
      *
      * Both steps are best-effort: a failure to ready either one is swallowed (logged) and never propagates,
      * so [onComplete] always runs and `getOfferings` can never be stranded waiting on it — if config data
-     * couldn't be readied, the render path fetches it on demand or falls back. The only thing that skips
-     * [onComplete] is coroutine cancellation (teardown / identity change), which must not fire a spurious
-     * success. A failure in one step also does not cancel the other.
+     * couldn't be readied, the render path fetches it on demand and reports an error if it is still unavailable.
+     * The only thing that skips [onComplete] is coroutine cancellation (teardown / identity change), which must not
+     * fire a spurious success. A failure in one step also does not cancel the other.
      *
      * It is not a `suspend` function: it launches the wait on [scope] and calls back, so a callback-based
      * caller can gate on it without owning a coroutine scope.
@@ -107,7 +125,7 @@ internal class WorkflowManager(
         scope.launch {
             coroutineScope {
                 launch { awaitBestEffort("workflows topic") { workflowsConfigProvider.awaitReady() } }
-                launch { awaitBestEffort("ui_config") { uiConfigProvider.getUiConfig() } }
+                launch { awaitBestEffort("ui_config") { checkNotNull(uiConfigProvider.getUiConfig()) } }
             }
             onComplete()
         }

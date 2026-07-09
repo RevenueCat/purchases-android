@@ -629,7 +629,12 @@ internal class PurchasesOrchestrator(
             }
             throw PurchasesException(PurchasesError(PurchasesErrorCode.ConfigurationError, message))
         }
-        return provider.getUiConfig()
+        return provider.getUiConfig() ?: throw PurchasesException(
+            PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                "UI config is unavailable.",
+            ),
+        )
     }
 
     fun getProducts(

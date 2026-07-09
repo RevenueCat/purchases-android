@@ -14,6 +14,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -118,6 +119,67 @@ class WorkflowManagerTest {
     }
 
     @Test
+    fun `getWorkflow calls onError when ui_config is unavailable`() {
+        val expectedResult = mockk<PublishedWorkflow>(relaxed = true)
+        coEvery { mockProvider.workflowIdForOfferingId("wf_1") } returns null
+        coEvery { mockProvider.getWorkflow("wf_1") } returns expectedResult
+        coEvery { mockUiConfigProvider.getUiConfig() } returns null
+
+        var error: PurchasesError? = null
+        workflowManager.getWorkflow(
+            workflowOrOfferingId = "wf_1",
+            onSuccess = { fail("expected error") },
+            onError = { error = it },
+        )
+        testScope.testScheduler.advanceUntilIdle()
+
+        assertThat(error).isNotNull
+        assertThat(error!!.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        assertThat(error!!.underlyingErrorMessage).contains("UI config is unavailable")
+        verify(exactly = 0) { mockAssetPreDownloader.preDownloadWorkflowAssets(any(), any()) }
+    }
+
+    @Test
+    fun `getWorkflow calls onError when ui_config loading fails`() {
+        val expectedResult = mockk<PublishedWorkflow>(relaxed = true)
+        coEvery { mockProvider.workflowIdForOfferingId("wf_1") } returns null
+        coEvery { mockProvider.getWorkflow("wf_1") } returns expectedResult
+        coEvery { mockUiConfigProvider.getUiConfig() } throws RuntimeException("boom")
+
+        var error: PurchasesError? = null
+        workflowManager.getWorkflow(
+            workflowOrOfferingId = "wf_1",
+            onSuccess = { fail("expected error") },
+            onError = { error = it },
+        )
+        testScope.testScheduler.advanceUntilIdle()
+
+        assertThat(error).isNotNull
+        assertThat(error!!.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        assertThat(error!!.underlyingErrorMessage).contains("UI config is unavailable")
+        verify(exactly = 0) { mockAssetPreDownloader.preDownloadWorkflowAssets(any(), any()) }
+    }
+
+    @Test
+    fun `getWorkflow does not call back when ui_config loading is cancelled`() {
+        val expectedResult = mockk<PublishedWorkflow>(relaxed = true)
+        coEvery { mockProvider.workflowIdForOfferingId("wf_1") } returns null
+        coEvery { mockProvider.getWorkflow("wf_1") } returns expectedResult
+        coEvery { mockUiConfigProvider.getUiConfig() } throws CancellationException("cancelled")
+
+        var calledBack = false
+        workflowManager.getWorkflow(
+            workflowOrOfferingId = "wf_1",
+            onSuccess = { calledBack = true },
+            onError = { calledBack = true },
+        )
+        testScope.testScheduler.advanceUntilIdle()
+
+        assertThat(calledBack).isFalse()
+        verify(exactly = 0) { mockAssetPreDownloader.preDownloadWorkflowAssets(any(), any()) }
+    }
+
+    @Test
     fun `getWorkflow pre-downloads the workflow's assets with the ui_config on success`() {
         val expectedResult = mockk<PublishedWorkflow>(relaxed = true)
         coEvery { mockProvider.workflowIdForOfferingId("wf_1") } returns null
@@ -197,6 +259,20 @@ class WorkflowManagerTest {
         val mockProvider = mockk<WorkflowsConfigProvider>()
         coEvery { mockProvider.awaitReady() } just Runs
         coEvery { mockUiConfigProvider.getUiConfig() } throws RuntimeException("boom")
+        val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = testScope)
+
+        var completed = false
+        manager.onPaywallConfigReady { completed = true }
+        testScope.testScheduler.advanceUntilIdle()
+
+        assertThat(completed).isTrue()
+    }
+
+    @Test
+    fun `onPaywallConfigReady still completes when ui_config is unavailable`() {
+        val mockProvider = mockk<WorkflowsConfigProvider>()
+        coEvery { mockProvider.awaitReady() } just Runs
+        coEvery { mockUiConfigProvider.getUiConfig() } returns null
         val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = testScope)
 
         var completed = false
