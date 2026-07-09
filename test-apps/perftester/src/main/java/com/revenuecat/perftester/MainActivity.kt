@@ -65,7 +65,7 @@ class MainActivity : ComponentActivity() {
             }
 
             LaunchedEffect(Unit) {
-                if (!autorunHandled && intent.getStringExtra("autorun")?.toBoolean() == true) {
+                if (!autorunHandled && !keyMissing && intent.getStringExtra("autorun")?.toBoolean() == true) {
                     autorunHandled = true
                     runCycle()
                 }

@@ -56,6 +56,7 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.coroutines.core)
 
     testImplementation(libs.androidx.junit)
 }

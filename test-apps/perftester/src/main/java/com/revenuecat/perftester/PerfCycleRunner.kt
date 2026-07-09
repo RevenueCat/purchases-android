@@ -108,6 +108,9 @@ internal class PerfCycleRunner(
                 }
             }
             workflowId?.let { id ->
+                // NOTE: this withTimeout cannot force-cancel awaitGetWorkflow — that SDK API uses
+                // non-cancellable suspendCoroutine, so a hung workflow-body fetch will keep runCycle
+                // waiting past CALL_TIMEOUT_MILLIS. The offerings measurement above is properly bounded.
                 workflowResolved = runCatching {
                     withTimeout(CALL_TIMEOUT_MILLIS) {
                         val started = SystemClock.elapsedRealtimeNanos()
