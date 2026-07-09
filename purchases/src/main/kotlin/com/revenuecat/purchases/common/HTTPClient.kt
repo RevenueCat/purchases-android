@@ -223,7 +223,7 @@ internal class HTTPClient(
                 // connectivity errors, but Android has no equivalent signal at this layer: a device with no
                 // connectivity and a host whose DNS fails both surface as UnknownHostException, and telling
                 // them apart requires a ConnectivityManager check (ACCESS_NETWORK_STATE), which the SDK does
-                // not currently have. Gating this reliably is deferred to a follow-up; see the PR description.
+                // not currently have.
                 callResult = performRequestToFallbackURL()
             } else {
                 throw e
