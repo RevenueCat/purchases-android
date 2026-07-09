@@ -74,3 +74,10 @@
 ## Debug flags
 ## ──────────────────────────────────────────────
 #ENABLE_EXTRA_REQUEST_LOGGING=true
+
+## ──────────────────────────────────────────────
+## Perf tester app (test-apps:perftester)
+## Test Store API key recommended: the SDK selects SimulatedStoreBillingWrapper
+## from the key type, so products resolve without any Play setup.
+## ──────────────────────────────────────────────
+#PERF_TESTER_API_KEY=your_test_store_key
