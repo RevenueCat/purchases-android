@@ -46,12 +46,30 @@ Offerings, remote config, and the blob store are **independent** caches, so warm
 | `warm_memory` | Primed on the same instance. The timed call vends the in-memory offerings cache and committed config — isolates the pure gate overhead on the path that was effectively instant before the workflows migration. |
 | `warm_offerings_cold_config` | Primed, instance recreated, then *only* the remote config disk cache and blob store are deleted. The post-app-update migration state: offerings data exists, the config layer starts cold, and the gate must wait for a full `/v1/config` sync. Expected to be the most regression-prone cell. |
 
+## Lifecycle modes (`PERF_TEST_LIFECYCLE_MODE`)
+
+The SDK's behavior depends on process lifecycle: it starts in background state (background request
+jitter, 25h cache TTLs) until `ProcessLifecycleOwner` dispatches the first foreground event, and
+`onAppForegrounded` triggers work (config staleness refresh, customer info refresh, offerings staleness
+check) that races a `getOfferings` call issued around the same time. Each iteration follows one journey:
+
+| Mode | Journey |
+|---|---|
+| `foreground` | Configure and call `getOfferings` with the activity already resumed. Simplest, lowest-variance journey; foreground hooks fire at configure time. |
+| `cold_start_ordering` | The real app-startup ordering: configure while the process is in background (as in `Application.onCreate`, before any activity starts), then bring the activity to the foreground, then call `getOfferings` immediately — the foreground-hook work races the measured call exactly as in production. Also records `resume_to_offerings_ms`. Not valid with `warm_memory`. |
+| `foreground_return` | The user-returns-to-the-app journey: prime on a live instance, background the app (waiting out `ProcessLifecycleOwner`'s ~700ms dispatch debounce), resume, and call `getOfferings` immediately. Only valid with `warm_memory` (a live SDK instance is what makes the journey real). |
+
+The driver skips invalid cache/lifecycle combinations automatically.
+
 ## Recorded metrics
 
 Per iteration (all durations in ms, monotonic clock):
 
 - `get_offerings_ms` — headline: `getOfferings` call → callback.
 - `configure_to_offerings_ms` — `Purchases.configure` → offerings callback (not recorded for `warm_memory`).
+- `resume_to_offerings_ms` — app moved to foreground → offerings callback (recorded for
+  `cold_start_ordering` and `foreground_return`); the closest analog to "startup until offerings" as a
+  user experiences it.
 - `ui_config_ms`, `ui_config_is_default` — `ui_config` readiness after offerings, and whether the
   all-or-nothing merge silently fell back to a default `UiConfig` (a *fast but degraded* result).
 - `workflow_resolution_ms`, `workflow_body_ms`, `workflow_resolved` — offering→workflow id resolution and
@@ -78,6 +96,14 @@ cross-run by the driver.
 - The kill-switch is **session-scoped and memory-only**. `cold` × `workflows_config_404` measures the
   first-call-of-session cost (the gate still waits for the 4xx); `warm_memory` × `workflows_config_404`
   measures steady state after the switch has tripped.
+- **Background request jitter is scaled down**: the harness configures the SDK with the integration-test
+  flag, which reduces the jitter the SDK normally applies to background-initiated requests to ~1%. This
+  keeps iteration variance low, but means `cold_start_ordering` slightly underrepresents the extra delay
+  a production app could see from background dispatch jitter before the first foreground event.
+- **In-process restarts, not process deaths**: iterations restart the SDK instance (singleton reset +
+  cache surgery) inside one instrumentation process. The driver does `pm clear` between matrix cells,
+  but classloading/process-start costs are intentionally out of scope (use Macrobenchmark on a real app
+  for those).
 
 ## Running
 
@@ -109,7 +135,7 @@ python3 scripts/perf/run_offerings_startup_perf.py run \
 Results are pulled to `perf-results/` and summarized as:
 
 ```text
-scenario  cache  network  project  n  p50  p90  p95  max  errors  fallbacks
+scenario  cache  lifecycle  network  project  n  p50  p90  p95  max  errors  fallbacks
 ```
 
 Run the same matrix once per network condition, changing `--network-label` each time.

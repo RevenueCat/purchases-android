@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.os.SystemClock
 import android.util.Log
+import androidx.lifecycle.Lifecycle
 import androidx.test.ext.junit.rules.activityScenarioRule
 import androidx.test.platform.app.InstrumentationRegistry
 import com.revenuecat.purchases.Constants
@@ -101,6 +102,7 @@ internal class OfferingsStartupPerfTest {
     private fun runIteration(iteration: Int): PerfIterationResult {
         val userId = "$userIdBase-$iteration"
         val configureTimed = prepareCacheState(userId)
+        prepareLifecycleState()
         // Drain diagnostics events produced during priming so the timed window only sees its own requests.
         diagnosticsReader.harvestNewHttpEvents()
         return measureTimedPhase(iteration, userId, configureTimed)
@@ -109,6 +111,7 @@ internal class OfferingsStartupPerfTest {
     /**
      * Puts caches in the state [PerfCacheMode] describes and returns whether the timed phase must configure
      * the SDK itself (false only for [PerfCacheMode.WARM_MEMORY], which reuses the primed instance).
+     * Priming always happens in the foreground, like a regular app session.
      */
     private fun prepareCacheState(userId: String): Boolean {
         Purchases.resetSingleton()
@@ -116,20 +119,34 @@ internal class OfferingsStartupPerfTest {
         return when (config.cacheMode) {
             PerfCacheMode.COLD -> true
             PerfCacheMode.WARM_DISK -> {
-                primeCaches(userId)
+                primeCachesInForeground(userId)
                 Purchases.resetSingleton()
                 true
             }
             PerfCacheMode.WARM_MEMORY -> {
-                primeCaches(userId)
+                primeCachesInForeground(userId)
                 false
             }
             PerfCacheMode.WARM_OFFERINGS_COLD_CONFIG -> {
-                primeCaches(userId)
+                primeCachesInForeground(userId)
                 Purchases.resetSingleton()
                 deleteRemoteConfigState()
                 true
             }
+        }
+    }
+
+    /**
+     * Moves the process into the lifecycle state the timed phase must start from. For the background-first
+     * journeys the activity is stopped and the harness waits for `ProcessLifecycleOwner` to dispatch the
+     * background event (it debounces `ON_STOP` by ~700ms), so a configure that follows really runs with the
+     * SDK in background state — matching `Application.onCreate` on a real cold start ([COLD_START_ORDERING])
+     * or an app sitting in the background ([FOREGROUND_RETURN]).
+     */
+    private fun prepareLifecycleState() {
+        when (config.lifecycleMode) {
+            PerfLifecycleMode.FOREGROUND -> moveToForeground()
+            PerfLifecycleMode.COLD_START_ORDERING, PerfLifecycleMode.FOREGROUND_RETURN -> moveToBackground()
         }
     }
 
@@ -139,6 +156,16 @@ internal class OfferingsStartupPerfTest {
         if (configureTimed) {
             configureStartedNanos = SystemClock.elapsedRealtimeNanos()
             configureSdk(userId)
+        }
+
+        // For the background-first journeys, bring the app to the foreground now — after configure (matching
+        // the Application.onCreate ordering) and right before getOfferings — so the foreground-hook work
+        // (config staleness refresh, customer info refresh, offerings staleness check) races the measured
+        // call exactly as it does in production.
+        var resumeStartedNanos: Long? = null
+        if (config.lifecycleMode != PerfLifecycleMode.FOREGROUND) {
+            resumeStartedNanos = SystemClock.elapsedRealtimeNanos()
+            moveToForeground()
         }
 
         val latch = CountDownLatch(1)
@@ -179,12 +206,16 @@ internal class OfferingsStartupPerfTest {
         val configureToOfferingsMs = configureStartedNanos?.let {
             (offeringsCallbackNanos - it).nanosToMillis()
         }
+        val resumeToOfferingsMs = resumeStartedNanos?.let {
+            (offeringsCallbackNanos - it).nanosToMillis()
+        }
         if (errorMessage != null) {
             return PerfIterationResult(
                 iteration = iteration,
                 success = false,
                 errorMessage = errorMessage,
                 configureToOfferingsMs = configureToOfferingsMs,
+                resumeToOfferingsMs = resumeToOfferingsMs,
                 getOfferingsMs = getOfferingsMs,
                 httpEvents = harvestHttpEvents(),
             )
@@ -195,6 +226,7 @@ internal class OfferingsStartupPerfTest {
             iteration = iteration,
             success = true,
             configureToOfferingsMs = configureToOfferingsMs,
+            resumeToOfferingsMs = resumeToOfferingsMs,
             getOfferingsMs = getOfferingsMs,
             offeringsCount = offeringsCount,
             currentOfferingId = currentOfferingId,
@@ -295,7 +327,8 @@ internal class OfferingsStartupPerfTest {
     }
 
     /** Untimed full warm-up: offerings + (on workflows scenarios) ui_config and the first workflow body. */
-    private fun primeCaches(userId: String) {
+    private fun primeCachesInForeground(userId: String) {
+        moveToForeground()
         configureSdk(userId)
         runBlocking {
             val offerings = withTimeout(PRIME_TIMEOUT_MILLIS) { Purchases.sharedInstance.awaitOfferings() }
@@ -361,6 +394,24 @@ internal class OfferingsStartupPerfTest {
 
     // endregion
 
+    // region lifecycle control
+
+    private fun moveToForeground() {
+        activityScenarioRule.scenario.moveToState(Lifecycle.State.RESUMED)
+    }
+
+    /**
+     * Stops the activity and waits until `ProcessLifecycleOwner` has actually dispatched the background
+     * event to its observers (it debounces `ON_STOP` by ~700ms), so the SDK observes the transition before
+     * the iteration continues.
+     */
+    private fun moveToBackground() {
+        activityScenarioRule.scenario.moveToState(Lifecycle.State.CREATED)
+        SystemClock.sleep(PROCESS_LIFECYCLE_DISPATCH_WAIT_MILLIS)
+    }
+
+    // endregion
+
     // region cache surgery
 
     private fun clearAllPersistentState() {
@@ -397,6 +448,7 @@ internal class OfferingsStartupPerfTest {
         val fileName = listOf(
             config.scenario.wireName,
             config.cacheMode.wireName,
+            config.lifecycleMode.wireName,
             config.networkLabel.sanitizeForFileName(),
             runStartedAtEpochMs.toString(),
         ).joinToString("__") + ".json"
@@ -419,6 +471,9 @@ internal class OfferingsStartupPerfTest {
         private const val PRIME_TIMEOUT_MILLIS = 120_000L
         private const val POST_MEASUREMENT_TIMEOUT_MILLIS = 120_000L
         private const val DIAGNOSTICS_FLUSH_WAIT_MILLIS = 500L
+
+        // ProcessLifecycleOwner debounces ON_PAUSE/ON_STOP by 700ms; wait comfortably past that.
+        private const val PROCESS_LIFECYCLE_DISPATCH_WAIT_MILLIS = 1500L
         private const val NANOS_PER_MILLI = 1_000_000.0
         private const val JSON_INDENT_SPACES = 2
     }

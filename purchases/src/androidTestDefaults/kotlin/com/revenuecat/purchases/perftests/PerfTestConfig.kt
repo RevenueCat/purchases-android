@@ -102,12 +102,48 @@ internal enum class PerfCacheMode(val wireName: String) {
 }
 
 /**
+ * The app lifecycle journey each timed iteration follows. The SDK's behavior depends on process lifecycle:
+ * it starts in background state (`PurchasesState.appInBackground = true`, background request jitter, 25h
+ * cache TTLs) until `ProcessLifecycleOwner` dispatches the first foreground event, and `onAppForegrounded`
+ * kicks off work (config staleness refresh, customer info refresh, offerings staleness check) that races
+ * with a `getOfferings` call issued around the same time.
+ *
+ * - [FOREGROUND]: configure and call `getOfferings` while the activity is already resumed. The simplest,
+ *   lowest-variance journey; the foreground hooks fire at configure time.
+ * - [COLD_START_ORDERING]: the real app-startup ordering. The SDK is configured while the process is in
+ *   background (as in `Application.onCreate`, before any activity starts), then the activity is brought to
+ *   the foreground, then `getOfferings` is called immediately — so the foreground-hook work races the
+ *   measured call exactly as it does in production. Records `resume_to_offerings_ms` in addition to the
+ *   standard timings. Not valid with [PerfCacheMode.WARM_MEMORY] (that mode reuses an already-configured
+ *   instance).
+ * - [FOREGROUND_RETURN]: the user-returns-to-the-app journey. Caches are primed in the foreground on a
+ *   live instance, the app is backgrounded, then resumed, and `getOfferings` is called immediately on
+ *   resume — measuring the gate plus whatever the foreground hooks re-trigger. Only valid with
+ *   [PerfCacheMode.WARM_MEMORY] (a live SDK instance is what makes the journey real).
+ */
+internal enum class PerfLifecycleMode(val wireName: String) {
+    FOREGROUND("foreground"),
+    COLD_START_ORDERING("cold_start_ordering"),
+    FOREGROUND_RETURN("foreground_return"),
+    ;
+
+    companion object {
+        fun fromWireName(name: String): PerfLifecycleMode =
+            values().firstOrNull { it.wireName == name }
+                ?: error(
+                    "Unknown PERF_TEST_LIFECYCLE_MODE '$name'. Valid: ${values().joinToString { it.wireName }}",
+                )
+    }
+}
+
+/**
  * Run configuration, read from instrumentation arguments. All arguments are optional except
  * `PERF_TEST_API_KEY` (the test self-skips when it is absent, mirroring the backend integration tests):
  *
  * - `PERF_TEST_API_KEY`: API key of the dedicated performance test project.
  * - `PERF_TEST_SCENARIO`: one of [PerfScenario] wire names. Default: `workflows`.
  * - `PERF_TEST_CACHE_MODE`: one of [PerfCacheMode] wire names. Default: `cold`.
+ * - `PERF_TEST_LIFECYCLE_MODE`: one of [PerfLifecycleMode] wire names. Default: `foreground`.
  * - `PERF_TEST_ITERATIONS`: timed iterations per run. Default: 3.
  * - `PERF_TEST_NETWORK_LABEL`: free-form label for the (externally applied) network shaping, recorded in the
  *   output so results can be grouped (e.g. `ideal`, `lte`, `lte_loss10`). Default: `unlabeled`.
@@ -120,11 +156,26 @@ internal data class PerfTestConfig(
     val apiKey: String,
     val scenario: PerfScenario,
     val cacheMode: PerfCacheMode,
+    val lifecycleMode: PerfLifecycleMode,
     val iterations: Int,
     val networkLabel: String,
     val projectLabel: String,
     val basePlanIds: List<String>,
 ) {
+    init {
+        when (lifecycleMode) {
+            PerfLifecycleMode.FOREGROUND -> Unit
+            PerfLifecycleMode.COLD_START_ORDERING -> require(cacheMode != PerfCacheMode.WARM_MEMORY) {
+                "cold_start_ordering configures the SDK during the timed phase, so it cannot be combined " +
+                    "with warm_memory (which reuses an already-configured instance)."
+            }
+            PerfLifecycleMode.FOREGROUND_RETURN -> require(cacheMode == PerfCacheMode.WARM_MEMORY) {
+                "foreground_return measures a live, already-configured SDK instance returning to the " +
+                    "foreground, so it is only valid with warm_memory."
+            }
+        }
+    }
+
     companion object {
         private const val DEFAULT_ITERATIONS = 3
 
@@ -135,6 +186,9 @@ internal data class PerfTestConfig(
                 apiKey = arg("PERF_TEST_API_KEY") ?: "",
                 scenario = PerfScenario.fromWireName(arg("PERF_TEST_SCENARIO") ?: "workflows"),
                 cacheMode = PerfCacheMode.fromWireName(arg("PERF_TEST_CACHE_MODE") ?: "cold"),
+                lifecycleMode = PerfLifecycleMode.fromWireName(
+                    arg("PERF_TEST_LIFECYCLE_MODE") ?: "foreground",
+                ),
                 iterations = arg("PERF_TEST_ITERATIONS")?.toIntOrNull() ?: DEFAULT_ITERATIONS,
                 networkLabel = arg("PERF_TEST_NETWORK_LABEL") ?: "unlabeled",
                 projectLabel = arg("PERF_TEST_PROJECT_LABEL") ?: "default",

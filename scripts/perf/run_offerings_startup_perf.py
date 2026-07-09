@@ -50,13 +50,28 @@ ALL_SCENARIOS = [
     "workflows_config_unreachable",
 ]
 ALL_CACHE_MODES = ["cold", "warm_disk", "warm_memory", "warm_offerings_cold_config"]
-# Baseline has no config dependency, so config-failure scenarios only make sense with workflows enabled;
-# warm_offerings_cold_config is a no-op distinction for baseline (there is no config cache to be cold).
+ALL_LIFECYCLE_MODES = ["foreground", "cold_start_ordering", "foreground_return"]
+
+
+def is_valid_cell(scenario, cache, lifecycle):
+    # warm_offerings_cold_config is a no-op distinction for baseline (there is no config cache to be cold).
+    if scenario == "baseline" and cache == "warm_offerings_cold_config":
+        return False
+    # cold_start_ordering configures the SDK in the timed phase; warm_memory reuses a live instance.
+    if lifecycle == "cold_start_ordering" and cache == "warm_memory":
+        return False
+    # foreground_return measures a live, already-configured instance returning to the foreground.
+    if lifecycle == "foreground_return" and cache != "warm_memory":
+        return False
+    return True
+
+
 DEFAULT_MATRIX = [
-    (scenario, cache)
+    (scenario, cache, lifecycle)
     for scenario in ALL_SCENARIOS
     for cache in ALL_CACHE_MODES
-    if not (scenario == "baseline" and cache == "warm_offerings_cold_config")
+    for lifecycle in ALL_LIFECYCLE_MODES
+    if is_valid_cell(scenario, cache, lifecycle)
 ]
 
 
@@ -89,13 +104,14 @@ def install_apk(serial):
     adb(["install", "-r", "-t", TEST_APK], serial=serial)
 
 
-def run_cell(serial, scenario, cache_mode, args):
-    """Runs one scenario x cache-mode cell. Returns True on instrumentation success."""
+def run_cell(serial, scenario, cache_mode, lifecycle_mode, args):
+    """Runs one scenario x cache-mode x lifecycle-mode cell. Returns True on instrumentation success."""
     instrument_args = {
         "class": TEST_CLASS,
         "PERF_TEST_API_KEY": args.api_key,
         "PERF_TEST_SCENARIO": scenario,
         "PERF_TEST_CACHE_MODE": cache_mode,
+        "PERF_TEST_LIFECYCLE_MODE": lifecycle_mode,
         "PERF_TEST_ITERATIONS": str(args.iterations),
         "PERF_TEST_NETWORK_LABEL": args.network_label,
         "PERF_TEST_PROJECT_LABEL": args.project_label,
@@ -112,7 +128,10 @@ def run_cell(serial, scenario, cache_mode, args):
         print(result.stderr, file=sys.stderr)
     ok = "OK (" in result.stdout and "FAILURES!!!" not in result.stdout
     if not ok:
-        print(f"WARNING: instrumentation reported failure for {scenario}/{cache_mode}", file=sys.stderr)
+        print(
+            f"WARNING: instrumentation reported failure for {scenario}/{cache_mode}/{lifecycle_mode}",
+            file=sys.stderr,
+        )
     return ok
 
 
@@ -152,12 +171,13 @@ def fmt(value):
 
 
 def aggregate(results):
-    """Groups runs by (scenario, cache, network, project) and prints one table per metric."""
+    """Groups runs by (scenario, cache, lifecycle, network, project) and prints one table per metric."""
     groups = {}
     for result in results:
         key = (
             result["scenario"],
             result["cache_mode"],
+            result.get("lifecycle_mode", "foreground"),
             result["network_label"],
             result.get("project_label", "default"),
         )
@@ -166,6 +186,7 @@ def aggregate(results):
     metrics = [
         ("get_offerings_ms", "get_offerings duration (headline)"),
         ("configure_to_offerings_ms", "configure -> offerings callback"),
+        ("resume_to_offerings_ms", "app resume -> offerings callback"),
         ("ui_config_ms", "ui_config readiness after offerings"),
         ("workflow_body_ms", "first workflow body after offerings"),
     ]
@@ -200,6 +221,7 @@ def aggregate(results):
         header = (
             "scenario",
             "cache",
+            "lifecycle",
             "network",
             "project",
             "n",
@@ -217,19 +239,29 @@ def aggregate(results):
 
 
 def cmd_run(args):
-    if args.scenarios == ["all"] and args.cache_modes == ["all"]:
-        matrix = DEFAULT_MATRIX
-    else:
-        scenarios = ALL_SCENARIOS if args.scenarios == ["all"] else args.scenarios
-        cache_modes = ALL_CACHE_MODES if args.cache_modes == ["all"] else args.cache_modes
-        matrix = [(s, c) for s in scenarios for c in cache_modes]
+    scenarios = ALL_SCENARIOS if args.scenarios == ["all"] else args.scenarios
+    cache_modes = ALL_CACHE_MODES if args.cache_modes == ["all"] else args.cache_modes
+    lifecycle_modes = ALL_LIFECYCLE_MODES if args.lifecycle_modes == ["all"] else args.lifecycle_modes
 
-    for scenario in {s for s, _ in matrix}:
+    for scenario in scenarios:
         if scenario not in ALL_SCENARIOS:
             sys.exit(f"Unknown scenario '{scenario}'. Valid: {ALL_SCENARIOS}")
-    for cache in {c for _, c in matrix}:
+    for cache in cache_modes:
         if cache not in ALL_CACHE_MODES:
             sys.exit(f"Unknown cache mode '{cache}'. Valid: {ALL_CACHE_MODES}")
+    for lifecycle in lifecycle_modes:
+        if lifecycle not in ALL_LIFECYCLE_MODES:
+            sys.exit(f"Unknown lifecycle mode '{lifecycle}'. Valid: {ALL_LIFECYCLE_MODES}")
+
+    matrix = [
+        (scenario, cache, lifecycle)
+        for scenario in scenarios
+        for cache in cache_modes
+        for lifecycle in lifecycle_modes
+        if is_valid_cell(scenario, cache, lifecycle)
+    ]
+    if not matrix:
+        sys.exit("The requested scenario/cache/lifecycle combination contains no valid cells.")
 
     if not args.skip_build:
         build_apk()
@@ -237,11 +269,14 @@ def cmd_run(args):
 
     results_dir = Path(args.results_dir)
     started = time.time()
-    for index, (scenario, cache_mode) in enumerate(matrix):
-        print(f"\n=== [{index + 1}/{len(matrix)}] scenario={scenario} cache={cache_mode} ===")
+    for index, (scenario, cache_mode, lifecycle_mode) in enumerate(matrix):
+        print(
+            f"\n=== [{index + 1}/{len(matrix)}] scenario={scenario} cache={cache_mode} "
+            f"lifecycle={lifecycle_mode} ==="
+        )
         # Process-level isolation between cells: cold cells start from a truly clean app.
         clear_app_data(args.serial)
-        run_cell(args.serial, scenario, cache_mode, args)
+        run_cell(args.serial, scenario, cache_mode, lifecycle_mode, args)
         pull_results(args.serial, results_dir)
     print(f"\nMatrix finished in {time.time() - started:.0f}s. Results in {results_dir}/")
     aggregate(load_results(results_dir))
@@ -271,6 +306,13 @@ def main():
         nargs="+",
         default=["all"],
         help=f"Cache modes to run ({', '.join(ALL_CACHE_MODES)} or 'all').",
+    )
+    run_parser.add_argument(
+        "--lifecycle-modes",
+        nargs="+",
+        default=["all"],
+        help=f"Lifecycle modes to run ({', '.join(ALL_LIFECYCLE_MODES)} or 'all'). "
+        "Invalid cache/lifecycle combinations are skipped automatically.",
     )
     run_parser.add_argument("--iterations", type=int, default=10, help="Timed iterations per cell.")
     run_parser.add_argument(

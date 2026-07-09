@@ -20,6 +20,7 @@ internal data class PerfIterationResult(
     val success: Boolean,
     val errorMessage: String? = null,
     val configureToOfferingsMs: Double? = null,
+    val resumeToOfferingsMs: Double? = null,
     val getOfferingsMs: Double? = null,
     val offeringsCount: Int? = null,
     val currentOfferingId: String? = null,
@@ -36,6 +37,7 @@ internal data class PerfIterationResult(
         put("success", success)
         putOpt("error_message", errorMessage)
         putOpt("configure_to_offerings_ms", configureToOfferingsMs)
+        putOpt("resume_to_offerings_ms", resumeToOfferingsMs)
         putOpt("get_offerings_ms", getOfferingsMs)
         putOpt("offerings_count", offeringsCount)
         putOpt("current_offering_id", currentOfferingId)
@@ -134,6 +136,7 @@ internal data class PerfRunResult(
         put("schema_version", 1)
         put("scenario", config.scenario.wireName)
         put("cache_mode", config.cacheMode.wireName)
+        put("lifecycle_mode", config.lifecycleMode.wireName)
         put("network_label", config.networkLabel)
         put("project_label", config.projectLabel)
         put("requested_iterations", config.iterations)
@@ -150,6 +153,7 @@ internal data class PerfRunResult(
             JSONObject().apply {
                 putOpt("get_offerings_ms", aggregate { it.getOfferingsMs }?.toJson())
                 putOpt("configure_to_offerings_ms", aggregate { it.configureToOfferingsMs }?.toJson())
+                putOpt("resume_to_offerings_ms", aggregate { it.resumeToOfferingsMs }?.toJson())
                 putOpt("ui_config_ms", aggregate { it.uiConfigMs }?.toJson())
                 putOpt("workflow_body_ms", aggregate { it.workflowBodyMs }?.toJson())
                 putOpt(

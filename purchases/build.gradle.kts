@@ -107,6 +107,7 @@ android {
         testInstrumentationRunnerArguments["PERF_TEST_API_KEY"] = resolveProperty("PERF_TEST_API_KEY")
         testInstrumentationRunnerArguments["PERF_TEST_SCENARIO"] = resolveProperty("PERF_TEST_SCENARIO")
         testInstrumentationRunnerArguments["PERF_TEST_CACHE_MODE"] = resolveProperty("PERF_TEST_CACHE_MODE")
+        testInstrumentationRunnerArguments["PERF_TEST_LIFECYCLE_MODE"] = resolveProperty("PERF_TEST_LIFECYCLE_MODE")
         testInstrumentationRunnerArguments["PERF_TEST_ITERATIONS"] = resolveProperty("PERF_TEST_ITERATIONS")
         testInstrumentationRunnerArguments["PERF_TEST_NETWORK_LABEL"] = resolveProperty("PERF_TEST_NETWORK_LABEL")
         testInstrumentationRunnerArguments["PERF_TEST_PROJECT_LABEL"] = resolveProperty("PERF_TEST_PROJECT_LABEL")
