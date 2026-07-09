@@ -36,13 +36,15 @@ public value class FontAlias(@get:JvmSynthetic public val value: String)
 @Serializable
 public class UiConfig(
     @get:JvmSynthetic
-    public val app: AppConfig = AppConfig(),
+    public val app: AppConfig,
     @Serializable(with = LocalizedVariableLocalizationKeyMapSerializer::class)
     @get:JvmSynthetic
-    public val localizations: Map<LocaleId, Map<VariableLocalizationKey, String>> = emptyMap(),
+    public val localizations: Map<LocaleId, Map<VariableLocalizationKey, String>>,
     @SerialName("variable_config")
     @get:JvmSynthetic
-    public val variableConfig: VariableConfig = VariableConfig(),
+    public val variableConfig: VariableConfig,
+    // `custom_variables` was added after the other parts, so it may be absent from the response. Unlike the other
+    // fields (which are required and must be present in the payload), it is allowed to fall back to an empty map.
     @SerialName("custom_variables")
     @get:JvmSynthetic
     public val customVariables: Map<String, CustomVariableDefinition> = emptyMap(),
@@ -53,9 +55,9 @@ public class UiConfig(
     @Serializable
     public class AppConfig(
         @get:JvmSynthetic
-        public val colors: Map<ColorAlias, ColorScheme> = emptyMap(),
+        public val colors: Map<ColorAlias, ColorScheme>,
         @get:JvmSynthetic
-        public val fonts: Map<FontAlias, FontsConfig> = emptyMap(),
+        public val fonts: Map<FontAlias, FontsConfig>,
     ) {
         @InternalRevenueCatAPI
         @Poko
@@ -96,10 +98,10 @@ public class UiConfig(
     public class VariableConfig(
         @SerialName("variable_compatibility_map")
         @get:JvmSynthetic
-        public val variableCompatibilityMap: Map<String, String> = emptyMap(),
+        public val variableCompatibilityMap: Map<String, String>,
         @SerialName("function_compatibility_map")
         @get:JvmSynthetic
-        public val functionCompatibilityMap: Map<String, String> = emptyMap(),
+        public val functionCompatibilityMap: Map<String, String>,
     )
 
     @InternalRevenueCatAPI

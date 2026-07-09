@@ -2915,7 +2915,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     @Test
     fun `getUiConfig delivers the provider's result to the caller`() {
-        val expected = UiConfig()
+        val expected = emptyUiConfig()
         coEvery { mockUiConfigProvider.getUiConfig() } returns expected
 
         val received = runBlocking { purchases.purchasesOrchestrator.getUiConfig() }

@@ -434,6 +434,7 @@ class PaywallComponentDataValidationTests {
         )
         val uiConfig = UiConfig(
             app = AppConfig(
+                colors = emptyMap(),
                 fonts = mapOf(
                     primaryFontAlias to FontsConfig(robotoFontRegularResourceName),
                     secondaryFontAlias to FontsConfig(openSansRegularFontAssetName),
@@ -546,6 +547,7 @@ class PaywallComponentDataValidationTests {
         )
         val uiConfig = UiConfig(
             app = AppConfig(
+                colors = emptyMap(),
                 fonts = mapOf(
                     primaryFontAlias to FontsConfig(robotoFontRegularResourceName),
                     secondaryFontAlias to FontsConfig(robotoFontBoldItalicResourceName),
@@ -628,6 +630,7 @@ class PaywallComponentDataValidationTests {
         val existingFontResourceName = FontInfo.Name("roboto")
         val uiConfig = UiConfig(
             app = AppConfig(
+                colors = emptyMap(),
                 fonts = mapOf(
                     existingFontAlias to FontsConfig(existingFontResourceName),
                 )
@@ -699,6 +702,7 @@ class PaywallComponentDataValidationTests {
         val missingBlankFontAliasOverride = FontAlias(" ")
         val uiConfig = UiConfig(
             app = AppConfig(
+                colors = emptyMap(),
                 // Our 2 font aliases are missing from the AppConfig.
                 fonts = emptyMap(),
             ),
