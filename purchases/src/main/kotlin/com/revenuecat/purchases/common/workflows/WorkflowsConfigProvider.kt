@@ -65,20 +65,15 @@ internal class WorkflowsConfigProvider(
     }
 
     /**
-     * Forces the `workflows` topic to be synced (or confirms it already is), discarding the result. Used by
+     * Forces the `workflows` topic to be synced (or confirms it already is) **and** waits for its
+     * `prefetch`-marked workflow blobs to finish caching, discarding the result. Used by
      * [WorkflowManager.onPaywallConfigReady] so `OfferingsManager` can gate its `onSuccess` callback on
      * workflow data being ready, the way it used to gate on the old `getWorkflowsList` fetch — cheap on a warm
-     * cache since [RemoteConfigManager.topic] returns immediately once a topic is committed.
+     * cache since [RemoteConfigManager.awaitTopicAndPrefetchBlobsReady] returns immediately once the topic is
+     * committed and its prefetch blobs are cached.
      */
     suspend fun awaitReady() {
-        // Known gap, planned follow-up: this only waits for the topic metadata commit; the sync's blob
-        // prefetch is best-effort and does not block it, so getOfferings can return before prefetch-marked
-        // workflow bodies finish downloading (a render that arrives first waits on the in-flight download,
-        // or fetches on demand; a failed download falls back at render time). The old getWorkflowsList gate
-        // also waited for its prefetch batch. The agreed design: the fetcher's prefetch returns a Job for
-        // the batch, RemoteConfigManager keeps the latest handle (awaitPrefetchSettled), and this joins it —
-        // prefetch stays owned by the sync; this read path must not trigger fetches itself.
-        manager.topic(RemoteConfigTopic.Workflows)
+        manager.awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.Workflows)
     }
 
     private companion object {
