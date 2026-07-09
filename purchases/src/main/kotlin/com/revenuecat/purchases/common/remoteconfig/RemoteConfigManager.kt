@@ -333,20 +333,36 @@ internal class RemoteConfigManager(
      * on demand / next sync). Returns the committed [ConfigTopic], or `null` when nothing is cached for [topic]
      * even after a refresh, or when the endpoint is [isDisabled] (the 4xx session kill-switch) — in which case the
      * fetcher is never touched. Runs on [ioDispatcher].
+     *
+     * The blob wait can suspend for a while, so after it the committed topic is re-read: if a [clearCache]
+     * (identity change) or a newer sync committed a different topic meanwhile, the snapshot we waited on no longer
+     * matches the current user, so the wait is repeated against the fresh topic instead of returning stale data.
+     * The re-read goes through [committedTopic], so a wipe that cleared the cache mid-wait self-primes a fresh sync
+     * for the new user before comparing. Converges once the committed topic stops changing (it re-reads null → the
+     * cache was wiped with nothing re-committed, and returns null).
      */
     suspend fun awaitTopicAndPrefetchBlobsReady(topic: RemoteConfigTopic): ConfigTopic? =
         withContext(ioDispatcher) {
-            val configTopic = committedTopic(topic) ?: return@withContext null
-            // Only the prefetch-marked items matter here; on-demand items are resolved lazily by blobData reads.
-            val prefetchRefs = configTopic.values
-                .filter { it.prefetch }
-                .mapNotNull { it.blobRef }
-            if (prefetchRefs.isNotEmpty()) {
-                verboseLog { "Awaiting ${prefetchRefs.size} prefetch blob(s) for topic '${topic.wireName}'." }
-                // Joins/boosts any in-flight LOW-priority prefetch; already-cached (inlined) refs return at once.
-                blobFetcher.ensureDownloaded(prefetchRefs)
+            var committed = committedTopic(topic)
+            while (committed != null) {
+                // Only the prefetch-marked items matter here; on-demand items are resolved lazily by blobData reads.
+                val prefetchRefs = committed.values
+                    .filter { it.prefetch }
+                    .mapNotNull { it.blobRef }
+                if (prefetchRefs.isNotEmpty()) {
+                    verboseLog { "Awaiting ${prefetchRefs.size} prefetch blob(s) for topic '${topic.wireName}'." }
+                    // Joins/boosts any in-flight LOW-priority prefetch; already-cached (inlined) refs return at once.
+                    blobFetcher.ensureDownloaded(prefetchRefs)
+                }
+                // Re-read: if the committed topic is unchanged the snapshot we waited on is still current, so return
+                // it. If it changed under us (identity change wiped it → null, or a newer sync committed a different
+                // topic) loop: a null exits with null, a different topic re-awaits its own prefetch blobs.
+                val latest = committedTopic(topic)
+                if (latest == committed) break
+                verboseLog { "Committed '${topic.wireName}' changed during prefetch wait; re-awaiting." }
+                committed = latest
             }
-            configTopic
+            committed
         }
 
     /**
