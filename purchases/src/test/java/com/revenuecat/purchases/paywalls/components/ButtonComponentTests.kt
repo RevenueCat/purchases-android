@@ -440,6 +440,32 @@ internal class ButtonComponentTests {
                     ),
                 ),
                 arrayOf(
+                    "navigate_to - sheet without inline sheet",
+                    Args(
+                        json = """
+                        {
+                          "type": "button",
+                          "action": {
+                            "type": "navigate_to",
+                            "destination": "sheet"
+                          },
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          }
+                        }
+                        """.trimIndent(),
+                        // A missing inline sheet must decode (not throw) as a content-less sheet
+                        // destination, so the button still renders. Rendering treats it as a no-op tap.
+                        expected = ButtonComponent(
+                            action = ButtonComponent.Action.NavigateTo(
+                                destination = ButtonComponent.Destination.Sheet(),
+                            ),
+                            stack = StackComponent(components = emptyList()),
+                        ),
+                    ),
+                ),
+                arrayOf(
                     "navigate_to - unknown",
                     Args(
                         json = """

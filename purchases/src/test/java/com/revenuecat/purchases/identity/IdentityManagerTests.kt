@@ -82,7 +82,7 @@ class IdentityManagerTests {
             every { clearCache() } just Runs
         }
         mockRemoteConfigManager = mockk<RemoteConfigManager>().apply {
-            every { clearCache() } just Runs
+            every { clearCache(any()) } just Runs
         }
 
         mockBackend = mockk<Backend>().apply {
@@ -256,7 +256,7 @@ class IdentityManagerTests {
         }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
         verify(exactly = 1) { mockWorkflowsCache.clearCache() }
-        verify(exactly = 1) { mockRemoteConfigManager.clearCache() }
+        verify(exactly = 1) { mockRemoteConfigManager.clearCache(newAppUserID) }
     }
 
     @Test
@@ -412,7 +412,8 @@ class IdentityManagerTests {
         }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
         verify(exactly = 1) { mockWorkflowsCache.clearCache() }
-        verify(exactly = 1) { mockRemoteConfigManager.clearCache() }
+        // logOut resets to a freshly generated anonymous ID, so match any user.
+        verify(exactly = 1) { mockRemoteConfigManager.clearCache(any()) }
     }
 
     @Test
@@ -638,7 +639,7 @@ class IdentityManagerTests {
         verify(exactly = 1) { mockDeviceCache.clearCachesForAppUserID(oldAppUserID) }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
         verify(exactly = 1) { mockWorkflowsCache.clearCache() }
-        verify(exactly = 1) { mockRemoteConfigManager.clearCache() }
+        verify(exactly = 1) { mockRemoteConfigManager.clearCache(newAppUserID) }
         verify(exactly = 1) {
             mockSubscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
         }
@@ -771,7 +772,7 @@ class IdentityManagerTests {
         }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
         verify(exactly = 1) { mockWorkflowsCache.clearCache() }
-        verify(exactly = 1) { mockRemoteConfigManager.clearCache() }
+        verify(exactly = 1) { mockRemoteConfigManager.clearCache(newAppUserId) }
         verify(exactly = 1) { mockDeviceCache.clearCustomerInfoCache(newAppUserId) }
         verify(exactly = 1) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
     }
@@ -811,7 +812,7 @@ class IdentityManagerTests {
         }
         verify(exactly = 0) { mockOfferingsCache.clearCache() }
         verify(exactly = 0) { mockWorkflowsCache.clearCache() }
-        verify(exactly = 0) { mockRemoteConfigManager.clearCache() }
+        verify(exactly = 0) { mockRemoteConfigManager.clearCache(any()) }
         verify(exactly = 0) { mockDeviceCache.clearCustomerInfoCache(newAppUserId) }
         verify(exactly = 0) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
     }

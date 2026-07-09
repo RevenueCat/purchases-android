@@ -12,7 +12,7 @@ import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 
 /**
- * In-memory cache for all workflow data: the resolved per-workflow [WorkflowDataResult]s and the
+ * In-memory cache for all workflow data: the resolved per-workflow [PublishedWorkflow]s and the
  * workflows list (plus its derived offeringId → workflowId map). It is the single owner of this
  * state so that clearing it on identity transitions wipes everything at once, mirroring how
  * [com.revenuecat.purchases.common.offerings.OfferingsCache] owns the in-memory offerings cache.
@@ -39,7 +39,7 @@ internal class WorkflowsCache(
     private val deviceCache: DeviceCache,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
-    private val cachedWorkflows = mutableMapOf<String, InMemoryCachedObject<WorkflowDataResult>>()
+    private val cachedWorkflows = mutableMapOf<String, InMemoryCachedObject<PublishedWorkflow>>()
     private val workflowsListCachedObject = InMemoryCachedObject<WorkflowsListResponse>(dateProvider = dateProvider)
 
     @Volatile
@@ -48,7 +48,7 @@ internal class WorkflowsCache(
     // region Workflow detail cache
 
     @Synchronized
-    fun cachedWorkflow(workflowId: String): WorkflowDataResult? =
+    fun cachedWorkflow(workflowId: String): PublishedWorkflow? =
         cachedWorkflows[workflowId]?.cachedInstance
 
     @Synchronized
@@ -56,7 +56,7 @@ internal class WorkflowsCache(
         cachedWorkflows[workflowId]?.lastUpdatedAt?.isCacheStale(appInBackground, dateProvider) ?: true
 
     @Synchronized
-    fun cacheWorkflow(workflowId: String, result: WorkflowDataResult) {
+    fun cacheWorkflow(workflowId: String, result: PublishedWorkflow) {
         val cached = cachedWorkflows.getOrPut(workflowId) { InMemoryCachedObject(dateProvider = dateProvider) }
         cached.cacheInstance(result)
     }

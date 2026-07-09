@@ -50,7 +50,7 @@ class WorkflowsCacheTest {
 
     @Test
     fun `cachedWorkflow returns cached value after cacheWorkflow`() {
-        val result = mockk<WorkflowDataResult>()
+        val result = mockk<PublishedWorkflow>()
         workflowsCache.cacheWorkflow("wf_1", result)
         assertThat(workflowsCache.cachedWorkflow("wf_1")).isSameAs(result)
     }
@@ -245,7 +245,6 @@ class WorkflowsCacheTest {
             action = WorkflowResponseAction.USE_CDN,
             url = url,
             hash = hash,
-            enrolledVariants = mapOf("exp" to "variant_a"),
         )
 
     @Test
@@ -283,8 +282,8 @@ class WorkflowsCacheTest {
         val envelopes = workflowsCache.cachedWorkflowDetailEnvelopesFromDisk()
 
         assertThat(envelopes).containsKey("wf_1")
+        // The persisted payload includes enrolled_variants (written by an older SDK); it parses and is ignored.
         assertThat(envelopes!!.getValue("wf_1").url).isEqualTo("https://cdn/x.json")
-        assertThat(envelopes.getValue("wf_1").enrolledVariants).isEqualTo(mapOf("e" to "v"))
     }
 
     @Test
@@ -375,8 +374,8 @@ class WorkflowsCacheTest {
 
     @Test
     fun `different workflowIds are cached independently`() {
-        val first = mockk<WorkflowDataResult>()
-        val second = mockk<WorkflowDataResult>()
+        val first = mockk<PublishedWorkflow>()
+        val second = mockk<PublishedWorkflow>()
         workflowsCache.cacheWorkflow("wf_1", first)
         currentDate = currentDate.add(6.minutes)
         workflowsCache.cacheWorkflow("wf_2", second)

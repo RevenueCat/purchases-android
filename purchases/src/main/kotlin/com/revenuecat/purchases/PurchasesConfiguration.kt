@@ -40,6 +40,9 @@ public open class PurchasesConfiguration(builder: Builder) {
 
     public val galaxyBillingMode: GalaxyBillingMode
 
+    @get:JvmSynthetic
+    internal val iamEnabled: Boolean
+
     init {
         this.context =
             if (builder.context.isDeviceProtectedStorageCompat) {
@@ -62,8 +65,10 @@ public open class PurchasesConfiguration(builder: Builder) {
         this.preferredUILocaleOverride = builder.preferredUILocaleOverride
 
         this.galaxyBillingMode = builder.galaxyBillingMode
+        this.iamEnabled = builder.iamEnabled
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
     internal fun copy(
         appUserID: String? = this.appUserID,
         service: ExecutorService? = this.service,
@@ -82,6 +87,7 @@ public open class PurchasesConfiguration(builder: Builder) {
             )
             .preferredUILocaleOverride(preferredUILocaleOverride)
             .galaxyBillingMode(galaxyBillingMode)
+            .iamEnabled(iamEnabled)
         if (service != null) {
             builder = builder.service(service)
         }
@@ -130,6 +136,9 @@ public open class PurchasesConfiguration(builder: Builder) {
         @set:JvmSynthetic
         @get:JvmSynthetic
         internal var galaxyBillingMode: GalaxyBillingMode = GalaxyBillingMode.PRODUCTION
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var iamEnabled: Boolean = false
 
         /**
          * A unique id for identifying the user
@@ -322,6 +331,15 @@ public open class PurchasesConfiguration(builder: Builder) {
         }
 
         /**
+         * Enabling this instructs the SDK to prefer using token-based user sessions
+         * for communicating with the server. Default is disabled.
+         */
+        @InternalRevenueCatAPI
+        public fun iamEnabled(iamEnabled: Boolean): Builder = apply {
+            this.iamEnabled = iamEnabled
+        }
+
+        /**
          * Creates a [PurchasesConfiguration] instance with the specified properties.
          */
         public open fun build(): PurchasesConfiguration {
@@ -348,6 +366,7 @@ public open class PurchasesConfiguration(builder: Builder) {
         if (automaticDeviceIdentifierCollectionEnabled != other.automaticDeviceIdentifierCollectionEnabled) return false
         if (preferredUILocaleOverride != other.preferredUILocaleOverride) return false
         if (galaxyBillingMode != other.galaxyBillingMode) return false
+        if (iamEnabled != other.iamEnabled) return false
 
         return true
     }
@@ -365,6 +384,7 @@ public open class PurchasesConfiguration(builder: Builder) {
         result = 31 * result + automaticDeviceIdentifierCollectionEnabled.hashCode()
         result = 31 * result + (preferredUILocaleOverride?.hashCode() ?: 0)
         result = 31 * result + (galaxyBillingMode.hashCode())
+        result = 31 * result + iamEnabled.hashCode()
         return result
     }
 }

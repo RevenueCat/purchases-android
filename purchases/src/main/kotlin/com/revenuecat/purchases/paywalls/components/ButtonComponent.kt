@@ -94,11 +94,11 @@ public class ButtonComponent(
         @Serializable
         @Immutable
         public data class Sheet(
-            @get:JvmSynthetic public val id: String,
-            @get:JvmSynthetic public val name: String?,
-            @get:JvmSynthetic public val stack: StackComponent,
-            @get:JvmSynthetic @SerialName("background_blur") public val backgroundBlur: Boolean,
-            @get:JvmSynthetic public val size: Size?,
+            @get:JvmSynthetic public val id: String = "",
+            @get:JvmSynthetic public val name: String? = null,
+            @get:JvmSynthetic public val stack: StackComponent? = null,
+            @get:JvmSynthetic @SerialName("background_blur") public val backgroundBlur: Boolean = false,
+            @get:JvmSynthetic public val size: Size? = null,
         ) : Destination
     }
 
@@ -229,43 +229,34 @@ private class ActionSurrogate(
             ActionTypeSurrogate.navigate_back -> Action.NavigateBack
             ActionTypeSurrogate.workflow -> Action.WorkflowTrigger
             ActionTypeSurrogate.close_workflow -> Action.CloseWorkflow
-            ActionTypeSurrogate.navigate_to -> Action.NavigateTo(
-                destination = when (destination) {
-                    DestinationSurrogate.customer_center -> Destination.CustomerCenter
-                    DestinationSurrogate.privacy_policy -> {
-                        checkNotNull(url) { "`url` cannot be null when `destination` is `privacy_policy`." }
-                        Destination.PrivacyPolicy(
-                            urlLid = url.url_lid,
-                            method = url.method,
-                        )
-                    }
+            ActionTypeSurrogate.navigate_to -> Action.NavigateTo(destination = toDestination())
+        }
 
-                    DestinationSurrogate.terms -> {
-                        checkNotNull(url) { "`url` cannot be null when `destination` is `terms`." }
-                        Destination.Terms(
-                            urlLid = url.url_lid,
-                            method = url.method,
-                        )
-                    }
+    private fun toDestination(): Destination =
+        when (destination) {
+            DestinationSurrogate.customer_center -> Destination.CustomerCenter
+            DestinationSurrogate.privacy_policy -> {
+                checkNotNull(url) { "`url` cannot be null when `destination` is `privacy_policy`." }
+                Destination.PrivacyPolicy(urlLid = url.url_lid, method = url.method)
+            }
 
-                    DestinationSurrogate.url -> {
-                        checkNotNull(url) { "`url` cannot be null when `destination` is `url`." }
-                        Destination.Url(
-                            urlLid = url.url_lid,
-                            method = url.method,
-                        )
-                    }
+            DestinationSurrogate.terms -> {
+                checkNotNull(url) { "`url` cannot be null when `destination` is `terms`." }
+                Destination.Terms(urlLid = url.url_lid, method = url.method)
+            }
 
-                    DestinationSurrogate.sheet -> {
-                        checkNotNull(sheet) { "`sheet` cannot be null when `destination` is `sheet`." }
-                        sheet
-                    }
+            DestinationSurrogate.url -> {
+                checkNotNull(url) { "`url` cannot be null when `destination` is `url`." }
+                Destination.Url(urlLid = url.url_lid, method = url.method)
+            }
 
-                    DestinationSurrogate.unknown -> Destination.Unknown
+            // The inline sheet is optional; a missing one is a valid (inert) sheet destination
+            // rather than a decode failure, matching the web SDK.
+            DestinationSurrogate.sheet -> sheet ?: Destination.Sheet()
 
-                    null -> error("`destination` cannot be null when `action` is `navigate_to`.")
-                },
-            )
+            DestinationSurrogate.unknown -> Destination.Unknown
+
+            null -> error("`destination` cannot be null when `action` is `navigate_to`.")
         }
 }
 

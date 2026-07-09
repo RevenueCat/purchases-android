@@ -125,7 +125,6 @@ class BackendWorkflowsTest {
                 assertThat(response.data).isNotNull
                 assertThat(response.data!!.id).isEqualTo("wf_1")
                 assertThat(response.data!!.initialStepId).isEqualTo("step_1")
-                assertThat(response.enrolledVariants).isNull()
                 success = true
             },
             onError = { e, _ -> fail("unexpected error $e") },
@@ -163,7 +162,6 @@ class BackendWorkflowsTest {
                 assertThat(response.action).isEqualTo(WorkflowResponseAction.USE_CDN)
                 assertThat(response.url).isEqualTo("https://cdn.example.com/wf.json")
                 assertThat(response.hash).isEqualTo("abc123")
-                assertThat(response.enrolledVariants).isEqualTo(mapOf("exp_1" to "variant_a"))
                 assertThat(response.data).isNull()
                 success = true
             },
