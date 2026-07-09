@@ -51,7 +51,10 @@ import java.util.concurrent.atomic.AtomicInteger
  * The `200` path runs on [scope]: persistence is synchronous, but the launch lets [clearCache] cancel the
  * in-flight parse/persist. Blob prefetch runs on the fetcher's own worker pool (not [scope]). Identity changes
  * call [clearCache], which bumps an epoch so a late `/v1/config` response (its HTTP request cannot be
- * socket-cancelled) is dropped instead of persisting over the freshly wiped cache.
+ * socket-cancelled) is dropped instead of persisting over the freshly wiped cache. [clearCache] also rebinds
+ * the current app user atomically with that bump, so a cold on-demand read triggered right after an identity
+ * change never fetches for the previous user (the cached app user ID the [appUserIDProvider] reads can still
+ * lag the change for a window).
  *
  * Overlapping refreshes are deduped: only one [refreshRemoteConfig] runs at a time. A call made while one is
  * already in flight is skipped (the backend collapses concurrent requests but still fires every callback, which
@@ -94,6 +97,13 @@ internal class RemoteConfigManager(
     @Volatile
     private var lastRefreshedAt: Date? = null
 
+    // The app user a cold on-demand read should sync for, rebound by clearCache() under [cacheLock] atomically
+    // with the epoch bump, so it can never lag the identity change the way [appUserIDProvider] (backed by the
+    // device cache) can. Null until the first identity change; awaitConfigForRead() falls back to the provider
+    // for that pre-first-change bootstrap window, where it is accurate and no transition is racing.
+    @Volatile
+    private var currentAppUserID: String? = null
+
     // Completion signal for the single in-flight refresh, so a read that finds no cached data can wait for the
     // refresh already in progress instead of failing. Created under [cacheLock] when a refresh starts, completed
     // (never cancelled, so waiting reads never throw) at every terminal point and by clearCache(); null when no
@@ -127,16 +137,24 @@ internal class RemoteConfigManager(
             return
         }
         val requestEpoch: Int
+        val requestAppUserID: String
         // Acquire the in-flight guard and capture the epoch together under the lock that also guards
         // clearCache()'s epoch bump + guard release. Otherwise an identity change could slip its bump
         // between getAndSet(true) and epoch.get(), stranding this request with a stale epoch: its
         // callbacks would drop on the mismatch and never release the guard, freezing all future syncs.
+        // The user is snapshotted here too, so the (user, epoch) pair the request carries is consistent:
+        // any clearCache() that would change the user also bumps the epoch under this same lock, so it
+        // either lands fully before this capture (we see its new user) or after (the epoch mismatch drops
+        // our response) — never a stale user paired with the post-clear epoch. currentAppUserID (bound by
+        // clearCache) wins; the passed appUserID is only the pre-first-identity-change bootstrap fallback.
+        // Read only in-memory state under the lock — never appUserIDProvider(), which can re-enter clearCache().
         synchronized(cacheLock) {
             if (isRefreshing.getAndSet(true)) {
                 debugLog { "Remote config refresh already in progress. Skipping." }
                 return
             }
             requestEpoch = epoch.get()
+            requestAppUserID = currentAppUserID ?: appUserID
             refreshCompletion = CompletableDeferred()
         }
         val persisted = diskCache.read()
@@ -144,7 +162,7 @@ internal class RemoteConfigManager(
         logRefreshStart(persisted, appInBackground)
         backend.getRemoteConfig(
             appInBackground = appInBackground,
-            appUserID = appUserID,
+            appUserID = requestAppUserID,
             domain = persisted?.domain ?: DEFAULT_DOMAIN,
             // Opaque manifest replayed verbatim; null on the first run when nothing is persisted yet.
             manifest = persisted?.manifest,
@@ -220,12 +238,18 @@ internal class RemoteConfigManager(
     }
 
     /**
-     * Wipes the cache on an identity change so configuration never bleeds across users (offerings-parity).
+     * Wipes the cache on an identity change so configuration never bleeds across users (offerings-parity), and
+     * rebinds [currentAppUserID] to [appUserID] atomically with the epoch bump. Binding the new identity here —
+     * rather than reading it back through [appUserIDProvider] — closes the window where a cold on-demand read
+     * could sync for the previous user: the device-cache-backed provider can still return the old user until the
+     * caller finishes caching the new one, but the epoch is already bumped, so that stale-user response would not
+     * be dropped and would repopulate the freshly wiped cache for the wrong user.
      */
-    fun clearCache() {
+    fun clearCache(appUserID: String) {
         scope.coroutineContext.cancelChildren()
         synchronized(cacheLock) {
             epoch.incrementAndGet()
+            currentAppUserID = appUserID
             isRefreshing.set(false)
             lastRefreshedAt = null
             completeRefresh()
@@ -274,7 +298,10 @@ internal class RemoteConfigManager(
      *   user is known yet, in which case it gives up without a network call.
      *
      * The on-demand sync is issued as foreground (`appInBackground = false`): a read is blocking on the result,
-     * so it wants the un-jittered, prompt request.
+     * so it wants the un-jittered, prompt request. The user it syncs for is snapshotted atomically with the
+     * epoch inside [refreshRemoteConfig] (the identity [clearCache] bound wins); the value resolved here is only
+     * the pre-first-identity-change bootstrap and the "is any user known" gate, so a read racing an identity
+     * change can never fetch and persist the previous user's config.
      */
     private suspend fun awaitConfigForRead() {
         if (awaitInFlightRefresh()) {
@@ -282,7 +309,9 @@ internal class RemoteConfigManager(
             return
         }
         // Nothing in flight: trigger a sync on demand, unless the endpoint is disabled or no user is known yet.
-        val appUserID = appUserIDProvider()?.takeIf { it.isNotBlank() }
+        // This value is only the bootstrap fallback + the "user known" gate; refreshRemoteConfig re-resolves the
+        // effective user under the lock (preferring the clearCache-bound [currentAppUserID]) when it runs.
+        val appUserID = (currentAppUserID ?: appUserIDProvider())?.takeIf { it.isNotBlank() }
         if (!disabled && appUserID != null) {
             verboseLog { "Cold remote config read triggering an on-demand sync." }
             refreshRemoteConfig(appInBackground = false, appUserID = appUserID)
