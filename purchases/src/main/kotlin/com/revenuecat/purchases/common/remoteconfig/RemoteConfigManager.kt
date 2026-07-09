@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common.remoteconfig
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
@@ -340,15 +339,13 @@ internal class RemoteConfigManager(
     /**
      * The resolved blob payload for `itemKey` in [topic], parsed from JSON into [T], or `null` when the item
      * is unknown, has no `blob_ref`, its blob can't be resolved, or its bytes don't deserialize into [T]. [T]
-     * must be a concrete `@Serializable` type; parsing uses [JsonTools.json] (not [JsonProvider.defaultJson],
-     * whose `classDiscriminator` is overridden for [com.revenuecat.purchases.common.events.BackendEvent] and
-     * would break any topic payload relying on the default `type` discriminator, e.g. paywall components). For
-     * non-JSON payloads use the `transform` overload, which also documents the resolution and waiting rules.
+     * must be a concrete `@Serializable` type; parsing uses the shared [JsonProvider.defaultJson]. For non-JSON
+     * payloads use the `transform` overload, which also documents the resolution and waiting rules.
      */
     suspend inline fun <reified T> blobData(topic: RemoteConfigTopic, itemKey: String): T? =
         blobData(topic, itemKey) { bytes ->
             try {
-                JsonTools.json.decodeFromString<T>(bytes.decodeToString())
+                JsonProvider.defaultJson.decodeFromString<T>(bytes.decodeToString())
             } catch (e: SerializationException) {
                 errorLog(e) { "Failed to parse remote config blob for item '$itemKey' as JSON." }
                 null
@@ -391,8 +388,7 @@ internal class RemoteConfigManager(
      * resolved, the call returns `null` (a partial object is never produced) and warn-logs the missing keys.
      * It also returns `null` if any resolved blob isn't valid JSON, or the merged object doesn't deserialize
      * into [T]. Duplicate keys are de-duplicated; an empty [itemKeys] returns `null` without any read; [T] must
-     * be a concrete `@Serializable` type and parsing uses [JsonTools.json] (see [blobData] for why not
-     * [JsonProvider.defaultJson]).
+     * be a concrete `@Serializable` type and parsing uses [JsonProvider.defaultJson].
      *
      * Each item resolves through the same path as the single-key [blobData] (see its KDoc for the `blob_ref`,
      * on-demand fetch, and waiting rules) — this only fans them out. The fan-out is safe: a shared in-flight
@@ -403,7 +399,7 @@ internal class RemoteConfigManager(
     suspend inline fun <reified T> mergeItemsBlobData(topic: RemoteConfigTopic, itemKeys: Collection<String>): T? =
         mergeItemsBlobData(topic, itemKeys) { merged ->
             try {
-                JsonTools.json.decodeFromJsonElement<T>(merged)
+                JsonProvider.defaultJson.decodeFromJsonElement<T>(merged)
             } catch (e: SerializationException) {
                 errorLog(e) { "Failed to decode merged remote config blobs from topic '${topic.wireName}' as JSON." }
                 null
