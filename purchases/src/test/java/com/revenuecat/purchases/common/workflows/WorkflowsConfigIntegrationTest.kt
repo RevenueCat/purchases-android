@@ -7,6 +7,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.emptyUiConfig
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.networking.RCContainer
@@ -369,7 +370,7 @@ class WorkflowsConfigIntegrationTest {
     // ui-config provider and a no-op pre-downloader.
     private fun workflowManagerWith(provider: WorkflowsConfigProvider) = WorkflowManager(
         workflowsConfigProvider = provider,
-        uiConfigProvider = mockk { coEvery { getUiConfig() } returns UiConfig() },
+        uiConfigProvider = mockk { coEvery { getUiConfig() } returns emptyUiConfig() },
         workflowAssetPreDownloader = mockk(relaxed = true),
         scope = testScope,
     )
