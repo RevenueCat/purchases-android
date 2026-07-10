@@ -26,7 +26,12 @@ internal class TestUrlConnectionFactory(
     val createdConnections: List<String>
         get() = _createdConnections.toList()
 
-    override fun createConnection(url: String, requestMethod: String): UrlConnection {
+    override fun createConnection(
+        url: String,
+        connectTimeoutMillis: Int,
+        readTimeoutMillis: Int,
+        requestMethod: String,
+    ): UrlConnection {
         _createdConnections.add(url)
         return connectionProvider?.invoke(url)
             ?: mockedConnections[url]

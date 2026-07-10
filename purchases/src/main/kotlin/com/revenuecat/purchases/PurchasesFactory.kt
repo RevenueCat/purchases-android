@@ -31,6 +31,7 @@ import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offerings.OfferingsFactory
 import com.revenuecat.purchases.common.offerings.OfferingsManager
@@ -38,6 +39,7 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineCustomerInfoCa
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetcher
 import com.revenuecat.purchases.common.remoteconfig.DefaultRemoteConfigSourceProvider
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobFetcher
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDiskCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
@@ -208,6 +210,8 @@ internal class PurchasesFactory(
             }
             val apiSourceProvider = DefaultRemoteConfigSourceProvider(remoteConfigTopicStore)
 
+            // Shared so blob-source downloads reuse the same per-host fail-fast memory as API requests.
+            val timeoutManager = HTTPTimeoutManager(appConfig)
             val httpClient = HTTPClient(
                 appConfig,
                 eTagManager,
@@ -217,6 +221,7 @@ internal class PurchasesFactory(
                 apiSourceProvider,
                 localeProvider = localeProvider,
                 forceServerErrorStrategy = forceServerErrorStrategy,
+                timeoutManager = timeoutManager,
             )
             val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(
@@ -284,12 +289,15 @@ internal class PurchasesFactory(
             val workflowsCache = if (appConfig.useWorkflows) WorkflowsCache(deviceCache = cache) else null
 
             val remoteConfigManager = if (remoteConfigDiskCache != null) {
+                val remoteConfigBlobStore = RemoteConfigBlobStore(contextForStorage)
                 RemoteConfigManager(
                     backend = backend,
                     diskCache = remoteConfigDiskCache,
-                    blobStore = RemoteConfigBlobStore(contextForStorage),
+                    blobStore = remoteConfigBlobStore,
                     topicStore = remoteConfigTopicStore,
                     sourceProvider = apiSourceProvider,
+                    // Shares the same per-host timeout memory as API requests (see timeoutManager above).
+                    blobFetcher = RemoteConfigBlobFetcher(remoteConfigBlobStore, apiSourceProvider, timeoutManager),
                     // Bootstrap source for a cold on-demand read's self-triggered sync (see blobData()); after
                     // the first identity change the manager syncs for the user clearCache() binds instead.
                     appUserIDProvider = { cache.getCachedAppUserID() },

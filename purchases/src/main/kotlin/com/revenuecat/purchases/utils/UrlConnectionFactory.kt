@@ -15,7 +15,12 @@ import java.net.URL
 import java.security.MessageDigest
 
 internal interface UrlConnectionFactory {
-    fun createConnection(url: String, requestMethod: String = "GET"): UrlConnection
+    fun createConnection(
+        url: String,
+        connectTimeoutMillis: Int,
+        readTimeoutMillis: Int,
+        requestMethod: String = "GET",
+    ): UrlConnection
 }
 
 internal interface UrlConnection {
@@ -24,13 +29,19 @@ internal interface UrlConnection {
     fun disconnect()
 }
 
-private const val TIMEOUT = 5000
+/** Default connect/read timeout for downloads that don't tune it per attempt. */
+internal const val DEFAULT_CONNECTION_TIMEOUT_MS = 5000
 
 internal class DefaultUrlConnectionFactory : UrlConnectionFactory {
-    override fun createConnection(url: String, requestMethod: String): UrlConnection {
+    override fun createConnection(
+        url: String,
+        connectTimeoutMillis: Int,
+        readTimeoutMillis: Int,
+        requestMethod: String,
+    ): UrlConnection {
         val connection = URL(url).openConnection() as HttpURLConnection
-        connection.connectTimeout = TIMEOUT
-        connection.readTimeout = TIMEOUT
+        connection.connectTimeout = connectTimeoutMillis
+        connection.readTimeout = readTimeoutMillis
         connection.requestMethod = requestMethod
         connection.doInput = true
         return DefaultUrlConnection(connection)
@@ -60,7 +71,7 @@ internal fun UrlConnectionFactory.downloadToFile(
     verboseLog { "Downloading $description from $url" }
     var connection: UrlConnection? = null
     try {
-        connection = createConnection(url)
+        connection = createConnection(url, DEFAULT_CONNECTION_TIMEOUT_MS, DEFAULT_CONNECTION_TIMEOUT_MS)
         if (connection.responseCode != HttpURLConnection.HTTP_OK) {
             throw IOException(
                 "HTTP ${connection.responseCode} when downloading $description from $url",
@@ -88,7 +99,7 @@ internal fun UrlConnectionFactory.downloadToFileAndVerifyChecksum(
     val digest = MessageDigest.getInstance(expectedChecksum.algorithm.algorithmName)
     var connection: UrlConnection? = null
     try {
-        connection = createConnection(url)
+        connection = createConnection(url, DEFAULT_CONNECTION_TIMEOUT_MS, DEFAULT_CONNECTION_TIMEOUT_MS)
         if (connection.responseCode != HttpURLConnection.HTTP_OK) {
             throw IOException(
                 "HTTP ${connection.responseCode} when downloading $description from $url",

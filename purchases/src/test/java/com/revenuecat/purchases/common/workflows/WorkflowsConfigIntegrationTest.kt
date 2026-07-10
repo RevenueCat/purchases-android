@@ -84,6 +84,7 @@ class WorkflowsConfigIntegrationTest {
         val fetcher = RemoteConfigBlobFetcher(
             blobStore = blobStore,
             sourceProvider = FakeBlobSourceProvider,
+            timeoutManager = mockk(relaxed = true),
             urlConnectionFactory = fakeUrlConnectionFactory(),
             scope = testScope,
         )
@@ -308,7 +309,12 @@ class WorkflowsConfigIntegrationTest {
     }
 
     private fun fakeUrlConnectionFactory() = object : UrlConnectionFactory {
-        override fun createConnection(url: String, requestMethod: String): UrlConnection {
+        override fun createConnection(
+            url: String,
+            connectTimeoutMillis: Int,
+            readTimeoutMillis: Int,
+            requestMethod: String,
+        ): UrlConnection {
             val ref = url.substringAfterLast("/")
             val bytes = downloads[ref]
             if (bytes != null) {
