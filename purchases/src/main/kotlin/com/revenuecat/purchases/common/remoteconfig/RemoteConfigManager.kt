@@ -160,39 +160,121 @@ internal class RemoteConfigManager(
         }
         val persisted = diskCache.read()
         val storedBlobs = blobStore.cachedRefs()
+        val domain = persisted?.domain ?: DEFAULT_DOMAIN
         logRefreshStart(persisted, appInBackground)
         backend.getRemoteConfig(
             appInBackground = appInBackground,
             appUserID = requestAppUserID,
-            domain = persisted?.domain ?: DEFAULT_DOMAIN,
+            domain = domain,
             // Opaque manifest replayed verbatim; null on the first run when nothing is persisted yet.
             manifest = persisted?.manifest,
             // Report only the prefetch blobs we actually hold, so the server stops re-inlining them.
             prefetchedBlobs = persisted?.prefetchBlobs?.filter { storedBlobs.contains(it) } ?: emptyList(),
-            onSuccess = { container, _ ->
-                if (epoch.get() != requestEpoch) {
-                    // The cache was cleared (identity change) after this request started. Drop the stale
-                    // response and leave isRefreshing alone: clearCache() reset it, or a newer refresh owns it.
-                    return@getRemoteConfig
+            onSuccess = { container, _ -> handleMainRefreshSuccess(requestEpoch, persisted, container) },
+            onError = { error, behavior ->
+                handleMainRefreshError(
+                    requestEpoch,
+                    appInBackground,
+                    domain,
+                    hasCachedConfig = persisted != null,
+                    error,
+                    behavior,
+                )
+            },
+        )
+    }
+
+    /**
+     * Handles a successful **main** `/v1/config` response: a `204` keeps the cache (bookkeeping only), a `200`
+     * parses the config element and commits it (on [scope] so [clearCache] can cancel the parse/persist). Drops
+     * the result if the epoch changed meanwhile (an identity change already reset the guard via [clearCache]).
+     */
+    private fun handleMainRefreshSuccess(
+        requestEpoch: Int,
+        persisted: PersistedRemoteConfigurationState?,
+        container: RCContainer?,
+    ) {
+        if (epoch.get() != requestEpoch) {
+            // The cache was cleared (identity change) after this request started. Drop the stale
+            // response and leave isRefreshing alone: clearCache() reset it, or a newer refresh owns it.
+            return
+        }
+        if (container == null) {
+            handleNotModified(requestEpoch)
+            return
+        }
+        scope.launch {
+            try {
+                val response = RemoteConfiguration.parse(container.config.decode())
+                synchronized(cacheLock) {
+                    if (epoch.get() != requestEpoch) return@launch
+                    persist(previous = persisted, response = response, container = container)
                 }
-                if (container == null) {
-                    handleNotModified(requestEpoch)
-                    return@getRemoteConfig
+            } catch (e: SerializationException) {
+                errorLog(e) {
+                    "Failed to parse remote config response. Keeping the cached configuration."
+                }
+            } catch (e: RCContainerFormatException) {
+                errorLog(e) {
+                    "Failed to decode remote config response. Keeping the cached configuration."
+                }
+            } finally {
+                releaseGuardIfOwned(requestEpoch)
+            }
+        }
+    }
+
+    /**
+     * Handles a failure of the **main** `/v1/config` request. Prefers cached data over the fallback: only when
+     * the request fails with a retryable error AND nothing is cached yet (cold start) is the fallback endpoint
+     * tried, using the same [domain] the main request used. Any cached config wins (keep it), and a 4xx
+     * (`SHOULD_DISABLE`) still disables the endpoint without a fallback.
+     */
+    private fun handleMainRefreshError(
+        requestEpoch: Int,
+        appInBackground: Boolean,
+        domain: String,
+        hasCachedConfig: Boolean,
+        error: PurchasesError,
+        behavior: GetRemoteConfigErrorHandlingBehavior,
+    ) {
+        if (behavior == GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY && !hasCachedConfig) {
+            fetchFromFallback(requestEpoch, appInBackground, domain)
+        } else {
+            handleRefreshError(requestEpoch, error, behavior)
+        }
+    }
+
+    /**
+     * The cold-start fallback: the main `/v1/config` request failed with a retryable error and no config is
+     * cached, so fetch the plain-JSON [RemoteConfiguration] from the fallback endpoint (for the same [domain] the
+     * main request used) and commit it. There is never persisted state on this path, so the commit passes
+     * `previous = null`. The in-flight guard captured by the originating [refreshRemoteConfig] is **kept held**
+     * across this call — the fallback continues that same sync/epoch and releases the guard at its own terminal
+     * points (success `finally` / `onError`). Does nothing if the epoch changed meanwhile (an identity change
+     * already reset the guard via [clearCache]).
+     */
+    private fun fetchFromFallback(
+        requestEpoch: Int,
+        appInBackground: Boolean,
+        domain: String,
+    ) {
+        if (epoch.get() != requestEpoch) return
+        verboseLog { "Main remote config request failed with no cached config; trying the fallback endpoint." }
+        backend.getRemoteConfigFallback(
+            appInBackground = appInBackground,
+            domain = domain,
+            onSuccess = { response, _ ->
+                if (epoch.get() != requestEpoch) {
+                    // Identity changed after the fallback started; clearCache() reset the guard. Drop the result.
+                    return@getRemoteConfigFallback
                 }
                 scope.launch {
                     try {
-                        val response = RemoteConfiguration.parse(container.config.decode())
                         synchronized(cacheLock) {
                             if (epoch.get() != requestEpoch) return@launch
-                            persist(previous = persisted, response = response, container = container)
-                        }
-                    } catch (e: SerializationException) {
-                        errorLog(e) {
-                            "Failed to parse remote config response. Keeping the cached configuration."
-                        }
-                    } catch (e: RCContainerFormatException) {
-                        errorLog(e) {
-                            "Failed to decode remote config response. Keeping the cached configuration."
+                            // No persisted state exists on the fallback path (it only runs on a cold start).
+                            persist(previous = null, response = response, container = null)
                         }
                     } finally {
                         releaseGuardIfOwned(requestEpoch)
@@ -593,7 +675,9 @@ internal class RemoteConfigManager(
     private fun persist(
         previous: PersistedRemoteConfigurationState?,
         response: RemoteConfiguration,
-        container: RCContainer,
+        // Null on the fallback path (plain-JSON response with no inlined blob elements to extract); the wanted
+        // blobs are then fetched over the network by prefetchBlobs instead.
+        container: RCContainer?,
     ) {
         debugLog {
             val changed = response.topics.entries.joinToString { (name, topic) ->
@@ -631,7 +715,7 @@ internal class RemoteConfigManager(
                 "Persisted remote config (domain=${response.domain}, ${response.activeTopics.size} active topics, " +
                     "${blobRefsToKeep.size} blobs wanted)."
             }
-            extractInlineBlobs(container, blobRefsToKeep)
+            container?.let { extractInlineBlobs(it, blobRefsToKeep) }
             blobStore.retainOnly(blobRefsToKeep)
             prefetchBlobs(response, mergedTopics)
         } else {

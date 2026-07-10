@@ -1,0 +1,71 @@
+{
+  "statusCode": 200,
+  "headers": {
+    "Connection": "keep-alive",
+    "Content-Length": "1002",
+    "Server": "cloudflare"
+  },
+  "body": {
+    "active_topics": [
+      "sources",
+      "ui_config",
+      "workflows"
+    ],
+    "domain": "app",
+    "manifest": "TEST_STATIC_VALUE",
+    "prefetch_blobs": [
+      "xSPsPoI1UfONQ_9Rr2y1-obBx6ODzUbB"
+    ],
+    "topics": {
+      "sources": {
+        "api": {
+          "sources": [
+            {
+              "id": "primary",
+              "url": "https:\/\/api.revenuecat.com\/",
+              "priority": 0,
+              "weight": 100
+            }
+          ]
+        },
+        "blob": {
+          "sources": [
+            {
+              "id": "primary",
+              "url_format": "https:\/\/config.revenuecat-static.com\/XG8lxnuicyUpwT-t\/{blob_ref}",
+              "priority": 0,
+              "weight": 100
+            },
+            {
+              "id": "source_1",
+              "url_format": "https:\/\/config.revenuecat-static.net\/XG8lxnuicyUpwT-t\/{blob_ref}",
+              "priority": 1,
+              "weight": 100
+            }
+          ]
+        }
+      },
+      "ui_config": {
+        "app": {
+          "blob_ref": "Ewnl-09gwxiodIR5CRhrhFzGFZmV6-1i"
+        },
+        "localizations": {
+          "blob_ref": "JewnfTkEoy4-m-Z6PTP01zML1fpVPwp7"
+        },
+        "variable_config": {
+          "blob_ref": "xXyp4pHaDNzyBOTRgrLJCxjuBSG21a1p"
+        },
+        "custom_variables": {
+          "blob_ref": "RBNvo1WzZ4oRRq0W9-hknpT7T8If536D"
+        }
+      },
+      "workflows": {
+        "wf6201bae5e8254982": {
+          "blob_ref": "xSPsPoI1UfONQ_9Rr2y1-obBx6ODzUbB",
+          "prefetch": true,
+          "offering_identifier": "default"
+        }
+      }
+    }
+  }
+}
