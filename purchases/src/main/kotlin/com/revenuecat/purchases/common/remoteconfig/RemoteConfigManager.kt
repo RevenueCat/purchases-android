@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.remoteconfig
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
@@ -346,16 +347,67 @@ internal class RemoteConfigManager(
      * that also resolves the referenced blob. Reads disk on [ioDispatcher].
      */
     suspend fun topic(topic: RemoteConfigTopic): ConfigTopic? = withContext(ioDispatcher) {
+        committedTopic(topic)
+    }
+
+    /**
+     * Like [topic], but additionally waits for the topic's `prefetch`-marked blobs to finish caching before
+     * returning: the config request must be committed **and** every item in [topic] flagged `prefetch` must have
+     * its referenced blob resolved (already inlined-and-cached, or downloaded now). Inlined blobs are cached
+     * synchronously when the topic commits, so this only adds a wait on the **non-inlined** prefetch blobs, which
+     * the per-sync prefetch enqueues fire-and-forget at LOW priority.
+     *
+     * This is best-effort: a prefetch blob that fails to download does not block the return (it stays recoverable
+     * on demand / next sync). Returns the committed [ConfigTopic], or `null` when nothing is cached for [topic]
+     * even after a refresh, or when the endpoint is [isDisabled] (the 4xx session kill-switch) — in which case the
+     * fetcher is never touched. Runs on [ioDispatcher].
+     *
+     * The blob wait can suspend for a while, so after it the committed topic is re-read: if a [clearCache]
+     * (identity change) or a newer sync committed a different topic meanwhile, the snapshot we waited on no longer
+     * matches the current user, so the wait is repeated against the fresh topic instead of returning stale data.
+     * The re-read goes through [committedTopic], so a wipe that cleared the cache mid-wait self-primes a fresh sync
+     * for the new user before comparing. Converges once the committed topic stops changing (it re-reads null → the
+     * cache was wiped with nothing re-committed, and returns null).
+     */
+    suspend fun awaitTopicAndPrefetchBlobsReady(topic: RemoteConfigTopic): ConfigTopic? =
+        withContext(ioDispatcher) {
+            var committed = committedTopic(topic)
+            while (committed != null) {
+                // Only the prefetch-marked items matter here; on-demand items are resolved lazily by blobData reads.
+                val prefetchRefs = committed.values
+                    .filter { it.prefetch }
+                    .mapNotNull { it.blobRef }
+                if (prefetchRefs.isNotEmpty()) {
+                    verboseLog { "Awaiting ${prefetchRefs.size} prefetch blob(s) for topic '${topic.wireName}'." }
+                    // Joins/boosts any in-flight LOW-priority prefetch; already-cached (inlined) refs return at once.
+                    blobFetcher.ensureDownloaded(prefetchRefs)
+                }
+                // Re-read: if the committed topic is unchanged the snapshot we waited on is still current, so return
+                // it. If it changed under us (identity change wiped it → null, or a newer sync committed a different
+                // topic) loop: a null exits with null, a different topic re-awaits its own prefetch blobs.
+                val latest = committedTopic(topic)
+                if (latest == committed) break
+                verboseLog { "Committed '${topic.wireName}' changed during prefetch wait; re-awaiting." }
+                committed = latest
+            }
+            committed
+        }
+
+    /**
+     * Reads a topic's committed item index, waiting for (or triggering) a refresh once on a miss. Assumes it is
+     * already running on [ioDispatcher] (its callers wrap it), so it doesn't switch context itself.
+     */
+    private suspend fun committedTopic(topic: RemoteConfigTopic): ConfigTopic? {
         if (disabled) {
             verboseLog { "Remote config disabled (4xx); skipping topic read '${topic.wireName}'." }
-            return@withContext null
+            return null
         }
         // A committed topic returns immediately; only a miss waits for (or triggers) a refresh, then re-reads.
         val result = topicStore.topic(topic) ?: run {
             awaitConfigForRead()
             topicStore.topic(topic)
         }
-        result.also {
+        return result.also {
             verboseLog {
                 val state = it?.let { committed -> "${committed.size} items" } ?: "not cached"
                 "Reading remote config topic '${topic.wireName}': $state."
@@ -366,13 +418,15 @@ internal class RemoteConfigManager(
     /**
      * The resolved blob payload for `itemKey` in [topic], parsed from JSON into [T], or `null` when the item
      * is unknown, has no `blob_ref`, its blob can't be resolved, or its bytes don't deserialize into [T]. [T]
-     * must be a concrete `@Serializable` type; parsing uses the shared [JsonProvider.defaultJson]. For non-JSON
-     * payloads use the `transform` overload, which also documents the resolution and waiting rules.
+     * must be a concrete `@Serializable` type; parsing uses [JsonTools.json] (not [JsonProvider.defaultJson],
+     * whose `classDiscriminator` is overridden for [com.revenuecat.purchases.common.events.BackendEvent] and
+     * would break any topic payload relying on the default `type` discriminator, e.g. paywall components). For
+     * non-JSON payloads use the `transform` overload, which also documents the resolution and waiting rules.
      */
     suspend inline fun <reified T> blobData(topic: RemoteConfigTopic, itemKey: String): T? =
         blobData(topic, itemKey) { bytes ->
             try {
-                JsonProvider.defaultJson.decodeFromString<T>(bytes.decodeToString())
+                JsonTools.json.decodeFromString<T>(bytes.decodeToString())
             } catch (e: SerializationException) {
                 errorLog(e) { "Failed to parse remote config blob for item '$itemKey' as JSON." }
                 null
@@ -415,7 +469,8 @@ internal class RemoteConfigManager(
      * resolved, the call returns `null` (a partial object is never produced) and warn-logs the missing keys.
      * It also returns `null` if any resolved blob isn't valid JSON, or the merged object doesn't deserialize
      * into [T]. Duplicate keys are de-duplicated; an empty [itemKeys] returns `null` without any read; [T] must
-     * be a concrete `@Serializable` type and parsing uses [JsonProvider.defaultJson].
+     * be a concrete `@Serializable` type and parsing uses [JsonTools.json] (see [blobData] for why not
+     * [JsonProvider.defaultJson]).
      *
      * Each item resolves through the same path as the single-key [blobData] (see its KDoc for the `blob_ref`,
      * on-demand fetch, and waiting rules) — this only fans them out. The fan-out is safe: a shared in-flight
@@ -426,7 +481,7 @@ internal class RemoteConfigManager(
     suspend inline fun <reified T> mergeItemsBlobData(topic: RemoteConfigTopic, itemKeys: Collection<String>): T? =
         mergeItemsBlobData(topic, itemKeys) { merged ->
             try {
-                JsonProvider.defaultJson.decodeFromJsonElement<T>(merged)
+                JsonTools.json.decodeFromJsonElement<T>(merged)
             } catch (e: SerializationException) {
                 errorLog(e) { "Failed to decode merged remote config blobs from topic '${topic.wireName}' as JSON." }
                 null

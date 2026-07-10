@@ -74,11 +74,3 @@
 ## Debug flags
 ## ──────────────────────────────────────────────
 #ENABLE_EXTRA_REQUEST_LOGGING=true
-
-## ──────────────────────────────────────────────
-## Enable Remote Config (test-only)
-## When true, the SDK instantiates the /v1/config manager and refreshes it on app
-## foreground (staleness-gated). The response is not consumed yet; this only exercises
-## the request/parse/persist path from test apps ahead of the production wiring.
-## ──────────────────────────────────────────────
-#ENABLE_REMOTE_CONFIG=true

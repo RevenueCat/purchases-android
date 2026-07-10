@@ -109,7 +109,7 @@ internal fun previewEmptyState(initialSelectedTabIndex: Int? = null): PaywallSta
         metadata = emptyMap(),
         availablePackages = listOf(TestData.Packages.monthly),
         paywallComponents = Offering.PaywallComponents(
-            uiConfig = UiConfig(
+            uiConfig = previewUiConfig(
                 localizations = nonEmptyMapOf(LocaleId("en_US") to variableLocalizationKeysForEnUs()),
             ),
             data = data,
@@ -131,11 +131,14 @@ internal fun previewEmptyState(initialSelectedTabIndex: Int? = null): PaywallSta
 }
 
 internal fun previewUiConfig(
-    app: AppConfig = AppConfig(),
+    app: AppConfig = AppConfig(colors = emptyMap(), fonts = emptyMap()),
     localizations: Map<LocaleId, Map<VariableLocalizationKey, String>> = mapOf(
         LocaleId("en_US") to variableLocalizationKeysForEnUs(),
     ),
-    variableConfig: VariableConfig = VariableConfig(),
+    variableConfig: VariableConfig = VariableConfig(
+        variableCompatibilityMap = emptyMap(),
+        functionCompatibilityMap = emptyMap(),
+    ),
 ): UiConfig =
     UiConfig(
         app = app,

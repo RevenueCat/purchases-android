@@ -5,11 +5,10 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
-import com.revenuecat.purchases.UiConfig
-import com.revenuecat.purchases.UiConfig.AppConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.paywalls.components.properties.FontStyle
+import com.revenuecat.purchases.uiConfigWithFonts
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -76,11 +75,7 @@ class OfferingFontPreDownloaderTest {
             metadata = emptyMap(),
             availablePackages = emptyList(),
             paywallComponents = Offering.PaywallComponents(
-                uiConfig = UiConfig(
-                    app = AppConfig(
-                        fonts = emptyMap()
-                    )
-                ),
+                uiConfig = uiConfigWithFonts(emptyMap()),
                 data = mockk(),
             ),
         )
@@ -145,15 +140,13 @@ class OfferingFontPreDownloaderTest {
             metadata = emptyMap(),
             availablePackages = emptyList(),
             paywallComponents = Offering.PaywallComponents(
-                uiConfig = UiConfig(
-                    app = AppConfig(
-                        fonts = mapOf(
-                            FontAlias("genericFont") to genericFont,
-                            FontAlias("resourceFont") to resourceFont,
-                            FontAlias("assetFont") to assetFont,
-                            FontAlias("downloadableFont") to downloadableFont,
-                        )
-                    )
+                uiConfig = uiConfigWithFonts(
+                    mapOf(
+                        FontAlias("genericFont") to genericFont,
+                        FontAlias("resourceFont") to resourceFont,
+                        FontAlias("assetFont") to assetFont,
+                        FontAlias("downloadableFont") to downloadableFont,
+                    ),
                 ),
                 data = mockk(),
             ),
@@ -193,12 +186,10 @@ class OfferingFontPreDownloaderTest {
             metadata = emptyMap(),
             availablePackages = emptyList(),
             paywallComponents = Offering.PaywallComponents(
-                uiConfig = UiConfig(
-                    app = AppConfig(
-                        fonts = mapOf(
-                            FontAlias("downloadableFont") to downloadableFont,
-                        )
-                    )
+                uiConfig = uiConfigWithFonts(
+                    mapOf(
+                        FontAlias("downloadableFont") to downloadableFont,
+                    ),
                 ),
                 data = mockk(),
             ),
@@ -228,10 +219,8 @@ class OfferingFontPreDownloaderTest {
             metadata = emptyMap(),
             availablePackages = emptyList(),
             paywallComponents = Offering.PaywallComponents(
-                uiConfig = UiConfig(
-                    app = AppConfig(
-                        fonts = mapOf(FontAlias("downloadableFont") to downloadableFont)
-                    )
+                uiConfig = uiConfigWithFonts(
+                    mapOf(FontAlias("downloadableFont") to downloadableFont),
                 ),
                 data = mockk(),
             ),
@@ -281,12 +270,10 @@ class OfferingFontPreDownloaderTest {
             metadata = emptyMap(),
             availablePackages = emptyList(),
             paywallComponents = Offering.PaywallComponents(
-                uiConfig = UiConfig(
-                    app = AppConfig(
-                        fonts = mapOf(
-                            FontAlias("capacitorFont") to capacitorFont,
-                        )
-                    )
+                uiConfig = uiConfigWithFonts(
+                    mapOf(
+                        FontAlias("capacitorFont") to capacitorFont,
+                    ),
                 ),
                 data = mockk(),
             ),

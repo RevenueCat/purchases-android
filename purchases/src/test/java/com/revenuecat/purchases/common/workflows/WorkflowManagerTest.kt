@@ -4,6 +4,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.emptyUiConfig
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
@@ -14,6 +15,10 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -34,7 +39,7 @@ class WorkflowManagerTest {
     private val mockProvider: WorkflowsConfigProvider = mockk()
     private val mockUiConfigProvider: UiConfigProvider = mockk()
     private val mockAssetPreDownloader: WorkflowAssetPreDownloader = mockk()
-    private val uiConfig = UiConfig()
+    private val uiConfig = emptyUiConfig()
     private val testScope = TestScope(UnconfinedTestDispatcher())
     private lateinit var workflowManager: WorkflowManager
 
@@ -115,6 +120,67 @@ class WorkflowManagerTest {
 
         assertThat(error).isNotNull
         assertThat(error!!.code).isEqualTo(PurchasesErrorCode.UnknownError)
+    }
+
+    @Test
+    fun `getWorkflow calls onError when ui_config is unavailable`() {
+        val expectedResult = mockk<PublishedWorkflow>(relaxed = true)
+        coEvery { mockProvider.workflowIdForOfferingId("wf_1") } returns null
+        coEvery { mockProvider.getWorkflow("wf_1") } returns expectedResult
+        coEvery { mockUiConfigProvider.getUiConfig() } returns null
+
+        var error: PurchasesError? = null
+        workflowManager.getWorkflow(
+            workflowOrOfferingId = "wf_1",
+            onSuccess = { fail("expected error") },
+            onError = { error = it },
+        )
+        testScope.testScheduler.advanceUntilIdle()
+
+        assertThat(error).isNotNull
+        assertThat(error!!.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        assertThat(error!!.underlyingErrorMessage).contains("UI config is unavailable")
+        verify(exactly = 0) { mockAssetPreDownloader.preDownloadWorkflowAssets(any(), any()) }
+    }
+
+    @Test
+    fun `getWorkflow calls onError when ui_config loading fails`() {
+        val expectedResult = mockk<PublishedWorkflow>(relaxed = true)
+        coEvery { mockProvider.workflowIdForOfferingId("wf_1") } returns null
+        coEvery { mockProvider.getWorkflow("wf_1") } returns expectedResult
+        coEvery { mockUiConfigProvider.getUiConfig() } throws RuntimeException("boom")
+
+        var error: PurchasesError? = null
+        workflowManager.getWorkflow(
+            workflowOrOfferingId = "wf_1",
+            onSuccess = { fail("expected error") },
+            onError = { error = it },
+        )
+        testScope.testScheduler.advanceUntilIdle()
+
+        assertThat(error).isNotNull
+        assertThat(error!!.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        assertThat(error!!.underlyingErrorMessage).contains("UI config is unavailable")
+        verify(exactly = 0) { mockAssetPreDownloader.preDownloadWorkflowAssets(any(), any()) }
+    }
+
+    @Test
+    fun `getWorkflow does not call back when ui_config loading is cancelled`() {
+        val expectedResult = mockk<PublishedWorkflow>(relaxed = true)
+        coEvery { mockProvider.workflowIdForOfferingId("wf_1") } returns null
+        coEvery { mockProvider.getWorkflow("wf_1") } returns expectedResult
+        coEvery { mockUiConfigProvider.getUiConfig() } throws CancellationException("cancelled")
+
+        var calledBack = false
+        workflowManager.getWorkflow(
+            workflowOrOfferingId = "wf_1",
+            onSuccess = { calledBack = true },
+            onError = { calledBack = true },
+        )
+        testScope.testScheduler.advanceUntilIdle()
+
+        assertThat(calledBack).isFalse()
+        verify(exactly = 0) { mockAssetPreDownloader.preDownloadWorkflowAssets(any(), any()) }
     }
 
     @Test
@@ -207,6 +273,20 @@ class WorkflowManagerTest {
     }
 
     @Test
+    fun `onPaywallConfigReady still completes when ui_config is unavailable`() {
+        val mockProvider = mockk<WorkflowsConfigProvider>()
+        coEvery { mockProvider.awaitReady() } just Runs
+        coEvery { mockUiConfigProvider.getUiConfig() } returns null
+        val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = testScope)
+
+        var completed = false
+        manager.onPaywallConfigReady { completed = true }
+        testScope.testScheduler.advanceUntilIdle()
+
+        assertThat(completed).isTrue()
+    }
+
+    @Test
     fun `onPaywallConfigReady still completes when the workflows sync fails`() {
         val mockProvider = mockk<WorkflowsConfigProvider>()
         coEvery { mockProvider.awaitReady() } throws RuntimeException("boom")
@@ -219,5 +299,49 @@ class WorkflowManagerTest {
         assertThat(completed).isTrue()
         // A failure to ready one step must not cancel the other.
         coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
+    }
+
+    @Test
+    fun `onPaywallConfigReady coalesces overlapping calls so readiness work runs only once and both callbacks fire`() {
+        val gate = CompletableDeferred<Unit>()
+        val mockProvider = mockk<WorkflowsConfigProvider>()
+        coEvery { mockProvider.awaitReady() } coAnswers { gate.await() }
+        val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = testScope)
+
+        var completed1 = false
+        var completed2 = false
+        manager.onPaywallConfigReady { completed1 = true }
+        manager.onPaywallConfigReady { completed2 = true }
+
+        // Readiness work is still suspended inside the gate; neither callback should have fired yet.
+        assertThat(completed1).isFalse()
+        assertThat(completed2).isFalse()
+
+        gate.complete(Unit)
+        testScope.testScheduler.advanceUntilIdle()
+
+        assertThat(completed1).isTrue()
+        assertThat(completed2).isTrue()
+        // The underlying work must have run exactly once despite two concurrent callers.
+        coVerify(exactly = 1) { mockProvider.awaitReady() }
+        coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
+    }
+
+    @Test
+    fun `onPaywallConfigReady does not invoke onComplete when the manager is closed before readiness completes`() {
+        val gate = CompletableDeferred<Unit>()
+        // Use a dedicated scope so closing the manager doesn't cancel the shared testScope.
+        val managerScope = CoroutineScope(SupervisorJob() + UnconfinedTestDispatcher())
+        val mockProvider = mockk<WorkflowsConfigProvider>()
+        coEvery { mockProvider.awaitReady() } coAnswers { gate.await() }
+        val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = managerScope)
+
+        var completed = false
+        manager.onPaywallConfigReady { completed = true }
+
+        // Cancel scope (simulates teardown / identity change) while readiness is still suspended.
+        manager.close()
+
+        assertThat(completed).isFalse()
     }
 }

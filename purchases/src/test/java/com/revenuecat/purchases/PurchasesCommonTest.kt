@@ -2915,12 +2915,22 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     @Test
     fun `getUiConfig delivers the provider's result to the caller`() {
-        val expected = UiConfig()
+        val expected = emptyUiConfig()
         coEvery { mockUiConfigProvider.getUiConfig() } returns expected
 
         val received = runBlocking { purchases.purchasesOrchestrator.getUiConfig() }
 
         assertThat(received).isEqualTo(expected)
+    }
+
+    @Test
+    fun `getUiConfig throws UnknownError when the provider returns null`() {
+        coEvery { mockUiConfigProvider.getUiConfig() } returns null
+
+        assertThatExceptionOfType(PurchasesException::class.java)
+            .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getUiConfig() } }
+            .extracting { it.code }
+            .isEqualTo(PurchasesErrorCode.UnknownError)
     }
 
     @Test
