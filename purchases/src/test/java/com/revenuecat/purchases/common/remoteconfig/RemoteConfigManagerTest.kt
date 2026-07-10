@@ -14,6 +14,7 @@ import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCElement
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.coVerifyOrder
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -553,6 +554,132 @@ class RemoteConfigManagerTest {
 
         // Even though the topic is cached, a disabled endpoint yields no reads.
         assertThat(manager.topic(RemoteConfigTopic.Workflows)).isNull()
+    }
+
+    @Test
+    fun `awaitTopicAndPrefetchBlobsReady waits on prefetch-marked item blobs and returns the topic`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(
+                    mapOf(
+                        "wf-prefetch" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID, prefetch = true),
+                        // On-demand item: not prefetch, so its blob is not awaited here.
+                        "wf-ondemand" to RemoteConfiguration.ConfigItem(blobRef = REF_UNWANTED),
+                    ),
+                ),
+            ),
+        )
+        coEvery { blobFetcher.ensureDownloaded(any<List<String>>()) } returns true
+
+        val topic = readManager().awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.Workflows)
+
+        assertThat(topic).isNotNull
+        assertThat(topic!!.keys).containsExactlyInAnyOrder("wf-prefetch", "wf-ondemand")
+        // Only the prefetch-marked item's blob is awaited; the on-demand item's is left for a lazy blobData read.
+        coVerify(exactly = 1) { blobFetcher.ensureDownloaded(listOf(REF_VALID)) }
+    }
+
+    @Test
+    fun `awaitTopicAndPrefetchBlobsReady returns the topic without touching the fetcher when nothing is prefetch`() =
+        runTest {
+            every { diskCache.read() } returns persisted(
+                manifest = "m",
+                activeTopics = listOf("workflows"),
+                topics = mapOf(
+                    "workflows" to ConfigTopic(
+                        mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID)),
+                    ),
+                ),
+            )
+
+            val topic = readManager().awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.Workflows)
+
+            assertThat(topic).isNotNull
+            coVerify(exactly = 0) { blobFetcher.ensureDownloaded(any<List<String>>()) }
+        }
+
+    @Test
+    fun `awaitTopicAndPrefetchBlobsReady returns null and skips the fetcher once the endpoint is disabled`() =
+        runTest {
+            every { diskCache.read() } returns persisted(
+                manifest = "m",
+                activeTopics = listOf("workflows"),
+                topics = mapOf(
+                    "workflows" to ConfigTopic(
+                        mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID, prefetch = true)),
+                    ),
+                ),
+            )
+            val manager = readManager()
+            manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+            onError.invoke(
+                PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+                GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+            )
+
+            assertThat(manager.awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.Workflows)).isNull()
+            coVerify(exactly = 0) { blobFetcher.ensureDownloaded(any<List<String>>()) }
+        }
+
+    @Test
+    fun `awaitTopicAndPrefetchBlobsReady returns null when an identity change wipes the cache mid-wait`() = runTest {
+        val topicA = ConfigTopic(
+            mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID, prefetch = true)),
+        )
+        var current: PersistedRemoteConfigurationState? = persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf("workflows" to topicA),
+        )
+        every { diskCache.read() } answers { current }
+        // clearCache() wipes the disk cache while we're blocked on the prefetch download.
+        coEvery { blobFetcher.ensureDownloaded(listOf(REF_VALID)) } answers {
+            current = null
+            true
+        }
+
+        // No app user is known, so the post-wait re-read does not self-prime a new sync: the cache stays wiped,
+        // so the method reports null instead of the stale pre-clear snapshot it first waited on.
+        val topic = readManager().awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.Workflows)
+
+        assertThat(topic).isNull()
+    }
+
+    @Test
+    fun `awaitTopicAndPrefetchBlobsReady re-awaits when a newer sync commits a different topic mid-wait`() = runTest {
+        val topicA = ConfigTopic(
+            mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID, prefetch = true)),
+        )
+        val topicB = ConfigTopic(
+            mapOf("wf2" to RemoteConfiguration.ConfigItem(blobRef = REF_UNWANTED, prefetch = true)),
+        )
+        var current = persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf("workflows" to topicA),
+        )
+        every { diskCache.read() } answers { current }
+        // While we wait on topic A's blob, a new identity's sync commits topic B underneath us.
+        coEvery { blobFetcher.ensureDownloaded(listOf(REF_VALID)) } answers {
+            current = persisted(
+                manifest = "m2",
+                activeTopics = listOf("workflows"),
+                topics = mapOf("workflows" to topicB),
+            )
+            true
+        }
+        coEvery { blobFetcher.ensureDownloaded(listOf(REF_UNWANTED)) } returns true
+
+        val topic = readManager().awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.Workflows)
+
+        // Returns the freshly committed topic after waiting on ITS prefetch blob, not the stale snapshot.
+        assertThat(topic).isEqualTo(topicB)
+        coVerifyOrder {
+            blobFetcher.ensureDownloaded(listOf(REF_VALID))
+            blobFetcher.ensureDownloaded(listOf(REF_UNWANTED))
+        }
     }
 
     @Test

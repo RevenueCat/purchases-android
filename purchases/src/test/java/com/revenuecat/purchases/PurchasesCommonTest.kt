@@ -2924,6 +2924,16 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `getUiConfig throws UnknownError when the provider returns null`() {
+        coEvery { mockUiConfigProvider.getUiConfig() } returns null
+
+        assertThatExceptionOfType(PurchasesException::class.java)
+            .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getUiConfig() } }
+            .extracting { it.code }
+            .isEqualTo(PurchasesErrorCode.UnknownError)
+    }
+
+    @Test
     fun `getUiConfig propagates a provider failure to the caller without wrapping it`() {
         val failure = RuntimeException("boom")
         coEvery { mockUiConfigProvider.getUiConfig() } throws failure

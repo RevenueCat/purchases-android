@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
-import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -47,7 +46,6 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.WorkflowManager
-import com.revenuecat.purchases.common.workflows.WorkflowsCache
 import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.FontLoader
@@ -198,10 +196,9 @@ internal class PurchasesFactory(
             val localeProvider = DefaultLocaleProvider()
 
             // useWorkflows implies the config layer: workflows are served from `/v1/config`, so the manager
-            // must exist whenever workflows are on, not only when the standalone flag is set. Neither flag
-            // applies to the customEntitlementComputation flavor, which doesn't serve paywalls this way.
-            val remoteConfigEnabled =
-                (BuildConfig.ENABLE_REMOTE_CONFIG || appConfig.useWorkflows) && !appConfig.customEntitlementComputation
+            // must exist whenever workflows are on. Not applicable to the customEntitlementComputation flavor,
+            // which doesn't serve paywalls this way.
+            val remoteConfigEnabled = appConfig.useWorkflows && !appConfig.customEntitlementComputation
             val remoteConfigDiskCache = if (remoteConfigEnabled) RemoteConfigDiskCache(contextForStorage) else null
             val remoteConfigTopicStore = RemoteConfigTopicStore {
                 remoteConfigDiskCache?.read()?.topics?.get(it.wireName)
@@ -281,8 +278,6 @@ internal class PurchasesFactory(
                 localeProvider = localeProvider,
             )
 
-            val workflowsCache = if (appConfig.useWorkflows) WorkflowsCache(deviceCache = cache) else null
-
             val remoteConfigManager = if (remoteConfigDiskCache != null) {
                 RemoteConfigManager(
                     backend = backend,
@@ -305,7 +300,6 @@ internal class PurchasesFactory(
                 subscriberAttributesCache,
                 subscriberAttributesManager,
                 offeringsCache,
-                workflowsCache,
                 remoteConfigManager,
                 backend,
                 offlineEntitlementsManager,

@@ -212,6 +212,102 @@ class WorkflowsConfigIntegrationTest {
     }
 
     @Test
+    fun `awaitReady waits for a non-inlined prefetch blob to finish downloading`() = runTest(testDispatcher) {
+        val workflowJson = JsonTools.json.encodeToString(PublishedWorkflow.serializer(), minimalWorkflow("wf-1"))
+        val ref = refOf(workflowJson.toByteArray())
+        downloads[ref] = workflowJson.toByteArray()
+        val config = """
+            {
+              "domain": "app",
+              "manifest": "v1.workflows:etag1",
+              "active_topics": ["workflows"],
+              "topics": {
+                "workflows": { "wf-1": { "blob_ref": "$ref", "prefetch": true } }
+              }
+            }
+        """.trimIndent()
+
+        sync(config) // not inlined; prefetched fire-and-forget during the sync
+
+        provider.awaitReady()
+
+        // awaitReady joined the prefetch: the blob is cached and a later read does not download again.
+        assertThat(blobStore.contains(ref)).isTrue()
+        assertThat(downloadCount).isEqualTo(1)
+        assertThat(provider.getWorkflow("wf-1")).isNotNull
+        assertThat(downloadCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `awaitReady returns without downloading when the prefetch blob is inlined`() = runTest(testDispatcher) {
+        val workflowJson = JsonTools.json.encodeToString(PublishedWorkflow.serializer(), minimalWorkflow("wf-1"))
+        val config = """
+            {
+              "domain": "app",
+              "manifest": "v1.workflows:etag1",
+              "active_topics": ["workflows"],
+              "prefetch_blobs": ["$INLINE_REF"],
+              "topics": {
+                "workflows": { "wf-1": { "blob_ref": "$INLINE_REF", "prefetch": true } }
+              }
+            }
+        """.trimIndent()
+
+        sync(config, INLINE_REF to workflowJson)
+
+        provider.awaitReady()
+
+        assertThat(blobStore.contains(INLINE_REF)).isTrue()
+        assertThat(downloadCount).isZero()
+    }
+
+    @Test
+    fun `awaitReady does not download bodies of non-prefetched items`() = runTest(testDispatcher) {
+        val workflowJson = JsonTools.json.encodeToString(PublishedWorkflow.serializer(), minimalWorkflow("wf-1"))
+        val ref = refOf(workflowJson.toByteArray())
+        downloads[ref] = workflowJson.toByteArray()
+        val config = """
+            {
+              "domain": "app",
+              "manifest": "v1.workflows:etag1",
+              "active_topics": ["workflows"],
+              "topics": {
+                "workflows": { "wf-1": { "blob_ref": "$ref" } }
+              }
+            }
+        """.trimIndent()
+
+        sync(config) // not inlined, not prefetched
+
+        provider.awaitReady()
+
+        // Nothing prefetched, so the on-demand body is left untouched until an explicit read.
+        assertThat(downloadCount).isZero()
+        assertThat(blobStore.contains(ref)).isFalse()
+    }
+
+    @Test
+    fun `awaitTopicAndPrefetchBlobsReady returns the committed topic`() = runTest(testDispatcher) {
+        val workflowJson = JsonTools.json.encodeToString(PublishedWorkflow.serializer(), minimalWorkflow("wf-1"))
+        val config = """
+            {
+              "domain": "app",
+              "manifest": "v1.workflows:etag1",
+              "active_topics": ["workflows"],
+              "prefetch_blobs": ["$INLINE_REF"],
+              "topics": {
+                "workflows": { "wf-1": { "blob_ref": "$INLINE_REF", "prefetch": true } }
+              }
+            }
+        """.trimIndent()
+
+        sync(config, INLINE_REF to workflowJson)
+
+        val topic = manager.awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.Workflows)
+        assertThat(topic).isNotNull
+        assertThat(topic!!.containsKey("wf-1")).isTrue()
+    }
+    @Test
     fun `WorkflowManager kept as the seam serves through the config path by offering id`() = runTest(testDispatcher) {
         val workflowJson = JsonTools.json.encodeToString(PublishedWorkflow.serializer(), minimalWorkflow("wf-1"))
         val ref = refOf(workflowJson.toByteArray())

@@ -14,17 +14,18 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
  * exactly, so the merged object decodes straight into [UiConfig] — including the property-level localizations
  * serializer that skips unknown variable localization keys.
  *
- * The merge is all-or-nothing: if any part is missing, unresolvable, or the merged object doesn't decode, the
- * whole config falls back to a default [UiConfig] rather than a partially-populated one.
+ * The merge is all-or-nothing: if any part is missing, unresolvable, or the merged object doesn't decode, no
+ * [UiConfig] is returned. Callers that need UI config to render should fail instead of using a partial/default
+ * configuration.
  */
 @OptIn(InternalRevenueCatAPI::class)
 internal class UiConfigProvider(
     private val manager: RemoteConfigManager,
 ) {
 
-    suspend fun getUiConfig(): UiConfig =
+    suspend fun getUiConfig(): UiConfig? =
         manager.mergeItemsBlobData<UiConfig>(
             RemoteConfigTopic.UiConfig,
             listOf("app", "localizations", "variable_config", "custom_variables"),
-        ) ?: UiConfig()
+        )
 }

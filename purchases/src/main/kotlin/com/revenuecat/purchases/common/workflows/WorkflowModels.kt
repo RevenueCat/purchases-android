@@ -161,33 +161,3 @@ public data class WorkflowExitOffer(
     val offeringId: String,
     val stepId: String,
 )
-
-@Serializable
-internal enum class WorkflowResponseAction {
-    @SerialName("inline")
-    INLINE,
-
-    @SerialName("use_cdn")
-    USE_CDN,
-}
-
-@Serializable
-internal data class WorkflowDetailResponse(
-    val action: WorkflowResponseAction,
-    val data: PublishedWorkflow? = null,
-    val url: String? = null,
-    val hash: String? = null,
-)
-
-@Serializable
-internal data class WorkflowSummary(
-    val id: String,
-    @SerialName("display_name") val displayName: String,
-    @SerialName("offering_id") val offeringId: String? = null,
-    val prefetch: Boolean = false,
-)
-
-@Serializable
-internal data class WorkflowsListResponse(
-    val workflows: List<WorkflowSummary>,
-)

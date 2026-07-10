@@ -35,33 +35,6 @@ internal sealed class Endpoint(
         }
     }
 
-    data class GetWorkflow(val userId: String, val workflowId: String) : Endpoint(
-        "/v1/subscribers/%s/workflows/%s",
-        "get_workflow",
-        fallbackPath = "/workflows/v1/workflows/%s",
-    ) {
-        override fun getPath(useFallback: Boolean): String {
-            return if (useFallback && fallbackPath != null) {
-                fallbackPath.format(Uri.encode(workflowId))
-            } else {
-                pathTemplate.format(Uri.encode(userId), Uri.encode(workflowId))
-            }
-        }
-    }
-    data class GetWorkflows(val userId: String, val type: String? = null) : Endpoint(
-        "/v1/subscribers/%s/workflows",
-        "get_workflows",
-        fallbackPath = "/workflows/v1/workflows",
-    ) {
-        override fun getPath(useFallback: Boolean): String {
-            val base = if (useFallback && fallbackPath != null) {
-                fallbackPath
-            } else {
-                pathTemplate.format(Uri.encode(userId))
-            }
-            return if (type != null) "$base?type=${Uri.encode(type)}" else base
-        }
-    }
     object LogIn : Endpoint("/v1/subscribers/identify", "log_in") {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
@@ -159,8 +132,6 @@ internal sealed class Endpoint(
             LogIn,
             PostReceipt,
             is GetOfferings,
-            is GetWorkflow,
-            is GetWorkflows,
             GetProductEntitlementMapping,
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
@@ -193,8 +164,6 @@ internal sealed class Endpoint(
                 true
             is GetAmazonReceipt,
             is GetOfferings,
-            is GetWorkflow,
-            is GetWorkflows,
             is PostAttributes,
             PostDiagnostics,
             PostEvents,
@@ -221,8 +190,6 @@ internal sealed class Endpoint(
             LogIn,
             PostReceipt,
             is GetOfferings,
-            is GetWorkflow,
-            is GetWorkflows,
             is AliasUsers,
             is PostAttributes,
             is GetAmazonReceipt,
