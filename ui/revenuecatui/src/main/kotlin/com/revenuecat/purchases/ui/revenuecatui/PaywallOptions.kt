@@ -61,7 +61,7 @@ public class PaywallOptions internal constructor(
      */
     public val customVariables: Map<String, CustomVariableValue> = emptyMap(),
     internal val injectedWorkflow: PublishedWorkflow? = null,
-    internal val injectedWorkflowUiConfig: UiConfig = UiConfig(),
+    internal val injectedWorkflowUiConfig: UiConfig = emptyUiConfig(),
 ) {
     public companion object {
         private const val hashMultiplier = 31
@@ -151,7 +151,7 @@ public class PaywallOptions internal constructor(
         internal var dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null
         internal var customVariables: Map<String, CustomVariableValue> = emptyMap()
         internal var injectedWorkflow: PublishedWorkflow? = null
-        internal var injectedWorkflowUiConfig: UiConfig = UiConfig()
+        internal var injectedWorkflowUiConfig: UiConfig = emptyUiConfig()
 
         public fun setOffering(offering: Offering?): Builder = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
@@ -228,7 +228,7 @@ public class PaywallOptions internal constructor(
         public fun injectedWorkflow(
             workflow: PublishedWorkflow,
             offering: Offering?,
-            uiConfig: UiConfig = UiConfig(),
+            uiConfig: UiConfig = emptyUiConfig(),
         ): Builder = apply {
             this.injectedWorkflow = workflow
             this.injectedWorkflowUiConfig = uiConfig
@@ -241,3 +241,17 @@ public class PaywallOptions internal constructor(
         }
     }
 }
+
+/**
+ * An explicitly empty [UiConfig] for locally-injected workflows and previews that don't fetch a remote `ui_config`.
+ * The remote fetch path no longer falls back to a default config, so this is only for in-memory construction.
+ */
+internal fun emptyUiConfig(): UiConfig =
+    UiConfig(
+        app = UiConfig.AppConfig(colors = emptyMap(), fonts = emptyMap()),
+        localizations = emptyMap(),
+        variableConfig = UiConfig.VariableConfig(
+            variableCompatibilityMap = emptyMap(),
+            functionCompatibilityMap = emptyMap(),
+        ),
+    )

@@ -25,6 +25,7 @@ class EndpointTest {
         Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
         Endpoint.AliasUsers("test-user-id"),
         Endpoint.GetRemoteConfig("app"),
+        Endpoint.GetRemoteConfigFallback("app"),
     )
 
     @Test
@@ -160,23 +161,34 @@ class EndpointTest {
     }
 
     @Test
-    fun `GetRemoteConfig supports fallback base URLs`() {
+    fun `GetRemoteConfig does not support fallback base URLs`() {
         val endpoint = Endpoint.GetRemoteConfig("app")
-        assertThat(endpoint.supportsFallbackBaseURLs).isTrue
+        assertThat(endpoint.supportsFallbackBaseURLs).isFalse
     }
 
     @Test
-    fun `GetRemoteConfig fallback path is correct`() {
+    fun `GetRemoteConfig expects an RC Container Format response`() {
         val endpoint = Endpoint.GetRemoteConfig("app")
-        val expectedPath = "/v1/config/app"
-        assertThat(endpoint.getPath(useFallback = true)).isEqualTo(expectedPath)
+        assertThat(endpoint.expectsRCFormatResponse).isTrue
     }
 
     @Test
-    fun `GetRemoteConfig encodes the domain in the fallback path`() {
-        val endpoint = Endpoint.GetRemoteConfig("my domain")
+    fun `GetRemoteConfigFallback encodes the domain in the path`() {
+        val endpoint = Endpoint.GetRemoteConfigFallback("my domain")
         val expectedPath = "/v1/config/my%20domain"
-        assertThat(endpoint.getPath(useFallback = true)).isEqualTo(expectedPath)
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `GetRemoteConfigFallback does not support fallback base URLs`() {
+        val endpoint = Endpoint.GetRemoteConfigFallback("app")
+        assertThat(endpoint.supportsFallbackBaseURLs).isFalse
+    }
+
+    @Test
+    fun `GetRemoteConfigFallback does not expect an RC Container Format response`() {
+        val endpoint = Endpoint.GetRemoteConfigFallback("app")
+        assertThat(endpoint.expectsRCFormatResponse).isFalse
     }
 
     @Test
@@ -197,6 +209,7 @@ class EndpointTest {
             Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
             Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
             Endpoint.GetRemoteConfig("app"),
+            Endpoint.GetRemoteConfigFallback("app"),
         )
         for (endpoint in expectedSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)
@@ -262,6 +275,7 @@ class EndpointTest {
             Endpoint.PostEvents,
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
             Endpoint.AliasUsers("test-user-id"),
+            Endpoint.GetRemoteConfigFallback("app"),
         )
         for (endpoint in expectedEndpoints) {
             assertThat(endpoint.needsNonceToPerformSigning)
