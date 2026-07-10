@@ -14,6 +14,7 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -36,6 +37,7 @@ import kotlin.time.Duration.Companion.seconds
 class BackendGetRemoteConfigTest {
 
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
+    private val mockFallbackURL = URL("http://mock-fallback-test.revenuecat.com/")
 
     private val testDomain = "app"
     private val testAppUserID = "test-app-user-id"
@@ -382,6 +384,136 @@ class BackendGetRemoteConfigTest {
             )
         }
     }
+
+    // region Fallback endpoint
+
+    @Test
+    fun `getRemoteConfigFallback parses a JSON RemoteConfiguration body`() {
+        every { appConfig.fallbackBaseURLs } returns listOf(mockFallbackURL)
+        mockHttpResult(
+            payload = HTTPResult.Payload.Text(
+                """
+                {
+                  "domain": "app",
+                  "manifest": "v1.fallback.sources:etag",
+                  "active_topics": ["sources"],
+                  "topics": { "sources": { "default": { "blob_ref": "someBlob" } } }
+                }
+                """.trimIndent(),
+            ),
+            verificationResult = VerificationResult.VERIFIED,
+        )
+
+        var config: RemoteConfiguration? = null
+        backend.getRemoteConfigFallback(
+            appInBackground = false,
+            domain = testDomain,
+            onSuccess = { config = it },
+            onError = { error, _ -> fail("Expected success. Got error: $error") },
+        )
+
+        assertThat(config).isNotNull
+        assertThat(config!!.domain).isEqualTo("app")
+        assertThat(config!!.manifest).isEqualTo("v1.fallback.sources:etag")
+        assertThat(config!!.activeTopics).containsExactly("sources")
+        assertThat(config!!.topics["sources"]!!["default"]!!.blobRef).isEqualTo("someBlob")
+    }
+
+    @Test
+    fun `getRemoteConfigFallback sends a GET with no body to the fallback base URL`() {
+        every { appConfig.fallbackBaseURLs } returns listOf(mockFallbackURL)
+        mockHttpResult(payload = HTTPResult.Payload.Text("""{"domain":"app","manifest":"m"}"""))
+
+        backend.getRemoteConfigFallback(
+            appInBackground = false,
+            domain = testDomain,
+            onSuccess = { },
+            onError = { error, _ -> fail("Expected success. Got error: $error") },
+        )
+
+        verify(exactly = 1) {
+            httpClient.performRequest(
+                mockFallbackURL,
+                Endpoint.GetRemoteConfigFallback(testDomain),
+                // A null body is what makes this a GET.
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `getRemoteConfigFallback errors as retryable when no fallback base URL is configured`() {
+        every { appConfig.fallbackBaseURLs } returns emptyList()
+
+        var obtainedBehavior: GetRemoteConfigErrorHandlingBehavior? = null
+        backend.getRemoteConfigFallback(
+            appInBackground = false,
+            domain = testDomain,
+            onSuccess = { fail("Expected error. Got success") },
+            onError = { _, behavior -> obtainedBehavior = behavior },
+        )
+
+        assertThat(obtainedBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
+        verify(exactly = 0) {
+            httpClient.performRequest(any(), any(), any(), any(), any(), fallbackBaseURLs = any())
+        }
+    }
+
+    @Test
+    fun `getRemoteConfigFallback surfaces malformed JSON as retryable`() {
+        every { appConfig.fallbackBaseURLs } returns listOf(mockFallbackURL)
+        mockHttpResult(payload = HTTPResult.Payload.Text("{ not valid json"))
+
+        var obtainedError: PurchasesError? = null
+        var obtainedBehavior: GetRemoteConfigErrorHandlingBehavior? = null
+        backend.getRemoteConfigFallback(
+            appInBackground = false,
+            domain = testDomain,
+            onSuccess = { fail("Expected error. Got success") },
+            onError = { error, behavior ->
+                obtainedError = error
+                obtainedBehavior = behavior
+            },
+        )
+
+        assertThat(obtainedError).isNotNull
+        assertThat(obtainedBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
+    }
+
+    @Test
+    fun `getRemoteConfigFallback marks a 5xx as retryable and a 4xx as should-disable`() {
+        every { appConfig.fallbackBaseURLs } returns listOf(mockFallbackURL)
+
+        mockHttpResult(
+            responseCode = RCHTTPStatusCodes.ERROR,
+            payload = HTTPResult.Payload.Text("""{"code": 7000, "message": "internal error"}"""),
+        )
+        var serverErrorBehavior: GetRemoteConfigErrorHandlingBehavior? = null
+        backend.getRemoteConfigFallback(
+            appInBackground = false,
+            domain = testDomain,
+            onSuccess = { fail("Expected error. Got success") },
+            onError = { _, behavior -> serverErrorBehavior = behavior },
+        )
+        assertThat(serverErrorBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
+
+        mockHttpResult(
+            responseCode = RCHTTPStatusCodes.BAD_REQUEST,
+            payload = HTTPResult.Payload.Text("""{"code": 7000, "message": "bad request"}"""),
+        )
+        var clientErrorBehavior: GetRemoteConfigErrorHandlingBehavior? = null
+        backend.getRemoteConfigFallback(
+            appInBackground = false,
+            domain = testDomain,
+            onSuccess = { fail("Expected error. Got success") },
+            onError = { _, behavior -> clientErrorBehavior = behavior },
+        )
+        assertThat(clientErrorBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE)
+    }
+
+    // endregion Fallback endpoint
 
     private fun mockNoContentRequest(bodySlot: MutableList<Map<String, Any?>?>) {
         every {

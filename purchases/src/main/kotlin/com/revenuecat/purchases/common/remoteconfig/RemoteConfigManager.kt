@@ -199,6 +199,66 @@ internal class RemoteConfigManager(
                     }
                 }
             },
+            onError = { error, behavior ->
+                handleMainRefreshError(requestEpoch, appInBackground, persisted, error, behavior)
+            },
+        )
+    }
+
+    /**
+     * Handles a failure of the **main** `/v1/config` request. Prefers cached data over the fallback: only when
+     * the request fails with a retryable error AND nothing is persisted yet (cold start) is the fallback
+     * endpoint tried. Any cached config wins (keep it), and a 4xx (`SHOULD_DISABLE`) still disables the endpoint
+     * without a fallback.
+     */
+    private fun handleMainRefreshError(
+        requestEpoch: Int,
+        appInBackground: Boolean,
+        persisted: PersistedRemoteConfigurationState?,
+        error: PurchasesError,
+        behavior: GetRemoteConfigErrorHandlingBehavior,
+    ) {
+        if (behavior == GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY && persisted == null) {
+            fetchFromFallback(requestEpoch, appInBackground, previous = persisted)
+        } else {
+            handleRefreshError(requestEpoch, error, behavior)
+        }
+    }
+
+    /**
+     * The cold-start fallback: the main `/v1/config` request failed with a retryable error and no config is
+     * cached, so fetch the plain-JSON [RemoteConfiguration] from the fallback endpoint and commit it. The
+     * in-flight guard captured by the originating [refreshRemoteConfig] is **kept held** across this call — the
+     * fallback continues that same sync/epoch and releases the guard at its own terminal points (success
+     * `finally` / `onError`). Does nothing if the epoch changed meanwhile (an identity change already reset the
+     * guard via [clearCache]).
+     */
+    private fun fetchFromFallback(
+        requestEpoch: Int,
+        appInBackground: Boolean,
+        previous: PersistedRemoteConfigurationState?,
+    ) {
+        if (epoch.get() != requestEpoch) return
+        verboseLog { "Main remote config request failed with no cached config; trying the fallback endpoint." }
+        backend.getRemoteConfigFallback(
+            appInBackground = appInBackground,
+            domain = previous?.domain ?: DEFAULT_DOMAIN,
+            onSuccess = { response ->
+                if (epoch.get() != requestEpoch) {
+                    // Identity changed after the fallback started; clearCache() reset the guard. Drop the result.
+                    return@getRemoteConfigFallback
+                }
+                scope.launch {
+                    try {
+                        synchronized(cacheLock) {
+                            if (epoch.get() != requestEpoch) return@launch
+                            persist(previous = previous, response = response, container = null)
+                        }
+                    } finally {
+                        releaseGuardIfOwned(requestEpoch)
+                    }
+                }
+            },
             onError = { error, behavior -> handleRefreshError(requestEpoch, error, behavior) },
         )
     }
@@ -593,7 +653,9 @@ internal class RemoteConfigManager(
     private fun persist(
         previous: PersistedRemoteConfigurationState?,
         response: RemoteConfiguration,
-        container: RCContainer,
+        // Null on the fallback path (plain-JSON response with no inlined blob elements to extract); the wanted
+        // blobs are then fetched over the network by prefetchBlobs instead.
+        container: RCContainer?,
     ) {
         debugLog {
             val changed = response.topics.entries.joinToString { (name, topic) ->
@@ -631,7 +693,7 @@ internal class RemoteConfigManager(
                 "Persisted remote config (domain=${response.domain}, ${response.activeTopics.size} active topics, " +
                     "${blobRefsToKeep.size} blobs wanted)."
             }
-            extractInlineBlobs(container, blobRefsToKeep)
+            container?.let { extractInlineBlobs(it, blobRefsToKeep) }
             blobStore.retainOnly(blobRefsToKeep)
             prefetchBlobs(response, mergedTopics)
         } else {
