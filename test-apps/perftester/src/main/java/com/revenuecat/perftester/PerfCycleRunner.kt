@@ -9,7 +9,6 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
-import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.getOfferingsWith
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeout
@@ -80,7 +79,7 @@ internal class PerfCycleRunner(
         val success = errorMessage == null && offerings != null
 
         var uiConfigMs: Double? = null
-        var uiConfigIsDefault: Boolean? = null
+        val uiConfigIsDefault: Boolean? = null
         var workflowResolutionMs: Double? = null
         var workflowBodyMs: Double? = null
         var workflowResolved: Boolean? = null
@@ -88,9 +87,8 @@ internal class PerfCycleRunner(
             runCatching {
                 withTimeout(CALL_TIMEOUT_MILLIS) {
                     val started = SystemClock.elapsedRealtimeNanos()
-                    val uiConfig = Purchases.sharedInstance.awaitGetUiConfig()
+                    Purchases.sharedInstance.awaitGetUiConfig()
                     uiConfigMs = (SystemClock.elapsedRealtimeNanos() - started).nanosToMillis()
-                    uiConfigIsDefault = uiConfig == UiConfig()
                 }
             }
             val offeringIds = offerings?.let { received ->
