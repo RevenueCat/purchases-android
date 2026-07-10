@@ -18,7 +18,6 @@ import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.After
-import org.junit.Ignore
 import org.junit.Test
 import java.io.File
 
@@ -30,14 +29,7 @@ import java.io.File
  * [forceServerErrorStrategy] is [ForceServerErrorStrategy.failExceptFallbackUrls]: the direct-endpoint tests
  * call the fallback host (which is never faked) so they hit the real endpoint, and the manager-flow test relies
  * on the main `api.revenuecat.com` request being forced to a `5xx` so the domain layer routes to the fallback.
- *
- * TODO: Ignored until the backend deploys the fallback config endpoint. As of writing, `GET /v1/config/{domain}`
- * on the fallback host returns `404 Object Not Found` (the sibling `/v1/offerings` and
- * `/v1/product_entitlement_mapping` fallbacks return `200`, so the host and auth are fine — the config snapshot
- * just isn't served yet). Re-enable once it is live. The SDK logic is fully covered by the unit tests in
- * `BackendGetRemoteConfigTest` and `RemoteConfigManagerTest`.
  */
-@Ignore("Backend fallback config endpoint (GET /v1/config/{domain}) not deployed yet; returns 404.")
 internal class ProductionRemoteConfigFallbackIntegrationTest : BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.apiKey
     override val forceServerErrorStrategy: ForceServerErrorStrategy = ForceServerErrorStrategy.failExceptFallbackUrls
