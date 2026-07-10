@@ -160,6 +160,13 @@ internal class PurchasesFactory(
                 createEventsExecutor(),
                 runningIntegrationTests = runningIntegrationTests,
             )
+            // `/v1/config` gets its own thread so it overlaps `getOfferings` instead of serializing behind it
+            // on the backend dispatcher. Kept separate even when the app supplied its own `service`, since
+            // sharing that executor would re-serialize the two requests.
+            val remoteConfigDispatcher = Dispatcher(
+                createRemoteConfigExecutor(),
+                runningIntegrationTests = runningIntegrationTests,
+            )
 
             var diagnosticsFileHelper: DiagnosticsFileHelper? = null
             var diagnosticsHelper: DiagnosticsHelper? = null
@@ -208,6 +215,7 @@ internal class PurchasesFactory(
                 eventsDispatcher,
                 httpClient,
                 backendHelper,
+                remoteConfigDispatcher,
             )
             val coilImageDownloader = CoilImageDownloader(application)
             val fileRepository = DefaultFileRepository(application)
@@ -557,6 +565,12 @@ internal class PurchasesFactory(
 
     private fun createEventsExecutor(): ExecutorService {
         return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("revenuecat-events-thread"))
+    }
+
+    // Scheduled so the dispatcher can apply the background jitter (Delay.DEFAULT) getRemoteConfig uses.
+    // Normal priority: it sits on the getOfferings critical path, unlike the low-priority events executor.
+    private fun createRemoteConfigExecutor(): ExecutorService {
+        return Executors.newSingleThreadScheduledExecutor()
     }
 
     private class LowPriorityThreadFactory(private val threadName: String) : ThreadFactory {

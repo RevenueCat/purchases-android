@@ -6,6 +6,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.GetRemoteConfigErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPClient
@@ -112,6 +113,50 @@ class BackendGetRemoteConfigTest {
             .isEqualTo(config)
         assertThat(parsed.contentElements).hasSize(1)
         assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
+    }
+
+    @Test
+    fun `getRemoteConfig is enqueued on the remote config dispatcher, not the main backend dispatcher`() {
+        // The whole point of the dedicated dispatcher is that /v1/config overlaps getOfferings instead of
+        // serializing on the shared backend dispatcher. Prove getRemoteConfig routes to the remote-config
+        // dispatcher (delivers synchronously here) and never touches the main backend dispatcher.
+        var mainDispatcherUsed = false
+        val mainDispatcher = object : Dispatcher(mockk()) {
+            override fun enqueue(command: Runnable, delay: Delay) {
+                mainDispatcherUsed = true
+            }
+        }
+        val isolatedBackend = Backend(
+            appConfig,
+            mainDispatcher,
+            SyncDispatcher(),
+            httpClient,
+            BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient),
+            SyncDispatcher(),
+        )
+
+        val config = "{\"hello\":\"world\"}".toByteArray()
+        val element = "blob-bytes".toByteArray()
+        mockHttpResult(
+            payload = HTTPResult.Payload.RCFormat(buildContainer(config = config, elements = listOf(element))),
+            verificationResult = VerificationResult.VERIFIED,
+        )
+
+        var container: RCContainer? = null
+        isolatedBackend.getRemoteConfig(
+            appInBackground = false,
+            appUserID = testAppUserID,
+            domain = testDomain,
+            manifest = testManifest,
+            prefetchedBlobs = testPrefetchedBlobs,
+            onSuccess = { result, _ -> container = result },
+            onError = { error, _ -> fail("Expected success. Got error: $error") },
+        )
+
+        // Delivered synchronously => it ran on the (Sync) remote-config dispatcher.
+        assertThat(container).isNotNull
+        // The main backend dispatcher was never used for the config request.
+        assertThat(mainDispatcherUsed).isFalse
     }
 
     @Test

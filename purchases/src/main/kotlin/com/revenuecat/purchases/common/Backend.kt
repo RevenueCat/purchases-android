@@ -146,6 +146,10 @@ internal class Backend(
     private val eventsDispatcher: Dispatcher,
     private val httpClient: HTTPClient,
     private val backendHelper: BackendHelper,
+    // Remote config (`/v1/config`) runs on its own dispatcher so it can overlap `getOfferings` instead of
+    // serializing behind it on the shared backend [dispatcher]. Defaults to [dispatcher] so callers that
+    // don't override it (tests) keep the previous single-threaded behavior.
+    private val remoteConfigDispatcher: Dispatcher = dispatcher,
 ) {
     companion object {
         private const val APP_USER_ID = "app_user_id"
@@ -222,6 +226,8 @@ internal class Backend(
 
     fun close() {
         this.dispatcher.close()
+        // No-op double shutdown when it defaults to [dispatcher]; closes the dedicated thread otherwise.
+        this.remoteConfigDispatcher.close()
     }
 
     fun getCustomerInfo(
@@ -1250,7 +1256,7 @@ internal class Backend(
             val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
             remoteConfigCallbacks.addBackgroundAwareCallback(
                 call,
-                dispatcher,
+                remoteConfigDispatcher,
                 cacheKey,
                 onSuccess to onError,
                 delay,
@@ -1336,7 +1342,7 @@ internal class Backend(
             val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
             remoteConfigFallbackCallbacks.addBackgroundAwareCallback(
                 call,
-                dispatcher,
+                remoteConfigDispatcher,
                 cacheKey,
                 onSuccess to onError,
                 delay,
