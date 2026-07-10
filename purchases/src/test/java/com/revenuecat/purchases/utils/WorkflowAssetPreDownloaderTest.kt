@@ -4,6 +4,8 @@ import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.NoOpLogHandler
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.emptyUiConfig
+import com.revenuecat.purchases.uiConfigWithFonts
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowScreen
@@ -62,10 +64,8 @@ class WorkflowAssetPreDownloaderTest {
                 "screen_1" to createScreen(screenConfig, localizations),
             ),
         )
-        val uiConfig = UiConfig(
-            app = UiConfig.AppConfig(
-                fonts = mapOf(FontAlias("font_1") to font),
-            ),
+        val uiConfig = uiConfigWithFonts(
+            mapOf(FontAlias("font_1") to font),
         )
 
         preDownloader.preDownloadWorkflowAssets(workflow, uiConfig)
@@ -85,8 +85,8 @@ class WorkflowAssetPreDownloaderTest {
             screens = mapOf("screen_1" to createScreen(screenConfig)),
         )
 
-        preDownloader.preDownloadWorkflowAssets(workflow, UiConfig())
-        preDownloader.preDownloadWorkflowAssets(workflow, UiConfig())
+        preDownloader.preDownloadWorkflowAssets(workflow, emptyUiConfig())
+        preDownloader.preDownloadWorkflowAssets(workflow, emptyUiConfig())
 
         val fontsSlot = slot<Collection<UiConfig.AppConfig.FontsConfig>>()
         verify(exactly = 1) {

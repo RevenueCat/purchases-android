@@ -71,6 +71,7 @@ class SamplePaywallsLoader {
                 Offering.PaywallComponents(
                     uiConfig = UiConfig(
                         app = UiConfig.AppConfig(
+                            colors = emptyMap(),
                             fonts = mapOf(
                                 primaryLocalFont to FontsConfig(android = FontInfo.Name("lobster_two")),
                                 secondaryGoogleFont to FontsConfig(android = FontInfo.GoogleFonts("Barrio")),
@@ -78,6 +79,10 @@ class SamplePaywallsLoader {
                             ),
                         ),
                         localizations = mapOf(localeId to variableLocalizationKeysForEnUs()),
+                        variableConfig = UiConfig.VariableConfig(
+                            variableCompatibilityMap = emptyMap(),
+                            functionCompatibilityMap = emptyMap(),
+                        ),
                     ),
                     data = data,
                 )
