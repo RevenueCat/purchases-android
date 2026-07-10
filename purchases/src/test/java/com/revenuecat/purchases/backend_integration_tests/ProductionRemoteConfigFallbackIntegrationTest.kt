@@ -79,6 +79,37 @@ internal class ProductionRemoteConfigFallbackIntegrationTest : BaseBackendIntegr
     }
 
     @Test
+    fun `a second fallback request is served from the ETag cache`() {
+        every { appConfig.isDebugBuild } returns false
+        // The base prefs mock does not persist, so back it with a real map: otherwise the stored ETag is never
+        // read back and the second request could not send `X-RevenueCat-ETag`.
+        val prefsBacking = mutableMapOf<String, String?>()
+        every { sharedPreferences.getString(any(), any()) } answers { prefsBacking[firstArg()] ?: secondArg() as String? }
+        every { sharedPreferencesEditor.putString(any(), any()) } answers {
+            prefsBacking[firstArg()] = secondArg()
+            sharedPreferencesEditor
+        }
+
+        val (firstError, firstConfig) = fetchRemoteConfigFallback()
+        val (secondError, secondConfig) = fetchRemoteConfigFallback()
+
+        assertThat(firstError).isNull()
+        assertThat(secondError).isNull()
+        // The cached response is returned verbatim, so the second config equals the first.
+        assertThat(secondConfig).isEqualTo(firstConfig)
+
+        // The first `200` is stored under the fallback URL; the second request sends the stored ETag, the server
+        // replies `304 Not Modified`, and the SDK serves the cached result. A `304` is not re-stored, so exactly
+        // one write to the fallback URL key proves the ETag round-trip happened (a plain re-fetch would store twice).
+        verify(exactly = 1) {
+            sharedPreferencesEditor.putString(
+                "https://api-production.8-lives-cat.io/v1/config/app",
+                any(),
+            )
+        }
+    }
+
+    @Test
     fun `domain layer falls back to the fallback endpoint when the main request fails with no cached config`() {
         every { appConfig.isDebugBuild } returns false
         val manager = buildRemoteConfigManager()
