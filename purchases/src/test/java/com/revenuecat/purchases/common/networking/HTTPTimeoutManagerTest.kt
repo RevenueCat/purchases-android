@@ -151,6 +151,18 @@ internal class HTTPTimeoutManagerTest {
     }
 
     @Test
+    fun `multiple hosts retain independent reduced state`() {
+        timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
+        timeoutManager.recordRequestResult(HOST_B, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
+
+        // Both hosts are reduced at the same time, each resolving to its own endpoint tier.
+        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = false))
+            .isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS)
+        assertThat(timeout(host = HOST_B, endpointSupportsFallbackURLs = true))
+            .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
+    }
+
+    @Test
     fun `success on main backend clears only that host entry`() {
         timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
         assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
@@ -196,6 +208,37 @@ internal class HTTPTimeoutManagerTest {
         dateProvider.advanceTime(360000)
 
         // 11 minutes since the first timeout, but only 6 since the second: still reduced
+        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
+            .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
+    }
+
+    @Test
+    fun `per-host expiry is independent`() {
+        timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
+
+        dateProvider.advanceTime(300000)
+        timeoutManager.recordRequestResult(HOST_B, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
+
+        // 6 more minutes: host A is 11 minutes old (expired), host B is 6 minutes old (still valid).
+        dateProvider.advanceTime(360000)
+
+        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
+            .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS)
+        assertThat(timeout(host = HOST_B, endpointSupportsFallbackURLs = true))
+            .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
+    }
+
+    @Test
+    fun `host becomes reduced again after entry expires and times out again`() {
+        timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
+
+        // Let the entry expire: back to base.
+        dateProvider.advanceTime(HTTPTimeoutManager.TIMEOUT_RESET_INTERVAL_MS + 60000)
+        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
+            .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS)
+
+        // A fresh timeout re-arms the reduced tier.
+        timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
         assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
     }
