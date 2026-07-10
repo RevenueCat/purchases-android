@@ -114,7 +114,7 @@ internal typealias RemoteConfigCallback = Pair<
     >
 
 internal typealias RemoteConfigFallbackCallback = Pair<
-    (RemoteConfiguration) -> Unit,
+    (RemoteConfiguration, VerificationResult) -> Unit,
     (PurchasesError, errorHandlingBehavior: GetRemoteConfigErrorHandlingBehavior) -> Unit,
     >
 
@@ -1261,7 +1261,7 @@ internal class Backend(
     fun getRemoteConfigFallback(
         appInBackground: Boolean,
         domain: String,
-        onSuccess: (RemoteConfiguration) -> Unit,
+        onSuccess: (RemoteConfiguration, VerificationResult) -> Unit,
         onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit,
     ) {
         val fallbackURL = appConfig.fallbackBaseURLs.firstOrNull()
@@ -1305,7 +1305,10 @@ internal class Backend(
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->
                     if (result.isSuccessful()) {
                         try {
-                            onSuccessHandler(RemoteConfiguration.parse(result.payloadText.encodeToByteArray()))
+                            onSuccessHandler(
+                                RemoteConfiguration.parse(result.payloadText.encodeToByteArray()),
+                                result.verificationResult,
+                            )
                         } catch (e: SerializationException) {
                             // A 2xx body that doesn't parse is not a client error; keep retrying.
                             onErrorHandler(

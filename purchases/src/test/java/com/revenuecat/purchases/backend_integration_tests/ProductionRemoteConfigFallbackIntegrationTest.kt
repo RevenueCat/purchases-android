@@ -3,6 +3,7 @@ package com.revenuecat.purchases.backend_integration_tests
 import android.content.Context
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobFetcher
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDiskCache
@@ -45,7 +46,7 @@ internal class ProductionRemoteConfigFallbackIntegrationTest : BaseBackendIntegr
 
     @Test
     fun `can fetch remote config from the fallback endpoint`() {
-        val (error, config) = fetchRemoteConfigFallback()
+        val (error, config, _) = fetchRemoteConfigFallback()
 
         assertThat(error).isNull()
         val remoteConfiguration = requireNotNull(config) { "Expected a fallback config response." }
@@ -69,12 +70,14 @@ internal class ProductionRemoteConfigFallbackIntegrationTest : BaseBackendIntegr
     fun `verifies the fallback response without a nonce when verification is enforced`() {
         setupTest(SignatureVerificationMode.Enforced())
 
-        val (error, config) = fetchRemoteConfigFallback()
+        val (error, config, verification) = fetchRemoteConfigFallback()
 
         // Under enforcement a failed verification surfaces as an error, so a null error already implies the
-        // response verified (statically, without a nonce). Assert the signing call happened explicitly too.
+        // response verified (statically, without a nonce). Assert the exposed verification result and the
+        // signing call explicitly too.
         assertThat(error).isNull()
         assertThat(config).isNotNull
+        assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
         assertSigningPerformed()
     }
 
@@ -90,8 +93,8 @@ internal class ProductionRemoteConfigFallbackIntegrationTest : BaseBackendIntegr
             sharedPreferencesEditor
         }
 
-        val (firstError, firstConfig) = fetchRemoteConfigFallback()
-        val (secondError, secondConfig) = fetchRemoteConfigFallback()
+        val (firstError, firstConfig, _) = fetchRemoteConfigFallback()
+        val (secondError, secondConfig, _) = fetchRemoteConfigFallback()
 
         assertThat(firstError).isNull()
         assertThat(secondError).isNull()
@@ -125,20 +128,22 @@ internal class ProductionRemoteConfigFallbackIntegrationTest : BaseBackendIntegr
     }
 
     /**
-     * Performs a single fallback request and blocks until it completes, returning the error (or `null`) and the
-     * parsed [RemoteConfiguration] (or `null` on error).
+     * Performs a single fallback request and blocks until it completes, returning the error (or `null`), the
+     * parsed [RemoteConfiguration] (or `null` on error), and the [VerificationResult] (or `null` on error).
      */
-    private fun fetchRemoteConfigFallback(): Pair<PurchasesError?, RemoteConfiguration?> {
+    private fun fetchRemoteConfigFallback(): Triple<PurchasesError?, RemoteConfiguration?, VerificationResult?> {
         every { appConfig.isDebugBuild } returns false
 
         var error: PurchasesError? = null
         var config: RemoteConfiguration? = null
+        var verification: VerificationResult? = null
         ensureBlockFinishes { latch ->
             backend.getRemoteConfigFallback(
                 appInBackground = false,
                 domain = "app",
-                onSuccess = {
-                    config = it
+                onSuccess = { result, verificationResult ->
+                    config = result
+                    verification = verificationResult
                     latch.countDown()
                 },
                 onError = { purchasesError, _ ->
@@ -147,7 +152,7 @@ internal class ProductionRemoteConfigFallbackIntegrationTest : BaseBackendIntegr
                 },
             )
         }
-        return error to config
+        return Triple(error, config, verification)
     }
 
     /**

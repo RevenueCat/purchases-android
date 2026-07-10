@@ -243,7 +243,7 @@ internal class RemoteConfigManager(
         backend.getRemoteConfigFallback(
             appInBackground = appInBackground,
             domain = previous?.domain ?: DEFAULT_DOMAIN,
-            onSuccess = { response ->
+            onSuccess = { response, _ ->
                 if (epoch.get() != requestEpoch) {
                     // Identity changed after the fallback started; clearCache() reset the guard. Drop the result.
                     return@getRemoteConfigFallback

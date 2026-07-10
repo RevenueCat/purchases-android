@@ -73,7 +73,7 @@ class RemoteConfigManagerTest {
     private lateinit var onSuccess: (RCContainer?, VerificationResult) -> Unit
     private lateinit var onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit
 
-    private lateinit var onFallbackSuccess: (RemoteConfiguration) -> Unit
+    private lateinit var onFallbackSuccess: (RemoteConfiguration, VerificationResult) -> Unit
     private lateinit var onFallbackError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit
 
     @Before
@@ -737,6 +737,7 @@ class RemoteConfigManagerTest {
                 }
                 """.trimIndent(),
             ),
+            VerificationResult.VERIFIED,
         )
 
         val written = slot<PersistedRemoteConfigurationState>()
@@ -768,6 +769,7 @@ class RemoteConfigManagerTest {
                 }
                 """.trimIndent(),
             ),
+            VerificationResult.VERIFIED,
         )
 
         // The fallback body carries no inlined elements, so no inline blob is written; the wanted blob is

@@ -405,10 +405,14 @@ class BackendGetRemoteConfigTest {
         )
 
         var config: RemoteConfiguration? = null
+        var verification: VerificationResult? = null
         backend.getRemoteConfigFallback(
             appInBackground = false,
             domain = testDomain,
-            onSuccess = { config = it },
+            onSuccess = { result, verificationResult ->
+                config = result
+                verification = verificationResult
+            },
             onError = { error, _ -> fail("Expected success. Got error: $error") },
         )
 
@@ -417,6 +421,8 @@ class BackendGetRemoteConfigTest {
         assertThat(config!!.manifest).isEqualTo("v1.fallback.sources:etag")
         assertThat(config!!.activeTopics).containsExactly("sources")
         assertThat(config!!.topics["sources"]!!["default"]!!.blobRef).isEqualTo("someBlob")
+        // The verification result is exposed the same way as the main endpoint.
+        assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
     }
 
     @Test
@@ -427,7 +433,7 @@ class BackendGetRemoteConfigTest {
         backend.getRemoteConfigFallback(
             appInBackground = false,
             domain = testDomain,
-            onSuccess = { },
+            onSuccess = { _, _ -> },
             onError = { error, _ -> fail("Expected success. Got error: $error") },
         )
 
@@ -451,7 +457,7 @@ class BackendGetRemoteConfigTest {
         backend.getRemoteConfigFallback(
             appInBackground = false,
             domain = testDomain,
-            onSuccess = { fail("Expected error. Got success") },
+            onSuccess = { _, _ -> fail("Expected error. Got success") },
             onError = { _, behavior -> obtainedBehavior = behavior },
         )
 
@@ -471,7 +477,7 @@ class BackendGetRemoteConfigTest {
         backend.getRemoteConfigFallback(
             appInBackground = false,
             domain = testDomain,
-            onSuccess = { fail("Expected error. Got success") },
+            onSuccess = { _, _ -> fail("Expected error. Got success") },
             onError = { error, behavior ->
                 obtainedError = error
                 obtainedBehavior = behavior
@@ -494,7 +500,7 @@ class BackendGetRemoteConfigTest {
         backend.getRemoteConfigFallback(
             appInBackground = false,
             domain = testDomain,
-            onSuccess = { fail("Expected error. Got success") },
+            onSuccess = { _, _ -> fail("Expected error. Got success") },
             onError = { _, behavior -> serverErrorBehavior = behavior },
         )
         assertThat(serverErrorBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
@@ -507,7 +513,7 @@ class BackendGetRemoteConfigTest {
         backend.getRemoteConfigFallback(
             appInBackground = false,
             domain = testDomain,
-            onSuccess = { fail("Expected error. Got success") },
+            onSuccess = { _, _ -> fail("Expected error. Got success") },
             onError = { _, behavior -> clientErrorBehavior = behavior },
         )
         assertThat(clientErrorBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE)
