@@ -117,7 +117,10 @@ internal class UiConfigProviderTest {
                     }
                 }
                 put("localizations", buildJsonObject {})
-                put("variable_config", buildJsonObject {})
+                putJsonObject("variable_config") {
+                    put("variable_compatibility_map", buildJsonObject {})
+                    put("function_compatibility_map", buildJsonObject {})
+                }
                 put("custom_variables", buildJsonObject {})
             },
         )
@@ -156,9 +159,15 @@ internal class UiConfigProviderTest {
         // undecodable; the reified mergeItemsBlobData swallows that to null instead of throwing out of the provider.
         stubMergedRead(
             buildJsonObject {
-                put("app", buildJsonObject {})
+                putJsonObject("app") {
+                    put("colors", buildJsonObject {})
+                    put("fonts", buildJsonObject {})
+                }
                 putJsonArray("localizations") { add(JsonPrimitive("not an object")) }
-                put("variable_config", buildJsonObject {})
+                putJsonObject("variable_config") {
+                    put("variable_compatibility_map", buildJsonObject {})
+                    put("function_compatibility_map", buildJsonObject {})
+                }
                 put("custom_variables", buildJsonObject {})
             },
         )

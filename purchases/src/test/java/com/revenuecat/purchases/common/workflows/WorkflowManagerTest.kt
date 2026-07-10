@@ -4,6 +4,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.emptyUiConfig
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
@@ -35,7 +36,7 @@ class WorkflowManagerTest {
     private val mockProvider: WorkflowsConfigProvider = mockk()
     private val mockUiConfigProvider: UiConfigProvider = mockk()
     private val mockAssetPreDownloader: WorkflowAssetPreDownloader = mockk()
-    private val uiConfig = UiConfig()
+    private val uiConfig = emptyUiConfig()
     private val testScope = TestScope(UnconfinedTestDispatcher())
     private lateinit var workflowManager: WorkflowManager
 

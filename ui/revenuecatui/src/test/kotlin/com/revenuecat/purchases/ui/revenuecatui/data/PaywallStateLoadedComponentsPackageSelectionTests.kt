@@ -167,7 +167,10 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         stickyFooter = null,
         background = BackgroundStyles.Color(color = ColorStyles(light = ColorStyle.Solid(Color.White))),
         showPricesWithDecimals = true,
-        variableConfig = UiConfig.VariableConfig(),
+        variableConfig = UiConfig.VariableConfig(
+            variableCompatibilityMap = emptyMap(),
+            functionCompatibilityMap = emptyMap(),
+        ),
         variableDataProvider = VariableDataProvider(MockResourceProvider()),
         offering = Offering(
             identifier = "test-offering",
