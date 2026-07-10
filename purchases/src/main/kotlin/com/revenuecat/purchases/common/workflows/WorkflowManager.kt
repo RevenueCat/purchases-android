@@ -10,8 +10,10 @@ import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -35,6 +37,15 @@ internal class WorkflowManager(
     private val workflowAssetPreDownloader: WorkflowAssetPreDownloader,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
+
+    // Guards [inFlightReadiness] so that concurrent calls to [onPaywallConfigReady] see the same
+    // Deferred and don't start a second round of readiness work while one is already in flight.
+    private val readinessLock = Any()
+
+    // The single in-flight readiness check started on [scope]. Null when no check is in progress.
+    // Written only under [readinessLock]; read under the lock to decide whether to reuse or start.
+    @Volatile
+    private var inFlightReadiness: Deferred<Unit>? = null
 
     fun close() {
         scope.cancel()
@@ -118,15 +129,34 @@ internal class WorkflowManager(
      * The only thing that skips [onComplete] is coroutine cancellation (teardown / identity change), which must not
      * fire a spurious success. A failure in one step also does not cancel the other.
      *
+     * Overlapping calls are coalesced: if a readiness check is already in flight when this is called, the
+     * new caller awaits the same [Deferred] instead of starting a second one, so the underlying work (topic
+     * sync + ui_config fetch) runs only once per overlapping burst. Sequential calls after the in-flight
+     * check completes may start a fresh one; by then blobs are cached so the cost is negligible.
+     *
      * It is not a `suspend` function: it launches the wait on [scope] and calls back, so a callback-based
      * caller can gate on it without owning a coroutine scope.
      */
     fun onPaywallConfigReady(onComplete: () -> Unit) {
-        scope.launch {
-            coroutineScope {
-                launch { awaitBestEffort("workflows topic") { workflowsConfigProvider.awaitReady() } }
-                launch { awaitBestEffort("ui_config") { checkNotNull(uiConfigProvider.getUiConfig()) } }
+        val readiness: Deferred<Unit> = synchronized(readinessLock) {
+            inFlightReadiness ?: scope.async<Unit> {
+                coroutineScope {
+                    launch { awaitBestEffort("workflows topic") { workflowsConfigProvider.awaitReady() } }
+                    launch { awaitBestEffort("ui_config") { checkNotNull(uiConfigProvider.getUiConfig()) } }
+                }
+            }.also { deferred ->
+                inFlightReadiness = deferred
+                deferred.invokeOnCompletion {
+                    synchronized(readinessLock) {
+                        if (inFlightReadiness === deferred) {
+                            inFlightReadiness = null
+                        }
+                    }
+                }
             }
+        }
+        scope.launch {
+            readiness.await()
             onComplete()
         }
     }

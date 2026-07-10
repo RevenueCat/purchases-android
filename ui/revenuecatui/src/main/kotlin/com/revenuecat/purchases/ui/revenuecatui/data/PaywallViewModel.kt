@@ -49,6 +49,7 @@ import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
+import com.revenuecat.purchases.ui.revenuecatui.emptyUiConfig
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.extensions.calculateOfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -204,7 +205,7 @@ internal class PaywallViewModelImpl(
 
     private var workflowNavigator: WorkflowNavigator? = null
     private var currentWorkflow: PublishedWorkflow? = null
-    private var currentWorkflowUiConfig: UiConfig = UiConfig()
+    private var currentWorkflowUiConfig: UiConfig = emptyUiConfig()
     private var currentWorkflowOfferings: Offerings? = null
     private var currentWorkflowPresentedOfferingContext: PresentedOfferingContext? = null
     private var currentWorkflowStepTracksPaywallEvents = true
@@ -945,7 +946,7 @@ internal class PaywallViewModelImpl(
         workflow: PublishedWorkflow,
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
-        uiConfig: UiConfig = UiConfig(),
+        uiConfig: UiConfig = emptyUiConfig(),
     ) {
         cancelStateUpdate()
         startWorkflowPresentation(workflow, uiConfig, offerings, presentedOfferingContext)
