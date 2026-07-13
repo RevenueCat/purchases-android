@@ -877,12 +877,12 @@ jobs:
           install: true
       - android/start_emulator:
           avd_name: test-e2e-tester
-          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug
+          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleRelease
       - android/restore_gradle_cache
       - run:
           name: Install E2E Tester on emulator
           command: |
-            adb install test-apps/e2etests/build/outputs/apk/debug/e2etests-debug.apk
+            adb install test-apps/e2etests/build/outputs/apk/release/e2etests-release.apk
       - revenuecat/install-maestro
       - run:
           name: Run Maestro tests

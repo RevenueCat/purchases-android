@@ -85,6 +85,7 @@ public class PurchaseButtonComponent(
 
 @OptIn(InternalRevenueCatAPI::class)
 private object ActionDeserializer : EnumDeserializerWithDefault<PurchaseButtonComponent.Action> (
+    serialName = "com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent.Action",
     defaultValue = PurchaseButtonComponent.Action.IN_APP_CHECKOUT,
 )
 

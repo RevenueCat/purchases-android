@@ -19,8 +19,12 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // Minified so the Maestro e2e flow exercises the SDK's consumer R8 rules end-to-end.
+            isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Debug signing so CI/Maestro can install the minified APK without release secrets;
+            // this app is a test target only, never published.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {

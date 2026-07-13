@@ -528,10 +528,14 @@ internal class PurchasesFactory(
 
             val apiKeyValidationResult = apiKeyValidator.validateAndLog(apiKey, store)
 
-            if (!isDebugBuild() &&
-                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE &&
-                !dangerousSettings.uiPreviewMode
-            ) {
+            // Test Store keys are only meant for development. uiPreviewMode and
+            // allowTestStoreInReleaseBuild are internal opt-ins that intentionally bypass this guard.
+            val isTestStoreKeyInReleaseBuild = !isDebugBuild() &&
+                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
+            val testStoreReleaseBuildAllowed = dangerousSettings.uiPreviewMode ||
+                dangerousSettings.allowTestStoreInReleaseBuild
+
+            if (isTestStoreKeyInReleaseBuild && !testStoreReleaseBuildAllowed) {
                 val redactedApiKey = apiKeyValidator.redactApiKey(apiKey)
                 errorLog(
                     error = PurchasesError(

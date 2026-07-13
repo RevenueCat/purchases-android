@@ -127,6 +127,7 @@ public class PartialTimelineComponentItem(
 
 @OptIn(InternalRevenueCatAPI::class)
 internal object TimelineIconAlignmentDeserializer : EnumDeserializerWithDefault<IconAlignment>(
+    serialName = "com.revenuecat.purchases.paywalls.components.TimelineComponent.IconAlignment",
     defaultValue = TimelineComponent.IconAlignment.Title,
     typeForValue = { value ->
         when (value) {
