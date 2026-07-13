@@ -5,9 +5,10 @@ package com.revenuecat.purchases.ui.revenuecatui.components.webview
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
-import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import androidx.annotation.MainThread
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewController
 import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessageHandler
 import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue
@@ -23,24 +24,22 @@ import java.util.Locale
  *
  * ## Transport
  * Implements the native Android host contract from `workflow-web-components-sdk`:
- * - JS → native: `window.rcWebComponents.postMessage(jsonString)` via [addJavascriptInterface]
+ * - JS → native: `rcWebComponents.postMessage(jsonString)` via [WebViewCompat.addWebMessageListener]
  * - native → JS: `window.__rcWebComponentsReceive(data)` via [WebView.evaluateJavascript]
  * - Wire format: `{ channel: "rc-web-components", kind, protocol_version, component_id, … }`
  *
- * The content SDK (`window.RC`) auto-detects Android when [NATIVE_OBJECT_NAME] is present and runs
- * the same connect/init handshake as on web. No document-start shim is injected.
+ * Inbound frames are validated against the message listener's `sourceOrigin` and `isMainFrame` —
+ * the WebView's top-level URL alone is not sufficient (same-origin subframes and navigation races).
  *
- * Because `addJavascriptInterface` provides no platform origin scoping, the bridge enforces the origin
- * itself: before delivering any inbound or outbound message it verifies the WebView's current URL still
- * has the same origin (scheme + host + port) as the resolved component URL, rejecting messages received
- * after navigation to an unexpected origin. Origin is always re-checked on the main thread at delivery
- * time.
+ * ## Document lifecycle
+ * Each main-frame navigation creates a new JavaScript document that must re-handshake. Call
+ * [onMainFrameNavigationStarted] from `WebViewClient.onPageStarted` so a fresh `connect` is accepted
+ * and outbound work queued for a previous document generation is dropped.
  *
  * ## Lifecycle & threading
  * The bridge holds only a [WeakReference] to the [WebView] (no Activity/Context), and stops delivering
- * messages once [release] is called. Inbound JavaScript callbacks arrive on a binder thread and are
- * hopped onto the main thread; app callbacks and all WebView interactions happen on the main thread.
- * Outbound [WebView.evaluateJavascript] calls queued before [release] are dropped when they run.
+ * messages once [release] is called. Inbound callbacks are hopped onto the main thread; app callbacks
+ * and all WebView interactions happen on the main thread.
  */
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class WebViewJavaScriptBridge(
@@ -52,7 +51,23 @@ internal class WebViewJavaScriptBridge(
     private val sizeToContentWidth: Boolean = false,
     private val sizeToContentHeight: Boolean = false,
     private val onContentResize: (widthCssPx: Int?, heightCssPx: Int?) -> Unit = { _, _ -> },
+    private val onDocumentReset: () -> Unit = {},
+    private val onSecureMessagingUnsupported: () -> Unit = {},
     private val mainHandler: Handler = Handler(Looper.getMainLooper()),
+    private val isWebMessageListenerSupported: () -> Boolean = {
+        WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)
+    },
+    private val installWebMessageListener: (
+        WebView,
+        String,
+        Set<String>,
+        WebViewCompat.WebMessageListener,
+    ) -> Unit = { view, jsObjectName, allowedOrigins, listener ->
+        WebViewCompat.addWebMessageListener(view, jsObjectName, allowedOrigins, listener)
+    },
+    private val uninstallWebMessageListener: (WebView, String) -> Unit = { view, jsObjectName ->
+        WebViewCompat.removeWebMessageListener(view, jsObjectName)
+    },
 ) : PaywallWebViewController {
 
     private val webViewRef = WeakReference(webView)
@@ -73,16 +88,50 @@ internal class WebViewJavaScriptBridge(
 
     @Volatile private var channelOpen: Boolean = false
 
+    @Volatile private var messageListenerInstalled: Boolean = false
+
+    /**
+     * Incremented on every main-frame document start. Outbound [WebView.evaluateJavascript] work
+     * captures the generation at enqueue time and is dropped if a newer document has started.
+     */
+    private var documentGeneration: Int = 0
+
     // Last content sizes applied per fit axis (main thread only), for the resize apply-threshold.
     private var lastAppliedWidthCssPx: Int? = null
     private var lastAppliedHeightCssPx: Int? = null
 
+    private val webMessageListener = WebViewCompat.WebMessageListener { _, message, sourceOrigin, isMainFrame, _ ->
+        val data = message.data ?: return@WebMessageListener
+        mainHandler.post {
+            if (released) return@post
+            handleInboundMessage(
+                json = data,
+                sourceOrigin = sourceOrigin,
+                isMainFrame = isMainFrame,
+            )
+        }
+    }
+
     /**
-     * Registers the native interface on the WebView. Call once, when the WebView is created.
+     * Registers the secure message listener on the WebView. Call once, when the WebView is created.
+     * If [WebViewFeature.WEB_MESSAGE_LISTENER] is unavailable, invokes [onSecureMessagingUnsupported]
+     * so the host can take the terminal failure/fallback path.
      */
     @MainThread
     fun attach() {
-        webViewRef.get()?.addJavascriptInterface(this, WebViewEnvelope.NATIVE_OBJECT_NAME)
+        val webView = webViewRef.get() ?: return
+        val origin = expectedOrigin
+        if (origin == null || !isWebMessageListenerSupported()) {
+            onSecureMessagingUnsupported()
+            return
+        }
+        installWebMessageListener(
+            webView,
+            WebViewEnvelope.NATIVE_OBJECT_NAME,
+            setOf(origin),
+            webMessageListener,
+        )
+        messageListenerInstalled = true
     }
 
     /**
@@ -98,6 +147,22 @@ internal class WebViewJavaScriptBridge(
     }
 
     /**
+     * Marks the start of a new main-frame JavaScript document (initial load, same-origin
+     * navigation, or reload). Resets the handshake and fit/resize threshold state so the new
+     * document can `connect` again.
+     */
+    @MainThread
+    @Suppress("UnusedParameter")
+    fun onMainFrameNavigationStarted(url: String?) {
+        if (released) return
+        documentGeneration += 1
+        channelOpen = false
+        lastAppliedWidthCssPx = null
+        lastAppliedHeightCssPx = null
+        onDocumentReset()
+    }
+
+    /**
      * Stops the bridge. After this call no further inbound messages are delivered and no outbound
      * messages are sent. Call from `AndroidView`'s onRelease block.
      */
@@ -105,26 +170,33 @@ internal class WebViewJavaScriptBridge(
     fun release() {
         released = true
         channelOpen = false
-        webViewRef.get()?.removeJavascriptInterface(WebViewEnvelope.NATIVE_OBJECT_NAME)
-    }
-
-    /**
-     * Entry point for `window.rcWebComponents.postMessage`. Invoked on a binder thread; we hop to the
-     * main thread before touching the WebView or validating the message.
-     */
-    @JavascriptInterface
-    fun postMessage(json: String) {
-        mainHandler.post {
-            if (released) return@post
-            handleInboundMessage(json)
+        val webView = webViewRef.get()
+        if (messageListenerInstalled && webView != null) {
+            uninstallWebMessageListener(webView, WebViewEnvelope.NATIVE_OBJECT_NAME)
+            messageListenerInstalled = false
         }
     }
 
+    /**
+     * Processes an inbound transport frame. Production traffic arrives via [webMessageListener];
+     * tests call this directly with an explicit [sourceOrigin] and [isMainFrame].
+     */
     @MainThread
     @Suppress("ReturnCount")
-    private fun handleInboundMessage(json: String) {
+    internal fun handleInboundMessage(
+        json: String,
+        sourceOrigin: Uri?,
+        isMainFrame: Boolean,
+    ) {
         if (released) return
-        val webView = webViewRef.get() ?: return
+
+        if (!isSourceTrusted(sourceOrigin = sourceOrigin, isMainFrame = isMainFrame)) {
+            Logger.w(
+                "Dropping inbound web view message: source origin is not the resolved component " +
+                    "origin or the frame is not the main frame.",
+            )
+            return
+        }
 
         if (json.toByteArray(Charsets.UTF_8).size > WebViewMessageParser.MAX_PAYLOAD_BYTES) {
             Logger.w(
@@ -140,29 +212,37 @@ internal class WebViewJavaScriptBridge(
         }
 
         when (envelope.kind) {
-            WebViewEnvelope.KIND_CONNECT -> {
-                if (!isOriginTrusted(webView, allowBeforeNavigation = true)) {
-                    Logger.w(
-                        "Dropping inbound web view connect: current origin does not match the " +
-                            "resolved component origin.",
-                    )
-                    return
-                }
-                handleConnect(envelope)
-            }
+            WebViewEnvelope.KIND_CONNECT -> handleConnect(envelope)
             WebViewEnvelope.KIND_MESSAGE,
             WebViewEnvelope.KIND_REQUEST,
-            -> {
-                if (!isOriginTrusted(webView, allowBeforeNavigation = false)) {
-                    Logger.w(
-                        "Dropping inbound web view message: current origin does not match the " +
-                            "resolved component origin.",
-                    )
-                    return
-                }
-                handleAppFrame(envelope)
-            }
+            -> handleAppFrame(envelope)
             else -> Unit
+        }
+    }
+
+    /**
+     * Test helper: posts [json] onto the main thread as a trusted main-frame message from
+     * [expectedOrigin], mirroring the WebMessageListener hop.
+     */
+    internal fun postMessage(json: String) {
+        val originUri = expectedOrigin?.let { Uri.parse(it) }
+        mainHandler.post {
+            if (released) return@post
+            handleInboundMessage(json = json, sourceOrigin = originUri, isMainFrame = true)
+        }
+    }
+
+    /**
+     * Test helper for explicit origin / main-frame combinations.
+     */
+    internal fun postMessage(
+        json: String,
+        sourceOrigin: Uri?,
+        isMainFrame: Boolean,
+    ) {
+        mainHandler.post {
+            if (released) return@post
+            handleInboundMessage(json = json, sourceOrigin = sourceOrigin, isMainFrame = isMainFrame)
         }
     }
 
@@ -329,14 +409,19 @@ internal class WebViewJavaScriptBridge(
     }
 
     private fun deliverEnvelope(envelope: JSONObject) {
+        val generationAtEnqueue = documentGeneration
         runOnMainThread {
             if (released) return@runOnMainThread
+            if (generationAtEnqueue != documentGeneration) return@runOnMainThread
             val webView = webViewRef.get() ?: return@runOnMainThread
             val kind = envelope.optString(WebViewMessageField.KIND)
             val allowBeforeNavigation = kind in HANDSHAKE_OUTBOUND_KINDS
-            if (!isOriginTrusted(webView, allowBeforeNavigation = allowBeforeNavigation)) {
+            // Defense in depth: drop outbound work if the top-level URL left the expected origin
+            // (e.g. after a policy hole). Inbound validation uses sourceOrigin separately.
+            if (!isCurrentUrlTrusted(webView, allowBeforeNavigation = allowBeforeNavigation)) {
                 Logger.w(
-                    "Dropping outbound web view message: current origin does not match the resolved component origin.",
+                    "Dropping outbound web view message: current origin does not match the " +
+                        "resolved component origin.",
                 )
                 return@runOnMainThread
             }
@@ -351,13 +436,24 @@ internal class WebViewJavaScriptBridge(
     }
 
     /**
-     * Whether the WebView's current URL still has the same origin (scheme + host + port) as the
-     * resolved component URL. When [allowBeforeNavigation] is true and the WebView has not committed
-     * a URL yet, the expected origin is trusted so the connect/init handshake can complete before
-     * the first navigation.
+     * Whether [sourceOrigin] matches the resolved component origin and the frame is the main frame.
+     * Subframe messages are always rejected — isolation for those is expected from the server CSP.
      */
     @MainThread
-    private fun isOriginTrusted(webView: WebView, allowBeforeNavigation: Boolean): Boolean {
+    @Suppress("ReturnCount")
+    private fun isSourceTrusted(sourceOrigin: Uri?, isMainFrame: Boolean): Boolean {
+        if (!isMainFrame) return false
+        if (expectedOrigin == null) return false
+        val origin = sourceOrigin?.toOriginOrNull() ?: return false
+        return origin == expectedOrigin
+    }
+
+    /**
+     * Whether the WebView's current top-level URL still has the expected origin. Used only as an
+     * outbound defense-in-depth check; inbound traffic is gated by [isSourceTrusted].
+     */
+    @MainThread
+    private fun isCurrentUrlTrusted(webView: WebView, allowBeforeNavigation: Boolean): Boolean {
         if (expectedOrigin == null) return false
         val currentOrigin = webView.url?.toOriginOrNull()
         return when {
@@ -411,14 +507,24 @@ internal class WebViewJavaScriptBridge(
 /**
  * The origin of this URL as `scheme://host[:port]`, or `null` if it lacks a host. Host comparison is
  * case-insensitive. Default ports (443 for https, 80 for http) are omitted.
+ *
+ * Accepts both full URLs and bare origins (as provided by [WebViewCompat.WebMessageListener]).
  */
 @Suppress("ReturnCount", "MagicNumber")
 internal fun String.toOriginOrNull(): String? {
     val uri = Uri.parse(this)
-    val scheme = uri.scheme?.lowercase(Locale.US) ?: return null
-    val host = uri.host?.takeIf { it.isNotBlank() }?.lowercase(Locale.US) ?: return null
+    return uri.toOriginOrNull()
+}
+
+/**
+ * The origin of this [Uri] as `scheme://host[:port]`, or `null` if it lacks a host.
+ */
+@Suppress("ReturnCount", "MagicNumber")
+internal fun Uri.toOriginOrNull(): String? {
+    val scheme = scheme?.lowercase(Locale.US) ?: return null
+    val host = host?.takeIf { it.isNotBlank() }?.lowercase(Locale.US) ?: return null
     val effectivePort = when {
-        uri.port != -1 -> uri.port
+        port != -1 -> port
         scheme == "https" -> 443
         scheme == "http" -> 80
         else -> -1

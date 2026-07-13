@@ -10,6 +10,10 @@ import org.json.JSONObject
  * Matches [RevenueCat/workflow-web-components-sdk](https://github.com/RevenueCat/workflow-web-components-sdk):
  * channel `rc-web-components`, handshake kinds `connect` / `init` / `reject`, and app frames
  * `message` / `request` / `response` / `error`.
+ *
+ * On Android the host installs `rcWebComponents` via `WebViewCompat.addWebMessageListener` so inbound
+ * frames carry a platform `sourceOrigin` / `isMainFrame`. The content still calls
+ * `rcWebComponents.postMessage(jsonString)`.
  */
 internal object WebViewEnvelope {
 

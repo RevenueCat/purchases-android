@@ -3,9 +3,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import android.graphics.Color
-import android.webkit.WebResourceError
-import android.webkit.WebResourceRequest
-import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -51,73 +48,105 @@ internal fun WebViewComponentView(
     val sizeToContentWidth = style.size.width is Fit
     val sizeToContentHeight = style.size.height is Fit
 
-    var contentWidthCssPx by remember(resolvedUrl) { mutableIntStateOf(0) }
-    var contentHeightCssPx by remember(resolvedUrl) { mutableIntStateOf(0) }
-    var loadFailed by remember(resolvedUrl) { mutableStateOf(false) }
-    val bridgeHolder = remember { WebViewBridgeHolder() }
+    val identity = WebViewIdentity(
+        resolvedUrl = resolvedUrl,
+        componentId = componentId,
+        sizeToContentWidth = sizeToContentWidth,
+        sizeToContentHeight = sizeToContentHeight,
+    )
 
-    val effectiveSize = remember(style.size, contentWidthCssPx, contentHeightCssPx) {
-        webViewEffectiveSize(
-            declaredSize = style.size,
-            contentWidthCssPx = contentWidthCssPx,
-            contentHeightCssPx = contentHeightCssPx,
-        )
-    }
+    // Identity-scoped state: when any immutable bridge field changes, Compose disposes the previous
+    // key subtree (WebView + bridge + measured sizes + failure flag) and creates a fresh one.
+    key(identity) {
+        var contentWidthCssPx by remember { mutableIntStateOf(0) }
+        var contentHeightCssPx by remember { mutableIntStateOf(0) }
+        var loadFailed by remember { mutableStateOf(false) }
+        // Holder is remembered inside the identity key so an old AndroidView.onRelease can only
+        // clear/release the bridge that belonged to that specific view instance.
+        val bridgeHolder = remember { WebViewBridgeHolder() }
+        val failureFlag = remember { LoadFailureFlag() }
 
-    val fallbackStyle = style.fallbackStackComponentStyle
-    if (loadFailed && fallbackStyle != null) {
-        StackComponentView(
-            style = fallbackStyle,
-            state = state,
-            clickHandler = onClick,
-            componentInteractionTracker = componentInteractionTracker,
-            modifier = modifier.size(effectiveSize),
-        )
-        return
-    }
+        val effectiveSize = remember(style.size, contentWidthCssPx, contentHeightCssPx) {
+            webViewEffectiveSize(
+                declaredSize = style.size,
+                contentWidthCssPx = contentWidthCssPx,
+                contentHeightCssPx = contentHeightCssPx,
+            )
+        }
 
-    key(resolvedUrl) {
-        AndroidView(
-            factory = { context ->
-                WebView(context).apply {
-                    val bridge = componentId?.let { id ->
-                        WebViewJavaScriptBridge(
-                            webView = this,
-                            componentId = id,
-                            expectedUrl = resolvedUrl,
-                            locale = locale,
-                            messageHandler = messageHandler,
-                            sizeToContentWidth = sizeToContentWidth,
-                            sizeToContentHeight = sizeToContentHeight,
-                            onContentResize = { widthCssPx, heightCssPx ->
-                                widthCssPx?.takeIf { it > 0 }?.let { contentWidthCssPx = it }
-                                heightCssPx?.takeIf { it > 0 }?.let { contentHeightCssPx = it }
-                            },
-                        ).also { createdBridge -> createdBridge.attach() }
-                    }
-                    bridgeHolder.bridge = bridge
-                    configure(
-                        expectedOrigin = resolvedUrl.toOriginOrNull(),
-                        onMainFrameLoadFailed = { loadFailed = true },
-                    )
-                    loadUrl(resolvedUrl)
-                }
-            },
-            update = {
-                bridgeHolder.bridge?.update(
-                    locale = locale,
-                    messageHandler = messageHandler,
+        val fallbackStyle = style.fallbackStackComponentStyle
+        if (loadFailed) {
+            if (fallbackStyle != null) {
+                StackComponentView(
+                    style = fallbackStyle,
+                    state = state,
+                    clickHandler = onClick,
+                    componentInteractionTracker = componentInteractionTracker,
+                    modifier = modifier.size(effectiveSize),
                 )
-            },
-            onRelease = { webView ->
-                bridgeHolder.bridge?.release()
-                bridgeHolder.bridge = null
-                webView.stopLoading()
-                webView.webViewClient = WebViewClient()
-                webView.destroy()
-            },
-            modifier = modifier.size(effectiveSize),
-        )
+            }
+            // No fallback: render nothing rather than retain a dead/unusable WebView.
+        } else {
+            AndroidView(
+                factory = { context ->
+                    WebView(context).apply {
+                        val bridge = componentId?.let { id ->
+                            WebViewJavaScriptBridge(
+                                webView = this,
+                                componentId = id,
+                                expectedUrl = resolvedUrl,
+                                locale = locale,
+                                messageHandler = messageHandler,
+                                sizeToContentWidth = sizeToContentWidth,
+                                sizeToContentHeight = sizeToContentHeight,
+                                onContentResize = { widthCssPx, heightCssPx ->
+                                    widthCssPx?.takeIf { it > 0 }?.let { contentWidthCssPx = it }
+                                    heightCssPx?.takeIf { it > 0 }?.let { contentHeightCssPx = it }
+                                },
+                                onDocumentReset = {
+                                    contentWidthCssPx = 0
+                                    contentHeightCssPx = 0
+                                },
+                                onSecureMessagingUnsupported = {
+                                    if (failureFlag.markFailed()) {
+                                        loadFailed = true
+                                    }
+                                },
+                            ).also { createdBridge -> createdBridge.attach() }
+                        }
+                        bridgeHolder.bridge = bridge
+                        configure(
+                            expectedOrigin = resolvedUrl.toOriginOrNull(),
+                            onMainFrameNavigationStarted = { url ->
+                                bridgeHolder.bridge?.onMainFrameNavigationStarted(url)
+                            },
+                            onMainFrameLoadFailed = {
+                                if (failureFlag.markFailed()) {
+                                    loadFailed = true
+                                }
+                            },
+                        )
+                        loadUrl(resolvedUrl)
+                    }
+                },
+                update = {
+                    bridgeHolder.bridge?.update(
+                        locale = locale,
+                        messageHandler = messageHandler,
+                    )
+                },
+                onRelease = { webView ->
+                    // Only release the bridge that this view installed into this holder.
+                    val bridge = bridgeHolder.bridge
+                    bridgeHolder.bridge = null
+                    bridge?.release()
+                    webView.stopLoading()
+                    webView.webViewClient = WebViewClient()
+                    webView.destroy()
+                },
+                modifier = modifier.size(effectiveSize),
+            )
+        }
     }
 }
 
@@ -147,12 +176,24 @@ internal fun webViewEffectiveSize(
 }
 
 /** Mutable holder for the per-WebView bridge instance, shared across factory/update/onRelease. */
-private class WebViewBridgeHolder {
+internal class WebViewBridgeHolder {
     var bridge: WebViewJavaScriptBridge? = null
+}
+
+/** Idempotent failure latch shared by URL/HTTP/renderer/secure-messaging failure paths. */
+internal class LoadFailureFlag {
+    private var failed: Boolean = false
+
+    fun markFailed(): Boolean {
+        if (failed) return false
+        failed = true
+        return true
+    }
 }
 
 private fun WebView.configure(
     expectedOrigin: String?,
+    onMainFrameNavigationStarted: (url: String?) -> Unit,
     onMainFrameLoadFailed: () -> Unit,
 ) {
     setBackgroundColor(Color.TRANSPARENT)
@@ -165,35 +206,9 @@ private fun WebView.configure(
     settings.javaScriptEnabled = true
     settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
     settings.setGeolocationEnabled(false)
-    webViewClient = object : WebViewClient() {
-        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-            return shouldBlockWebViewNavigation(
-                url = request.url?.toString(),
-                isMainFrame = request.isForMainFrame,
-                expectedOrigin = expectedOrigin,
-            )
-        }
-
-        override fun onReceivedError(
-            view: WebView,
-            request: WebResourceRequest,
-            error: WebResourceError,
-        ) {
-            if (request.isForMainFrame) {
-                onMainFrameLoadFailed()
-            }
-        }
-
-        override fun onReceivedHttpError(
-            view: WebView,
-            request: WebResourceRequest,
-            errorResponse: WebResourceResponse,
-        ) {
-            if (request.isForMainFrame && errorResponse.statusCode >= HTTP_ERROR_STATUS_MIN) {
-                onMainFrameLoadFailed()
-            }
-        }
-    }
+    webViewClient = PaywallWebViewClient(
+        expectedOrigin = expectedOrigin,
+        onMainFrameNavigationStarted = onMainFrameNavigationStarted,
+        onMainFrameLoadFailed = onMainFrameLoadFailed,
+    )
 }
-
-private const val HTTP_ERROR_STATUS_MIN = 400

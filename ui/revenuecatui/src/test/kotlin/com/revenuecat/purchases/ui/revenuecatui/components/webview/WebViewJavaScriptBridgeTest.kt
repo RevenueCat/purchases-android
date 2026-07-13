@@ -24,12 +24,14 @@ internal class WebViewJavaScriptBridgeTest {
     private lateinit var webView: WebView
     private lateinit var shadowWebView: ShadowWebView
     private val received = mutableListOf<PaywallWebViewMessage>()
+    private val installedListeners = mutableListOf<Boolean>()
 
     @Before
     fun setUp() {
         webView = WebView(ApplicationProvider.getApplicationContext())
         shadowWebView = shadowOf(webView)
         received.clear()
+        installedListeners.clear()
     }
 
     private fun bridge(
@@ -39,6 +41,10 @@ internal class WebViewJavaScriptBridgeTest {
         sizeToContentWidth: Boolean = false,
         sizeToContentHeight: Boolean = false,
         onContentResize: (widthCssPx: Int?, heightCssPx: Int?) -> Unit = { _, _ -> },
+        onDocumentReset: () -> Unit = {},
+        onSecureMessagingUnsupported: () -> Unit = {},
+        webMessageListenerSupported: Boolean = true,
+        trackInstallState: Boolean = false,
     ): WebViewJavaScriptBridge {
         val bridge = WebViewJavaScriptBridge(
             webView = webView,
@@ -49,6 +55,15 @@ internal class WebViewJavaScriptBridgeTest {
             sizeToContentWidth = sizeToContentWidth,
             sizeToContentHeight = sizeToContentHeight,
             onContentResize = onContentResize,
+            onDocumentReset = onDocumentReset,
+            onSecureMessagingUnsupported = onSecureMessagingUnsupported,
+            isWebMessageListenerSupported = { webMessageListenerSupported },
+            installWebMessageListener = { _, _, _, _ ->
+                if (trackInstallState) installedListeners.add(true)
+            },
+            uninstallWebMessageListener = { _, _ ->
+                if (trackInstallState) installedListeners.add(false)
+            },
         )
         bridge.attach()
         navigateTo?.let { webView.loadUrl(it) }
@@ -270,12 +285,15 @@ internal class WebViewJavaScriptBridgeTest {
     }
 
     @Test
-    fun `re-validates origin at main-thread delivery after navigation race`() {
+    fun `re-validates source origin at main-thread delivery`() {
         val bridge = bridge()
         connect(bridge)
-        webView.loadUrl("https://evil.example.org/phish.html")
         val background = Thread {
-            bridge.postMessage(appMessage(WebViewMessageType.STEP_LOADED))
+            bridge.postMessage(
+                json = appMessage(WebViewMessageType.STEP_LOADED),
+                sourceOrigin = android.net.Uri.parse("https://evil.example.org"),
+                isMainFrame = true,
+            )
         }
         background.start()
         background.join()
@@ -288,17 +306,39 @@ internal class WebViewJavaScriptBridgeTest {
     fun `treats host comparison as case insensitive`() {
         val bridge = bridge(navigateTo = "https://Assets.Example.COM/promo/index.html")
         connect(bridge)
-        bridge.postMessage(appMessage(WebViewMessageType.STEP_LOADED))
+        bridge.postMessage(
+            json = appMessage(WebViewMessageType.STEP_LOADED),
+            sourceOrigin = android.net.Uri.parse("https://Assets.Example.COM"),
+            isMainFrame = true,
+        )
         idleMainLooper()
 
         assertThat(received).hasSize(1)
     }
 
     @Test
-    fun `rejects messages after navigation to an unexpected origin`() {
-        val bridge = bridge(navigateTo = "https://evil.example.org/phish.html")
+    fun `rejects messages from an unexpected source origin`() {
+        val bridge = bridge()
         connect(bridge)
-        bridge.postMessage(appMessage(WebViewMessageType.STEP_LOADED))
+        bridge.postMessage(
+            json = appMessage(WebViewMessageType.STEP_LOADED),
+            sourceOrigin = android.net.Uri.parse("https://evil.example.org"),
+            isMainFrame = true,
+        )
+        idleMainLooper()
+
+        assertThat(received).isEmpty()
+    }
+
+    @Test
+    fun `rejects messages that are not from the main frame`() {
+        val bridge = bridge()
+        connect(bridge)
+        bridge.postMessage(
+            json = appMessage(WebViewMessageType.STEP_LOADED),
+            sourceOrigin = android.net.Uri.parse("https://assets.example.com"),
+            isMainFrame = false,
+        )
         idleMainLooper()
 
         assertThat(received).isEmpty()
@@ -459,20 +499,33 @@ internal class WebViewJavaScriptBridgeTest {
     }
 
     @Test
-    fun `attach registers native interface under rcWebComponents`() {
-        bridge()
+    fun `attach installs the web message listener when supported`() {
+        bridge(trackInstallState = true)
 
-        assertThat(shadowWebView.getJavascriptInterface("rcWebComponents")).isNotNull
+        assertThat(installedListeners).containsExactly(true)
     }
 
     @Test
-    fun `release removes the native interface`() {
-        val bridge = bridge()
-        assertThat(shadowWebView.getJavascriptInterface("rcWebComponents")).isNotNull
+    fun `attach reports unsupported secure messaging when the feature is missing`() {
+        var unsupported = false
+        bridge(
+            webMessageListenerSupported = false,
+            onSecureMessagingUnsupported = { unsupported = true },
+            trackInstallState = true,
+        )
+
+        assertThat(unsupported).isTrue()
+        assertThat(installedListeners).isEmpty()
+    }
+
+    @Test
+    fun `release removes the web message listener`() {
+        val bridge = bridge(trackInstallState = true)
+        assertThat(installedListeners).containsExactly(true)
 
         bridge.release()
 
-        assertThat(shadowWebView.getJavascriptInterface("rcWebComponents")).isNull()
+        assertThat(installedListeners).containsExactly(true, false)
     }
 
     @Test
@@ -629,5 +682,150 @@ internal class WebViewJavaScriptBridgeTest {
         idleMainLooper()
 
         assertThat(received).isEmpty()
+    }
+
+    @Test
+    fun `initial document connect produces one init`() {
+        val bridge = bridge()
+        bridge.onMainFrameNavigationStarted(expectedUrl)
+        connect(bridge)
+
+        assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"kind\":\"init\"")
+    }
+
+    @Test
+    fun `duplicate connect in the same document is ignored`() {
+        val bridge = bridge()
+        bridge.onMainFrameNavigationStarted(expectedUrl)
+        connect(bridge)
+        val afterFirst = shadowWebView.lastEvaluatedJavascript
+        connect(bridge)
+
+        assertThat(shadowWebView.lastEvaluatedJavascript).isEqualTo(afterFirst)
+    }
+
+    @Test
+    fun `after navigation starts app frames are rejected until reconnect`() {
+        val bridge = bridge()
+        bridge.onMainFrameNavigationStarted(expectedUrl)
+        connect(bridge)
+        bridge.onMainFrameNavigationStarted("https://assets.example.com/promo/step-two.html")
+
+        bridge.postMessage(appMessage(WebViewMessageType.STEP_LOADED))
+        idleMainLooper()
+
+        assertThat(received).isEmpty()
+    }
+
+    @Test
+    fun `new document connect produces a second init`() {
+        val bridge = bridge()
+        bridge.onMainFrameNavigationStarted(expectedUrl)
+        connect(bridge)
+        assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"kind\":\"init\"")
+
+        bridge.onMainFrameNavigationStarted("https://assets.example.com/promo/step-two.html")
+        webView.loadUrl("https://assets.example.com/promo/step-two.html")
+        bridge.postMessage(appMessage(WebViewMessageType.STEP_LOADED))
+        idleMainLooper()
+        assertThat(received).isEmpty()
+
+        connect(bridge)
+        assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"kind\":\"init\"")
+        bridge.postMessage(appMessage(WebViewMessageType.STEP_LOADED))
+        idleMainLooper()
+        assertThat(received).hasSize(1)
+    }
+
+    @Test
+    fun `rc fit is resent after reconnect when height is fit`() {
+        val bridge = bridge(sizeToContentHeight = true)
+        bridge.onMainFrameNavigationStarted(expectedUrl)
+        connect(bridge)
+        assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"type\":\"fit\"")
+
+        bridge.onMainFrameNavigationStarted("https://assets.example.com/promo/step-two.html")
+        webView.loadUrl("https://assets.example.com/promo/step-two.html")
+        connect(bridge)
+
+        val script = shadowWebView.lastEvaluatedJavascript
+        assertThat(script).contains("\"type\":\"fit\"")
+        assertThat(script).contains("\"height\":true")
+    }
+
+    @Test
+    fun `resize threshold state is reset between documents`() {
+        val resizes = mutableListOf<Pair<Int?, Int?>>()
+        val bridge = bridge(
+            handler = null,
+            sizeToContentHeight = true,
+            onContentResize = { widthCssPx, heightCssPx -> resizes.add(widthCssPx to heightCssPx) },
+        )
+        bridge.onMainFrameNavigationStarted(expectedUrl)
+        connect(bridge)
+        bridge.postMessage(
+            appMessage(type = WebViewMessageType.RESIZE, payload = """{"height":300}"""),
+        )
+        idleMainLooper()
+        assertThat(resizes).containsExactly(null to 300)
+
+        bridge.onMainFrameNavigationStarted("https://assets.example.com/promo/step-two.html")
+        webView.loadUrl("https://assets.example.com/promo/step-two.html")
+        connect(bridge)
+        // Same height as before the document reset — must apply again because threshold state cleared.
+        bridge.postMessage(
+            appMessage(type = WebViewMessageType.RESIZE, payload = """{"height":300}"""),
+        )
+        idleMainLooper()
+
+        assertThat(resizes).containsExactly(null to 300, null to 300)
+    }
+
+    @Test
+    fun `document reset clears compose content dimensions`() {
+        var resets = 0
+        val bridge = bridge(onDocumentReset = { resets += 1 })
+        bridge.onMainFrameNavigationStarted(expectedUrl)
+        bridge.onMainFrameNavigationStarted("https://assets.example.com/promo/reload.html")
+
+        assertThat(resets).isEqualTo(2)
+    }
+
+    @Test
+    fun `queued outbound message from the old document is not delivered after navigation`() {
+        val bridge = bridge()
+        bridge.onMainFrameNavigationStarted(expectedUrl)
+        connect(bridge)
+        val background = Thread {
+            bridge.postMessage(
+                componentId = componentId,
+                type = "rc:queued",
+                variables = mapOf("foo" to PaywallWebViewValue.String("bar")),
+            )
+        }
+        background.start()
+        background.join()
+        bridge.onMainFrameNavigationStarted("https://assets.example.com/promo/step-two.html")
+        idleMainLooper()
+
+        assertThat(shadowWebView.lastEvaluatedJavascript).doesNotContain("rc:queued")
+    }
+
+    @Test
+    fun `reload follows the same reconnect behavior`() {
+        val bridge = bridge()
+        bridge.onMainFrameNavigationStarted(expectedUrl)
+        connect(bridge)
+        bridge.onMainFrameNavigationStarted(expectedUrl) // reload
+        bridge.postMessage(appMessage(WebViewMessageType.STEP_LOADED))
+        idleMainLooper()
+        assertThat(received).isEmpty()
+
+        connect(bridge)
+        bridge.postMessage(appMessage(WebViewMessageType.STEP_LOADED))
+        idleMainLooper()
+
+        assertThat(received).hasSize(1)
+        assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"kind\":\"init\"")
     }
 }
