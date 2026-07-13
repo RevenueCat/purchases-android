@@ -867,11 +867,17 @@ internal class PaywallViewModelImpl(
     }
 
     private suspend fun presentWorkflow(offering: Offering, preloadedOfferings: Offerings?) {
-        // Resolve the offering to its configured workflow id, which aligns with the prefetch cache key.
-        // An offering with no configured workflow resolves to null and falls through as its own id;
-        // getWorkflow then reports it unavailable, since the config path has no backend lazy
-        // offering→workflow conversion.
-        val workflowIdentifier = purchases.workflowIdForOfferingId(offering.identifier) ?: offering.identifier
+        // Resolve the offering to its configured workflow id, which aligns with the prefetch cache key. The
+        // config path has no backend lazy offering→workflow conversion, so a missing mapping should fail
+        // immediately instead of attempting a guaranteed-miss blob read (and potentially an on-demand sync).
+        val workflowIdentifier = purchases.workflowIdForOfferingId(offering.identifier) ?: run {
+            throw PurchasesException(
+                PurchasesError(
+                    PurchasesErrorCode.UnknownError,
+                    "No workflow is configured for offering '${offering.identifier}'.",
+                ),
+            )
+        }
         coroutineScope {
             val workflowDeferred = async { purchases.awaitGetWorkflow(workflowIdentifier) }
             val uiConfigDeferred = async { purchases.awaitGetUiConfig() }
