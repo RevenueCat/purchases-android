@@ -780,6 +780,12 @@ internal class PaywallViewModelImpl(
     }
     private fun updateState() {
         cancelStateUpdate()
+        // Fast path: when the workflow, its ui_config, and offerings are already warm in memory, present the
+        // workflow synchronously so the very first composition renders the loaded paywall instead of the
+        // LoadingPaywall placeholder. Any cache miss falls through to the async path below, unchanged.
+        if (presentCachedWorkflowIfNeeded(options.offeringSelection)) {
+            return
+        }
         updateStateJob = viewModelScope.launch {
             try {
                 updateStateFromOffering(options.offeringSelection)
@@ -791,6 +797,40 @@ internal class PaywallViewModelImpl(
             }
         }
     }
+
+    /**
+     * Presents a workflow paywall synchronously when everything it needs is already in the in-memory config
+     * caches, returning true. All-or-nothing: any missing piece (offerings not cached, offering not resolvable
+     * synchronously, not a workflow paywall, workflow / ui_config not warm) returns false so [updateState] uses
+     * the existing async fetch-and-wait path. Injected-workflow rendering stays in [updateStateFromOffering].
+     */
+    @Suppress("ReturnCount")
+    private fun presentCachedWorkflowIfNeeded(offeringSelection: OfferingSelection): Boolean {
+        if (!useWorkflowsEndpoint || options.injectedWorkflow != null) return false
+
+        val offerings = purchases.cachedOfferings ?: return false
+        val offering = resolveOfferingFromCache(offeringSelection, offerings) ?: return false
+        // `offering.paywall == null` is the durable marker of a workflow (non-legacy) paywall; see
+        // updateStateFromOffering for why we don't gate on paywallComponents.
+        if (offering.paywall != null) return false
+
+        val workflowId = purchases.getCachedWorkflowIdForOffering(offering.identifier) ?: offering.identifier
+        val workflow = purchases.getCachedWorkflow(workflowId) ?: return false
+        val uiConfig = purchases.getCachedUiConfig() ?: return false
+
+        startWorkflowPresentation(workflow, uiConfig, offerings, offering.presentedOfferingContext)
+        return true
+    }
+
+    private fun resolveOfferingFromCache(offeringSelection: OfferingSelection, offerings: Offerings): Offering? =
+        when (offeringSelection) {
+            is OfferingSelection.OfferingType -> offeringSelection.offeringType
+            is OfferingSelection.IdAndPresentedOfferingContext -> {
+                val offering = offerings[offeringSelection.offeringId] ?: offerings.current
+                offeringSelection.presentedOfferingContext?.let { offering?.copy(it) } ?: offering
+            }
+            is OfferingSelection.None -> offerings.current
+        }
 
     private suspend fun updateStateFromOffering(offeringSelection: OfferingSelection) {
         // Injected workflow (e.g. mobile app preview): render locally, no /workflows fetch.

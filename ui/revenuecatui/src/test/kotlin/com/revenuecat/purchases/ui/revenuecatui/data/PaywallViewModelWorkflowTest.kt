@@ -57,6 +57,7 @@ import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -447,6 +448,12 @@ class PaywallViewModelWorkflowTest {
             every { purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
             every { useWorkflows } returns true
             every { track(any()) } just Runs
+            // Cold in-memory caches by default: the synchronous fast-path falls through to the async path,
+            // preserving these tests' existing behavior. The fast-path tests re-stub these per test.
+            every { cachedOfferings } returns null
+            every { getCachedUiConfig() } returns null
+            every { getCachedWorkflow(any()) } returns null
+            every { getCachedWorkflowIdForOffering(any()) } returns null
             coEvery { awaitOfferings() } returns testOfferings
             coEvery { awaitCustomerInfo(any()) } returns mockk {
                 every { activeSubscriptions } returns setOf()
@@ -902,6 +909,45 @@ class PaywallViewModelWorkflowTest {
         // monthlyPackageComponentDefault has isSelectedByDefault = true → MONTHLY wins.
         assertThat(step1State!!.selectedPackageInfo?.rcPackage?.identifier)
             .isEqualTo(PackageType.MONTHLY.identifier)
+    }
+
+    // endregion
+
+    // region synchronous cache fast-path
+
+    @Test
+    fun `warm cache renders the workflow on the first frame without the async reads`() = runTest {
+        every { purchases.cachedOfferings } returns testOfferings
+        every { purchases.getCachedWorkflowIdForOffering(offeringId) } returns workflow.id
+        every { purchases.getCachedWorkflow(workflow.id) } returns fetchResult
+        every { purchases.getCachedUiConfig() } returns uiConfig
+
+        val vm = createVm()
+
+        // First observed state (no dispatcher advance) is the loaded workflow, not LoadingPaywall.
+        assertThat(vm.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        assertThat(vm.workflowState.value).isNotNull
+        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
+        coVerify(exactly = 0) { purchases.awaitGetUiConfig() }
+        coVerify(exactly = 0) { purchases.awaitOfferings() }
+    }
+
+    @Test
+    fun `a cold workflow cache falls back to the async fetch path`() = runTest {
+        // Offerings cached but the workflow body isn't warmed yet.
+        every { purchases.cachedOfferings } returns testOfferings
+        every { purchases.getCachedWorkflowIdForOffering(offeringId) } returns workflow.id
+        every { purchases.getCachedWorkflow(workflow.id) } returns null
+        every { purchases.getCachedUiConfig() } returns uiConfig
+        coEvery { purchases.workflowIdForOfferingId(any()) } returns workflow.id
+        coEvery { purchases.awaitGetWorkflow(any()) } returns fetchResult
+        coEvery { purchases.awaitGetUiConfig() } returns uiConfig
+
+        val vm = createVm()
+        advanceUntilIdle()
+
+        assertThat(vm.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        coVerify(exactly = 1) { purchases.awaitGetWorkflow(any()) }
     }
 
     // endregion

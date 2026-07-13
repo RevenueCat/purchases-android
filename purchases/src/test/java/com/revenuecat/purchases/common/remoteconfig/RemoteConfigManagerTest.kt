@@ -573,6 +573,85 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `a 200 persist advances the generation and notifies listeners with it`() {
+        every { diskCache.read() } returns null
+        val recorder = RecordingCommitListener()
+        manager.registerListener(recorder)
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "default": { "blob_ref": "b" } } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        assertThat(manager.configGeneration).isEqualTo(1)
+        assertThat(recorder.committed).containsExactly(1)
+        assertThat(recorder.invalidated).isEmpty()
+    }
+
+    @Test
+    fun `clearCache advances the generation and invalidates listeners`() {
+        val recorder = RecordingCommitListener()
+        manager.registerListener(recorder)
+
+        manager.clearCache(TEST_APP_USER_ID)
+
+        assertThat(manager.configGeneration).isEqualTo(1)
+        assertThat(recorder.invalidated).containsExactly(1)
+        assertThat(recorder.committed).isEmpty()
+    }
+
+    @Test
+    fun `a 4xx disable invalidates listeners once`() {
+        every { diskCache.read() } returns null
+        val recorder = RecordingCommitListener()
+        manager.registerListener(recorder)
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+        )
+
+        assertThat(manager.isDisabled).isTrue()
+        assertThat(recorder.invalidated).containsExactly(1)
+    }
+
+    @Test
+    fun `committedTopicOrNull returns committed data without triggering a sync`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        val manager = readManager()
+
+        val topic = manager.committedTopicOrNull(RemoteConfigTopic.Workflows)
+
+        assertThat(topic).isNotNull
+        assertThat(topic!!["wf1"]!!.blobRef).isEqualTo(REF_VALID)
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `committedTopicOrNull returns null without a sync when nothing is committed`() = runTest {
+        every { diskCache.read() } returns null
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
+
+        val topic = manager.committedTopicOrNull(RemoteConfigTopic.Workflows)
+
+        assertThat(topic).isNull()
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `topic returns null once the endpoint is disabled even when data is cached`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",
@@ -1913,6 +1992,19 @@ class RemoteConfigManagerTest {
         every { container.config } returns element
         every { container.elements } returns emptyMap()
         return container
+    }
+
+    private class RecordingCommitListener : RemoteConfigCommitListener {
+        val committed = mutableListOf<Int>()
+        val invalidated = mutableListOf<Int>()
+
+        override fun onConfigCommitted(generation: Int) {
+            committed += generation
+        }
+
+        override fun onConfigInvalidated(generation: Int) {
+            invalidated += generation
+        }
     }
 
     @Serializable

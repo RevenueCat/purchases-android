@@ -12,6 +12,8 @@ import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationK
 import com.revenuecat.purchases.paywalls.components.properties.FontStyle
 import io.mockk.CapturingSlot
 import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.test.runTest
@@ -38,6 +40,7 @@ internal class UiConfigProviderTest {
 
     @Before
     fun setUp() {
+        every { manager.configGeneration } returns 0
         currentLogHandler = object : LogHandler {
             override fun v(tag: String, msg: String) {}
             override fun d(tag: String, msg: String) {}
@@ -175,6 +178,95 @@ internal class UiConfigProviderTest {
         val uiConfig = provider.getUiConfig()
 
         assertThat(uiConfig).isNull()
+    }
+
+    @Test
+    fun `getCachedUiConfig is null before warm and populated after`() = runTest {
+        coEvery { manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) } returns mockk()
+        stubMergedRead(minimalUiConfigJson())
+
+        assertThat(provider.getCachedUiConfig()).isNull()
+        provider.warm(generation = 0)
+
+        assertThat(provider.getCachedUiConfig()).isNotNull
+    }
+
+    @Test
+    fun `warm is a no-op and never reads blobs when the ui_config topic is not committed`() = runTest {
+        coEvery { manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) } returns null
+
+        provider.warm(generation = 0)
+
+        assertThat(provider.getCachedUiConfig()).isNull()
+        coVerify(exactly = 0) {
+            manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())
+        }
+    }
+
+    @Test
+    fun `getUiConfig serves the second call from the in-memory cache without re-reading`() = runTest {
+        stubMergedRead(minimalUiConfigJson())
+
+        val first = provider.getUiConfig()
+        val second = provider.getUiConfig()
+
+        assertThat(first).isNotNull
+        assertThat(second).isSameAs(first)
+        coVerify(exactly = 1) {
+            manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())
+        }
+    }
+
+    @Test
+    fun `onConfigInvalidated drops the cached ui_config`() = runTest {
+        stubMergedRead(minimalUiConfigJson())
+        provider.getUiConfig()
+        assertThat(provider.getCachedUiConfig()).isNotNull
+
+        provider.onConfigInvalidated(generation = 1)
+
+        assertThat(provider.getCachedUiConfig()).isNull()
+    }
+
+    @Test
+    fun `a lower-generation warm does not clobber a higher-generation value`() = runTest {
+        coEvery { manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) } returns mockk()
+        stubMergedRead(minimalUiConfigJson())
+
+        // A fresh (higher-generation) commit warmed the cache.
+        provider.warm(generation = 5)
+        val higher = requireNotNull(provider.getCachedUiConfig())
+
+        // A slower disk warm for an older generation must not overwrite it.
+        provider.warm(generation = 2)
+
+        assertThat(provider.getCachedUiConfig()).isSameAs(higher)
+    }
+
+    @Test
+    fun `a stale warm cannot repopulate the cache after a newer invalidation`() = runTest {
+        coEvery { manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) } returns mockk()
+        stubMergedRead(minimalUiConfigJson())
+
+        // Identity change / disable invalidated at a newer generation.
+        provider.onConfigInvalidated(generation = 5)
+        // An in-flight warm started for an older generation lands afterward.
+        provider.warm(generation = 3)
+
+        assertThat(provider.getCachedUiConfig()).isNull()
+    }
+
+    private fun minimalUiConfigJson(): JsonObject = buildJsonObject {
+        putJsonObject("app") {
+            put("colors", buildJsonObject {})
+            put("fonts", buildJsonObject {})
+        }
+        put("localizations", buildJsonObject {})
+        putJsonObject("variable_config") {
+            put("variable_compatibility_map", buildJsonObject {})
+            put("function_compatibility_map", buildJsonObject {})
+        }
+        put("custom_variables", buildJsonObject {})
     }
 
     // The provider calls the reified mergeItemsBlobData overload, which compiles down to the transform

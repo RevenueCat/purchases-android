@@ -2,8 +2,14 @@ package com.revenuecat.purchases.common.uiconfig
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 /**
  * The topic-specific front door for `ui_config`: four independently-updated parts — `app`, `localizations`,
@@ -17,15 +23,88 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
  * The merge is all-or-nothing: if any part is missing, unresolvable, or the merged object doesn't decode, no
  * [UiConfig] is returned. Callers that need UI config to render should fail instead of using a partial/default
  * configuration.
+ *
+ * `ui_config` is always kept in memory ([getCachedUiConfig]) once resolved, so a paywall render can read it
+ * synchronously without a disk hop. The in-memory copy is re-warmed on every config commit and dropped on
+ * identity change / disable (via [RemoteConfigCommitListener]); a [RemoteConfigManager.configGeneration] guard
+ * makes sure a slower disk warm never clobbers a fresher network commit (store-if-newer).
  */
 @OptIn(InternalRevenueCatAPI::class)
 internal class UiConfigProvider(
     private val manager: RemoteConfigManager,
-) {
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+) : RemoteConfigCommitListener {
 
-    suspend fun getUiConfig(): UiConfig? =
-        manager.mergeItemsBlobData<UiConfig>(
-            RemoteConfigTopic.UiConfig,
-            listOf("app", "localizations", "variable_config", "custom_variables"),
-        )
+    private val cacheLock = Any()
+
+    @Volatile
+    private var cache: UiConfig? = null
+
+    // The newest generation this provider has acted on, whether by storing a value or by an invalidation. A
+    // store/clear is applied only if its generation is >= this, so an out-of-order low-generation warm landing
+    // after a newer commit or an invalidation can't repopulate stale data. -1 = nothing seen yet.
+    private var lastGeneration: Int = -1
+
+    /** The in-memory [UiConfig], or `null` if not warmed yet. Synchronous and main-safe. */
+    fun getCachedUiConfig(): UiConfig? = cache
+
+    /**
+     * Returns the in-memory [UiConfig] if present, else resolves it from the config layer (which may wait for or
+     * trigger a `/v1/config` sync on a cold cache), caches it, and returns it. `null` when it can't be resolved.
+     */
+    suspend fun getUiConfig(): UiConfig? {
+        cache?.let { return it }
+        val generation = manager.configGeneration
+        val uiConfig = resolve()
+        if (uiConfig != null) store(generation, uiConfig)
+        return uiConfig
+    }
+
+    /**
+     * Best-effort populate of the in-memory cache from already-committed config, tagged with [generation].
+     * No-op (no network) when `ui_config` isn't committed yet, so a cold-disk init warm never triggers a sync.
+     */
+    suspend fun warm(generation: Int) {
+        if (manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) == null) return
+        val uiConfig = resolve() ?: return
+        store(generation, uiConfig)
+    }
+
+    /** Fire-and-forget [warm] on this provider's own scope; used for the cold-start init warm. */
+    fun warmAsync(generation: Int) {
+        scope.launch { warm(generation) }
+    }
+
+    override fun onConfigCommitted(generation: Int) {
+        scope.launch { warm(generation) }
+    }
+
+    override fun onConfigInvalidated(generation: Int) {
+        synchronized(cacheLock) {
+            if (generation >= lastGeneration) {
+                lastGeneration = generation
+                cache = null
+            }
+        }
+    }
+
+    fun close() {
+        scope.cancel()
+    }
+
+    private suspend fun resolve(): UiConfig? =
+        manager.mergeItemsBlobData<UiConfig>(RemoteConfigTopic.UiConfig, ITEM_KEYS)
+
+    private fun store(generation: Int, uiConfig: UiConfig) {
+        synchronized(cacheLock) {
+            if (generation >= lastGeneration) {
+                lastGeneration = generation
+                cache = uiConfig
+            }
+        }
+    }
+
+    private companion object {
+        private val ITEM_KEYS = listOf("app", "localizations", "variable_config", "custom_variables")
+    }
 }

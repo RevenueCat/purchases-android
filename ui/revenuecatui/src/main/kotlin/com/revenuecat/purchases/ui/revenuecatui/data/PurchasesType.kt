@@ -76,6 +76,17 @@ internal interface PurchasesType {
     suspend fun workflowIdForOfferingId(offeringId: String): String?
 
     val useWorkflows: Boolean
+
+    // Synchronous, main-safe reads of the in-memory config caches, used by the paywall fast-path to render a
+    // warm workflow on the first frame without a suspend/disk hop. Each returns null when not cached, and the
+    // fast-path falls back to the suspend variants above.
+    fun getCachedWorkflow(workflowId: String): PublishedWorkflow?
+
+    fun getCachedUiConfig(): UiConfig?
+
+    fun getCachedWorkflowIdForOffering(offeringId: String): String?
+
+    val cachedOfferings: Offerings?
 }
 
 @Suppress("TooManyFunctions")
@@ -160,4 +171,19 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     @OptIn(InternalRevenueCatAPI::class)
     override val useWorkflows: Boolean
         get() = purchases.currentConfiguration.dangerousSettings.useWorkflows
+
+    @OptIn(InternalRevenueCatAPI::class)
+    override fun getCachedWorkflow(workflowId: String): PublishedWorkflow? =
+        purchases.getCachedWorkflow(workflowId)
+
+    @OptIn(InternalRevenueCatAPI::class)
+    override fun getCachedUiConfig(): UiConfig? = purchases.getCachedUiConfig()
+
+    @OptIn(InternalRevenueCatAPI::class)
+    override fun getCachedWorkflowIdForOffering(offeringId: String): String? =
+        purchases.getCachedWorkflowIdForOffering(offeringId)
+
+    @OptIn(InternalRevenueCatAPI::class)
+    override val cachedOfferings: Offerings?
+        get() = purchases.getCachedOfferings()
 }

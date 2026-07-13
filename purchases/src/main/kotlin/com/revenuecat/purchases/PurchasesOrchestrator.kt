@@ -55,6 +55,7 @@ import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
+import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
@@ -164,6 +165,7 @@ internal class PurchasesOrchestrator(
     val fileRepository: FileRepository = DefaultFileRepository(application),
     private val remoteConfigManager: RemoteConfigManager? = null,
     private val uiConfigProvider: UiConfigProvider? = null,
+    private val workflowsConfigProvider: WorkflowsConfigProvider? = null,
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
@@ -619,6 +621,23 @@ internal class PurchasesOrchestrator(
     suspend fun workflowIdForOfferingId(offeringId: String): String? =
         workflowManager?.workflowIdForOfferingId(offeringId)
 
+    /**
+     * The in-memory [UiConfig] if it has been warmed (always cached once resolved), else `null`. Synchronous:
+     * lets the paywall render path avoid a disk hop and the resulting loading flash when config is warm.
+     */
+    fun getCachedUiConfig(): UiConfig? = uiConfigProvider?.getCachedUiConfig()
+
+    /**
+     * The in-memory parsed workflow for [workflowId] if it is cached (only prefetch / current-offering workflows
+     * are), else `null`. Synchronous; see [getCachedUiConfig].
+     */
+    fun getCachedWorkflow(workflowId: String): PublishedWorkflow? =
+        workflowsConfigProvider?.getCachedWorkflow(workflowId)
+
+    /** The in-memory workflow id for [offeringId] (metadata only) if cached, else `null`. Synchronous. */
+    fun getCachedWorkflowIdForOffering(offeringId: String): String? =
+        workflowsConfigProvider?.getCachedWorkflowIdForOffering(offeringId)
+
     suspend fun getUiConfig(): UiConfig {
         val provider = uiConfigProvider
         if (appConfig.uiPreviewMode || provider == null) {
@@ -871,6 +890,8 @@ internal class PurchasesOrchestrator(
         this.backend.close()
         this.remoteConfigManager?.close()
         this.workflowManager?.close()
+        this.uiConfigProvider?.close()
+        this.workflowsConfigProvider?.close()
 
         billing.close()
         updatedCustomerInfoListener = null // Do not call on state since the setter does more stuff

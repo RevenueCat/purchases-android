@@ -436,6 +436,40 @@ public class Purchases internal constructor(
         purchasesOrchestrator.workflowIdForOfferingId(offeringId)
 
     /**
+     * The in-memory [UiConfig] if it has already been warmed, else `null`. `ui_config` is kept in memory once
+     * resolved, so this lets the paywall render path read it synchronously (no disk hop, no loading flash).
+     * Returns `null` when workflows are off or it hasn't been warmed yet; callers should fall back to
+     * [awaitGetUiConfig] in that case.
+     */
+    @InternalRevenueCatAPI
+    public fun getCachedUiConfig(): UiConfig? = purchasesOrchestrator.getCachedUiConfig()
+
+    /**
+     * The in-memory parsed [PublishedWorkflow] for [workflowId] if it is cached, else `null`. Only workflows
+     * worth holding are cached in memory (flagged `prefetch`, or associated with the current offering). Returns
+     * `null` when workflows are off, the workflow isn't eligible, or it hasn't been warmed yet; callers should
+     * fall back to [awaitGetWorkflow] in that case.
+     */
+    @InternalRevenueCatAPI
+    public fun getCachedWorkflow(workflowId: String): PublishedWorkflow? =
+        purchasesOrchestrator.getCachedWorkflow(workflowId)
+
+    /**
+     * The in-memory workflow id for [offeringId] (metadata only) if cached, else `null`. Synchronous companion
+     * to [workflowIdForOfferingId].
+     */
+    @InternalRevenueCatAPI
+    public fun getCachedWorkflowIdForOffering(offeringId: String): String? =
+        purchasesOrchestrator.getCachedWorkflowIdForOffering(offeringId)
+
+    /**
+     * The in-memory [Offerings] if the cache is warm, else `null`. Synchronous; lets the paywall render path
+     * resolve an offering without suspending when offerings are already cached.
+     */
+    @InternalRevenueCatAPI
+    public fun getCachedOfferings(): Offerings? = purchasesOrchestrator.cachedOfferings
+
+    /**
      * Gets the StoreProduct(s) for the given list of product ids for all product types.
      * @param [productIds] List of productIds
      * @param [callback] Response callback

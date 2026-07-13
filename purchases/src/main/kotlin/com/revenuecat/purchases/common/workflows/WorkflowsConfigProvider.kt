@@ -5,10 +5,19 @@ package com.revenuecat.purchases.common.workflows
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
@@ -18,10 +27,42 @@ import kotlinx.serialization.json.JsonPrimitive
  * content, and how to parse a [PublishedWorkflow]. Everything else — reading metadata, waiting on an in-flight
  * sync, resolving inline vs `blob_ref`, downloading and reading the body — it delegates to [RemoteConfigManager]
  * through `topic()` / `blobData()`. It never sees the blob store, the fetcher, or the disk cache.
+ *
+ * On top of the on-demand suspend reads it keeps a small in-memory cache of **parsed** workflows so a paywall
+ * render can read one synchronously ([getCachedWorkflow]) without a disk + JSON hop. Only workflows worth
+ * holding are cached: an item flagged `prefetch`, or the one associated with the current offering (its
+ * `offering_identifier` equals [currentOfferingIdProvider]'s value). The full `offering_identifier -> workflowId`
+ * map (metadata only) is cached for every offering so the render path can resolve an offering to its workflow id
+ * synchronously ([getCachedWorkflowIdForOffering]). Both are re-warmed on every config commit and dropped on
+ * identity change / disable, guarded by [RemoteConfigManager.configGeneration] (store-if-newer) so a slower disk
+ * warm never clobbers a fresher network commit.
  */
+@Suppress("TooManyFunctions")
 internal class WorkflowsConfigProvider(
     private val manager: RemoteConfigManager,
-) {
+    private val currentOfferingIdProvider: () -> String? = { null },
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+) : RemoteConfigCommitListener {
+
+    private class Cached(
+        val workflows: Map<String, PublishedWorkflow>,
+        val offeringToWorkflowId: Map<String, String>,
+    )
+
+    private val cacheLock = Any()
+
+    @Volatile
+    private var cache: Cached? = null
+
+    // Newest generation acted on (store or invalidation); an update applies only if its generation is >= this,
+    // so an out-of-order low-generation warm can't repopulate stale data. -1 = nothing seen yet.
+    private var lastGeneration: Int = -1
+
+    /** The in-memory parsed workflow for [workflowId], or `null` if not cached. Synchronous and main-safe. */
+    fun getCachedWorkflow(workflowId: String): PublishedWorkflow? = cache?.workflows?.get(workflowId)
+
+    /** The in-memory workflow id for [offeringId] (metadata only), or `null` if not cached. Synchronous. */
+    fun getCachedWorkflowIdForOffering(offeringId: String): String? = cache?.offeringToWorkflowId?.get(offeringId)
 
     suspend fun workflowIdForOfferingId(offeringId: String): String? {
         val topic = manager.topic(RemoteConfigTopic.Workflows)
@@ -74,6 +115,70 @@ internal class WorkflowsConfigProvider(
      */
     suspend fun awaitReady() {
         manager.awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.Workflows)
+    }
+
+    /**
+     * Best-effort populate of the in-memory caches from already-committed config, tagged with [generation]. No-op
+     * (no `/v1/config` sync) when the `workflows` topic isn't committed yet, so a cold-disk init warm never
+     * triggers a network config fetch. Caches only eligible workflows (prefetch or current offering); the
+     * offering->workflowId map covers every offering.
+     */
+    suspend fun warm(generation: Int) {
+        val topic = manager.committedTopicOrNull(RemoteConfigTopic.Workflows) ?: return
+        val offeringToWorkflowId = LinkedHashMap<String, String>()
+        val currentOfferingId = currentOfferingIdProvider()
+        val eligibleIds = mutableListOf<String>()
+        topic.entries.forEach { (workflowId, item) ->
+            val offeringId = item.metadata.stringOrNull(KEY_OFFERING_IDENTIFIER)
+            if (offeringId != null) {
+                // Last entry wins on duplicates, matching workflowIdForOfferingId.
+                offeringToWorkflowId[offeringId] = workflowId
+            }
+            if (item.prefetch || (offeringId != null && offeringId == currentOfferingId)) {
+                eligibleIds += workflowId
+            }
+        }
+        val workflows = coroutineScope {
+            eligibleIds.distinct()
+                .map { id -> async { id to getWorkflow(id) } }
+                .awaitAll()
+        }.mapNotNull { (id, workflow) -> workflow?.let { id to it } }.toMap()
+        verboseLog {
+            "Warmed workflows cache: ${workflows.size} eligible workflow(s), " +
+                "${offeringToWorkflowId.size} offering mapping(s)."
+        }
+        store(generation, Cached(workflows, offeringToWorkflowId))
+    }
+
+    /** Fire-and-forget [warm] on this provider's own scope; used for the cold-start init warm. */
+    fun warmAsync(generation: Int) {
+        scope.launch { warm(generation) }
+    }
+
+    override fun onConfigCommitted(generation: Int) {
+        scope.launch { warm(generation) }
+    }
+
+    override fun onConfigInvalidated(generation: Int) {
+        synchronized(cacheLock) {
+            if (generation >= lastGeneration) {
+                lastGeneration = generation
+                cache = null
+            }
+        }
+    }
+
+    fun close() {
+        scope.cancel()
+    }
+
+    private fun store(generation: Int, value: Cached) {
+        synchronized(cacheLock) {
+            if (generation >= lastGeneration) {
+                lastGeneration = generation
+                cache = value
+            }
+        }
     }
 
     private companion object {
