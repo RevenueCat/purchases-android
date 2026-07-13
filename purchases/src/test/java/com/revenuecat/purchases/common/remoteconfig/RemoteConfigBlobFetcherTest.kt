@@ -36,6 +36,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.ByteArrayInputStream
+import java.io.IOException
 import java.net.SocketTimeoutException
 import java.nio.ByteBuffer
 import java.security.MessageDigest
@@ -509,6 +510,88 @@ class RemoteConfigBlobFetcherTest {
 
         verify { provider.reportUnhealthy(match { it.url == primary }) }
         verify { blobStore.write(ref, any()) }
+    }
+
+    @Test
+    fun `a non-timeout network failure does not arm the source's fail-fast memory`() {
+        val bytes = "body".toByteArray()
+        val ref = refOf(bytes)
+        val timeouts = CopyOnWriteArrayList<Int>()
+        val calls = AtomicInteger(0)
+        every { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) } answers {
+            timeouts.add(secondArg<Int>())
+            // A plain IOException (e.g. connection refused) is not a timeout: SocketTimeoutException is an
+            // IOException subclass, so this guards the catch order and that only timeouts arm the reduced tier.
+            if (calls.getAndIncrement() == 0) throw IOException("connection refused")
+            connection(code = 200, body = bytes)
+        }
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        assertThat(download(fetcher, ref)).isFalse()
+        assertThat(download(fetcher, ref)).isTrue()
+
+        // The failure never armed the source, so both attempts used the base timeout.
+        assertThat(timeouts).containsExactly(
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+        )
+    }
+
+    @Test
+    fun `a non-timeout failure does not clear an already-armed source`() {
+        val bytes = "body".toByteArray()
+        val ref = refOf(bytes)
+        val timeouts = CopyOnWriteArrayList<Int>()
+        val calls = AtomicInteger(0)
+        every { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) } answers {
+            timeouts.add(secondArg<Int>())
+            when (calls.getAndIncrement()) {
+                0 -> throw SocketTimeoutException("timed out") // arms the reduced tier
+                1 -> connection(code = 500) // a non-timeout failure must not clear the armed memory
+                else -> connection(code = 200, body = bytes)
+            }
+        }
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        assertThat(download(fetcher, ref)).isFalse()
+        assertThat(download(fetcher, ref)).isFalse()
+        assertThat(download(fetcher, ref)).isTrue()
+
+        // The 500 left the fail-fast memory intact, so the source stayed on the reduced timeout.
+        assertThat(timeouts).containsExactly(
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS.toInt(),
+        )
+    }
+
+    @Test
+    fun `a 200 with a checksum mismatch still clears the source's fail-fast memory`() {
+        val expected = "expected".toByteArray()
+        val ref = refOf(expected)
+        val timeouts = CopyOnWriteArrayList<Int>()
+        val calls = AtomicInteger(0)
+        every { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) } answers {
+            timeouts.add(secondArg<Int>())
+            when (calls.getAndIncrement()) {
+                0 -> throw SocketTimeoutException("timed out") // arms the reduced tier
+                1 -> connection(code = 200, body = "tampered".toByteArray()) // 200: source is network-healthy
+                else -> connection(code = 200, body = expected)
+            }
+        }
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        assertThat(download(fetcher, ref)).isFalse() // timeout arms the reduced tier
+        assertThat(download(fetcher, ref)).isFalse() // 200 answered but the payload fails verification
+        assertThat(download(fetcher, ref)).isTrue()
+
+        // The 200 (even with a bad payload) proved the source healthy and cleared its memory, so the last
+        // attempt reverted to the base timeout.
+        assertThat(timeouts).containsExactly(
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+        )
     }
 
     // endregion
