@@ -216,6 +216,7 @@ internal sealed class Endpoint(
                 true
             PostDiagnostics,
             PostEvents,
+            is GetRemoteConfigFallback,
             ->
                 false
         }
