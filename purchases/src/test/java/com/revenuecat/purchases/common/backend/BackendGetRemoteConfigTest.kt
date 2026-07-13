@@ -6,6 +6,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.GetRemoteConfigErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPClient
@@ -14,6 +15,7 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
@@ -36,6 +38,7 @@ import kotlin.time.Duration.Companion.seconds
 class BackendGetRemoteConfigTest {
 
     private val mockBaseURL = URL("http://mock-api-test.revenuecat.com/")
+    private val mockFallbackURL = URL("http://mock-fallback-test.revenuecat.com/")
 
     private val testDomain = "app"
     private val testAppUserID = "test-app-user-id"
@@ -110,6 +113,50 @@ class BackendGetRemoteConfigTest {
             .isEqualTo(config)
         assertThat(parsed.contentElements).hasSize(1)
         assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
+    }
+
+    @Test
+    fun `getRemoteConfig is enqueued on the remote config dispatcher, not the main backend dispatcher`() {
+        // The whole point of the dedicated dispatcher is that /v1/config overlaps getOfferings instead of
+        // serializing on the shared backend dispatcher. Prove getRemoteConfig routes to the remote-config
+        // dispatcher (delivers synchronously here) and never touches the main backend dispatcher.
+        var mainDispatcherUsed = false
+        val mainDispatcher = object : Dispatcher(mockk()) {
+            override fun enqueue(command: Runnable, delay: Delay) {
+                mainDispatcherUsed = true
+            }
+        }
+        val isolatedBackend = Backend(
+            appConfig,
+            mainDispatcher,
+            SyncDispatcher(),
+            httpClient,
+            BackendHelper("TEST_API_KEY", SyncDispatcher(), appConfig, httpClient),
+            SyncDispatcher(),
+        )
+
+        val config = "{\"hello\":\"world\"}".toByteArray()
+        val element = "blob-bytes".toByteArray()
+        mockHttpResult(
+            payload = HTTPResult.Payload.RCFormat(buildContainer(config = config, elements = listOf(element))),
+            verificationResult = VerificationResult.VERIFIED,
+        )
+
+        var container: RCContainer? = null
+        isolatedBackend.getRemoteConfig(
+            appInBackground = false,
+            appUserID = testAppUserID,
+            domain = testDomain,
+            manifest = testManifest,
+            prefetchedBlobs = testPrefetchedBlobs,
+            onSuccess = { result, _ -> container = result },
+            onError = { error, _ -> fail("Expected success. Got error: $error") },
+        )
+
+        // Delivered synchronously => it ran on the (Sync) remote-config dispatcher.
+        assertThat(container).isNotNull
+        // The main backend dispatcher was never used for the config request.
+        assertThat(mainDispatcherUsed).isFalse
     }
 
     @Test
@@ -382,6 +429,142 @@ class BackendGetRemoteConfigTest {
             )
         }
     }
+
+    // region Fallback endpoint
+
+    @Test
+    fun `getRemoteConfigFallback parses a JSON RemoteConfiguration body`() {
+        every { appConfig.fallbackBaseURLs } returns listOf(mockFallbackURL)
+        mockHttpResult(
+            payload = HTTPResult.Payload.Text(
+                """
+                {
+                  "domain": "app",
+                  "manifest": "v1.fallback.sources:etag",
+                  "active_topics": ["sources"],
+                  "topics": { "sources": { "default": { "blob_ref": "someBlob" } } }
+                }
+                """.trimIndent(),
+            ),
+            verificationResult = VerificationResult.VERIFIED,
+        )
+
+        var config: RemoteConfiguration? = null
+        var verification: VerificationResult? = null
+        backend.getRemoteConfigFallback(
+            appInBackground = false,
+            domain = testDomain,
+            onSuccess = { result, verificationResult ->
+                config = result
+                verification = verificationResult
+            },
+            onError = { error, _ -> fail("Expected success. Got error: $error") },
+        )
+
+        assertThat(config).isNotNull
+        assertThat(config!!.domain).isEqualTo("app")
+        assertThat(config!!.manifest).isEqualTo("v1.fallback.sources:etag")
+        assertThat(config!!.activeTopics).containsExactly("sources")
+        assertThat(config!!.topics["sources"]!!["default"]!!.blobRef).isEqualTo("someBlob")
+        // The verification result is exposed the same way as the main endpoint.
+        assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
+    }
+
+    @Test
+    fun `getRemoteConfigFallback sends a GET with no body to the fallback base URL`() {
+        every { appConfig.fallbackBaseURLs } returns listOf(mockFallbackURL)
+        mockHttpResult(payload = HTTPResult.Payload.Text("""{"domain":"app","manifest":"m"}"""))
+
+        backend.getRemoteConfigFallback(
+            appInBackground = false,
+            domain = testDomain,
+            onSuccess = { _, _ -> },
+            onError = { error, _ -> fail("Expected success. Got error: $error") },
+        )
+
+        verify(exactly = 1) {
+            httpClient.performRequest(
+                mockFallbackURL,
+                Endpoint.GetRemoteConfigFallback(testDomain),
+                // A null body is what makes this a GET.
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `getRemoteConfigFallback errors as retryable when no fallback base URL is configured`() {
+        every { appConfig.fallbackBaseURLs } returns emptyList()
+
+        var obtainedBehavior: GetRemoteConfigErrorHandlingBehavior? = null
+        backend.getRemoteConfigFallback(
+            appInBackground = false,
+            domain = testDomain,
+            onSuccess = { _, _ -> fail("Expected error. Got success") },
+            onError = { _, behavior -> obtainedBehavior = behavior },
+        )
+
+        assertThat(obtainedBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
+        verify(exactly = 0) {
+            httpClient.performRequest(any(), any(), any(), any(), any(), fallbackBaseURLs = any())
+        }
+    }
+
+    @Test
+    fun `getRemoteConfigFallback surfaces malformed JSON as retryable`() {
+        every { appConfig.fallbackBaseURLs } returns listOf(mockFallbackURL)
+        mockHttpResult(payload = HTTPResult.Payload.Text("{ not valid json"))
+
+        var obtainedError: PurchasesError? = null
+        var obtainedBehavior: GetRemoteConfigErrorHandlingBehavior? = null
+        backend.getRemoteConfigFallback(
+            appInBackground = false,
+            domain = testDomain,
+            onSuccess = { _, _ -> fail("Expected error. Got success") },
+            onError = { error, behavior ->
+                obtainedError = error
+                obtainedBehavior = behavior
+            },
+        )
+
+        assertThat(obtainedError).isNotNull
+        assertThat(obtainedBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
+    }
+
+    @Test
+    fun `getRemoteConfigFallback marks a 5xx as retryable and a 4xx as should-disable`() {
+        every { appConfig.fallbackBaseURLs } returns listOf(mockFallbackURL)
+
+        mockHttpResult(
+            responseCode = RCHTTPStatusCodes.ERROR,
+            payload = HTTPResult.Payload.Text("""{"code": 7000, "message": "internal error"}"""),
+        )
+        var serverErrorBehavior: GetRemoteConfigErrorHandlingBehavior? = null
+        backend.getRemoteConfigFallback(
+            appInBackground = false,
+            domain = testDomain,
+            onSuccess = { _, _ -> fail("Expected error. Got success") },
+            onError = { _, behavior -> serverErrorBehavior = behavior },
+        )
+        assertThat(serverErrorBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
+
+        mockHttpResult(
+            responseCode = RCHTTPStatusCodes.BAD_REQUEST,
+            payload = HTTPResult.Payload.Text("""{"code": 7000, "message": "bad request"}"""),
+        )
+        var clientErrorBehavior: GetRemoteConfigErrorHandlingBehavior? = null
+        backend.getRemoteConfigFallback(
+            appInBackground = false,
+            domain = testDomain,
+            onSuccess = { _, _ -> fail("Expected error. Got success") },
+            onError = { _, behavior -> clientErrorBehavior = behavior },
+        )
+        assertThat(clientErrorBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE)
+    }
+
+    // endregion Fallback endpoint
 
     private fun mockNoContentRequest(bodySlot: MutableList<Map<String, Any?>?>) {
         every {

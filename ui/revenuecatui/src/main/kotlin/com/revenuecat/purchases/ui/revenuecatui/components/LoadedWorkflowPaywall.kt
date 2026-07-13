@@ -5,7 +5,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
@@ -85,10 +84,10 @@ internal fun LoadedWorkflowPaywall(
     }
 
     // When the header is LEAVING (fading out over an incoming step that has no header), routing it
-    // through HeaderOverlayLayout would write its measured height into currentState.headerHeightPx.
+    // through OverlayLayout would write its measured height into currentState.headerHeightPx.
     // The incoming step would then use that height as its hero ZLayer top inset instead of the
     // status-bar fallback. To avoid this, LEAVING headers are rendered as a Box overlay inside the
-    // mainContent lambda — outside HeaderOverlayLayout — so currentState.headerHeightPx stays 0.
+    // mainContent lambda — outside OverlayLayout — so currentState.headerHeightPx stays 0.
     val isLeavingHeader = headerPresentation.role == WorkflowHeaderTransitionRole.LEAVING
     val headerComposable: (@Composable () -> Unit)? = headerState.header?.let { headerStyle ->
         {
@@ -200,7 +199,7 @@ private fun WorkflowStepsContent(
 
 /**
  * Renders one workflow step's body and footer as a self-contained sliding surface.
- * The header is rendered outside this surface (either via the scaffold's HeaderOverlayLayout or,
+ * The header is rendered outside this surface (either via the scaffold's OverlayLayout or,
  * when LEAVING, as a Box overlay in the main content — see [LoadedWorkflowPaywall]).
  * Off-screen (parked) steps still receive a click handler, but it short-circuits because they are
  * translated off-screen and can't receive touches.
@@ -238,20 +237,29 @@ private fun WorkflowStepContent(
             background = background,
             modifier = Modifier.fillMaxSize(),
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
+            // The header for a workflow step is rendered by the scaffold, so hasHeader is false here.
+            // A sticky footer, when present, overlays the bottom on top of the full-height content and
+            // reserves clearance via footerBottomPadding (see PaywallComponentsScaffold).
+            OverlayLayout(
+                state = stepState,
+                modifier = Modifier.fillMaxSize(),
+                hasFooter = stepState.stickyFooter != null,
+            ) {
                 ComponentView(
                     style = stepState.stack,
                     state = stepState,
                     onClick = onClick,
                     componentInteractionTracker = tracker,
                     modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
+                        .fillMaxSize()
                         .conditional(shouldWrapMainContentInVerticalScroll) {
                             verticalScroll(mainScrollState)
                         }
                         .conditional(stepState.header != null && !stepState.mainStackHasHeroImage) {
                             headerTopPadding(stepState)
+                        }
+                        .conditional(stepState.stickyFooter != null) {
+                            footerBottomPadding(stepState)
                         },
                 )
                 stepState.stickyFooter?.let { footerStyle ->

@@ -74,6 +74,9 @@ class RemoteConfigManagerTest {
     private lateinit var onSuccess: (RCContainer?, VerificationResult) -> Unit
     private lateinit var onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit
 
+    private lateinit var onFallbackSuccess: (RemoteConfiguration, VerificationResult) -> Unit
+    private lateinit var onFallbackError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit
+
     @Before
     fun setup() {
         backend = mockk()
@@ -105,6 +108,13 @@ class RemoteConfigManagerTest {
             capturedPrefetchedBlobs = arg(4)
             onSuccess = arg(5)
             onError = arg(6)
+        }
+
+        every {
+            backend.getRemoteConfigFallback(any(), any(), any(), any())
+        } answers {
+            onFallbackSuccess = arg(2)
+            onFallbackError = arg(3)
         }
     }
 
@@ -173,7 +183,9 @@ class RemoteConfigManagerTest {
 
     @Test
     fun `a failed refresh does not stamp the refresh time, so the next staleness check retries`() {
-        every { diskCache.read() } returns null
+        // A warm cache: a retryable error settles the refresh directly (no cold-start fallback), so this
+        // exercises the "failure doesn't stamp the time" bookkeeping in isolation.
+        every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         onError.invoke(
@@ -438,6 +450,34 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `prefetch preserves the server prefetch_blobs order, then item prefetch refs, deduped`() {
+        every { diskCache.read() } returns null
+        // prefetch_blobs deliberately not sorted: the SDK must warm them in the exact order the server sent.
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.workflows:etag2",
+              "active_topics": ["workflows"],
+              "prefetch_blobs": ["$REF_TAMPERED", "$REF_VALID", "$REF_UNWANTED"],
+              "topics": {
+                "workflows": {
+                  "wf1": { "blob_ref": "$REF_VALID", "prefetch": true },
+                  "wf2": { "blob_ref": "$REF_EXTRA", "prefetch": true }
+                }
+              }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        val prefetched = slot<List<String>>()
+        verify(exactly = 1) { blobFetcher.prefetch(capture(prefetched)) }
+        // Server order first (as-is), then the only new item ref; REF_VALID is deduped to its first position.
+        assertThat(prefetched.captured).containsExactly(REF_TAMPERED, REF_VALID, REF_UNWANTED, REF_EXTRA)
+    }
+
+    @Test
     fun `a 200 response does not prefetch blobs already cached`() {
         every { diskCache.read() } returns null
         every { blobStore.contains(REF_VALID) } returns true
@@ -684,7 +724,8 @@ class RemoteConfigManagerTest {
 
     @Test
     fun `a retryable error does not disable the endpoint`() {
-        every { diskCache.read() } returns null
+        // Warm cache: a retryable error settles directly (no cold-start fallback), so a subsequent refresh fires.
+        every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         onError.invoke(
@@ -698,6 +739,142 @@ class RemoteConfigManagerTest {
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
     }
+
+    // region Fallback endpoint
+
+    @Test
+    fun `a cold-start retryable error fetches from the fallback endpoint and commits its config`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownBackendError, "server error"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+
+        // No cached config: the retryable main error routes to the fallback endpoint for the same domain.
+        verify(exactly = 1) { backend.getRemoteConfigFallback(any(), "app", any(), any()) }
+
+        // The fallback returns a plain-JSON RemoteConfiguration, which the manager persists as the commit.
+        onFallbackSuccess.invoke(
+            remoteConfiguration(
+                """
+                {
+                  "domain": "app",
+                  "manifest": "v1.fallback.sources:etag",
+                  "active_topics": ["sources"],
+                  "prefetch_blobs": ["newBlob"],
+                  "topics": { "sources": { "default": { "blob_ref": "newBlob" } } }
+                }
+                """.trimIndent(),
+            ),
+            VerificationResult.VERIFIED,
+        )
+
+        val written = slot<PersistedRemoteConfigurationState>()
+        verify(exactly = 1) { diskCache.write(capture(written)) }
+        assertThat(written.captured.manifest).isEqualTo("v1.fallback.sources:etag")
+        assertThat(written.captured.activeTopics).containsExactly("sources")
+        assertThat(written.captured.topics["sources"]!!["default"]!!.blobRef).isEqualTo("newBlob")
+    }
+
+    @Test
+    fun `a fallback commit prefetches wanted blobs over the network with no inline extraction`() {
+        every { diskCache.read() } returns null
+        every { blobStore.contains(any()) } returns false
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownBackendError, "server error"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        onFallbackSuccess.invoke(
+            remoteConfiguration(
+                """
+                {
+                  "domain": "app",
+                  "manifest": "v1.fallback.sources:etag",
+                  "active_topics": ["sources"],
+                  "prefetch_blobs": ["newBlob"],
+                  "topics": { "sources": { "default": { "blob_ref": "newBlob" } } }
+                }
+                """.trimIndent(),
+            ),
+            VerificationResult.VERIFIED,
+        )
+
+        // The fallback body carries no inlined elements, so no inline blob is written; the wanted blob is
+        // instead fetched over the network.
+        verify(exactly = 0) { blobStore.write(any(), any()) }
+        verify(exactly = 1) { blobFetcher.prefetch(match { it.contains("newBlob") }) }
+    }
+
+    @Test
+    fun `the fallback is not attempted when a retryable error occurs with cached data`() {
+        every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownBackendError, "server error"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+
+        // Cached data wins: no fallback request, and the cache is left untouched.
+        verify(exactly = 0) { backend.getRemoteConfigFallback(any(), any(), any(), any()) }
+        verify(exactly = 0) { diskCache.write(any()) }
+    }
+
+    @Test
+    fun `a 4xx does not attempt the fallback`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+        )
+
+        verify(exactly = 0) { backend.getRemoteConfigFallback(any(), any(), any(), any()) }
+        assertThat(manager.isDisabled).isTrue()
+    }
+
+    @Test
+    fun `a failing fallback releases the guard so a later refresh retries`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownBackendError, "server error"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        onFallbackError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownBackendError, "still down"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+
+        // The fallback settled the sync, so a later refresh is allowed to fire again.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a 4xx from the fallback disables the endpoint`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownBackendError, "server error"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        onFallbackError.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+        )
+
+        assertThat(manager.isDisabled).isTrue()
+    }
+
+    // endregion Fallback endpoint
 
     @Test
     fun `clearCache does not re-enable an endpoint disabled by a 4xx`() {
@@ -741,7 +918,8 @@ class RemoteConfigManagerTest {
 
     @Test
     fun `a new refresh is allowed after an error settles the in-flight one`() {
-        every { diskCache.read() } returns null
+        // Warm cache: the error settles the in-flight refresh directly (no cold-start fallback continuation).
+        every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
         onError.invoke(
@@ -1595,7 +1773,14 @@ class RemoteConfigManagerTest {
         }
         assertThat(read.isActive).isTrue()
 
+        // Cold start (empty cache): the retryable main error continues into the fallback, so the read stays
+        // parked until the fallback also settles. A failing fallback then releases the guard and unblocks it.
         onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownError, "boom"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        assertThat(read.isActive).isTrue()
+        onFallbackError.invoke(
             PurchasesError(PurchasesErrorCode.UnknownError, "boom"),
             GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
         )
@@ -1713,6 +1898,10 @@ class RemoteConfigManagerTest {
         return element
     }
 
+    /** Parses a plain-JSON [RemoteConfiguration] the way the fallback endpoint delivers it (no RC container). */
+    private fun remoteConfiguration(json: String): RemoteConfiguration =
+        RemoteConfiguration.parse(json.toByteArray())
+
     private fun containerWithConfig(json: String, elements: Map<String, RCElement> = emptyMap()): RCContainer {
         val element = mockk<RCElement>()
         every { element.decode() } returns ByteBuffer.wrap(json.toByteArray())
@@ -1761,5 +1950,6 @@ class RemoteConfigManagerTest {
         private const val REF_VALID = "AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHH"
         private const val REF_TAMPERED = "IIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPP"
         private const val REF_UNWANTED = "QQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXX"
+        private const val REF_EXTRA = "11112222333344445555666677778888"
     }
 }
