@@ -315,6 +315,7 @@ class EndpointTest {
         val nonApiEndpoints = listOf(
             Endpoint.PostDiagnostics,
             Endpoint.PostEvents,
+            Endpoint.GetRemoteConfigFallback("app"),
         )
         for (endpoint in nonApiEndpoints) {
             assertThat(endpoint.usesAPISources)
