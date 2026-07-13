@@ -33,7 +33,7 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Duration.Companion.minutes
 
 /**
  * Orchestrates a single `/v1/config` sync: replays the persisted opaque manifest, then on `204` keeps the cache
@@ -803,7 +803,7 @@ internal class RemoteConfigManager(
 
     private companion object {
         private const val DEFAULT_DOMAIN = "app"
-        private val REFRESH_ATTEMPT_COOLDOWN = 30.seconds
+        private val REFRESH_ATTEMPT_COOLDOWN = 1.minutes
     }
 }
 

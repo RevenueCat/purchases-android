@@ -2048,7 +2048,7 @@ class RemoteConfigManagerTest {
 
         // Older than the 5-minute foreground staleness window (see Date?.isCacheStale).
         private const val STALE_FOREGROUND_AGE_MILLIS = 6 * 60 * 1000L
-        private const val REFRESH_ATTEMPT_COOLDOWN_MILLIS = 30_000L
+        private const val REFRESH_ATTEMPT_COOLDOWN_MILLIS = 60_000L
         private const val WAIT_SECONDS = 5L
         private const val BLOCKED_MILLIS = 200L
         private const val STRESS_ITERATIONS = 50
