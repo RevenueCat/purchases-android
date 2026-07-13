@@ -146,6 +146,7 @@ internal class Backend(
     private val eventsDispatcher: Dispatcher,
     private val httpClient: HTTPClient,
     private val backendHelper: BackendHelper,
+    private val remoteConfigDispatcher: Dispatcher = dispatcher,
 ) {
     companion object {
         private const val APP_USER_ID = "app_user_id"
@@ -222,6 +223,7 @@ internal class Backend(
 
     fun close() {
         this.dispatcher.close()
+        this.remoteConfigDispatcher.close()
     }
 
     fun getCustomerInfo(
@@ -1250,7 +1252,7 @@ internal class Backend(
             val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
             remoteConfigCallbacks.addBackgroundAwareCallback(
                 call,
-                dispatcher,
+                remoteConfigDispatcher,
                 cacheKey,
                 onSuccess to onError,
                 delay,
@@ -1336,7 +1338,7 @@ internal class Backend(
             val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
             remoteConfigFallbackCallbacks.addBackgroundAwareCallback(
                 call,
-                dispatcher,
+                remoteConfigDispatcher,
                 cacheKey,
                 onSuccess to onError,
                 delay,
