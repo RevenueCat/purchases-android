@@ -4,11 +4,13 @@ import android.content.Context
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.remoteconfig.DefaultRemoteConfigSourceProvider
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobFetcher
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDiskCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopicStore
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import io.mockk.coEvery
@@ -167,10 +169,14 @@ internal class ProductionRemoteConfigFallbackIntegrationTest : BaseBackendIntegr
         remoteConfigBlobStore = RemoteConfigBlobStore(context)
         val blobFetcher = mockk<RemoteConfigBlobFetcher>(relaxed = true)
         coEvery { blobFetcher.ensureDownloaded(any<String>()) } answers { remoteConfigBlobStore.contains(firstArg()) }
+        val diskCache = RemoteConfigDiskCache(context)
+        val topicStore = RemoteConfigTopicStore { diskCache.read()?.topics?.get(it.wireName) }
         return RemoteConfigManager(
             backend = backend,
-            diskCache = RemoteConfigDiskCache(context),
+            diskCache = diskCache,
             blobStore = remoteConfigBlobStore,
+            topicStore = topicStore,
+            sourceProvider = DefaultRemoteConfigSourceProvider(topicStore),
             blobFetcher = blobFetcher,
             appUserIDProvider = { REMOTE_CONFIG_USER },
         )
