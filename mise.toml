@@ -8,7 +8,7 @@ java = ["liberica-21.0.6", "liberica-17.0.6"]
 # Gradle/Android Studio don't auto-detect mise JDKs (https://github.com/gradle/gradle/issues/29355), so expose them through
 # mise's asdf-compatible layout (https://mise.jdx.dev/lang/java.html). Runs after `mise install`.
 [hooks]
-postinstall = "mise run link-jdks"
+postinstall = { task = "link-jdks" } 
 
 [tasks.link-jdks]
 description = "Expose mise JDKs to Gradle/IDE toolchain auto-detection (asdf layout)"

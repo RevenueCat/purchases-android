@@ -59,16 +59,10 @@ parameters:
     default: alpha
 
 commands:
-  install-sdkman:
-    description: Install SDKMAN and set up Java environment
+  install-mise-tools:
+    description: Install mise tools from mise.toml (Java, etc.)
     steps:
-      - revenuecat/install-sdkman
-      - run:
-          name: Setup Java environment
-          command: |
-            if ! sdk env install; then
-              echo "Error installing Java SDK through SDKMAN, continuing with default Java" >&2
-            fi
+      - revenuecat/install-mise-tools
 
   android-dependencies:
     steps:
@@ -175,7 +169,7 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/accept_licenses
@@ -191,7 +185,7 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/accept_licenses
@@ -207,7 +201,7 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/accept_licenses
@@ -227,7 +221,7 @@ jobs:
       - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
-      - install-sdkman
+      - install-mise-tools
       - android/accept_licenses
       - android/restore_gradle_cache
       - run:
@@ -261,6 +255,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - install-mise-tools
       - android/restore_gradle_cache
       - run:
           name: Run << parameters.flavor >> << parameters.build_type >> Tests
@@ -297,6 +292,7 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - install-mise-tools
       - android/restore_gradle_cache
       - run:
           name: Run dokka-hide-internal Tests
@@ -312,6 +308,7 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - install-mise-tools
       - android/restore_gradle_cache
       - run:
           name: Run detekt-rules Tests
@@ -328,6 +325,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
+      - install-mise-tools
       - android/restore_gradle_cache
       - run:
           name: Run Rules Engine Internal Unit Tests
@@ -349,7 +347,7 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
-      - install-sdkman
+      - install-mise-tools
       - android/restore_gradle_cache
       - run:
           name: Detekt
@@ -361,7 +359,7 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
-      - install-sdkman
+      - install-mise-tools
       - android/restore_gradle_cache
       - run:
           name: Validate binary compatibility
@@ -372,7 +370,7 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-sdkman
+      - install-mise-tools
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
@@ -400,7 +398,7 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/setup-git-credentials
       - revenuecat/trust-github-key
       - revenuecat/install-gem-unix-dependencies:
@@ -419,7 +417,7 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - revenuecat/setup-git-credentials
@@ -432,7 +430,7 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_gradle_cache:
@@ -479,7 +477,7 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/accept_licenses
@@ -506,7 +504,7 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - build-paywall-tester
@@ -518,7 +516,7 @@ jobs:
         type: string
     steps:
       - checkout
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - build-paywall-tester
@@ -531,7 +529,7 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - build-rct-tester
@@ -543,7 +541,7 @@ jobs:
         type: string
     steps:
       - checkout
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - build-rct-tester
@@ -566,7 +564,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/create_avd:
@@ -592,7 +590,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/create_avd:
@@ -620,13 +618,13 @@ jobs:
       - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_build_cache
       - attach_workspace:
           at: .
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_gradle_cache
@@ -643,7 +641,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - prepare-signing-key
@@ -661,7 +659,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - install-sdkman
+      - install-mise-tools
       - run:
           name: Prepare Keystore
           working_directory: integration-tests
@@ -698,7 +696,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_gradle_cache
@@ -728,7 +726,7 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - revenuecat/setup-git-credentials
@@ -753,7 +751,7 @@ jobs:
           path: upstream/paywall-preview-resources
       - attach_workspace:
           at: .
-      - install-sdkman
+      - install-mise-tools
       # Required by Emerge CLI
       - install-ruby:
           version: 3.2.0
@@ -812,7 +810,7 @@ jobs:
       - run:
           name: Clone paywall-rendering-validation repository
           command: git clone git@github.com:RevenueCat/paywall-rendering-validation.git ../paywall-rendering-validation
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_build_cache
@@ -833,7 +831,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - install-sdkman
+      - install-mise-tools
       - android/create_avd:
           avd_name: test-revenuecat-ui
           system_image: system-images;android-32;google_apis;x86_64
@@ -865,7 +863,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - install-sdkman
+      - install-mise-tools
       - run:
           name: Replace API_KEY (Using Test store API key from Production Integration Tests Android project)
           working_directory: test-apps/e2etests/src/main/java/com/revenuecat/e2etests/
@@ -898,7 +896,7 @@ jobs:
     <<: *android-machine-emulator
     steps:
       - checkout
-      - install-sdkman
+      - install-mise-tools
       - revenuecat/setup-git-credentials
       - revenuecat/trust-github-key
       - revenuecat/install-gem-unix-dependencies:
@@ -937,6 +935,7 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - install-mise-tools
       - android/restore_gradle_cache
       - run:
           name: Run Android Lint
@@ -950,6 +949,7 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - install-mise-tools
       - android/restore_gradle_cache
       - run:
           name: Verify purchases-android target SDK (33)
@@ -1243,7 +1243,7 @@ workflows:
                 command: |
                   echo 'export JVM_OPTS=-Xmx6g' >> "$BASH_ENV"
                   echo 'export GRADLE_OPTS=-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2' >> "$BASH_ENV"
-            - install-sdkman
+            - install-mise-tools
             - revenuecat/install-gem-unix-dependencies:
                 cache-version: v1
             - android/restore_gradle_cache
