@@ -25,6 +25,7 @@ import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -35,6 +36,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
+import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessageHandler
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.FontSpec
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.determineFontSpecs
@@ -366,6 +368,7 @@ internal fun Offering.toComponentsPaywallState(
     purchases: PurchasesType,
     customVariables: Map<String, CustomVariableValue> = emptyMap(),
     defaultCustomVariables: Map<String, CustomVariableValue> = emptyMap(),
+    webViewMessageHandler: PaywallWebViewMessageHandler? = null,
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
         !validationResult.zeroDecimalPlaceCountries.contains(it)
@@ -386,6 +389,7 @@ internal fun Offering.toComponentsPaywallState(
         packages = validationResult.packages,
         customVariables = customVariables,
         defaultCustomVariables = defaultCustomVariables,
+        initialWebViewMessageHandler = webViewMessageHandler,
         initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
         mainStackHasHeroImage = validationResult.mainStackHasHeroImage,
         purchases = purchases,
@@ -516,6 +520,7 @@ internal fun PaywallComponent.containsUnsupportedCondition(): Boolean = when (th
     is TabControlToggleComponent -> false
     is TabControlComponent -> false
     is FallbackHeaderComponent -> false
+    is WebViewComponent -> false
 }
 
 @JvmSynthetic

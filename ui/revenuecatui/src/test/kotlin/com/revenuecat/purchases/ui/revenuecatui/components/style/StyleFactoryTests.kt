@@ -22,6 +22,7 @@ import com.revenuecat.purchases.paywalls.components.TabControlComponent
 import com.revenuecat.purchases.paywalls.components.TabControlToggleComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -116,6 +117,41 @@ class StyleFactoryTests {
             .isEqualTo(localizations.getValue(localeId)[LOCALIZATION_KEY_TEXT_1]!!.value)
         val colorStyle = style.color.light as ColorStyle.Solid
         assertThat(colorStyle.color).isEqualTo(expectedColor)
+    }
+
+    @Test
+    fun `Should create a WebViewComponentStyle for a WebViewComponent`() {
+        val size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit)
+        val component = WebViewComponent(
+            url = "https://paywalls.revenuecat.com/{{ custom.animal }}.html",
+            id = "promo_web_view",
+            visible = false,
+            size = size,
+        )
+
+        val result = styleFactory.create(component)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as WebViewComponentStyle
+        assertThat(style.url).isEqualTo("https://paywalls.revenuecat.com/{{ custom.animal }}.html")
+        assertThat(style.visible).isFalse()
+        assertThat(style.size).isEqualTo(size)
+        assertThat(style.componentId).isEqualTo("promo_web_view")
+        assertThat(style.protocolVersion).isNull()
+    }
+
+    @Test
+    fun `Should pass protocolVersion through to the WebViewComponentStyle`() {
+        val component = WebViewComponent(
+            url = "https://paywalls.revenuecat.com/index.html",
+            protocolVersion = 1,
+        )
+
+        val result = styleFactory.create(component)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as WebViewComponentStyle
+        assertThat(style.protocolVersion).isEqualTo(1)
     }
 
     @Test
