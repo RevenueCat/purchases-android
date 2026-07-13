@@ -502,6 +502,7 @@ abstract class BaseIntegrationPurchasesTest : BasePurchasesIntegrationTest() {
             every { isAppBackgrounded } returns false
             every { runningTests } returns true
             every { fallbackBaseURLs } returns emptyList()
+            every { hasProxyURL } returns false
         }
         return HTTPClient(
             appConfig = appConfig,
