@@ -117,11 +117,10 @@ internal class HTTPTimeoutManager(
      */
     private fun hasRecentTimeout(host: String): Boolean {
         val lastTimeout = lastTimeoutByHost[host] ?: return false
-        val elapsed = dateProvider.now.time - lastTimeout
-        if (elapsed >= TIMEOUT_RESET_INTERVAL_MS) {
+        val expired = dateProvider.now.time - lastTimeout >= TIMEOUT_RESET_INTERVAL_MS
+        if (expired) {
             lastTimeoutByHost.remove(host)
-            return false
         }
-        return true
+        return !expired
     }
 }

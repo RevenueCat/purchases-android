@@ -23,10 +23,9 @@ class EndpointTest {
         Endpoint.PostRedeemWebPurchase,
         Endpoint.GetVirtualCurrencies("test-user-id"),
         Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
-        Endpoint.GetWorkflow("test-user-id", "wf_test"),
-        Endpoint.GetWorkflows("test-user-id"),
         Endpoint.AliasUsers("test-user-id"),
         Endpoint.GetRemoteConfig("app"),
+        Endpoint.GetRemoteConfigFallback("app"),
     )
 
     @Test
@@ -48,48 +47,6 @@ class EndpointTest {
         val endpoint = Endpoint.GetOfferings("test user-id")
         val expectedPath = "/v1/subscribers/test%20user-id/offerings"
         assertThat(endpoint.getPath()).isEqualTo(expectedPath)
-    }
-
-    @Test
-    fun `GetWorkflow has correct path`() {
-        val endpoint = Endpoint.GetWorkflow("test user-id", "wf abc")
-        val expectedPath = "/v1/subscribers/test%20user-id/workflows/wf%20abc"
-        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
-    }
-
-    @Test
-    fun `GetWorkflows has correct path`() {
-        val endpoint = Endpoint.GetWorkflows("test user-id")
-        val expectedPath = "/v1/subscribers/test%20user-id/workflows"
-        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
-    }
-
-    @Test
-    fun `GetWorkflows with type has correct path`() {
-        val endpoint = Endpoint.GetWorkflows("test user-id", type = "paywall")
-        val expectedPath = "/v1/subscribers/test%20user-id/workflows?type=paywall"
-        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
-    }
-
-    @Test
-    fun `GetWorkflow fallback path is correct`() {
-        val endpoint = Endpoint.GetWorkflow("test user-id", "wf abc")
-        val expectedPath = "/workflows/v1/workflows/wf%20abc"
-        assertThat(endpoint.getPath(useFallback = true)).isEqualTo(expectedPath)
-    }
-
-    @Test
-    fun `GetWorkflows fallback path is correct`() {
-        val endpoint = Endpoint.GetWorkflows("test user-id", type = "paywall")
-        val expectedPath = "/workflows/v1/workflows?type=paywall"
-        assertThat(endpoint.getPath(useFallback = true)).isEqualTo(expectedPath)
-    }
-
-    @Test
-    fun `GetWorkflows fallback path without type is correct`() {
-        val endpoint = Endpoint.GetWorkflows("test user-id")
-        val expectedPath = "/workflows/v1/workflows"
-        assertThat(endpoint.getPath(useFallback = true)).isEqualTo(expectedPath)
     }
 
     @Test
@@ -204,23 +161,34 @@ class EndpointTest {
     }
 
     @Test
-    fun `GetRemoteConfig supports fallback base URLs`() {
+    fun `GetRemoteConfig does not support fallback base URLs`() {
         val endpoint = Endpoint.GetRemoteConfig("app")
-        assertThat(endpoint.supportsFallbackBaseURLs).isTrue
+        assertThat(endpoint.supportsFallbackBaseURLs).isFalse
     }
 
     @Test
-    fun `GetRemoteConfig fallback path is correct`() {
+    fun `GetRemoteConfig expects an RC Container Format response`() {
         val endpoint = Endpoint.GetRemoteConfig("app")
-        val expectedPath = "/v1/config/app"
-        assertThat(endpoint.getPath(useFallback = true)).isEqualTo(expectedPath)
+        assertThat(endpoint.expectsRCFormatResponse).isTrue
     }
 
     @Test
-    fun `GetRemoteConfig encodes the domain in the fallback path`() {
-        val endpoint = Endpoint.GetRemoteConfig("my domain")
+    fun `GetRemoteConfigFallback encodes the domain in the path`() {
+        val endpoint = Endpoint.GetRemoteConfigFallback("my domain")
         val expectedPath = "/v1/config/my%20domain"
-        assertThat(endpoint.getPath(useFallback = true)).isEqualTo(expectedPath)
+        assertThat(endpoint.getPath()).isEqualTo(expectedPath)
+    }
+
+    @Test
+    fun `GetRemoteConfigFallback does not support fallback base URLs`() {
+        val endpoint = Endpoint.GetRemoteConfigFallback("app")
+        assertThat(endpoint.supportsFallbackBaseURLs).isFalse
+    }
+
+    @Test
+    fun `GetRemoteConfigFallback does not expect an RC Container Format response`() {
+        val endpoint = Endpoint.GetRemoteConfigFallback("app")
+        assertThat(endpoint.expectsRCFormatResponse).isFalse
     }
 
     @Test
@@ -236,13 +204,12 @@ class EndpointTest {
             Endpoint.LogIn,
             Endpoint.PostReceipt,
             Endpoint.GetOfferings("test-user-id"),
-            Endpoint.GetWorkflow("test-user-id", "wf_1"),
-            Endpoint.GetWorkflows("test-user-id"),
             Endpoint.GetProductEntitlementMapping,
             Endpoint.PostRedeemWebPurchase,
             Endpoint.GetVirtualCurrencies(userId = "test-user-id"),
             Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
             Endpoint.GetRemoteConfig("app"),
+            Endpoint.GetRemoteConfigFallback("app"),
         )
         for (endpoint in expectedSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)
@@ -301,7 +268,6 @@ class EndpointTest {
     fun `needsNonceToPerformSigning is false for expected values`() {
         val expectedEndpoints = listOf(
             Endpoint.GetOfferings("test-user-id"),
-            Endpoint.GetWorkflow("test-user-id", "wf_1"),
             Endpoint.GetProductEntitlementMapping,
             Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
             Endpoint.PostAttributes("test-user-id"),
@@ -309,7 +275,7 @@ class EndpointTest {
             Endpoint.PostEvents,
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
             Endpoint.AliasUsers("test-user-id"),
-            Endpoint.GetWorkflows("test-user-id"),
+            Endpoint.GetRemoteConfigFallback("app"),
         )
         for (endpoint in expectedEndpoints) {
             assertThat(endpoint.needsNonceToPerformSigning)
@@ -325,8 +291,6 @@ class EndpointTest {
             Endpoint.LogIn,
             Endpoint.PostReceipt,
             Endpoint.GetOfferings("test-user-id"),
-            Endpoint.GetWorkflow("test-user-id", "wf_1"),
-            Endpoint.GetWorkflows("test-user-id"),
             Endpoint.AliasUsers("test-user-id"),
             Endpoint.PostAttributes("test-user-id"),
             Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
@@ -351,6 +315,7 @@ class EndpointTest {
         val nonApiEndpoints = listOf(
             Endpoint.PostDiagnostics,
             Endpoint.PostEvents,
+            Endpoint.GetRemoteConfigFallback("app"),
         )
         for (endpoint in nonApiEndpoints) {
             assertThat(endpoint.usesAPISources)

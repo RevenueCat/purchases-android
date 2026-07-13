@@ -1,4 +1,5 @@
 plugins {
+    base
     alias(libs.plugins.mavenPublish) apply false
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
@@ -27,8 +28,20 @@ dependencies {
     detektPlugins(project(":detekt-rules"))
 }
 
-tasks.register<Delete>("clean") {
-    delete(rootProject.layout.buildDirectory)
+// Aggregate docs from every module that applies the Dokka plugin (currently done by revenuecat-public-library),
+// so new library modules are documented without having to remember to list them here.
+val dokkaPluginId = libs.plugins.dokka.get().pluginId
+subprojects {
+    plugins.withId(dokkaPluginId) {
+        rootProject.dependencies.add("dokka", project)
+    }
+}
+
+dokka {
+    dokkaPublications.html {
+        outputDirectory.set(file("docs/${project.property("VERSION_NAME")}"))
+        includes.from("README.md")
+    }
 }
 
 tasks.register<io.gitlab.arturbosch.detekt.Detekt>("detektAll") {
@@ -69,9 +82,4 @@ tasks.register<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>("detektAllB
         "**/testDefaults/**/*.kt",
         "**/testCustomEntitlementComputation/**/*.kt",
     )
-}
-
-tasks.named<org.jetbrains.dokka.gradle.DokkaMultiModuleTask>("dokkaHtmlMultiModule") {
-    outputDirectory.set(file("docs/${project.property("VERSION_NAME")}"))
-    includes.from("README.md")
 }

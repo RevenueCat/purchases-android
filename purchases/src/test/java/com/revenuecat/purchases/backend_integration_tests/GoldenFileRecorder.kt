@@ -108,6 +108,7 @@ class GoldenFileRecorder(
             "Via",
             "X-Signature",
             "X-Revenuecat-Etag",
+            "X-RC-Last-Refresh-Time",
             "Last-Modified",
             "CF-Ray",
             "x-envoy-upstream-service-time",

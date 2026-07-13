@@ -135,31 +135,21 @@ dependencies {
     baselineProfile(project(":baselineprofile"))
 }
 
-tasks.dokkaHtmlPartial.configure {
+dokka {
     dokkaSourceSets {
         named("defaults") {
-            dependsOn("main")
+            dependentSourceSets.addLater(dokkaSourceSets.named("main").flatMap { it.sourceSetId })
         }
         named("main") {
             reportUndocumented.set(true)
-            includeNonPublic.set(false)
             skipDeprecated.set(true)
 
-            externalDocumentationLink {
-                url.set(
-                    uri("https://developer.android.com/reference/package-list").toURL(),
-                )
+            externalDocumentationLinks.register("android") {
+                url("https://developer.android.com/reference/")
             }
             sourceLink {
-                localDirectory.set(
-                    file("src/main/kotlin"),
-                )
-                remoteUrl.set(
-                    uri(
-                        "https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin",
-                    ).toURL(),
-                )
-                remoteLineSuffix.set("#L")
+                localDirectory.set(file("src/main/kotlin"))
+                remoteUrl("https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin")
             }
         }
     }

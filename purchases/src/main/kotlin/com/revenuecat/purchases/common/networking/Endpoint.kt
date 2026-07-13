@@ -35,33 +35,6 @@ internal sealed class Endpoint(
         }
     }
 
-    data class GetWorkflow(val userId: String, val workflowId: String) : Endpoint(
-        "/v1/subscribers/%s/workflows/%s",
-        "get_workflow",
-        fallbackPath = "/workflows/v1/workflows/%s",
-    ) {
-        override fun getPath(useFallback: Boolean): String {
-            return if (useFallback && fallbackPath != null) {
-                fallbackPath.format(Uri.encode(workflowId))
-            } else {
-                pathTemplate.format(Uri.encode(userId), Uri.encode(workflowId))
-            }
-        }
-    }
-    data class GetWorkflows(val userId: String, val type: String? = null) : Endpoint(
-        "/v1/subscribers/%s/workflows",
-        "get_workflows",
-        fallbackPath = "/workflows/v1/workflows",
-    ) {
-        override fun getPath(useFallback: Boolean): String {
-            val base = if (useFallback && fallbackPath != null) {
-                fallbackPath
-            } else {
-                pathTemplate.format(Uri.encode(userId))
-            }
-            return if (type != null) "$base?type=${Uri.encode(type)}" else base
-        }
-    }
     object LogIn : Endpoint("/v1/subscribers/identify", "log_in") {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
@@ -108,13 +81,22 @@ internal sealed class Endpoint(
     data class GetRemoteConfig(val domain: String) : Endpoint(
         pathTemplate = "/v1/config/%s",
         name = "remote_config",
-        fallbackPath = "/v1/config/%s",
     ) {
-        override fun getPath(useFallback: Boolean): String {
-            val template = if (useFallback && fallbackPath != null) fallbackPath else pathTemplate
-            return template.format(Uri.encode(domain))
-        }
+        override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(domain))
         override val expectsRCFormatResponse: Boolean = true
+    }
+
+    /**
+     * Fallback for [GetRemoteConfig] served from a fallback base URL. Unlike the main endpoint, it is a plain
+     * `GET` returning `application/json` (no `x-rc-format`, no inlined blobs, no request body), and its response
+     * is signature-verified **without** a nonce (mirroring [GetOfferings]). The domain layer chooses this
+     * endpoint explicitly; it does not participate in the generic HTTPClient URL-fallback mechanism.
+     */
+    data class GetRemoteConfigFallback(val domain: String) : Endpoint(
+        pathTemplate = "/v1/config/%s",
+        name = "remote_config_fallback",
+    ) {
+        override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(domain))
     }
     object PostCreateSupportTicket : Endpoint(
         "/v1/customercenter/support/create-ticket",
@@ -159,13 +141,12 @@ internal sealed class Endpoint(
             LogIn,
             PostReceipt,
             is GetOfferings,
-            is GetWorkflow,
-            is GetWorkflows,
             GetProductEntitlementMapping,
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
             is GetRewardVerification,
             is GetRemoteConfig,
+            is GetRemoteConfigFallback,
             ->
                 true
             is GetAmazonReceipt,
@@ -193,8 +174,6 @@ internal sealed class Endpoint(
                 true
             is GetAmazonReceipt,
             is GetOfferings,
-            is GetWorkflow,
-            is GetWorkflows,
             is PostAttributes,
             PostDiagnostics,
             PostEvents,
@@ -203,6 +182,7 @@ internal sealed class Endpoint(
             PostCreateSupportTicket,
             is WebBillingGetProducts,
             is AliasUsers,
+            is GetRemoteConfigFallback,
             ->
                 false
         }
@@ -221,8 +201,6 @@ internal sealed class Endpoint(
             LogIn,
             PostReceipt,
             is GetOfferings,
-            is GetWorkflow,
-            is GetWorkflows,
             is AliasUsers,
             is PostAttributes,
             is GetAmazonReceipt,
@@ -238,6 +216,7 @@ internal sealed class Endpoint(
                 true
             PostDiagnostics,
             PostEvents,
+            is GetRemoteConfigFallback,
             ->
                 false
         }

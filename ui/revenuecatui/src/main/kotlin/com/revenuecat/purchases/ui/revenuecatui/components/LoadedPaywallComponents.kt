@@ -5,7 +5,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
@@ -137,6 +136,9 @@ internal fun LoadedPaywallComponents(
                     }
                     .conditional(state.header != null && !state.mainStackHasHeroImage) {
                         headerTopPadding(state)
+                    }
+                    .conditional(state.stickyFooter != null) {
+                        footerBottomPadding(state)
                     },
             )
         }
@@ -166,55 +168,93 @@ internal fun PaywallComponentsScaffold(
         modifier = background?.let { modifier.background(it) } ?: modifier,
     ) {
         WithOptionalBackgroundOverlay(state, background = background) {
-            Column {
-                HeaderOverlayLayout(
+            if (footerContent != null) {
+                // Overlapping footer: main content fills the whole area and the footer is pinned to the
+                // bottom, drawn on top. Main content reserves bottom clearance equal to the footer height
+                // (see footerBottomPadding), so an opaque footer looks identical to the old stacked layout
+                // while a transparent footer lets content draw behind it.
+                OverlayLayout(
                     state = state,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxSize(),
+                    hasHeader = headerContent != null,
+                    hasFooter = true,
+                ) {
+                    // Child 0: caller-supplied main content.
+                    mainContent()
+                    // Child 1 (optional): fixed header overlay.
+                    headerContent?.invoke()
+                    // Child 2: sticky footer overlay, pinned to the bottom.
+                    footerContent.invoke()
+                }
+            } else {
+                OverlayLayout(
+                    state = state,
+                    modifier = Modifier.fillMaxSize(),
+                    hasHeader = headerContent != null,
                 ) {
                     // Child 0: caller-supplied main content.
                     mainContent()
                     // Child 1 (optional): fixed header overlay.
                     headerContent?.invoke()
                 }
-                footerContent?.invoke()
             }
         }
     }
 }
 
 /**
- * Custom Layout that measures the fixed header overlay first, stores its pixel height in [state],
- * then measures the main content.
+ * Custom Layout that measures the fixed header and footer overlays first, stores their pixel heights
+ * in [state], then measures the main content so its inner [Modifier.layout] blocks can read those
+ * heights in the same pass. The header is placed at the top and the footer pinned to the bottom, both
+ * drawn on top of the main content.
  *
- * Children: index 0 = main scrollable content, index 1 (optional) = header overlay.
+ * Only the heights of the overlays this layout owns are written to [state]: [state.headerHeightPx]
+ * [PaywallState.Loaded.Components.headerHeightPx] only when [hasHeader], and [state.footerHeightPx]
+ * [PaywallState.Loaded.Components.footerHeightPx] only when [hasFooter]. This lets a nested
+ * OverlayLayout (workflow steps render one inside the scaffold's, sharing the same state) avoid
+ * clobbering a height already set by the outer layout.
+ *
+ * Children (in emission order): index 0 = main scrollable content, then the optional header overlay
+ * (present when [hasHeader]), then the optional footer overlay (present when [hasFooter]).
  */
 @Composable
-internal fun HeaderOverlayLayout(
+internal fun OverlayLayout(
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
+    hasHeader: Boolean = false,
+    hasFooter: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     Layout(
         content = content,
         modifier = modifier,
     ) { measurables, constraints ->
-        // Measure header first (child 1) to get its height before the main content is measured.
-        val headerPlaceable = if (measurables.size > 1) {
-            measurables[1].measure(constraints.copy(minHeight = 0))
-        } else {
-            null
-        }
+        // Measure the overlays first to get their heights before the main content is measured.
+        // Emission order after main content (index 0) is: header (if any), then footer (if any).
+        val headerMeasurable = if (hasHeader) measurables[1] else null
+        val footerMeasurable = if (hasFooter) measurables[if (hasHeader) 2 else 1] else null
 
-        // Store header height so child Modifier.layout blocks can read it in this same pass.
-        // Both hero (ZLayer reads it) and non-hero (headerTopPadding reads it) cases need this.
-        state.headerHeightPx = headerPlaceable?.height ?: 0
+        val headerPlaceable = headerMeasurable?.measure(constraints.copy(minHeight = 0))
+        val footerPlaceable = footerMeasurable?.measure(constraints.copy(minHeight = 0))
 
-        // Measure main content. Its inner Modifier.layout blocks can now read state.headerHeightPx.
+        // Store overlay heights so child Modifier.layout blocks can read them in this same pass.
+        // Header: both hero (ZLayer reads it) and non-hero (headerTopPadding reads it) cases need this.
+        // Footer: footerBottomPadding reads it to reserve bottom clearance.
+        //
+        // Only publish the height of an overlay this layout actually owns. A nested OverlayLayout
+        // (workflow steps render one inside the scaffold's, sharing the same state) must not clobber a
+        // height set by the outer layout: e.g. an inner layout with hasHeader = false wiping
+        // headerHeightPx to 0 would collapse the step's header clearance.
+        if (hasHeader) state.headerHeightPx = headerPlaceable?.height ?: 0
+        if (hasFooter) state.footerHeightPx = footerPlaceable?.height ?: 0
+
+        // Measure main content. Its inner Modifier.layout blocks can now read the stored heights.
         val mainPlaceable = measurables[0].measure(constraints)
 
         layout(constraints.maxWidth, constraints.maxHeight) {
             mainPlaceable.placeRelative(0, 0)
             headerPlaceable?.placeRelative(0, 0)
+            footerPlaceable?.placeRelative(0, constraints.maxHeight - footerPlaceable.height)
         }
     }
 }
@@ -222,7 +262,7 @@ internal fun HeaderOverlayLayout(
 /**
  * Adds top padding equal to the header's measured height in pixels. The value is read during the
  * layout phase from [state.headerHeightPx][PaywallState.Loaded.Components.headerHeightPx], which
- * is set by [HeaderOverlayLayout] earlier in the same layout pass.
+ * is set by [OverlayLayout] earlier in the same layout pass.
  */
 internal fun Modifier.headerTopPadding(state: PaywallState.Loaded.Components): Modifier =
     this.layout { measurable, constraints ->
@@ -230,6 +270,22 @@ internal fun Modifier.headerTopPadding(state: PaywallState.Loaded.Components): M
         val placeable = measurable.measure(constraints.offset(vertical = -topPad))
         layout(placeable.width, placeable.height + topPad) {
             placeable.placeRelative(0, topPad)
+        }
+    }
+
+/**
+ * Reserves bottom clearance equal to the sticky footer's measured height in pixels, so the last piece
+ * of main content can scroll clear of a footer that content otherwise draws behind. The value is read
+ * during the layout phase from [state.footerHeightPx][PaywallState.Loaded.Components.footerHeightPx],
+ * which is set by [OverlayLayout] earlier in the same layout pass.
+ */
+internal fun Modifier.footerBottomPadding(state: PaywallState.Loaded.Components): Modifier =
+    this.layout { measurable, constraints ->
+        val bottomPad = state.footerHeightPx
+        val placeable = measurable.measure(constraints.offset(vertical = -bottomPad))
+        layout(placeable.width, placeable.height + bottomPad) {
+            // Content placed at the top; the extra space is reserved at the bottom, behind the footer.
+            placeable.placeRelative(0, 0)
         }
     }
 
