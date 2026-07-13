@@ -213,8 +213,6 @@ internal class RemoteConfigBlobFetcher(
     }
 
     private fun tryDownloadVerifyStore(url: String, ref: String): DownloadOutcome {
-        // Blob sources never support fallback URLs, so each attempt uses the no-fallback tier (15s base, 5s if this
-        // host timed out recently), keyed by the source host and sharing PR 3's per-host memory with API requests.
         val host = hostOf(url)
         val timeout = timeoutManager.getTimeoutForRequest(
             host = host,
@@ -228,7 +226,6 @@ internal class RemoteConfigBlobFetcher(
             connection = urlConnectionFactory.createConnection(url, timeout, timeout)
             when (val code = connection.responseCode) {
                 HttpURLConnection.HTTP_OK -> {
-                    // The source answered, so clear any fail-fast memory for it before reading the body.
                     timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND)
                     val bytes = connection.inputStream.use { it.readBytes() }
                     verifyAndStore(bytes, ref, url)
@@ -244,7 +241,6 @@ internal class RemoteConfigBlobFetcher(
             }
         } catch (e: SocketTimeoutException) {
             errorLog(e) { "Timed out downloading remote config blob '$ref' from $url." }
-            // A timeout arms the source's fail-fast memory so a re-hit within 10 min bails out sooner.
             timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
             DownloadOutcome.SOURCE_UNHEALTHY
         } catch (e: IOException) {

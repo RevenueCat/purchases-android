@@ -210,7 +210,6 @@ internal class PurchasesFactory(
             }
             val apiSourceProvider = DefaultRemoteConfigSourceProvider(remoteConfigTopicStore)
 
-            // Shared so blob-source downloads reuse the same per-host fail-fast memory as API requests.
             val timeoutManager = HTTPTimeoutManager(appConfig)
             val httpClient = HTTPClient(
                 appConfig,
@@ -296,7 +295,6 @@ internal class PurchasesFactory(
                     blobStore = remoteConfigBlobStore,
                     topicStore = remoteConfigTopicStore,
                     sourceProvider = apiSourceProvider,
-                    // Shares the same per-host timeout memory as API requests (see timeoutManager above).
                     blobFetcher = RemoteConfigBlobFetcher(remoteConfigBlobStore, apiSourceProvider, timeoutManager),
                     // Bootstrap source for a cold on-demand read's self-triggered sync (see blobData()); after
                     // the first identity change the manager syncs for the user clearCache() binds instead.
