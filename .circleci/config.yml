@@ -375,7 +375,7 @@ jobs:
       - android/restore_build_cache
       - run:
           name: Dokka
-          command: ./gradlew dokkaHtmlMultiModule
+          command: ./gradlew :dokkaGenerate
       - android/save_gradle_cache
       - android/save_build_cache
       - run:

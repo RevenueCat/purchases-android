@@ -31,7 +31,8 @@ datastorePreference = "1.0.0"
 dependencyGraph = "0.9"
 detekt = "1.23.8"
 detektRulesCompose = "0.4.10"
-dokka = "1.8.10"
+dokka = "2.2.0"
+dokkaAnalysisKotlin = "2.2.0"
 emergeGradlePlugin = "4.4.0"
 emergeSnapshots = "1.5.0"
 espresso = "3.6.1"
@@ -144,6 +145,7 @@ detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", 
 detekt-libraries = { module = "io.gitlab.arturbosch.detekt:detekt-rules-libraries", version.ref = "detekt"}
 detekt-test = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }
 
+dokka-analysisKotlinSymbols = { module = "org.jetbrains.dokka:analysis-kotlin-symbols", version.ref = "dokka" }
 dokka-base = { module = "org.jetbrains.dokka:dokka-base", version.ref = "dokka" }
 dokka-baseTestUtils = { module = "org.jetbrains.dokka:dokka-base-test-utils", version.ref = "dokka" }
 dokka-core = { module = "org.jetbrains.dokka:dokka-core", version.ref = "dokka" }

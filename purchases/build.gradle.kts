@@ -1,3 +1,4 @@
+import org.jetbrains.dokka.gradle.engine.parameters.DokkaSourceSetSpec
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import java.io.FileInputStream
 import java.util.Properties
@@ -237,44 +238,33 @@ dependencies {
     testImplementation(kotlin("test"))
 }
 
-tasks.dokkaHtmlPartial.configure {
+fun DokkaSourceSetSpec.configureDocumentedSourceSet() {
+    reportUndocumented.set(true)
+    skipDeprecated.set(true)
+    externalDocumentationLinks.register("android") {
+        url("https://developer.android.com/reference/")
+    }
+}
+
+dokka {
     dokkaSourceSets {
         named("customEntitlementComputation") {
             suppress.set(true)
         }
         named("defaults") {
-            dependsOn("main")
-            reportUndocumented.set(true)
-            includeNonPublic.set(false)
-            skipDeprecated.set(true)
-            externalDocumentationLink {
-                url.set(
-                    uri("https://developer.android.com/reference/package-list").toURL(),
-                )
-            }
-            sourceLink {
-                localDirectory.set(
-                    file("src/main/kotlin"),
-                )
-                remoteUrl.set(
-                    uri("https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin").toURL(),
-                )
-                remoteLineSuffix.set("#L")
-            }
-            sourceLink {
-                localDirectory.set(
-                    file("src/main/java"),
-                )
-                remoteUrl.set(
-                    uri("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java").toURL(),
-                )
-                remoteLineSuffix.set("#L")
-            }
+            dependentSourceSets.addLater(dokkaSourceSets.named("main").flatMap { it.sourceSetId })
+            configureDocumentedSourceSet()
         }
         named("main") {
-            reportUndocumented.set(true)
-            includeNonPublic.set(false)
-            skipDeprecated.set(true)
+            configureDocumentedSourceSet()
+            sourceLink {
+                localDirectory.set(file("src/main/kotlin"))
+                remoteUrl("https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin")
+            }
+            sourceLink {
+                localDirectory.set(file("src/main/java"))
+                remoteUrl("https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/java")
+            }
 
             // This package exclusively contains symbols annotated with @InternalRevenueCatAPI, for which no
             // documentation is generated due to our dokka-hide-internal plugin. However, by default Dokka still
@@ -282,29 +272,6 @@ tasks.dokkaHtmlPartial.configure {
             perPackageOption {
                 matchingRegex.set("com\\.revenuecat\\.purchases\\.paywalls\\.components.*")
                 suppress.set(true)
-            }
-            externalDocumentationLink {
-                url.set(
-                    uri("https://developer.android.com/reference/package-list").toURL(),
-                )
-            }
-            sourceLink {
-                localDirectory.set(
-                    file("src/main/kotlin"),
-                )
-                remoteUrl.set(
-                    uri(
-                        "https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin",
-                    ).toURL(),
-                )
-                remoteLineSuffix.set("#L")
-            }
-            sourceLink {
-                localDirectory.set(file("src/main/java"))
-                remoteUrl.set(
-                    uri("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java").toURL(),
-                )
-                remoteLineSuffix.set("#L")
             }
         }
     }
