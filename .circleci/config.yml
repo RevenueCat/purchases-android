@@ -967,7 +967,8 @@ workflows:
             equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
-      - revenuecat/danger
+      - revenuecat/danger:
+          ruby_version: "3.2.0"
 
   snapshot-deploy-manual:
     when:
