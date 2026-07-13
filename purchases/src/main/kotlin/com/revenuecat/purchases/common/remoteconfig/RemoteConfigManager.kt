@@ -33,6 +33,7 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Orchestrates a single `/v1/config` sync: replays the persisted opaque manifest, then on `204` keeps the cache
@@ -98,6 +99,9 @@ internal class RemoteConfigManager(
     @Volatile
     private var lastRefreshedAt: Date? = null
 
+    @Volatile
+    private var lastRefreshAttemptAt: Date? = null
+
     // The app user a cold on-demand read should sync for, rebound by clearCache() under [cacheLock] atomically
     // with the epoch bump, so it can never lag the identity change the way [appUserIDProvider] (backed by the
     // device cache) can. Null until the first identity change; awaitConfigForRead() falls back to the provider
@@ -128,7 +132,7 @@ internal class RemoteConfigManager(
 
     fun refreshRemoteConfigIfStale(appInBackground: Boolean, appUserID: String) {
         if (lastRefreshedAt.isCacheStale(appInBackground, dateProvider)) {
-            refreshRemoteConfig(appInBackground, appUserID)
+            refreshRemoteConfigIfAttemptCooldownElapsed(appInBackground, appUserID)
         }
     }
 
@@ -182,6 +186,17 @@ internal class RemoteConfigManager(
                 )
             },
         )
+    }
+
+    private fun refreshRemoteConfigIfAttemptCooldownElapsed(appInBackground: Boolean, appUserID: String) {
+        val now = dateProvider.now
+        val lastAttempt = lastRefreshAttemptAt
+        if (lastAttempt == null || now.time - lastAttempt.time >= REFRESH_ATTEMPT_COOLDOWN.inWholeMilliseconds) {
+            lastRefreshAttemptAt = now
+            refreshRemoteConfig(appInBackground, appUserID)
+        } else {
+            debugLog { "Remote config refresh was attempted recently. Skipping stale-gated refresh." }
+        }
     }
 
     /**
@@ -291,6 +306,7 @@ internal class RemoteConfigManager(
         synchronized(cacheLock) {
             if (epoch.get() == requestEpoch) {
                 lastRefreshedAt = dateProvider.now
+                lastRefreshAttemptAt = null
                 isRefreshing.set(false)
                 completeRefresh()
             }
@@ -335,6 +351,7 @@ internal class RemoteConfigManager(
             currentAppUserID = appUserID
             isRefreshing.set(false)
             lastRefreshedAt = null
+            lastRefreshAttemptAt = null
             completeRefresh()
             // Intentionally NOT resetting `disabled`: a 4xx is an endpoint/app-level fact that outlives an
             // identity change. It clears only on app restart.
@@ -397,7 +414,7 @@ internal class RemoteConfigManager(
         val appUserID = (currentAppUserID ?: appUserIDProvider())?.takeIf { it.isNotBlank() }
         if (!disabled && appUserID != null) {
             verboseLog { "Cold remote config read triggering an on-demand sync." }
-            refreshRemoteConfig(appInBackground = false, appUserID = appUserID)
+            refreshRemoteConfigIfAttemptCooldownElapsed(appInBackground = false, appUserID = appUserID)
             // Join whatever is now in flight — the sync we just triggered, or one a concurrent caller started.
             awaitInFlightRefresh()
         } else {
@@ -711,6 +728,7 @@ internal class RemoteConfigManager(
 
         if (persisted) {
             lastRefreshedAt = dateProvider.now
+            lastRefreshAttemptAt = null
             debugLog {
                 "Persisted remote config (domain=${response.domain}, ${response.activeTopics.size} active topics, " +
                     "${blobRefsToKeep.size} blobs wanted)."
@@ -770,6 +788,7 @@ internal class RemoteConfigManager(
 
     private companion object {
         private const val DEFAULT_DOMAIN = "app"
+        private val REFRESH_ATTEMPT_COOLDOWN = 30.seconds
     }
 }
 
