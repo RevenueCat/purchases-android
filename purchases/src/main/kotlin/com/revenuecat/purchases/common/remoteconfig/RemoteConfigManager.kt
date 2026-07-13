@@ -733,12 +733,12 @@ internal class RemoteConfigManager(
      */
     private fun prefetchBlobs(response: RemoteConfiguration, mergedTopics: Map<String, ConfigTopic>) {
         sourceProvider.restartIfExhausted(RemoteConfigSourceHandle.Purpose.BLOB)
-        val refs = buildSet {
+        val refs = buildList {
             addAll(response.prefetchBlobs)
             mergedTopics.values.forEach { topic ->
                 topic.values.forEach { item -> if (item.prefetch) item.blobRef?.let(::add) }
             }
-        }
+        }.distinct()
         val toPrefetch = refs.filterNot { blobStore.contains(it) }
         verboseLog { "Prefetching ${toPrefetch.size} remote config blob(s)." }
         blobFetcher.prefetch(toPrefetch)

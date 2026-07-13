@@ -447,6 +447,34 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `prefetch preserves the server prefetch_blobs order, then item prefetch refs, deduped`() {
+        every { diskCache.read() } returns null
+        // prefetch_blobs deliberately not sorted: the SDK must warm them in the exact order the server sent.
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.workflows:etag2",
+              "active_topics": ["workflows"],
+              "prefetch_blobs": ["$REF_TAMPERED", "$REF_VALID", "$REF_UNWANTED"],
+              "topics": {
+                "workflows": {
+                  "wf1": { "blob_ref": "$REF_VALID", "prefetch": true },
+                  "wf2": { "blob_ref": "$REF_EXTRA", "prefetch": true }
+                }
+              }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        val prefetched = slot<List<String>>()
+        verify(exactly = 1) { blobFetcher.prefetch(capture(prefetched)) }
+        // Server order first (as-is), then the only new item ref; REF_VALID is deduped to its first position.
+        assertThat(prefetched.captured).containsExactly(REF_TAMPERED, REF_VALID, REF_UNWANTED, REF_EXTRA)
+    }
+
+    @Test
     fun `a 200 response does not prefetch blobs already cached`() {
         every { diskCache.read() } returns null
         every { blobStore.contains(REF_VALID) } returns true
@@ -1917,5 +1945,6 @@ class RemoteConfigManagerTest {
         private const val REF_VALID = "AAAABBBBCCCCDDDDEEEEFFFFGGGGHHHH"
         private const val REF_TAMPERED = "IIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPP"
         private const val REF_UNWANTED = "QQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXX"
+        private const val REF_EXTRA = "11112222333344445555666677778888"
     }
 }

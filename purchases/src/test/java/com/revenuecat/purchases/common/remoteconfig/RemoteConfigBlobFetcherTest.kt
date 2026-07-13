@@ -285,6 +285,22 @@ class RemoteConfigBlobFetcherTest {
     }
 
     @Test
+    fun `prefetch downloads blobs in the given list order`() = runTest {
+        val started = CopyOnWriteArrayList<String>()
+        recordStartedConnections(started)
+        val fetcherScope = CoroutineScope(StandardTestDispatcher(testScheduler))
+        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), urlConnectionFactory, fetcherScope)
+
+        // Deliberately unsorted: the LOW queue must attempt the refs in exactly the order they were handed over.
+        val refs = listOf("e", "a", "d", "b", "c").map { refOf("blob-$it".toByteArray()) }
+        fetcher.prefetch(refs)
+        advanceUntilIdle()
+
+        assertThat(started).containsExactly(*refs.toTypedArray())
+        fetcherScope.cancel()
+    }
+
+    @Test
     fun `an on-demand request boosts and joins a blob already queued for prefetch`() = runTest {
         val started = CopyOnWriteArrayList<String>()
         recordStartedConnections(started)
