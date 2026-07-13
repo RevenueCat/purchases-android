@@ -321,7 +321,6 @@ internal class RemoteConfigManager(
         synchronized(cacheLock) {
             if (epoch.get() == requestEpoch) {
                 lastRefreshedAt = dateProvider.now
-                lastRefreshAttemptAt = null
                 isRefreshing.set(false)
                 completeRefresh()
             }
@@ -743,7 +742,6 @@ internal class RemoteConfigManager(
 
         if (persisted) {
             lastRefreshedAt = dateProvider.now
-            lastRefreshAttemptAt = null
             debugLog {
                 "Persisted remote config (domain=${response.domain}, ${response.activeTopics.size} active topics, " +
                     "${blobRefsToKeep.size} blobs wanted)."

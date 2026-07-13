@@ -179,7 +179,7 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `clearCache clears the failed attempt cooldown`() {
+    fun `clearCache clears the refresh attempt cooldown`() {
         every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
 
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
