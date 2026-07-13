@@ -132,17 +132,21 @@ internal class RemoteConfigManager(
 
     fun refreshRemoteConfigIfStale(appInBackground: Boolean, appUserID: String) {
         if (lastRefreshedAt.isCacheStale(appInBackground, dateProvider)) {
-            refreshRemoteConfigIfAttemptCooldownElapsed(appInBackground, appUserID)
+            refreshRemoteConfig(appInBackground, appUserID, staleGated = true)
         }
     }
 
     fun refreshRemoteConfig(appInBackground: Boolean, appUserID: String) {
+        refreshRemoteConfig(appInBackground, appUserID, staleGated = false)
+    }
+
+    private fun refreshRemoteConfig(appInBackground: Boolean, appUserID: String, staleGated: Boolean) {
         if (disabled) {
             debugLog { "Remote config is disabled for this session (4xx). Skipping refresh." }
             return
         }
-        val requestEpoch: Int
-        val requestAppUserID: String
+        var requestEpoch = 0
+        var requestAppUserID = appUserID
         // Acquire the in-flight guard and capture the epoch together under the lock that also guards
         // clearCache()'s epoch bump + guard release. Otherwise an identity change could slip its bump
         // between getAndSet(true) and epoch.get(), stranding this request with a stale epoch: its
@@ -153,14 +157,31 @@ internal class RemoteConfigManager(
         // our response) — never a stale user paired with the post-clear epoch. currentAppUserID (bound by
         // clearCache) wins; the passed appUserID is only the pre-first-identity-change bootstrap fallback.
         // Read only in-memory state under the lock — never appUserIDProvider(), which can re-enter clearCache().
-        synchronized(cacheLock) {
-            if (isRefreshing.getAndSet(true)) {
-                debugLog { "Remote config refresh already in progress. Skipping." }
-                return
+        val shouldRefresh = synchronized(cacheLock) {
+            val now = dateProvider.now
+            when {
+                isRefreshing.get() -> {
+                    debugLog { "Remote config refresh already in progress. Skipping." }
+                    false
+                }
+                staleGated && !isRefreshAttemptCooldownElapsed(now) -> {
+                    debugLog { "Remote config refresh was attempted recently. Skipping stale-gated refresh." }
+                    false
+                }
+                else -> {
+                    if (staleGated) {
+                        lastRefreshAttemptAt = now
+                    }
+                    isRefreshing.set(true)
+                    requestEpoch = epoch.get()
+                    requestAppUserID = currentAppUserID ?: appUserID
+                    refreshCompletion = CompletableDeferred()
+                    true
+                }
             }
-            requestEpoch = epoch.get()
-            requestAppUserID = currentAppUserID ?: appUserID
-            refreshCompletion = CompletableDeferred()
+        }
+        if (!shouldRefresh) {
+            return
         }
         val persisted = diskCache.read()
         val storedBlobs = blobStore.cachedRefs()
@@ -188,15 +209,9 @@ internal class RemoteConfigManager(
         )
     }
 
-    private fun refreshRemoteConfigIfAttemptCooldownElapsed(appInBackground: Boolean, appUserID: String) {
-        val now = dateProvider.now
+    private fun isRefreshAttemptCooldownElapsed(now: Date): Boolean {
         val lastAttempt = lastRefreshAttemptAt
-        if (lastAttempt == null || now.time - lastAttempt.time >= REFRESH_ATTEMPT_COOLDOWN.inWholeMilliseconds) {
-            lastRefreshAttemptAt = now
-            refreshRemoteConfig(appInBackground, appUserID)
-        } else {
-            debugLog { "Remote config refresh was attempted recently. Skipping stale-gated refresh." }
-        }
+        return lastAttempt == null || now.time - lastAttempt.time >= REFRESH_ATTEMPT_COOLDOWN.inWholeMilliseconds
     }
 
     /**
@@ -414,7 +429,7 @@ internal class RemoteConfigManager(
         val appUserID = (currentAppUserID ?: appUserIDProvider())?.takeIf { it.isNotBlank() }
         if (!disabled && appUserID != null) {
             verboseLog { "Cold remote config read triggering an on-demand sync." }
-            refreshRemoteConfigIfAttemptCooldownElapsed(appInBackground = false, appUserID = appUserID)
+            refreshRemoteConfig(appInBackground = false, appUserID = appUserID, staleGated = true)
             // Join whatever is now in flight — the sync we just triggered, or one a concurrent caller started.
             awaitInFlightRefresh()
         } else {

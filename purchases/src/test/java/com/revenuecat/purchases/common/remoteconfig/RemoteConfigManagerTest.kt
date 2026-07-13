@@ -218,6 +218,22 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `a skipped stale-gated refresh while already in flight does not start the cooldown`() {
+        every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `explicit refresh retries immediately after a retryable failure`() {
         every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
 
