@@ -567,8 +567,6 @@ internal class PurchasesFactory(
         return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("revenuecat-events-thread"))
     }
 
-    // Scheduled so the dispatcher can apply the background jitter (Delay.DEFAULT) getRemoteConfig uses.
-    // Normal priority: it sits on the getOfferings critical path, unlike the low-priority events executor.
     private fun createRemoteConfigExecutor(): ExecutorService {
         return Executors.newSingleThreadScheduledExecutor()
     }
