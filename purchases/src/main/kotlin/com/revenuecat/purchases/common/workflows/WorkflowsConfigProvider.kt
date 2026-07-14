@@ -5,6 +5,7 @@ package com.revenuecat.purchases.common.workflows
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.remoteconfig.GenerationGuardedCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
@@ -50,14 +51,7 @@ internal class WorkflowsConfigProvider(
         val offeringToWorkflowId: Map<String, String>,
     )
 
-    private val cacheLock = Any()
-
-    @Volatile
-    private var cache: Cached? = null
-
-    // Newest generation acted on (store or invalidation); an update applies only if its generation is >= this,
-    // so an out-of-order low-generation warm can't repopulate stale data. -1 = nothing seen yet.
-    private var lastGeneration: Int = -1
+    private val cache = GenerationGuardedCache<Cached>()
 
     /**
      * Whether the in-memory cache already holds what the current offering's paywall needs, so the offerings
@@ -65,13 +59,14 @@ internal class WorkflowsConfigProvider(
      * offering, the current offering has no workflow mapping (legacy/embedded paywall), or its workflow is parsed.
      */
     fun isWarmForCurrentOffering(): Boolean {
-        val cached = cache ?: return false
+        val cached = cache.cached ?: return false
         val workflowId = currentOfferingIdProvider()?.let { cached.offeringToWorkflowId[it] }
         return workflowId == null || cached.workflows.containsKey(workflowId)
     }
 
     suspend fun workflowIdForOfferingId(offeringId: String): String? {
-        cache?.let { return it.offeringToWorkflowId[offeringId] }
+        cache.cached?.let { return it.offeringToWorkflowId[offeringId] }
+        val generation = manager.configGeneration
         val topic = manager.topic(RemoteConfigTopic.Workflows)
         verboseLog { "workflows topic ${if (topic == null) "is absent" else "has ${topic.size} item(s)"}" }
         val matches = topic
@@ -90,7 +85,9 @@ internal class WorkflowsConfigProvider(
                 "No workflow found for offering '$offeringId'"
             }
         }
-        return workflowId
+        // If an identity-change invalidation advanced the generation while the topic was read, the resolved id
+        // may belong to the previous user; prefer whatever the (now newer) cache holds instead.
+        return if (cache.isCurrent(generation)) workflowId else cache.cached?.offeringToWorkflowId?.get(offeringId)
     }
 
     /**
@@ -99,8 +96,16 @@ internal class WorkflowsConfigProvider(
      * synchronously; only a miss reads through [RemoteConfigManager] (disk/network + JSON parse).
      */
     suspend fun getWorkflow(workflowId: String): PublishedWorkflow? {
-        cache?.workflows?.get(workflowId)?.let { return it }
-        return resolveWorkflow(workflowId)
+        cache.cached?.workflows?.get(workflowId)?.let { return it }
+        val generation = manager.configGeneration
+        val workflow = resolveWorkflow(workflowId)
+        // If an identity-change invalidation advanced the generation while the body was resolved, it may belong
+        // to the previous user; prefer whatever the (now newer) cache holds instead of serving it.
+        return when {
+            workflow == null -> null
+            cache.isCurrent(generation) -> workflow
+            else -> cache.cached?.workflows?.get(workflowId)
+        }
     }
 
     /** Reads + parses a workflow body straight from the config layer, bypassing the in-memory cache. */
@@ -164,7 +169,7 @@ internal class WorkflowsConfigProvider(
             "Warmed workflows cache: ${workflows.size} eligible workflow(s), " +
                 "${offeringToWorkflowId.size} offering mapping(s)."
         }
-        store(generation, Cached(workflows, offeringToWorkflowId))
+        cache.store(generation, Cached(workflows, offeringToWorkflowId))
     }
 
     /** Warms at the current config generation; used by the offerings readiness gate. */
@@ -180,30 +185,15 @@ internal class WorkflowsConfigProvider(
     }
 
     override fun onConfigInvalidated(generation: Int) {
-        synchronized(cacheLock) {
-            if (generation >= lastGeneration) {
-                lastGeneration = generation
-                cache = null
-            }
-        }
+        cache.invalidate(generation)
     }
 
     fun close() {
         scope.cancel()
     }
 
-    private fun isWarmAtOrAbove(generation: Int): Boolean = synchronized(cacheLock) {
-        lastGeneration >= generation && isWarmForCurrentOffering()
-    }
-
-    private fun store(generation: Int, value: Cached) {
-        synchronized(cacheLock) {
-            if (generation >= lastGeneration) {
-                lastGeneration = generation
-                cache = value
-            }
-        }
-    }
+    private fun isWarmAtOrAbove(generation: Int): Boolean =
+        cache.isAtOrAbove(generation) && isWarmForCurrentOffering()
 
     private companion object {
         private const val KEY_OFFERING_IDENTIFIER = "offering_identifier"

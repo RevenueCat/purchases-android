@@ -256,6 +256,26 @@ internal class UiConfigProviderTest {
         assertThat(provider.isWarm()).isFalse
     }
 
+    @Test
+    fun `getUiConfig does not serve a value resolved before a concurrent newer invalidation`() = runTest {
+        // Cold read snapshots generation 0, then an identity-change invalidation at a newer generation lands
+        // while the merge is in flight. The just-resolved value belongs to the previous user, so it must not be
+        // returned to the in-flight caller, nor repopulate the cache.
+        every { manager.configGeneration } returns 0
+        val merged = minimalUiConfigJson()
+        coEvery {
+            manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())
+        } answers {
+            provider.onConfigInvalidated(generation = 5)
+            thirdArg<(JsonObject) -> UiConfig?>().invoke(merged)
+        }
+
+        val uiConfig = provider.getUiConfig()
+
+        assertThat(uiConfig).isNull()
+        assertThat(provider.isWarm()).isFalse
+    }
+
     private fun minimalUiConfigJson(): JsonObject = buildJsonObject {
         putJsonObject("app") {
             put("colors", buildJsonObject {})

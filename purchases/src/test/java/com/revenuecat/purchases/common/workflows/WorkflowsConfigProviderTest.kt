@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
@@ -153,6 +154,51 @@ internal class WorkflowsConfigProviderTest {
         provider.warm(generation = 2)
 
         assertThat(provider.getWorkflow(WF_CURRENT)).isSameAs(higher)
+    }
+
+    @Test
+    fun `getWorkflow cold miss returns the resolved workflow when the generation is unchanged`() = runTest {
+        every { manager.configGeneration } returns 0
+        stubWorkflowBody(WF_CURRENT)
+
+        assertThat(provider.getWorkflow(WF_CURRENT)).isNotNull
+    }
+
+    @Test
+    fun `getWorkflow does not serve a body resolved before a concurrent newer invalidation`() = runTest {
+        // Cold read snapshots generation 0, then an identity-change invalidation at a newer generation lands
+        // while the body is being resolved. That body may belong to the previous user, so it must not be served.
+        every { manager.configGeneration } returns 0
+        val body = workflowJson(WF_CURRENT).toByteArray()
+        coEvery {
+            manager.blobData(RemoteConfigTopic.Workflows, WF_CURRENT, any<(ByteArray) -> ByteArray?>())
+        } answers {
+            provider.onConfigInvalidated(generation = 5)
+            thirdArg<(ByteArray) -> ByteArray?>().invoke(body)
+        }
+
+        assertThat(provider.getWorkflow(WF_CURRENT)).isNull()
+    }
+
+    @Test
+    fun `workflowIdForOfferingId cold miss returns the resolved id when the generation is unchanged`() = runTest {
+        every { manager.configGeneration } returns 0
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns topicWith(
+            WF_CURRENT to configItem(prefetch = false, offeringId = CURRENT_OFFERING),
+        )
+
+        assertThat(provider.workflowIdForOfferingId(CURRENT_OFFERING)).isEqualTo(WF_CURRENT)
+    }
+
+    @Test
+    fun `workflowIdForOfferingId does not serve an id resolved before a concurrent newer invalidation`() = runTest {
+        every { manager.configGeneration } returns 0
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } answers {
+            provider.onConfigInvalidated(generation = 5)
+            topicWith(WF_CURRENT to configItem(prefetch = false, offeringId = CURRENT_OFFERING))
+        }
+
+        assertThat(provider.workflowIdForOfferingId(CURRENT_OFFERING)).isNull()
     }
 
     private fun stubTopic() {

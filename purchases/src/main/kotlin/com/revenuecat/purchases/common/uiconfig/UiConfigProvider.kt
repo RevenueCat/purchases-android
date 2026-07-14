@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.uiconfig
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.common.remoteconfig.GenerationGuardedCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
@@ -36,29 +37,24 @@ internal class UiConfigProvider(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) : RemoteConfigCommitListener {
 
-    private val cacheLock = Any()
-
-    @Volatile
-    private var cache: UiConfig? = null
-
-    // The newest generation this provider has acted on, whether by storing a value or by an invalidation. A
-    // store/clear is applied only if its generation is >= this, so an out-of-order low-generation warm landing
-    // after a newer commit or an invalidation can't repopulate stale data. -1 = nothing seen yet.
-    private var lastGeneration: Int = -1
+    private val cache = GenerationGuardedCache<UiConfig>()
 
     /** Whether the `ui_config` is already in memory, so a caller can deliver synchronously. */
-    fun isWarm(): Boolean = cache != null
+    fun isWarm(): Boolean = cache.isWarm()
 
     /**
      * Returns the in-memory [UiConfig] if present, else resolves it from the config layer (which may wait for or
      * trigger a `/v1/config` sync on a cold cache), caches it, and returns it. `null` when it can't be resolved.
+     *
+     * On a miss the resolved value is only returned via the cache (store-if-newer): if an identity-change
+     * invalidation advanced the generation while [resolve] was in flight, [GenerationGuardedCache.store] drops
+     * it and [GenerationGuardedCache.cached] is `null`, so the previous user's config is never served.
      */
     suspend fun getUiConfig(): UiConfig? {
-        cache?.let { return it }
+        cache.cached?.let { return it }
         val generation = manager.configGeneration
-        val uiConfig = resolve()
-        if (uiConfig != null) store(generation, uiConfig)
-        return uiConfig
+        resolve()?.let { cache.store(generation, it) }
+        return cache.cached
     }
 
     /**
@@ -68,7 +64,7 @@ internal class UiConfigProvider(
     suspend fun warm(generation: Int) {
         if (manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) == null) return
         val uiConfig = resolve() ?: return
-        store(generation, uiConfig)
+        cache.store(generation, uiConfig)
     }
 
     /** Warms at the current config generation; used by the offerings readiness gate. */
@@ -84,12 +80,7 @@ internal class UiConfigProvider(
     }
 
     override fun onConfigInvalidated(generation: Int) {
-        synchronized(cacheLock) {
-            if (generation >= lastGeneration) {
-                lastGeneration = generation
-                cache = null
-            }
-        }
+        cache.invalidate(generation)
     }
 
     fun close() {
@@ -98,15 +89,6 @@ internal class UiConfigProvider(
 
     private suspend fun resolve(): UiConfig? =
         manager.mergeItemsBlobData<UiConfig>(RemoteConfigTopic.UiConfig, ITEM_KEYS)
-
-    private fun store(generation: Int, uiConfig: UiConfig) {
-        synchronized(cacheLock) {
-            if (generation >= lastGeneration) {
-                lastGeneration = generation
-                cache = uiConfig
-            }
-        }
-    }
 
     private companion object {
         private val ITEM_KEYS = listOf("app", "localizations", "variable_config", "custom_variables")
