@@ -18,9 +18,23 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 @OptIn(InternalRevenueCatAPI::class)
 class GetOfferingsPerfTest {
+    companion object {
+        private const val RATIO_BOUND = 3.0
+    }
+
     private val server = MockWebServer()
     private val context = ApplicationProvider.getApplicationContext<Context>()
     private fun harness() = PerfHarness(context, server)
+
+    private fun medianElapsedMs(useWorkflows: Boolean, iterations: Int = 5): Long {
+        val samples = (1..iterations).map {
+            Purchases.backingFieldSharedInstance?.close()
+            harness().runCycle(useWorkflows = useWorkflows, cold = true).also {
+                assertThat(it.error).isNull()
+            }.elapsedMs
+        }.sorted()
+        return samples[samples.size / 2]
+    }
 
     @After fun tearDown() {
         Purchases.backingFieldSharedInstance?.close()
@@ -59,6 +73,21 @@ class GetOfferingsPerfTest {
         assertThat(countByEndpoint(feature.paths())["products"]).isEqualTo(1)
         // Feature adds exactly the config sync over baseline — no other extra requests.
         assertThat(feature.paths().size).isEqualTo(baseline.paths().size + 1)
+    }
+
+    @Test
+    fun featureVsBaselineRatioUnderBadNetworkStaysBounded() {
+        // server.url(...) auto-starts the server; no explicit server.start().
+        server.dispatcher = NetworkProfile.BAD.decorate(PerfFixtures.dispatcher(server.url("/").toString()))
+
+        val baseline = medianElapsedMs(useWorkflows = false)
+        val feature = medianElapsedMs(useWorkflows = true)
+        val ratio = feature.toDouble() / baseline.toDouble()
+
+        println("PERF_RATIO baseline=${baseline}ms feature=${feature}ms ratio=$ratio")
+        assertThat(ratio)
+            .withFailMessage("feature/baseline getOfferings ratio %.2f exceeded bound %.2f (regression?)", ratio, RATIO_BOUND)
+            .isLessThan(RATIO_BOUND)
     }
 }
 
