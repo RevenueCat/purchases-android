@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.perf
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.mockwebserver.MockWebServer
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -16,17 +18,16 @@ class PerfFixturesDispatcherTest {
     @After fun tearDown() { server.shutdown() }
 
     @Test
-    fun returnsMatchingFixtureBodyAndRewritesPlaceholderHost() {
+    fun returnsMatchingFixtureBody() {
         val base = "http://127.0.0.1:1/"
         server.dispatcher = PerfFixtures.dispatcher(mockBaseUrl = base)
         server.start()
-        val client = okhttp3.OkHttpClient()
+        val client = OkHttpClient()
         val entry = PerfFixtures.loadManifest().first()
         val resp = client.newCall(
-            okhttp3.Request.Builder().url(server.url("/v1${entry.match}")).build(),
+            Request.Builder().url(server.url("/v1${entry.match}")).build(),
         ).execute()
         assertThat(resp.code).isEqualTo(entry.status)
-        assertThat(resp.body!!.string()).doesNotContain("PERF_MOCK_HOST")
     }
 
     // The SDK's getOfferings path never requests /blob (assets are inlined), so this fixture
@@ -38,9 +39,9 @@ class PerfFixturesDispatcherTest {
         server.start()
         val mockBaseUrl = server.url("/").toString()
         server.dispatcher = PerfFixtures.dispatcher(mockBaseUrl = mockBaseUrl)
-        val client = okhttp3.OkHttpClient()
+        val client = OkHttpClient()
         val resp = client.newCall(
-            okhttp3.Request.Builder().url(server.url("/blob/paywall/image")).build(),
+            Request.Builder().url(server.url("/blob/paywall/image")).build(),
         ).execute()
         val body = resp.body!!.string()
         assertThat(body).contains(mockBaseUrl)
@@ -51,9 +52,9 @@ class PerfFixturesDispatcherTest {
     fun unmatchedPathReturns404() {
         server.dispatcher = PerfFixtures.dispatcher(mockBaseUrl = "http://127.0.0.1:1/")
         server.start()
-        val client = okhttp3.OkHttpClient()
+        val client = OkHttpClient()
         val resp = client.newCall(
-            okhttp3.Request.Builder().url(server.url("/nothing/here")).build(),
+            Request.Builder().url(server.url("/nothing/here")).build(),
         ).execute()
         assertThat(resp.code).isEqualTo(404)
     }
@@ -62,15 +63,15 @@ class PerfFixturesDispatcherTest {
     fun routesAmbiguousSubscriberPathsCorrectly() {
         server.dispatcher = PerfFixtures.dispatcher(mockBaseUrl = "http://127.0.0.1:1/")
         server.start()
-        val client = okhttp3.OkHttpClient()
+        val client = OkHttpClient()
 
         val offeringsResp = client.newCall(
-            okhttp3.Request.Builder().url(server.url("/v1/subscribers/u/offerings")).build(),
+            Request.Builder().url(server.url("/v1/subscribers/u/offerings")).build(),
         ).execute()
         assertThat(offeringsResp.body!!.string()).contains("offering_a")
 
         val productsResp = client.newCall(
-            okhttp3.Request.Builder().url(server.url("/rcbilling/v1/subscribers/u/products?id=x")).build(),
+            Request.Builder().url(server.url("/rcbilling/v1/subscribers/u/products?id=x")).build(),
         ).execute()
         assertThat(productsResp.body!!.string()).contains("monthly_freetrial")
     }

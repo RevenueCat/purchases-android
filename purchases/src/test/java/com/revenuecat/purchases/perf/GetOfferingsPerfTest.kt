@@ -31,6 +31,7 @@ class GetOfferingsPerfTest {
             Purchases.backingFieldSharedInstance?.close()
             harness().runCycle(useWorkflows = useWorkflows, cold = true).also {
                 assertThat(it.error).isNull()
+                assertThat(it.offeringsCount).isGreaterThan(0)
             }.elapsedMs
         }.sorted()
         return samples[samples.size / 2]
