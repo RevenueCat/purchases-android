@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.GetRemoteConfigErrorHandlingBehavior
 import com.revenuecat.purchases.common.JsonProvider
+import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.isCacheStale
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
@@ -33,6 +34,7 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
 /**
@@ -211,7 +213,7 @@ internal class RemoteConfigManager(
 
     private fun isRefreshAttemptCooldownElapsed(now: Date): Boolean {
         val lastAttempt = lastRefreshAttemptAt
-        return lastAttempt == null || now.time - lastAttempt.time >= REFRESH_ATTEMPT_COOLDOWN.inWholeMilliseconds
+        return lastAttempt == null || Duration.between(lastAttempt, now) >= REFRESH_ATTEMPT_COOLDOWN
     }
 
     /**
