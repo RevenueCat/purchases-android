@@ -46,7 +46,6 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.slot
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifyAll
@@ -2842,50 +2841,25 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     @Test
     fun `getWorkflow delivers the manager success result to the caller`() {
         val expected = mockk<PublishedWorkflow>()
-        val successSlot = slot<(PublishedWorkflow) -> Unit>()
-        every {
-            mockWorkflowManager.getWorkflow(
-                workflowOrOfferingId = "wf_1",
-                onSuccess = capture(successSlot),
-                onError = any(),
-            )
-        } answers { successSlot.captured(expected) }
+        coEvery { mockWorkflowManager.getWorkflow("wf_1") } returns expected
 
-        var received: PublishedWorkflow? = null
-        var receivedError: PurchasesError? = null
-        purchases.purchasesOrchestrator.getWorkflow(
-            workflowId = "wf_1",
-            onSuccess = { received = it },
-            onError = { receivedError = it },
-        )
+        val result = runBlocking { purchases.purchasesOrchestrator.getWorkflow("wf_1") }
 
-        assertThat(received).isEqualTo(expected)
-        assertThat(receivedError).isNull()
+        assertThat(result).isEqualTo(expected)
     }
 
     @OptIn(InternalRevenueCatAPI::class)
     @Test
-    fun `getWorkflow delivers the manager error to the caller`() {
+    fun `getWorkflow surfaces the manager error to the caller`() {
         val expectedError = PurchasesError(PurchasesErrorCode.UnknownError, "boom")
-        val errorSlot = slot<(PurchasesError) -> Unit>()
-        every {
-            mockWorkflowManager.getWorkflow(
-                workflowOrOfferingId = "wf_1",
-                onSuccess = any(),
-                onError = capture(errorSlot),
-            )
-        } answers { errorSlot.captured(expectedError) }
+        coEvery { mockWorkflowManager.getWorkflow("wf_1") } throws PurchasesException(expectedError)
 
-        var received: PublishedWorkflow? = null
-        var receivedError: PurchasesError? = null
-        purchases.purchasesOrchestrator.getWorkflow(
-            workflowId = "wf_1",
-            onSuccess = { received = it },
-            onError = { receivedError = it },
-        )
+        val thrown = runBlocking {
+            runCatching { purchases.purchasesOrchestrator.getWorkflow("wf_1") }.exceptionOrNull()
+        }
 
-        assertThat(receivedError).isEqualTo(expectedError)
-        assertThat(received).isNull()
+        assertThat(thrown).isInstanceOf(PurchasesException::class.java)
+        assertThat((thrown as PurchasesException).error).isEqualTo(expectedError)
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -2893,20 +2867,13 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     fun `getWorkflow returns ConfigurationError and never calls manager when uiPreviewMode is true`() {
         buildPurchases(anonymous = true, uiPreviewMode = true)
 
-        var received: PublishedWorkflow? = null
-        var receivedError: PurchasesError? = null
-        purchases.purchasesOrchestrator.getWorkflow(
-            workflowId = "wf_1",
-            onSuccess = { received = it },
-            onError = { receivedError = it },
-        )
-
-        assertThat(receivedError).isNotNull
-        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
-        assertThat(received).isNull()
-        verify(exactly = 0) {
-            mockWorkflowManager.getWorkflow(any(), any(), any())
+        val thrown = runBlocking {
+            runCatching { purchases.purchasesOrchestrator.getWorkflow("wf_1") }.exceptionOrNull()
         }
+
+        assertThat(thrown).isInstanceOf(PurchasesException::class.java)
+        assertThat((thrown as PurchasesException).error.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        coVerify(exactly = 0) { mockWorkflowManager.getWorkflow(any()) }
     }
 
     // endregion

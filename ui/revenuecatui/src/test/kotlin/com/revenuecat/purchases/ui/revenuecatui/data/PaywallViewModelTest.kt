@@ -234,11 +234,6 @@ class PaywallViewModelTest {
         every { purchases.useWorkflows } returns false
         coEvery { purchases.workflowIdForOfferingId(any()) } returns null
         coEvery { purchases.awaitGetUiConfig() } returns UiConfig()
-        // Cold in-memory caches by default so the synchronous fast-path falls through to the async path.
-        every { purchases.cachedOfferings } returns null
-        every { purchases.getCachedUiConfig() } returns null
-        every { purchases.getCachedWorkflow(any()) } returns null
-        every { purchases.getCachedWorkflowIdForOffering(any()) } returns null
 
         every { listener.onPurchaseStarted(any()) } just runs
         every { listener.onPurchaseCompleted(any(), any()) } just runs

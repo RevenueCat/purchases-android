@@ -24,8 +24,9 @@ import kotlinx.coroutines.launch
  * [UiConfig] is returned. Callers that need UI config to render should fail instead of using a partial/default
  * configuration.
  *
- * `ui_config` is always kept in memory ([getCachedUiConfig]) once resolved, so a paywall render can read it
- * synchronously without a disk hop. The in-memory copy is re-warmed on every config commit and dropped on
+ * `ui_config` is always kept in memory once resolved, so [getUiConfig] is memory-first: a warm read returns
+ * synchronously (the suspend fn never suspends, so it resumes on the caller's thread with no dispatch) and only
+ * a miss touches the config layer. The in-memory copy is re-warmed on every config commit and dropped on
  * identity change / disable (via [RemoteConfigCommitListener]); a [RemoteConfigManager.configGeneration] guard
  * makes sure a slower disk warm never clobbers a fresher network commit (store-if-newer).
  */
@@ -45,8 +46,8 @@ internal class UiConfigProvider(
     // after a newer commit or an invalidation can't repopulate stale data. -1 = nothing seen yet.
     private var lastGeneration: Int = -1
 
-    /** The in-memory [UiConfig], or `null` if not warmed yet. Synchronous and main-safe. */
-    fun getCachedUiConfig(): UiConfig? = cache
+    /** Whether the `ui_config` is already in memory, so a caller can deliver synchronously. */
+    fun isWarm(): Boolean = cache != null
 
     /**
      * Returns the in-memory [UiConfig] if present, else resolves it from the config layer (which may wait for or
@@ -69,6 +70,9 @@ internal class UiConfigProvider(
         val uiConfig = resolve() ?: return
         store(generation, uiConfig)
     }
+
+    /** Warms at the current config generation; used by the offerings readiness gate. */
+    suspend fun warm() = warm(manager.configGeneration)
 
     /** Fire-and-forget [warm] on this provider's own scope; used for the cold-start init warm. */
     fun warmAsync(generation: Int) {

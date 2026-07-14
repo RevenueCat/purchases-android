@@ -29,13 +29,14 @@ import kotlinx.serialization.json.JsonPrimitive
  * through `topic()` / `blobData()`. It never sees the blob store, the fetcher, or the disk cache.
  *
  * On top of the on-demand suspend reads it keeps a small in-memory cache of **parsed** workflows so a paywall
- * render can read one synchronously ([getCachedWorkflow]) without a disk + JSON hop. Only workflows worth
- * holding are cached: an item flagged `prefetch`, or the one associated with the current offering (its
- * `offering_identifier` equals [currentOfferingIdProvider]'s value). The full `offering_identifier -> workflowId`
- * map (metadata only) is cached for every offering so the render path can resolve an offering to its workflow id
- * synchronously ([getCachedWorkflowIdForOffering]). Both are re-warmed on every config commit and dropped on
- * identity change / disable, guarded by [RemoteConfigManager.configGeneration] (store-if-newer) so a slower disk
- * warm never clobbers a fresher network commit.
+ * render can read one without a disk + JSON hop: [getWorkflow] and [workflowIdForOfferingId] are **memory-first**
+ * — a cache hit returns synchronously (the suspend fn never actually suspends, so it resumes on the caller's
+ * thread with no dispatch), and only a miss touches [RemoteConfigManager]. Only workflows worth holding are
+ * cached: an item flagged `prefetch`, or the one associated with the current offering (its `offering_identifier`
+ * equals [currentOfferingIdProvider]'s value). The full `offering_identifier -> workflowId` map (metadata only)
+ * is cached for every offering. Both are re-warmed on every config commit and dropped on identity change /
+ * disable, guarded by [RemoteConfigManager.configGeneration] (store-if-newer) so a slower disk warm never
+ * clobbers a fresher network commit.
  */
 @Suppress("TooManyFunctions")
 internal class WorkflowsConfigProvider(
@@ -58,13 +59,19 @@ internal class WorkflowsConfigProvider(
     // so an out-of-order low-generation warm can't repopulate stale data. -1 = nothing seen yet.
     private var lastGeneration: Int = -1
 
-    /** The in-memory parsed workflow for [workflowId], or `null` if not cached. Synchronous and main-safe. */
-    fun getCachedWorkflow(workflowId: String): PublishedWorkflow? = cache?.workflows?.get(workflowId)
-
-    /** The in-memory workflow id for [offeringId] (metadata only), or `null` if not cached. Synchronous. */
-    fun getCachedWorkflowIdForOffering(offeringId: String): String? = cache?.offeringToWorkflowId?.get(offeringId)
+    /**
+     * Whether the in-memory cache already holds what the current offering's paywall needs, so the offerings
+     * readiness gate can deliver synchronously. True when the cache is populated and either there is no current
+     * offering, the current offering has no workflow mapping (legacy/embedded paywall), or its workflow is parsed.
+     */
+    fun isWarmForCurrentOffering(): Boolean {
+        val cached = cache ?: return false
+        val workflowId = currentOfferingIdProvider()?.let { cached.offeringToWorkflowId[it] }
+        return workflowId == null || cached.workflows.containsKey(workflowId)
+    }
 
     suspend fun workflowIdForOfferingId(offeringId: String): String? {
+        cache?.let { return it.offeringToWorkflowId[offeringId] }
         val topic = manager.topic(RemoteConfigTopic.Workflows)
         verboseLog { "workflows topic ${if (topic == null) "is absent" else "has ${topic.size} item(s)"}" }
         val matches = topic
@@ -88,9 +95,16 @@ internal class WorkflowsConfigProvider(
 
     /**
      * Resolves [workflowId] into a [PublishedWorkflow], or `null` when the item is unknown, its body can be
-     * neither read nor downloaded, or the body fails to parse.
+     * neither read nor downloaded, or the body fails to parse. Memory-first: a cached (parsed) workflow returns
+     * synchronously; only a miss reads through [RemoteConfigManager] (disk/network + JSON parse).
      */
     suspend fun getWorkflow(workflowId: String): PublishedWorkflow? {
+        cache?.workflows?.get(workflowId)?.let { return it }
+        return resolveWorkflow(workflowId)
+    }
+
+    /** Reads + parses a workflow body straight from the config layer, bypassing the in-memory cache. */
+    private suspend fun resolveWorkflow(workflowId: String): PublishedWorkflow? {
         val body = manager.blobData(RemoteConfigTopic.Workflows, workflowId) { it } ?: run {
             errorLog { "Workflow '$workflowId' is unavailable from remote config." }
             return null
@@ -124,6 +138,8 @@ internal class WorkflowsConfigProvider(
      * offering->workflowId map covers every offering.
      */
     suspend fun warm(generation: Int) {
+        // Already warm for this (or a newer) generation and the current offering — nothing to do.
+        if (isWarmAtOrAbove(generation)) return
         val topic = manager.committedTopicOrNull(RemoteConfigTopic.Workflows) ?: return
         val offeringToWorkflowId = LinkedHashMap<String, String>()
         val currentOfferingId = currentOfferingIdProvider()
@@ -138,9 +154,10 @@ internal class WorkflowsConfigProvider(
                 eligibleIds += workflowId
             }
         }
+        // Resolve from committed config (not the cache we're rebuilding).
         val workflows = coroutineScope {
             eligibleIds.distinct()
-                .map { id -> async { id to getWorkflow(id) } }
+                .map { id -> async { id to resolveWorkflow(id) } }
                 .awaitAll()
         }.mapNotNull { (id, workflow) -> workflow?.let { id to it } }.toMap()
         verboseLog {
@@ -149,6 +166,9 @@ internal class WorkflowsConfigProvider(
         }
         store(generation, Cached(workflows, offeringToWorkflowId))
     }
+
+    /** Warms at the current config generation; used by the offerings readiness gate. */
+    suspend fun warm() = warm(manager.configGeneration)
 
     /** Fire-and-forget [warm] on this provider's own scope; used for the cold-start init warm. */
     fun warmAsync(generation: Int) {
@@ -170,6 +190,10 @@ internal class WorkflowsConfigProvider(
 
     fun close() {
         scope.cancel()
+    }
+
+    private fun isWarmAtOrAbove(generation: Int): Boolean = synchronized(cacheLock) {
+        lastGeneration >= generation && isWarmForCurrentOffering()
     }
 
     private fun store(generation: Int, value: Cached) {

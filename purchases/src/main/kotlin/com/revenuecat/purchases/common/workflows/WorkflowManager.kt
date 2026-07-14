@@ -5,6 +5,8 @@ package com.revenuecat.purchases.common.workflows
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
@@ -15,7 +17,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 /**
@@ -52,62 +53,53 @@ internal class WorkflowManager(
     }
 
     /**
-     * Resolves a workflow by workflow id or offering id and delivers it through [onSuccess], or an error through
-     * [onError] when it cannot be served. Callbacks fire on [scope]; the consumer boundary
-     * (`PurchasesOrchestrator`) normalizes delivery to the main thread, as it always has.
+     * Resolves a workflow by workflow id or offering id, or throws [PurchasesException] when it cannot be
+     * served. Memory-first: on a warm cache every read below resumes synchronously (no dispatch), so a caller
+     * on a `Dispatchers.Main.immediate` coroutine gets the workflow without ever suspending. The workflow's
+     * images and `ui_config` fonts are pre-downloaded fire-and-forget on [scope]; a prewarm failure never fails
+     * the read.
      */
-    fun getWorkflow(
-        workflowOrOfferingId: String,
-        onSuccess: (PublishedWorkflow) -> Unit,
-        onError: (PurchasesError) -> Unit,
-    ) {
-        scope.launch {
-            // An offering id resolves to its workflow id up front from persisted config metadata; a workflow id
-            // passes through. No backend round-trip, no lazy offering→workflow conversion.
-            val workflowId = workflowsConfigProvider.workflowIdForOfferingId(workflowOrOfferingId)
-                ?: workflowOrOfferingId
-            when (val result = workflowsConfigProvider.getWorkflow(workflowId)) {
-                null -> onError(
-                    PurchasesError(
-                        PurchasesErrorCode.UnknownError,
-                        "Workflow '$workflowId' is unavailable from remote config.",
-                    ),
-                )
-                else -> {
-                    val uiConfig = try {
-                        uiConfigProvider.getUiConfig()
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                        errorLog(e) { "Failed to load ui_config for workflow '$workflowId'." }
-                        null
-                    }
-                    if (uiConfig == null) {
-                        onError(
-                            PurchasesError(
-                                PurchasesErrorCode.UnknownError,
-                                "Workflow '$workflowId' resolved, but its UI config is unavailable.",
-                            ),
-                        )
-                        return@launch
-                    }
+    suspend fun getWorkflow(workflowOrOfferingId: String): PublishedWorkflow {
+        // An offering id resolves to its workflow id up front from persisted config metadata; a workflow id
+        // passes through. No backend round-trip, no lazy offering→workflow conversion.
+        val workflowId = workflowsConfigProvider.workflowIdForOfferingId(workflowOrOfferingId)
+            ?: workflowOrOfferingId
+        val workflow = workflowsConfigProvider.getWorkflow(workflowId)
+            ?: throw PurchasesException(
+                PurchasesError(
+                    PurchasesErrorCode.UnknownError,
+                    "Workflow '$workflowId' is unavailable from remote config.",
+                ),
+            )
+        val uiConfig = loadUiConfig(workflowId)
+            ?: throw PurchasesException(
+                PurchasesError(
+                    PurchasesErrorCode.UnknownError,
+                    "Workflow '$workflowId' resolved, but its UI config is unavailable.",
+                ),
+            )
 
-                    // Warm the workflow's images and ui_config fonts in parallel with delivery, like the old
-                    // fetch path did on resolve; a prewarm failure must never fail the read itself. The fonts
-                    // now come from the ui_config topic rather than a uiConfig embedded in the workflow body.
-                    scope.launch {
-                        runCatching {
-                            workflowAssetPreDownloader.preDownloadWorkflowAssets(
-                                result,
-                                uiConfig,
-                            )
-                        }.onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
-                    }
-                    onSuccess(result)
-                }
-            }
+        // Warm the workflow's images and ui_config fonts in parallel with delivery, like the old fetch path did
+        // on resolve; a prewarm failure must never fail the read itself. The fonts now come from the ui_config
+        // topic rather than a uiConfig embedded in the workflow body.
+        scope.launch {
+            runCatching {
+                workflowAssetPreDownloader.preDownloadWorkflowAssets(workflow, uiConfig)
+            }.onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
         }
+        return workflow
     }
+
+    /** Loads `ui_config` (memory-first), swallowing non-cancellation failures to null so the caller decides. */
+    private suspend fun loadUiConfig(workflowId: String): UiConfig? =
+        try {
+            uiConfigProvider.getUiConfig()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            errorLog(e) { "Failed to load ui_config for workflow '$workflowId'." }
+            null
+        }
 
     suspend fun workflowIdForOfferingId(offeringId: String): String? =
         workflowsConfigProvider.workflowIdForOfferingId(offeringId)
@@ -129,21 +121,24 @@ internal class WorkflowManager(
      * The only thing that skips [onComplete] is coroutine cancellation (teardown / identity change), which must not
      * fire a spurious success. A failure in one step also does not cancel the other.
      *
-     * Overlapping calls are coalesced: if a readiness check is already in flight when this is called, the
-     * new caller awaits the same [Deferred] instead of starting a second one, so the underlying work (topic
-     * sync + ui_config fetch) runs only once per overlapping burst. Sequential calls after the in-flight
-     * check completes may start a fresh one; by then blobs are cached so the cost is negligible.
+     * **Fast path:** when the in-memory caches already hold what the current offering needs, [onComplete] runs
+     * **synchronously** on the caller's thread (no `scope.launch`), so a warm `awaitOfferings()` resumes without
+     * a thread hop — the whole point of gating here rather than dispatching unconditionally.
      *
-     * It is not a `suspend` function: it launches the wait on [scope] and calls back, so a callback-based
-     * caller can gate on it without owning a coroutine scope.
+     * Otherwise the caches are warmed on [scope] and [onComplete] fires when done. Overlapping calls are
+     * coalesced onto one [Deferred]. `ui_config` is resolved first: it is memory-first and self-primes a
+     * `/v1/config` sync on a cold cache, which also commits the workflows topic, so warming the workflow parsed
+     * cache next reads committed data.
      */
     fun onPaywallConfigReady(onComplete: () -> Unit) {
+        if (uiConfigProvider.isWarm() && workflowsConfigProvider.isWarmForCurrentOffering()) {
+            onComplete()
+            return
+        }
         val readiness: Deferred<Unit> = synchronized(readinessLock) {
-            inFlightReadiness ?: scope.async<Unit> {
-                coroutineScope {
-                    launch { awaitBestEffort("workflows topic") { workflowsConfigProvider.awaitReady() } }
-                    launch { awaitBestEffort("ui_config") { checkNotNull(uiConfigProvider.getUiConfig()) } }
-                }
+            inFlightReadiness ?: scope.async {
+                awaitBestEffort("ui_config") { checkNotNull(uiConfigProvider.getUiConfig()) }
+                awaitBestEffort("workflows") { workflowsConfigProvider.warm() }
             }.also { deferred ->
                 inFlightReadiness = deferred
                 deferred.invokeOnCompletion {

@@ -578,65 +578,28 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    fun getWorkflow(
-        workflowId: String,
-        onSuccess: (PublishedWorkflow) -> Unit,
-        onError: (PurchasesError) -> Unit,
-    ) {
-        // Deliver every outcome through dispatch so the callback always lands on the main thread,
-        // matching the rest of the SDK's callback APIs (e.g. getOfferings, getCustomerInfo).
-        // WorkflowManager.getWorkflow intentionally has no fixed delivery thread — a cache hit calls
-        // back synchronously on the caller's thread while a miss resolves on its IO scope, and the
-        // prefetch path routes detail callbacks onto a dedicated dispatcher — so normalizing here, at
-        // the consumer boundary, is what gives callers (including awaitGetWorkflow) a stable thread.
+    /**
+     * Resolves a workflow by workflow or offering id, or throws [PurchasesException] when it can't be served.
+     * Memory-first via [WorkflowManager.getWorkflow]: a warm cache resumes synchronously on the caller's thread
+     * with no dispatch, so a paywall render on a `Dispatchers.Main.immediate` coroutine never suspends.
+     */
+    suspend fun getWorkflow(workflowId: String): PublishedWorkflow {
         if (appConfig.uiPreviewMode) {
-            dispatch {
-                onError(
-                    PurchasesError(
-                        PurchasesErrorCode.ConfigurationError,
-                        "Workflows cannot be fetched in UI preview mode.",
-                    ),
-                )
-            }
-            return
+            throw PurchasesException(
+                PurchasesError(
+                    PurchasesErrorCode.ConfigurationError,
+                    "Workflows cannot be fetched in UI preview mode.",
+                ),
+            )
         }
-        if (workflowManager == null) {
-            dispatch {
-                onError(
-                    PurchasesError(
-                        PurchasesErrorCode.ConfigurationError,
-                        "Workflows are not enabled.",
-                    ),
-                )
-            }
-            return
-        }
-        workflowManager.getWorkflow(
-            workflowOrOfferingId = workflowId,
-            onSuccess = { dispatch { onSuccess(it) } },
-            onError = { dispatch { onError(it) } },
+        val manager = workflowManager ?: throw PurchasesException(
+            PurchasesError(PurchasesErrorCode.ConfigurationError, "Workflows are not enabled."),
         )
+        return manager.getWorkflow(workflowId)
     }
 
     suspend fun workflowIdForOfferingId(offeringId: String): String? =
         workflowManager?.workflowIdForOfferingId(offeringId)
-
-    /**
-     * The in-memory [UiConfig] if it has been warmed (always cached once resolved), else `null`. Synchronous:
-     * lets the paywall render path avoid a disk hop and the resulting loading flash when config is warm.
-     */
-    fun getCachedUiConfig(): UiConfig? = uiConfigProvider?.getCachedUiConfig()
-
-    /**
-     * The in-memory parsed workflow for [workflowId] if it is cached (only prefetch / current-offering workflows
-     * are), else `null`. Synchronous; see [getCachedUiConfig].
-     */
-    fun getCachedWorkflow(workflowId: String): PublishedWorkflow? =
-        workflowsConfigProvider?.getCachedWorkflow(workflowId)
-
-    /** The in-memory workflow id for [offeringId] (metadata only) if cached, else `null`. Synchronous. */
-    fun getCachedWorkflowIdForOffering(offeringId: String): String? =
-        workflowsConfigProvider?.getCachedWorkflowIdForOffering(offeringId)
 
     suspend fun getUiConfig(): UiConfig {
         val provider = uiConfigProvider

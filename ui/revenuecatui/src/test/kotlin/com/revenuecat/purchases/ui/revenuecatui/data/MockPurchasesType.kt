@@ -68,12 +68,4 @@ internal class MockPurchasesType(
     }
 
     override suspend fun workflowIdForOfferingId(offeringId: String): String? = null
-
-    override fun getCachedWorkflow(workflowId: String): PublishedWorkflow? = null
-
-    override fun getCachedUiConfig(): UiConfig? = null
-
-    override fun getCachedWorkflowIdForOffering(offeringId: String): String? = null
-
-    override val cachedOfferings: Offerings? = null
 }

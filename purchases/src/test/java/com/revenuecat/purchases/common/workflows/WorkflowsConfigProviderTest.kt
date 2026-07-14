@@ -45,34 +45,62 @@ internal class WorkflowsConfigProviderTest {
     }
 
     @Test
-    fun `warm caches only prefetch and current-offering workflows`() = runTest {
+    fun `warm resolves only prefetch and current-offering workflow bodies`() = runTest {
         stubTopic()
         stubWorkflowBody(WF_PREFETCH)
         stubWorkflowBody(WF_CURRENT)
 
         provider.warm(generation = 0)
 
-        assertThat(provider.getCachedWorkflow(WF_PREFETCH)).isNotNull
-        assertThat(provider.getCachedWorkflow(WF_CURRENT)).isNotNull
-        assertThat(provider.getCachedWorkflow(WF_OTHER)).isNull()
+        coVerify(exactly = 1) { manager.blobData(RemoteConfigTopic.Workflows, WF_PREFETCH, any<(ByteArray) -> ByteArray?>()) }
+        coVerify(exactly = 1) { manager.blobData(RemoteConfigTopic.Workflows, WF_CURRENT, any<(ByteArray) -> ByteArray?>()) }
         // The ineligible workflow's body is never read.
-        coVerify(exactly = 0) {
-            manager.blobData(RemoteConfigTopic.Workflows, WF_OTHER, any<(ByteArray) -> ByteArray?>())
-        }
+        coVerify(exactly = 0) { manager.blobData(RemoteConfigTopic.Workflows, WF_OTHER, any<(ByteArray) -> ByteArray?>()) }
+        assertThat(provider.isWarmForCurrentOffering()).isTrue
     }
 
     @Test
-    fun `warm caches the offering-to-workflow-id map for every offering`() = runTest {
+    fun `getWorkflow returns a warmed workflow from memory without re-reading`() = runTest {
         stubTopic()
         stubWorkflowBody(WF_PREFETCH)
         stubWorkflowBody(WF_CURRENT)
-
         provider.warm(generation = 0)
 
-        assertThat(provider.getCachedWorkflowIdForOffering(CURRENT_OFFERING)).isEqualTo(WF_CURRENT)
-        // Even the ineligible workflow's offering mapping is cached (metadata is cheap); only its body isn't.
-        assertThat(provider.getCachedWorkflowIdForOffering(OTHER_OFFERING)).isEqualTo(WF_OTHER)
+        val workflow = provider.getWorkflow(WF_CURRENT)
+
+        assertThat(workflow).isNotNull
+        // Only the one read during warm; the memory-first getWorkflow did not touch the config layer again.
+        coVerify(exactly = 1) { manager.blobData(RemoteConfigTopic.Workflows, WF_CURRENT, any<(ByteArray) -> ByteArray?>()) }
     }
+
+    @Test
+    fun `workflowIdForOfferingId resolves from memory without reading the topic`() = runTest {
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        stubWorkflowBody(WF_CURRENT)
+        provider.warm(generation = 0)
+
+        assertThat(provider.workflowIdForOfferingId(CURRENT_OFFERING)).isEqualTo(WF_CURRENT)
+        // Even the ineligible workflow's offering mapping is cached (metadata is cheap).
+        assertThat(provider.workflowIdForOfferingId(OTHER_OFFERING)).isEqualTo(WF_OTHER)
+        // A strict mock: manager.topic() is never stubbed, so a cache miss would throw. It doesn't → memory hit.
+        coVerify(exactly = 0) { manager.topic(RemoteConfigTopic.Workflows) }
+    }
+
+    @Test
+    fun `workflowIdForOfferingId returns null from the warm cache for a non-offering id without reading the topic`() =
+        runTest {
+            // Regression: WorkflowManager.getWorkflow re-resolves with a workflow id (not an offering id). When
+            // warm, that must return null from the complete cached map, NOT fall through to manager.topic() and
+            // suspend — which would reintroduce a one-frame loading flash on an otherwise-warm render.
+            stubTopic()
+            stubWorkflowBody(WF_PREFETCH)
+            stubWorkflowBody(WF_CURRENT)
+            provider.warm(generation = 0)
+
+            assertThat(provider.workflowIdForOfferingId(WF_CURRENT)).isNull()
+            coVerify(exactly = 0) { manager.topic(RemoteConfigTopic.Workflows) }
+        }
 
     @Test
     fun `warm is a no-op and never reads bodies when the workflows topic is not committed`() = runTest {
@@ -80,10 +108,24 @@ internal class WorkflowsConfigProviderTest {
 
         provider.warm(generation = 0)
 
-        assertThat(provider.getCachedWorkflow(WF_PREFETCH)).isNull()
+        assertThat(provider.isWarmForCurrentOffering()).isFalse
         coVerify(exactly = 0) {
             manager.blobData(RemoteConfigTopic.Workflows, any(), any<(ByteArray) -> ByteArray?>())
         }
+    }
+
+    @Test
+    fun `isWarmForCurrentOffering is false when the current offering changes to an uncached workflow`() = runTest {
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        stubWorkflowBody(WF_CURRENT)
+        provider.warm(generation = 0)
+        assertThat(provider.isWarmForCurrentOffering()).isTrue
+
+        // The current offering switches to one whose workflow was not eligible (so not parsed).
+        currentOfferingId = OTHER_OFFERING
+
+        assertThat(provider.isWarmForCurrentOffering()).isFalse
     }
 
     @Test
@@ -92,12 +134,11 @@ internal class WorkflowsConfigProviderTest {
         stubWorkflowBody(WF_PREFETCH)
         stubWorkflowBody(WF_CURRENT)
         provider.warm(generation = 0)
-        assertThat(provider.getCachedWorkflow(WF_PREFETCH)).isNotNull
+        assertThat(provider.isWarmForCurrentOffering()).isTrue
 
         provider.onConfigInvalidated(generation = 1)
 
-        assertThat(provider.getCachedWorkflow(WF_PREFETCH)).isNull()
-        assertThat(provider.getCachedWorkflowIdForOffering(CURRENT_OFFERING)).isNull()
+        assertThat(provider.isWarmForCurrentOffering()).isFalse
     }
 
     @Test
@@ -107,11 +148,11 @@ internal class WorkflowsConfigProviderTest {
         stubWorkflowBody(WF_CURRENT)
 
         provider.warm(generation = 5)
-        val higher = provider.getCachedWorkflow(WF_PREFETCH)
+        val higher = provider.getWorkflow(WF_CURRENT)
 
         provider.warm(generation = 2)
 
-        assertThat(provider.getCachedWorkflow(WF_PREFETCH)).isSameAs(higher)
+        assertThat(provider.getWorkflow(WF_CURRENT)).isSameAs(higher)
     }
 
     private fun stubTopic() {

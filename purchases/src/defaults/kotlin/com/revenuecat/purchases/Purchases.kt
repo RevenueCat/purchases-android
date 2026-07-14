@@ -57,9 +57,6 @@ import org.json.JSONObject
 import java.net.URL
 import java.util.Locale
 import java.util.UUID
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -417,13 +414,7 @@ public class Purchases internal constructor(
     @Throws(PurchasesException::class)
     public suspend fun awaitGetWorkflow(
         workflowId: String,
-    ): PublishedWorkflow = suspendCoroutine { continuation ->
-        purchasesOrchestrator.getWorkflow(
-            workflowId = workflowId,
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
-        )
-    }
+    ): PublishedWorkflow = purchasesOrchestrator.getWorkflow(workflowId)
 
     @InternalRevenueCatAPI
     @JvmSynthetic
@@ -434,40 +425,6 @@ public class Purchases internal constructor(
     @JvmSynthetic
     public suspend fun workflowIdForOfferingId(offeringId: String): String? =
         purchasesOrchestrator.workflowIdForOfferingId(offeringId)
-
-    /**
-     * The in-memory [UiConfig] if it has already been warmed, else `null`. `ui_config` is kept in memory once
-     * resolved, so this lets the paywall render path read it synchronously (no disk hop, no loading flash).
-     * Returns `null` when workflows are off or it hasn't been warmed yet; callers should fall back to
-     * [awaitGetUiConfig] in that case.
-     */
-    @InternalRevenueCatAPI
-    public fun getCachedUiConfig(): UiConfig? = purchasesOrchestrator.getCachedUiConfig()
-
-    /**
-     * The in-memory parsed [PublishedWorkflow] for [workflowId] if it is cached, else `null`. Only workflows
-     * worth holding are cached in memory (flagged `prefetch`, or associated with the current offering). Returns
-     * `null` when workflows are off, the workflow isn't eligible, or it hasn't been warmed yet; callers should
-     * fall back to [awaitGetWorkflow] in that case.
-     */
-    @InternalRevenueCatAPI
-    public fun getCachedWorkflow(workflowId: String): PublishedWorkflow? =
-        purchasesOrchestrator.getCachedWorkflow(workflowId)
-
-    /**
-     * The in-memory workflow id for [offeringId] (metadata only) if cached, else `null`. Synchronous companion
-     * to [workflowIdForOfferingId].
-     */
-    @InternalRevenueCatAPI
-    public fun getCachedWorkflowIdForOffering(offeringId: String): String? =
-        purchasesOrchestrator.getCachedWorkflowIdForOffering(offeringId)
-
-    /**
-     * The in-memory [Offerings] if the cache is warm, else `null`. Synchronous; lets the paywall render path
-     * resolve an offering without suspending when offerings are already cached.
-     */
-    @InternalRevenueCatAPI
-    public fun getCachedOfferings(): Offerings? = purchasesOrchestrator.cachedOfferings
 
     /**
      * Gets the StoreProduct(s) for the given list of product ids for all product types.

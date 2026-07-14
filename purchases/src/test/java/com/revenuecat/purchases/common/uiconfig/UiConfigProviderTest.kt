@@ -181,14 +181,14 @@ internal class UiConfigProviderTest {
     }
 
     @Test
-    fun `getCachedUiConfig is null before warm and populated after`() = runTest {
+    fun `isWarm is false before warm and true after`() = runTest {
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) } returns mockk()
         stubMergedRead(minimalUiConfigJson())
 
-        assertThat(provider.getCachedUiConfig()).isNull()
+        assertThat(provider.isWarm()).isFalse
         provider.warm(generation = 0)
 
-        assertThat(provider.getCachedUiConfig()).isNotNull
+        assertThat(provider.isWarm()).isTrue
     }
 
     @Test
@@ -197,7 +197,7 @@ internal class UiConfigProviderTest {
 
         provider.warm(generation = 0)
 
-        assertThat(provider.getCachedUiConfig()).isNull()
+        assertThat(provider.isWarm()).isFalse
         coVerify(exactly = 0) {
             manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())
         }
@@ -221,11 +221,11 @@ internal class UiConfigProviderTest {
     fun `onConfigInvalidated drops the cached ui_config`() = runTest {
         stubMergedRead(minimalUiConfigJson())
         provider.getUiConfig()
-        assertThat(provider.getCachedUiConfig()).isNotNull
+        assertThat(provider.isWarm()).isTrue
 
         provider.onConfigInvalidated(generation = 1)
 
-        assertThat(provider.getCachedUiConfig()).isNull()
+        assertThat(provider.isWarm()).isFalse
     }
 
     @Test
@@ -235,12 +235,12 @@ internal class UiConfigProviderTest {
 
         // A fresh (higher-generation) commit warmed the cache.
         provider.warm(generation = 5)
-        val higher = requireNotNull(provider.getCachedUiConfig())
+        val higher = requireNotNull(provider.getUiConfig())
 
         // A slower disk warm for an older generation must not overwrite it.
         provider.warm(generation = 2)
 
-        assertThat(provider.getCachedUiConfig()).isSameAs(higher)
+        assertThat(provider.getUiConfig()).isSameAs(higher)
     }
 
     @Test
@@ -253,7 +253,7 @@ internal class UiConfigProviderTest {
         // An in-flight warm started for an older generation lands afterward.
         provider.warm(generation = 3)
 
-        assertThat(provider.getCachedUiConfig()).isNull()
+        assertThat(provider.isWarm()).isFalse
     }
 
     private fun minimalUiConfigJson(): JsonObject = buildJsonObject {
