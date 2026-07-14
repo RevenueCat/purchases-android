@@ -160,15 +160,18 @@ internal class StyleFactory(
 
         private class WindowInsetsState {
             /**
-             * Whether the current component should apply the top window insets. This field is reset when it is read,
-             * as it should only be set on a single component.
+             * The stack that should apply the top window insets, if any. Tracked by reference (rather than a
+             * flag consumed by the next stack style built) because children styles are built before their
+             * parent's: a flag intended for a hero ZLayer would otherwise be consumed by the first stack
+             * nested inside one of its overlay children (e.g. a close button's stack).
              */
-            var applyTopWindowInsets = false
-                get() {
-                    val value = field
-                    field = false
-                    return value
-                }
+            private var stackAwaitingTopWindowInsets: StackComponent? = null
+
+            /**
+             * Whether [component] should apply the top window insets.
+             */
+            fun shouldApplyTopWindowInsets(component: StackComponent): Boolean =
+                stackAwaitingTopWindowInsets === component
 
             /**
              * Whether the current component should ignore the top window insets. This field is reset when it is read,
@@ -207,17 +210,12 @@ internal class StyleFactory(
             fun handleHeaderMediaViewWindowInsets(component: PaywallComponent) {
                 when (component) {
                     is StackComponent -> if (stillLookingForHeaderMedia) {
-                        applyTopWindowInsets = when (component.dimension) {
-                            is Dimension.ZLayer -> {
-                                val hasHero = component.components.firstOrNull()?.isHeaderMedia == true
-                                topWindowInsetsApplied = hasHero
-                                heroImageDetected = hasHero
-                                hasHero
-                            }
+                        when (component.dimension) {
+                            is Dimension.ZLayer -> handleZLayerHeaderStack(component)
 
                             is Dimension.Horizontal,
                             is Dimension.Vertical,
-                            -> false
+                            -> Unit
                         }
                     }
 
@@ -240,6 +238,13 @@ internal class StyleFactory(
                     is FallbackHeaderComponent -> { /* Skip: does not affect hero image detection. */ }
                     else -> stillLookingForHeaderMedia = false
                 }
+            }
+
+            private fun handleZLayerHeaderStack(component: StackComponent) {
+                val hasHero = component.components.firstOrNull()?.isHeaderMedia == true
+                topWindowInsetsApplied = hasHero
+                heroImageDetected = hasHero
+                if (hasHero) stackAwaitingTopWindowInsets = component
             }
 
             private val PaywallComponent.isHeaderMedia: Boolean
@@ -267,9 +272,10 @@ internal class StyleFactory(
         val windowInsetsState = WindowInsetsState()
 
         /**
-         * Whether the current component should apply the top window insets.
+         * Whether [component] should apply the top window insets.
          */
-        val applyTopWindowInsets by windowInsetsState::applyTopWindowInsets
+        fun shouldApplyTopWindowInsets(component: StackComponent): Boolean =
+            windowInsetsState.shouldApplyTopWindowInsets(component)
 
         /**
          * Whether the current component should ignore the top window insets.
@@ -926,7 +932,7 @@ internal class StyleFactory(
             countdownDate = countdownDate,
             countFrom = countFrom,
             overrides = presentedOverrides,
-            applyTopWindowInsets = applyTopWindowInsets,
+            applyTopWindowInsets = shouldApplyTopWindowInsets(component),
         )
     }
 
