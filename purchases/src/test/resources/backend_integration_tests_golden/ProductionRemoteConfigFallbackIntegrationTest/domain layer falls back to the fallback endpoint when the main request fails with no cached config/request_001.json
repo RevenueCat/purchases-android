@@ -22,6 +22,7 @@
   },
   "body": {
     "app_user_id": "integrationTestRemoteConfigFallbackUser",
+    "fetch_context": "read",
     "prefetched_blobs": []
   }
 }
