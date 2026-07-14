@@ -1,10 +1,13 @@
 package com.revenuecat.paywallstester
 
 import android.content.Context
+import com.revenuecat.purchases.DangerousSettings
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesConfiguration
 
+@OptIn(InternalRevenueCatAPI::class)
 internal class ConfigurePurchasesUseCase(
     private val context: Context,
 ) {
@@ -14,6 +17,10 @@ internal class ConfigurePurchasesUseCase(
             .purchasesAreCompletedBy(PurchasesAreCompletedBy.REVENUECAT)
             .appUserID(null)
             .diagnosticsEnabled(true)
+
+        if (BuildConfig.PAYWALL_TESTER_USE_WORKFLOWS) {
+            builder.dangerousSettings(DangerousSettings.forWorkflows())
+        }
 
         if (Constants.PREFERRED_UI_LOCALE_OVERRIDE.isNotEmpty()) {
             builder.preferredUILocaleOverride(

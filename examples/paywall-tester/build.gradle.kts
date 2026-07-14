@@ -59,6 +59,11 @@ android {
             "PAYWALL_TESTER_AUTO_OPEN_OFFERING_ID",
             "\"${resolveProperty("PAYWALL_TESTER_AUTO_OPEN_OFFERING_ID")}\"",
         )
+        buildConfigField(
+            "boolean",
+            "PAYWALL_TESTER_USE_WORKFLOWS",
+            resolveProperty("PAYWALL_TESTER_USE_WORKFLOWS").toBoolean().toString(),
+        )
     }
 
     signingConfigs {
@@ -73,6 +78,10 @@ android {
     buildTypes {
         getByName("release") {
             isMinifyEnabled = true
+            // The macrobenchmark targets this release variant. Isolate workflow on/off
+            // installs so Android does not reuse the other variant's app data.
+            val benchmarkPackageSuffix = resolveProperty("PAYWALL_TESTER_BENCHMARK_PACKAGE_SUFFIX")
+            applicationIdSuffix = benchmarkPackageSuffix.ifEmpty { null }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
@@ -141,6 +150,7 @@ dependencies {
 
     implementation(libs.androidx.core)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.profileinstaller)
     implementation(platform(libs.compose.bom))
     implementation(libs.material)
     implementation(libs.compose.ui)
