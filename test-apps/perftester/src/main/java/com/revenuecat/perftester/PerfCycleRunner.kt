@@ -35,6 +35,7 @@ internal class PerfCycleRunner(
         val hadRemoteConfig = SdkCaches.hadRemoteConfigCache(context)
         val hadBlobs = SdkCaches.hadBlobsCache(context)
         val processStartToPressMs = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
+        val memoryBefore = ProcessMemorySnapshot.capture()
 
         val dangerousSettings = if (workflowsEnabled) {
             DangerousSettings.forWorkflows()
@@ -119,6 +120,10 @@ internal class PerfCycleRunner(
             }
         }
 
+        // getOfferings plus the workflows readiness calls above are complete here. This is the
+        // retained-state sample, after the workflow data has been parsed and cached.
+        val memoryAfter = ProcessMemorySnapshot.capture()
+
         val result = PerfResult(
             timestampEpochMs = System.currentTimeMillis(),
             sdkVersion = Purchases.frameworkVersion,
@@ -130,6 +135,21 @@ internal class PerfCycleRunner(
             hadOfferingsCache = hadOfferings,
             hadRemoteConfigCache = hadRemoteConfig,
             hadBlobsCache = hadBlobs,
+            memoryBeforeRssKb = memoryBefore.rssKb,
+            memoryAfterRssKb = memoryAfter.rssKb,
+            memoryDeltaRssKb = memoryAfter.rssKb.deltaFrom(memoryBefore.rssKb),
+            memoryBeforeRssAnonKb = memoryBefore.rssAnonKb,
+            memoryAfterRssAnonKb = memoryAfter.rssAnonKb,
+            memoryDeltaRssAnonKb = memoryAfter.rssAnonKb.deltaFrom(memoryBefore.rssAnonKb),
+            memoryBeforeRssFileKb = memoryBefore.rssFileKb,
+            memoryAfterRssFileKb = memoryAfter.rssFileKb,
+            memoryDeltaRssFileKb = memoryAfter.rssFileKb.deltaFrom(memoryBefore.rssFileKb),
+            memoryBeforeJavaHeapKb = memoryBefore.javaHeapKb,
+            memoryAfterJavaHeapKb = memoryAfter.javaHeapKb,
+            memoryDeltaJavaHeapKb = memoryAfter.javaHeapKb.deltaFrom(memoryBefore.javaHeapKb),
+            memoryBeforeNativeHeapKb = memoryBefore.nativeHeapKb,
+            memoryAfterNativeHeapKb = memoryAfter.nativeHeapKb,
+            memoryDeltaNativeHeapKb = memoryAfter.nativeHeapKb.deltaFrom(memoryBefore.nativeHeapKb),
             configureToOfferingsMs = configureToOfferingsMs,
             getOfferingsMs = getOfferingsMs,
             uiConfigMs = uiConfigMs,
