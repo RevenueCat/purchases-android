@@ -1,0 +1,19 @@
+{
+  "product_details": [
+    {
+      "identifier": "monthly_freetrial",
+      "product_type": "subscription",
+      "title": "Monthly",
+      "description": "Monthly subscription",
+      "default_purchase_option_id": "option1",
+      "purchase_options": {
+        "option1": {
+          "base": {
+            "price": { "amount_micros": 4990000, "currency": "USD" },
+            "period_duration": "P1M"
+          }
+        }
+      }
+    }
+  ]
+}

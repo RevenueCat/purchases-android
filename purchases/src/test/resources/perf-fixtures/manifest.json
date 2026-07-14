@@ -1,0 +1,6 @@
+[
+  { "match": "/products",       "file": "products.json",    "status": 200 },
+  { "match": "/offerings",      "file": "offerings.json",   "status": 200 },
+  { "match": "/config",         "file": "config.json",      "status": 200 },
+  { "match": "/v1/subscribers", "file": "subscribers.json", "status": 200 }
+]
