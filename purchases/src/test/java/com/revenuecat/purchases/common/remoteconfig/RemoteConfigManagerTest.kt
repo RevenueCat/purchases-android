@@ -179,9 +179,62 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `a failed refresh does not stamp the refresh time, so the next staleness check retries`() {
+    fun `clearCache clears the refresh attempt cooldown`() {
+        every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
+
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+
+        manager.clearCache(TEST_APP_USER_ID)
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a failed refresh does not stamp the refresh time, but stale-gated retries are throttled`() {
         // A warm cache: a retryable error settles the refresh directly (no cold-start fallback), so this
         // exercises the "failure doesn't stamp the time" bookkeeping in isolation.
+        every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
+
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+
+        // Same clock: the failure left lastRefreshedAt unset, but the recent attempt keeps stale-gated refreshes
+        // from retrying on every caller.
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+
+        currentTimeMillis += REFRESH_ATTEMPT_COOLDOWN_MILLIS + 1
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a skipped stale-gated refresh while already in flight does not start the cooldown`() {
+        every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `explicit refresh retries immediately after a retryable failure`() {
         every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
@@ -190,9 +243,7 @@ class RemoteConfigManagerTest {
             GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
         )
 
-        // Same clock: the failure left lastRefreshedAt unset, so the staleness check retries immediately
-        // instead of sitting out the window with no data.
-        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
 
         verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
     }
@@ -855,6 +906,28 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `a failing fallback is throttled for stale-gated retries`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownBackendError, "server error"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        onFallbackError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownBackendError, "still down"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+
+        currentTimeMillis += REFRESH_ATTEMPT_COOLDOWN_MILLIS + 1
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `a 4xx from the fallback disables the endpoint`() {
         every { diskCache.read() } returns null
 
@@ -1127,6 +1200,44 @@ class RemoteConfigManagerTest {
 
         assertThat(read.isCompleted).isTrue()
         assertThat(result).containsKey("wf1")
+    }
+
+    @Test
+    fun `topic-triggered syncs are throttled after a retryable failure`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("sources"),
+            topics = mapOf(
+                "sources" to ConfigTopic(mapOf("default" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
+
+        var firstResult: ConfigTopic? = ConfigTopic(emptyMap())
+        val firstRead = launch(UnconfinedTestDispatcher(testScheduler)) {
+            firstResult = manager.topic(RemoteConfigTopic.Workflows)
+        }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        assertThat(firstRead.isCompleted).isTrue()
+        assertThat(firstResult).isNull()
+
+        assertThat(manager.topic(RemoteConfigTopic.Workflows)).isNull()
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+
+        currentTimeMillis += REFRESH_ATTEMPT_COOLDOWN_MILLIS + 1
+        val retryRead = launch(UnconfinedTestDispatcher(testScheduler)) {
+            manager.topic(RemoteConfigTopic.Workflows)
+        }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        assertThat(retryRead.isCompleted).isTrue()
     }
 
     @Test
@@ -1937,6 +2048,7 @@ class RemoteConfigManagerTest {
 
         // Older than the 5-minute foreground staleness window (see Date?.isCacheStale).
         private const val STALE_FOREGROUND_AGE_MILLIS = 6 * 60 * 1000L
+        private const val REFRESH_ATTEMPT_COOLDOWN_MILLIS = 60_000L
         private const val WAIT_SECONDS = 5L
         private const val BLOCKED_MILLIS = 200L
         private const val STRESS_ITERATIONS = 50
