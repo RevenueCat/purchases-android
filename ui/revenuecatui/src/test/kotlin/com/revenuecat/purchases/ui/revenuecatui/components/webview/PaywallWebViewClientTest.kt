@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
+import android.content.Context
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -17,16 +18,26 @@ import org.robolectric.RobolectricTestRunner
 @RunWith(RobolectricTestRunner::class)
 internal class PaywallWebViewClientTest {
 
-    private lateinit var webView: WebView
+    private lateinit var webView: TrackingWebView
     private val expectedOrigin = "https://assets.example.com"
     private val navigations = mutableListOf<String?>()
     private var failureCount = 0
 
     private lateinit var client: PaywallWebViewClient
 
+    private class TrackingWebView(context: Context) : WebView(context) {
+        var stopLoadingCount: Int = 0
+            private set
+
+        override fun stopLoading() {
+            stopLoadingCount += 1
+            super.stopLoading()
+        }
+    }
+
     @Before
     fun setUp() {
-        webView = WebView(ApplicationProvider.getApplicationContext())
+        webView = TrackingWebView(ApplicationProvider.getApplicationContext())
         navigations.clear()
         failureCount = 0
         client = PaywallWebViewClient(
@@ -41,6 +52,32 @@ internal class PaywallWebViewClientTest {
         client.onPageStarted(webView, "https://assets.example.com/promo/index.html", null)
 
         assertThat(navigations).containsExactly("https://assets.example.com/promo/index.html")
+        assertThat(webView.stopLoadingCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `onPageStarted does not stop same-origin https loads`() {
+        client.onPageStarted(webView, "https://assets.example.com/promo/step-two.html", null)
+
+        assertThat(navigations).containsExactly("https://assets.example.com/promo/step-two.html")
+        assertThat(webView.stopLoadingCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `onPageStarted stops blocked cross-origin loads that bypass shouldOverrideUrlLoading`() {
+        // POST navigations skip shouldOverrideUrlLoading; onPageStarted is the backstop.
+        client.onPageStarted(webView, "https://evil.example.org/phish.html", null)
+
+        assertThat(navigations).containsExactly("https://evil.example.org/phish.html")
+        assertThat(webView.stopLoadingCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `onPageStarted stops blocked non-https loads`() {
+        client.onPageStarted(webView, "http://assets.example.com/promo/insecure.html", null)
+
+        assertThat(navigations).containsExactly("http://assets.example.com/promo/insecure.html")
+        assertThat(webView.stopLoadingCount).isEqualTo(1)
     }
 
     @Test

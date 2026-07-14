@@ -43,7 +43,7 @@ public class PaywallDialogOptions internal constructor(
         webViewMessageHandler = builder.webViewMessageHandler,
     )
 
-    public companion object {
+    private companion object {
         private const val hashMultiplier = 31
     }
 

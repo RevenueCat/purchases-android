@@ -34,6 +34,16 @@ internal class PaywallWebViewClient(
         super.onPageStarted(view, url, favicon)
         // onPageStarted is main-frame only and marks a new JavaScript document.
         onMainFrameNavigationStarted(url)
+        // shouldOverrideUrlLoading is not called for POST navigations, so re-check the policy
+        // here and kill any main-frame load that slipped through (cross-origin / non-HTTPS).
+        if (shouldBlockWebViewNavigation(
+                url = url,
+                isMainFrame = true,
+                expectedOrigin = expectedOrigin,
+            )
+        ) {
+            view.stopLoading()
+        }
     }
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {

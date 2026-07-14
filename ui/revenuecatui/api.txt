@@ -54,7 +54,6 @@ package com.revenuecat.purchases.ui.revenuecatui {
     property public final kotlin.jvm.functions.Function1<com.revenuecat.purchases.CustomerInfo,java.lang.Boolean>? shouldDisplayBlock;
     property public final boolean shouldDisplayDismissButton;
     property public final com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessageHandler? webViewMessageHandler;
-    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions.Companion Companion;
   }
 
   public static final class PaywallDialogOptions.Builder {
@@ -70,9 +69,6 @@ package com.revenuecat.purchases.ui.revenuecatui {
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions.Builder setShouldDisplayBlock(kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.CustomerInfo,java.lang.Boolean>? shouldDisplayBlock);
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions.Builder setShouldDisplayDismissButton(boolean shouldDisplayDismissButton);
     method public com.revenuecat.purchases.ui.revenuecatui.PaywallDialogOptions.Builder setWebViewMessageHandler(com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessageHandler? handler);
-  }
-
-  public static final class PaywallDialogOptions.Companion {
   }
 
   public final class PaywallFooterKt {
