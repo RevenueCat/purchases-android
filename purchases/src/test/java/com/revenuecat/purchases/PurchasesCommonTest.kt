@@ -11,6 +11,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toInAppStoreProduct
@@ -2996,7 +2997,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         )
 
         verify(exactly = 1) {
-            mockRemoteConfigManager.refreshRemoteConfig(false, appUserId)
+            mockRemoteConfigManager.refreshRemoteConfig(false, appUserId, RemoteConfigFetchContext.Read)
         }
     }
 
@@ -3018,7 +3019,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         repeat(6) { purchases.purchasesOrchestrator.syncAttributesAndOfferingsIfNeeded(callback) }
 
         verify(exactly = 5) {
-            mockRemoteConfigManager.refreshRemoteConfig(false, appUserId)
+            mockRemoteConfigManager.refreshRemoteConfig(false, appUserId, RemoteConfigFetchContext.Read)
         }
     }
 

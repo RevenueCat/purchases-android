@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobFetcher
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDiskCache
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
@@ -236,6 +237,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
             backend.getRemoteConfig(
                 appInBackground = false,
                 appUserID = "integrationTestRemoteConfigUser",
+                fetchContext = RemoteConfigFetchContext.AppStart,
                 domain = "app",
                 manifest = manifest,
                 prefetchedBlobs = prefetchedBlobs,
