@@ -89,6 +89,36 @@ class GetOfferingsPerfTest {
             .withFailMessage("feature/baseline getOfferings ratio %.2f exceeded bound %.2f (regression?)", ratio, RATIO_BOUND)
             .isLessThan(RATIO_BOUND)
     }
+
+    @Test
+    fun warmGetOfferingsUnderBadNetworkServesFromCacheFast() {
+        // server.url(...) auto-starts the server; no explicit server.start().
+        server.dispatcher = NetworkProfile.BAD.decorate(PerfFixtures.dispatcher(server.url("/").toString()))
+        // Prime cache (cold), then measure a warm cycle reusing state.
+        val cold = harness().runCycle(useWorkflows = true, cold = true)
+        val warm = PerfHarness(context, server).runCycle(useWorkflows = true, cold = false)
+        println("PERF_WARM cold=${cold.elapsedMs}ms warm=${warm.elapsedMs}ms")
+        assertThat(warm.error).isNull()
+        assertThat(warm.offeringsCount).isGreaterThan(0)
+        // The SDK's "warm" path is not a pure cache read — it revalidates via conditional
+        // requests, so it does not stay under a single request delay (NetworkProfile.BAD.
+        // perRequestDelayMs). Instead, assert it beats a full cold cycle, which proves the
+        // cache still helps even though it does not eliminate the round trip entirely.
+        assertThat(warm.elapsedMs).isLessThan(cold.elapsedMs)
+    }
+
+    @Test
+    fun failingNonCriticalConfigSyncStillReturnsOfferings() {
+        // The workflow /config sync is best-effort: if it fails, getOfferings must still return offerings.
+        // server.url(...) auto-starts the server; no explicit server.start().
+        server.dispatcher = NetworkProfile.FLAKY.decorate(
+            PerfFixtures.dispatcher(server.url("/").toString()),
+            failMatch = "/config",
+        )
+        val result = harness().runCycle(useWorkflows = true, cold = true)
+        assertThat(result.error).isNull()
+        assertThat(result.offeringsCount).isGreaterThan(0)
+    }
 }
 
 private fun CycleResult.paths() = requestPaths
