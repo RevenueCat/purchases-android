@@ -62,8 +62,19 @@ class PerfHarness(
         val elapsedMs = (System.nanoTime() - start) / 1_000_000
         check(latch.count == 0L) { "getOfferings timed out after $TIMEOUT_SECONDS s" }
 
-        val paths = generateSequence { server.takeRequest(0, TimeUnit.MILLISECONDS) }
-            .mapNotNull { it.path }.toList()
+        // The workflow /config sync is fired on a background thread and is NOT awaited by
+        // getOfferings, so it may still be in flight when the callback returns. Drain with a
+        // bounded grace wait — collect requests until none arrives within DRAIN_GRACE_MS, capped
+        // by DRAIN_MAX_MS — so the async config request is captured deterministically rather than
+        // racing a zero-timeout drain. (takeRequest blocks this thread, but the SDK's network I/O
+        // runs on background executors, so the in-flight request still lands.)
+        val paths = mutableListOf<String>()
+        val drainDeadlineMs = System.currentTimeMillis() + DRAIN_MAX_MS
+        while (System.currentTimeMillis() < drainDeadlineMs) {
+            shadowOf(Looper.getMainLooper()).idle()
+            val req = server.takeRequest(DRAIN_GRACE_MS, TimeUnit.MILLISECONDS) ?: break
+            req.path?.let { paths.add(it) }
+        }
         return CycleResult(elapsedMs, offerings?.all?.size ?: 0, paths, error)
     }
 
@@ -82,5 +93,7 @@ class PerfHarness(
     private companion object {
         const val TIMEOUT_SECONDS = 15L
         const val POLL_MS = 50L
+        const val DRAIN_GRACE_MS = 400L
+        const val DRAIN_MAX_MS = 3000L
     }
 }

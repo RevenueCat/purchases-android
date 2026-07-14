@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.perf
 
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -20,9 +22,9 @@ class NetworkProfileTest {
     fun flakyFailsOnlyMatchingPath() {
         server.dispatcher = NetworkProfile.FLAKY.decorate(okDispatcher(), failMatch = "/blob")
         server.start()
-        val client = okhttp3.OkHttpClient()
-        val ok = client.newCall(okhttp3.Request.Builder().url(server.url("/v1/offerings")).build()).execute()
-        val bad = client.newCall(okhttp3.Request.Builder().url(server.url("/blob/x")).build()).execute()
+        val client = OkHttpClient()
+        val ok = client.newCall(Request.Builder().url(server.url("/v1/offerings")).build()).execute()
+        val bad = client.newCall(Request.Builder().url(server.url("/blob/x")).build()).execute()
         assertThat(ok.code).isEqualTo(200)
         assertThat(bad.code).isEqualTo(500)
     }
@@ -32,7 +34,7 @@ class NetworkProfileTest {
         server.dispatcher = NetworkProfile.BAD.decorate(okDispatcher())
         server.start()
         val start = System.nanoTime()
-        okhttp3.OkHttpClient().newCall(okhttp3.Request.Builder().url(server.url("/v1/offerings")).build()).execute()
+        OkHttpClient().newCall(Request.Builder().url(server.url("/v1/offerings")).build()).execute()
         val elapsedMs = (System.nanoTime() - start) / 1_000_000
         assertThat(elapsedMs).isGreaterThanOrEqualTo(NetworkProfile.BAD.perRequestDelayMs - 50)
     }
