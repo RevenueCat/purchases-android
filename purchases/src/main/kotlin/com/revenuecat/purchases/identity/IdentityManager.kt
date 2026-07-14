@@ -103,8 +103,8 @@ internal class IdentityManager(
                         log(LogIntent.USER) {
                             IdentityStrings.ALIAS_OLD_USER_ID_TO_CURRENT_SUCCESSFUL.format(oldAppUserID, newAppUserID)
                         }
-                        offeringsCache.clearCache()
                         remoteConfigManager?.clearCache(newAppUserID)
+                        offeringsCache.clearCache()
                         deviceCache.clearCustomerInfoCache(newAppUserID)
                         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     }
@@ -156,8 +156,8 @@ internal class IdentityManager(
                             IdentityStrings.LOG_IN_SUCCESSFUL.format(newAppUserID, created)
                         }
                         deviceCache.clearCachesForAppUserID(oldAppUserID)
-                        offeringsCache.clearCache()
                         remoteConfigManager?.clearCache(newAppUserID)
+                        offeringsCache.clearCache()
                         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
 
                         deviceCache.cacheAppUserID(newAppUserID)
@@ -259,8 +259,8 @@ internal class IdentityManager(
     @Synchronized
     private fun resetAndSaveUserID(newUserID: String) {
         deviceCache.clearCachesForAppUserID(currentAppUserID)
-        offeringsCache.clearCache()
         remoteConfigManager?.clearCache(newUserID)
+        offeringsCache.clearCache()
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
         deviceCache.cacheAppUserID(newUserID)
