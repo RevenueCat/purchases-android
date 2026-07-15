@@ -69,72 +69,70 @@ internal fun WebViewComponentView(
             )
         }
 
-        if (loadFailed) {
-            // Terminal failure: render nothing rather than retain a dead/unusable WebView.
-            // There is intentionally no native fallback stack — apps must use an SDK that
-            // supports web_view.
-            return@key
-        }
-
-        AndroidView(
-            factory = { context ->
-                WebView(context).apply {
-                    val bridge = componentId?.let { id ->
-                        WebViewJavaScriptBridge(
-                            webView = this,
-                            componentId = id,
-                            expectedUrl = resolvedUrl,
-                            locale = locale,
-                            messageHandler = messageHandler,
-                            sizeToContentWidth = sizeToContentWidth,
-                            sizeToContentHeight = sizeToContentHeight,
-                            onContentResize = { widthCssPx, heightCssPx ->
-                                widthCssPx?.takeIf { it > 0 }?.let { contentWidthCssPx = it }
-                                heightCssPx?.takeIf { it > 0 }?.let { contentHeightCssPx = it }
+        if (!loadFailed) {
+            AndroidView(
+                factory = { context ->
+                    WebView(context).apply {
+                        val bridge = componentId?.let { id ->
+                            WebViewJavaScriptBridge(
+                                webView = this,
+                                componentId = id,
+                                expectedUrl = resolvedUrl,
+                                locale = locale,
+                                messageHandler = messageHandler,
+                                sizeToContentWidth = sizeToContentWidth,
+                                sizeToContentHeight = sizeToContentHeight,
+                                onContentResize = { widthCssPx, heightCssPx ->
+                                    widthCssPx?.takeIf { it > 0 }?.let { contentWidthCssPx = it }
+                                    heightCssPx?.takeIf { it > 0 }?.let { contentHeightCssPx = it }
+                                },
+                                onDocumentReset = {
+                                    contentWidthCssPx = 0
+                                    contentHeightCssPx = 0
+                                },
+                                onSecureMessagingUnsupported = {
+                                    if (failureFlag.markFailed()) {
+                                        loadFailed = true
+                                    }
+                                },
+                            ).also { createdBridge -> createdBridge.attach() }
+                        }
+                        bridgeHolder.bridge = bridge
+                        configure(
+                            expectedOrigin = resolvedUrl.toOriginOrNull(),
+                            onMainFrameNavigationStarted = { url ->
+                                bridgeHolder.bridge?.onMainFrameNavigationStarted(url)
                             },
-                            onDocumentReset = {
-                                contentWidthCssPx = 0
-                                contentHeightCssPx = 0
-                            },
-                            onSecureMessagingUnsupported = {
+                            onMainFrameLoadFailed = {
                                 if (failureFlag.markFailed()) {
                                     loadFailed = true
                                 }
                             },
-                        ).also { createdBridge -> createdBridge.attach() }
+                        )
+                        loadUrl(resolvedUrl)
                     }
-                    bridgeHolder.bridge = bridge
-                    configure(
-                        expectedOrigin = resolvedUrl.toOriginOrNull(),
-                        onMainFrameNavigationStarted = { url ->
-                            bridgeHolder.bridge?.onMainFrameNavigationStarted(url)
-                        },
-                        onMainFrameLoadFailed = {
-                            if (failureFlag.markFailed()) {
-                                loadFailed = true
-                            }
-                        },
+                },
+                update = {
+                    bridgeHolder.bridge?.update(
+                        locale = locale,
+                        messageHandler = messageHandler,
                     )
-                    loadUrl(resolvedUrl)
-                }
-            },
-            update = {
-                bridgeHolder.bridge?.update(
-                    locale = locale,
-                    messageHandler = messageHandler,
-                )
-            },
-            onRelease = { webView ->
-                // Only release the bridge that this view installed into this holder.
-                val bridge = bridgeHolder.bridge
-                bridgeHolder.bridge = null
-                bridge?.release()
-                webView.stopLoading()
-                webView.webViewClient = WebViewClient()
-                webView.destroy()
-            },
-            modifier = modifier.size(effectiveSize),
-        )
+                },
+                onRelease = { webView ->
+                    // Only release the bridge that this view installed into this holder.
+                    val bridge = bridgeHolder.bridge
+                    bridgeHolder.bridge = null
+                    bridge?.release()
+                    webView.stopLoading()
+                    webView.webViewClient = WebViewClient()
+                    webView.destroy()
+                },
+                modifier = modifier.size(effectiveSize),
+            )
+        }
+        // Terminal failure: render nothing rather than retain a dead/unusable WebView.
+        // There is intentionally no native fallback stack — apps must use an SDK that
+        // supports web_view.
     }
 }
 
