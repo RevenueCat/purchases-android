@@ -200,11 +200,13 @@ internal class ETagManager(
         )
         eTagHeader?.let { eTagInResponse ->
             if (shouldUseCachedVersion(responseCode)) {
-                val storedResult = getStoredResult(urlString)?.also { storedResult ->
-                    storedResult.requestDate = requestDate ?: storedResult.requestDate
-                    // This assumes we won't store verification failures in the cache and we will clear the cache
-                    // when enabling verification.
-                    storedResult.verificationResult = verificationResult
+                val storedResult = getStoredResult(urlString)?.let { storedResult ->
+                    storedResult.copy(
+                        // This assumes we won't store verification failures in the cache and we will clear the cache
+                        // when enabling verification.
+                        verificationResult = verificationResult,
+                        requestDate = requestDate ?: storedResult.requestDate,
+                    )
                 }
                 return storedResult
                     ?: if (refreshETag) {
