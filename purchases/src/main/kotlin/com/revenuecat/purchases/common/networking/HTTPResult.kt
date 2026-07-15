@@ -71,7 +71,8 @@ public data class HTTPResult(
             }
     }
 
-    val payloadText: String = payload.text
+    val payloadText: String
+        get() { return payload.text }
 
     internal companion object {
         internal const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
