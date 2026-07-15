@@ -294,13 +294,17 @@ internal class PurchasesOrchestrator(
             log(LogIntent.WARNING) { ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED }
         }
 
-        // When the `/v1/config` 4xx kill-switch trips, workflow-served paywalls are no longer available, so
-        // refetch offerings from the network: the parser skips capturing paywall components while the endpoint
-        // is live, and this refetch (with the endpoint now disabled) decodes them for the fallback render path.
+        // When the `/v1/config` 4xx kill-switch trips, workflow-served paywalls are no longer available, so the
+        // cached offerings (parsed while the endpoint was live, with paywall components skipped) can no longer
+        // serve the fallback render path. Invalidate the in-memory cache first so any getOfferings caller in the
+        // window before the refetch lands takes the cache-miss -> network path and gets freshly decoded
+        // components, instead of being served the stale null-component objects. The refetch (with the endpoint
+        // now disabled) then repopulates the cache proactively.
         remoteConfigManager?.registerListener(object : RemoteConfigCommitListener {
             // Only the disable transition matters here; commits/invalidations are handled by the config providers.
             override fun onConfigCommitted(generation: Int) = Unit
             override fun onRemoteConfigDisabled(generation: Int) {
+                offeringsManager.clearInMemoryOfferingsCache()
                 offeringsManager.fetchAndCacheOfferings(appUserID, state.appInBackground)
             }
         })

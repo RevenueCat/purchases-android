@@ -2993,7 +2993,8 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun `remote config disable triggers an offerings network refetch`() {
+    fun `remote config disable invalidates the offerings cache then refetches from network`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
         every { mockOfferingsManager.fetchAndCacheOfferings(appUserId, false, any(), any()) } just Runs
 
         // Capture the disable listener the orchestrator registered on construction.
@@ -3002,9 +3003,10 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         listenerSlot.captured.onRemoteConfigDisabled(generation = 1)
 
-        // The refetch re-parses offerings with remote config now disabled, decoding paywall components for the
-        // fallback render path.
-        verify(exactly = 1) {
+        // The in-memory cache must be dropped BEFORE the refetch, so getOfferings callers in the window take the
+        // cache-miss -> network path (freshly decoded components) instead of the stale null-component offerings.
+        verifyOrder {
+            mockOfferingsManager.clearInMemoryOfferingsCache()
             mockOfferingsManager.fetchAndCacheOfferings(appUserId, false, any(), any())
         }
     }
