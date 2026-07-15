@@ -63,6 +63,11 @@ internal data class HTTPResultWithETag(
  * (https://github.com/RevenueCat/purchases-android/issues/3628).
  *
  * `origin` is intentionally not persisted: stored results always read back as [HTTPResult.Origin.CACHE].
+ *
+ * Downgrade note: older SDK versions cannot parse this format — after a downgrade, reads of split
+ * entries fail (as request errors, not crashes) and do not self-heal until the cache is cleared
+ * (e.g. identity change) since the failure happens before any response could overwrite the entry.
+ * Accepted tradeoff for keeping the URL as the metadata key; see PR #3774.
  */
 @OptIn(InternalRevenueCatAPI::class)
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -125,33 +130,35 @@ internal data class ETagCacheMetadata(
          */
         @Suppress("SwallowedException", "ReturnCount")
         fun deserialize(serialized: String): ETagCacheMetadata? {
-            val jsonObject = try {
-                JSONObject(serialized)
+            return try {
+                val jsonObject = JSONObject(serialized)
+                if (!jsonObject.has(SERIALIZATION_NAME_RESPONSE_CODE)) {
+                    return null
+                }
+                val lastRefreshTime = jsonObject.optLong(SERIALIZATION_NAME_LAST_REFRESH_TIME, -1L)
+                    .takeIf { it != -1L }
+                    ?.let { Date(it) }
+                val requestDate = jsonObject.optLong(SERIALIZATION_NAME_REQUEST_DATE, -1L)
+                    .takeIf { it != -1L }
+                    ?.let { Date(it) }
+                val verificationResult = if (jsonObject.has(SERIALIZATION_NAME_VERIFICATION_RESULT)) {
+                    VerificationResult.valueOf(jsonObject.getString(SERIALIZATION_NAME_VERIFICATION_RESULT))
+                } else {
+                    VerificationResult.NOT_REQUESTED
+                }
+                ETagCacheMetadata(
+                    eTagData = ETagData(jsonObject.getString(SERIALIZATION_NAME_ETAG), lastRefreshTime),
+                    responseCode = jsonObject.getInt(SERIALIZATION_NAME_RESPONSE_CODE),
+                    requestDate = requestDate,
+                    verificationResult = verificationResult,
+                    isLoadShedderResponse = jsonObject.optBoolean(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE, false),
+                    isFallbackURL = jsonObject.optBoolean(SERIALIZATION_NAME_IS_FALLBACK_URL, false),
+                )
             } catch (e: JSONException) {
-                return null
+                null
+            } catch (e: IllegalArgumentException) {
+                null
             }
-            if (!jsonObject.has(SERIALIZATION_NAME_RESPONSE_CODE)) {
-                return null
-            }
-            val lastRefreshTime = jsonObject.optLong(SERIALIZATION_NAME_LAST_REFRESH_TIME, -1L)
-                .takeIf { it != -1L }
-                ?.let { Date(it) }
-            val requestDate = jsonObject.optLong(SERIALIZATION_NAME_REQUEST_DATE, -1L)
-                .takeIf { it != -1L }
-                ?.let { Date(it) }
-            val verificationResult = if (jsonObject.has(SERIALIZATION_NAME_VERIFICATION_RESULT)) {
-                VerificationResult.valueOf(jsonObject.getString(SERIALIZATION_NAME_VERIFICATION_RESULT))
-            } else {
-                VerificationResult.NOT_REQUESTED
-            }
-            return ETagCacheMetadata(
-                eTagData = ETagData(jsonObject.getString(SERIALIZATION_NAME_ETAG), lastRefreshTime),
-                responseCode = jsonObject.getInt(SERIALIZATION_NAME_RESPONSE_CODE),
-                requestDate = requestDate,
-                verificationResult = verificationResult,
-                isLoadShedderResponse = jsonObject.optBoolean(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE, false),
-                isFallbackURL = jsonObject.optBoolean(SERIALIZATION_NAME_IS_FALLBACK_URL, false),
-            )
         }
     }
 }
@@ -229,6 +236,10 @@ internal class ETagManager(
         val serialized = prefs.value.getString(urlString, null) ?: return null
         val metadata = ETagCacheMetadata.deserialize(serialized)
         if (metadata != null) {
+            // Read without the monitor: a concurrent storeResult() landing between the two getString calls can
+            // pair the old metadata with the new payload for this one read. The window is nanoseconds, requires
+            // concurrent same-URL traffic, and the worst case is one response served with the previous entry's
+            // metadata fields — accepted to keep reads lock-free.
             val payload = prefs.value.getString(payloadKey(urlString), null) ?: return null
             return metadata.toHTTPResult(payload)
         }
