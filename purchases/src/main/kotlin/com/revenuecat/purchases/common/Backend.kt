@@ -28,6 +28,7 @@ import com.revenuecat.purchases.common.networking.RewardVerificationResponse
 import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
 import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -1161,6 +1162,7 @@ internal class Backend(
     fun getRemoteConfig(
         appInBackground: Boolean,
         appUserID: String,
+        fetchContext: RemoteConfigFetchContext,
         domain: String,
         manifest: String?,
         prefetchedBlobs: List<String>,
@@ -1171,12 +1173,13 @@ internal class Backend(
         val path = endpoint.getPath()
         // Include the app user in the key: the path carries the domain but not the app_user_id (sent in the
         // request body), so concurrent calls for different users must not be deduped onto a single shared request.
-        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path, appUserID), appInBackground)
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path, appUserID, fetchContext.wireName), appInBackground)
 
         val baseURL = appConfig.baseURL
         // The manifest is an opaque token replayed verbatim; omitted on the first run when there is none.
         val body = buildMap<String, Any?> {
             put(APP_USER_ID, appUserID)
+            put("fetch_context", fetchContext.wireName)
             manifest?.let { put("manifest", it) }
             put("prefetched_blobs", prefetchedBlobs)
         }
