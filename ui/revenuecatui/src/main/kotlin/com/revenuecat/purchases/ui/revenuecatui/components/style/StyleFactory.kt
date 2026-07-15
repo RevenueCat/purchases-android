@@ -574,7 +574,7 @@ internal class StyleFactory(
             is TabsComponent -> createTabsComponentStyle(component)
             is VideoComponent -> createVideoComponentStyle(component)
             is FallbackHeaderComponent -> Result.Success(null)
-            // Stub until A6 wires createWebViewComponentStyle; null style is filtered like FallbackHeader.
+            // Stub until Part 8 wires createWebViewComponentStyle; null style is filtered like FallbackHeader.
             is WebViewComponent -> Result.Success(null)
             is CountdownComponent -> createCountdownComponentStyle(
                 component,
