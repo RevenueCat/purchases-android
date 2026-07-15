@@ -751,6 +751,21 @@ class ETagManagerTest {
     }
 
     @Test
+    fun `a v2 entry with an unknown verification result reads as a miss`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        val metadata = ETagCacheMetadata.fromResult(
+            HTTPResult.createResult(origin = HTTPResult.Origin.CACHE),
+            ETagData("etag", testDate),
+        )
+        val corrupted = metadata.serialize().replace("NOT_REQUESTED", "SOMETHING_UNKNOWN")
+        every { mockedPrefs.getString(urlString, null) } returns corrupted
+
+        val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
+
+        assertThat(eTagHeaders[HTTPRequest.ETAG_HEADER_NAME]).isEmpty()
+    }
+
+    @Test
     fun `metadata without a stored payload is treated as a miss on read`() {
         val urlString = "http://localhost:100/v1/subscribers/appUserID"
         val metadata = ETagCacheMetadata.fromResult(
