@@ -4,6 +4,7 @@ import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.models.InAppMessageType
 import io.mockk.Runs
 import io.mockk.every
@@ -82,6 +83,24 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
             mockRemoteConfigManager.refreshRemoteConfigIfStale(
                 appInBackground = false,
                 appUserID = appUserId,
+                fetchContext = RemoteConfigFetchContext.AppStart,
+            )
+        }
+    }
+
+    @Test
+    fun `onAppForegrounded passes foreground fetch context after the first foreground`() {
+        mockOfferingsManagerAppForeground()
+        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(
+            appInBackground = false,
+            firstTimeInForeground = false,
+        )
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        verify(exactly = 1) {
+            mockRemoteConfigManager.refreshRemoteConfigIfStale(
+                appInBackground = false,
+                appUserID = appUserId,
+                fetchContext = RemoteConfigFetchContext.Foreground,
             )
         }
     }
@@ -143,7 +162,7 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
         verify(exactly = 0) {
             mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any(), callback = any())
         }
-        verify(exactly = 0) { mockRemoteConfigManager.refreshRemoteConfigIfStale(any(), any()) }
+        verify(exactly = 0) { mockRemoteConfigManager.refreshRemoteConfigIfStale(any(), any(), any()) }
         verify(exactly = 0) { mockOfferingsManager.onAppForeground(any()) }
         verify(exactly = 0) { mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any()) }
         verify(exactly = 0) { mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any()) }

@@ -14,6 +14,7 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.common.events.FeatureEvent
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.google.toInAppStoreProduct
@@ -692,7 +693,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         purchases.logIn(newAppUserID, mockCompletion)
 
         verify(exactly = 1) {
-            mockRemoteConfigManager.refreshRemoteConfig(false, newAppUserID)
+            mockRemoteConfigManager.refreshRemoteConfig(false, newAppUserID, RemoteConfigFetchContext.IdentityChange)
         }
     }
 
@@ -737,7 +738,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         purchases.logOut()
 
         verify(exactly = 1) {
-            mockRemoteConfigManager.refreshRemoteConfig(false, appUserID)
+            mockRemoteConfigManager.refreshRemoteConfig(false, appUserID, RemoteConfigFetchContext.IdentityChange)
         }
     }
 

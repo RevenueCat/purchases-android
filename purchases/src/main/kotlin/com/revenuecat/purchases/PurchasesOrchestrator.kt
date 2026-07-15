@@ -47,6 +47,7 @@ import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
@@ -325,6 +326,11 @@ internal class PurchasesOrchestrator(
             remoteConfigManager?.refreshRemoteConfigIfStale(
                 appInBackground = false,
                 appUserID = identityManager.currentAppUserID,
+                fetchContext = if (firstTimeInForeground) {
+                    RemoteConfigFetchContext.AppStart
+                } else {
+                    RemoteConfigFetchContext.Foreground
+                },
             )
 
             if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
@@ -435,7 +441,11 @@ internal class PurchasesOrchestrator(
         }
 
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID) {
-            remoteConfigManager?.refreshRemoteConfig(state.appInBackground, appUserID)
+            remoteConfigManager?.refreshRemoteConfig(
+                state.appInBackground,
+                appUserID,
+                RemoteConfigFetchContext.Read,
+            )
             getOfferings(receiveOfferingsCallback, fetchCurrent = true)
         }
     }
@@ -806,7 +816,11 @@ internal class PurchasesOrchestrator(
                             callback?.onReceived(customerInfo, created)
                             customerInfoUpdateHandler.notifyListeners(customerInfo)
                         }
-                        remoteConfigManager?.refreshRemoteConfig(state.appInBackground, newAppUserID)
+                        remoteConfigManager?.refreshRemoteConfig(
+                            state.appInBackground,
+                            newAppUserID,
+                            RemoteConfigFetchContext.IdentityChange,
+                        )
                         offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
                         backupManager.dataChanged()
                     },
@@ -840,7 +854,11 @@ internal class PurchasesOrchestrator(
                 synchronized(this@PurchasesOrchestrator) {
                     state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
                 }
-                updateAllCaches(identityManager.currentAppUserID, callback)
+                updateAllCaches(
+                    identityManager.currentAppUserID,
+                    RemoteConfigFetchContext.IdentityChange,
+                    callback,
+                )
                 backupManager.dataChanged()
             }
         }
@@ -1317,7 +1335,11 @@ internal class PurchasesOrchestrator(
         identityManager.switchUser(newAppUserID)
 
         offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
-        remoteConfigManager?.refreshRemoteConfig(state.appInBackground, newAppUserID)
+        remoteConfigManager?.refreshRemoteConfig(
+            state.appInBackground,
+            newAppUserID,
+            RemoteConfigFetchContext.IdentityChange,
+        )
     }
     //endregion
 
@@ -1390,10 +1412,11 @@ internal class PurchasesOrchestrator(
 
     private fun updateAllCaches(
         appUserID: String,
+        fetchContext: RemoteConfigFetchContext,
         completion: ReceiveCustomerInfoCallback? = null,
     ) {
         state.appInBackground.let { appInBackground ->
-            remoteConfigManager?.refreshRemoteConfig(appInBackground, appUserID)
+            remoteConfigManager?.refreshRemoteConfig(appInBackground, appUserID, fetchContext)
             customerInfoHelper.retrieveCustomerInfo(
                 appUserID,
                 CacheFetchPolicy.FETCH_CURRENT,

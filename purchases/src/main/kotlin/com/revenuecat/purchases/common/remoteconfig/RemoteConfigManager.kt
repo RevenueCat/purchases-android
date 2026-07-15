@@ -150,17 +150,30 @@ internal class RemoteConfigManager(
         listeners.add(listener)
     }
 
-    fun refreshRemoteConfigIfStale(appInBackground: Boolean, appUserID: String) {
+    fun refreshRemoteConfigIfStale(
+        appInBackground: Boolean,
+        appUserID: String,
+        fetchContext: RemoteConfigFetchContext,
+    ) {
         if (lastRefreshedAt.isCacheStale(appInBackground, dateProvider)) {
-            refreshRemoteConfig(appInBackground, appUserID, staleGated = true)
+            refreshRemoteConfig(appInBackground, appUserID, fetchContext, staleGated = true)
         }
     }
 
-    fun refreshRemoteConfig(appInBackground: Boolean, appUserID: String) {
-        refreshRemoteConfig(appInBackground, appUserID, staleGated = false)
+    fun refreshRemoteConfig(
+        appInBackground: Boolean,
+        appUserID: String,
+        fetchContext: RemoteConfigFetchContext,
+    ) {
+        refreshRemoteConfig(appInBackground, appUserID, fetchContext, staleGated = false)
     }
 
-    private fun refreshRemoteConfig(appInBackground: Boolean, appUserID: String, staleGated: Boolean) {
+    private fun refreshRemoteConfig(
+        appInBackground: Boolean,
+        appUserID: String,
+        fetchContext: RemoteConfigFetchContext,
+        staleGated: Boolean,
+    ) {
         if (disabled) {
             debugLog { "Remote config is disabled for this session (4xx). Skipping refresh." }
             return
@@ -210,6 +223,7 @@ internal class RemoteConfigManager(
         backend.getRemoteConfig(
             appInBackground = appInBackground,
             appUserID = requestAppUserID,
+            fetchContext = fetchContext,
             domain = domain,
             // Opaque manifest replayed verbatim; null on the first run when nothing is persisted yet.
             manifest = persisted?.manifest,
@@ -454,7 +468,12 @@ internal class RemoteConfigManager(
         val appUserID = (currentAppUserID ?: appUserIDProvider())?.takeIf { it.isNotBlank() }
         if (!disabled && appUserID != null) {
             verboseLog { "Cold remote config read triggering an on-demand sync." }
-            refreshRemoteConfig(appInBackground = false, appUserID = appUserID, staleGated = true)
+            refreshRemoteConfig(
+                appInBackground = false,
+                appUserID = appUserID,
+                fetchContext = RemoteConfigFetchContext.Read,
+                staleGated = true,
+            )
             // Join whatever is now in flight — the sync we just triggered, or one a concurrent caller started.
             awaitInFlightRefresh()
         } else {
