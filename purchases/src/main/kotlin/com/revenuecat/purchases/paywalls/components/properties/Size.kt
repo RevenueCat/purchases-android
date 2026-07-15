@@ -5,6 +5,7 @@ import androidx.compose.runtime.Stable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @InternalRevenueCatAPI
@@ -22,8 +23,17 @@ public class Size(
 public sealed interface SizeConstraint {
     // SerialNames are handled by the SizeConstraintDeserializer.
 
+    /**
+     * Fits the content size.
+     *
+     * @param default Optional default size (in dp) to show during loading and initial content size calculations.
+     */
+    @Poko
+    @Immutable
     @Serializable
-    public object Fit : SizeConstraint
+    public class Fit(
+        @get:JvmSynthetic @SerialName("default") public val default: UInt? = null,
+    ) : SizeConstraint
 
     @Serializable
     public object Fill : SizeConstraint
@@ -44,5 +54,5 @@ internal object SizeConstraintDeserializer : SealedDeserializerWithDefault<SizeC
         "fill" to { SizeConstraint.Fill.serializer() },
         "fixed" to { SizeConstraint.Fixed.serializer() },
     ),
-    defaultValue = { SizeConstraint.Fit },
+    defaultValue = { SizeConstraint.Fit() },
 )

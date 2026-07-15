@@ -154,7 +154,7 @@ internal fun previewStackComponentStyle(
         distribution = FlexDistribution.START,
     ),
     visible: Boolean = true,
-    size: Size = Size(width = Fixed(200u), height = Fit),
+    size: Size = Size(width = Fixed(200u), height = Fit()),
     spacing: Dp = 16.dp,
     background: BackgroundStyles = BackgroundStyles.Color(
         color = ColorStyles(light = ColorStyle.Solid(Color.Red)),
@@ -206,7 +206,7 @@ internal fun previewTextComponentStyle(
     horizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER,
     backgroundColor: ColorStyles? = null,
     visible: Boolean = true,
-    size: Size = Size(width = Fill, height = Fit),
+    size: Size = Size(width = Fill, height = Fit()),
     padding: Padding = zero,
     margin: Padding = zero,
     tabIndex: Int? = null,

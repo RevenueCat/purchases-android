@@ -138,12 +138,12 @@ private fun TabsComponentView_Preview() {
                     children = listOf(
                         previewTextComponentStyle(
                             text = "Tab 1",
-                            size = Size(width = Fit, height = Fit),
+                            size = Size(width = Fit(), height = Fit()),
                             tabIndex = 0,
                             overrides = listOf(boldWhenSelectedOverride),
                         ),
                     ),
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                 ),
             ),
             TabControlButtonComponentStyle(
@@ -153,12 +153,12 @@ private fun TabsComponentView_Preview() {
                     children = listOf(
                         previewTextComponentStyle(
                             text = "Tab 2",
-                            size = Size(width = Fit, height = Fit),
+                            size = Size(width = Fit(), height = Fit()),
                             tabIndex = 1,
                             overrides = listOf(boldWhenSelectedOverride),
                         ),
                     ),
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                 ),
             ),
             TabControlButtonComponentStyle(
@@ -168,17 +168,17 @@ private fun TabsComponentView_Preview() {
                     children = listOf(
                         previewTextComponentStyle(
                             text = "Tab 3",
-                            size = Size(width = Fit, height = Fit),
+                            size = Size(width = Fit(), height = Fit()),
                             tabIndex = 2,
                             overrides = listOf(boldWhenSelectedOverride),
                         ),
                     ),
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                 ),
             ),
         ),
         dimension = Horizontal(alignment = VerticalAlignment.CENTER, FlexDistribution.CENTER),
-        size = Size(width = Fit, height = Fit),
+        size = Size(width = Fit(), height = Fit()),
         spacing = 8.dp,
     )
 

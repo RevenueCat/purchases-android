@@ -1148,7 +1148,7 @@ class StyleFactoryTests {
                     components = listOf(
                         ImageComponent(
                             source = imageUrls,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                         ),
                     ),
                     dimension = Dimension.ZLayer(
@@ -1158,7 +1158,7 @@ class StyleFactoryTests {
 
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1203,7 +1203,7 @@ class StyleFactoryTests {
                         ImageComponent(
                             source = imageUrls,
                             // Width is not Fill.
-                            size = Size(width = SizeConstraint.Fixed(200u), height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fixed(200u), height = SizeConstraint.Fit()),
                         ),
                     ),
                     dimension = Dimension.ZLayer(
@@ -1213,7 +1213,7 @@ class StyleFactoryTests {
 
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1255,11 +1255,11 @@ class StyleFactoryTests {
             components = listOf(
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                 ),
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1299,11 +1299,11 @@ class StyleFactoryTests {
                 ImageComponent(
                     source = imageUrls,
                     // Width is not Fill.
-                    size = Size(width = SizeConstraint.Fixed(200u), height = SizeConstraint.Fit),
+                    size = Size(width = SizeConstraint.Fixed(200u), height = SizeConstraint.Fit()),
                 ),
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1478,7 +1478,7 @@ class StyleFactoryTests {
                     components = listOf(
                         ImageComponent(
                             source = imageUrls,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                         ),
                     ),
                     dimension = Dimension.ZLayer(
