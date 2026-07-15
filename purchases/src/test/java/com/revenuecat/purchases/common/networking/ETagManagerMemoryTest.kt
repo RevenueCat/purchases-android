@@ -59,6 +59,8 @@ class ETagManagerMemoryTest {
 
     @Test
     fun `measure allocations of store and read paths with an offerings-sized payload`() {
+        warmUpMeasuredCodePaths()
+
         val result = HTTPResult.createResult(
             responseCode = RCHTTPStatusCodes.SUCCESS,
             payload = payload,
@@ -93,10 +95,63 @@ class ETagManagerMemoryTest {
         assertThat(cacheHit!!.payloadText).isEqualTo(payload)
         assertThat(cacheHit!!.origin).isEqualTo(HTTPResult.Origin.CACHE)
 
+        // Regression gate for #3628: none of the cache hot paths may allocate anywhere near payload size.
+        // The legacy combined format allocated tens of MB per operation on this 5MB payload.
+        val maxAllowedBytes = 1024L * 1024L
+        assertThat(storeBytes).isLessThan(maxAllowedBytes)
+        assertThat(headerBytes).isLessThan(maxAllowedBytes)
+        assertThat(notModifiedBytes).isLessThan(maxAllowedBytes)
+
         println("ETagManager memory profile (payload ${payload.length} chars, ~${payload.length / (1024 * 1024)}MB)")
         println("  storeBackendResultIfNoError: ${storeBytes / 1024} KB allocated")
         println("  getETagHeaders (warm cache): ${headerBytes / 1024} KB allocated")
         println("  304 cache-hit read:          ${notModifiedBytes / 1024} KB allocated")
+    }
+
+    /**
+     * Exercises every code path the measured blocks hit — the three [ETagManager] operations plus AssertJ
+     * and `org.json`'s parsing constructor — once, against a separate URL in a separate prefs file, before
+     * any measurement. The first-ever use of those libraries in the process pays a multi-MB
+     * classloading/static-init allocation cost that would otherwise be misattributed to whichever measured
+     * operation runs first, drowning out the KB-scale steady-state costs the regression gate is about.
+     */
+    private fun warmUpMeasuredCodePaths() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val warmUpPrefs = context.getSharedPreferences("etag_memory_test_warmup", Context.MODE_PRIVATE)
+        warmUpPrefs.edit().clear().commit()
+        val warmUpManager = ETagManager(
+            context,
+            lazy { warmUpPrefs },
+            object : DateProvider {
+                override val now: Date
+                    get() = testDate
+            },
+        )
+        val warmUpUrl = "https://api.revenuecat.com/v1/warmup"
+        val warmUpResult = HTTPResult.createResult(
+            responseCode = RCHTTPStatusCodes.SUCCESS,
+            payload = "{}",
+            origin = HTTPResult.Origin.BACKEND,
+            requestDate = testDate,
+        )
+        warmUpManager.storeBackendResultIfNoError(warmUpUrl, warmUpResult, eTagInResponse = "etag")
+        val warmUpHeaders = warmUpManager.getETagHeaders(warmUpUrl, verificationRequested = false)
+        assertThat(warmUpHeaders[HTTPRequest.ETAG_HEADER_NAME]).isEqualTo("etag")
+        val warmUpCacheHit = warmUpManager.getHTTPResultFromCacheOrBackend(
+            responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
+            payload = "",
+            eTagHeader = "etag",
+            urlString = warmUpUrl,
+            refreshETag = false,
+            requestDate = testDate,
+            verificationResult = VerificationResult.NOT_REQUESTED,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
+        )
+        assertThat(warmUpCacheHit).isNotNull
+        assertThat(warmUpCacheHit!!.payloadText).isEqualTo("{}")
+        assertThat(warmUpCacheHit.origin).isEqualTo(HTTPResult.Origin.CACHE)
+        warmUpPrefs.edit().clear().commit()
     }
 
     private fun measureAllocatedBytes(block: () -> Unit): Long {
