@@ -30,6 +30,10 @@ internal class GenerationGuardedCache<T : Any> {
     /** Whether this cache has already acted on [generation] or a newer one. */
     fun isAtOrAbove(generation: Int): Boolean = synchronized(lock) { lastGeneration >= generation }
 
+    /** Whether this cache holds a value acted on at [generation] or newer (warm and not older). */
+    fun isWarmAtOrAbove(generation: Int): Boolean =
+        synchronized(lock) { lastGeneration >= generation && value != null }
+
     /** True while [generation] is still the newest acted-on generation (nothing newer stored/invalidated). */
     fun isCurrent(generation: Int): Boolean = synchronized(lock) { generation >= lastGeneration }
 

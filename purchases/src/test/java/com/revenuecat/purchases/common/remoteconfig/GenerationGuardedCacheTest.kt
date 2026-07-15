@@ -87,6 +87,23 @@ internal class GenerationGuardedCacheTest {
     }
 
     @Test
+    fun `isWarmAtOrAbove requires both a value and a current-enough generation`() {
+        val cache = GenerationGuardedCache<String>()
+        // Cold: never warm.
+        assertThat(cache.isWarmAtOrAbove(0)).isFalse
+
+        cache.store(generation = 4, newValue = "a")
+        assertThat(cache.isWarmAtOrAbove(3)).isTrue
+        assertThat(cache.isWarmAtOrAbove(4)).isTrue
+        // Warm, but for an older generation than asked.
+        assertThat(cache.isWarmAtOrAbove(5)).isFalse
+
+        // Invalidated at a newer generation: generation is current enough, but there is no value.
+        cache.invalidate(generation = 6)
+        assertThat(cache.isWarmAtOrAbove(6)).isFalse
+    }
+
+    @Test
     fun `isCurrent is true only until a newer generation is acted on`() {
         val cache = GenerationGuardedCache<String>()
         // Nothing acted on yet: any non-negative snapshot is still current.

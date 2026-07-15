@@ -204,6 +204,24 @@ internal class UiConfigProviderTest {
     }
 
     @Test
+    fun `warm is a no-op when already warm at or above the generation`() = runTest {
+        coEvery { manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) } returns mockk()
+        stubMergedRead(minimalUiConfigJson())
+        provider.warm(generation = 3)
+        val warmed = requireNotNull(provider.getUiConfig())
+
+        // A warm at the same or an older generation short-circuits before touching the topic or blobs.
+        provider.warm(generation = 3)
+        provider.warm(generation = 1)
+
+        assertThat(provider.getUiConfig()).isSameAs(warmed)
+        coVerify(exactly = 1) { manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) }
+        coVerify(exactly = 1) {
+            manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())
+        }
+    }
+
+    @Test
     fun `getUiConfig serves the second call from the in-memory cache without re-reading`() = runTest {
         stubMergedRead(minimalUiConfigJson())
 

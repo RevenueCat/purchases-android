@@ -68,6 +68,8 @@ internal class UiConfigProvider(
      * makes the next [getUiConfig] re-resolve the committed config instead.
      */
     suspend fun warm(generation: Int) {
+        // Already warm for this (or a newer) generation — nothing to do.
+        if (cache.isWarmAtOrAbove(generation)) return
         if (manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) == null) return
         when (val uiConfig = resolve()) {
             null -> cache.invalidate(generation)
