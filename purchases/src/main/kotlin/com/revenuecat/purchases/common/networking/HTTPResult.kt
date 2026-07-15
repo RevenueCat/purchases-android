@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common.networking
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.isSuccessful
@@ -16,14 +15,12 @@ private const val SERIALIZATION_NAME_VERIFICATION_RESULT = "verificationResult"
 private const val SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE = "isLoadShedderResponse"
 private const val SERIALIZATION_NAME_IS_FALLBACK_URL = "isFallbackURL"
 
-@Suppress("ForbiddenPublicDataClass")
-@InternalRevenueCatAPI
-public data class HTTPResult(
+internal data class HTTPResult(
     val responseCode: Int,
     val payload: Payload,
-    val origin: Origin,
-    val requestDate: Date?,
-    val verificationResult: VerificationResult,
+    var origin: Origin,
+    var requestDate: Date?,
+    var verificationResult: VerificationResult,
     val isLoadShedderResponse: Boolean,
     val isFallbackURL: Boolean,
 ) {
@@ -31,7 +28,7 @@ public data class HTTPResult(
      * Convenience constructor for textual (JSON) responses, which keeps the common call sites and the
      * ETag cache deserialization ergonomic. Wraps [payload] in [Payload.Text].
      */
-    public constructor(
+    constructor(
         responseCode: Int,
         payload: String,
         origin: Origin,
@@ -53,10 +50,10 @@ public data class HTTPResult(
      * The response body, which is either textual (JSON, the common case) or raw [RCFormat] bytes (e.g.
      * the RC Container Format returned for `Accept: application/x-rc-format` requests).
      */
-    public sealed interface Payload {
-        public data class Text(val value: String) : Payload
+    sealed interface Payload {
+        data class Text(val value: String) : Payload
 
-        public class RCFormat(public val bytes: ByteArray) : Payload {
+        class RCFormat(val bytes: ByteArray) : Payload {
             override fun equals(other: Any?): Boolean =
                 this === other || (other is RCFormat && bytes.contentEquals(other.bytes))
 
@@ -64,7 +61,7 @@ public data class HTTPResult(
         }
 
         /** The textual payload, or an empty string for a [Payload.RCFormat] body. */
-        public val text: String
+        val text: String
             get() = when (this) {
                 is Text -> value
                 is RCFormat -> ""
@@ -120,21 +117,25 @@ public data class HTTPResult(
         }
     }
 
-    public enum class Origin {
+    enum class Origin {
         BACKEND, CACHE
     }
 
-    val body: JSONObject = payloadText
-        .takeIf { it.isNotBlank() }
-        ?.let {
-            try {
-                JSONObject(it)
-            } catch (e: JSONException) {
-                errorLog(throwable = e) { "Failed to parse payload as JSON: $it" }
-                null
+    val body: JSONObject by lazy { parseBody() }
+
+    private fun parseBody(): JSONObject {
+        return payloadText
+            .takeIf { it.isNotBlank() }
+            ?.let {
+                try {
+                    JSONObject(it)
+                } catch (e: JSONException) {
+                    errorLog(throwable = e) { "Failed to parse payload as JSON: $it" }
+                    null
+                }
             }
-        }
-        ?: JSONObject()
+            ?: JSONObject()
+    }
 
     val backendErrorCode: Int? = if (!isSuccessful()) body.optInt("code").takeIf { it > 0 } else null
     val backendErrorMessage: String? = if (!isSuccessful()) {
