@@ -115,7 +115,7 @@ internal class WebViewJavaScriptBridge(
     /**
      * Registers the secure message listener on the WebView. Call once, when the WebView is created.
      * If [WebViewFeature.WEB_MESSAGE_LISTENER] is unavailable, invokes [onSecureMessagingUnsupported]
-     * so the host can take the terminal failure/fallback path.
+     * so the host can take the terminal failure path.
      */
     @MainThread
     fun attach() {

@@ -23,5 +23,4 @@ internal data class WebViewComponentStyle(
      * (the single version this SDK build implements) during the handshake, regardless of this value.
      */
     val protocolVersion: Int? = null,
-    val fallbackStackComponentStyle: StackComponentStyle? = null,
 ) : ComponentStyle

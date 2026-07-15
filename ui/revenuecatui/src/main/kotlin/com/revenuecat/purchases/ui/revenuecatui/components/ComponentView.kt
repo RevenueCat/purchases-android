@@ -79,8 +79,6 @@ internal fun ComponentView(
         style = style,
         state = state,
         modifier = modifier,
-        onClick = onClick,
-        componentInteractionTracker = componentInteractionTracker,
     )
     is ButtonComponentStyle -> ButtonComponentView(
         style = style,

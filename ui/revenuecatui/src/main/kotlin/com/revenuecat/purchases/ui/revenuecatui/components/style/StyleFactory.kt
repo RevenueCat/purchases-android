@@ -584,16 +584,15 @@ internal class StyleFactory(
     private fun StyleFactoryScope.createWebViewComponentStyle(
         component: WebViewComponent,
     ): Result<WebViewComponentStyle, NonEmptyList<PaywallValidationError>> =
-        component.fallback?.let { createStackComponentStyle(it) }.orSuccessfullyNull().map { fallbackStyle ->
+        Result.Success(
             WebViewComponentStyle(
                 url = component.url,
                 visible = component.visible ?: DEFAULT_VISIBILITY,
                 size = component.size,
                 componentId = component.id,
                 protocolVersion = component.protocolVersion,
-                fallbackStackComponentStyle = fallbackStyle,
-            )
-        }
+            ),
+        )
 
     private fun StyleFactoryScope.createCountdownComponentStyle(
         component: CountdownComponent,

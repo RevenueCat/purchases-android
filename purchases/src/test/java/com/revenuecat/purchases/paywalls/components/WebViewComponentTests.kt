@@ -23,11 +23,7 @@ class WebViewComponentTests {
             "height": { "type": "fit" }
           },
           "visible": true,
-          "name": "Promo web component",
-          "fallback": {
-            "type": "stack",
-            "components": []
-          }
+          "name": "Promo web component"
         }
         """
 
@@ -44,8 +40,30 @@ class WebViewComponentTests {
         assertThat(webView.protocolVersion).isEqualTo(1)
         assertThat(webView.url).isEqualTo("https://assets.pawwalls.com/web_bundles/123/index.html")
         assertThat(webView.size).isEqualTo(Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit))
-        assertThat(webView.fallback).isNotNull
-        assertThat(webView.fallback?.components).isEmpty()
+    }
+
+    @Test
+    fun `ignores schema fallback field`() {
+        // web_view intentionally has no native fallback stack; older/dashboard payloads that
+        // still include `fallback` must decode without error (unknown keys are ignored).
+        @Language("json")
+        val json = """
+            {
+              "type": "web_view",
+              "url": "https://paywalls.revenuecat.com/index.html",
+              "fallback": {
+                "type": "stack",
+                "components": []
+              }
+            }
+            """
+
+        val actual = JsonTools.json.decodeFromString<PaywallComponent>(json)
+
+        assertEquals(
+            WebViewComponent(url = "https://paywalls.revenuecat.com/index.html"),
+            actual,
+        )
     }
 
     @Test

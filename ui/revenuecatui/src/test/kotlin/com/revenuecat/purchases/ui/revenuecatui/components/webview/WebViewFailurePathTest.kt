@@ -2,9 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebView
-import androidx.compose.foundation.layout.Box
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -29,59 +27,16 @@ internal class WebViewFailurePathTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun `renderer termination shows fallback and destroys the web view`() {
+    fun `renderer termination removes the dead web view`() {
         var destroyed = false
-        var identity by mutableStateOf("a")
-        var showFallback = false
+        var loadFailedObserved = false
 
-        composeTestRule.setContent {
-            key(identity) {
-                var loadFailed by remember { mutableStateOf(false) }
-                showFallback = loadFailed
-                if (loadFailed) {
-                    Text("fallback")
-                } else {
-                    val context = LocalContext.current
-                    val holder = remember { WebViewBridgeHolder() }
-                    AndroidView(
-                        factory = {
-                            WebView(context).apply {
-                                val client = PaywallWebViewClient(
-                                    expectedOrigin = "https://assets.example.com",
-                                    onMainFrameNavigationStarted = {},
-                                    onMainFrameLoadFailed = { loadFailed = true },
-                                )
-                                setWebViewClient(client)
-                                // Simulate renderer death immediately after creation.
-                                client.onRenderProcessGone(this, mockk<RenderProcessGoneDetail>(relaxed = true))
-                            }
-                        },
-                        onRelease = { webView ->
-                            holder.bridge?.release()
-                            holder.bridge = null
-                            webView.destroy()
-                            destroyed = true
-                        },
-                    )
-                }
-            }
-        }
-        composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithText("fallback").assertIsDisplayed()
-        assertThat(destroyed).isTrue()
-        assertThat(showFallback).isTrue()
-    }
-
-    @Test
-    fun `without fallback the dead android view is removed`() {
-        var webViewPresent = true
         composeTestRule.setContent {
             var loadFailed by remember { mutableStateOf(false) }
-            if (loadFailed) {
-                webViewPresent = false
-                Box {}
-            } else {
+            loadFailedObserved = loadFailed
+            if (!loadFailed) {
                 val context = LocalContext.current
+                val holder = remember { WebViewBridgeHolder() }
                 AndroidView(
                     factory = {
                         WebView(context).apply {
@@ -91,15 +46,22 @@ internal class WebViewFailurePathTest {
                                 onMainFrameLoadFailed = { loadFailed = true },
                             )
                             setWebViewClient(client)
-                            client.onRenderProcessGone(this, mockk(relaxed = true))
+                            // Simulate renderer death immediately after creation.
+                            client.onRenderProcessGone(this, mockk<RenderProcessGoneDetail>(relaxed = true))
                         }
                     },
-                    onRelease = { it.destroy() },
+                    onRelease = { webView ->
+                        holder.bridge?.release()
+                        holder.bridge = null
+                        webView.destroy()
+                        destroyed = true
+                    },
                 )
             }
         }
         composeTestRule.waitForIdle()
-        assertThat(webViewPresent).isFalse()
+        assertThat(destroyed).isTrue()
+        assertThat(loadFailedObserved).isTrue()
     }
 
     @Test

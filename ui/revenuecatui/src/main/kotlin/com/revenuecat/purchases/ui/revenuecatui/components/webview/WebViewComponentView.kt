@@ -18,12 +18,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
-import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
-import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 
 @JvmSynthetic
 @Composable
@@ -32,8 +29,6 @@ internal fun WebViewComponentView(
     style: WebViewComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
-    onClick: suspend (PaywallAction) -> Unit = {},
-    componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     if (!style.visible) return
 
@@ -74,79 +69,72 @@ internal fun WebViewComponentView(
             )
         }
 
-        val fallbackStyle = style.fallbackStackComponentStyle
         if (loadFailed) {
-            if (fallbackStyle != null) {
-                StackComponentView(
-                    style = fallbackStyle,
-                    state = state,
-                    clickHandler = onClick,
-                    componentInteractionTracker = componentInteractionTracker,
-                    modifier = modifier.size(effectiveSize),
-                )
-            }
-            // No fallback: render nothing rather than retain a dead/unusable WebView.
-        } else {
-            AndroidView(
-                factory = { context ->
-                    WebView(context).apply {
-                        val bridge = componentId?.let { id ->
-                            WebViewJavaScriptBridge(
-                                webView = this,
-                                componentId = id,
-                                expectedUrl = resolvedUrl,
-                                locale = locale,
-                                messageHandler = messageHandler,
-                                sizeToContentWidth = sizeToContentWidth,
-                                sizeToContentHeight = sizeToContentHeight,
-                                onContentResize = { widthCssPx, heightCssPx ->
-                                    widthCssPx?.takeIf { it > 0 }?.let { contentWidthCssPx = it }
-                                    heightCssPx?.takeIf { it > 0 }?.let { contentHeightCssPx = it }
-                                },
-                                onDocumentReset = {
-                                    contentWidthCssPx = 0
-                                    contentHeightCssPx = 0
-                                },
-                                onSecureMessagingUnsupported = {
-                                    if (failureFlag.markFailed()) {
-                                        loadFailed = true
-                                    }
-                                },
-                            ).also { createdBridge -> createdBridge.attach() }
-                        }
-                        bridgeHolder.bridge = bridge
-                        configure(
-                            expectedOrigin = resolvedUrl.toOriginOrNull(),
-                            onMainFrameNavigationStarted = { url ->
-                                bridgeHolder.bridge?.onMainFrameNavigationStarted(url)
+            // Terminal failure: render nothing rather than retain a dead/unusable WebView.
+            // There is intentionally no native fallback stack — apps must use an SDK that
+            // supports web_view.
+            return@key
+        }
+
+        AndroidView(
+            factory = { context ->
+                WebView(context).apply {
+                    val bridge = componentId?.let { id ->
+                        WebViewJavaScriptBridge(
+                            webView = this,
+                            componentId = id,
+                            expectedUrl = resolvedUrl,
+                            locale = locale,
+                            messageHandler = messageHandler,
+                            sizeToContentWidth = sizeToContentWidth,
+                            sizeToContentHeight = sizeToContentHeight,
+                            onContentResize = { widthCssPx, heightCssPx ->
+                                widthCssPx?.takeIf { it > 0 }?.let { contentWidthCssPx = it }
+                                heightCssPx?.takeIf { it > 0 }?.let { contentHeightCssPx = it }
                             },
-                            onMainFrameLoadFailed = {
+                            onDocumentReset = {
+                                contentWidthCssPx = 0
+                                contentHeightCssPx = 0
+                            },
+                            onSecureMessagingUnsupported = {
                                 if (failureFlag.markFailed()) {
                                     loadFailed = true
                                 }
                             },
-                        )
-                        loadUrl(resolvedUrl)
+                        ).also { createdBridge -> createdBridge.attach() }
                     }
-                },
-                update = {
-                    bridgeHolder.bridge?.update(
-                        locale = locale,
-                        messageHandler = messageHandler,
+                    bridgeHolder.bridge = bridge
+                    configure(
+                        expectedOrigin = resolvedUrl.toOriginOrNull(),
+                        onMainFrameNavigationStarted = { url ->
+                            bridgeHolder.bridge?.onMainFrameNavigationStarted(url)
+                        },
+                        onMainFrameLoadFailed = {
+                            if (failureFlag.markFailed()) {
+                                loadFailed = true
+                            }
+                        },
                     )
-                },
-                onRelease = { webView ->
-                    // Only release the bridge that this view installed into this holder.
-                    val bridge = bridgeHolder.bridge
-                    bridgeHolder.bridge = null
-                    bridge?.release()
-                    webView.stopLoading()
-                    webView.webViewClient = WebViewClient()
-                    webView.destroy()
-                },
-                modifier = modifier.size(effectiveSize),
-            )
-        }
+                    loadUrl(resolvedUrl)
+                }
+            },
+            update = {
+                bridgeHolder.bridge?.update(
+                    locale = locale,
+                    messageHandler = messageHandler,
+                )
+            },
+            onRelease = { webView ->
+                // Only release the bridge that this view installed into this holder.
+                val bridge = bridgeHolder.bridge
+                bridgeHolder.bridge = null
+                bridge?.release()
+                webView.stopLoading()
+                webView.webViewClient = WebViewClient()
+                webView.destroy()
+            },
+            modifier = modifier.size(effectiveSize),
+        )
     }
 }
 
