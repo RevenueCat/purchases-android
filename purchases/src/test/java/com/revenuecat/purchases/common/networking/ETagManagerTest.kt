@@ -728,6 +728,19 @@ class ETagManagerTest {
     }
 
     @Test
+    fun `a legacy entry cleared between read and migration is not resurrected`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        val legacyEntry = HTTPResultWithETag(
+            ETagData("etag", testDate),
+            HTTPResult.createResult(payload = "{\"legacy\":true}", origin = HTTPResult.Origin.CACHE),
+        )
+        every { mockedPrefs.getString(urlString, null) } returnsMany listOf(legacyEntry.serialize(), null)
+
+        assertThat(underTest.getStoredResult(urlString)).isNull()
+        assertThat(putStringKeys).isEmpty()
+    }
+
+    @Test
     fun `an unparseable cache entry is treated as a miss`() {
         val urlString = "http://localhost:100/v1/subscribers/appUserID"
         every { mockedPrefs.getString(urlString, null) } returns "not json"

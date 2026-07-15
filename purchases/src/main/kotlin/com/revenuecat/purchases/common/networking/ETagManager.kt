@@ -277,12 +277,18 @@ internal class ETagManager(
      * them in the split format on first read so later reads never pay the unescape cost again, and
      * return the parsed legacy entry. Unparseable data reads as a cache miss.
      */
-    @Suppress("SwallowedException")
+    @Suppress("SwallowedException", "ReturnCount")
     @Synchronized
     private fun migrateLegacyEntry(urlString: String, serialized: String): HTTPResultWithETag? {
         val legacy = try {
             HTTPResultWithETag.deserialize(serialized)
         } catch (e: JSONException) {
+            return null
+        }
+        // Re-read under the monitor: a concurrent clearCaches() or storeResult() may have removed or
+        // replaced this entry after the (unsynchronized) caller captured it — writing the stale capture
+        // back would resurrect data the clear was meant to purge. Treat any change as a cache miss.
+        if (prefs.value.getString(urlString, null) != serialized) {
             return null
         }
         prefs.value.edit()
