@@ -62,7 +62,8 @@ commands:
   install-mise-tools:
     description: Install mise tools from mise.toml (Java, etc.)
     steps:
-      - revenuecat/install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java
 
   android-dependencies:
     steps:
@@ -148,7 +149,7 @@ commands:
             echo 'rvm use << parameters.version >>' >> $BASH_ENV
             source $BASH_ENV
             ruby -v
-  
+
   checkout-submodule:
     description: "Checks out a git submodule."
     parameters:

@@ -124,17 +124,21 @@ public data class HTTPResult(
         BACKEND, CACHE
     }
 
-    val body: JSONObject = payloadText
-        .takeIf { it.isNotBlank() }
-        ?.let {
-            try {
-                JSONObject(it)
-            } catch (e: JSONException) {
-                errorLog(throwable = e) { "Failed to parse payload as JSON: $it" }
-                null
+    val body: JSONObject by lazy { parseBody() }
+
+    private fun parseBody(): JSONObject {
+        return payloadText
+            .takeIf { it.isNotBlank() }
+            ?.let {
+                try {
+                    JSONObject(it)
+                } catch (e: JSONException) {
+                    errorLog(throwable = e) { "Failed to parse payload as JSON: $it" }
+                    null
+                }
             }
-        }
-        ?: JSONObject()
+            ?: JSONObject()
+    }
 
     val backendErrorCode: Int? = if (!isSuccessful()) body.optInt("code").takeIf { it > 0 } else null
     val backendErrorMessage: String? = if (!isSuccessful()) {
