@@ -26,6 +26,7 @@ import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
@@ -115,6 +116,7 @@ internal class PaywallComponentsImagePreDownloader(
                     is TabControlToggleComponent,
                     is TextComponent,
                     is TimelineComponent,
+                    is WebViewComponent,
                     -> emptySet()
                 }
             }
