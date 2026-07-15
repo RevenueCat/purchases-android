@@ -447,7 +447,7 @@ class BackendGetRemoteConfigTest {
     }
 
     @Test
-    fun `getRemoteConfig does not dedup concurrent calls for different fetch contexts`() {
+    fun `getRemoteConfig dedups concurrent calls with different fetch contexts`() {
         mockHttpResult(payload = HTTPResult.Payload.RCFormat(buildContainer()), delayMs = 200)
         val lock = CountDownLatch(2)
         asyncBackend.getRemoteConfig(
@@ -472,7 +472,8 @@ class BackendGetRemoteConfigTest {
         )
         lock.await(5.seconds.inWholeSeconds, TimeUnit.SECONDS)
         assertThat(lock.count).isEqualTo(0)
-        verify(exactly = 2) {
+        // The fetch context is not part of the dedup key, so concurrent calls share a single request.
+        verify(exactly = 1) {
             httpClient.performRequest(
                 mockBaseURL,
                 Endpoint.GetRemoteConfig(testDomain),
