@@ -130,6 +130,56 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `the first request is forced to the app_start fetch context regardless of the requested context`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+    }
+
+    @Test
+    fun `the first stale request is forced to the app_start fetch context regardless of the requested context`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfigIfStale(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.Foreground,
+        )
+
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+    }
+
+    @Test
+    fun `only the first request is forced to the app_start fetch context`() {
+        every { diskCache.read() } returns null
+
+        // First committed request is forced to AppStart, even though IdentityChange was requested.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+
+        // The next committed request reports its own context.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.IdentityChange)
+    }
+
+    @Test
     fun `refreshRemoteConfigIfStale refreshes on the first call in a process`() {
         every { diskCache.read() } returns null
 
@@ -1180,12 +1230,20 @@ class RemoteConfigManagerTest {
         every { diskCache.write(any()) } answers { state = firstArg(); true }
         val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
 
+        // The first committed request is forced to AppStart, so prime it before asserting the on-demand read's Read.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
+        )
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+
         // Nothing is in flight and nothing is cached: the read triggers its own sync and waits for it.
         var result: ConfigTopic? = null
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
             result = manager.topic(RemoteConfigTopic.Workflows)
         }
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
         // The on-demand sync is issued as foreground for the current user with a read fetch context.
         assertThat(capturedAppUserID).isEqualTo(TEST_APP_USER_ID)
         assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.Read)
