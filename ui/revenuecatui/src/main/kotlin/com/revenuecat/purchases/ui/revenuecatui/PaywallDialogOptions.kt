@@ -22,6 +22,10 @@ public class PaywallDialogOptions internal constructor(
      * `{{ $custom.key }}` placeholders in the paywall configuration.
      */
     public val customVariables: Map<String, CustomVariableValue> = emptyMap(),
+    /**
+     * Handler for messages sent by Paywalls V2 `web_view` components. See [PaywallWebViewMessageHandler].
+     */
+    public val webViewMessageHandler: PaywallWebViewMessageHandler? = null,
 ) {
 
     internal val offeringSelection: OfferingSelection
@@ -36,8 +40,40 @@ public class PaywallDialogOptions internal constructor(
         listener = builder.listener,
         purchaseLogic = builder.purchaseLogic,
         customVariables = builder.customVariables,
+        webViewMessageHandler = builder.webViewMessageHandler,
     )
 
+    private companion object {
+        private const val hashMultiplier = 31
+    }
+
+    // webViewMessageHandler is included in equals but excluded from hashCode (like PaywallOptions).
+    override fun hashCode(): Int {
+        var result = shouldDisplayDismissButton.hashCode()
+        result = hashMultiplier * result + customVariables.hashCode()
+        result = hashMultiplier * result + (offering?.identifier?.hashCode() ?: 0)
+        return result
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is PaywallDialogOptions) return false
+
+        return when {
+            this.shouldDisplayBlock != other.shouldDisplayBlock -> false
+            this.dismissRequest != other.dismissRequest -> false
+            this.offering != other.offering -> false
+            this.shouldDisplayDismissButton != other.shouldDisplayDismissButton -> false
+            this.fontProvider != other.fontProvider -> false
+            this.listener != other.listener -> false
+            this.purchaseLogic != other.purchaseLogic -> false
+            this.customVariables != other.customVariables -> false
+            this.webViewMessageHandler != other.webViewMessageHandler -> false
+            else -> true
+        }
+    }
+
+    @Suppress("TooManyFunctions")
     public class Builder {
         internal var shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null
         internal var dismissRequest: (() -> Unit)? = null
@@ -47,6 +83,7 @@ public class PaywallDialogOptions internal constructor(
         internal var listener: PaywallListener? = null
         internal var purchaseLogic: PaywallPurchaseLogic? = null
         internal var customVariables: Map<String, CustomVariableValue> = emptyMap()
+        internal var webViewMessageHandler: PaywallWebViewMessageHandler? = null
 
         /**
          * Allows to configure whether to display the paywall dialog depending on operations on the CustomerInfo
@@ -104,6 +141,15 @@ public class PaywallDialogOptions internal constructor(
          */
         public fun setCustomVariables(variables: Map<String, CustomVariableValue>): Builder = apply {
             this.customVariables = variables
+        }
+
+        /**
+         * Sets a handler for messages sent by Paywalls V2 `web_view` components. The handler receives
+         * validated messages (such as `rc:step-complete`, `rc:request-variables`, and `rc:error`) on
+         * the main thread, along with a [PaywallWebViewController] for replying to the web view.
+         */
+        public fun setWebViewMessageHandler(handler: PaywallWebViewMessageHandler?): Builder = apply {
+            this.webViewMessageHandler = handler
         }
 
         public fun build(): PaywallDialogOptions {

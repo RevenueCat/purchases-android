@@ -132,5 +132,6 @@ private fun buildPaywallOptions(
         .setPurchaseLogic(paywallDialogOptions.purchaseLogic)
         .setDismissRequestWithExitOffering(dismissRequestWithExitOffering)
         .setCustomVariables(paywallDialogOptions.customVariables)
+        .setWebViewMessageHandler(paywallDialogOptions.webViewMessageHandler)
         .build()
 }
