@@ -639,7 +639,11 @@ class RemoteConfigManagerTest {
             }
         """.trimIndent()
 
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = DEFAULT_FETCH_CONTEXT,
+        )
         onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
 
         assertThat(manager.configGeneration).isEqualTo(1)
@@ -665,7 +669,11 @@ class RemoteConfigManagerTest {
         val recorder = RecordingCommitListener()
         manager.registerListener(recorder)
 
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = DEFAULT_FETCH_CONTEXT,
+        )
         onError.invoke(
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
             GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
@@ -690,7 +698,7 @@ class RemoteConfigManagerTest {
 
         assertThat(topic).isNotNull
         assertThat(topic!!["wf1"]!!.blobRef).isEqualTo(REF_VALID)
-        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -701,7 +709,7 @@ class RemoteConfigManagerTest {
         val topic = manager.committedTopicOrNull(RemoteConfigTopic.Workflows)
 
         assertThat(topic).isNull()
-        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test

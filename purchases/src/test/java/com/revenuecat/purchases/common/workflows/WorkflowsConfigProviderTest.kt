@@ -116,6 +116,53 @@ internal class WorkflowsConfigProviderTest {
     }
 
     @Test
+    fun `warm(generation) never triggers a sync`() = runTest {
+        // The commit/init overload must stay a pure read: a strict mock would throw if it touched the
+        // sync-triggering path, but assert it explicitly to lock the contract in.
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        stubWorkflowBody(WF_CURRENT)
+
+        provider.warm(generation = 0)
+
+        coVerify(exactly = 0) { manager.awaitTopicAndPrefetchBlobsReady(any()) }
+    }
+
+    @Test
+    fun `no-arg warm triggers a sync for an uncommitted topic, then warms from the freshly committed config`() =
+        runTest {
+            // Regression: the gate's no-arg warm() must be able to force a /v1/config sync. onPaywallConfigReady
+            // primes the sync via getUiConfig() only on a COLD ui_config cache; when ui_config is already warm it
+            // short-circuits, so the workflows step is the only thing left that can sync. A pure
+            // committedTopicOrNull read (the old warm()) would see the not-yet-committed topic, no-op, and let the
+            // offerings gate fire without workflows ready — reintroducing the loading flash at render time.
+            every { manager.configGeneration } returns 0
+            var synced = false
+            coEvery { manager.committedTopicOrNull(RemoteConfigTopic.Workflows) } answers {
+                if (synced) {
+                    topicWith(
+                        WF_PREFETCH to configItem(prefetch = true, offeringId = null),
+                        WF_CURRENT to configItem(prefetch = false, offeringId = CURRENT_OFFERING),
+                    )
+                } else {
+                    null
+                }
+            }
+            // The sync is what commits the topic.
+            coEvery { manager.awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.Workflows) } answers {
+                synced = true
+                null
+            }
+            stubWorkflowBody(WF_PREFETCH)
+            stubWorkflowBody(WF_CURRENT)
+
+            provider.warm()
+
+            coVerify(exactly = 1) { manager.awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.Workflows) }
+            assertThat(provider.isWarmForCurrentOffering()).isTrue
+        }
+
+    @Test
     fun `isWarmForCurrentOffering is false when the current offering changes to an uncached workflow`() = runTest {
         stubTopic()
         stubWorkflowBody(WF_PREFETCH)
