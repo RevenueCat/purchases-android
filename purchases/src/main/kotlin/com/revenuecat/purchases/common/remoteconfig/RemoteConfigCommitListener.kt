@@ -18,4 +18,9 @@ internal fun interface RemoteConfigCommitListener {
 
     // Default no-op so a listener that only reacts to commits (re-warm) needn't handle invalidation explicitly.
     fun onConfigInvalidated(generation: Int) {}
+
+    // Fired exactly once, the first time the `/v1/config` 4xx session kill-switch trips (never on an
+    // identity-change wipe, unlike [onConfigInvalidated]). Lets a listener react specifically to the endpoint
+    // becoming unavailable for the session — e.g. refetch offerings so the paywall-components fallback is decoded.
+    fun onRemoteConfigDisabled(generation: Int) {}
 }

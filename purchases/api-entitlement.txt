@@ -188,10 +188,11 @@ package com.revenuecat.purchases {
 
   @dev.drewhamilton.poko.Poko public final class Offering {
     ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages);
-    ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages, optional @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.paywalls.PaywallData? paywall, optional @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.Offering.PaywallComponents? paywallComponents, optional java.net.URL? webCheckoutURL);
+    ctor public Offering(String identifier, String serverDescription, java.util.Map<java.lang.String,?> metadata, java.util.List<com.revenuecat.purchases.Package> availablePackages, optional @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.paywalls.PaywallData? paywall, optional @com.revenuecat.purchases.InternalRevenueCatAPI com.revenuecat.purchases.Offering.PaywallComponents? paywallComponents, optional java.net.URL? webCheckoutURL, optional @com.revenuecat.purchases.InternalRevenueCatAPI boolean hasPaywallComponents);
     method public operator com.revenuecat.purchases.Package get(String s);
     method public com.revenuecat.purchases.Package? getAnnual();
     method public java.util.List<com.revenuecat.purchases.Package> getAvailablePackages();
+    method public boolean getHasPaywallComponents();
     method public String getIdentifier();
     method public com.revenuecat.purchases.Package? getLifetime();
     method public java.util.Map<java.lang.String,java.lang.Object> getMetadata();
@@ -211,6 +212,7 @@ package com.revenuecat.purchases {
     property public final com.revenuecat.purchases.Package? annual;
     property public final java.util.List<com.revenuecat.purchases.Package> availablePackages;
     property public final boolean hasPaywall;
+    property public final boolean hasPaywallComponents;
     property public final String identifier;
     property public final com.revenuecat.purchases.Package? lifetime;
     property public final java.util.Map<java.lang.String,java.lang.Object> metadata;

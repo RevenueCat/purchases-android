@@ -11,6 +11,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
@@ -47,6 +48,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifyAll
@@ -2987,6 +2989,23 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         verify(exactly = 5) {
             mockRemoteConfigManager.refreshRemoteConfig(false, appUserId, RemoteConfigFetchContext.Read)
+        }
+    }
+
+    @Test
+    fun `remote config disable triggers an offerings network refetch`() {
+        every { mockOfferingsManager.fetchAndCacheOfferings(appUserId, false, any(), any()) } just Runs
+
+        // Capture the disable listener the orchestrator registered on construction.
+        val listenerSlot = slot<RemoteConfigCommitListener>()
+        verify { mockRemoteConfigManager.registerListener(capture(listenerSlot)) }
+
+        listenerSlot.captured.onRemoteConfigDisabled(generation = 1)
+
+        // The refetch re-parses offerings with remote config now disabled, decoding paywall components for the
+        // fallback render path.
+        verify(exactly = 1) {
+            mockOfferingsManager.fetchAndCacheOfferings(appUserId, false, any(), any())
         }
     }
 

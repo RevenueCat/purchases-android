@@ -33,6 +33,11 @@ constructor(
     @InternalRevenueCatAPI
     public val paywallComponents: PaywallComponents? = null,
     public val webCheckoutURL: URL? = null,
+    // Whether the backend served a components paywall for this offering, tracked independently of whether
+    // [paywallComponents] was actually decoded. Under workflows the components are served from `/v1/config` and
+    // not captured here to save memory, but [hasPaywall] must still report the offering as paywall-capable.
+    @InternalRevenueCatAPI
+    public val hasPaywallComponents: Boolean = false,
 ) {
     @OptIn(InternalRevenueCatAPI::class)
     public constructor(
@@ -99,7 +104,7 @@ constructor(
     @OptIn(InternalRevenueCatAPI::class)
     @get:JvmName("hasPaywall")
     public val hasPaywall: Boolean
-        get() = paywall != null || paywallComponents != null
+        get() = paywall != null || paywallComponents != null || hasPaywallComponents
 
     /**
      * Lifetime package type configured in the RevenueCat dashboard, if available.
@@ -181,6 +186,7 @@ constructor(
             paywall = this.paywall,
             paywallComponents = this.paywallComponents,
             webCheckoutURL = this.webCheckoutURL,
+            hasPaywallComponents = this.hasPaywallComponents,
         )
     }
 }

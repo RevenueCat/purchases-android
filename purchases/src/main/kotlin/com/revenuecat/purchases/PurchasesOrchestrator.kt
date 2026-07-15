@@ -47,6 +47,7 @@ import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.sha1
@@ -292,6 +293,17 @@ internal class PurchasesOrchestrator(
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.WARNING) { ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED }
         }
+
+        // When the `/v1/config` 4xx kill-switch trips, workflow-served paywalls are no longer available, so
+        // refetch offerings from the network: the parser skips capturing paywall components while the endpoint
+        // is live, and this refetch (with the endpoint now disabled) decodes them for the fallback render path.
+        remoteConfigManager?.registerListener(object : RemoteConfigCommitListener {
+            // Only the disable transition matters here; commits/invalidations are handled by the config providers.
+            override fun onConfigCommitted(generation: Int) = Unit
+            override fun onRemoteConfigDisabled(generation: Int) {
+                offeringsManager.fetchAndCacheOfferings(appUserID, state.appInBackground)
+            }
+        })
     }
 
     /** @suppress */

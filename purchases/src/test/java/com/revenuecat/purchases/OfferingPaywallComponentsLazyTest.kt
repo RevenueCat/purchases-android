@@ -47,6 +47,23 @@ internal class OfferingPaywallComponentsLazyTest {
     }
 
     @Test
+    fun `hasPaywall is true when hasPaywallComponents flag is set even though paywallComponents is skipped`() {
+        // Simulates the workflows path: components are not captured (null) but presence is flagged.
+        val offering = Offering(
+            identifier = "offering",
+            serverDescription = "desc",
+            metadata = emptyMap(),
+            availablePackages = emptyList(),
+            paywall = null,
+            paywallComponents = null,
+            webCheckoutURL = null,
+            hasPaywallComponents = true,
+        )
+
+        assertThat(offering.hasPaywall).isTrue()
+    }
+
+    @Test
     fun `equals is true for same uiConfig and componentsHash, without forcing the decode`() {
         val uiConfig = mockk<UiConfig>()
         var decodeCount = 0
