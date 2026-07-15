@@ -242,15 +242,14 @@ internal class ETagManager(
         result: HTTPResult,
         eTag: String,
     ) {
-        val originalOrigin = result.origin
-        result.origin = HTTPResult.Origin.CACHE
-        try {
-            val eTagData = ETagData(eTag, dateProvider.now)
-            val httpResultWithETag = HTTPResultWithETag(eTagData, result)
-            prefs.value.edit().putString(urlString, httpResultWithETag.serialize()).apply()
-        } finally {
-            result.origin = originalOrigin
-        }
+        val metadata = ETagCacheMetadata.fromResult(result, ETagData(eTag, dateProvider.now))
+        prefs.value.edit()
+            .putString(urlString, metadata.serialize())
+            // The payload is stored verbatim under its own key: embedding it inside the metadata JSON
+            // would re-escape a multi-MB string we already hold, which OOMed on large /offerings
+            // responses (https://github.com/RevenueCat/purchases-android/issues/3628).
+            .putString(payloadKey(urlString), result.payloadText)
+            .apply()
     }
 
     private fun getStoredResultSavedInSharedPreferences(urlString: String): HTTPResultWithETag? {
@@ -277,6 +276,13 @@ internal class ETagManager(
     }
 
     companion object {
+        // Cache keys are endpoint URLs from URL(baseURL, path).toString(), which never carry a '#'
+        // fragment, so this suffix cannot collide with another URL's entry.
+        private const val PAYLOAD_KEY_SUFFIX = "#rc_payload"
+
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal fun payloadKey(urlString: String): String = "$urlString$PAYLOAD_KEY_SUFFIX"
+
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
                 "${context.packageName}_preferences_etags",
