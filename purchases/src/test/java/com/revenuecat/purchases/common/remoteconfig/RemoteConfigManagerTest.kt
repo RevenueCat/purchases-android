@@ -180,6 +180,43 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `requests keep being forced to app_start until one succeeds`() {
+        every { diskCache.read() } returns null
+
+        // A failed first request must not consume the forced AppStart, so the next attempt is forced too.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        onFallbackError.invoke(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+
+        // Once a request succeeds, the forcing stops and later requests report their own context.
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.IdentityChange)
+    }
+
+    @Test
     fun `refreshRemoteConfigIfStale refreshes on the first call in a process`() {
         every { diskCache.read() } returns null
 
