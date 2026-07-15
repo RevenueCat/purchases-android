@@ -192,6 +192,16 @@ class ETagManagerTest {
     // endregion ETag headers usage verification tests
 
     @Test
+    fun `getETagHeaders does not read the cached payload`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        mockCachedHTTPResult(expectedETag = "etag", urlString = urlString)
+
+        underTest.getETagHeaders(urlString, verificationRequested = false)
+
+        verify(exactly = 0) { mockedPrefs.getString(ETagManager.payloadKey(urlString), null) }
+    }
+
+    @Test
     fun `If response code is 304, cached version should be used`() {
         val shouldUse = underTest.shouldUseCachedVersion(RCHTTPStatusCodes.NOT_MODIFIED)
 
@@ -209,8 +219,9 @@ class ETagManagerTest {
     fun `Cached result is returned when calling getStoredResult`() {
         val urlString = "http://localhost:100/v1/subscribers/appUserID"
         val eTag = "eTag"
+        val cachedHTTPResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE)
 
-        val cachedHTTPResult = mockCachedHTTPResult(eTag, urlString)!!.httpResult
+        mockCachedHTTPResult(eTag, urlString, httpResult = cachedHTTPResult)
 
         val storedResult = underTest.getStoredResult(urlString)
 
@@ -723,14 +734,17 @@ class ETagManagerTest {
         urlString: String,
         expectedLastRefreshTime: Date? = Date(),
         httpResult: HTTPResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE)
-    ): HTTPResultWithETag? {
-        val cachedResult = expectedETag?.let {
-            HTTPResultWithETag(ETagData(expectedETag, expectedLastRefreshTime), httpResult)
+    ): ETagCacheMetadata? {
+        val metadata = expectedETag?.let {
+            ETagCacheMetadata.fromResult(httpResult, ETagData(expectedETag, expectedLastRefreshTime))
         }
         every {
             mockedPrefs.getString(urlString, null)
-        } returns cachedResult?.serialize()
-        return cachedResult
+        } returns metadata?.serialize()
+        every {
+            mockedPrefs.getString(ETagManager.payloadKey(urlString), null)
+        } returns metadata?.let { httpResult.payloadText }
+        return metadata
     }
 
     private fun assertStoredResponse(

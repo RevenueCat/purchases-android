@@ -163,8 +163,8 @@ internal class ETagManager(
         verificationRequested: Boolean,
         refreshETag: Boolean = false,
     ): Map<String, String?> {
-        val storedResult = if (refreshETag) null else getStoredResultSavedInSharedPreferences(urlString)
-        val eTagData = storedResult?.eTagData?.takeIf { shouldUseETag(storedResult, verificationRequested) }
+        val metadata = if (refreshETag) null else getStoredMetadata(urlString)
+        val eTagData = metadata?.eTagData?.takeIf { shouldUseETag(metadata.verificationResult, verificationRequested) }
         return mapOf(
             HTTPRequest.ETAG_HEADER_NAME to eTagData?.eTag.orEmpty(),
             HTTPRequest.ETAG_LAST_REFRESH_NAME to eTagData?.lastRefreshTime?.time?.toString(),
@@ -216,9 +216,11 @@ internal class ETagManager(
 
     internal fun shouldUseCachedVersion(responseCode: Int) = responseCode == RCHTTPStatusCodes.NOT_MODIFIED
 
+    @Suppress("ReturnCount")
     internal fun getStoredResult(urlString: String): HTTPResult? {
-        val storedResult = getStoredResultSavedInSharedPreferences(urlString)
-        return storedResult?.httpResult
+        val metadata = getStoredMetadata(urlString) ?: return null
+        val payload = prefs.value.getString(payloadKey(urlString), null) ?: return null
+        return metadata.toHTTPResult(payload)
     }
 
     internal fun storeBackendResultIfNoError(
@@ -252,11 +254,9 @@ internal class ETagManager(
             .apply()
     }
 
-    private fun getStoredResultSavedInSharedPreferences(urlString: String): HTTPResultWithETag? {
-        val serializedHTTPResultWithETag = prefs.value.getString(urlString, null)
-        return serializedHTTPResultWithETag?.let {
-            HTTPResultWithETag.deserialize(it)
-        }
+    private fun getStoredMetadata(urlString: String): ETagCacheMetadata? {
+        val serialized = prefs.value.getString(urlString, null) ?: return null
+        return ETagCacheMetadata.deserialize(serialized)
     }
 
     private fun shouldStoreBackendResult(resultFromBackend: HTTPResult): Boolean {
@@ -266,8 +266,8 @@ internal class ETagManager(
             resultFromBackend.verificationResult != VerificationResult.FAILED
     }
 
-    private fun shouldUseETag(storedResult: HTTPResultWithETag, verificationRequested: Boolean): Boolean {
-        return when (storedResult.httpResult.verificationResult) {
+    private fun shouldUseETag(verificationResult: VerificationResult, verificationRequested: Boolean): Boolean {
+        return when (verificationResult) {
             VerificationResult.VERIFIED -> true
             VerificationResult.NOT_REQUESTED -> !verificationRequested
             // Should never happen since we don't store these verification results in the cache
