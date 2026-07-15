@@ -304,7 +304,7 @@ internal class PurchasesOrchestrator(
             // Only the disable transition matters here; commits/invalidations are handled by the config providers.
             override fun onConfigCommitted(generation: Int) = Unit
             override fun onRemoteConfigDisabled(generation: Int) {
-                offeringsManager.clearInMemoryOfferingsCache()
+                offeringsManager.clearInMemoryOfferingsCache(invalidateInFlightFetches = true)
                 offeringsManager.fetchAndCacheOfferings(appUserID, state.appInBackground)
             }
         })

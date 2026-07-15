@@ -172,8 +172,7 @@ internal abstract class OfferingParser(
                 paywallData,
                 paywallComponents,
                 webCheckoutURL,
-                hasPaywallComponents = hasPaywallComponents,
-            )
+            ).also { it.hasPaywallComponents = hasPaywallComponents }
         } else {
             null
         }

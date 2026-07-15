@@ -24,6 +24,7 @@ import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.optNullableString
 import org.json.JSONObject
 import java.util.Date
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -43,6 +44,12 @@ internal class OfferingsManager(
 ) {
 
     private val emptyOfferings: Offerings = Offerings(current = null, all = emptyMap())
+
+    // Bumped by an invalidating clearInMemoryOfferingsCache (the `/v1/config` kill-switch flow only). A fetch
+    // captures it when it starts and re-checks it right before writing to the cache: a fetch that began before such
+    // an invalidation (e.g. one parsed while remote config was still enabled, with paywall components skipped) must
+    // not clobber the cache the invalidation's own refetch is repopulating. See PurchasesOrchestrator.
+    private val cacheGeneration = AtomicInteger(0)
 
     val cachedCurrentOfferingIdentifier: String?
         get() = offeringsCache.cachedOfferings?.current?.identifier
@@ -171,7 +178,19 @@ internal class OfferingsManager(
         }
     }
 
-    fun clearInMemoryOfferingsCache() {
+    /**
+     * Clears the in-memory offerings cache.
+     *
+     * [invalidateInFlightFetches] is only set by the `/v1/config` kill-switch flow: it bumps the cache generation
+     * so any fetch already in flight (parsed with the now-stale, pre-disable config, with paywall components
+     * skipped) drops its cache write instead of clobbering the offerings the kill-switch refetch is repopulating.
+     * All other callers leave it false to preserve previous behavior (a late in-flight write still lands) when
+     * remote config is disabled or workflows are off.
+     */
+    fun clearInMemoryOfferingsCache(invalidateInFlightFetches: Boolean = false) {
+        if (invalidateInFlightFetches) {
+            cacheGeneration.incrementAndGet()
+        }
         offeringsCache.clearInMemoryOfferingsCache()
     }
 
@@ -194,6 +213,9 @@ internal class OfferingsManager(
             return
         }
         log(LogIntent.RC_SUCCESS) { OfferingStrings.OFFERINGS_START_UPDATE_FROM_NETWORK }
+        // Snapshot the cache generation at fetch start so a cache invalidation that races this fetch can drop its
+        // (now stale) write instead of clobbering the fresher offerings the invalidation's refetch is producing.
+        val fetchGeneration = cacheGeneration.get()
         backend.getOfferings(
             appUserID,
             appInBackground,
@@ -202,6 +224,7 @@ internal class OfferingsManager(
                     offeringsJSON = body,
                     originalDataSource = originalDataSource,
                     loadedFromDiskCache = false,
+                    fetchGeneration = fetchGeneration,
                     onError,
                     onSuccess,
                 )
@@ -228,6 +251,7 @@ internal class OfferingsManager(
                                 offeringsJSON = cachedOfferingsResponse,
                                 originalDataSource = originalDataSource,
                                 loadedFromDiskCache = true,
+                                fetchGeneration = fetchGeneration,
                                 onError,
                                 onSuccess,
                             )
@@ -245,6 +269,7 @@ internal class OfferingsManager(
         offeringsJSON: JSONObject,
         originalDataSource: HTTPResponseOriginalSource,
         loadedFromDiskCache: Boolean,
+        fetchGeneration: Int,
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((OfferingsResultData) -> Unit)? = null,
     ) {
@@ -260,7 +285,14 @@ internal class OfferingsManager(
                     offeringImagePreDownloader.preDownloadOfferingImages(it)
                 }
                 offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
-                offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
+                // Only write if no invalidation happened since this fetch started; otherwise this result is stale
+                // (a newer refetch owns the cache now) and writing it would clobber the fresher offerings. The
+                // parsed result is still delivered to the caller below so an in-flight request never hangs.
+                if (cacheGeneration.get() == fetchGeneration) {
+                    offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
+                } else {
+                    log(LogIntent.DEBUG) { OfferingStrings.OFFERINGS_CACHE_INVALIDATED_SKIPPING_STALE_WRITE }
+                }
                 val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
                 workflowManager?.onPaywallConfigReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
             },

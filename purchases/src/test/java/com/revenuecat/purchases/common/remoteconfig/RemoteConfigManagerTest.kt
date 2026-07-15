@@ -689,14 +689,14 @@ class RemoteConfigManagerTest {
         val recorder = RecordingCommitListener()
         manager.registerListener(recorder)
 
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
         onError.invoke(
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
             GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
         )
 
         // Further refreshes are no-ops (already disabled), so the disable signal must not fire again.
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
 
         assertThat(recorder.disabled).containsExactly(1)
     }
@@ -725,7 +725,7 @@ class RemoteConfigManagerTest {
             }
         """.trimIndent()
 
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
         onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
 
         assertThat(recorder.disabled).isEmpty()

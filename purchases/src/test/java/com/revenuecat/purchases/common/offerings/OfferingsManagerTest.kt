@@ -16,6 +16,7 @@ import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.stubOfferings
+import io.mockk.CapturingSlot
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -92,6 +93,51 @@ class OfferingsManagerTest {
     }
 
     // endregion clearInMemoryOfferingsCache
+
+    // region cache write invalidation guard
+
+    @Test
+    fun `in-flight fetch write is dropped after an invalidating clear (kill-switch)`() {
+        every { cache.clearInMemoryOfferingsCache() } just Runs
+        mockDeviceCache()
+        val onSuccessSlot = captureFactoryOnSuccess()
+
+        // The fetch reaches the factory but its parsed result is not delivered yet (still in flight).
+        offeringsManager.fetchAndCacheOfferings(appUserId, appInBackground = false)
+
+        // Kill switch trips: invalidate in-flight fetches, then the in-flight parse finally completes.
+        offeringsManager.clearInMemoryOfferingsCache(invalidateInFlightFetches = true)
+        onSuccessSlot.captured.invoke(OfferingsResultData(testOfferings, setOf(productId), emptySet()))
+
+        verify(exactly = 0) { cache.cacheOfferings(any(), any()) }
+    }
+
+    @Test
+    fun `in-flight fetch write lands when no clear happens`() {
+        mockDeviceCache()
+        val onSuccessSlot = captureFactoryOnSuccess()
+
+        offeringsManager.fetchAndCacheOfferings(appUserId, appInBackground = false)
+        onSuccessSlot.captured.invoke(OfferingsResultData(testOfferings, setOf(productId), emptySet()))
+
+        verify(exactly = 1) { cache.cacheOfferings(any(), any()) }
+    }
+
+    @Test
+    fun `in-flight fetch write lands after a non-invalidating clear (previous behavior preserved)`() {
+        every { cache.clearInMemoryOfferingsCache() } just Runs
+        mockDeviceCache()
+        val onSuccessSlot = captureFactoryOnSuccess()
+
+        offeringsManager.fetchAndCacheOfferings(appUserId, appInBackground = false)
+        // A plain clear (locale override / remote config disabled path) must not drop the late write.
+        offeringsManager.clearInMemoryOfferingsCache()
+        onSuccessSlot.captured.invoke(OfferingsResultData(testOfferings, setOf(productId), emptySet()))
+
+        verify(exactly = 1) { cache.cacheOfferings(any(), any()) }
+    }
+
+    // endregion cache write invalidation guard
 
     // region onAppForeground
 
@@ -903,6 +949,24 @@ class OfferingsManagerTest {
                 lambda<(PurchasesError) -> Unit>().captured.invoke(error)
             }
         }
+    }
+
+    /**
+     * Captures the offerings factory `onSuccess` lambda without invoking it, so a test can drive the parse
+     * completion manually (simulating a fetch still in flight while the cache is cleared).
+     */
+    private fun captureFactoryOnSuccess(): CapturingSlot<(OfferingsResultData) -> Unit> {
+        val onSuccessSlot = slot<(OfferingsResultData) -> Unit>()
+        every {
+            offeringsFactory.createOfferings(
+                offeringsJSON = any(),
+                originalDataSource = any(),
+                loadedFromDiskCache = any(),
+                onError = any(),
+                onSuccess = capture(onSuccessSlot),
+            )
+        } just Runs
+        return onSuccessSlot
     }
 
     private fun mockBackendResponseSuccess(response: String = ONE_OFFERINGS_RESPONSE) {

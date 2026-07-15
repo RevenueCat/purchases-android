@@ -57,8 +57,7 @@ internal class OfferingPaywallComponentsLazyTest {
             paywall = null,
             paywallComponents = null,
             webCheckoutURL = null,
-            hasPaywallComponents = true,
-        )
+        ).also { it.hasPaywallComponents = true }
 
         assertThat(offering.hasPaywall).isTrue()
     }
