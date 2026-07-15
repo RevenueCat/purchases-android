@@ -244,6 +244,30 @@ internal class UiConfigProviderTest {
     }
 
     @Test
+    fun `warm drops a stale ui_config when a newer commit's resolve fails, so getUiConfig re-reads`() = runTest {
+        // Regression: onConfigCommitted re-warms asynchronously and doesn't pre-invalidate. If that warm can't
+        // resolve the body (e.g. a transient blob read) it must not leave the previous snapshot behind tagged
+        // with an older generation — memory-first getUiConfig would keep serving it after the config advanced.
+        coEvery { manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) } returns mockk()
+        stubMergedRead(minimalUiConfigJson())
+        val original = requireNotNull(provider.getUiConfig())
+
+        // A newer commit advanced the generation; the warm finds the topic committed but can't resolve now.
+        every { manager.configGeneration } returns 1
+        coEvery {
+            manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())
+        } returns null
+        provider.warm(generation = 1)
+
+        assertThat(provider.isWarm()).isFalse
+
+        // The next read re-resolves the committed config instead of serving the outdated snapshot.
+        stubMergedRead(minimalUiConfigJson())
+        val refreshed = requireNotNull(provider.getUiConfig())
+        assertThat(refreshed).isNotSameAs(original)
+    }
+
+    @Test
     fun `a stale warm cannot repopulate the cache after a newer invalidation`() = runTest {
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) } returns mockk()
         stubMergedRead(minimalUiConfigJson())

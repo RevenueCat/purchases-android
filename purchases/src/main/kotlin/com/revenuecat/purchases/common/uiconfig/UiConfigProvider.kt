@@ -60,11 +60,19 @@ internal class UiConfigProvider(
     /**
      * Best-effort populate of the in-memory cache from already-committed config, tagged with [generation].
      * No-op (no network) when `ui_config` isn't committed yet, so a cold-disk init warm never triggers a sync.
+     *
+     * If the topic **is** committed but its body can't be resolved right now (e.g. a transient blob read),
+     * the previous snapshot is dropped (store-if-newer [GenerationGuardedCache.invalidate]) rather than left
+     * behind tagged with an older generation. Otherwise, since [getUiConfig] is memory-first and never falls
+     * through on a hit, it would keep serving the outdated config after the generation advanced; dropping it
+     * makes the next [getUiConfig] re-resolve the committed config instead.
      */
     suspend fun warm(generation: Int) {
         if (manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) == null) return
-        val uiConfig = resolve() ?: return
-        cache.store(generation, uiConfig)
+        when (val uiConfig = resolve()) {
+            null -> cache.invalidate(generation)
+            else -> cache.store(generation, uiConfig)
+        }
     }
 
     /** Warms at the current config generation; used by the offerings readiness gate. */
