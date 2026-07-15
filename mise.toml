@@ -1,8 +1,12 @@
 [settings]
 lockfile = true
 
+[settings.ruby]
+compile = false
+
 [tools]
 java = ["liberica-21.0.6", "liberica-17.0.6"]
+ruby = "3.3.0"
 
 # :codegen needs a Java 17 toolchain while the rest of the build runs on 21.
 # Gradle/Android Studio don't auto-detect mise JDKs (https://github.com/gradle/gradle/issues/29355), so expose them through
