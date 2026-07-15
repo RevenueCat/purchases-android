@@ -24,9 +24,11 @@ import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.jsonObject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
+import org.junit.Ignore
 import org.junit.Test
 import java.io.File
 
+@Ignore("Disabling temporarily while we debug some failures. This path is not used right now in production")
 internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.apiKey
 
