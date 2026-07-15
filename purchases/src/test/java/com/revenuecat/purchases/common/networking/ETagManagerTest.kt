@@ -11,7 +11,6 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -31,8 +30,8 @@ class ETagManagerTest {
     }
     private val mockedPrefs = mockk<SharedPreferences>()
     private val underTest = ETagManager(mockk(), lazy { mockedPrefs }, testDateProvider)
-    private val slotPutStringSharedPreferencesKey = slot<String>()
-    private val slotPutSharedPreferencesValue = slot<String>()
+    private val putStringKeys = mutableListOf<String>()
+    private val putStringValues = mutableListOf<String>()
     private val mockEditor = mockk<SharedPreferences.Editor>()
 
     @Before
@@ -41,7 +40,7 @@ class ETagManagerTest {
             mockedPrefs.edit()
         } returns mockEditor
         every {
-            mockEditor.putString(capture(slotPutStringSharedPreferencesKey), capture(slotPutSharedPreferencesValue))
+            mockEditor.putString(capture(putStringKeys), capture(putStringValues))
         } returns mockEditor
         every {
             mockEditor.apply()
@@ -240,8 +239,7 @@ class ETagManagerTest {
 
         underTest.storeBackendResultIfNoError(urlString, resultFromBackend, eTag)
 
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
+        assertThat(putStringKeys).isEmpty()
     }
 
     @Test
@@ -252,18 +250,10 @@ class ETagManagerTest {
         val resultFromBackend = HTTPResult.createResult(
             RCHTTPStatusCodes.SUCCESS, Responses.validEmptyPurchaserResponse
         )
-        val resultStored = resultFromBackend.copy(
-            origin = HTTPResult.Origin.CACHE
-        )
-        val resultStoredWithETag = HTTPResultWithETag(ETagData(eTag, testDate), resultStored)
 
         underTest.storeBackendResultIfNoError(urlString, resultFromBackend, eTag)
 
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isTrue
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isTrue
-
-        assertThat(slotPutStringSharedPreferencesKey.captured).isEqualTo(urlString)
-        assertThat(slotPutSharedPreferencesValue.captured).isEqualTo(resultStoredWithETag.serialize())
+        assertStoredResponse(urlString, eTag, testDate, Responses.validEmptyPurchaserResponse)
     }
 
     @Test
@@ -275,8 +265,7 @@ class ETagManagerTest {
 
         underTest.storeBackendResultIfNoError(urlString, resultFromBackend, eTag)
 
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
+        assertThat(putStringKeys).isEmpty()
     }
 
     @Test
@@ -291,8 +280,7 @@ class ETagManagerTest {
 
         underTest.storeBackendResultIfNoError(urlString, resultFromBackend, eTag)
 
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
+        assertThat(putStringKeys).isEmpty()
     }
 
     @Test
@@ -304,18 +292,45 @@ class ETagManagerTest {
             verificationResult = VERIFIED,
             payload = Responses.validEmptyPurchaserResponse
         )
-        val resultStored = resultFromBackend.copy(
-            origin = HTTPResult.Origin.CACHE
-        )
-        val resultStoredWithETag = HTTPResultWithETag(ETagData(eTag, testDate), resultStored)
 
         underTest.storeBackendResultIfNoError(urlString, resultFromBackend, eTag)
 
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isTrue
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isTrue
+        assertStoredResponse(urlString, eTag, testDate, Responses.validEmptyPurchaserResponse)
+    }
 
-        assertThat(slotPutStringSharedPreferencesKey.captured).isEqualTo(urlString)
-        assertThat(slotPutSharedPreferencesValue.captured).isEqualTo(resultStoredWithETag.serialize())
+    @Test
+    fun `storeBackendResultIfNoError stores metadata and payload under separate keys`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        val payload = "{\"key\":\"value\"}"
+        val result = HTTPResult.createResult(payload = payload)
+
+        underTest.storeBackendResultIfNoError(urlString, result, eTagInResponse = "etag")
+
+        assertStoredResponse(urlString, "etag", testDate, payload)
+    }
+
+    @Test
+    fun `storeBackendResultIfNoError stores the payload string verbatim without re-encoding`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        // Quote-dense payload: the legacy combined format would escape every quote twice.
+        val payload = "{\"offerings\":[{\"id\":\"premium\",\"desc\":\"a \\\"quoted\\\" name\"}]}"
+        val result = HTTPResult.createResult(payload = payload)
+
+        underTest.storeBackendResultIfNoError(urlString, result, eTagInResponse = "etag")
+
+        val storedByKey = putStringKeys.zip(putStringValues).toMap()
+        // Reference equality: the exact string instance we already held is stored — zero copies, zero escaping.
+        assertThat(storedByKey.getValue(ETagManager.payloadKey(urlString))).isSameAs(result.payloadText)
+    }
+
+    @Test
+    fun `storeBackendResultIfNoError does not mutate the result being stored`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        val result = HTTPResult.createResult(origin = HTTPResult.Origin.BACKEND)
+
+        underTest.storeBackendResultIfNoError(urlString, result, eTagInResponse = "etag")
+
+        assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
     }
 
     @Test
@@ -380,8 +395,7 @@ class ETagManagerTest {
             isFallbackURL = false,
         )
 
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
+        assertThat(putStringKeys).isEmpty()
     }
 
     @Test
@@ -407,8 +421,7 @@ class ETagManagerTest {
         )
 
         assertThat(result).isNull()
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
+        assertThat(putStringKeys).isEmpty()
     }
 
     @Test
@@ -437,8 +450,7 @@ class ETagManagerTest {
         assertThat(result!!.responseCode).isEqualTo(RCHTTPStatusCodes.NOT_MODIFIED)
         assertThat(result.payloadText).isEqualTo(responsePayload)
         assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
+        assertThat(putStringKeys).isEmpty()
     }
 
     @Test
@@ -727,17 +739,14 @@ class ETagManagerTest {
         lastRefreshTime: Date?,
         responsePayload: String
     ) {
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isTrue
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isTrue
+        val storedByKey = putStringKeys.zip(putStringValues).toMap()
 
-        assertThat(slotPutStringSharedPreferencesKey.captured).isEqualTo(urlString)
-        assertThat(slotPutSharedPreferencesValue.captured).isNotNull
+        val metadata = ETagCacheMetadata.deserialize(storedByKey.getValue(urlString))
+        assertThat(metadata).isNotNull
+        assertThat(metadata!!.eTagData.eTag).isEqualTo(eTagInResponse)
+        assertThat(metadata.eTagData.lastRefreshTime?.time).isEqualTo(lastRefreshTime?.time)
+        assertThat(metadata.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
 
-        val deserializedResult = HTTPResultWithETag.deserialize(slotPutSharedPreferencesValue.captured)
-        assertThat(deserializedResult.eTagData.eTag).isEqualTo(eTagInResponse)
-        assertThat(deserializedResult.eTagData.lastRefreshTime?.time).isEqualTo(lastRefreshTime?.time)
-        assertThat(deserializedResult.httpResult.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
-        assertThat(deserializedResult.httpResult.payloadText).isEqualTo(responsePayload)
-        assertThat(deserializedResult.httpResult.origin).isEqualTo(HTTPResult.Origin.CACHE)
+        assertThat(storedByKey.getValue(ETagManager.payloadKey(urlString))).isEqualTo(responsePayload)
     }
 }
