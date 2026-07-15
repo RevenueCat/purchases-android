@@ -21,9 +21,9 @@ private const val SERIALIZATION_NAME_IS_FALLBACK_URL = "isFallbackURL"
 public data class HTTPResult(
     val responseCode: Int,
     val payload: Payload,
-    val origin: Origin,
-    val requestDate: Date?,
-    val verificationResult: VerificationResult,
+    var origin: Origin,
+    var requestDate: Date?,
+    var verificationResult: VerificationResult,
     val isLoadShedderResponse: Boolean,
     val isFallbackURL: Boolean,
 ) {
