@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.NetworkStrings
+import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
 
@@ -46,6 +47,106 @@ internal data class HTTPResultWithETag(
                 ?.let { Date(it) }
             val serializedHTTPResult = jsonObject.getString(SERIALIZATION_NAME_HTTPRESULT)
             return HTTPResultWithETag(ETagData(eTag, lastRefreshTime), HTTPResult.deserialize(serializedHTTPResult))
+        }
+    }
+}
+
+/**
+ * Everything the ETag cache persists about a response except its payload. Stored as a small flat JSON
+ * under the URL key, while the payload is stored verbatim under a separate key ([ETagManager.payloadKey])
+ * so caching a large response never re-encodes a string we already hold in memory
+ * (https://github.com/RevenueCat/purchases-android/issues/3628).
+ *
+ * `origin` is intentionally not persisted: stored results always read back as [HTTPResult.Origin.CACHE].
+ */
+@OptIn(InternalRevenueCatAPI::class)
+@VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+internal data class ETagCacheMetadata(
+    val eTagData: ETagData,
+    val responseCode: Int,
+    val requestDate: Date?,
+    val verificationResult: VerificationResult,
+    val isLoadShedderResponse: Boolean,
+    val isFallbackURL: Boolean,
+) {
+    fun serialize(): String {
+        return JSONObject().apply {
+            put(SERIALIZATION_NAME_ETAG, eTagData.eTag)
+            eTagData.lastRefreshTime?.let { put(SERIALIZATION_NAME_LAST_REFRESH_TIME, it.time) }
+            put(SERIALIZATION_NAME_RESPONSE_CODE, responseCode)
+            requestDate?.let { put(SERIALIZATION_NAME_REQUEST_DATE, it.time) }
+            put(SERIALIZATION_NAME_VERIFICATION_RESULT, verificationResult.name)
+            put(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE, isLoadShedderResponse)
+            put(SERIALIZATION_NAME_IS_FALLBACK_URL, isFallbackURL)
+        }.toString()
+    }
+
+    fun toHTTPResult(payload: String): HTTPResult {
+        return HTTPResult(
+            responseCode,
+            payload,
+            HTTPResult.Origin.CACHE,
+            requestDate,
+            verificationResult,
+            isLoadShedderResponse,
+            isFallbackURL,
+        )
+    }
+
+    companion object {
+        private const val SERIALIZATION_NAME_ETAG = "eTag"
+        private const val SERIALIZATION_NAME_LAST_REFRESH_TIME = "lastRefreshTime"
+        private const val SERIALIZATION_NAME_RESPONSE_CODE = "responseCode"
+        private const val SERIALIZATION_NAME_REQUEST_DATE = "requestDate"
+        private const val SERIALIZATION_NAME_VERIFICATION_RESULT = "verificationResult"
+        private const val SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE = "isLoadShedderResponse"
+        private const val SERIALIZATION_NAME_IS_FALLBACK_URL = "isFallbackURL"
+
+        fun fromResult(result: HTTPResult, eTagData: ETagData): ETagCacheMetadata {
+            return ETagCacheMetadata(
+                eTagData = eTagData,
+                responseCode = result.responseCode,
+                requestDate = result.requestDate,
+                verificationResult = result.verificationResult,
+                isLoadShedderResponse = result.isLoadShedderResponse,
+                isFallbackURL = result.isFallbackURL,
+            )
+        }
+
+        /**
+         * Returns null when [serialized] is not the split-format metadata JSON: a legacy combined entry
+         * (top-level "httpResult" string instead of "responseCode") or corrupt data. Callers fall back
+         * to legacy migration.
+         */
+        @Suppress("SwallowedException", "ReturnCount")
+        fun deserialize(serialized: String): ETagCacheMetadata? {
+            val jsonObject = try {
+                JSONObject(serialized)
+            } catch (e: JSONException) {
+                return null
+            }
+            if (!jsonObject.has(SERIALIZATION_NAME_RESPONSE_CODE)) {
+                return null
+            }
+            val lastRefreshTime = jsonObject.optLong(SERIALIZATION_NAME_LAST_REFRESH_TIME, -1L)
+                .takeIf { it != -1L }
+                ?.let { Date(it) }
+            val requestDate = jsonObject.optLong(SERIALIZATION_NAME_REQUEST_DATE, -1L)
+                .takeIf { it != -1L }
+                ?.let { Date(it) }
+            val verificationResult = if (jsonObject.has(SERIALIZATION_NAME_VERIFICATION_RESULT)) {
+                VerificationResult.valueOf(jsonObject.getString(SERIALIZATION_NAME_VERIFICATION_RESULT))
+            } else {
+                VerificationResult.NOT_REQUESTED
+            }
+            return ETagCacheMetadata(
+                eTagData = ETagData(jsonObject.getString(SERIALIZATION_NAME_ETAG), lastRefreshTime),
+                responseCode = jsonObject.getInt(SERIALIZATION_NAME_RESPONSE_CODE),
+                requestDate = requestDate,
+                verificationResult = verificationResult,
+                isLoadShedderResponse = jsonObject.optBoolean(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE, false),
+                isFallbackURL = jsonObject.optBoolean(SERIALIZATION_NAME_IS_FALLBACK_URL, false),
+            )
         }
     }
 }

@@ -611,6 +611,75 @@ class ETagManagerTest {
         }
     }
 
+    @Test
+    fun `ETagCacheMetadata serialization round-trips all fields`() {
+        val metadata = ETagCacheMetadata(
+            eTagData = ETagData("etag", testDate),
+            responseCode = RCHTTPStatusCodes.SUCCESS,
+            requestDate = Date(1234567890),
+            verificationResult = VERIFIED,
+            isLoadShedderResponse = true,
+            isFallbackURL = true,
+        )
+
+        val deserialized = ETagCacheMetadata.deserialize(metadata.serialize())
+
+        assertThat(deserialized).isEqualTo(metadata)
+    }
+
+    @Test
+    fun `ETagCacheMetadata serialization round-trips null dates`() {
+        val metadata = ETagCacheMetadata(
+            eTagData = ETagData("etag", lastRefreshTime = null),
+            responseCode = RCHTTPStatusCodes.SUCCESS,
+            requestDate = null,
+            verificationResult = NOT_REQUESTED,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
+        )
+
+        val deserialized = ETagCacheMetadata.deserialize(metadata.serialize())
+
+        assertThat(deserialized).isEqualTo(metadata)
+    }
+
+    @Test
+    fun `ETagCacheMetadata deserialize returns null for a legacy combined entry`() {
+        val legacyEntry = HTTPResultWithETag(
+            ETagData("etag", testDate),
+            HTTPResult.createResult(origin = HTTPResult.Origin.CACHE),
+        )
+
+        assertThat(ETagCacheMetadata.deserialize(legacyEntry.serialize())).isNull()
+    }
+
+    @Test
+    fun `ETagCacheMetadata deserialize returns null for unparseable data`() {
+        assertThat(ETagCacheMetadata.deserialize("not json")).isNull()
+    }
+
+    @Test
+    fun `ETagCacheMetadata toHTTPResult rebuilds the result with CACHE origin`() {
+        val metadata = ETagCacheMetadata.fromResult(
+            HTTPResult.createResult(
+                responseCode = RCHTTPStatusCodes.SUCCESS,
+                payload = "{\"key\":\"value\"}",
+                origin = HTTPResult.Origin.BACKEND,
+                requestDate = Date(1000),
+                verificationResult = VERIFIED,
+            ),
+            ETagData("etag", testDate),
+        )
+
+        val result = metadata.toHTTPResult("{\"key\":\"value\"}")
+
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+        assertThat(result.payloadText).isEqualTo("{\"key\":\"value\"}")
+        assertThat(result.origin).isEqualTo(HTTPResult.Origin.CACHE)
+        assertThat(result.requestDate).isEqualTo(Date(1000))
+        assertThat(result.verificationResult).isEqualTo(VERIFIED)
+    }
+
     private fun assertCorrectVerificationResult(
         cachedVerificationResult: VerificationResult,
         backendVerificationResult: VerificationResult,
