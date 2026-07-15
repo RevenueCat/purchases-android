@@ -20,6 +20,11 @@ internal data class ETagData(
     val lastRefreshTime: Date?,
 )
 
+/**
+ * Legacy (pre-split) cache entry format: metadata and payload combined in one JSON string, with the
+ * payload double-escaped. Retained only to read-and-migrate entries written by older SDK versions —
+ * new entries are written as [ETagCacheMetadata] + a verbatim payload key.
+ */
 @OptIn(InternalRevenueCatAPI::class)
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
 internal data class HTTPResultWithETag(
@@ -152,6 +157,7 @@ internal data class ETagCacheMetadata(
 }
 
 @OptIn(InternalRevenueCatAPI::class)
+@Suppress("TooManyFunctions")
 internal class ETagManager(
     context: Context,
     private val prefs: Lazy<SharedPreferences> = lazy { initializeSharedPreferences(context) },
@@ -218,9 +224,13 @@ internal class ETagManager(
 
     @Suppress("ReturnCount")
     internal fun getStoredResult(urlString: String): HTTPResult? {
-        val metadata = getStoredMetadata(urlString) ?: return null
-        val payload = prefs.value.getString(payloadKey(urlString), null) ?: return null
-        return metadata.toHTTPResult(payload)
+        val serialized = prefs.value.getString(urlString, null) ?: return null
+        val metadata = ETagCacheMetadata.deserialize(serialized)
+        if (metadata != null) {
+            val payload = prefs.value.getString(payloadKey(urlString), null) ?: return null
+            return metadata.toHTTPResult(payload)
+        }
+        return migrateLegacyEntry(urlString, serialized)?.httpResult
     }
 
     internal fun storeBackendResultIfNoError(
@@ -257,6 +267,29 @@ internal class ETagManager(
     private fun getStoredMetadata(urlString: String): ETagCacheMetadata? {
         val serialized = prefs.value.getString(urlString, null) ?: return null
         return ETagCacheMetadata.deserialize(serialized)
+            ?: migrateLegacyEntry(urlString, serialized)?.let { legacy ->
+                ETagCacheMetadata.fromResult(legacy.httpResult, legacy.eTagData)
+            }
+    }
+
+    /**
+     * Pre-split entries embedded the payload (double-escaped) inside one combined JSON string. Rewrite
+     * them in the split format on first read so later reads never pay the unescape cost again, and
+     * return the parsed legacy entry. Unparseable data reads as a cache miss.
+     */
+    @Suppress("SwallowedException")
+    @Synchronized
+    private fun migrateLegacyEntry(urlString: String, serialized: String): HTTPResultWithETag? {
+        val legacy = try {
+            HTTPResultWithETag.deserialize(serialized)
+        } catch (e: JSONException) {
+            return null
+        }
+        prefs.value.edit()
+            .putString(urlString, ETagCacheMetadata.fromResult(legacy.httpResult, legacy.eTagData).serialize())
+            .putString(payloadKey(urlString), legacy.httpResult.payloadText)
+            .apply()
+        return legacy
     }
 
     private fun shouldStoreBackendResult(resultFromBackend: HTTPResult): Boolean {
