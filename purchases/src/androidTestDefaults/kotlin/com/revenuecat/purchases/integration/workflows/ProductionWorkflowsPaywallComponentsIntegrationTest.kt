@@ -7,22 +7,24 @@ import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.awaitOfferings
+import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
-import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.helpers.mockQueryProductDetails
-import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.net.URL
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * End-to-end check of the workflows paywall-components memory optimization + kill-switch fallback:
@@ -57,20 +59,21 @@ class ProductionWorkflowsPaywallComponentsIntegrationTest : BasePurchasesIntegra
     }
 
     @Test
-    fun offeringsSkipPaywallComponentsUntilRemoteConfigKillSwitch() {
+    fun offeringsSkipPaywallComponentsUntilRemoteConfigKillSwitch() = runBlocking<Unit> {
         confirmProductionBackendEnvironment()
         mockBillingAbstract.mockQueryProductDetails()
 
         // Phase 1: remote config healthy (faked 204) + workflows on => components are NOT captured, but the
         // offering still reports a paywall via the cheap presence flag.
-        val phase1Current = fetchCurrentOffering()
+        val phase1Current = currentOffering()
         assertThat(phase1Current.hasPaywall).isTrue()
         assertThat(phase1Current.paywallComponents).isNull()
 
         // Phase 2: make /v1/config return a 4xx and force a refresh => the session kill switch trips, the
-        // orchestrator invalidates the in-memory offerings cache and refetches.
+        // orchestrator invalidates the in-memory offerings cache and refetches. syncAttributesAndOfferingsIfNeeded
+        // runs an unconditional remote-config refresh, which now hits the faked 4xx.
         remoteConfigFake.disableRemoteConfig = true
-        triggerRemoteConfigRefresh()
+        runCatching { Purchases.sharedInstance.awaitSyncAttributesAndOfferingsIfNeeded() }
 
         // Phase 3: after the kill switch, a fetch re-parses with remote config disabled, so paywall components are
         // captured and available for the fallback render path.
@@ -81,50 +84,21 @@ class ProductionWorkflowsPaywallComponentsIntegrationTest : BasePurchasesIntegra
         assertThat(phase3Current.paywallComponents!!.data).isNotNull
     }
 
-    private fun fetchCurrentOffering(): Offering {
-        var offerings: Offerings? = null
-        ensureBlockFinishes { latch ->
-            onActivityReady {
-                Purchases.sharedInstance.getOfferingsWith(
-                    onError = { error -> fail("Expected to fetch offerings but got error: ${error.message}") },
-                    onSuccess = {
-                        offerings = it
-                        latch.countDown()
-                    },
-                )
-            }
-        }
-        return offerings?.current ?: fail("Expected a current offering")
-    }
+    private suspend fun currentOffering(): Offering =
+        Purchases.sharedInstance.awaitOfferings().current ?: fail("Expected a current offering")
 
-    private fun triggerRemoteConfigRefresh() {
-        // syncAttributesAndOfferingsIfNeeded runs an unconditional remote-config refresh, which now hits the faked
-        // 4xx and disables the endpoint for the session.
-        ensureBlockFinishes { latch ->
-            onActivityReady {
-                Purchases.sharedInstance.syncAttributesAndOfferingsIfNeeded(
-                    object : SyncAttributesAndOfferingsCallback {
-                        override fun onSuccess(offerings: Offerings) = latch.countDown()
-                        override fun onError(error: PurchasesError) = latch.countDown()
-                    },
-                )
-            }
-        }
-    }
-
-    private fun awaitCurrentOfferingWithComponents(): Offering {
-        // The disable + cache invalidation + refetch happen asynchronously, so poll until the refetched offering
-        // carries the decoded components (bounded, so a regression fails instead of hanging).
-        var current: Offering? = null
+    private suspend fun awaitCurrentOfferingWithComponents(): Offering {
+        // The disable + cache invalidation + refetch happen asynchronously, so retry until the refetched offering
+        // carries the captured components (bounded, so a regression fails instead of hanging).
         repeat(MAX_POLL_ATTEMPTS) {
-            current = fetchCurrentOffering()
-            if (current?.paywallComponents != null) return current!!
-            Thread.sleep(POLL_INTERVAL_MS)
+            val current = currentOffering()
+            if (current.paywallComponents != null) return current
+            delay(POLL_INTERVAL)
         }
-        return current ?: fail("Expected a current offering with paywall components after the kill switch")
+        return fail("Expected a current offering with paywall components after the kill switch")
     }
 
-    private inner class RemoteConfigKillSwitchFake : ForceServerErrorStrategy {
+    private class RemoteConfigKillSwitchFake : ForceServerErrorStrategy {
         @Volatile
         var disableRemoteConfig = false
 
@@ -157,6 +131,6 @@ class ProductionWorkflowsPaywallComponentsIntegrationTest : BasePurchasesIntegra
 
     private companion object {
         const val MAX_POLL_ATTEMPTS = 20
-        const val POLL_INTERVAL_MS = 500L
+        val POLL_INTERVAL: Duration = 500.milliseconds
     }
 }
