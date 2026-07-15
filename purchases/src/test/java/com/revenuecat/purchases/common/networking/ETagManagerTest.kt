@@ -554,6 +554,39 @@ class ETagManagerTest {
     }
 
     @Test
+    fun `getHTTPResultFromCacheOrBackend on 304 returns cached payload and origin while updating verification and requestDate`() {
+        val cachedPayload = "{\"cached\":true}"
+        val newRequestDate = Date(1234567890)
+        val cachedHttpResult = HTTPResult.createResult(
+            responseCode = RCHTTPStatusCodes.SUCCESS,
+            payload = cachedPayload,
+            origin = HTTPResult.Origin.CACHE,
+            requestDate = Date(1000),
+            verificationResult = NOT_REQUESTED,
+        )
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        mockCachedHTTPResult("etag", urlString, httpResult = cachedHttpResult)
+
+        val result = underTest.getHTTPResultFromCacheOrBackend(
+            responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
+            payload = "",
+            eTagHeader = "etag",
+            urlString = urlString,
+            refreshETag = false,
+            requestDate = newRequestDate,
+            verificationResult = VERIFIED,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
+        )
+
+        assertThat(result).isNotNull
+        assertThat(result!!.payloadText).isEqualTo(cachedPayload)
+        assertThat(result.origin).isEqualTo(HTTPResult.Origin.CACHE)
+        assertThat(result.verificationResult).isEqualTo(VERIFIED)
+        assertThat(result.requestDate).isEqualTo(newRequestDate)
+    }
+
+    @Test
     fun `verificationResults are expected between cache and backend`() {
         data class TestCase(
             val cachedVerificationResult: VerificationResult,
@@ -636,5 +669,6 @@ class ETagManagerTest {
         assertThat(deserializedResult.eTagData.lastRefreshTime?.time).isEqualTo(lastRefreshTime?.time)
         assertThat(deserializedResult.httpResult.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
         assertThat(deserializedResult.httpResult.payloadText).isEqualTo(responsePayload)
+        assertThat(deserializedResult.httpResult.origin).isEqualTo(HTTPResult.Origin.CACHE)
     }
 }

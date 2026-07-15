@@ -3175,35 +3175,10 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `when useWorkflows is true and offering has no legacy paywall but no mapped workflow, fetches by offering id`() {
-        // offeringWithWPL has no legacy paywall and no mapped workflow (not yet converted). It must
-        // still hit the workflows endpoint, passing the offering id so the backend lazily converts
-        // it — rather than falling back to a legacy paywall that does not exist.
+    fun `when useWorkflows is true and offering has no mapped workflow, skips fetch and falls back`() {
+        // The config endpoint cannot lazily convert an offering id into a workflow. A missing mapping should
+        // therefore fall back immediately to the components paywall already delivered by offerings.
         coEvery { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns null
-        val workflowScreen = WorkflowScreen(
-            templateName = "template",
-            revision = 0,
-            assetBaseURL = URL("https://assets.pawwalls.com"),
-            componentsConfig = ComponentsConfig(
-                base = PaywallComponentsConfig(
-                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
-                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
-                    stickyFooter = null,
-                ),
-            ),
-            componentsLocalizations = localizations,
-            defaultLocaleIdentifier = defaultLocaleIdentifier,
-            offeringIdentifier = defaultOffering.identifier,
-        )
-        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
-        val workflow = PublishedWorkflow(
-            id = "lazily-converted",
-            displayName = "Lazy Workflow",
-            initialStepId = "step-1",
-            steps = mapOf("step-1" to stepOne),
-            screens = mapOf("screen-1" to workflowScreen),
-        )
-        coEvery { purchases.awaitGetWorkflow(offeringWithWPL.identifier) } returns workflow
 
         val model = PaywallViewModelImpl(
             MockResourceProvider(),
@@ -3219,7 +3194,7 @@ class PaywallViewModelTest {
         )
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
-        coVerify(exactly = 1) { purchases.awaitGetWorkflow(offeringWithWPL.identifier) }
+        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
     }
 
     @Test
@@ -3227,8 +3202,9 @@ class PaywallViewModelTest {
         // The config endpoint may be disabled for the session (4xx kill switch) or unreachable, or the
         // offering may have no workflow yet. The offering still carries the paywall /offerings delivered,
         // so the paywall renders through the regular components path instead of erroring.
-        coEvery { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns null
-        coEvery { purchases.awaitGetWorkflow(offeringWithWPL.identifier) } throws PurchasesException(
+        val workflowId = "wfl-unavailable"
+        coEvery { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns workflowId
+        coEvery { purchases.awaitGetWorkflow(workflowId) } throws PurchasesException(
             PurchasesError(PurchasesErrorCode.UnknownError, "Workflow is unavailable from remote config."),
         )
 
@@ -3246,7 +3222,7 @@ class PaywallViewModelTest {
         )
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
-        coVerify(exactly = 1) { purchases.awaitGetWorkflow(offeringWithWPL.identifier) }
+        coVerify(exactly = 1) { purchases.awaitGetWorkflow(workflowId) }
     }
 
     @Test
@@ -3260,9 +3236,6 @@ class PaywallViewModelTest {
             webCheckoutURL = null,
         )
         coEvery { purchases.workflowIdForOfferingId(offeringWithoutPaywallData.identifier) } returns null
-        coEvery { purchases.awaitGetWorkflow(offeringWithoutPaywallData.identifier) } throws PurchasesException(
-            PurchasesError(PurchasesErrorCode.UnknownError, "Workflow is unavailable from remote config."),
-        )
 
         val model = PaywallViewModelImpl(
             MockResourceProvider(),
@@ -3278,6 +3251,7 @@ class PaywallViewModelTest {
         )
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Error::class.java)
+        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
     }
 
     @Test
@@ -3337,9 +3311,6 @@ class PaywallViewModelTest {
             webCheckoutURL = null,
         )
         coEvery { purchases.workflowIdForOfferingId(fallbackOffering.identifier) } returns null
-        coEvery { purchases.awaitGetWorkflow(fallbackOffering.identifier) } throws PurchasesException(
-            PurchasesError(PurchasesErrorCode.UnknownError, "Workflow is unavailable from remote config."),
-        )
 
         model.updateOptions(
             PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
