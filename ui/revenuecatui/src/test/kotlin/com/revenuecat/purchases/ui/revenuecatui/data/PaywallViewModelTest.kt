@@ -3198,22 +3198,27 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `when useWorkflows is true and the workflow fetch fails, falls back to the offerings-provided paywall`() {
-        // The config endpoint may be disabled for the session (4xx kill switch) or unreachable, or the
-        // offering may have no workflow yet. The offering still carries the paywall /offerings delivered,
-        // so the paywall renders through the regular components path instead of erroring.
+    fun `when useWorkflows is true and the workflow fetch fails, reloads its paywall from offerings`() {
+        // A 4xx disables the config endpoint for the session. The initial offering was parsed while workflows
+        // were enabled, so it has no components. Reload it from /offerings after the disable to get its paywall.
         val workflowId = "wfl-unavailable"
+        val offeringWithoutComponents = offeringWithWPL.copy(paywallComponents = null)
+        val reloadedOfferings = Offerings(
+            current = offeringWithWPL,
+            all = mapOf(offeringWithWPL.identifier to offeringWithWPL),
+        )
         coEvery { purchases.workflowIdForOfferingId(offeringWithWPL.identifier) } returns workflowId
         coEvery { purchases.awaitGetWorkflow(workflowId) } throws PurchasesException(
             PurchasesError(PurchasesErrorCode.UnknownError, "Workflow is unavailable from remote config."),
         )
+        coEvery { purchases.awaitOfferings() } returns reloadedOfferings
 
         val model = PaywallViewModelImpl(
             MockResourceProvider(),
             purchases,
             PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
                 .setListener(listener)
-                .setOffering(offeringWithWPL)
+                .setOffering(offeringWithoutComponents)
                 .build(),
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
@@ -3222,11 +3227,14 @@ class PaywallViewModelTest {
         )
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        val reloadedOffering = (model.state.value as PaywallState.Loaded.Components).offering
+        assertThat(reloadedOffering.identifier).isEqualTo(offeringWithWPL.identifier)
+        assertThat(reloadedOffering.paywallComponents).isNotNull()
         coVerify(exactly = 1) { purchases.awaitGetWorkflow(workflowId) }
     }
 
     @Test
-    fun `when useWorkflows is true and the workflow fetch fails with no fallback paywall, renders the default paywall`() {
+    fun `when useWorkflows is true and no workflow is mapped with no paywall data, renders the default paywall`() {
         val offeringWithoutPaywallData = Offering(
             identifier = "offering-no-paywall-data",
             serverDescription = "description",
