@@ -2,6 +2,7 @@ package com.revenuecat.purchases.backend_integration_tests
 
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
+import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -145,7 +146,7 @@ internal open class LoadShedderUSEast1BackendIntegrationTest: BaseBackendIntegra
         val urlString = URL(appConfig.baseURL, Endpoint.GetOfferings("test-user-id").getPath()).toString()
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
-            sharedPreferencesEditor.putString(urlString, any())
+            sharedPreferencesEditor.putString(ETagManager.metadataKey(urlString), any())
         }
         verify(exactly = 1) { sharedPreferencesEditor.apply() }
         assertSigningNotPerformed()

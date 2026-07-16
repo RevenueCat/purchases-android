@@ -116,6 +116,7 @@ internal abstract class BaseBackendIntegrationTest {
         diagnosticsDispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor(), runningIntegrationTests = true)
         sharedPreferencesEditor = mockk<SharedPreferences.Editor>().apply {
             every { putString(any(), any()) } returns this
+            every { remove(any()) } returns this
             every { apply() } just Runs
         }
         sharedPreferences = mockk<SharedPreferences>().apply {

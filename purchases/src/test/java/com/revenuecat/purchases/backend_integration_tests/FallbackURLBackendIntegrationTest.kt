@@ -2,6 +2,7 @@ package com.revenuecat.purchases.backend_integration_tests
 
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -42,7 +43,7 @@ internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
             sharedPreferencesEditor.putString(
-                "https://api-production.8-lives-cat.io/v1/product_entitlement_mapping",
+                ETagManager.metadataKey("https://api-production.8-lives-cat.io/v1/product_entitlement_mapping"),
                 any(),
             )
         }
@@ -95,7 +96,7 @@ internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
         verify(exactly = 1) {
             // Verify we save the backend response in the shared preferences
             sharedPreferencesEditor.putString(
-                "https://api-production.8-lives-cat.io/v1/offerings",
+                ETagManager.metadataKey("https://api-production.8-lives-cat.io/v1/offerings"),
                 any(),
             )
         }
