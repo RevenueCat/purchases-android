@@ -272,12 +272,13 @@ internal class HTTPClient(
      * still the default host (a proxy or an overridden base URL pins the host and bypasses API sources).
      */
     private fun apiSourceURL(endpoint: Endpoint, baseURL: URL, isFallbackAttempt: Boolean): URL? {
+        val provider = apiSourceProvider ?: return null
         val eligible = appConfig.usesRemoteConfigAPISources &&
             !isFallbackAttempt &&
             endpoint.usesAPISources &&
             baseURL.toString() == AppConfig.baseUrlString
         if (!eligible) return null
-        return apiSourceProvider?.currentAPISource()?.url?.let { runCatching { URL(it) }.getOrNull() }
+        return provider.currentAPISource()?.url?.let { runCatching { URL(it) }.getOrNull() }
     }
 
     @Suppress("ThrowsCount", "LongParameterList", "LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth")
