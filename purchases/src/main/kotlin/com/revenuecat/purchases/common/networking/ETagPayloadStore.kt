@@ -72,6 +72,8 @@ internal class ETagPayloadStore(
             // Strict decoding (unlike String(bytes), which silently substitutes U+FFFD) so a corrupt file
             // reads back as a cache miss instead of serving garbage as a valid cached response.
             Charsets.UTF_8.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPORT)
+                .onUnmappableCharacter(CodingErrorAction.REPORT)
                 .decode(ByteBuffer.wrap(file.readBytes()))
                 .toString()
         } catch (e: FileNotFoundException) {
