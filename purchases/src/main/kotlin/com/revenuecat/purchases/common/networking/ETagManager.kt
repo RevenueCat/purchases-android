@@ -22,18 +22,14 @@ internal data class ETagData(
 )
 
 /**
- * Everything the ETag cache persists about a response except its payload. Stored as a small flat JSON
- * under the URL key, while the payload is stored verbatim in a file ([ETagPayloadStore]) so caching a
- * large response never re-encodes a string we already hold in memory
- * (https://github.com/RevenueCat/purchases-android/issues/3628) nor retains it in the SharedPreferences
- * in-memory map for the process lifetime.
+ * Everything the ETag cache persists about a response except its payload, stored as a small flat JSON
+ * under the URL key; the payload lives in an [ETagPayloadStore] file.
  *
  * `origin` is intentionally not persisted: stored results always read back as [HTTPResult.Origin.CACHE].
  *
- * Downgrade note: older SDK versions cannot parse this format — after a downgrade, reads of split
- * entries fail (as request errors, not crashes) and do not self-heal until the cache is cleared
- * (e.g. identity change) since the failure happens before any response could overwrite the entry.
- * Accepted tradeoff for keeping the URL as the metadata key; see PR #3774.
+ * Downgrade note: older SDKs cannot parse this format and fail these entries as request errors (not
+ * crashes) without self-healing until the cache is cleared, since the failure happens before any
+ * response could overwrite the entry. Accepted tradeoff for keeping the URL as the metadata key.
  */
 @OptIn(InternalRevenueCatAPI::class)
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -44,10 +40,7 @@ internal data class ETagCacheMetadata(
     val verificationResult: VerificationResult,
     val isLoadShedderResponse: Boolean,
     val isFallbackURL: Boolean,
-    /**
-     * Expected byte size of the stored payload file, used to detect files truncated by a power loss
-     * (payload writes are not fsynced). `null` (absent from the serialized entry) skips the check.
-     */
+    /** Verified on read to detect truncated payload files; `null` skips the check. */
     val payloadSizeBytes: Long? = null,
 ) {
     fun serialize(): String {
@@ -204,14 +197,10 @@ internal class ETagManager(
         val serialized = prefs.value.getString(urlString, null) ?: return null
         val metadata = ETagCacheMetadata.deserialize(serialized)
         if (metadata != null) {
-            // Read without the monitor: a concurrent storeResult() landing between the metadata read and the
-            // payload read makes the size check fail, so the worst case is one spurious cache miss (and its
-            // refresh retry) under concurrent same-URL traffic; accepted to keep reads lock-free. (Reads
-            // only take the monitor while an entry still needs migrating to the file store.)
-            // The size check matters because a truncated payload would not read as a miss on its own: it
-            // fails to parse only downstream, where HTTPResult.body swallows the JSONException, and the
-            // server keeps answering 304 for its eTag, so the entry would error indefinitely instead of
-            // healing as a miss here.
+            // Lock-free read: a store racing between the metadata and payload reads fails the size check,
+            // costing one spurious miss plus its refresh retry. The size check itself is what turns a
+            // truncated file into a miss here: downstream, HTTPResult.body swallows the parse failure and
+            // the server keeps answering 304 for its eTag, so a bad entry would never heal.
             val payload = payloadStore.read(urlString, metadata.payloadSizeBytes) ?: return null
             return metadata.toHTTPResult(payload)
         }
@@ -230,9 +219,8 @@ internal class ETagManager(
 
     @Synchronized
     internal fun clearCaches() {
-        // Prefs (metadata) first, and synchronously (commit, not apply): a crash in between then leaves
-        // orphan payload files, which are harmless and overwritten later, rather than metadata pointing
-        // at purged payloads.
+        // Metadata first, synchronously: a crash in between leaves harmless orphan payload files rather
+        // than metadata pointing at purged payloads.
         prefs.value.edit().clear().commit()
         payloadStore.clear()
     }
@@ -251,9 +239,8 @@ internal class ETagManager(
     }
 
     /**
-     * Persists a split-format entry: payload file first, and metadata only once that write succeeded, so
-     * metadata present always implies its payload was written. The metadata records the payload's byte
-     * size, which reads verify to catch files truncated by a power loss.
+     * Payload file first, metadata only once that write succeeded: metadata present always implies its
+     * payload was written.
      */
     private fun persistEntry(urlString: String, metadata: ETagCacheMetadata, payload: String) {
         val payloadSizeBytes = payloadStore.write(urlString, payload) ?: return

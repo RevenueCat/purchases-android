@@ -15,27 +15,17 @@ import java.nio.charset.CoderResult
 import java.nio.charset.CodingErrorAction
 
 /**
- * Stores ETag cache payloads as one file per URL under a cache directory, so caching a multi-MB response
- * costs neither JSON re-encoding nor permanent heap retention (SharedPreferences keeps its whole file parsed
- * in memory for the process lifetime; see https://github.com/RevenueCat/purchases-android/issues/3628).
+ * Stores ETag cache payloads as one file per URL, so multi-MB payloads are neither re-encoded nor
+ * retained in the SharedPreferences heap map (https://github.com/RevenueCat/purchases-android/issues/3628).
  *
- * Writes encode straight from the payload string into a fixed-size buffer, so storing never allocates
- * payload-sized memory. Each write goes to a temporary file that is atomically renamed over the final one,
- * so readers only ever see complete payloads: a read concurrent with a write serves the previous complete
- * payload. (androidx AtomicFile is deliberately not used: its openRead mutates the filesystem, deleting a
- * concurrent writer's in-flight file, and its finishWrite reports rename failures only to logcat.)
+ * Writes stream through fixed-size buffers into a temp file committed by atomic rename (androidx
+ * AtomicFile is unsafe here: its openRead deletes a concurrent writer's in-flight file and its
+ * finishWrite hides rename failures). Writes are not fsynced; callers verify the size [write] returns
+ * on [read] instead, turning files truncated by power loss into misses. A stale same-length file is
+ * accepted: it serves the previous complete payload.
  *
- * Writes are deliberately not fsynced, keeping disk latency off the request path. A power loss shortly
- * after a write can therefore leave a truncated file behind; callers guard against that by recording the
- * size [write] returns and passing it back to [read], which verifies it against the file. (The other
- * power-loss residue, a stale same-length file behind fresher metadata, is accepted: it is the complete
- * previous payload and simply serves as a stale response until the content next changes.)
- *
- * Reads return the payload string, or `null` for a missing/truncated/unreadable file, which callers treat
- * as a cache miss ([ETagManager]'s existing self-heal contract). Living under [Context.getCacheDir] means
- * the system may purge files under storage pressure; that also reads back as a miss.
- *
- * No eviction beyond per-URL overwrite and [clear]: parity with the SharedPreferences store it replaces.
+ * `null` reads are cache misses that self-heal via [ETagManager]'s refresh retry; the OS may purge
+ * [Context.getCacheDir]. No eviction beyond overwrite and [clear], at parity with the prefs store.
  */
 @OptIn(InternalRevenueCatAPI::class)
 internal class ETagPayloadStore(
@@ -53,9 +43,8 @@ internal class ETagPayloadStore(
             return null
         }
         val file = fileFor(urlString)
-        // One temp file per target, overwritten by the next write and removed by the rename on success,
-        // so a crash mid-write leaves at most one orphan that self-cleans. Writes for the same URL never
-        // run concurrently ([ETagManager] serializes them), and readers never open temp files.
+        // Never opened by readers; a crash mid-write leaves one orphan that the next write overwrites.
+        // Same-URL writes are serialized by [ETagManager].
         val tempFile = File(directory, file.name + TEMP_SUFFIX)
         return try {
             FileOutputStream(tempFile).use { out -> encodeTo(out, payload) }
@@ -67,15 +56,14 @@ internal class ETagPayloadStore(
     }
 
     /**
-     * Returns the payload for [urlString], or `null` for a miss: no file, a size mismatch against
-     * [expectedSizeBytes] (pass the size [write] returned; `null` skips the check), or undecodable bytes.
+     * Returns the payload, or `null` for a miss: no file, undecodable bytes, or a size mismatch
+     * against [expectedSizeBytes] (the size [write] returned; `null` skips the check).
      */
     @Suppress("SwallowedException")
     fun read(urlString: String, expectedSizeBytes: Long? = null): String? {
         val file = fileFor(urlString)
         return try {
             if (expectedSizeBytes != null && file.length() != expectedSizeBytes) {
-                // Truncated by a power loss (writes are not fsynced) or otherwise tampered with.
                 return null
             }
             // Strict decoding (unlike String(bytes), which silently substitutes U+FFFD) so a corrupt file
@@ -101,13 +89,9 @@ internal class ETagPayloadStore(
     }
 
     /**
-     * UTF-8 encodes [payload] into [out] through fixed-size buffers. A plain `Writer.write(String)`
-     * copies the whole string into a fresh `char[]` first, a payload-sized allocation, the exact cost
-     * this store exists to avoid. The string is copied through a fixed `char[]` chunk instead of
-     * `CharBuffer.wrap(payload)`: a wrapped string is not array-backed, which forces the encoder off its
-     * fast array loop into per-char access. Encoding is strict (REPORT, matching [read]'s decoder): a
-     * payload the encoder cannot represent fails the write and stays uncached, rather than being
-     * silently altered.
+     * Streams [payload] to [out] via a `char[]` chunk: `CharBuffer.wrap(payload)` has no backing array,
+     * which forces the encoder off its fast path and measured a >60x slower store on ART. REPORT so an
+     * unencodable payload fails the write instead of being silently altered.
      */
     private fun encodeTo(out: OutputStream, payload: String) {
         val encoder = Charsets.UTF_8.newEncoder()

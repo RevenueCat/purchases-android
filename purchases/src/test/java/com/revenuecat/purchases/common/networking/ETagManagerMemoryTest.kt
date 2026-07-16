@@ -112,11 +112,9 @@ class ETagManagerMemoryTest {
     }
 
     /**
-     * Exercises every code path the measured blocks hit — the three [ETagManager] operations plus AssertJ
-     * and `org.json`'s parsing constructor — once, against a separate URL in a separate prefs file, before
-     * any measurement. The first-ever use of those libraries in the process pays a multi-MB
-     * classloading/static-init allocation cost that would otherwise be misattributed to whichever measured
-     * operation runs first, drowning out the KB-scale steady-state costs the regression gate is about.
+     * Exercises every measured code path once (the three [ETagManager] operations, AssertJ, org.json)
+     * against a separate prefs file and URL, so first-use classloading/static-init allocations
+     * (multi-MB) are not misattributed to whichever measured operation runs first.
      */
     private fun warmUpMeasuredCodePaths() {
         val context = ApplicationProvider.getApplicationContext<Context>()
@@ -167,11 +165,7 @@ class ETagManagerMemoryTest {
         return getThreadAllocatedBytes(threadId) - before
     }
 
-    // Reflection is used here (instead of importing java.lang.management.ManagementFactory /
-    // com.sun.management.ThreadMXBean directly) because this module compiles Kotlin with jvmTarget 1.8 on a
-    // newer JDK, which makes Kotlin restrict the compile-time JDK API surface to java.base only, hiding the
-    // java.management/jdk.management modules these classes live in. The classes themselves are present at
-    // runtime, so reflection resolves them without needing a build-wide compiler flag change.
+    // Reflection because jvmTarget 1.8 hides java.management at compile time; see the class KDoc.
     private fun getThreadAllocatedBytes(threadId: Long): Long {
         val threadMXBean = managementFactoryGetThreadMXBean.invoke(null)
         return getThreadAllocatedBytesMethod.invoke(threadMXBean, threadId) as Long
