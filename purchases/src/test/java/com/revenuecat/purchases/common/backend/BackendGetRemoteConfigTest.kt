@@ -15,6 +15,7 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import io.mockk.every
 import io.mockk.mockk
@@ -97,6 +98,7 @@ class BackendGetRemoteConfigTest {
         backend.getRemoteConfig(
             appInBackground = false,
             appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -146,6 +148,7 @@ class BackendGetRemoteConfigTest {
         isolatedBackend.getRemoteConfig(
             appInBackground = false,
             appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -168,6 +171,7 @@ class BackendGetRemoteConfigTest {
         backend.getRemoteConfig(
             appInBackground = false,
             appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -190,6 +194,7 @@ class BackendGetRemoteConfigTest {
         backend.getRemoteConfig(
             appInBackground = false,
             appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -213,6 +218,7 @@ class BackendGetRemoteConfigTest {
         backend.getRemoteConfig(
             appInBackground = false,
             appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -237,6 +243,7 @@ class BackendGetRemoteConfigTest {
         backend.getRemoteConfig(
             appInBackground = false,
             appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -246,8 +253,9 @@ class BackendGetRemoteConfigTest {
 
         val body = bodySlot.firstOrNull()
         assertThat(body).isNotNull
-        assertThat(body?.keys).containsExactlyInAnyOrder("app_user_id", "manifest", "prefetched_blobs")
+        assertThat(body?.keys).containsExactlyInAnyOrder("app_user_id", "manifest", "prefetched_blobs", "fetch_context")
         assertThat(body?.get("app_user_id")).isEqualTo(testAppUserID)
+        assertThat(body?.get("fetch_context")).isEqualTo("app_start")
         // The manifest is replayed verbatim as the opaque string the SDK received.
         assertThat(body?.get("manifest")).isEqualTo(testManifest)
         assertThat(body?.get("prefetched_blobs")).isEqualTo(listOf("blobRefA"))
@@ -278,6 +286,7 @@ class BackendGetRemoteConfigTest {
         backend.getRemoteConfig(
             appInBackground = false,
             appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -297,6 +306,7 @@ class BackendGetRemoteConfigTest {
         backend.getRemoteConfig(
             appInBackground = false,
             appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
             domain = testDomain,
             manifest = null,
             prefetchedBlobs = emptyList(),
@@ -305,7 +315,7 @@ class BackendGetRemoteConfigTest {
         )
 
         val body = bodySlot.firstOrNull()
-        assertThat(body?.keys).containsExactlyInAnyOrder("app_user_id", "prefetched_blobs")
+        assertThat(body?.keys).containsExactlyInAnyOrder("app_user_id", "prefetched_blobs", "fetch_context")
         assertThat(body).doesNotContainKey("manifest")
     }
 
@@ -320,6 +330,7 @@ class BackendGetRemoteConfigTest {
         backend.getRemoteConfig(
             appInBackground = false,
             appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -345,6 +356,7 @@ class BackendGetRemoteConfigTest {
         backend.getRemoteConfig(
             appInBackground = false,
             appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -366,6 +378,7 @@ class BackendGetRemoteConfigTest {
         asyncBackend.getRemoteConfig(
             appInBackground = false,
             appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -375,6 +388,7 @@ class BackendGetRemoteConfigTest {
         asyncBackend.getRemoteConfig(
             appInBackground = false,
             appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -401,6 +415,7 @@ class BackendGetRemoteConfigTest {
         asyncBackend.getRemoteConfig(
             appInBackground = false,
             appUserID = "user-a",
+            fetchContext = RemoteConfigFetchContext.AppStart,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -410,6 +425,7 @@ class BackendGetRemoteConfigTest {
         asyncBackend.getRemoteConfig(
             appInBackground = false,
             appUserID = "user-b",
+            fetchContext = RemoteConfigFetchContext.AppStart,
             domain = testDomain,
             manifest = testManifest,
             prefetchedBlobs = testPrefetchedBlobs,
@@ -420,6 +436,44 @@ class BackendGetRemoteConfigTest {
         assertThat(lock.count).isEqualTo(0)
         // Different users must each get their own request rather than sharing the first caller's response.
         verify(exactly = 2) {
+            httpClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetRemoteConfig(testDomain),
+                body = any(),
+                postFieldsToSign = null,
+                requestHeaders = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `getRemoteConfig dedups concurrent calls with different fetch contexts`() {
+        mockHttpResult(payload = HTTPResult.Payload.RCFormat(buildContainer()), delayMs = 200)
+        val lock = CountDownLatch(2)
+        asyncBackend.getRemoteConfig(
+            appInBackground = false,
+            appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
+            domain = testDomain,
+            manifest = testManifest,
+            prefetchedBlobs = testPrefetchedBlobs,
+            onSuccess = { _, _ -> lock.countDown() },
+            onError = { error, _ -> fail("Expected success. Got error: $error") },
+        )
+        asyncBackend.getRemoteConfig(
+            appInBackground = false,
+            appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.Read,
+            domain = testDomain,
+            manifest = testManifest,
+            prefetchedBlobs = testPrefetchedBlobs,
+            onSuccess = { _, _ -> lock.countDown() },
+            onError = { error, _ -> fail("Expected success. Got error: $error") },
+        )
+        lock.await(5.seconds.inWholeSeconds, TimeUnit.SECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        // The fetch context is not part of the dedup key, so concurrent calls share a single request.
+        verify(exactly = 1) {
             httpClient.performRequest(
                 mockBaseURL,
                 Endpoint.GetRemoteConfig(testDomain),

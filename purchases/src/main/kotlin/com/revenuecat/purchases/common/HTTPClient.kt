@@ -268,12 +268,13 @@ internal class HTTPClient(
     /**
      * The API base URL to use for [endpoint], or null to keep using [baseURL].
      *
-     * API sources apply only when this is not an endpoint fallback-host attempt, the endpoint opts in via
-     * [Endpoint.usesAPISources], and [baseURL] is still the default host (a proxy or an overridden base URL
-     * pins the host and bypasses API sources).
+     * API sources apply only when the `usesRemoteConfigAPISources` dangerous setting is enabled, this is not
+     * an endpoint fallback-host attempt, the endpoint opts in via [Endpoint.usesAPISources], and [baseURL] is
+     * still the default host (a proxy or an overridden base URL pins the host and bypasses API sources).
      */
     private fun apiSourceURL(endpoint: Endpoint, baseURL: URL, isFallbackAttempt: Boolean): URL? {
-        val eligible = !isFallbackAttempt &&
+        val eligible = appConfig.usesRemoteConfigAPISources &&
+            !isFallbackAttempt &&
             endpoint.usesAPISources &&
             baseURL.toString() == AppConfig.baseUrlString
         if (!eligible) return null
@@ -636,7 +637,9 @@ internal class HTTPClient(
 
     /**
      * Verifies an RC Container Format response. The backend signs the leading config element's (element 0)
-     * bytes exactly as received — the config part / `main_body` — so we verify the signature over those bytes.
+     * **uncompressed** bytes — the config part / `main_body` — so we [decode][RCElement.decodedBytes] the
+     * element first and verify the signature over those bytes. Per-element compression is transparent to the
+     * signature (as it is to the element checksum), so a codec change never invalidates a signed config.
      * The per-element container checksums are untrusted lookup hints, not a trust anchor: inline blob elements
      * are not signed and are instead authenticated transitively by hashing against the `blob_ref` in the signed
      * config. This endpoint is not ETag-cached and sends no post params, but the signature does cover the request
@@ -648,8 +651,8 @@ internal class HTTPClient(
         payloadBytes: ByteArray,
         nonce: String?,
     ): VerificationResult {
-        val config = try {
-            RCContainer.parse(payloadBytes).config
+        val bodyBytes = try {
+            RCContainer.parse(payloadBytes).config.decodedBytes()
         } catch (e: RCContainerFormatException) {
             errorLog(e) { NetworkStrings.VERIFICATION_ERROR.format(urlPath) }
             return VerificationResult.FAILED
@@ -658,7 +661,7 @@ internal class HTTPClient(
             urlPath = urlPath,
             signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
             nonce = nonce,
-            bodyBytes = config.dataBytes(),
+            bodyBytes = bodyBytes,
             requestTime = getRequestTimeHeader(connection),
             eTag = getETagHeader(connection),
             postFieldsToSignHeader = null,

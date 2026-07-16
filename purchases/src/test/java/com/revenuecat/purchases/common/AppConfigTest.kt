@@ -508,6 +508,7 @@ class AppConfigTest {
                 "customEntitlementComputation=false, " +
                 "uiPreviewMode=false, " +
                 "applyObfuscatedAccountIdToSubscriptionChanges=false, " +
+                "usesRemoteConfigAPISources=false, " +
                 "useWorkflows=false), " +
                 "languageTag='', " +
                 "versionName='', " +

@@ -24,6 +24,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import io.mockk.verifyOrder
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -251,6 +252,12 @@ class IdentityManagerTests {
         }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
         verify(exactly = 1) { mockRemoteConfigManager.clearCache(newAppUserID) }
+        // Remote config must be cleared before offerings so its in-memory caches can't serve the previous
+        // user's config while offerings is momentarily null.
+        verifyOrder {
+            mockRemoteConfigManager.clearCache(newAppUserID)
+            mockOfferingsCache.clearCache()
+        }
     }
 
     @Test
@@ -637,6 +644,11 @@ class IdentityManagerTests {
         }
         verify(exactly = 1) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
         verify(exactly = 1) { mockBackend.clearCaches() }
+        // Remote config cleared before offerings — see `login clears caches...` for the rationale.
+        verifyOrder {
+            mockRemoteConfigManager.clearCache(newAppUserID)
+            mockOfferingsCache.clearCache()
+        }
     }
     @Test
     fun `switching users saves the new user`() {
@@ -766,6 +778,11 @@ class IdentityManagerTests {
         verify(exactly = 1) { mockRemoteConfigManager.clearCache(newAppUserId) }
         verify(exactly = 1) { mockDeviceCache.clearCustomerInfoCache(newAppUserId) }
         verify(exactly = 1) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
+        // Remote config cleared before offerings — see `login clears caches...` for the rationale.
+        verifyOrder {
+            mockRemoteConfigManager.clearCache(newAppUserId)
+            mockOfferingsCache.clearCache()
+        }
     }
 
     @Test

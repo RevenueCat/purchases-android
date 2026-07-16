@@ -83,11 +83,11 @@ class RemoteConfigManagerIntegrationTest {
         )
 
         every {
-            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any())
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any())
         } answers {
-            capturedManifest = arg(3)
-            capturedPrefetchedBlobs = arg(4)
-            onSuccess = arg(5)
+            capturedManifest = arg(4)
+            capturedPrefetchedBlobs = arg(5)
+            onSuccess = arg(6)
         }
     }
 
@@ -157,7 +157,7 @@ class RemoteConfigManagerIntegrationTest {
         assertThat(blobStore.contains(refA)).isTrue
 
         // Start the next sync: it should replay the manifest persisted by the first sync.
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = RemoteConfigFetchContext.AppStart)
         assertThat(capturedManifest).isEqualTo("v1.1.workflows:etag1")
         settle(container(workflowsConfig(manifest = "v1.2.workflows:etag2", items = mapOf("wf1234" to refB)), blobB))
 
@@ -174,7 +174,7 @@ class RemoteConfigManagerIntegrationTest {
         sync(container(workflowsConfig(prefetchBlobs = listOf(ref), items = mapOf("wf1234" to ref)), blob))
         assertThat(blobStore.contains(ref)).isTrue
 
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = RemoteConfigFetchContext.AppStart)
 
         // The blob is now cached on disk, so it is reported back so the server stops re-inlining it.
         assertThat(capturedPrefetchedBlobs).containsExactly(ref)
@@ -344,7 +344,7 @@ class RemoteConfigManagerIntegrationTest {
 
     /** Runs a full refresh and settles it with [container] (null = a 204). */
     private fun sync(container: RCContainer?) {
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = RemoteConfigFetchContext.AppStart)
         settle(container)
     }
 
