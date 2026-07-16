@@ -22,7 +22,7 @@
   },
   "body": {
     "app_user_id": "integrationTestRemoteConfigUser",
-    "fetch_context": "app_start",
+    "fetch_context": "foreground",
     "manifest": "TEST_STATIC_VALUE",
     "prefetched_blobs": []
   }
