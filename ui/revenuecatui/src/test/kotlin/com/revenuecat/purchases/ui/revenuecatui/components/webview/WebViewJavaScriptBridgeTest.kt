@@ -792,23 +792,42 @@ internal class WebViewJavaScriptBridgeTest {
     }
 
     @Test
-    fun `queued outbound message from the old document is not delivered after navigation`() {
+    fun `inbound message queued before document reset is dropped`() {
+        val bridge = bridge()
+        val background = Thread {
+            bridge.postMessage(
+                """
+                {"channel":"rc-web-components","protocol_version":1,"kind":"connect","component_id":""}
+                """.trimIndent(),
+            )
+        }
+        background.start()
+        background.join()
+        bridge.onMainFrameNavigationStarted(null)
+        idleMainLooper()
+
+        // Stale connect was cancelled with the old document scope — channel stays closed.
+        assertThat(shadowWebView.lastEvaluatedJavascript).isNull()
+    }
+
+    @Test
+    fun `outbound message queued before document reset is dropped`() {
         val bridge = bridge()
         bridge.onMainFrameNavigationStarted(expectedUrl)
         connect(bridge)
         val background = Thread {
             bridge.postMessage(
                 componentId = componentId,
-                type = "rc:queued",
+                type = "rc:x",
                 variables = mapOf("foo" to PaywallWebViewValue.String("bar")),
             )
         }
         background.start()
         background.join()
-        bridge.onMainFrameNavigationStarted("https://assets.example.com/promo/step-two.html")
+        bridge.onMainFrameNavigationStarted(null)
         idleMainLooper()
 
-        assertThat(shadowWebView.lastEvaluatedJavascript).doesNotContain("rc:queued")
+        assertThat(shadowWebView.lastEvaluatedJavascript).doesNotContain("rc:x")
     }
 
     @Test

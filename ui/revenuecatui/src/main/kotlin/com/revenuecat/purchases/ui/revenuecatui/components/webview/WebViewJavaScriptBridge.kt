@@ -3,8 +3,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import android.net.Uri
-import android.os.Handler
-import android.os.Looper
 import android.webkit.WebView
 import androidx.annotation.MainThread
 import androidx.webkit.WebViewCompat
@@ -14,6 +12,11 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessageHandler
 import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.toJsonObject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 
@@ -33,12 +36,15 @@ import java.lang.ref.WeakReference
  * ## Document lifecycle
  * Each main-frame navigation creates a new JavaScript document that must re-handshake. Call
  * [onMainFrameNavigationStarted] from `WebViewClient.onPageStarted` so a fresh `connect` is accepted
- * and outbound work queued for a previous document generation is dropped.
+ * and work queued for the previous document's [documentScope] is cancelled.
  *
  * ## Lifecycle & threading
  * The bridge holds only a [WeakReference] to the [WebView] (no Activity/Context), and stops delivering
- * messages once [release] is called. Inbound callbacks are hopped onto the main thread; app callbacks
- * and all WebView interactions happen on the main thread.
+ * messages once [release] is called. All main-thread work for the current JavaScript document runs on
+ * a per-document [CoroutineScope] (`Dispatchers.Main.immediate`); that scope is cancelled and replaced
+ * on every main-frame navigation and cancelled permanently on [release], so work queued for a dead
+ * document or a released bridge never runs. App callbacks and all WebView interactions happen on the
+ * main thread.
  */
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class WebViewJavaScriptBridge(
@@ -52,7 +58,6 @@ internal class WebViewJavaScriptBridge(
     private val onContentResize: (widthCssPx: Int?, heightCssPx: Int?) -> Unit = { _, _ -> },
     private val onDocumentReset: () -> Unit = {},
     private val onSecureMessagingUnsupported: () -> Unit = {},
-    private val mainHandler: Handler = Handler(Looper.getMainLooper()),
     private val isWebMessageListenerSupported: () -> Boolean = {
         WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)
     },
@@ -79,21 +84,29 @@ internal class WebViewJavaScriptBridge(
     private val protocolVersion: Int = WebViewEnvelope.DEFAULT_PROTOCOL_VERSION
 
     // Refreshed from the latest paywall state on every recomposition via update().
-    @Volatile private var locale: String = locale
+    private var locale: String = locale
 
-    @Volatile private var messageHandler: PaywallWebViewMessageHandler? = messageHandler
+    private var messageHandler: PaywallWebViewMessageHandler? = messageHandler
 
-    @Volatile private var released: Boolean = false
+    private var released: Boolean = false
 
-    @Volatile private var channelOpen: Boolean = false
+    private var channelOpen: Boolean = false
 
-    @Volatile private var messageListenerInstalled: Boolean = false
+    private var messageListenerInstalled: Boolean = false
+
+    // Deliberately no CoroutineExceptionHandler: uncaught exceptions should crash like the old
+    // Handler.post path — do not swallow bugs in a security-sensitive path.
+    private fun newDocumentScope(): CoroutineScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     /**
-     * Incremented on every main-frame document start. Outbound [WebView.evaluateJavascript] work
-     * captures the generation at enqueue time and is dropped if a newer document has started.
+     * Scope for all main-thread work belonging to the CURRENT JavaScript document.
+     * Cancelled and replaced on every main-frame navigation (see
+     * [onMainFrameNavigationStarted]) and cancelled permanently on [release] —
+     * cancellation is what guarantees that work queued for a dead document or a
+     * released bridge never runs.
      */
-    @Volatile private var documentGeneration: Int = 0
+    private var documentScope: CoroutineScope = newDocumentScope()
 
     // Last content sizes applied per fit axis (main thread only), for the resize apply-threshold.
     private var lastAppliedWidthCssPx: Int? = null
@@ -101,8 +114,7 @@ internal class WebViewJavaScriptBridge(
 
     private val webMessageListener = WebViewCompat.WebMessageListener { _, message, sourceOrigin, isMainFrame, _ ->
         val data = message.data ?: return@WebMessageListener
-        mainHandler.post {
-            if (released) return@post
+        documentScope.launch {
             handleInboundMessage(
                 json = data,
                 sourceOrigin = sourceOrigin,
@@ -154,7 +166,8 @@ internal class WebViewJavaScriptBridge(
     @Suppress("UnusedParameter")
     fun onMainFrameNavigationStarted(url: String?) {
         if (released) return
-        documentGeneration += 1
+        documentScope.cancel()
+        documentScope = newDocumentScope()
         channelOpen = false
         lastAppliedWidthCssPx = null
         lastAppliedHeightCssPx = null
@@ -169,6 +182,7 @@ internal class WebViewJavaScriptBridge(
     fun release() {
         released = true
         channelOpen = false
+        documentScope.cancel()
         val webView = webViewRef.get()
         if (messageListenerInstalled && webView != null) {
             uninstallWebMessageListener(webView, WebViewEnvelope.NATIVE_OBJECT_NAME)
@@ -225,8 +239,7 @@ internal class WebViewJavaScriptBridge(
      */
     internal fun postMessage(json: String) {
         val originUri = expectedOrigin?.let { Uri.parse(it) }
-        mainHandler.post {
-            if (released) return@post
+        documentScope.launch {
             handleInboundMessage(json = json, sourceOrigin = originUri, isMainFrame = true)
         }
     }
@@ -239,8 +252,7 @@ internal class WebViewJavaScriptBridge(
         sourceOrigin: Uri?,
         isMainFrame: Boolean,
     ) {
-        mainHandler.post {
-            if (released) return@post
+        documentScope.launch {
             handleInboundMessage(json = json, sourceOrigin = sourceOrigin, isMainFrame = isMainFrame)
         }
     }
@@ -408,11 +420,8 @@ internal class WebViewJavaScriptBridge(
     }
 
     private fun deliverEnvelope(envelope: JSONObject) {
-        val generationAtEnqueue = documentGeneration
-        runOnMainThread {
-            if (released) return@runOnMainThread
-            if (generationAtEnqueue != documentGeneration) return@runOnMainThread
-            val webView = webViewRef.get() ?: return@runOnMainThread
+        documentScope.launch {
+            val webView = webViewRef.get() ?: return@launch
             val kind = envelope.optString(WebViewMessageField.KIND)
             val allowBeforeNavigation = kind in HANDSHAKE_OUTBOUND_KINDS
             // Defense in depth: drop outbound work if the top-level URL left the expected origin
@@ -422,7 +431,7 @@ internal class WebViewJavaScriptBridge(
                     "Dropping outbound web view message: current origin does not match the " +
                         "resolved component origin.",
                 )
-                return@runOnMainThread
+                return@launch
             }
             val payload = envelope.toString().escapeForJavaScript()
             webView.evaluateJavascript(
@@ -458,18 +467,6 @@ internal class WebViewJavaScriptBridge(
         return when {
             currentOrigin == null -> allowBeforeNavigation
             else -> currentOrigin == expectedOrigin
-        }
-    }
-
-    private fun runOnMainThread(block: () -> Unit) {
-        if (Looper.myLooper() == Looper.getMainLooper()) {
-            if (released) return
-            block()
-        } else {
-            mainHandler.post {
-                if (released) return@post
-                block()
-            }
         }
     }
 
