@@ -5,7 +5,6 @@ import androidx.core.util.AtomicFile
 import com.revenuecat.purchases.common.errorLog
 import java.io.File
 import java.io.IOException
-import java.nio.ByteBuffer
 
 /**
  * A content-addressed, on-disk cache for remote-config blobs. Each blob is stored as one file under
@@ -56,21 +55,18 @@ internal class RemoteConfigBlobStore(
      * partial. An interrupted write leaves only the `.new` orphan, whose name is not a valid ref — it is
      * invisible to the index scan and pruned by [retainOnly].
      */
-    fun write(ref: String, data: ByteBuffer): Boolean {
+    fun write(ref: String, data: ByteArray): Boolean {
         val target = blobFile(ref)
         if (target == null) {
             errorLog { "Refusing to write remote config blob with malformed ref '$ref'." }
             return false
         }
         return try {
-            val view = data.duplicate()
-            val bytes = ByteArray(view.remaining())
-            view.get(bytes)
             // startWrite creates the blobs directory when missing.
             val atomicFile = AtomicFile(target)
             val out = atomicFile.startWrite()
             try {
-                out.write(bytes)
+                out.write(data)
                 atomicFile.finishWrite(out)
             } catch (e: IOException) {
                 atomicFile.failWrite(out)
