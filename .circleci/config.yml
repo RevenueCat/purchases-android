@@ -886,7 +886,7 @@ jobs:
       - run:
           name: Run Maestro tests
           command: |
-            maestro test --format junit --output maestro/report.xml maestro/
+            maestro test --format junit --output maestro/report.xml maestro/e2e_tests/
       - store_artifacts:
           path: ~/.maestro/tests/
       - store_test_results:

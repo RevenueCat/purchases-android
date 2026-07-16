@@ -11,6 +11,8 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -72,6 +74,44 @@ internal class WorkflowsConfigProviderTest {
         assertThat(workflow).isNotNull
         // Only the one read during warm; the memory-first getWorkflow did not touch the config layer again.
         coVerify(exactly = 1) { manager.blobData(RemoteConfigTopic.Workflows, WF_CURRENT, any<(ByteArray) -> ByteArray?>()) }
+    }
+
+    @Test
+    fun `warm pre-loads bytes but defers the decode until the first getWorkflow, then retains it`() = runTest {
+        mockkObject(WorkflowJsonParser) {
+            stubTopic()
+            stubWorkflowBody(WF_PREFETCH)
+            stubWorkflowBody(WF_CURRENT)
+
+            provider.warm(generation = 0)
+            // Bytes are in memory (the offering is warm), but nothing has been decoded yet.
+            assertThat(provider.isWarmForCurrentOffering()).isTrue
+            verify(exactly = 0) { WorkflowJsonParser.parsePublishedWorkflow(any()) }
+
+            assertThat(provider.getWorkflow(WF_CURRENT)).isNotNull
+            verify(exactly = 1) { WorkflowJsonParser.parsePublishedWorkflow(any()) }
+
+            // A second read is served from the retained decode, not re-parsed.
+            assertThat(provider.getWorkflow(WF_CURRENT)).isNotNull
+            verify(exactly = 1) { WorkflowJsonParser.parsePublishedWorkflow(any()) }
+        }
+    }
+
+    @Test
+    fun `a malformed workflow body warms as bytes but reads back null`() = runTest {
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        // WF_CURRENT's body resolves but is not valid PublishedWorkflow JSON.
+        coEvery {
+            manager.blobData(RemoteConfigTopic.Workflows, WF_CURRENT, any<(ByteArray) -> ByteArray?>())
+        } answers { thirdArg<(ByteArray) -> ByteArray?>().invoke("not a workflow".toByteArray()) }
+
+        provider.warm(generation = 0)
+
+        // The body was cached (bytes resolved), so the gate treats the current offering as warm...
+        assertThat(provider.isWarmForCurrentOffering()).isTrue
+        // ...but the deferred decode fails synchronously on read, surfacing as null (no warm-time exclusion).
+        assertThat(provider.getWorkflow(WF_CURRENT)).isNull()
     }
 
     @Test
@@ -170,7 +210,7 @@ internal class WorkflowsConfigProviderTest {
         provider.warm(generation = 0)
         assertThat(provider.isWarmForCurrentOffering()).isTrue
 
-        // The current offering switches to one whose workflow was not eligible (so not parsed).
+        // The current offering switches to one whose workflow was not eligible (so its body was not cached).
         currentOfferingId = OTHER_OFFERING
 
         assertThat(provider.isWarmForCurrentOffering()).isFalse

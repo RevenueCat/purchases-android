@@ -2,7 +2,6 @@
   "statusCode": 200,
   "headers": {
     "Connection": "keep-alive",
-    "Content-Length": "515",
     "Content-Type": "application\/json",
     "server": "envoy",
     "strict-transport-security": "max-age= 63072000; includeSubdomains; preload",
