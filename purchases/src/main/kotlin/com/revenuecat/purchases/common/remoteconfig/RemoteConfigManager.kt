@@ -104,10 +104,11 @@ internal class RemoteConfigManager(
     @Volatile
     private var lastRefreshAttemptAt: Date? = null
 
-    // Forces requests to report AppStart until the first one succeeds, regardless of the caller's context, so the
-    // backend always sees app_start on a fresh app open. Guarded by [cacheLock]; set when a request succeeds, so a
-    // failed attempt keeps forcing AppStart until a later attempt delivers it.
-    private var hasSucceededInitialRequest = false
+    // Forces requests to report AppStart until the session's first config is committed, regardless of the caller's
+    // context, so the backend always sees app_start on a fresh app open. Guarded by [cacheLock]; set only once config
+    // is durably committed (persisted from a 200 or the fallback) or confirmed current (204), so a failed request or
+    // an undecodable/unpersistable 200 keeps forcing AppStart until a later attempt actually commits config.
+    private var hasCommittedInitialConfig = false
 
     // The app user a cold on-demand read should sync for, rebound by clearCache() under [cacheLock] atomically
     // with the epoch bump, so it can never lag the identity change the way [appUserIDProvider] (backed by the
@@ -237,19 +238,10 @@ internal class RemoteConfigManager(
         return lastAttempt == null || Duration.between(lastAttempt, now) >= REFRESH_ATTEMPT_COOLDOWN
     }
 
-    // Overrides a request's context to AppStart until the first request succeeds. Must be called within [cacheLock].
+    // Overrides a request's context to AppStart until the session's first config is committed. Must be called within
+    // [cacheLock].
     private fun fetchContextForRequest(requested: RemoteConfigFetchContext): RemoteConfigFetchContext {
-        return if (hasSucceededInitialRequest) requested else RemoteConfigFetchContext.AppStart
-    }
-
-    // Records that a request succeeded so later requests stop being forced to AppStart. Drops stale successes whose
-    // epoch changed meanwhile (an identity change already reset the guard via [clearCache]).
-    private fun markInitialRequestSucceeded(requestEpoch: Int) {
-        synchronized(cacheLock) {
-            if (epoch.get() == requestEpoch) {
-                hasSucceededInitialRequest = true
-            }
-        }
+        return if (hasCommittedInitialConfig) requested else RemoteConfigFetchContext.AppStart
     }
 
     /**
@@ -267,7 +259,6 @@ internal class RemoteConfigManager(
             // response and leave isRefreshing alone: clearCache() reset it, or a newer refresh owns it.
             return
         }
-        markInitialRequestSucceeded(requestEpoch)
         if (container == null) {
             handleNotModified(requestEpoch)
             return
@@ -360,6 +351,7 @@ internal class RemoteConfigManager(
         synchronized(cacheLock) {
             if (epoch.get() == requestEpoch) {
                 lastRefreshedAt = dateProvider.now
+                hasCommittedInitialConfig = true
                 isRefreshing.set(false)
                 completeRefresh()
             }
@@ -786,6 +778,7 @@ internal class RemoteConfigManager(
 
         if (persisted) {
             lastRefreshedAt = dateProvider.now
+            hasCommittedInitialConfig = true
             debugLog {
                 "Persisted remote config (domain=${response.domain}, ${response.activeTopics.size} active topics, " +
                     "${blobRefsToKeep.size} blobs wanted)."

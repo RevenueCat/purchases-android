@@ -217,6 +217,95 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `forcing stops once a 200 config is persisted`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag",
+              "active_topics": [],
+              "topics": {}
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.IdentityChange)
+    }
+
+    @Test
+    fun `a 200 that fails to parse keeps forcing app_start`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+        // A 200 whose body fails to parse commits nothing, so the initial config is still not committed.
+        onSuccess.invoke(containerWithConfig("{ not valid json"), VerificationResult.VERIFIED)
+
+        // The next request must still be forced to AppStart, since no config landed yet.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+    }
+
+    @Test
+    fun `forcing stops once the fallback commits its config`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+
+        // The main request fails on a cold cache, routing to the fallback, which commits its config.
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownBackendError, "server error"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        onFallbackSuccess.invoke(
+            remoteConfiguration(
+                """
+                {
+                  "domain": "app",
+                  "manifest": "v1.fallback.sources:etag",
+                  "active_topics": [],
+                  "topics": {}
+                }
+                """.trimIndent(),
+            ),
+            VerificationResult.VERIFIED,
+        )
+
+        // The fallback commit counts as the initial config, so later requests report their own context.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.IdentityChange)
+    }
+
+    @Test
     fun `refreshRemoteConfigIfStale refreshes on the first call in a process`() {
         every { diskCache.read() } returns null
 
