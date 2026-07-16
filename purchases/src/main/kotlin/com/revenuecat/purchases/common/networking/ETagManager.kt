@@ -22,9 +22,10 @@ internal data class ETagData(
 
 /**
  * Everything the ETag cache persists about a response except its payload. Stored as a small flat JSON
- * under the URL key, while the payload is stored verbatim under a separate key ([ETagManager.payloadKey])
- * so caching a large response never re-encodes a string we already hold in memory
- * (https://github.com/RevenueCat/purchases-android/issues/3628).
+ * under the URL key, while the payload is stored verbatim in a file ([ETagPayloadStore]) so caching a
+ * large response never re-encodes a string we already hold in memory
+ * (https://github.com/RevenueCat/purchases-android/issues/3628) nor retains it in the SharedPreferences
+ * in-memory map for the process lifetime.
  *
  * `origin` is intentionally not persisted: stored results always read back as [HTTPResult.Origin.CACHE].
  *
@@ -126,6 +127,7 @@ internal class ETagManager(
     context: Context,
     private val prefs: Lazy<SharedPreferences> = lazy { initializeSharedPreferences(context) },
     private val dateProvider: DateProvider = DefaultDateProvider(),
+    private val payloadStore: ETagPayloadStore = ETagPayloadStore(context),
 ) {
 
     internal fun getETagHeaders(
@@ -193,14 +195,32 @@ internal class ETagManager(
         val serialized = prefs.value.getString(urlString, null) ?: return null
         val metadata = ETagCacheMetadata.deserialize(serialized)
         if (metadata != null) {
-            // Read without the monitor: a concurrent storeResult() landing between the two getString calls can
-            // pair the old metadata with the new payload for this one read. The window is nanoseconds, requires
+            // Read without the monitor: a concurrent storeResult() landing between the metadata read and the
+            // payload read can pair the old metadata with the new payload for this one read. It requires
             // concurrent same-URL traffic, and the worst case is one response served with the previous entry's
             // metadata fields — accepted to keep reads lock-free.
-            val payload = prefs.value.getString(payloadKey(urlString), null) ?: return null
+            val payload = readPayload(urlString) ?: return null
             return metadata.toHTTPResult(payload)
         }
         return null
+    }
+
+    private fun readPayload(urlString: String): String? {
+        return payloadStore.read(urlString) ?: migratePrefsPayload(urlString)
+    }
+
+    /**
+     * An earlier release stored the payload under a second SharedPreferences key instead of a file.
+     * Move such payloads to the file store on first read; the prefs key is only removed once the file
+     * write is durable, so a failed write retries on the next read.
+     */
+    @Synchronized
+    private fun migratePrefsPayload(urlString: String): String? {
+        val prefsPayload = prefs.value.getString(payloadKey(urlString), null) ?: return null
+        if (payloadStore.write(urlString, prefsPayload)) {
+            prefs.value.edit().remove(payloadKey(urlString)).apply()
+        }
+        return prefsPayload
     }
 
     internal fun storeBackendResultIfNoError(
@@ -215,7 +235,10 @@ internal class ETagManager(
 
     @Synchronized
     internal fun clearCaches() {
+        // Prefs (metadata) first: a crash in between leaves orphan payload files, which are harmless and
+        // overwritten later, rather than metadata pointing at purged payloads.
         prefs.value.edit().clear().apply()
+        payloadStore.clear()
     }
 
     @Synchronized
@@ -225,19 +248,23 @@ internal class ETagManager(
         eTag: String,
     ) {
         val metadata = ETagCacheMetadata.fromResult(result, ETagData(eTag, dateProvider.now))
-        prefs.value.edit()
-            .putString(urlString, metadata.serialize())
-            // The payload is stored verbatim under its own key: embedding it inside the metadata JSON
-            // would re-escape a multi-MB string we already hold, which OOMed on large /offerings
-            // responses (https://github.com/RevenueCat/purchases-android/issues/3628).
-            .putString(payloadKey(urlString), result.payloadText)
-            .apply()
+        // Payload file first, and metadata only once that write is durable: metadata present must imply
+        // the payload was written. The payload lives in a file rather than in the prefs JSON because
+        // re-escaping a multi-MB string OOMed on large /offerings responses
+        // (https://github.com/RevenueCat/purchases-android/issues/3628), and SharedPreferences would keep
+        // it parsed in the app heap for the process lifetime.
+        if (payloadStore.write(urlString, result.payloadText)) {
+            prefs.value.edit()
+                .putString(urlString, metadata.serialize())
+                .apply()
+        }
     }
 
     private fun getStoredMetadata(urlString: String): ETagCacheMetadata? {
         val serialized = prefs.value.getString(urlString, null) ?: return null
         return ETagCacheMetadata.deserialize(serialized)
     }
+
 
     private fun shouldStoreBackendResult(resultFromBackend: HTTPResult): Boolean {
         val responseCode = resultFromBackend.responseCode
@@ -256,8 +283,10 @@ internal class ETagManager(
     }
 
     companion object {
-        // Cache keys are endpoint URLs from URL(baseURL, path).toString(), which never carry a '#'
-        // fragment, so this suffix cannot collide with another URL's entry.
+        // Where an earlier release kept the payload in SharedPreferences. Only read (and removed) by
+        // [migratePrefsPayload]; new payloads go to [ETagPayloadStore]. Cache keys are endpoint URLs
+        // from URL(baseURL, path).toString(), which never carry a '#' fragment, so this suffix cannot
+        // collide with another URL's entry.
         private const val PAYLOAD_KEY_SUFFIX = "#rc_payload"
 
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)

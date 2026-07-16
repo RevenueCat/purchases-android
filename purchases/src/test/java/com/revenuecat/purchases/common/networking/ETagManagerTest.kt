@@ -14,7 +14,9 @@ import io.mockk.mockk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
@@ -29,10 +31,17 @@ class ETagManagerTest {
             get() = testDate
     }
     private val mockedPrefs = mockk<SharedPreferences>()
-    private val underTest = ETagManager(mockk(), lazy { mockedPrefs }, testDateProvider)
+    private val payloadStore: ETagPayloadStore by lazy { ETagPayloadStore(temporaryFolder.newFolder()) }
+    private val underTest: ETagManager by lazy {
+        ETagManager(mockk(), lazy { mockedPrefs }, testDateProvider, payloadStore)
+    }
     private val putStringKeys = mutableListOf<String>()
     private val putStringValues = mutableListOf<String>()
+    private val removedKeys = mutableListOf<String>()
     private val mockEditor = mockk<SharedPreferences.Editor>()
+
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
 
     @Before
     fun setup() {
@@ -40,7 +49,13 @@ class ETagManagerTest {
             mockedPrefs.edit()
         } returns mockEditor
         every {
+            mockedPrefs.getString(any(), null)
+        } returns null
+        every {
             mockEditor.putString(capture(putStringKeys), capture(putStringValues))
+        } returns mockEditor
+        every {
+            mockEditor.remove(capture(removedKeys))
         } returns mockEditor
         every {
             mockEditor.apply()
@@ -192,13 +207,14 @@ class ETagManagerTest {
     // endregion ETag headers usage verification tests
 
     @Test
-    fun `getETagHeaders does not read the cached payload`() {
+    fun `getETagHeaders does not need the cached payload`() {
         val urlString = "http://localhost:100/v1/subscribers/appUserID"
         mockCachedHTTPResult(expectedETag = "etag", urlString = urlString)
+        payloadStore.clear()
 
-        underTest.getETagHeaders(urlString, verificationRequested = false)
+        val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
 
-        verify(exactly = 0) { mockedPrefs.getString(ETagManager.payloadKey(urlString), null) }
+        assertThat(eTagHeaders[HTTPRequest.ETAG_HEADER_NAME]).isEqualTo("etag")
     }
 
     @Test
@@ -310,7 +326,7 @@ class ETagManagerTest {
     }
 
     @Test
-    fun `storeBackendResultIfNoError stores metadata and payload under separate keys`() {
+    fun `storeBackendResultIfNoError stores metadata in prefs and the payload in the payload store`() {
         val urlString = "http://localhost:100/v1/subscribers/appUserID"
         val payload = "{\"key\":\"value\"}"
         val result = HTTPResult.createResult(payload = payload)
@@ -321,7 +337,7 @@ class ETagManagerTest {
     }
 
     @Test
-    fun `storeBackendResultIfNoError stores the payload string verbatim without re-encoding`() {
+    fun `storeBackendResultIfNoError stores the payload without JSON re-encoding`() {
         val urlString = "http://localhost:100/v1/subscribers/appUserID"
         // Quote-dense payload: the legacy combined format would escape every quote twice.
         val payload = "{\"offerings\":[{\"id\":\"premium\",\"desc\":\"a \\\"quoted\\\" name\"}]}"
@@ -329,9 +345,10 @@ class ETagManagerTest {
 
         underTest.storeBackendResultIfNoError(urlString, result, eTagInResponse = "etag")
 
-        val storedByKey = putStringKeys.zip(putStringValues).toMap()
-        // Reference equality: the exact string instance we already held is stored — zero copies, zero escaping.
-        assertThat(storedByKey.getValue(ETagManager.payloadKey(urlString))).isSameAs(result.payloadText)
+        // Byte-for-byte what we received: never escaped, and never written into the prefs JSON.
+        // (ETagManagerMemoryTest gates the allocation cost of this path.)
+        assertThat(payloadStore.read(urlString)).isEqualTo(payload)
+        assertThat(putStringKeys).containsExactly(urlString)
     }
 
     @Test
@@ -345,9 +362,12 @@ class ETagManagerTest {
     }
 
     @Test
-    fun `Clearing caches removes all shared preferences`() {
+    fun `Clearing caches removes all shared preferences and stored payloads`() {
+        payloadStore.write("http://localhost:100/v1/subscribers/appUserID", "payload")
+
         underTest.clearCaches()
 
+        assertThat(payloadStore.read("http://localhost:100/v1/subscribers/appUserID")).isNull()
         verify {
             mockEditor.clear()
         }
@@ -719,6 +739,24 @@ class ETagManagerTest {
     }
 
     @Test
+    fun `a payload stored in prefs by an earlier release is served and moved to the payload store`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        val payload = "{\"fromPrefs\":true}"
+        val metadata = ETagCacheMetadata.fromResult(
+            HTTPResult.createResult(payload = payload, origin = HTTPResult.Origin.CACHE),
+            ETagData("etag", testDate),
+        )
+        every { mockedPrefs.getString(urlString, null) } returns metadata.serialize()
+        every { mockedPrefs.getString(ETagManager.payloadKey(urlString), null) } returns payload
+
+        val storedResult = underTest.getStoredResult(urlString)
+
+        assertThat(storedResult?.payloadText).isEqualTo(payload)
+        assertThat(payloadStore.read(urlString)).isEqualTo(payload)
+        assertThat(removedKeys).containsExactly(ETagManager.payloadKey(urlString))
+    }
+
+    @Test
     fun `ETagCacheMetadata toHTTPResult rebuilds the result with CACHE origin`() {
         val metadata = ETagCacheMetadata.fromResult(
             HTTPResult.createResult(
@@ -778,9 +816,9 @@ class ETagManagerTest {
         every {
             mockedPrefs.getString(urlString, null)
         } returns metadata?.serialize()
-        every {
-            mockedPrefs.getString(ETagManager.payloadKey(urlString), null)
-        } returns metadata?.let { httpResult.payloadText }
+        if (metadata != null) {
+            payloadStore.write(urlString, httpResult.payloadText)
+        }
         return metadata
     }
 
@@ -798,6 +836,6 @@ class ETagManagerTest {
         assertThat(metadata.eTagData.lastRefreshTime?.time).isEqualTo(lastRefreshTime?.time)
         assertThat(metadata.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
 
-        assertThat(storedByKey.getValue(ETagManager.payloadKey(urlString))).isEqualTo(responsePayload)
+        assertThat(payloadStore.read(urlString)).isEqualTo(responsePayload)
     }
 }
