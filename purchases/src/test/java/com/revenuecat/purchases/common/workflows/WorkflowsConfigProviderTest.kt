@@ -288,6 +288,38 @@ internal class WorkflowsConfigProviderTest {
         assertThat(provider.workflowIdForOfferingId(CURRENT_OFFERING)).isNull()
     }
 
+    @Test
+    fun `resolveWorkflow returns Found when the topic maps the offering to a workflow`() = runTest {
+        every { manager.configGeneration } returns 0
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns topicWith(
+            WF_CURRENT to configItem(prefetch = false, offeringId = CURRENT_OFFERING),
+        )
+
+        assertThat(provider.resolveWorkflow(CURRENT_OFFERING))
+            .isEqualTo(WorkflowResolution.Found(WF_CURRENT))
+    }
+
+    @Test
+    fun `resolveWorkflow returns NoWorkflow when the topic is readable but has no mapping`() = runTest {
+        every { manager.configGeneration } returns 0
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns topicWith(
+            WF_CURRENT to configItem(prefetch = false, offeringId = CURRENT_OFFERING),
+        )
+
+        // The topic committed fine; this offering simply has no workflow, so it is workflowless (not unknown).
+        assertThat(provider.resolveWorkflow(OTHER_OFFERING)).isEqualTo(WorkflowResolution.NoWorkflow)
+    }
+
+    @Test
+    fun `resolveWorkflow returns Unresolved when the topic cannot be read`() = runTest {
+        every { manager.configGeneration } returns 0
+        // A disabled endpoint (4xx) or a transient sync failure surfaces as a null topic; whether the offering
+        // has a workflow is unknown, so the caller — not the provider — decides how to recover.
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns null
+
+        assertThat(provider.resolveWorkflow(CURRENT_OFFERING)).isEqualTo(WorkflowResolution.Unresolved)
+    }
+
     private fun stubTopic() {
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.Workflows) } returns topicWith(
             WF_PREFETCH to configItem(prefetch = true, offeringId = null),

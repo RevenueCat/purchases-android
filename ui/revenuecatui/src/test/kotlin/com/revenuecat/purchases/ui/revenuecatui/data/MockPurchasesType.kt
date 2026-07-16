@@ -10,6 +10,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
@@ -67,5 +68,7 @@ internal class MockPurchasesType(
         throw NotImplementedError("Mock implementation")
     }
 
-    override suspend fun workflowIdForOfferingId(offeringId: String): String? = null
+    override suspend fun resolveWorkflow(offeringId: String): WorkflowResolution = WorkflowResolution.NoWorkflow
+
+    override val isRemoteConfigDisabled: Boolean = false
 }
