@@ -69,6 +69,4 @@ internal class MockPurchasesType(
     }
 
     override suspend fun resolveWorkflow(offeringId: String): WorkflowResolution = WorkflowResolution.NoWorkflow
-
-    override val isRemoteConfigDisabled: Boolean = false
 }

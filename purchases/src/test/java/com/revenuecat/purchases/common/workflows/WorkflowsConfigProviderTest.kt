@@ -311,14 +311,25 @@ internal class WorkflowsConfigProviderTest {
     }
 
     @Test
-    fun `resolveWorkflow returns Unresolved when the topic cannot be read`() = runTest {
+    fun `resolveWorkflow returns Disabled when the topic cannot be read and remote config is disabled`() = runTest {
         every { manager.configGeneration } returns 0
-        // A disabled endpoint (4xx) or a transient sync failure surfaces as a null topic; whether the offering
-        // has a workflow is unknown, so the caller — not the provider — decides how to recover.
         coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns null
+        // A 4xx kill switch: the offering's components were skipped, so the caller can reload to recover them.
+        every { manager.isDisabled } returns true
 
-        assertThat(provider.resolveWorkflow(CURRENT_OFFERING)).isEqualTo(WorkflowResolution.Unresolved)
+        assertThat(provider.resolveWorkflow(CURRENT_OFFERING)).isEqualTo(WorkflowResolution.Disabled)
     }
+
+    @Test
+    fun `resolveWorkflow returns Unavailable when the topic cannot be read and remote config is not disabled`() =
+        runTest {
+            every { manager.configGeneration } returns 0
+            coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns null
+            // A transient failure: reloading would recover nothing, so the caller surfaces an error.
+            every { manager.isDisabled } returns false
+
+            assertThat(provider.resolveWorkflow(CURRENT_OFFERING)).isEqualTo(WorkflowResolution.Unavailable)
+        }
 
     private fun stubTopic() {
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.Workflows) } returns topicWith(

@@ -76,8 +76,6 @@ internal interface PurchasesType {
 
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution
 
-    val isRemoteConfigDisabled: Boolean
-
     val useWorkflows: Boolean
 }
 
@@ -159,10 +157,6 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     @OptIn(InternalRevenueCatAPI::class)
     override suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         purchases.resolveWorkflow(offeringId)
-
-    @OptIn(InternalRevenueCatAPI::class)
-    override val isRemoteConfigDisabled: Boolean
-        get() = purchases.isRemoteConfigDisabled
 
     @OptIn(InternalRevenueCatAPI::class)
     override val useWorkflows: Boolean

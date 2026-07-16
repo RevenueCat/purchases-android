@@ -628,10 +628,6 @@ internal class PurchasesOrchestrator(
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         workflowManager?.resolveWorkflow(offeringId) ?: WorkflowResolution.NoWorkflow
 
-    /** Whether the `/v1/config` endpoint has been disabled for this session by a 4xx client error. */
-    val isRemoteConfigDisabled: Boolean
-        get() = remoteConfigManager?.isDisabled == true
-
     suspend fun getUiConfig(): UiConfig {
         val provider = uiConfigProvider
         if (appConfig.uiPreviewMode || provider == null) {

@@ -868,7 +868,7 @@ internal class PaywallViewModelImpl(
     /**
      * Resolves [workflowOffering] to its workflow and either presents it or decides how to fall back: a
      * workflowless offering renders its own paywall, a 4xx kill switch reloads offerings to recover the
-     * components skipped during the workflows-enabled parse, and a transient failure throws (→ error state).
+     * components skipped during the workflows-enabled parse, and any other failure throws (→ error state).
      */
     @Suppress("ReturnCount")
     private suspend fun presentWorkflowOrResolveFallback(
@@ -881,17 +881,12 @@ internal class PaywallViewModelImpl(
                     presentWorkflow(resolution.workflowId, workflowOffering, preloadedOfferings)
                     return WorkflowOutcome.Presented
                 } catch (e: PurchasesException) {
-                    // The workflow id resolved but its body or ui config could not be served. A 4xx kill switch
-                    // means the offering was parsed with its components skipped, so reload it from /offerings to
-                    // recover them; any other (transient) failure surfaces as an error rather than silently
-                    // degrading to a different paywall.
-                    if (!purchases.isRemoteConfigDisabled) throw e
-                    Logger.w(
-                        "Paywalls: Failed to fetch workflow for offering '${workflowOffering.identifier}' " +
-                            "(${e.message}). Falling back to the offerings-provided paywall.",
-                    )
-                    val reloaded = reloadOfferingAfterConfigDisabled(workflowOffering)
-                    return WorkflowOutcome.Fallback(reloaded.offering, reloaded.offerings)
+                    // The workflow id resolved but its body or ui config could not be served. Reloading offerings
+                    // would only yield the offering's skipped-away components, so surface the error instead of
+                    // silently degrading to a different paywall. Clear any stale workflow UI first so the error
+                    // isn't masked by a prior successful workflow render.
+                    clearWorkflowState()
+                    throw e
                 }
             }
             WorkflowResolution.NoWorkflow -> {
@@ -902,25 +897,26 @@ internal class PaywallViewModelImpl(
                 clearWorkflowState()
                 return WorkflowOutcome.Fallback(workflowOffering, preloadedOfferings)
             }
-            WorkflowResolution.Unresolved -> {
-                // The workflows topic could not be read at all, so whether this offering has a workflow is
-                // unknown. A 4xx kill switch means the offering was parsed with its components skipped, so reload
-                // it from /offerings to recover them. A transient failure instead surfaces as an error rather
-                // than silently degrading to the default paywall.
-                if (!purchases.isRemoteConfigDisabled) {
-                    throw PurchasesException(
-                        PurchasesError(
-                            PurchasesErrorCode.UnknownError,
-                            "Could not resolve the workflow for offering '${workflowOffering.identifier}'.",
-                        ),
-                    )
-                }
+            WorkflowResolution.Disabled -> {
+                // A 4xx kill switch disabled remote config. The offering was parsed with its components skipped,
+                // so reload it from /offerings — which now re-parse with those components — to recover its paywall.
                 Logger.w(
                     "Paywalls: Workflows unavailable for offering '${workflowOffering.identifier}' after a " +
                         "remote config disable. Falling back to the offerings-provided paywall.",
                 )
                 val reloaded = reloadOfferingAfterConfigDisabled(workflowOffering)
                 return WorkflowOutcome.Fallback(reloaded.offering, reloaded.offerings)
+            }
+            WorkflowResolution.Unavailable -> {
+                // The workflows topic could not be read and remote config is not disabled (a transient failure),
+                // so whether this offering has a workflow is unknown and reloading would recover nothing. Surface
+                // an error rather than silently degrading to the default paywall.
+                throw PurchasesException(
+                    PurchasesError(
+                        PurchasesErrorCode.UnknownError,
+                        "Could not resolve the workflow for offering '${workflowOffering.identifier}'.",
+                    ),
+                )
             }
         }
     }

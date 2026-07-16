@@ -427,11 +427,6 @@ public class Purchases internal constructor(
     public suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         purchasesOrchestrator.resolveWorkflow(offeringId)
 
-    @InternalRevenueCatAPI
-    @get:JvmSynthetic
-    public val isRemoteConfigDisabled: Boolean
-        get() = purchasesOrchestrator.isRemoteConfigDisabled
-
     /**
      * Gets the StoreProduct(s) for the given list of product ids for all product types.
      * @param [productIds] List of productIds

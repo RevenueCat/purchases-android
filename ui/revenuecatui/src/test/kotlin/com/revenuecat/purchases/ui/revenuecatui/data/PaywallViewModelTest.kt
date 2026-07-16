@@ -234,7 +234,6 @@ class PaywallViewModelTest {
         every { purchases.preferredUILocaleOverride } returns null
         every { purchases.useWorkflows } returns false
         coEvery { purchases.resolveWorkflow(any()) } returns WorkflowResolution.NoWorkflow
-        every { purchases.isRemoteConfigDisabled } returns false
         coEvery { purchases.awaitGetUiConfig() } returns UiConfig()
 
         every { listener.onPurchaseStarted(any()) } just runs
@@ -3200,54 +3199,16 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `when useWorkflows is true and the workflow fetch fails, reloads its paywall from offerings`() {
-        // A 4xx disables the config endpoint for the session. The initial offering was parsed while workflows
-        // were enabled, so it has no components. Reload it from /offerings after the disable to get its paywall.
-        val workflowId = "wfl-unavailable"
-        val offeringWithoutComponents = offeringWithWPL.copy(paywallComponents = null)
-        val reloadedOfferings = Offerings(
-            current = offeringWithWPL,
-            all = mapOf(offeringWithWPL.identifier to offeringWithWPL),
-        )
-        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Found(workflowId)
-        coEvery { purchases.awaitGetWorkflow(workflowId) } throws PurchasesException(
-            PurchasesError(PurchasesErrorCode.UnknownError, "Workflow is unavailable from remote config."),
-        )
-        every { purchases.isRemoteConfigDisabled } returns true
-        coEvery { purchases.awaitOfferings() } returns reloadedOfferings
-
-        val model = PaywallViewModelImpl(
-            MockResourceProvider(),
-            purchases,
-            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
-                .setListener(listener)
-                .setOffering(offeringWithoutComponents)
-                .build(),
-            TestData.Constants.currentColorScheme,
-            isDarkMode = false,
-            shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
-        )
-
-        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
-        val reloadedOffering = (model.state.value as PaywallState.Loaded.Components).offering
-        assertThat(reloadedOffering.identifier).isEqualTo(offeringWithWPL.identifier)
-        assertThat(reloadedOffering.paywallComponents).isNotNull()
-        coVerify(exactly = 1) { purchases.awaitGetWorkflow(workflowId) }
-    }
-
-    @Test
-    fun `when useWorkflows is true and the workflow fetch fails transiently, surfaces the error`() {
-        // The workflow id resolved but its body could not be fetched, and remote config is NOT disabled (a
-        // transient failure). Reloading offerings would re-parse with components still skipped, so there is
-        // nothing to recover — the paywall surfaces the error instead of silently degrading.
+    fun `when useWorkflows is true and the workflow fetch fails, surfaces the error`() {
+        // The workflow id resolved but its body or ui config could not be served. Reloading offerings would only
+        // yield the offering's skipped-away components, so the paywall surfaces the error instead of silently
+        // degrading to a different paywall.
         val workflowId = "wfl-unavailable"
         val offeringWithoutComponents = offeringWithWPL.copy(paywallComponents = null)
         coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Found(workflowId)
         coEvery { purchases.awaitGetWorkflow(workflowId) } throws PurchasesException(
             PurchasesError(PurchasesErrorCode.UnknownError, "Workflow is unavailable from remote config."),
         )
-        every { purchases.isRemoteConfigDisabled } returns false
 
         val model = PaywallViewModelImpl(
             MockResourceProvider(),
@@ -3267,16 +3228,15 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `when useWorkflows is true and the workflows topic is unresolved after a disable, reloads from offerings`() {
-        // A 4xx disabled the config endpoint before the workflow id could be resolved. The offering was parsed
-        // with its components skipped, so reload it from /offerings after the disable to recover its paywall.
+    fun `when useWorkflows is true and the workflows topic is disabled by a 4xx, reloads its paywall from offerings`() {
+        // A 4xx disabled the config endpoint for the session. The initial offering was parsed while workflows
+        // were enabled, so it has no components. Reload it from /offerings after the disable to get its paywall.
         val offeringWithoutComponents = offeringWithWPL.copy(paywallComponents = null)
         val reloadedOfferings = Offerings(
             current = offeringWithWPL,
             all = mapOf(offeringWithWPL.identifier to offeringWithWPL),
         )
-        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Unresolved
-        every { purchases.isRemoteConfigDisabled } returns true
+        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Disabled
         coEvery { purchases.awaitOfferings() } returns reloadedOfferings
 
         val model = PaywallViewModelImpl(
@@ -3294,17 +3254,17 @@ class PaywallViewModelTest {
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
         val reloadedOffering = (model.state.value as PaywallState.Loaded.Components).offering
+        assertThat(reloadedOffering.identifier).isEqualTo(offeringWithWPL.identifier)
         assertThat(reloadedOffering.paywallComponents).isNotNull()
         coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
     }
 
     @Test
-    fun `when useWorkflows is true and the workflows topic is unresolved transiently, surfaces the error`() {
-        // The workflows topic could not be read but remote config is NOT disabled (a transient sync failure).
-        // Reloading offerings would not recover components, so surface the error instead of degrading to default.
+    fun `when useWorkflows is true and the workflows topic is unavailable, surfaces the error`() {
+        // The workflows topic could not be read and remote config is not disabled (a transient failure), so
+        // reloading offerings would recover nothing — surface the error instead of degrading to the default.
         val offeringWithoutComponents = offeringWithWPL.copy(paywallComponents = null)
-        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Unresolved
-        every { purchases.isRemoteConfigDisabled } returns false
+        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Unavailable
 
         val model = PaywallViewModelImpl(
             MockResourceProvider(),
