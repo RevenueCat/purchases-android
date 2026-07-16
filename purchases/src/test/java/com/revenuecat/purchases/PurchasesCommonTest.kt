@@ -2994,7 +2994,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     @Test
     fun `remote config disable invalidates the offerings cache then refetches from network`() {
-        every { mockOfferingsManager.clearInMemoryOfferingsCache() } just Runs
+        every { mockOfferingsManager.clearInMemoryOfferingsCache(true) } just Runs
         every { mockOfferingsManager.fetchAndCacheOfferings(appUserId, false, any(), any()) } just Runs
 
         // Capture the disable listener the orchestrator registered on construction.
@@ -3006,7 +3006,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         // The in-memory cache must be dropped BEFORE the refetch, so getOfferings callers in the window take the
         // cache-miss -> network path (freshly decoded components) instead of the stale null-component offerings.
         verifyOrder {
-            mockOfferingsManager.clearInMemoryOfferingsCache()
+            mockOfferingsManager.clearInMemoryOfferingsCache(true)
             mockOfferingsManager.fetchAndCacheOfferings(appUserId, false, any(), any())
         }
     }
