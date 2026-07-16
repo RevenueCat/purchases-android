@@ -23,13 +23,10 @@ internal data class ETagData(
 
 /**
  * Everything the ETag cache persists about a response except its payload, stored as a small flat JSON
- * under the URL key; the payload lives in an [ETagPayloadStore] file.
+ * under [ETagManager.metadataKey]; the payload lives in an [ETagPayloadStore] file. The versioned key
+ * keeps downgrades safe: older SDKs only read the bare URL key and simply refetch.
  *
  * `origin` is intentionally not persisted: stored results always read back as [HTTPResult.Origin.CACHE].
- *
- * Downgrade note: older SDKs cannot parse this format and fail these entries as request errors (not
- * crashes) without self-healing until the cache is cleared, since the failure happens before any
- * response could overwrite the entry. Accepted tradeoff for keeping the URL as the metadata key.
  */
 @OptIn(InternalRevenueCatAPI::class)
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -194,17 +191,14 @@ internal class ETagManager(
 
     @Suppress("ReturnCount")
     internal fun getStoredResult(urlString: String): HTTPResult? {
-        val serialized = prefs.value.getString(urlString, null) ?: return null
-        val metadata = ETagCacheMetadata.deserialize(serialized)
-        if (metadata != null) {
-            // Lock-free read: a store racing between the metadata and payload reads fails the size check,
-            // costing one spurious miss plus its refresh retry. The size check itself is what turns a
-            // truncated file into a miss here: downstream, HTTPResult.body swallows the parse failure and
-            // the server keeps answering 304 for its eTag, so a bad entry would never heal.
-            val payload = payloadStore.read(urlString, metadata.payloadSizeBytes) ?: return null
-            return metadata.toHTTPResult(payload)
-        }
-        return null
+        val serialized = prefs.value.getString(metadataKey(urlString), null) ?: return null
+        val metadata = ETagCacheMetadata.deserialize(serialized) ?: return null
+        // Lock-free read: a store racing between the metadata and payload reads fails the size check,
+        // costing one spurious miss plus its refresh retry. The size check itself is what turns a
+        // truncated file into a miss here: downstream, HTTPResult.body swallows the parse failure and
+        // the server keeps answering 304 for its eTag, so a bad entry would never heal.
+        val payload = payloadStore.read(urlString, metadata.payloadSizeBytes) ?: return null
+        return metadata.toHTTPResult(payload)
     }
 
     internal fun storeBackendResultIfNoError(
@@ -245,13 +239,12 @@ internal class ETagManager(
     private fun persistEntry(urlString: String, metadata: ETagCacheMetadata, payload: String) {
         val payloadSizeBytes = payloadStore.write(urlString, payload) ?: return
         prefs.value.edit()
-            .putString(urlString, metadata.copy(payloadSizeBytes = payloadSizeBytes).serialize())
+            .putString(metadataKey(urlString), metadata.copy(payloadSizeBytes = payloadSizeBytes).serialize())
             .apply()
     }
 
     private fun getStoredMetadata(urlString: String): ETagCacheMetadata? {
-        val serialized = prefs.value.getString(urlString, null) ?: return null
-        return ETagCacheMetadata.deserialize(serialized)
+        return prefs.value.getString(metadataKey(urlString), null)?.let { ETagCacheMetadata.deserialize(it) }
     }
 
 
@@ -272,6 +265,13 @@ internal class ETagManager(
     }
 
     companion object {
+        // Downgrade safety: older SDKs look up the bare URL key, so versioned entries are inert to
+        // them and they simply refetch. URLs are always absolute, so no URL starts with "v2:".
+        private const val METADATA_KEY_PREFIX = "v2:"
+
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal fun metadataKey(urlString: String): String = METADATA_KEY_PREFIX + urlString
+
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
                 "${context.packageName}_preferences_etags",

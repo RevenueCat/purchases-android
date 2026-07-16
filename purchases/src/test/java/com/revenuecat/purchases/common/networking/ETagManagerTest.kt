@@ -348,7 +348,7 @@ class ETagManagerTest {
         // Byte-for-byte what we received: never escaped, and never written into the prefs JSON.
         // (ETagManagerMemoryTest gates the allocation cost of this path.)
         assertThat(payloadStore.read(urlString)).isEqualTo(payload)
-        assertThat(putStringKeys).containsExactly(urlString)
+        assertThat(putStringKeys).containsExactly(ETagManager.metadataKey(urlString))
     }
 
     @Test
@@ -719,7 +719,7 @@ class ETagManagerTest {
             ETagData("etag", testDate),
         )
         val corrupted = metadata.serialize().replace("NOT_REQUESTED", "SOMETHING_UNKNOWN")
-        every { mockedPrefs.getString(urlString, null) } returns corrupted
+        every { mockedPrefs.getString(ETagManager.metadataKey(urlString), null) } returns corrupted
 
         val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
 
@@ -734,7 +734,7 @@ class ETagManagerTest {
             HTTPResult.createResult(payload = payload, origin = HTTPResult.Origin.CACHE),
             ETagData("etag", testDate),
         ).copy(payloadSizeBytes = payload.length + 100L)
-        every { mockedPrefs.getString(urlString, null) } returns metadata.serialize()
+        every { mockedPrefs.getString(ETagManager.metadataKey(urlString), null) } returns metadata.serialize()
         payloadStore.write(urlString, payload)
 
         assertThat(underTest.getStoredResult(urlString)).isNull()
@@ -747,7 +747,7 @@ class ETagManagerTest {
             HTTPResult.createResult(origin = HTTPResult.Origin.CACHE),
             ETagData("etag", testDate),
         )
-        every { mockedPrefs.getString(urlString, null) } returns metadata.serialize()
+        every { mockedPrefs.getString(ETagManager.metadataKey(urlString), null) } returns metadata.serialize()
 
         assertThat(underTest.getStoredResult(urlString)).isNull()
     }
@@ -810,7 +810,7 @@ class ETagManagerTest {
             ETagCacheMetadata.fromResult(httpResult, ETagData(expectedETag, expectedLastRefreshTime))
         }
         every {
-            mockedPrefs.getString(urlString, null)
+            mockedPrefs.getString(ETagManager.metadataKey(urlString), null)
         } returns metadata?.serialize()
         if (metadata != null) {
             payloadStore.write(urlString, httpResult.payloadText)
@@ -826,7 +826,7 @@ class ETagManagerTest {
     ) {
         val storedByKey = putStringKeys.zip(putStringValues).toMap()
 
-        val metadata = ETagCacheMetadata.deserialize(storedByKey.getValue(urlString))
+        val metadata = ETagCacheMetadata.deserialize(storedByKey.getValue(ETagManager.metadataKey(urlString)))
         assertThat(metadata).isNotNull
         assertThat(metadata!!.eTagData.eTag).isEqualTo(eTagInResponse)
         assertThat(metadata.eTagData.lastRefreshTime?.time).isEqualTo(lastRefreshTime?.time)
