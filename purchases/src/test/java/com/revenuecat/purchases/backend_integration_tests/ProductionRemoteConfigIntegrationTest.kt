@@ -48,9 +48,8 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         assertThat(error).isNull()
         assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
         val rcContainer = requireNotNull(container) { "Expected a 200 container, got 204 (no content)." }
-        assertThat(rcContainer.config.isChecksumValid()).isTrue()
 
-        val config = RemoteConfiguration.parse(rcContainer.config.decode())
+        val config = RemoteConfiguration.parse(rcContainer.config)
         assertThat(config.domain).isEqualTo("app")
         assertThat(config.manifest).isNotEmpty()
         assertThat(config.activeTopics).contains("sources", "ui_config", "workflows")
@@ -85,24 +84,20 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
         val rcContainer = requireNotNull(container) { "Expected a 200 container, got 204 (no content)." }
 
-        val config = RemoteConfiguration.parse(rcContainer.config.decode())
+        val config = RemoteConfiguration.parse(rcContainer.config)
 
-        // Pick a workflows item whose blob was inlined in the container, so we can decode it directly.
+        // The refs of workflows items whose bodies the container may have inlined.
         val workflows = requireNotNull(config.topics["workflows"]) { "Expected a workflows topic." }
-        val ref = requireNotNull(
-            workflows.values.mapNotNull { it.blobRef }.firstOrNull { it in rcContainer.elements },
-        ) { "Expected a workflows item with an inlined blob_ref." }
-        val element = rcContainer.elements.getValue(ref)
+        val wantedRefs = workflows.values.mapNotNull { it.blobRef }.toSet()
 
-        // isChecksumValid() decodes (uncompresses) the element and checks the SHA-256 of the
-        // uncompressed bytes against the advertised ref, so a true result proves the uncompression
-        // produced exactly the content the backend addressed.
-        assertThat(element.isChecksumValid()).isTrue()
+        // Find an inlined workflows item and capture its decoded bytes. decode() uncompresses and checks the
+        // SHA-256 against the advertised ref, so the bytes are exactly the content the backend addressed there.
+        val element = requireNotNull(rcContainer.contentElements.firstOrNull { it.checksumBase64() in wantedRefs }) {
+            "Expected a workflows item with an inlined blob_ref."
+        }
 
         // The decoded bytes are real, structured content (a non-empty JSON object), not garbage.
-        val decodedView = element.decode().duplicate().apply { rewind() }
-        val decodedBytes = ByteArray(decodedView.remaining()).also { decodedView.get(it) }
-        val json = JsonProvider.defaultJson.parseToJsonElement(decodedBytes.decodeToString())
+        val json = JsonProvider.defaultJson.parseToJsonElement(element.decode().decodeToString())
         assertThat(json.jsonObject).isNotEmpty()
     }
 
@@ -179,7 +174,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         assertThat(firstError).isNull()
         assertThat(firstVerification).isEqualTo(VerificationResult.VERIFIED)
         val rcContainer = requireNotNull(firstContainer) { "Expected a 200 container on the first run." }
-        val manifest = RemoteConfiguration.parse(rcContainer.config.decode()).manifest
+        val manifest = RemoteConfiguration.parse(rcContainer.config).manifest
 
         // Replaying that manifest with nothing changed server-side -> 204 (success, but no container to parse).
         // A non-`app_start` context is required: the backend always fully resolves an `app_start` request, so it
@@ -213,7 +208,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         val (firstError, firstContainer, _) = fetchRemoteConfig(manifest = null)
         assertThat(firstError).isNull()
         val rcContainer = requireNotNull(firstContainer) { "Expected a 200 container on the first run." }
-        val manifest = RemoteConfiguration.parse(rcContainer.config.decode()).manifest
+        val manifest = RemoteConfiguration.parse(rcContainer.config).manifest
 
         // The 204 carries no body, but its signature covers the request context. Under enforcement a verification
         // failure would surface as an error, so a null error with a VERIFIED result confirms the 204 was verified.

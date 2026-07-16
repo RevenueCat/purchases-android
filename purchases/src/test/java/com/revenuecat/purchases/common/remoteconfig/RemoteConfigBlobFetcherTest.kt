@@ -33,7 +33,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.ByteArrayInputStream
-import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
@@ -88,9 +87,9 @@ class RemoteConfigBlobFetcherTest {
 
         // The placeholder is substituted with the ref before the request is made.
         verify { urlConnectionFactory.createConnection(urlFor(ref), any()) }
-        val written = slot<ByteBuffer>()
+        val written = slot<ByteArray>()
         verify { blobStore.write(ref, capture(written)) }
-        assertThat(written.captured.toBytes()).isEqualTo(bytes)
+        assertThat(written.captured).isEqualTo(bytes)
     }
 
     @Test
@@ -450,11 +449,6 @@ class RemoteConfigBlobFetcherTest {
     private fun refOf(bytes: ByteArray): String {
         val digest = MessageDigest.getInstance("SHA-256").digest(bytes)
         return Base64.encodeToString(digest.copyOf(REF_HASH_BYTES), Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
-    }
-
-    private fun ByteBuffer.toBytes(): ByteArray {
-        val view = duplicate().apply { rewind() }
-        return ByteArray(view.remaining()).also { view.get(it) }
     }
 
     private class FakeTopicStore(private val sources: ConfigTopic?) : RemoteConfigTopicStore {
