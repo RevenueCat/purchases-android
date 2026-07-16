@@ -56,6 +56,7 @@ import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
+import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
@@ -165,6 +166,7 @@ internal class PurchasesOrchestrator(
     val fileRepository: FileRepository = DefaultFileRepository(application),
     private val remoteConfigManager: RemoteConfigManager? = null,
     private val uiConfigProvider: UiConfigProvider? = null,
+    private val workflowsConfigProvider: WorkflowsConfigProvider? = null,
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
@@ -586,44 +588,24 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    fun getWorkflow(
-        workflowId: String,
-        onSuccess: (PublishedWorkflow) -> Unit,
-        onError: (PurchasesError) -> Unit,
-    ) {
-        // Deliver every outcome through dispatch so the callback always lands on the main thread,
-        // matching the rest of the SDK's callback APIs (e.g. getOfferings, getCustomerInfo).
-        // WorkflowManager.getWorkflow intentionally has no fixed delivery thread — a cache hit calls
-        // back synchronously on the caller's thread while a miss resolves on its IO scope, and the
-        // prefetch path routes detail callbacks onto a dedicated dispatcher — so normalizing here, at
-        // the consumer boundary, is what gives callers (including awaitGetWorkflow) a stable thread.
+    /**
+     * Resolves a workflow by workflow or offering id, or throws [PurchasesException] when it can't be served.
+     * Memory-first via [WorkflowManager.getWorkflow]: a warm cache resumes synchronously on the caller's thread
+     * with no dispatch, so a paywall render on a `Dispatchers.Main.immediate` coroutine never suspends.
+     */
+    suspend fun getWorkflow(workflowId: String): PublishedWorkflow {
         if (appConfig.uiPreviewMode) {
-            dispatch {
-                onError(
-                    PurchasesError(
-                        PurchasesErrorCode.ConfigurationError,
-                        "Workflows cannot be fetched in UI preview mode.",
-                    ),
-                )
-            }
-            return
+            throw PurchasesException(
+                PurchasesError(
+                    PurchasesErrorCode.ConfigurationError,
+                    "Workflows cannot be fetched in UI preview mode.",
+                ),
+            )
         }
-        if (workflowManager == null) {
-            dispatch {
-                onError(
-                    PurchasesError(
-                        PurchasesErrorCode.ConfigurationError,
-                        "Workflows are not enabled.",
-                    ),
-                )
-            }
-            return
-        }
-        workflowManager.getWorkflow(
-            workflowOrOfferingId = workflowId,
-            onSuccess = { dispatch { onSuccess(it) } },
-            onError = { dispatch { onError(it) } },
+        val manager = workflowManager ?: throw PurchasesException(
+            PurchasesError(PurchasesErrorCode.ConfigurationError, "Workflows are not enabled."),
         )
+        return manager.getWorkflow(workflowId)
     }
 
     suspend fun workflowIdForOfferingId(offeringId: String): String? =
@@ -889,6 +871,8 @@ internal class PurchasesOrchestrator(
         this.backend.close()
         this.remoteConfigManager?.close()
         this.workflowManager?.close()
+        this.uiConfigProvider?.close()
+        this.workflowsConfigProvider?.close()
 
         billing.close()
         updatedCustomerInfoListener = null // Do not call on state since the setter does more stuff

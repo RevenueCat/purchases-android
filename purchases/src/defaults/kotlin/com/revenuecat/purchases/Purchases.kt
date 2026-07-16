@@ -57,9 +57,6 @@ import org.json.JSONObject
 import java.net.URL
 import java.util.Locale
 import java.util.UUID
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -417,13 +414,7 @@ public class Purchases internal constructor(
     @Throws(PurchasesException::class)
     public suspend fun awaitGetWorkflow(
         workflowId: String,
-    ): PublishedWorkflow = suspendCoroutine { continuation ->
-        purchasesOrchestrator.getWorkflow(
-            workflowId = workflowId,
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
-        )
-    }
+    ): PublishedWorkflow = purchasesOrchestrator.getWorkflow(workflowId)
 
     @InternalRevenueCatAPI
     @JvmSynthetic
