@@ -2,7 +2,6 @@
   "statusCode": 200,
   "headers": {
     "Connection": "keep-alive",
-    "Content-Length": "91379",
     "Content-Type": "application\/json",
     "access-control-allow-origin": "*",
     "server": "envoy",
