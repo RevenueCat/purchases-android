@@ -281,7 +281,7 @@ internal class RemoteConfigManager(
         }
         scope.launch {
             try {
-                val response = RemoteConfiguration.parse(container.config.decode())
+                val response = RemoteConfiguration.parse(container.config)
                 synchronized(cacheLock) {
                     if (epoch.get() != requestEpoch) return@launch
                     persist(previous = persisted, response = response, container = container)
@@ -857,24 +857,21 @@ internal class RemoteConfigManager(
 
     /** Caches inlined content elements the config still wants, whose bytes match their content-address ref. */
     private fun extractInlineBlobs(container: RCContainer, refsToKeep: Set<String>) {
-        container.elements.forEach { (ref, element) ->
-            if (ref !in refsToKeep) return@forEach
-            // Decode once (the on-wire bytes may be compressed), then verify and store the uncompressed
-            // bytes: the blob store is content-addressed by the hash of the uncompressed payload.
+        // Decide by ref before decoding so a blob we don't need (not referenced, or already cached) is never
+        // decompressed, and decode one at a time so the whole uncompressed payload is never held at once —
+        // inline blobs can be large.
+        container.contentElements.forEach { element ->
+            val ref = element.checksumBase64()
+            if (ref !in refsToKeep || blobStore.contains(ref)) return@forEach
             val decoded = try {
                 element.decode()
             } catch (e: RCContainerFormatException) {
-                errorLog(e) { "Skipping remote config blob '$ref': could not decode element." }
+                errorLog(e) { "Skipping remote config blob '$ref': could not decode or verify its content." }
                 return@forEach
             }
-            if (element.matchesChecksum(decoded)) {
-                val size = decoded.remaining()
-                // write() logs its own error on failure; only report success when it actually stored the blob.
-                if (blobStore.write(ref, decoded)) {
-                    verboseLog { "Stored inlined remote config blob '$ref' ($size bytes)." }
-                }
-            } else {
-                errorLog { "Skipping remote config blob '$ref': checksum verification failed." }
+            // write() logs its own error on failure; only report success when it actually stored the blob.
+            if (blobStore.write(ref, decoded)) {
+                verboseLog { "Stored inlined remote config blob '$ref' (${decoded.size} bytes)." }
             }
         }
     }

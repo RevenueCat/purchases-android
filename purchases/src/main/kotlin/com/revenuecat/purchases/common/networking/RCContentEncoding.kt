@@ -30,15 +30,14 @@ internal enum class RCContentEncoding(val id: Int) {
         fun fromId(id: Int): RCContentEncoding? = values().firstOrNull { it.id == id }
 
         /**
-         * Returns the uncompressed bytes of [source] for the given [codecId].
-         *
-         * [NONE] returns [source] unchanged (zero-copy). [GZIP] inflates into a fresh read-only buffer. Any
-         * other codec (including the known-but-unsupported [BROTLI]/[ZSTD]) or a corrupt gzip stream throws
+         * The uncompressed bytes of [source] for the given [codecId], as a fresh [ByteArray] detached from
+         * [source]'s backing buffer. [NONE] copies the bytes out; [GZIP] inflates into a new array. Any other
+         * codec (including the known-but-unsupported [BROTLI]/[ZSTD]) or a corrupt gzip stream throws
          * [RCContainerFormatException]; callers treat that as a verification/decode failure.
          */
-        fun decode(source: ByteBuffer, codecId: Int): ByteBuffer = when (fromId(codecId)) {
-            NONE -> source
-            GZIP -> ByteBuffer.wrap(gunzip(source)).asReadOnlyBuffer()
+        fun decode(source: ByteBuffer, codecId: Int): ByteArray = when (fromId(codecId)) {
+            NONE -> source.toByteArray()
+            GZIP -> gunzip(source)
             BROTLI, ZSTD, null ->
                 throw RCContainerFormatException("Unsupported content encoding id $codecId.")
         }

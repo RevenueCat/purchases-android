@@ -24,6 +24,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.common.workflows.WorkflowScreenType
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
@@ -799,38 +800,28 @@ internal class PaywallViewModelImpl(
         }
 
         val resolvedOfferingSelection = resolveOfferingSelection(offeringSelection)
-        val selectedOffering = resolvedOfferingSelection.selectedOffering
+        var selectedOffering = resolvedOfferingSelection.selectedOffering
+        var offeringsForExitOfferLookup = resolvedOfferingSelection.offeringsForExitOfferLookup
 
         // When workflows are enabled, every non-legacy paywall is served through the workflows
         // path. `offering.paywall == null` is the durable marker of a non-legacy (workflow)
         // paywall: a legacy v1 paywall always carries `offering.paywall`, and that field stays
         // even after `paywallComponents` is removed and all V2 paywalls move to workflows. We
         // deliberately do NOT gate on `paywallComponents`, which is going away.
-        if (useWorkflowsEndpoint && selectedOffering != null && selectedOffering.paywall == null) {
-            try {
-                presentWorkflow(selectedOffering, resolvedOfferingSelection.offeringsForExitOfferLookup)
-                return
-            } catch (e: PurchasesException) {
-                // The workflow could not be served — the config endpoint is disabled for the session
-                // (4xx kill switch), unreachable, or the offering has no workflow yet. Degrade to the
-                // paywall /offerings already delivered so the app still shows something; rethrow
-                // (→ PaywallState.Error) only when there is nothing to fall back to.
-                if (selectedOffering.paywallComponents == null) throw e
-                // A prior render on this ViewModel may have been a successful workflow, leaving
-                // _workflowState non-null. InternalPaywall renders the workflow UI whenever workflowState
-                // is non-null, so without clearing it the stale workflow would mask the offerings fallback
-                // we're about to set via updatePaywallState.
-                clearWorkflowState()
-                Logger.w(
-                    "Paywalls: Failed to fetch workflow for offering '${selectedOffering.identifier}' " +
-                        "(${e.message}). Falling back to the offerings-provided paywall.",
-                )
+        val workflowOffering = selectedOffering
+        if (useWorkflowsEndpoint && workflowOffering != null && workflowOffering.paywall == null) {
+            when (val outcome = presentWorkflowOrResolveFallback(workflowOffering, offeringsForExitOfferLookup)) {
+                WorkflowOutcome.Presented -> return
+                is WorkflowOutcome.Fallback -> {
+                    selectedOffering = outcome.offering
+                    offeringsForExitOfferLookup = outcome.offerings
+                }
             }
         }
 
         val exitOfferingId = selectedOffering?.paywallComponents?.data?.exitOffers?.dismiss?.offeringId
 
-        val offerings = resolvedOfferingSelection.offeringsForExitOfferLookup
+        val offerings = offeringsForExitOfferLookup
         updateExitOfferData(
             if (exitOfferingId != null && offerings != null) {
                 ExitOfferData.Configured(
@@ -866,20 +857,73 @@ internal class PaywallViewModelImpl(
         return true
     }
 
-    private suspend fun presentWorkflow(offering: Offering, preloadedOfferings: Offerings?) {
-        // Resolve the offering to its configured workflow id, which aligns with the prefetch cache key. The
-        // config path has no backend lazy offering→workflow conversion, so a missing mapping should fail
-        // immediately instead of attempting a guaranteed-miss blob read (and potentially an on-demand sync).
-        val workflowIdentifier = purchases.workflowIdForOfferingId(offering.identifier) ?: run {
-            throw PurchasesException(
-                PurchasesError(
-                    PurchasesErrorCode.UnknownError,
-                    "No workflow is configured for offering '${offering.identifier}'.",
-                ),
-            )
+    private sealed interface WorkflowOutcome {
+        /** The workflow was presented; the caller should stop and not render an offerings paywall. */
+        object Presented : WorkflowOutcome
+
+        /** Render the offering's own paywall using [offering] and [offerings] instead of a workflow. */
+        data class Fallback(val offering: Offering, val offerings: Offerings?) : WorkflowOutcome
+    }
+
+    /**
+     * Resolves [workflowOffering] to its workflow and either presents it or decides how to fall back: a
+     * workflowless offering renders its own paywall, a 4xx kill switch reloads offerings to recover the
+     * components skipped during the workflows-enabled parse, and any other failure throws (→ error state).
+     */
+    @Suppress("ReturnCount")
+    private suspend fun presentWorkflowOrResolveFallback(
+        workflowOffering: Offering,
+        preloadedOfferings: Offerings?,
+    ): WorkflowOutcome {
+        when (val resolution = purchases.resolveWorkflow(workflowOffering.identifier)) {
+            is WorkflowResolution.Found -> {
+                try {
+                    presentWorkflow(resolution.workflowId, workflowOffering, preloadedOfferings)
+                    return WorkflowOutcome.Presented
+                } catch (e: PurchasesException) {
+                    // The workflow id resolved but its body or ui config could not be served. Reloading offerings
+                    // would only yield the offering's skipped-away components, so surface the error instead of
+                    // silently degrading to a different paywall. Clear any stale workflow UI first so the error
+                    // isn't masked by a prior successful workflow render.
+                    clearWorkflowState()
+                    throw e
+                }
+            }
+            WorkflowResolution.NoWorkflow -> {
+                // The workflows topic was readable and this offering genuinely has no workflow, so render its
+                // regular or default paywall. A prior render on this ViewModel may have been a successful
+                // workflow, leaving _workflowState non-null; InternalPaywall renders the workflow UI whenever
+                // workflowState is non-null, so clear it or the stale workflow would mask the offerings fallback.
+                clearWorkflowState()
+                return WorkflowOutcome.Fallback(workflowOffering, preloadedOfferings)
+            }
+            WorkflowResolution.Disabled -> {
+                // A 4xx kill switch disabled remote config. The offering was parsed with its components skipped,
+                // so reload it from /offerings — which now re-parse with those components — to recover its paywall.
+                Logger.w(
+                    "Paywalls: Workflows unavailable for offering '${workflowOffering.identifier}' after a " +
+                        "remote config disable. Falling back to the offerings-provided paywall.",
+                )
+                val reloaded = reloadOfferingAfterConfigDisabled(workflowOffering)
+                return WorkflowOutcome.Fallback(reloaded.offering, reloaded.offerings)
+            }
+            WorkflowResolution.Unavailable -> {
+                // The workflows topic could not be read and remote config is not disabled (a transient failure),
+                // so whether this offering has a workflow is unknown and reloading would recover nothing. Surface
+                // an error rather than silently degrading to the default paywall.
+                throw PurchasesException(
+                    PurchasesError(
+                        PurchasesErrorCode.UnknownError,
+                        "Could not resolve the workflow for offering '${workflowOffering.identifier}'.",
+                    ),
+                )
+            }
         }
+    }
+
+    private suspend fun presentWorkflow(workflowId: String, offering: Offering, preloadedOfferings: Offerings?) {
         coroutineScope {
-            val workflowDeferred = async { purchases.awaitGetWorkflow(workflowIdentifier) }
+            val workflowDeferred = async { purchases.awaitGetWorkflow(workflowId) }
             val uiConfigDeferred = async { purchases.awaitGetUiConfig() }
             val offeringsDeferred = async { preloadedOfferings ?: purchases.awaitOfferings() }
             startWorkflowPresentation(
@@ -890,6 +934,24 @@ internal class PaywallViewModelImpl(
             )
         }
     }
+
+    /**
+     * Reloads offerings after the `/v1/config` endpoint was disabled by a 4xx kill switch. The disable makes
+     * `/offerings` re-parse with the paywall components that were skipped while workflows were enabled, so the
+     * offering's own paywall can be recovered. Falls back to [originalOffering] when it is no longer present in
+     * the reloaded offerings (rather than leaving no offering to render), and clears any stale workflow state so
+     * the fallback isn't masked by a prior successful workflow render.
+     */
+    private suspend fun reloadOfferingAfterConfigDisabled(originalOffering: Offering): ReloadedOffering {
+        val reloadedOfferings = purchases.awaitOfferings()
+        val reloadedOffering = reloadedOfferings[originalOffering.identifier]?.let { offering ->
+            originalOffering.presentedOfferingContext?.let(offering::copy) ?: offering
+        } ?: originalOffering
+        clearWorkflowState()
+        return ReloadedOffering(reloadedOffering, reloadedOfferings)
+    }
+
+    private data class ReloadedOffering(val offering: Offering, val offerings: Offerings)
 
     private suspend fun resolveOfferingSelection(offeringSelection: OfferingSelection): ResolvedOfferingSelection =
         when (offeringSelection) {
