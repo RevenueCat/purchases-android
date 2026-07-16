@@ -820,7 +820,7 @@ internal class PaywallViewModelImpl(
                 // likely parsed while components were skipped. Re-fetch it after the kill switch so its
                 // offerings-provided paywall components can be rendered.
                 val reloadedOfferings = purchases.awaitOfferings()
-                val reloadedOffering = reloadedOfferings[workflowOffering.identifier] ?: reloadedOfferings.current
+                val reloadedOffering = reloadedOfferings[workflowOffering.identifier]
                 selectedOffering = reloadedOffering?.let { offering ->
                     workflowOffering.presentedOfferingContext?.let(offering::copy) ?: offering
                 }
