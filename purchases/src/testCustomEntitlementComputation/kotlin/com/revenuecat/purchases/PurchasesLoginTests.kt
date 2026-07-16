@@ -1,6 +1,7 @@
 package com.revenuecat.purchases
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -50,7 +51,9 @@ internal class PurchasesLoginTests : BasePurchasesTest() {
 
         purchases.switchUser(newAppUserID)
 
-        verify(exactly = 1) { mockRemoteConfigManager.refreshRemoteConfig(false, newAppUserID) }
+        verify(exactly = 1) {
+            mockRemoteConfigManager.refreshRemoteConfig(false, newAppUserID, RemoteConfigFetchContext.IdentityChange)
+        }
     }
 
     @Test
@@ -65,7 +68,7 @@ internal class PurchasesLoginTests : BasePurchasesTest() {
 
         verify(exactly = 0) { mockIdentityManager.switchUser(newAppUserID) }
         verify(exactly = 0) { mockOfferingsManager.fetchAndCacheOfferings(newAppUserID, false, any(), any()) }
-        verify(exactly = 0) { mockRemoteConfigManager.refreshRemoteConfig(any(), any()) }
+        verify(exactly = 0) { mockRemoteConfigManager.refreshRemoteConfig(any(), any(), any()) }
     }
     // endregion
 }
