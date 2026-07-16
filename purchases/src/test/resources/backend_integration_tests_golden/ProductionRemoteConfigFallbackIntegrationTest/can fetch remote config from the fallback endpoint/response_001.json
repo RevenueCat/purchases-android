@@ -2,7 +2,7 @@
   "statusCode": 200,
   "headers": {
     "Connection": "keep-alive",
-    "Content-Length": "1002",
+    "Content-Length": "1206",
     "Server": "cloudflare"
   },
   "body": {
@@ -14,7 +14,11 @@
     "domain": "app",
     "manifest": "TEST_STATIC_VALUE",
     "prefetch_blobs": [
-      "xSPsPoI1UfONQ_9Rr2y1-obBx6ODzUbB"
+      "Ewnl-09gwxiodIR5CRhrhFzGFZmV6-1i",
+      "JewnfTkEoy4-m-Z6PTP01zML1fpVPwp7",
+      "RBNvo1WzZ4oRRq0W9-hknpT7T8If536D",
+      "xSPsPoI1UfONQ_9Rr2y1-obBx6ODzUbB",
+      "xXyp4pHaDNzyBOTRgrLJCxjuBSG21a1p"
     ],
     "topics": {
       "sources": {
@@ -47,16 +51,20 @@
       },
       "ui_config": {
         "app": {
+          "prefetch": true,
           "blob_ref": "Ewnl-09gwxiodIR5CRhrhFzGFZmV6-1i"
         },
+        "custom_variables": {
+          "prefetch": true,
+          "blob_ref": "RBNvo1WzZ4oRRq0W9-hknpT7T8If536D"
+        },
         "localizations": {
+          "prefetch": true,
           "blob_ref": "JewnfTkEoy4-m-Z6PTP01zML1fpVPwp7"
         },
         "variable_config": {
+          "prefetch": true,
           "blob_ref": "xXyp4pHaDNzyBOTRgrLJCxjuBSG21a1p"
-        },
-        "custom_variables": {
-          "blob_ref": "RBNvo1WzZ4oRRq0W9-hknpT7T8If536D"
         }
       },
       "workflows": {

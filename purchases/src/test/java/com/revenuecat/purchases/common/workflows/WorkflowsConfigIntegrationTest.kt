@@ -326,16 +326,10 @@ class WorkflowsConfigIntegrationTest {
         // WorkflowManager is kept as the consumer-facing seam; only its data source moved to the config layer.
         val workflowManager = workflowManagerWith(provider)
 
-        var delivered: PublishedWorkflow? = null
-        var error: PurchasesError? = null
-        workflowManager.getWorkflow(
-            workflowOrOfferingId = "premium_annual", // by offering id; resolved via config metadata, not a backend call
-            onSuccess = { delivered = it },
-            onError = { error = it },
-        )
+        // By offering id; resolved via config metadata, not a backend call.
+        val delivered = workflowManager.getWorkflow("premium_annual")
 
-        assertThat(error).isNull()
-        assertThat(delivered?.id).isEqualTo("wf-1")
+        assertThat(delivered.id).isEqualTo("wf-1")
         assertThat(downloadCount).isEqualTo(1) // body pulled on demand through the manager
     }
 
@@ -368,7 +362,10 @@ class WorkflowsConfigIntegrationTest {
     // ui-config provider and a no-op pre-downloader.
     private fun workflowManagerWith(provider: WorkflowsConfigProvider) = WorkflowManager(
         workflowsConfigProvider = provider,
-        uiConfigProvider = mockk { coEvery { getUiConfig() } returns emptyUiConfig() },
+        uiConfigProvider = mockk {
+            every { isWarm() } returns false
+            coEvery { getUiConfig() } returns emptyUiConfig()
+        },
         workflowAssetPreDownloader = mockk(relaxed = true),
         scope = testScope,
     )
