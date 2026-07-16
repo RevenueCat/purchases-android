@@ -277,8 +277,11 @@ internal class HTTPClient(
             !isFallbackAttempt &&
             endpoint.usesAPISources &&
             baseURL.toString() == AppConfig.baseUrlString
-        if (!eligible) return null
-        return provider.currentAPISource()?.url?.let { runCatching { URL(it) }.getOrNull() }
+        return if (eligible) {
+            provider.currentAPISource()?.url?.let { runCatching { URL(it) }.getOrNull() }
+        } else {
+            null
+        }
     }
 
     @Suppress("ThrowsCount", "LongParameterList", "LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth")
