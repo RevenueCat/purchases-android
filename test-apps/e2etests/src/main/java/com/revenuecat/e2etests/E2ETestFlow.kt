@@ -1,13 +1,10 @@
 package com.revenuecat.e2etests
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
-
 /**
  * The E2E test flow to run, selected via a Maestro launch argument. On Android, Maestro
  * `launchApp.arguments` are delivered as Activity intent extras, read in [MainActivity].
  */
-@InternalRevenueCatAPI
-enum class E2ETestFlow(val rawValue: String) {
+internal enum class E2ETestFlow(val rawValue: String) {
     OPEN_WORKFLOW("open_workflow"),
     ;
 
