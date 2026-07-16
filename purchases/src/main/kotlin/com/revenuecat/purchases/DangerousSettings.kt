@@ -24,6 +24,13 @@ public class DangerousSettings internal constructor(
     internal val applyObfuscatedAccountIdToSubscriptionChanges: Boolean = false,
 
     /**
+     * Whether main-API requests resolve their base host from the remote-config API sources
+     * instead of the static [AppConfig] base URL. Disabled by default; enabled in tests while
+     * remote-config-driven host resolution is being validated.
+     */
+    internal val usesRemoteConfigAPISources: Boolean = false,
+
+    /**
      * Enables RevenueCat Workflows (multipage paywalls). Internal RevenueCat use only.
      */
     @InternalRevenueCatAPI
@@ -35,6 +42,7 @@ public class DangerousSettings internal constructor(
         customEntitlementComputation = false,
         uiPreviewMode = false,
         applyObfuscatedAccountIdToSubscriptionChanges = false,
+        usesRemoteConfigAPISources = false,
         useWorkflows = false,
     )
 
