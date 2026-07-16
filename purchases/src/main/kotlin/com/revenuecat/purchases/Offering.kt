@@ -50,6 +50,13 @@ constructor(
         webCheckoutURL = null,
     )
 
+    // Whether the backend served a components paywall for this offering, tracked independently of whether
+    // [paywallComponents] was actually decoded. Under workflows the components are served from `/v1/config` and are
+    // not captured here to save memory, but [hasPaywall] must still report the offering as paywall-capable. Kept
+    // internal (module-only, not in the primary constructor) so it stays out of the public API and out of the
+    // @Poko-generated equals/hashCode/toString; the parser sets it right after construction.
+    internal var hasPaywallComponents: Boolean = false
+
     @InternalRevenueCatAPI
     public class PaywallComponents private constructor(
         public val uiConfig: UiConfig,
@@ -99,7 +106,7 @@ constructor(
     @OptIn(InternalRevenueCatAPI::class)
     @get:JvmName("hasPaywall")
     public val hasPaywall: Boolean
-        get() = paywall != null || paywallComponents != null
+        get() = paywall != null || paywallComponents != null || hasPaywallComponents
 
     /**
      * Lifetime package type configured in the RevenueCat dashboard, if available.
@@ -181,6 +188,6 @@ constructor(
             paywall = this.paywall,
             paywallComponents = this.paywallComponents,
             webCheckoutURL = this.webCheckoutURL,
-        )
+        ).also { it.hasPaywallComponents = this.hasPaywallComponents }
     }
 }

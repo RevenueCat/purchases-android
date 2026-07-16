@@ -684,6 +684,54 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `a 4xx disable signals onRemoteConfigDisabled exactly once`() {
+        every { diskCache.read() } returns null
+        val recorder = RecordingCommitListener()
+        manager.registerListener(recorder)
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+        )
+
+        // Further refreshes are no-ops (already disabled), so the disable signal must not fire again.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+
+        assertThat(recorder.disabled).containsExactly(1)
+    }
+
+    @Test
+    fun `clearCache does not signal onRemoteConfigDisabled`() {
+        val recorder = RecordingCommitListener()
+        manager.registerListener(recorder)
+
+        manager.clearCache(TEST_APP_USER_ID)
+
+        assertThat(recorder.disabled).isEmpty()
+    }
+
+    @Test
+    fun `a normal commit does not signal onRemoteConfigDisabled`() {
+        every { diskCache.read() } returns null
+        val recorder = RecordingCommitListener()
+        manager.registerListener(recorder)
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "default": { "blob_ref": "b" } } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        assertThat(recorder.disabled).isEmpty()
+    }
+
+    @Test
     fun `committedTopicOrNull returns committed data without triggering a sync`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",
@@ -2119,6 +2167,7 @@ class RemoteConfigManagerTest {
     private class RecordingCommitListener : RemoteConfigCommitListener {
         val committed = mutableListOf<Int>()
         val invalidated = mutableListOf<Int>()
+        val disabled = mutableListOf<Int>()
 
         override fun onConfigCommitted(generation: Int) {
             committed += generation
@@ -2126,6 +2175,10 @@ class RemoteConfigManagerTest {
 
         override fun onConfigInvalidated(generation: Int) {
             invalidated += generation
+        }
+
+        override fun onRemoteConfigDisabled(generation: Int) {
+            disabled += generation
         }
     }
 

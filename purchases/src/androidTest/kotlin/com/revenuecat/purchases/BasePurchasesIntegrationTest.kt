@@ -45,6 +45,10 @@ abstract class BasePurchasesIntegrationTest {
     protected open val initialActivePurchasesToUse: Map<String, StoreTransaction> = emptyMap()
     protected open val initialForceSigningErrors: Boolean = false
 
+    // Optional dangerous settings applied at configure time (e.g. to enable workflows). Null keeps the default.
+    @OptIn(InternalRevenueCatAPI::class)
+    internal open val dangerousSettings: DangerousSettings? = null
+
     protected val testTimeout = 10.seconds
     protected val currentTimestamp = Date().time
     protected val testUserId = "android-integration-test-$currentTimestamp"
@@ -153,6 +157,7 @@ abstract class BasePurchasesIntegrationTest {
                 entitlementVerificationMode,
                 forceServerErrorStrategyDelegate,
                 forceSigningErrors,
+                dangerousSettings,
             )
 
             postSetupTestCallback(it)
