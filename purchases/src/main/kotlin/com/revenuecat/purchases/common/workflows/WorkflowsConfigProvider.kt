@@ -29,15 +29,18 @@ import kotlinx.serialization.json.JsonPrimitive
  * sync, resolving inline vs `blob_ref`, downloading and reading the body — it delegates to [RemoteConfigManager]
  * through `topic()` / `blobData()`. It never sees the blob store, the fetcher, or the disk cache.
  *
- * On top of the on-demand suspend reads it keeps a small in-memory cache of **parsed** workflows so a paywall
- * render can read one without a disk + JSON hop: [getWorkflow] and [workflowIdForOfferingId] are **memory-first**
- * — a cache hit returns synchronously (the suspend fn never actually suspends, so it resumes on the caller's
- * thread with no dispatch), and only a miss touches [RemoteConfigManager]. Only workflows worth holding are
- * cached: an item flagged `prefetch`, or the one associated with the current offering (its `offering_identifier`
- * equals [currentOfferingIdProvider]'s value). The full `offering_identifier -> workflowId` map (metadata only)
- * is cached for every offering. Both are re-warmed on every config commit and dropped on identity change /
- * disable, guarded by [RemoteConfigManager.configGeneration] (store-if-newer) so a slower disk warm never
- * clobbers a fresher network commit.
+ * On top of the on-demand suspend reads it keeps a small in-memory cache so a paywall render can read a workflow
+ * without a disk + JSON hop: [getWorkflow] and [workflowIdForOfferingId] are **memory-first** — a cache hit
+ * returns synchronously (the suspend fn never actually suspends, so it resumes on the caller's thread with no
+ * dispatch), and only a miss touches [RemoteConfigManager]. To keep memory low the cache holds the **raw workflow
+ * body bytes**, not the decoded [PublishedWorkflow] graph (which retains an entire paywall component tree +
+ * localizations per screen); the decode is deferred behind a [Lazy] and runs on first [getWorkflow] access, on
+ * the caller's (main) thread, and is retained thereafter — mirroring `Offering.PaywallComponents`. Only workflows
+ * worth holding are cached: an item flagged `prefetch`, or the one associated with the current offering (its
+ * `offering_identifier` equals [currentOfferingIdProvider]'s value). The full `offering_identifier -> workflowId`
+ * map (metadata only) is cached for every offering. Both are re-warmed on every config commit and dropped on
+ * identity change / disable, guarded by [RemoteConfigManager.configGeneration] (store-if-newer) so a slower disk
+ * warm never clobbers a fresher network commit.
  */
 @Suppress("TooManyFunctions")
 internal class WorkflowsConfigProvider(
@@ -47,7 +50,8 @@ internal class WorkflowsConfigProvider(
 ) : RemoteConfigCommitListener {
 
     private class Cached(
-        val workflows: Map<String, PublishedWorkflow>,
+        // Raw body bytes per workflow, decoded lazily (on first access, on the caller's thread) and retained.
+        val workflows: Map<String, Lazy<PublishedWorkflow?>>,
         val offeringToWorkflowId: Map<String, String>,
     )
 
@@ -56,11 +60,13 @@ internal class WorkflowsConfigProvider(
     /**
      * Whether the in-memory cache already holds what the current offering's paywall needs, so the offerings
      * readiness gate can deliver synchronously. True when the cache is populated and either there is no current
-     * offering, the current offering has no workflow mapping (legacy/embedded paywall), or its workflow is parsed.
+     * offering, the current offering has no workflow mapping (legacy/embedded paywall), or its body is in memory
+     * (ready to decode synchronously on read).
      */
     fun isWarmForCurrentOffering(): Boolean {
         val cached = cache.cached ?: return false
         val workflowId = currentOfferingIdProvider()?.let { cached.offeringToWorkflowId[it] }
+        // "Has the body in memory" — the decode is deferred, so this never forces a parse.
         return workflowId == null || cached.workflows.containsKey(workflowId)
     }
 
@@ -92,11 +98,12 @@ internal class WorkflowsConfigProvider(
 
     /**
      * Resolves [workflowId] into a [PublishedWorkflow], or `null` when the item is unknown, its body can be
-     * neither read nor downloaded, or the body fails to parse. Memory-first: a cached (parsed) workflow returns
-     * synchronously; only a miss reads through [RemoteConfigManager] (disk/network + JSON parse).
+     * neither read nor downloaded, or the body fails to parse. Memory-first: a cached workflow returns
+     * synchronously — the body bytes are already in memory, so the [Lazy] decode runs on this (caller) thread
+     * without suspending. Only a miss reads through [RemoteConfigManager] (disk/network + JSON parse).
      */
     suspend fun getWorkflow(workflowId: String): PublishedWorkflow? {
-        cache.cached?.workflows?.get(workflowId)?.let { return it }
+        cache.cached?.workflows?.get(workflowId)?.let { return it.value }
         val generation = manager.configGeneration
         val workflow = resolveWorkflow(workflowId)
         // If an identity-change invalidation advanced the generation while the body was resolved, it may belong
@@ -104,17 +111,27 @@ internal class WorkflowsConfigProvider(
         return when {
             workflow == null -> null
             cache.isCurrent(generation) -> workflow
-            else -> cache.cached?.workflows?.get(workflowId)
+            else -> cache.cached?.workflows?.get(workflowId)?.value
         }
     }
 
     /** Reads + parses a workflow body straight from the config layer, bypassing the in-memory cache. */
     private suspend fun resolveWorkflow(workflowId: String): PublishedWorkflow? {
-        val body = manager.blobData(RemoteConfigTopic.Workflows, workflowId) { it } ?: run {
-            errorLog { "Workflow '$workflowId' is unavailable from remote config." }
-            return null
-        }
-        return try {
+        val body = resolveWorkflowBytes(workflowId) ?: return null
+        return decodeWorkflow(workflowId, body)
+    }
+
+    /** Reads a workflow body's raw bytes from the config layer (disk/network); no decode. */
+    private suspend fun resolveWorkflowBytes(workflowId: String): ByteArray? =
+        manager.blobData(RemoteConfigTopic.Workflows, workflowId) { it }
+            ?: run {
+                errorLog { "Workflow '$workflowId' is unavailable from remote config." }
+                null
+            }
+
+    /** Parses raw workflow body bytes into a [PublishedWorkflow], or `null` on a parse failure. */
+    private fun decodeWorkflow(workflowId: String, body: ByteArray): PublishedWorkflow? =
+        try {
             val workflow = WorkflowJsonParser.parsePublishedWorkflow(body.decodeToString())
             debugLog { "Parsed workflow '$workflowId' (${workflow.steps.size} step(s))" }
             workflow
@@ -122,7 +139,6 @@ internal class WorkflowsConfigProvider(
             errorLog(e) { "Failed to parse workflow '$workflowId' body." }
             null
         }
-    }
 
     /**
      * Forces the `workflows` topic to be synced (or confirms it already is) **and** waits for its
@@ -142,6 +158,12 @@ internal class WorkflowsConfigProvider(
      * (no `/v1/config` sync) when the `workflows` topic isn't committed yet, so a cold-disk init warm never
      * triggers a network config fetch. Caches only eligible workflows (prefetch or current offering); the
      * offering->workflowId map covers every offering.
+     *
+     * Only the **raw body bytes** are pre-loaded here (the expensive IO/network hop, on this warm's dispatcher);
+     * the [PublishedWorkflow] decode is deferred behind a [Lazy] and runs on first [getWorkflow] access, so
+     * warming never retains a decoded workflow graph. An eligible workflow is cached iff its bytes resolve;
+     * whether those bytes later parse is decided lazily on read (a bad body reads back as `null`, not a warm-time
+     * exclusion).
      */
     suspend fun warm(generation: Int) {
         // Already warm for this (or a newer) generation and the current offering — nothing to do.
@@ -160,12 +182,14 @@ internal class WorkflowsConfigProvider(
                 eligibleIds += workflowId
             }
         }
-        // Resolve from committed config (not the cache we're rebuilding).
+        // Pre-load bytes from committed config (not the cache we're rebuilding); defer the decode.
         val workflows = coroutineScope {
             eligibleIds.distinct()
-                .map { id -> async { id to resolveWorkflow(id) } }
+                .map { id -> async { id to resolveWorkflowBytes(id) } }
                 .awaitAll()
-        }.mapNotNull { (id, workflow) -> workflow?.let { id to it } }.toMap()
+        }.mapNotNull { (id, bytes) ->
+            bytes?.let { id to lazy(LazyThreadSafetyMode.SYNCHRONIZED) { decodeWorkflow(id, it) } }
+        }.toMap()
         verboseLog {
             "Warmed workflows cache: ${workflows.size} eligible workflow(s), " +
                 "${offeringToWorkflowId.size} offering mapping(s)."
