@@ -12,14 +12,13 @@ import org.json.JSONObject
  * @see PaywallWebViewMessage
  * @see PaywallWebViewController
  */
-// Modeled as an abstract class with a closed set of subtypes (mirroring [CustomVariableValue]) rather
-// than a sealed class, to stay binary-compatible as public API.
-public abstract class PaywallWebViewValue internal constructor() {
+// Modeled as an abstract class with a closed set of subtypes (mirroring [CustomVariableValue]).
+internal abstract class PaywallWebViewValue {
 
     /**
      * A string value.
      */
-    public class String(public val value: kotlin.String) : PaywallWebViewValue() {
+    class String(val value: kotlin.String) : PaywallWebViewValue() {
         override fun equals(other: Any?): kotlin.Boolean = other is String && value == other.value
         override fun hashCode(): Int = value.hashCode()
         override fun toString(): kotlin.String = "PaywallWebViewValue.String(value=$value)"
@@ -32,10 +31,10 @@ public abstract class PaywallWebViewValue internal constructor() {
      * `null` when sent into the web view. Equality follows [Double.equals] semantics (consistent
      * with [hashCode]): `NaN` equals `NaN`, and `-0.0` does not equal `0.0`.
      */
-    public class Number(public val value: kotlin.Double) : PaywallWebViewValue() {
-        public constructor(value: kotlin.Int) : this(value.toDouble())
-        public constructor(value: kotlin.Long) : this(value.toDouble())
-        public constructor(value: kotlin.Float) : this(value.toDouble())
+    class Number(val value: kotlin.Double) : PaywallWebViewValue() {
+        constructor(value: kotlin.Int) : this(value.toDouble())
+        constructor(value: kotlin.Long) : this(value.toDouble())
+        constructor(value: kotlin.Float) : this(value.toDouble())
 
         override fun equals(other: Any?): kotlin.Boolean = other is Number && value.equals(other.value)
         override fun hashCode(): Int = value.hashCode()
@@ -45,7 +44,7 @@ public abstract class PaywallWebViewValue internal constructor() {
     /**
      * A boolean value.
      */
-    public class Boolean(public val value: kotlin.Boolean) : PaywallWebViewValue() {
+    class Boolean(val value: kotlin.Boolean) : PaywallWebViewValue() {
         override fun equals(other: Any?): kotlin.Boolean = other is Boolean && value == other.value
         override fun hashCode(): Int = value.hashCode()
         override fun toString(): kotlin.String = "PaywallWebViewValue.Boolean(value=$value)"
@@ -54,7 +53,7 @@ public abstract class PaywallWebViewValue internal constructor() {
     /**
      * A JSON object: a map of string keys to [PaywallWebViewValue]s.
      */
-    public class Object(public val value: Map<kotlin.String, PaywallWebViewValue>) : PaywallWebViewValue() {
+    class Object(val value: Map<kotlin.String, PaywallWebViewValue>) : PaywallWebViewValue() {
         override fun equals(other: Any?): kotlin.Boolean = other is Object && value == other.value
         override fun hashCode(): Int = value.hashCode()
         override fun toString(): kotlin.String = "PaywallWebViewValue.Object(value=$value)"
@@ -63,7 +62,7 @@ public abstract class PaywallWebViewValue internal constructor() {
     /**
      * A JSON array: an ordered list of [PaywallWebViewValue]s.
      */
-    public class Array(public val value: List<PaywallWebViewValue>) : PaywallWebViewValue() {
+    class Array(val value: List<PaywallWebViewValue>) : PaywallWebViewValue() {
         override fun equals(other: Any?): kotlin.Boolean = other is Array && value == other.value
         override fun hashCode(): Int = value.hashCode()
         override fun toString(): kotlin.String = "PaywallWebViewValue.Array(value=$value)"
@@ -72,7 +71,7 @@ public abstract class PaywallWebViewValue internal constructor() {
     /**
      * A JSON `null` value.
      */
-    public object Null : PaywallWebViewValue() {
+    object Null : PaywallWebViewValue() {
         override fun toString(): kotlin.String = "PaywallWebViewValue.Null"
     }
 

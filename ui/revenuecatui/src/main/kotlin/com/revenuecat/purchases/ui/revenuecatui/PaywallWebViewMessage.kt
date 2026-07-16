@@ -18,11 +18,11 @@ import dev.drewhamilton.poko.Poko
  * @property error The error description for a `rc:error` message, if any.
  */
 @Poko
-public class PaywallWebViewMessage(
-    public val componentId: String,
-    public val type: String,
-    public val responses: Map<String, PaywallWebViewValue>? = null,
-    public val error: String? = null,
+internal class PaywallWebViewMessage(
+    val componentId: String,
+    val type: String,
+    val responses: Map<String, PaywallWebViewValue>? = null,
+    val error: String? = null,
 )
 
 /**
@@ -32,7 +32,7 @@ public class PaywallWebViewMessage(
  * Outgoing messages preserve the RevenueCat web view postMessage envelope and are validated before
  * being delivered to the web view.
  */
-public interface PaywallWebViewController {
+internal interface PaywallWebViewController {
 
     /**
      * Sends a `rc:variables` message into the web view targeting [componentId]. The SDK already replies
@@ -41,7 +41,7 @@ public interface PaywallWebViewController {
      * `variables` key). Reserved SDK-managed top-level keys cannot be overwritten; provide
      * app-specific values under `custom`.
      */
-    public fun postVariables(
+    fun postVariables(
         componentId: String,
         variables: Map<String, PaywallWebViewValue>,
     )
@@ -51,7 +51,7 @@ public interface PaywallWebViewController {
      * [variables] map is sent as the transport envelope's `payload` field (not nested under a
      * `variables` key). Use [postVariables] for the common `rc:variables` case.
      */
-    public fun postMessage(
+    fun postMessage(
         componentId: String,
         type: String,
         variables: Map<String, PaywallWebViewValue>,
@@ -85,8 +85,8 @@ public interface PaywallWebViewController {
  *     .build()
  * ```
  */
-public fun interface PaywallWebViewMessageHandler {
-    public fun onMessage(
+internal fun interface PaywallWebViewMessageHandler {
+    fun onMessage(
         message: PaywallWebViewMessage,
         controller: PaywallWebViewController,
     )
