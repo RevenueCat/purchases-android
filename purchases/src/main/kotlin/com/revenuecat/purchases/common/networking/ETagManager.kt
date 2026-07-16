@@ -219,9 +219,9 @@ internal class ETagManager(
 
     @Synchronized
     internal fun clearCaches() {
-        // Metadata first, synchronously: a crash in between leaves harmless orphan payload files rather
-        // than metadata pointing at purged payloads.
-        prefs.value.edit().clear().commit()
+        // Metadata first: its in-memory clear is immediate, so readers miss before ever touching files.
+        // A crash before the async disk flush leaves metadata without payloads, a self-healing miss.
+        prefs.value.edit().clear().apply()
         payloadStore.clear()
     }
 

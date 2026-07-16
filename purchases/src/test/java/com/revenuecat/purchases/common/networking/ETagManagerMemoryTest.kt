@@ -103,6 +103,9 @@ class ETagManagerMemoryTest {
         val maxAllowedBytes = 1024L * 1024L
         assertThat(storeBytes).isLessThan(maxAllowedBytes)
         assertThat(headerBytes).isLessThan(maxAllowedBytes)
+        // Deterministic (exact allocation counting, no timing): file byte[] (~1x payload.length for
+        // ASCII) + decoder char[] (2x) + String copy (up to 2x) = ~5x length, ~3.9x measured; 6x allows
+        // for JDKs without compact strings.
         assertThat(notModifiedBytes).isLessThan(3L * payload.length * Char.SIZE_BYTES)
 
         println("ETagManager memory profile (payload ${payload.length} chars, ~${payload.length / (1024 * 1024)}MB)")
