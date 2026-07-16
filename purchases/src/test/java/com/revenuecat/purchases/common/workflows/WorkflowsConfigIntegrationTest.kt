@@ -20,6 +20,7 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSource
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopicStore
 import com.revenuecat.purchases.utils.UrlConnection
@@ -102,9 +103,9 @@ class WorkflowsConfigIntegrationTest {
         provider = WorkflowsConfigProvider(manager)
 
         every {
-            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any())
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any())
         } answers {
-            onSuccess = arg(5)
+            onSuccess = arg(6)
         }
     }
 
@@ -329,16 +330,10 @@ class WorkflowsConfigIntegrationTest {
         // WorkflowManager is kept as the consumer-facing seam; only its data source moved to the config layer.
         val workflowManager = workflowManagerWith(provider)
 
-        var delivered: PublishedWorkflow? = null
-        var error: PurchasesError? = null
-        workflowManager.getWorkflow(
-            workflowOrOfferingId = "premium_annual", // by offering id; resolved via config metadata, not a backend call
-            onSuccess = { delivered = it },
-            onError = { error = it },
-        )
+        // By offering id; resolved via config metadata, not a backend call.
+        val delivered = workflowManager.getWorkflow("premium_annual")
 
-        assertThat(error).isNull()
-        assertThat(delivered?.id).isEqualTo("wf-1")
+        assertThat(delivered.id).isEqualTo("wf-1")
         assertThat(downloadCount).isEqualTo(1) // body pulled on demand through the manager
     }
 
@@ -364,20 +359,23 @@ class WorkflowsConfigIntegrationTest {
             assertThat(completed).isTrue()
             // The topic was already committed by the sync() above — onPaywallConfigReady must not trigger
             // another one; this is what keeps OfferingsManager's gate cheap on a warm cache.
-            verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any()) }
+            verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
         }
 
     // Asset prewarming is out of scope here (covered by WorkflowManagerTest), so the manager gets a stubbed
     // ui-config provider and a no-op pre-downloader.
     private fun workflowManagerWith(provider: WorkflowsConfigProvider) = WorkflowManager(
         workflowsConfigProvider = provider,
-        uiConfigProvider = mockk { coEvery { getUiConfig() } returns emptyUiConfig() },
+        uiConfigProvider = mockk {
+            every { isWarm() } returns false
+            coEvery { getUiConfig() } returns emptyUiConfig()
+        },
         workflowAssetPreDownloader = mockk(relaxed = true),
         scope = testScope,
     )
 
     private fun sync(configJson: String, vararg blobs: Pair<String, String>) {
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = "user-1")
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = "user-1", fetchContext = RemoteConfigFetchContext.AppStart)
         onSuccess.invoke(containerWith(configJson, *blobs), VerificationResult.VERIFIED)
     }
 

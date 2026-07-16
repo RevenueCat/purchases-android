@@ -31,6 +31,18 @@ class DangerousSettingsTest {
         assertThat(dangerousSettings.uiPreviewMode).isFalse
     }
 
+    @Test
+    fun `default usesRemoteConfigAPISources is false`() {
+        val dangerousSettings = DangerousSettings()
+        assertThat(dangerousSettings.usesRemoteConfigAPISources).isFalse
+    }
+
+    @Test
+    fun `usesRemoteConfigAPISources can be enabled`() {
+        val dangerousSettings = DangerousSettings(usesRemoteConfigAPISources = true)
+        assertThat(dangerousSettings.usesRemoteConfigAPISources).isTrue
+    }
+
     @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `forPreviewMode sets uiPreviewMode to true and autoSyncPurchases to false`() {

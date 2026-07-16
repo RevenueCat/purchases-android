@@ -57,15 +57,18 @@ import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import io.mockk.Runs
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
 import io.mockk.verifyOrder
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -902,6 +905,53 @@ class PaywallViewModelWorkflowTest {
         // monthlyPackageComponentDefault has isSelectedByDefault = true → MONTHLY wins.
         assertThat(step1State!!.selectedPackageInfo?.rcPackage?.identifier)
             .isEqualTo(PackageType.MONTHLY.identifier)
+    }
+
+    // endregion
+
+    // region memory-first single-path (no Loading flash)
+
+    @Test
+    fun `warm cache renders the workflow on the first composition with no Loading state`() {
+        // Model Dispatchers.Main.immediate with an unconfined main dispatcher so viewModelScope.launch runs
+        // eagerly, as in production. On a warm cache every suspend read resolves without suspending (mockk
+        // stubs don't suspend), so the single presentWorkflow path completes inside init and sets Loaded
+        // before the first composition would read state — no LoadingPaywall frame.
+        val immediateMain = UnconfinedTestDispatcher()
+        Dispatchers.setMain(immediateMain)
+        try {
+            coEvery { purchases.workflowIdForOfferingId(offeringId) } returns workflow.id
+            coEvery { purchases.awaitGetWorkflow(workflow.id) } returns fetchResult
+            coEvery { purchases.awaitGetUiConfig() } returns uiConfig
+            coEvery { purchases.awaitOfferings() } returns testOfferings
+
+            val vm = createVm()
+
+            assertThat(vm.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+            assertThat(vm.workflowState.value).isNotNull
+            // It is the same single suspend path — the reads are invoked, they just resolve synchronously.
+            coVerify(exactly = 1) { purchases.awaitGetWorkflow(workflow.id) }
+        } finally {
+            Dispatchers.setMain(testDispatcher)
+        }
+    }
+
+    @Test
+    fun `a cold cache shows Loading then the loaded workflow after the async read`() = runTest {
+        // A cold read really suspends; the same single path shows Loading until it resolves.
+        val gate = CompletableDeferred<Unit>()
+        coEvery { purchases.workflowIdForOfferingId(any()) } returns workflow.id
+        coEvery { purchases.awaitGetWorkflow(any()) } coAnswers { gate.await(); fetchResult }
+        coEvery { purchases.awaitGetUiConfig() } returns uiConfig
+        coEvery { purchases.awaitOfferings() } returns testOfferings
+
+        val vm = createVm()
+        advanceUntilIdle()
+        assertThat(vm.state.value).isEqualTo(PaywallState.Loading)
+
+        gate.complete(Unit)
+        advanceUntilIdle()
+        assertThat(vm.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
     }
 
     // endregion

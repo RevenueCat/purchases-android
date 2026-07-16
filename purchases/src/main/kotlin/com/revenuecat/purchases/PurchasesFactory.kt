@@ -307,7 +307,26 @@ internal class PurchasesFactory(
                 null
             }
 
+            // Single shared instances so the in-memory caches the render path reads synchronously are the same
+            // ones the manager warms on commit. Registered as commit listeners; a null manager means workflows
+            // are off, so neither exists.
             val uiConfigProvider = remoteConfigManager?.let { UiConfigProvider(it) }
+            val workflowsConfigProvider = remoteConfigManager?.let {
+                WorkflowsConfigProvider(
+                    it,
+                    currentOfferingIdProvider = { offeringsCache.cachedOfferings?.current?.identifier },
+                )
+            }
+            if (remoteConfigManager != null && uiConfigProvider != null && workflowsConfigProvider != null) {
+                remoteConfigManager.registerListener(uiConfigProvider)
+                remoteConfigManager.registerListener(workflowsConfigProvider)
+                // Cold-start-with-warm-disk: preload the in-memory caches from whatever is already committed on
+                // disk without triggering a network config sync. A subsequent network commit re-warms with a
+                // higher generation and supersedes this (store-if-newer).
+                val initialGeneration = remoteConfigManager.configGeneration
+                uiConfigProvider.warmAsync(initialGeneration)
+                workflowsConfigProvider.warmAsync(initialGeneration)
+            }
 
             val identityManager = IdentityManager(
                 cache,
@@ -369,7 +388,13 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 uiPreviewMode = appConfig.uiPreviewMode,
             )
-            val offeringParser = OfferingParserFactory.createOfferingParser(finalStore)
+            // Under workflows, paywall components are served from `/v1/config`, so skip capturing the raw
+            // component JSON at parse time (memory). Reverts to decoding once the 4xx kill switch disables remote
+            // config (or when workflows are off / customEntitlementComputation), so the fallback render path has
+            // the components after a refetch. Evaluated per parse against the volatile `isDisabled`.
+            val offeringParser = OfferingParserFactory.createOfferingParser(finalStore) {
+                remoteConfigManager?.isDisabled ?: true
+            }
 
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
             @Suppress("ComplexCondition")
@@ -409,10 +434,11 @@ internal class PurchasesFactory(
             // but behind it sit the RemoteConfig stack (sync + blob store + on-demand fetch) and the
             // WorkflowsConfigProvider. Lifecycle (foreground refresh, identity clearCache, teardown) is driven
             // through remoteConfigManager, which the orchestrator and IdentityManager already own.
-            val workflowManager = if (appConfig.useWorkflows && remoteConfigManager != null) {
+            // Both providers are non-null exactly when remoteConfigManager is (i.e. workflows are enabled).
+            val workflowManager = if (workflowsConfigProvider != null && uiConfigProvider != null) {
                 WorkflowManager(
-                    WorkflowsConfigProvider(remoteConfigManager),
-                    UiConfigProvider(remoteConfigManager),
+                    workflowsConfigProvider,
+                    uiConfigProvider,
                     WorkflowAssetPreDownloader(
                         paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
                         offeringFontPreDownloader = offeringFontPreDownloader,
@@ -504,6 +530,7 @@ internal class PurchasesFactory(
                 fileRepository = fileRepository,
                 remoteConfigManager = remoteConfigManager,
                 uiConfigProvider = uiConfigProvider,
+                workflowsConfigProvider = workflowsConfigProvider,
             )
 
             return Purchases(purchasesOrchestrator)

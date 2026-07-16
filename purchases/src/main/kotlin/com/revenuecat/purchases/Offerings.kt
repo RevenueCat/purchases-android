@@ -159,5 +159,5 @@ internal fun Offering.withPresentedContext(placementId: String?, targeting: Offe
         paywall = this.paywall,
         paywallComponents = this.paywallComponents,
         webCheckoutURL = this.webCheckoutURL,
-    )
+    ).also { it.hasPaywallComponents = this.hasPaywallComponents }
 }
