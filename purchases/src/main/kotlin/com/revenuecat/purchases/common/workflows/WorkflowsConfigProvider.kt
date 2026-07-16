@@ -77,7 +77,13 @@ internal class WorkflowsConfigProvider(
      * ([WorkflowResolution.Unavailable]). Memory-first: a warm cache resolves synchronously; only a miss reads the
      * topic (which may trigger a sync).
      */
+    @Suppress("ReturnCount")
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution {
+        // Once the endpoint is disabled (4xx kill switch) the offering was parsed with its components skipped, so
+        // resolution must always yield Disabled (→ offerings reload) — even off a warm cache. Check the flag
+        // before the fast path: disabling sets isDisabled and invalidates this cache non-atomically, so a warm
+        // cache can briefly coexist with isDisabled, and a stale Found/NoWorkflow here would skip the reload.
+        if (manager.isDisabled) return WorkflowResolution.Disabled
         cache.cached?.let { cached ->
             return cached.offeringToWorkflowId[offeringId]?.let { WorkflowResolution.Found(it) }
                 ?: WorkflowResolution.NoWorkflow
