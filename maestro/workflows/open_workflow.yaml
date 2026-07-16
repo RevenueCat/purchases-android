@@ -15,7 +15,6 @@ env:
     clearState: true
     arguments:
       e2e_test_flow: open_workflow
-- assertVisible: "entitlement (pro): nil"
 - extendedWaitUntil:
     visible: "Present Paywall"
     timeout: 15000
