@@ -109,7 +109,43 @@ class OfferingsManagerTest {
         offeringsManager.clearInMemoryOfferingsCache(invalidateInFlightFetches = true)
         onSuccessSlot.captured.invoke(OfferingsResultData(testOfferings, setOf(productId), emptySet()))
 
+        // The stale parse is dropped (a re-parse is issued instead, but its onSuccess is never fired here).
         verify(exactly = 0) { cache.cacheOfferings(any(), any()) }
+    }
+
+    @Test
+    fun `stale in-flight parse is re-parsed and only the decoded result is delivered and cached`() {
+        every { cache.clearInMemoryOfferingsCache() } just Runs
+        mockDeviceCache()
+        val onSuccessSlot = captureFactoryOnSuccess()
+
+        // Two distinguishable results: the in-flight parse (pre-disable, paywall components skipped) and the
+        // re-parse (post-disable, components decoded). Distinct instances so we can assert which one is used.
+        val staleOfferings = testOfferings.copy(current = null)
+        val decodedOfferings = testOfferings
+
+        var delivered: OfferingsResultData? = null
+        offeringsManager.fetchAndCacheOfferings(
+            appUserId,
+            appInBackground = false,
+            onSuccess = { delivered = it },
+        )
+
+        // Kill switch trips: invalidate in-flight fetches.
+        offeringsManager.clearInMemoryOfferingsCache(invalidateInFlightFetches = true)
+
+        // The in-flight (pre-disable) parse completes -> guard is stale -> a re-parse is issued.
+        onSuccessSlot.captured.invoke(OfferingsResultData(staleOfferings, setOf(productId), emptySet()))
+        // The re-parse completes -> generation now matches -> cached and delivered.
+        onSuccessSlot.captured.invoke(OfferingsResultData(decodedOfferings, setOf(productId), emptySet()))
+
+        assertThat(delivered).isNotNull
+        assertThat(delivered!!.offerings).isEqualTo(decodedOfferings)
+        verify(exactly = 2) {
+            offeringsFactory.createOfferings(any(), any(), any(), onError = any(), onSuccess = any())
+        }
+        verify(exactly = 1) { cache.cacheOfferings(decodedOfferings, any()) }
+        verify(exactly = 0) { cache.cacheOfferings(staleOfferings, any()) }
     }
 
     @Test

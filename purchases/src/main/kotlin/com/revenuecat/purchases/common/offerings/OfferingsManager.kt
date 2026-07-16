@@ -281,20 +281,33 @@ internal class OfferingsManager(
                 handleErrorFetchingOfferings(error, onError)
             },
             onSuccess = { offeringsResultData ->
-                offeringsResultData.offerings.current?.let {
-                    offeringImagePreDownloader.preDownloadOfferingImages(it)
-                }
-                offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
-                // Only write if no invalidation happened since this fetch started; otherwise this result is stale
-                // (a newer refetch owns the cache now) and writing it would clobber the fresher offerings. The
-                // parsed result is still delivered to the caller below so an in-flight request never hangs.
+                // Only handle this result if no invalidation happened since this fetch started. If the generation
+                // moved, this parse is stale: it ran while remote config was still enabled, so paywall components
+                // were skipped (hasPaywall == true but paywallComponents == null). Re-parse the same response JSON
+                // instead of delivering it. Remote config is guaranteed disabled by the time the guard fires
+                // (RemoteConfigManager flips isDisabled before bumping the generation that triggers the invalidating
+                // clear), so createOfferings now decodes the components. On the re-entry the generation matches, so
+                // the decoded result is cached and delivered to the original caller. This re-runs the store-product
+                // query; it is bounded to once per session because the kill-switch disable is one-shot.
                 if (cacheGeneration.get() == fetchGeneration) {
+                    offeringsResultData.offerings.current?.let {
+                        offeringImagePreDownloader.preDownloadOfferingImages(it)
+                    }
+                    offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                     offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
+                    val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
+                    workflowManager?.onPaywallConfigReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
                 } else {
                     log(LogIntent.DEBUG) { OfferingStrings.OFFERINGS_CACHE_INVALIDATED_SKIPPING_STALE_WRITE }
+                    createAndCacheOfferings(
+                        offeringsJSON = offeringsJSON,
+                        originalDataSource = originalDataSource,
+                        loadedFromDiskCache = loadedFromDiskCache,
+                        fetchGeneration = cacheGeneration.get(),
+                        onError = onError,
+                        onSuccess = onSuccess,
+                    )
                 }
-                val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
-                workflowManager?.onPaywallConfigReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
             },
         )
     }
