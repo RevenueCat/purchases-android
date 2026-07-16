@@ -38,9 +38,12 @@ internal class ETagPayloadStore(
      * callers must not persist metadata for a failed write.
      */
     fun write(urlString: String, payload: String): Long? {
-        if (!directory.exists() && !directory.mkdirs()) {
-            errorLog { "Failed to create ETag payload directory: $directory" }
-            return null
+        if (!directory.exists()) {
+            deleteTrash()
+            if (!directory.mkdirs()) {
+                errorLog { "Failed to create ETag payload directory: $directory" }
+                return null
+            }
         }
         val file = fileFor(urlString)
         // Never opened by readers; a crash mid-write leaves one orphan that the next write overwrites.
@@ -81,7 +84,19 @@ internal class ETagPayloadStore(
     }
 
     fun clear() {
-        directory.deleteRecursively()
+        // Renaming is a constant-time metadata op, safe on the main thread (configure, logIn/logOut);
+        // the trashed directory is deleted by the next write, which runs on a background thread.
+        if (!directory.exists()) return
+        val trash = File(directory.parentFile, directory.name + TRASH_SUFFIX + System.nanoTime())
+        if (!directory.renameTo(trash)) {
+            directory.deleteRecursively()
+        }
+    }
+
+    private fun deleteTrash() {
+        directory.parentFile
+            ?.listFiles { file -> file.name.startsWith(directory.name + TRASH_SUFFIX) }
+            ?.forEach { it.deleteRecursively() }
     }
 
     private fun fileFor(urlString: String): File {
@@ -135,6 +150,7 @@ internal class ETagPayloadStore(
     private companion object {
         const val DIRECTORY_NAME = "rc_etag_payloads"
         const val TEMP_SUFFIX = ".tmp"
+        const val TRASH_SUFFIX = ".trash"
         const val CHUNK_CHARS = 64 * 1024
         const val WRITE_BUFFER_BYTES = 256 * 1024
     }

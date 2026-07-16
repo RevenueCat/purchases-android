@@ -119,6 +119,19 @@ class ETagPayloadStoreTest {
     }
 
     @Test
+    fun `cleared payloads are trashed and deleted by the next write`() {
+        underTest.write(url, "payload")
+
+        underTest.clear()
+        val afterClear = temporaryFolder.root.list()!!
+        assertThat(afterClear).hasSize(1)
+        assertThat(afterClear.single()).contains(".trash")
+
+        underTest.write(url, "again")
+        assertThat(temporaryFolder.root.list()!!).containsExactly("payloads")
+    }
+
+    @Test
     fun `write returns null when the directory cannot be used`() {
         val blockedByFile = ETagPayloadStore(temporaryFolder.newFile())
 
