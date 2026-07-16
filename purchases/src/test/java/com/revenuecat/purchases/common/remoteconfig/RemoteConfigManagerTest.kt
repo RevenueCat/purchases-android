@@ -130,6 +130,182 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `the first request is forced to the app_start fetch context regardless of the requested context`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+    }
+
+    @Test
+    fun `the first stale request is forced to the app_start fetch context regardless of the requested context`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfigIfStale(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.Foreground,
+        )
+
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+    }
+
+    @Test
+    fun `only the first request is forced to the app_start fetch context`() {
+        every { diskCache.read() } returns null
+
+        // First committed request is forced to AppStart, even though IdentityChange was requested.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+
+        // The next committed request reports its own context.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.IdentityChange)
+    }
+
+    @Test
+    fun `requests keep being forced to app_start until one succeeds`() {
+        every { diskCache.read() } returns null
+
+        // A failed first request must not consume the forced AppStart, so the next attempt is forced too.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        onFallbackError.invoke(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+
+        // Once a request succeeds, the forcing stops and later requests report their own context.
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.IdentityChange)
+    }
+
+    @Test
+    fun `forcing stops once a 200 config is persisted`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag",
+              "active_topics": [],
+              "topics": {}
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.IdentityChange)
+    }
+
+    @Test
+    fun `a 200 that fails to parse keeps forcing app_start`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+        // A 200 whose body fails to parse commits nothing, so the initial config is still not committed.
+        onSuccess.invoke(containerWithConfig("{ not valid json"), VerificationResult.VERIFIED)
+
+        // The next request must still be forced to AppStart, since no config landed yet.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+    }
+
+    @Test
+    fun `forcing stops once the fallback commits its config`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+
+        // The main request fails on a cold cache, routing to the fallback, which commits its config.
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownBackendError, "server error"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        onFallbackSuccess.invoke(
+            remoteConfiguration(
+                """
+                {
+                  "domain": "app",
+                  "manifest": "v1.fallback.sources:etag",
+                  "active_topics": [],
+                  "topics": {}
+                }
+                """.trimIndent(),
+            ),
+            VerificationResult.VERIFIED,
+        )
+
+        // The fallback commit counts as the initial config, so later requests report their own context.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.IdentityChange)
+    }
+
+    @Test
     fun `refreshRemoteConfigIfStale refreshes on the first call in a process`() {
         every { diskCache.read() } returns null
 
@@ -1315,12 +1491,20 @@ class RemoteConfigManagerTest {
         every { diskCache.write(any()) } answers { state = firstArg(); true }
         val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
 
+        // The first committed request is forced to AppStart, so prime it before asserting the on-demand read's Read.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
+        )
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+
         // Nothing is in flight and nothing is cached: the read triggers its own sync and waits for it.
         var result: ConfigTopic? = null
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
             result = manager.topic(RemoteConfigTopic.Workflows)
         }
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
         // The on-demand sync is issued as foreground for the current user with a read fetch context.
         assertThat(capturedAppUserID).isEqualTo(TEST_APP_USER_ID)
         assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.Read)
