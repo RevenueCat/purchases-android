@@ -5,6 +5,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.RCContentEncoding
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -22,6 +23,7 @@ import org.robolectric.annotation.Config
 import java.io.ByteArrayOutputStream
 import java.security.MessageDigest
 import java.util.Date
+import java.util.zip.GZIPOutputStream
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -478,6 +480,41 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     }
 
     @Test
+    fun `performRequest verifies a GZIP-compressed config element over its decoded bytes`() {
+        val endpoint = Endpoint.GetRemoteConfig("app")
+        val configBytes = "{\"config\":true}".toByteArray()
+        // Once the config element crosses the backend's size threshold it is served GZIP-compressed (codec 1).
+        // The signature covers the uncompressed config bytes, so verification must decode before signing.
+        val container = buildContainer(configBytes, codec = RCContentEncoding.GZIP.id)
+
+        mockSigningResult(VerificationResult.VERIFIED)
+        enqueueRCFormat(container)
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            requestHeaders = emptyMap()
+        )
+
+        server.takeRequest()
+
+        assertThat(result.verificationResult).isEqualTo(VerificationResult.VERIFIED)
+        verify(exactly = 1) {
+            mockSigningManager.verifyResponse(
+                urlPath = endpoint.getPath(),
+                "test-signature",
+                "test-nonce",
+                match<ByteArray> { it.contentEquals(configBytes) },
+                "1234567890",
+                "test-etag",
+                postFieldsToSignHeader = null
+            )
+        }
+    }
+
+    @Test
     fun `performRequest fails RC Format verification when the response is not a valid RC Container`() {
         val endpoint = Endpoint.GetRemoteConfig("app")
 
@@ -599,7 +636,10 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     private fun buildContainer(
         config: ByteArray,
         configChecksum: ByteArray = sha256Truncated(config),
+        codec: Int = RCContentEncoding.NONE.id,
     ): ByteArray {
+        // The checksum always covers the uncompressed config; only the on-wire body is (optionally) compressed.
+        val body = if (codec == RCContentEncoding.GZIP.id) gzip(config) else config
         val out = ByteArrayOutputStream()
         out.write('R'.code)
         out.write('C'.code)
@@ -607,12 +647,18 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         out.write(0) // flags
         repeat(4) { out.write(0) } // header reserved
         out.write(configChecksum)
-        out.writeUInt32LE(config.size)
-        out.writeUInt32LE(0) // element reserved
-        out.write(config)
+        out.writeUInt32LE(body.size)
+        out.writeUInt32LE(codec) // element reserved; low byte is the content-encoding codec id
+        out.write(body)
         while (out.size() % 8 != 0) {
             out.write(0)
         }
+        return out.toByteArray()
+    }
+
+    private fun gzip(data: ByteArray): ByteArray {
+        val out = ByteArrayOutputStream()
+        GZIPOutputStream(out).use { it.write(data) }
         return out.toByteArray()
     }
 

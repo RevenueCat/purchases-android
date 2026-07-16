@@ -50,7 +50,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         val rcContainer = requireNotNull(container) { "Expected a 200 container, got 204 (no content)." }
         assertThat(rcContainer.config.isChecksumValid()).isTrue()
 
-        val config = RemoteConfiguration.parse(rcContainer.config.data)
+        val config = RemoteConfiguration.parse(rcContainer.config.decode())
         assertThat(config.domain).isEqualTo("app")
         assertThat(config.manifest).isNotEmpty()
         assertThat(config.activeTopics).contains("sources", "ui_config", "workflows")
@@ -85,7 +85,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
         val rcContainer = requireNotNull(container) { "Expected a 200 container, got 204 (no content)." }
 
-        val config = RemoteConfiguration.parse(rcContainer.config.data)
+        val config = RemoteConfiguration.parse(rcContainer.config.decode())
 
         // Pick a workflows item whose blob was inlined in the container, so we can decode it directly.
         val workflows = requireNotNull(config.topics["workflows"]) { "Expected a workflows topic." }
@@ -179,10 +179,13 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         assertThat(firstError).isNull()
         assertThat(firstVerification).isEqualTo(VerificationResult.VERIFIED)
         val rcContainer = requireNotNull(firstContainer) { "Expected a 200 container on the first run." }
-        val manifest = RemoteConfiguration.parse(rcContainer.config.data).manifest
+        val manifest = RemoteConfiguration.parse(rcContainer.config.decode()).manifest
 
         // Replaying that manifest with nothing changed server-side -> 204 (success, but no container to parse).
-        val (secondError, secondContainer, secondVerification) = fetchRemoteConfig(manifest = manifest)
+        // A non-`app_start` context is required: the backend always fully resolves an `app_start` request, so it
+        // never returns 204 for one.
+        val (secondError, secondContainer, secondVerification) =
+            fetchRemoteConfig(manifest = manifest, fetchContext = RemoteConfigFetchContext.Foreground)
         assertThat(secondError).isNull()
         assertThat(secondContainer).isNull()
         assertThat(secondVerification).isEqualTo(VerificationResult.VERIFIED)
@@ -210,11 +213,13 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         val (firstError, firstContainer, _) = fetchRemoteConfig(manifest = null)
         assertThat(firstError).isNull()
         val rcContainer = requireNotNull(firstContainer) { "Expected a 200 container on the first run." }
-        val manifest = RemoteConfiguration.parse(rcContainer.config.data).manifest
+        val manifest = RemoteConfiguration.parse(rcContainer.config.decode()).manifest
 
         // The 204 carries no body, but its signature covers the request context. Under enforcement a verification
         // failure would surface as an error, so a null error with a VERIFIED result confirms the 204 was verified.
-        val (secondError, secondContainer, secondVerification) = fetchRemoteConfig(manifest = manifest)
+        // A non-`app_start` context is required: an `app_start` request is always fully resolved (never 204).
+        val (secondError, secondContainer, secondVerification) =
+            fetchRemoteConfig(manifest = manifest, fetchContext = RemoteConfigFetchContext.Foreground)
         assertThat(secondError).isNull()
         assertThat(secondContainer).isNull()
         assertThat(secondVerification).isEqualTo(VerificationResult.VERIFIED)
@@ -227,6 +232,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
     private fun fetchRemoteConfig(
         manifest: String?,
         prefetchedBlobs: List<String> = emptyList(),
+        fetchContext: RemoteConfigFetchContext = RemoteConfigFetchContext.AppStart,
     ): Triple<PurchasesError?, RCContainer?, VerificationResult?> {
         every { appConfig.isDebugBuild } returns false
 
@@ -237,7 +243,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
             backend.getRemoteConfig(
                 appInBackground = false,
                 appUserID = "integrationTestRemoteConfigUser",
-                fetchContext = RemoteConfigFetchContext.AppStart,
+                fetchContext = fetchContext,
                 domain = "app",
                 manifest = manifest,
                 prefetchedBlobs = prefetchedBlobs,
