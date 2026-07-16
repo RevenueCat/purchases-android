@@ -47,6 +47,7 @@ import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.sha1
@@ -292,6 +293,21 @@ internal class PurchasesOrchestrator(
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.WARNING) { ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED }
         }
+
+        // When the `/v1/config` 4xx kill-switch trips, workflow-served paywalls are no longer available, so the
+        // cached offerings (parsed while the endpoint was live, with paywall components skipped) can no longer
+        // serve the fallback render path. Invalidate the in-memory cache first so any getOfferings caller in the
+        // window before the refetch lands takes the cache-miss -> network path and gets freshly decoded
+        // components, instead of being served the stale null-component objects. The refetch (with the endpoint
+        // now disabled) then repopulates the cache proactively.
+        remoteConfigManager?.registerListener(object : RemoteConfigCommitListener {
+            // Only the disable transition matters here; commits/invalidations are handled by the config providers.
+            override fun onConfigCommitted(generation: Int) = Unit
+            override fun onRemoteConfigDisabled(generation: Int) {
+                offeringsManager.clearInMemoryOfferingsCache(invalidateInFlightFetches = true)
+                offeringsManager.fetchAndCacheOfferings(appUserID, state.appInBackground)
+            }
+        })
     }
 
     /** @suppress */

@@ -4,7 +4,9 @@ import com.revenuecat.purchases.common.OfferingParser
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 
-internal class GalaxyOfferingParser : OfferingParser() {
+internal class GalaxyOfferingParser(
+    shouldParsePaywallComponents: () -> Boolean = { true },
+) : OfferingParser(shouldParsePaywallComponents) {
     override fun findMatchingProduct(
         productsById: Map<String, List<StoreProduct>>,
         packageJson: JSONObject,

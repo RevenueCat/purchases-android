@@ -68,6 +68,8 @@ internal object OfferingStrings {
         "https://rev.cat/how-to-configure-offerings.\nMore information: https://rev.cat/why-are-offerings-empty"
     const val ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE = "Error fetching offerings. Using disk cache."
     const val TARGETING_ERROR = "Error while parsing targeting - skipping"
+    const val OFFERINGS_CACHE_INVALIDATED_SKIPPING_STALE_WRITE =
+        "Offerings cache was invalidated during fetch; skipping stale cache write."
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)

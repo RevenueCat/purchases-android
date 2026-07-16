@@ -1182,7 +1182,8 @@ workflows:
         - equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
         - equal: [ "release-train", << pipeline.schedule.name >> ]
     jobs:
-      - revenuecat/automatic-bump
+      - revenuecat/automatic-bump:
+          ruby_version: "3.2.0"
 
   biweekly-baseline-profiles:
     when:
@@ -1198,7 +1199,8 @@ workflows:
     when:
       equal: [ bump, << pipeline.parameters.action >> ]
     jobs:
-      - revenuecat/automatic-bump
+      - revenuecat/automatic-bump:
+          ruby_version: "3.2.0"
 
   manual-paywall-tester-release:
     when:

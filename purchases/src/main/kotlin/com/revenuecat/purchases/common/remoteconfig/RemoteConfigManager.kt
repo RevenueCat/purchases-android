@@ -395,6 +395,10 @@ internal class RemoteConfigManager(
             disabled = true
             val invalidatedGeneration = generation.incrementAndGet()
             listeners.forEach { it.onConfigInvalidated(invalidatedGeneration) }
+            // Distinct one-shot signal (this branch runs once, guarded by !disabled): lets consumers refetch
+            // offerings so paywall components — skipped while the endpoint was live — get decoded for the
+            // fallback render path.
+            listeners.forEach { it.onRemoteConfigDisabled(invalidatedGeneration) }
         }
         if (releaseGuardIfOwned(requestEpoch)) {
             errorLog(error)

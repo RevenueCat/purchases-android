@@ -11,6 +11,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
@@ -47,6 +48,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifyAll
@@ -2987,6 +2989,25 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         verify(exactly = 5) {
             mockRemoteConfigManager.refreshRemoteConfig(false, appUserId, RemoteConfigFetchContext.Read)
+        }
+    }
+
+    @Test
+    fun `remote config disable invalidates the offerings cache then refetches from network`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache(true) } just Runs
+        every { mockOfferingsManager.fetchAndCacheOfferings(appUserId, false, any(), any()) } just Runs
+
+        // Capture the disable listener the orchestrator registered on construction.
+        val listenerSlot = slot<RemoteConfigCommitListener>()
+        verify { mockRemoteConfigManager.registerListener(capture(listenerSlot)) }
+
+        listenerSlot.captured.onRemoteConfigDisabled(generation = 1)
+
+        // The in-memory cache must be dropped BEFORE the refetch, so getOfferings callers in the window take the
+        // cache-miss -> network path (freshly decoded components) instead of the stale null-component offerings.
+        verifyOrder {
+            mockOfferingsManager.clearInMemoryOfferingsCache(true)
+            mockOfferingsManager.fetchAndCacheOfferings(appUserId, false, any(), any())
         }
     }
 
