@@ -98,6 +98,7 @@ internal abstract class BaseHTTPClientTest {
         isDebugBuild: Boolean = false,
         customEntitlementComputation: Boolean = false,
         uiPreviewMode: Boolean = false,
+        usesRemoteConfigAPISources: Boolean = false,
         forceSigningErrors: Boolean = false,
         baseUrlString: String = AppConfig.baseUrlString
     ): AppConfig {
@@ -113,6 +114,7 @@ internal abstract class BaseHTTPClientTest {
             dangerousSettings = DangerousSettings(
                 customEntitlementComputation = customEntitlementComputation,
                 uiPreviewMode = uiPreviewMode,
+                usesRemoteConfigAPISources = usesRemoteConfigAPISources,
             ),
             runningTests = true,
             forceSigningErrors = forceSigningErrors,

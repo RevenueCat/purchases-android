@@ -267,12 +267,13 @@ internal class HTTPClient(
     /**
      * The API base URL to use for [endpoint], or null to keep using [baseURL].
      *
-     * API sources apply only when this is not an endpoint fallback-host attempt, the endpoint opts in via
-     * [Endpoint.usesAPISources], and [baseURL] is still the default host (a proxy or an overridden base URL
-     * pins the host and bypasses API sources).
+     * API sources apply only when the `usesRemoteConfigAPISources` dangerous setting is enabled, this is not
+     * an endpoint fallback-host attempt, the endpoint opts in via [Endpoint.usesAPISources], and [baseURL] is
+     * still the default host (a proxy or an overridden base URL pins the host and bypasses API sources).
      */
     private fun apiSourceURL(endpoint: Endpoint, baseURL: URL, isFallbackAttempt: Boolean): URL? {
-        val eligible = !isFallbackAttempt &&
+        val eligible = appConfig.usesRemoteConfigAPISources &&
+            !isFallbackAttempt &&
             endpoint.usesAPISources &&
             baseURL.toString() == AppConfig.baseUrlString
         if (!eligible) return null

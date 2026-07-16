@@ -75,7 +75,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val endpoint = Endpoint.GetCustomerInfo("test_user_id")
         val provider = FakeAPISourceProvider(listOf(server.url("/").toString()))
         val client = createClient(
-            appConfig = createAppConfig(proxyURL = null),
+            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
             apiSourceProvider = provider,
         )
         enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult())
@@ -91,6 +91,32 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val request = server.takeRequest()
         assertThat(request.path).isEqualTo("/v1/subscribers/test_user_id")
         assertThat(server.requestCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `performRequest ignores the API source provider when usesRemoteConfigAPISources is disabled`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        // The setting is disabled by default, so the provider must never be consulted and requests keep
+        // targeting the provided base URL.
+        val provider = mockk<RemoteConfigSourceProvider>(relaxed = true)
+        val client = createClient(
+            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = false),
+            apiSourceProvider = provider,
+        )
+        enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult())
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        val request = server.takeRequest()
+        assertThat(request.path).isEqualTo("/v1/subscribers/test_user_id")
+        assertThat(server.requestCount).isEqualTo(1)
+        verify(exactly = 0) { provider.getCurrent(any()) }
     }
 
     @Test
@@ -121,7 +147,10 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         // An overridden/proxy base URL pins the host; the API source (a different server) must not be used.
         val apiSourceServer = MockWebServer()
         val provider = FakeAPISourceProvider(listOf(apiSourceServer.url("/").toString()))
-        val client = createClient(apiSourceProvider = provider)
+        val client = createClient(
+            appConfig = createAppConfig(usesRemoteConfigAPISources = true),
+            apiSourceProvider = provider,
+        )
         enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult())
 
         client.performRequest(
@@ -147,7 +176,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         val provider = FakeAPISourceProvider(listOf(server.url("/").toString()))
         val client = createClient(
-            appConfig = createAppConfig(proxyURL = null),
+            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
             apiSourceProvider = provider,
         )
 

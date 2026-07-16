@@ -70,6 +70,9 @@ internal class AppConfig(
     val useWorkflows: Boolean
         get() = dangerousSettings.useWorkflows
 
+    val usesRemoteConfigAPISources: Boolean
+        get() = dangerousSettings.usesRemoteConfigAPISources
+
     val playStoreVersionName = context.playStoreVersionName
     val playServicesVersionName = context.playServicesVersionName
 
