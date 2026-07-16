@@ -25,7 +25,7 @@ public class PaywallDialogOptions internal constructor(
     /**
      * Handler for messages sent by Paywalls V2 `web_view` components. See [PaywallWebViewMessageHandler].
      */
-    public val webViewMessageHandler: PaywallWebViewMessageHandler? = null,
+    internal val webViewMessageHandler: PaywallWebViewMessageHandler? = null,
 ) {
 
     internal val offeringSelection: OfferingSelection
@@ -148,7 +148,7 @@ public class PaywallDialogOptions internal constructor(
          * validated messages (such as `rc:step-complete`, `rc:request-variables`, and `rc:error`) on
          * the main thread, along with a [PaywallWebViewController] for replying to the web view.
          */
-        public fun setWebViewMessageHandler(handler: PaywallWebViewMessageHandler?): Builder = apply {
+        internal fun setWebViewMessageHandler(handler: PaywallWebViewMessageHandler?): Builder = apply {
             this.webViewMessageHandler = handler
         }
 

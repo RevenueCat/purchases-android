@@ -64,7 +64,7 @@ public class PaywallOptions internal constructor(
      * Handler for messages sent by Paywalls V2 `web_view` components. Lets app code receive validated
      * messages and reply to them. See [PaywallWebViewMessageHandler].
      */
-    public val webViewMessageHandler: PaywallWebViewMessageHandler? = null,
+    internal val webViewMessageHandler: PaywallWebViewMessageHandler? = null,
     internal val injectedWorkflow: PublishedWorkflow? = null,
     internal val injectedWorkflowUiConfig: UiConfig = emptyUiConfig(),
 ) {
@@ -232,7 +232,7 @@ public class PaywallOptions internal constructor(
          * app observes and responds to those messages. The SDK does not automatically dismiss the
          * paywall or trigger a purchase in response to any message.
          */
-        public fun setWebViewMessageHandler(handler: PaywallWebViewMessageHandler?): Builder = apply {
+        internal fun setWebViewMessageHandler(handler: PaywallWebViewMessageHandler?): Builder = apply {
             this.webViewMessageHandler = handler
         }
 
