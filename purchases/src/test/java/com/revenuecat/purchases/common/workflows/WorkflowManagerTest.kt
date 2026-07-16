@@ -190,12 +190,12 @@ class WorkflowManagerTest {
     }
 
     @Test
-    fun `workflowIdForOfferingId delegates to the provider`() = runTest {
-        coEvery { mockProvider.workflowIdForOfferingId("off_1") } returns "wf_1"
+    fun `resolveWorkflow delegates to the provider`() = runTest {
+        coEvery { mockProvider.resolveWorkflow("off_1") } returns WorkflowResolution.Found("wf_1")
 
-        val result = workflowManager.workflowIdForOfferingId("off_1")
+        val result = workflowManager.resolveWorkflow("off_1")
 
-        assertThat(result).isEqualTo("wf_1")
+        assertThat(result).isEqualTo(WorkflowResolution.Found("wf_1"))
     }
 
     @Test

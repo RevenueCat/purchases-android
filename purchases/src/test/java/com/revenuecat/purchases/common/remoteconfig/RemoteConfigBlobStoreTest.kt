@@ -11,7 +11,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.File
-import java.nio.ByteBuffer
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -49,35 +48,26 @@ class RemoteConfigBlobStoreTest {
     fun `write then read round-trips the blob bytes`() {
         val bytes = byteArrayOf(1, 2, 3, 4, 5)
 
-        blobStore.write(refA, ByteBuffer.wrap(bytes))
+        blobStore.write(refA, bytes)
 
         assertThat(blobStore.read(refA)).isEqualTo(bytes)
     }
 
     @Test
     fun `write returns true when the blob is persisted`() {
-        assertThat(blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1, 2, 3)))).isTrue
+        assertThat(blobStore.write(refA, byteArrayOf(1, 2, 3))).isTrue
     }
 
     @Test
     fun `write returns false for a malformed ref`() {
-        assertThat(blobStore.write("../escape", ByteBuffer.wrap(byteArrayOf(6, 6, 6)))).isFalse
-    }
-
-    @Test
-    fun `write does not consume the caller's buffer`() {
-        val buffer = ByteBuffer.wrap(byteArrayOf(9, 8, 7))
-
-        blobStore.write(refA, buffer)
-
-        assertThat(buffer.position()).isEqualTo(0)
+        assertThat(blobStore.write("../escape", byteArrayOf(6, 6, 6))).isFalse
     }
 
     @Test
     fun `contains reflects whether a blob has been written`() {
         assertThat(blobStore.contains(refA)).isFalse
 
-        blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1)))
+        blobStore.write(refA, byteArrayOf(1))
 
         assertThat(blobStore.contains(refA)).isTrue
     }
@@ -89,7 +79,7 @@ class RemoteConfigBlobStoreTest {
 
     @Test
     fun `contains and cachedRefs load blobs already on disk from a previous instance`() {
-        blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1)))
+        blobStore.write(refA, byteArrayOf(1))
 
         // A fresh instance over the same directory must discover the existing blob via its one-time disk scan.
         val reopened = RemoteConfigBlobStore(applicationContext)
@@ -100,8 +90,8 @@ class RemoteConfigBlobStoreTest {
 
     @Test
     fun `cachedRefs reflects the written blobs`() {
-        blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1)))
-        blobStore.write(refB, ByteBuffer.wrap(byteArrayOf(2)))
+        blobStore.write(refA, byteArrayOf(1))
+        blobStore.write(refB, byteArrayOf(2))
 
         assertThat(blobStore.cachedRefs()).containsExactlyInAnyOrder(refA, refB)
     }
@@ -113,8 +103,8 @@ class RemoteConfigBlobStoreTest {
 
     @Test
     fun `retainOnly deletes unreferenced blobs and keeps referenced ones`() {
-        blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1)))
-        blobStore.write(refB, ByteBuffer.wrap(byteArrayOf(2)))
+        blobStore.write(refA, byteArrayOf(1))
+        blobStore.write(refB, byteArrayOf(2))
 
         blobStore.retainOnly(setOf(refA))
 
@@ -124,7 +114,7 @@ class RemoteConfigBlobStoreTest {
 
     @Test
     fun `retainOnly prunes orphan side files and invalid-named files the index never tracks`() {
-        blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1)))
+        blobStore.write(refA, byteArrayOf(1))
         // Simulate the AtomicFile side file left by a write interrupted mid-flight, plus a stray
         // invalid-named file.
         val blobsDir = File(File(testFolder, "RevenueCat"), "blobs")
@@ -154,13 +144,13 @@ class RemoteConfigBlobStoreTest {
         assertThat(reopened.cachedRefs()).isEmpty()
 
         // A retry completes normally, replacing the leftover side file.
-        assertThat(blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(3, 4)))).isTrue
+        assertThat(blobStore.write(refA, byteArrayOf(3, 4))).isTrue
         assertThat(blobStore.read(refA)).isEqualTo(byteArrayOf(3, 4))
     }
 
     @Test
     fun `read self-heals the index when the underlying file is gone`() {
-        blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1)))
+        blobStore.write(refA, byteArrayOf(1))
         assertThat(blobStore.contains(refA)).isTrue
 
         // The file disappears from under us (e.g. external removal); the index still claims it.
@@ -173,7 +163,7 @@ class RemoteConfigBlobStoreTest {
 
     @Test
     fun `retainOnly with an empty set clears the cache`() {
-        blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1)))
+        blobStore.write(refA, byteArrayOf(1))
 
         blobStore.retainOnly(emptySet())
 
@@ -182,8 +172,8 @@ class RemoteConfigBlobStoreTest {
 
     @Test
     fun `clear deletes every cached blob`() {
-        blobStore.write(refA, ByteBuffer.wrap(byteArrayOf(1)))
-        blobStore.write(refB, ByteBuffer.wrap(byteArrayOf(2)))
+        blobStore.write(refA, byteArrayOf(1))
+        blobStore.write(refB, byteArrayOf(2))
 
         blobStore.clear()
 
@@ -203,7 +193,7 @@ class RemoteConfigBlobStoreTest {
     fun `a malformed ref is rejected and cannot escape the blobs directory`() {
         val malformed = "../escape"
 
-        blobStore.write(malformed, ByteBuffer.wrap(byteArrayOf(6, 6, 6)))
+        blobStore.write(malformed, byteArrayOf(6, 6, 6))
 
         assertThat(blobStore.contains(malformed)).isFalse
         assertThat(blobStore.read(malformed)).isNull()

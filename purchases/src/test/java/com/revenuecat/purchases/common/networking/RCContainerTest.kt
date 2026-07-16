@@ -27,10 +27,8 @@ class RCContainerTest {
 
         assertThat(container.version).isEqualTo(1)
         assertThat(container.flags).isEqualTo(0x07)
-        assertThat(container.config.data.readBytes()).isEqualTo(config)
-        assertThat(container.config.isChecksumValid()).isTrue()
+        assertThat(container.config).isEqualTo(config)
         assertThat(container.contentElements).isEmpty()
-        assertThat(container.elements).isEmpty()
     }
 
     @Test
@@ -91,7 +89,8 @@ class RCContainerTest {
 
         assertThat(container.contentElements).hasSize(1)
         assertThat(container.contentElements[0].data.readBytes()).isEqualTo(element)
-        assertThat(container.elements[refOf(element)]!!.data.readBytes()).isEqualTo(element)
+        // The element is content-addressed by the hash of its (uncompressed) bytes.
+        assertThat(container.contentElements[0].checksumBase64()).isEqualTo(refOf(element))
     }
 
     @Test
@@ -109,7 +108,7 @@ class RCContainerTest {
         assertThat(container.contentElements).hasSize(elements.size)
         elements.forEachIndexed { index, expected ->
             assertThat(container.contentElements[index].data.readBytes()).isEqualTo(expected)
-            assertThat(container.elements[refOf(expected)]!!.data.readBytes()).isEqualTo(expected)
+            assertThat(container.contentElements[index].checksumBase64()).isEqualTo(refOf(expected))
         }
     }
 
@@ -123,20 +122,20 @@ class RCContainerTest {
         val ref = refOf(element)
         assertThat(ref).hasSize(32)
         assertThat(ref).doesNotContain("=")
-        assertThat(container.elements).containsKey(ref)
-        assertThat(container.elements[ref]!!.data.readBytes()).isEqualTo(element)
+        assertThat(container.contentElements.single().checksumBase64()).isEqualTo(ref)
     }
 
     @Test
-    fun `identical content elements collapse to one map entry`() {
+    fun `identical content elements are parsed as separate elements sharing a ref`() {
         val element = "duplicate".toByteArray()
         val bytes = buildContainer(elements = listOf(element, element.copyOf()))
 
         val container = RCContainer.parse(bytes)
 
-        // Both are present in the ordered list, but content-addressing collapses them in the map.
+        // Both copies are present in the ordered list, addressed by the same content ref.
         assertThat(container.contentElements).hasSize(2)
-        assertThat(container.elements).hasSize(1)
+        assertThat(container.contentElements.map { it.checksumBase64() })
+            .containsExactly(refOf(element), refOf(element))
     }
 
     @Test
@@ -147,7 +146,7 @@ class RCContainerTest {
 
         val container = RCContainer.parse(bytes)
 
-        assertThat(container.config.data.readBytes()).isEqualTo("abc".toByteArray())
+        assertThat(container.config).isEqualTo("abc".toByteArray())
         assertThat(container.contentElements[0].data.readBytes()).isEqualTo(element)
     }
 
@@ -158,7 +157,7 @@ class RCContainerTest {
 
         val container = RCContainer.parse(bytes)
 
-        assertThat(container.config.data.remaining()).isEqualTo(0)
+        assertThat(container.config).isEmpty()
         assertThat(container.contentElements[0].data.readBytes()).isEqualTo(element)
     }
 
@@ -176,30 +175,6 @@ class RCContainerTest {
     }
 
     @Test
-    fun `isChecksumValid returns true for a correct checksum`() {
-        val element = "verify-me".toByteArray()
-        val bytes = buildContainer(elements = listOf(element))
-
-        val container = RCContainer.parse(bytes)
-
-        assertThat(container.contentElements[0].isChecksumValid()).isTrue()
-    }
-
-    @Test
-    fun `isChecksumValid returns false for a corrupted element`() {
-        val element = "verify-me".toByteArray()
-        // Store a checksum that does not match the element bytes.
-        val bytes = buildContainer(
-            elements = listOf(element),
-            checksumOverride = { _, _ -> ByteArray(24) { 0 } },
-        )
-
-        val container = RCContainer.parse(bytes)
-
-        assertThat(container.contentElements[0].isChecksumValid()).isFalse()
-    }
-
-    @Test
     fun `gzip element decodes to its uncompressed bytes and verifies`() {
         val element = "compress-me-".repeat(20).toByteArray()
         val bytes = buildContainer(
@@ -214,27 +189,61 @@ class RCContainerTest {
         // The on-wire bytes are compressed (and smaller than the original)...
         assertThat(parsed.data.readBytes()).isNotEqualTo(element)
         assertThat(parsed.data.remaining()).isLessThan(element.size)
-        // ...but decode() yields the original and the checksum verifies against the uncompressed bytes.
-        assertThat(parsed.decode().readBytes()).isEqualTo(element)
-        assertThat(parsed.isChecksumValid()).isTrue()
+        // ...but decode() yields the original (verifying against the uncompressed bytes as it does).
+        assertThat(parsed.decode()).isEqualTo(element)
         // The content address is the hash of the uncompressed bytes, unchanged by compression.
-        assertThat(container.elements).containsKey(refOf(element))
+        assertThat(parsed.checksumBase64()).isEqualTo(refOf(element))
     }
 
     @Test
-    fun `gzip config element decodes for parsing`() {
+    fun `gzip config element is decoded during parsing`() {
         val config = "{\"hello\":\"world\"}".toByteArray()
+        // The config is gzipped on the wire; parse must decode it into container.config.
         val bytes = buildContainer(config = config, codecForIndex = { RCContentEncoding.GZIP.id })
 
         val container = RCContainer.parse(bytes)
 
-        assertThat(container.config.codec).isEqualTo(RCContentEncoding.GZIP.id)
-        assertThat(container.config.decode().readBytes()).isEqualTo(config)
-        assertThat(container.config.isChecksumValid()).isTrue()
+        assertThat(container.config).isEqualTo(config)
     }
 
     @Test
-    fun `unsupported codec makes decode throw and checksum invalid`() {
+    fun `parse throws when the config element checksum does not match its bytes`() {
+        // Store a checksum for the config (element 0) that does not match its bytes.
+        val bytes = buildContainer(
+            config = "{\"hello\":\"world\"}".toByteArray(),
+            checksumOverride = { _, _ -> ByteArray(24) { 0 } },
+        )
+
+        assertThatThrownBy { RCContainer.parse(bytes) }.isInstanceOf(RCContainerFormatException::class.java)
+    }
+
+    @Test
+    fun `contentElements decode to their uncompressed bytes and re-iterate`() {
+        val blobs = listOf("a".toByteArray(), "bb".toByteArray(), "ccc".repeat(30).toByteArray())
+        val container = RCContainer.parse(buildContainer(elements = blobs))
+
+        assertThat(container.contentElements.map { it.decode() }).containsExactlyElementsOf(blobs)
+        // Iterating doesn't consume: the elements are still there for another pass.
+        assertThat(container.contentElements.map { it.decode() }).containsExactlyElementsOf(blobs)
+    }
+
+    @Test
+    fun `decode throws when the element checksum does not match its bytes`() {
+        val blob = "verify-me".toByteArray()
+        // Store a checksum that does not match the (content) element bytes.
+        val bytes = buildContainer(
+            elements = listOf(blob),
+            checksumOverride = { index, element -> if (index == 1) ByteArray(24) { 0 } else RCContainerTestData.sha256(element) },
+        )
+
+        val parsed = RCContainer.parse(bytes).contentElements.single()
+
+        // The bytes decompress, but they do not hash to the (tampered) checksum, so decode() rejects them.
+        assertThatThrownBy { parsed.decode() }.isInstanceOf(RCContainerFormatException::class.java)
+    }
+
+    @Test
+    fun `unsupported codec makes decode throw`() {
         listOf(RCContentEncoding.BROTLI.id, RCContentEncoding.ZSTD.id, 9).forEach { codecId ->
             val element = "payload".toByteArray()
             val bytes = buildContainer(
@@ -246,12 +255,11 @@ class RCContainerTest {
 
             assertThat(parsed.codec).isEqualTo(codecId)
             assertThatThrownBy { parsed.decode() }.isInstanceOf(RCContainerFormatException::class.java)
-            assertThat(parsed.isChecksumValid()).isFalse()
         }
     }
 
     @Test
-    fun `corrupt gzip body fails verification without throwing`() {
+    fun `corrupt gzip body makes decode throw`() {
         val element = "compress-me-".repeat(20).toByteArray()
         val bytes = buildContainer(
             elements = listOf(element),
@@ -264,23 +272,23 @@ class RCContainerTest {
 
         val parsed = RCContainer.parse(bytes).contentElements[0]
 
-        assertThat(parsed.isChecksumValid()).isFalse()
+        assertThatThrownBy { parsed.decode() }.isInstanceOf(RCContainerFormatException::class.java)
     }
 
     @Test
-    fun `config data is a zero-copy view over the source buffer`() {
-        val config = "ABCD".toByteArray()
-        // Element 0 (config) body begins at offset 8 (header) + 32 (checksum + size + reserved) = 40.
-        val bytes = buildContainer(config = config)
-        val configOffset = 8 + 24 + 4 + 4
+    fun `content element data is a zero-copy view over the source buffer`() {
+        val element = "ABCD".toByteArray()
+        // Empty config: header(8) + config elem header(32) + config body(0) + content elem header(32) = 72.
+        val bytes = buildContainer(config = ByteArray(0), elements = listOf(element))
+        val elementOffset = 8 + 32 + 32
 
         val container = RCContainer.parse(bytes)
-        val data = container.config.data
+        val data = container.contentElements[0].data
 
         assertThat(data.get(0)).isEqualTo('A'.code.toByte())
 
         // Mutating the backing array is reflected in the view: no copy was made during parse.
-        bytes[configOffset] = 'Z'.code.toByte()
+        bytes[elementOffset] = 'Z'.code.toByte()
         assertThat(data.get(0)).isEqualTo('Z'.code.toByte())
     }
 
@@ -305,7 +313,7 @@ class RCContainerTest {
 
         val parsed = RCContainer.parse(buffer)
 
-        assertThat(parsed.config.data.readBytes()).isEqualTo("cfg".toByteArray())
+        assertThat(parsed.config).isEqualTo("cfg".toByteArray())
         assertThat(parsed.contentElements[0].data.readBytes()).isEqualTo("e".toByteArray())
         // The overload must not consume the caller's position.
         assertThat(buffer.position()).isEqualTo(prefix.size)
@@ -322,7 +330,7 @@ class RCContainerTest {
 
         val parsed = RCContainer.parse(buffer)
 
-        assertThat(parsed.config.data.readBytes()).isEqualTo("abc".toByteArray())
+        assertThat(parsed.config).isEqualTo("abc".toByteArray())
         assertThat(parsed.contentElements[0].data.readBytes()).isEqualTo("element".toByteArray())
         assertThat(buffer.position()).isEqualTo(prefix.size)
     }

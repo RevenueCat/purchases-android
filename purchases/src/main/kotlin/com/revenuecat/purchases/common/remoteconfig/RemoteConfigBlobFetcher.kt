@@ -17,7 +17,6 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.net.HttpURLConnection
-import java.nio.ByteBuffer
 import java.util.PriorityQueue
 
 /** The placeholder a blob source URL template carries; substituted with the blob ref before download. */
@@ -240,7 +239,7 @@ internal class RemoteConfigBlobFetcher(
         }
         // A failed disk write isn't a source problem, so don't condemn the source: report the blob as unavailable
         // (yields false, stops) and let a later sync/on-demand read re-fetch it.
-        return if (blobStore.write(ref, ByteBuffer.wrap(bytes))) {
+        return if (blobStore.write(ref, bytes)) {
             verboseLog { "Downloaded and stored remote config blob '$ref' (${bytes.size} bytes) from $url." }
             DownloadOutcome.SUCCESS
         } else {

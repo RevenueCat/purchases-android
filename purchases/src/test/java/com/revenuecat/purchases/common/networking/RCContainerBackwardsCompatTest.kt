@@ -29,10 +29,8 @@ class RCContainerBackwardsCompatTest {
 
         assertThat(container.version).isEqualTo(1)
         assertThat(container.flags).isEqualTo(0)
-        assertThat(container.config.data.readBytes()).isEqualTo(RCContainerTestData.CONFIG_JSON)
-        assertThat(container.config.isChecksumValid()).isTrue()
+        assertThat(container.config).isEqualTo(RCContainerTestData.CONFIG_JSON)
         assertThat(container.contentElements).isEmpty()
-        assertThat(container.elements).isEmpty()
     }
 
     @Test
@@ -40,11 +38,11 @@ class RCContainerBackwardsCompatTest {
         val container = parseFixture("v1_single_element.bin")
         val blob = RCContainerTestData.WORKFLOW_BLOB
 
-        assertThat(container.config.data.readBytes()).isEqualTo(RCContainerTestData.CONFIG_JSON)
+        assertThat(container.config).isEqualTo(RCContainerTestData.CONFIG_JSON)
         assertThat(container.contentElements).hasSize(1)
         assertThat(container.contentElements[0].data.readBytes()).isEqualTo(blob)
-        assertThat(container.contentElements[0].isChecksumValid()).isTrue()
-        assertThat(container.elements[RCContainerTestData.refOf(blob)]!!.data.readBytes()).isEqualTo(blob)
+        assertThat(container.contentElements[0].checksumBase64()).isEqualTo(RCContainerTestData.refOf(blob))
+        assertThat(container.contentElements[0].decode()).isEqualTo(blob)
     }
 
     @Test
@@ -57,11 +55,11 @@ class RCContainerBackwardsCompatTest {
             RCContainerTestData.LARGE_BLOB,
         )
 
-        assertThat(container.config.data.readBytes()).isEqualTo(RCContainerTestData.CONFIG_JSON)
+        assertThat(container.config).isEqualTo(RCContainerTestData.CONFIG_JSON)
         assertThat(container.contentElements).hasSize(expected.size)
         expected.forEachIndexed { index, blob ->
-            assertThat(container.contentElements[index].data.readBytes()).isEqualTo(blob)
-            assertThat(container.contentElements[index].isChecksumValid()).isTrue()
+            // decode() verifies as it decompresses, so this also checks each element against its checksum.
+            assertThat(container.contentElements[index].decode()).isEqualTo(blob)
         }
         // The 300-byte element proves little-endian size decoding survives round-trips.
         assertThat(container.contentElements[3].data.remaining()).isEqualTo(300)
@@ -72,7 +70,7 @@ class RCContainerBackwardsCompatTest {
         val container = parseFixture("v1_empty_config.bin")
         val blob = RCContainerTestData.WORKFLOW_BLOB
 
-        assertThat(container.config.data.remaining()).isEqualTo(0)
+        assertThat(container.config).isEmpty()
         assertThat(container.contentElements).hasSize(1)
         assertThat(container.contentElements[0].data.readBytes()).isEqualTo(blob)
     }
@@ -82,7 +80,7 @@ class RCContainerBackwardsCompatTest {
         val container = parseFixture("v1_flags_set.bin")
 
         assertThat(container.flags).isEqualTo(0x07)
-        assertThat(container.config.data.readBytes()).isEqualTo(RCContainerTestData.CONFIG_JSON)
+        assertThat(container.config).isEqualTo(RCContainerTestData.CONFIG_JSON)
     }
 
     @Test
@@ -90,24 +88,23 @@ class RCContainerBackwardsCompatTest {
         val container = parseFixture("v1_gzip_element.bin")
         val blob = RCContainerTestData.WORKFLOW_BLOB
 
-        assertThat(container.config.data.readBytes()).isEqualTo(RCContainerTestData.CONFIG_JSON)
+        assertThat(container.config).isEqualTo(RCContainerTestData.CONFIG_JSON)
         assertThat(container.contentElements).hasSize(1)
         val element = container.contentElements[0]
         assertThat(element.codec).isEqualTo(RCContentEncoding.GZIP.id)
-        // The on-wire body is compressed, but decode() recovers the original and the checksum verifies.
+        // The on-wire body is compressed, but decode() recovers the original and verifies it as it does.
         assertThat(element.data.readBytes()).isNotEqualTo(blob)
-        assertThat(element.decode().readBytes()).isEqualTo(blob)
-        assertThat(element.isChecksumValid()).isTrue()
-        assertThat(container.elements[RCContainerTestData.refOf(blob)]!!.decode().readBytes()).isEqualTo(blob)
+        assertThat(element.decode()).isEqualTo(blob)
+        assertThat(element.checksumBase64()).isEqualTo(RCContainerTestData.refOf(blob))
     }
 
     @Test
-    fun `duplicate-elements fixture collapses in the content-addressed map`() {
+    fun `duplicate-elements fixture keeps both copies under the same ref`() {
         val container = parseFixture("v1_duplicate_elements.bin")
 
-        // Both copies remain in the ordered list, but content-addressing collapses them in the map.
+        // Both copies remain in the ordered list, addressed by the same content ref.
         assertThat(container.contentElements).hasSize(2)
-        assertThat(container.elements).hasSize(1)
+        assertThat(container.contentElements.map { it.checksumBase64() }.distinct()).hasSize(1)
     }
 
     /**

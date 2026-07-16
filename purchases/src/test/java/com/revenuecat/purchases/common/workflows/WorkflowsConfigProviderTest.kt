@@ -33,6 +33,8 @@ internal class WorkflowsConfigProviderTest {
 
     @Before
     fun setUp() {
+        // Default: endpoint live. Tests exercising the 4xx kill switch override this to true.
+        every { manager.isDisabled } returns false
         currentLogHandler = object : LogHandler {
             override fun v(tag: String, msg: String) {}
             override fun d(tag: String, msg: String) {}
@@ -287,6 +289,69 @@ internal class WorkflowsConfigProviderTest {
 
         assertThat(provider.workflowIdForOfferingId(CURRENT_OFFERING)).isNull()
     }
+
+    @Test
+    fun `resolveWorkflow returns Found when the topic maps the offering to a workflow`() = runTest {
+        every { manager.configGeneration } returns 0
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns topicWith(
+            WF_CURRENT to configItem(prefetch = false, offeringId = CURRENT_OFFERING),
+        )
+
+        assertThat(provider.resolveWorkflow(CURRENT_OFFERING))
+            .isEqualTo(WorkflowResolution.Found(WF_CURRENT))
+    }
+
+    @Test
+    fun `resolveWorkflow returns NoWorkflow when the topic is readable but has no mapping`() = runTest {
+        every { manager.configGeneration } returns 0
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns topicWith(
+            WF_CURRENT to configItem(prefetch = false, offeringId = CURRENT_OFFERING),
+        )
+
+        // The topic committed fine; this offering simply has no workflow, so it is workflowless (not unknown).
+        assertThat(provider.resolveWorkflow(OTHER_OFFERING)).isEqualTo(WorkflowResolution.NoWorkflow)
+    }
+
+    @Test
+    fun `resolveWorkflow returns Disabled when the topic cannot be read and remote config is disabled`() = runTest {
+        every { manager.configGeneration } returns 0
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns null
+        // A 4xx kill switch: the offering's components were skipped, so the caller can reload to recover them.
+        every { manager.isDisabled } returns true
+
+        assertThat(provider.resolveWorkflow(CURRENT_OFFERING)).isEqualTo(WorkflowResolution.Disabled)
+    }
+
+    @Test
+    fun `resolveWorkflow returns Disabled from a warm cache when remote config is disabled`() = runTest {
+        // Race: on a 4xx kill switch the disabled flag is set before the workflow cache is invalidated, so a
+        // concurrent resolution can still see a warm cache. The warm-cache fast path must honor isDisabled and
+        // yield Disabled (→ offerings reload) instead of the stale Found/NoWorkflow, or the components skipped
+        // while workflows were enabled are never recovered.
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        stubWorkflowBody(WF_CURRENT)
+        provider.warm(generation = 0)
+        assertThat(provider.isWarmForCurrentOffering()).isTrue
+
+        every { manager.isDisabled } returns true
+
+        // CURRENT_OFFERING maps to WF_CURRENT in the warm cache, so the fast path would return Found without the
+        // isDisabled guard; OTHER_OFFERING is unmapped and would return NoWorkflow. Both must yield Disabled.
+        assertThat(provider.resolveWorkflow(CURRENT_OFFERING)).isEqualTo(WorkflowResolution.Disabled)
+        assertThat(provider.resolveWorkflow("unmapped_off")).isEqualTo(WorkflowResolution.Disabled)
+    }
+
+    @Test
+    fun `resolveWorkflow returns Unavailable when the topic cannot be read and remote config is not disabled`() =
+        runTest {
+            every { manager.configGeneration } returns 0
+            coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns null
+            // A transient failure: reloading would recover nothing, so the caller surfaces an error.
+            every { manager.isDisabled } returns false
+
+            assertThat(provider.resolveWorkflow(CURRENT_OFFERING)).isEqualTo(WorkflowResolution.Unavailable)
+        }
 
     private fun stubTopic() {
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.Workflows) } returns topicWith(
