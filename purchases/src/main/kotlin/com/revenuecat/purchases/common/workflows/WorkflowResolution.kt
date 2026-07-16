@@ -18,15 +18,11 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
  */
 @InternalRevenueCatAPI
 public sealed class WorkflowResolution {
-    @InternalRevenueCatAPI
     public data class Found(val workflowId: String) : WorkflowResolution()
 
-    @InternalRevenueCatAPI
     public object NoWorkflow : WorkflowResolution()
 
-    @InternalRevenueCatAPI
     public object Disabled : WorkflowResolution()
 
-    @InternalRevenueCatAPI
     public object Unavailable : WorkflowResolution()
 }
