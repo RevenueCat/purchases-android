@@ -11,6 +11,7 @@ import java.io.IOException
 import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.nio.CharBuffer
+import java.nio.charset.CoderResult
 import java.nio.charset.CodingErrorAction
 
 /**
@@ -100,34 +101,57 @@ internal class ETagPayloadStore(
     }
 
     /**
-     * UTF-8 encodes [payload] into [out] through a fixed-size buffer. A plain `Writer.write(String)`
+     * UTF-8 encodes [payload] into [out] through fixed-size buffers. A plain `Writer.write(String)`
      * copies the whole string into a fresh `char[]` first, a payload-sized allocation, the exact cost
-     * this store exists to avoid; `CharBuffer.wrap` reads the string in place. Encoding is strict
-     * (REPORT, matching [read]'s decoder): a payload the encoder cannot represent fails the write and
-     * stays uncached, rather than being silently altered.
+     * this store exists to avoid. The string is copied through a fixed `char[]` chunk instead of
+     * `CharBuffer.wrap(payload)`: a wrapped string is not array-backed, which forces the encoder off its
+     * fast array loop into per-char access. Encoding is strict (REPORT, matching [read]'s decoder): a
+     * payload the encoder cannot represent fails the write and stays uncached, rather than being
+     * silently altered.
      */
     private fun encodeTo(out: OutputStream, payload: String) {
         val encoder = Charsets.UTF_8.newEncoder()
             .onMalformedInput(CodingErrorAction.REPORT)
             .onUnmappableCharacter(CodingErrorAction.REPORT)
-        val charBuffer = CharBuffer.wrap(payload)
+        val chunk = CharArray(CHUNK_CHARS)
+        val charBuffer = CharBuffer.wrap(chunk)
+        // Sized so a full chunk always encodes in one pass (UTF-8 is at most 3 bytes per UTF-16 char).
         val byteBuffer = ByteBuffer.allocate(WRITE_BUFFER_BYTES)
-        var encoded = false
+        var payloadPosition = 0
+        // Chars the encoder left unconsumed at a chunk edge (a high surrogate whose pair is in the next
+        // chunk); carried to the front of the next chunk so pairs are never encoded split.
+        var carriedChars = 0
+        do {
+            val charsToCopy = minOf(chunk.size - carriedChars, payload.length - payloadPosition)
+            payload.toCharArray(chunk, carriedChars, payloadPosition, payloadPosition + charsToCopy)
+            payloadPosition += charsToCopy
+            val isLastChunk = payloadPosition == payload.length
+            charBuffer.position(0)
+            charBuffer.limit(carriedChars + charsToCopy)
+            drainInto(out, byteBuffer) { encoder.encode(charBuffer, byteBuffer, isLastChunk) }
+            carriedChars = charBuffer.remaining()
+            if (carriedChars > 0) {
+                System.arraycopy(chunk, charBuffer.position(), chunk, 0, carriedChars)
+            }
+        } while (payloadPosition < payload.length)
+        drainInto(out, byteBuffer) { encoder.flush(byteBuffer) }
+    }
+
+    /** Runs [step] until it reports underflow, writing whatever it put in [byteBuffer] after each round. */
+    private inline fun drainInto(out: OutputStream, byteBuffer: ByteBuffer, step: () -> CoderResult) {
         while (true) {
-            val result = if (!encoded) encoder.encode(charBuffer, byteBuffer, true) else encoder.flush(byteBuffer)
+            val result = step()
             if (result.isError) result.throwException()
             out.write(byteBuffer.array(), 0, byteBuffer.position())
             byteBuffer.clear()
-            if (result.isUnderflow) {
-                if (encoded) break
-                encoded = true
-            }
+            if (result.isUnderflow) return
         }
     }
 
     private companion object {
         const val DIRECTORY_NAME = "rc_etag_payloads"
         const val TEMP_SUFFIX = ".tmp"
-        const val WRITE_BUFFER_BYTES = 64 * 1024
+        const val CHUNK_CHARS = 64 * 1024
+        const val WRITE_BUFFER_BYTES = 256 * 1024
     }
 }
