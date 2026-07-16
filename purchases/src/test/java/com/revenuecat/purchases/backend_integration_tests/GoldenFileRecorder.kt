@@ -125,6 +125,7 @@ class GoldenFileRecorder(
             "Alt-Svc",
             "X-Revenuecat-App-Id",
             "x-revenuecat-app-id",
+            "Content-Length",
         )
 
         /**
