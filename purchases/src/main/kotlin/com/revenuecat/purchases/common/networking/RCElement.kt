@@ -78,6 +78,19 @@ internal class RCElement(
         return bytes
     }
 
+    /**
+     * A copy of this element's decoded (uncompressed) bytes. Mirrors [dataBytes] but runs the payload
+     * through [decode] first, so callers that need the logical content (checksum/signature/JSON) get the
+     * same bytes regardless of the on-wire [codec]. Throws [RCContainerFormatException] for an unsupported
+     * codec or a corrupt compressed stream.
+     */
+    fun decodedBytes(): ByteArray {
+        val view = decode().duplicate().apply { rewind() }
+        val bytes = ByteArray(view.remaining())
+        view.get(bytes)
+        return bytes
+    }
+
     private companion object {
         private const val SHA_256_ALGORITHM = "SHA-256"
     }
