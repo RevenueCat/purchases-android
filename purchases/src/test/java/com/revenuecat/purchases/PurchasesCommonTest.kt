@@ -11,6 +11,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
@@ -2843,50 +2844,25 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     @Test
     fun `getWorkflow delivers the manager success result to the caller`() {
         val expected = mockk<PublishedWorkflow>()
-        val successSlot = slot<(PublishedWorkflow) -> Unit>()
-        every {
-            mockWorkflowManager.getWorkflow(
-                workflowOrOfferingId = "wf_1",
-                onSuccess = capture(successSlot),
-                onError = any(),
-            )
-        } answers { successSlot.captured(expected) }
+        coEvery { mockWorkflowManager.getWorkflow("wf_1") } returns expected
 
-        var received: PublishedWorkflow? = null
-        var receivedError: PurchasesError? = null
-        purchases.purchasesOrchestrator.getWorkflow(
-            workflowId = "wf_1",
-            onSuccess = { received = it },
-            onError = { receivedError = it },
-        )
+        val result = runBlocking { purchases.purchasesOrchestrator.getWorkflow("wf_1") }
 
-        assertThat(received).isEqualTo(expected)
-        assertThat(receivedError).isNull()
+        assertThat(result).isEqualTo(expected)
     }
 
     @OptIn(InternalRevenueCatAPI::class)
     @Test
-    fun `getWorkflow delivers the manager error to the caller`() {
+    fun `getWorkflow surfaces the manager error to the caller`() {
         val expectedError = PurchasesError(PurchasesErrorCode.UnknownError, "boom")
-        val errorSlot = slot<(PurchasesError) -> Unit>()
-        every {
-            mockWorkflowManager.getWorkflow(
-                workflowOrOfferingId = "wf_1",
-                onSuccess = any(),
-                onError = capture(errorSlot),
-            )
-        } answers { errorSlot.captured(expectedError) }
+        coEvery { mockWorkflowManager.getWorkflow("wf_1") } throws PurchasesException(expectedError)
 
-        var received: PublishedWorkflow? = null
-        var receivedError: PurchasesError? = null
-        purchases.purchasesOrchestrator.getWorkflow(
-            workflowId = "wf_1",
-            onSuccess = { received = it },
-            onError = { receivedError = it },
-        )
+        val thrown = runBlocking {
+            runCatching { purchases.purchasesOrchestrator.getWorkflow("wf_1") }.exceptionOrNull()
+        }
 
-        assertThat(receivedError).isEqualTo(expectedError)
-        assertThat(received).isNull()
+        assertThat(thrown).isInstanceOf(PurchasesException::class.java)
+        assertThat((thrown as PurchasesException).error).isEqualTo(expectedError)
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -2894,20 +2870,13 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     fun `getWorkflow returns ConfigurationError and never calls manager when uiPreviewMode is true`() {
         buildPurchases(anonymous = true, uiPreviewMode = true)
 
-        var received: PublishedWorkflow? = null
-        var receivedError: PurchasesError? = null
-        purchases.purchasesOrchestrator.getWorkflow(
-            workflowId = "wf_1",
-            onSuccess = { received = it },
-            onError = { receivedError = it },
-        )
-
-        assertThat(receivedError).isNotNull
-        assertThat(receivedError!!.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
-        assertThat(received).isNull()
-        verify(exactly = 0) {
-            mockWorkflowManager.getWorkflow(any(), any(), any())
+        val thrown = runBlocking {
+            runCatching { purchases.purchasesOrchestrator.getWorkflow("wf_1") }.exceptionOrNull()
         }
+
+        assertThat(thrown).isInstanceOf(PurchasesException::class.java)
+        assertThat((thrown as PurchasesException).error.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        coVerify(exactly = 0) { mockWorkflowManager.getWorkflow(any()) }
     }
 
     // endregion
@@ -3020,6 +2989,25 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         verify(exactly = 5) {
             mockRemoteConfigManager.refreshRemoteConfig(false, appUserId, RemoteConfigFetchContext.Read)
+        }
+    }
+
+    @Test
+    fun `remote config disable invalidates the offerings cache then refetches from network`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache(true) } just Runs
+        every { mockOfferingsManager.fetchAndCacheOfferings(appUserId, false, any(), any()) } just Runs
+
+        // Capture the disable listener the orchestrator registered on construction.
+        val listenerSlot = slot<RemoteConfigCommitListener>()
+        verify { mockRemoteConfigManager.registerListener(capture(listenerSlot)) }
+
+        listenerSlot.captured.onRemoteConfigDisabled(generation = 1)
+
+        // The in-memory cache must be dropped BEFORE the refetch, so getOfferings callers in the window take the
+        // cache-miss -> network path (freshly decoded components) instead of the stale null-component offerings.
+        verifyOrder {
+            mockOfferingsManager.clearInMemoryOfferingsCache(true)
+            mockOfferingsManager.fetchAndCacheOfferings(appUserId, false, any(), any())
         }
     }
 

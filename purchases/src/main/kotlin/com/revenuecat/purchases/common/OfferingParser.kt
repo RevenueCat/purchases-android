@@ -24,7 +24,13 @@ import org.json.JSONObject
 import java.net.MalformedURLException
 import java.net.URL
 
-internal abstract class OfferingParser {
+internal abstract class OfferingParser(
+    // Whether to actually build [Offering.PaywallComponents] (capturing the raw component JSON) when an offering
+    // carries `paywall_components`. Evaluated per parse: under workflows with remote config still enabled the
+    // components are served from `/v1/config`, so capturing them here is dead memory. Reverts to `true` once the
+    // 4xx kill switch disables remote config, so a subsequent refetch decodes them for the fallback render path.
+    private val shouldParsePaywallComponents: () -> Boolean = { true },
+) {
 
     protected abstract fun findMatchingProduct(
         productsById: Map<String, List<StoreProduct>>,
@@ -149,26 +155,11 @@ internal abstract class OfferingParser {
         }
 
         val paywallComponentsJson = offeringJson.optJSONObject("paywall_components")
-        val paywallComponents = if (
-            paywallComponentsJson != null &&
-            uiConfig != null &&
-            paywallComponentsJson.hasPaywallComponentsShape()
-        ) {
-            // Defer the (potentially expensive) component-tree deserialization until the paywall is actually
-            // accessed/displayed. Capturing the raw JSON string here is cheap; without this we would eagerly
-            // deserialize every cached offering's component tree at load, even those that are never shown.
-            val rawPaywallComponents = paywallComponentsJson.toString()
-            // A content hash of the raw JSON serves as the equality key, so comparing offerings (e.g. cached vs
-            // network) never forces the lazy decode.
-            Offering.PaywallComponents(uiConfig, componentsHash = rawPaywallComponents.sha256()) {
-                json.decodeFromString<PaywallComponentsData>(rawPaywallComponents)
-            }
-        } else {
-            if (paywallComponentsJson != null && uiConfig != null) {
-                warnLog { "Skipping paywall components data with unexpected shape for offering" }
-            }
-            null
-        }
+        // Presence is tracked independently of whether we decode: [Offering.hasPaywall] must keep reporting a
+        // components paywall even when we skip capturing it (workflows serve it), so external integrators still
+        // see the offering as paywall-capable.
+        val hasPaywallComponents = hasWellShapedPaywallComponents(paywallComponentsJson, uiConfig)
+        val paywallComponents = createPaywallComponents(paywallComponentsJson, uiConfig, hasPaywallComponents)
 
         val webCheckoutURL = offeringJson.getWebCheckoutURL()
 
@@ -181,9 +172,43 @@ internal abstract class OfferingParser {
                 paywallData,
                 paywallComponents,
                 webCheckoutURL,
-            )
+            ).also { it.hasPaywallComponents = hasPaywallComponents }
         } else {
             null
+        }
+    }
+
+    /** Whether the backend sent a `paywall_components` object with the required shape for the given [uiConfig]. */
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun hasWellShapedPaywallComponents(paywallComponentsJson: JSONObject?, uiConfig: UiConfig?): Boolean =
+        paywallComponentsJson != null && uiConfig != null && paywallComponentsJson.hasPaywallComponentsShape()
+
+    /**
+     * Builds the (lazily-decoded) [Offering.PaywallComponents] from the raw JSON, or `null` when there is nothing
+     * to build ([hasWellShaped] is false) or when [shouldParsePaywallComponents] says to skip capturing it.
+     */
+    @OptIn(InternalRevenueCatAPI::class)
+    @Suppress("ReturnCount")
+    private fun createPaywallComponents(
+        paywallComponentsJson: JSONObject?,
+        uiConfig: UiConfig?,
+        hasWellShaped: Boolean,
+    ): Offering.PaywallComponents? {
+        if (paywallComponentsJson == null || uiConfig == null) return null
+        if (!hasWellShaped) {
+            warnLog { "Skipping paywall components data with unexpected shape for offering" }
+            return null
+        }
+        if (!shouldParsePaywallComponents()) return null
+
+        // Defer the (potentially expensive) component-tree deserialization until the paywall is actually
+        // accessed/displayed. Capturing the raw JSON string here is cheap; without this we would eagerly
+        // deserialize every cached offering's component tree at load, even those that are never shown.
+        val rawPaywallComponents = paywallComponentsJson.toString()
+        // A content hash of the raw JSON serves as the equality key, so comparing offerings (e.g. cached vs
+        // network) never forces the lazy decode.
+        return Offering.PaywallComponents(uiConfig, componentsHash = rawPaywallComponents.sha256()) {
+            json.decodeFromString<PaywallComponentsData>(rawPaywallComponents)
         }
     }
 

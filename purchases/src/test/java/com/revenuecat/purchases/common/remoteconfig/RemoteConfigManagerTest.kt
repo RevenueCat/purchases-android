@@ -133,6 +133,182 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `the first request is forced to the app_start fetch context regardless of the requested context`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+    }
+
+    @Test
+    fun `the first stale request is forced to the app_start fetch context regardless of the requested context`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfigIfStale(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.Foreground,
+        )
+
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+    }
+
+    @Test
+    fun `only the first request is forced to the app_start fetch context`() {
+        every { diskCache.read() } returns null
+
+        // First committed request is forced to AppStart, even though IdentityChange was requested.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+
+        // The next committed request reports its own context.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.IdentityChange)
+    }
+
+    @Test
+    fun `requests keep being forced to app_start until one succeeds`() {
+        every { diskCache.read() } returns null
+
+        // A failed first request must not consume the forced AppStart, so the next attempt is forced too.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        onFallbackError.invoke(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+
+        // Once a request succeeds, the forcing stops and later requests report their own context.
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.IdentityChange)
+    }
+
+    @Test
+    fun `forcing stops once a 200 config is persisted`() {
+        every { diskCache.read() } returns null
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag",
+              "active_topics": [],
+              "topics": {}
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.IdentityChange)
+    }
+
+    @Test
+    fun `a 200 that fails to parse keeps forcing app_start`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+        // A 200 whose body fails to parse commits nothing, so the initial config is still not committed.
+        onSuccess.invoke(containerWithConfig("{ not valid json"), VerificationResult.VERIFIED)
+
+        // The next request must still be forced to AppStart, since no config landed yet.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+    }
+
+    @Test
+    fun `forcing stops once the fallback commits its config`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+
+        // The main request fails on a cold cache, routing to the fallback, which commits its config.
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownBackendError, "server error"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        onFallbackSuccess.invoke(
+            remoteConfiguration(
+                """
+                {
+                  "domain": "app",
+                  "manifest": "v1.fallback.sources:etag",
+                  "active_topics": [],
+                  "topics": {}
+                }
+                """.trimIndent(),
+            ),
+            VerificationResult.VERIFIED,
+        )
+
+        // The fallback commit counts as the initial config, so later requests report their own context.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.IdentityChange,
+        )
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.IdentityChange)
+    }
+
+    @Test
     fun `refreshRemoteConfigIfStale refreshes on the first call in a process`() {
         every { diskCache.read() } returns null
 
@@ -626,6 +802,141 @@ class RemoteConfigManagerTest {
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
         verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
         verify(exactly = 0) { blobFetcher.prefetch(any()) }
+    }
+
+    @Test
+    fun `a 200 persist advances the generation and notifies listeners with it`() {
+        every { diskCache.read() } returns null
+        val recorder = RecordingCommitListener()
+        manager.registerListener(recorder)
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "default": { "blob_ref": "b" } } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = DEFAULT_FETCH_CONTEXT,
+        )
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        assertThat(manager.configGeneration).isEqualTo(1)
+        assertThat(recorder.committed).containsExactly(1)
+        assertThat(recorder.invalidated).isEmpty()
+    }
+
+    @Test
+    fun `clearCache advances the generation and invalidates listeners`() {
+        val recorder = RecordingCommitListener()
+        manager.registerListener(recorder)
+
+        manager.clearCache(TEST_APP_USER_ID)
+
+        assertThat(manager.configGeneration).isEqualTo(1)
+        assertThat(recorder.invalidated).containsExactly(1)
+        assertThat(recorder.committed).isEmpty()
+    }
+
+    @Test
+    fun `a 4xx disable invalidates listeners once`() {
+        every { diskCache.read() } returns null
+        val recorder = RecordingCommitListener()
+        manager.registerListener(recorder)
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = DEFAULT_FETCH_CONTEXT,
+        )
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+        )
+
+        assertThat(manager.isDisabled).isTrue()
+        assertThat(recorder.invalidated).containsExactly(1)
+    }
+
+    @Test
+    fun `a 4xx disable signals onRemoteConfigDisabled exactly once`() {
+        every { diskCache.read() } returns null
+        val recorder = RecordingCommitListener()
+        manager.registerListener(recorder)
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+        )
+
+        // Further refreshes are no-ops (already disabled), so the disable signal must not fire again.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+
+        assertThat(recorder.disabled).containsExactly(1)
+    }
+
+    @Test
+    fun `clearCache does not signal onRemoteConfigDisabled`() {
+        val recorder = RecordingCommitListener()
+        manager.registerListener(recorder)
+
+        manager.clearCache(TEST_APP_USER_ID)
+
+        assertThat(recorder.disabled).isEmpty()
+    }
+
+    @Test
+    fun `a normal commit does not signal onRemoteConfigDisabled`() {
+        every { diskCache.read() } returns null
+        val recorder = RecordingCommitListener()
+        manager.registerListener(recorder)
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "default": { "blob_ref": "b" } } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+
+        assertThat(recorder.disabled).isEmpty()
+    }
+
+    @Test
+    fun `committedTopicOrNull returns committed data without triggering a sync`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        val manager = readManager()
+
+        val topic = manager.committedTopicOrNull(RemoteConfigTopic.Workflows)
+
+        assertThat(topic).isNotNull
+        assertThat(topic!!["wf1"]!!.blobRef).isEqualTo(REF_VALID)
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `committedTopicOrNull returns null without a sync when nothing is committed`() = runTest {
+        every { diskCache.read() } returns null
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
+
+        val topic = manager.committedTopicOrNull(RemoteConfigTopic.Workflows)
+
+        assertThat(topic).isNull()
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1183,12 +1494,20 @@ class RemoteConfigManagerTest {
         every { diskCache.write(any()) } answers { state = firstArg(); true }
         val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
 
+        // The first committed request is forced to AppStart, so prime it before asserting the on-demand read's Read.
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
+        )
+        onSuccess.invoke(null, VerificationResult.VERIFIED)
+
         // Nothing is in flight and nothing is cached: the read triggers its own sync and waits for it.
         var result: ConfigTopic? = null
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
             result = manager.topic(RemoteConfigTopic.Workflows)
         }
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
         // The on-demand sync is issued as foreground for the current user with a read fetch context.
         assertThat(capturedAppUserID).isEqualTo(TEST_APP_USER_ID)
         assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.Read)
@@ -2032,6 +2351,24 @@ class RemoteConfigManagerTest {
         every { container.config } returns element
         every { container.elements } returns emptyMap()
         return container
+    }
+
+    private class RecordingCommitListener : RemoteConfigCommitListener {
+        val committed = mutableListOf<Int>()
+        val invalidated = mutableListOf<Int>()
+        val disabled = mutableListOf<Int>()
+
+        override fun onConfigCommitted(generation: Int) {
+            committed += generation
+        }
+
+        override fun onConfigInvalidated(generation: Int) {
+            invalidated += generation
+        }
+
+        override fun onRemoteConfigDisabled(generation: Int) {
+            disabled += generation
+        }
     }
 
     @Serializable

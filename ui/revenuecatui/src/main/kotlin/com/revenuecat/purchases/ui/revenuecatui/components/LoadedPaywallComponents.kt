@@ -355,6 +355,7 @@ internal fun SimpleSheetState.show(
                     .conditional(sheet.size == null) { fillMaxWidth() },
             )
         },
+        contentKey = sheet.id,
         onDismiss = {
             val sheetSelected = state.selectedPackageInfo
             val resulting = state.peekSelectedPackageInfoAfterSheetDismiss()

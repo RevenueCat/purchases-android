@@ -32,6 +32,7 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.decodeFromJsonElement
 import java.util.Date
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
@@ -102,6 +103,12 @@ internal class RemoteConfigManager(
     @Volatile
     private var lastRefreshAttemptAt: Date? = null
 
+    // Forces requests to report AppStart until the session's first config is committed, regardless of the caller's
+    // context, so the backend always sees app_start on a fresh app open. Guarded by [cacheLock]; set only once config
+    // is durably committed (persisted from a 200 or the fallback) or confirmed current (204), so a failed request or
+    // an undecodable/unpersistable 200 keeps forcing AppStart until a later attempt actually commits config.
+    private var hasCommittedInitialConfig = false
+
     // The app user a cold on-demand read should sync for, rebound by clearCache() under [cacheLock] atomically
     // with the epoch bump, so it can never lag the identity change the way [appUserIDProvider] (backed by the
     // device cache) can. Null until the first identity change; awaitConfigForRead() falls back to the provider
@@ -129,6 +136,23 @@ internal class RemoteConfigManager(
      */
     val isDisabled: Boolean
         get() = disabled
+
+    // A monotonic commit token, bumped on every mutation of the committed state: a successful persist(), an
+    // identity-change clearCache(), and the 4xx disable. Handed to listeners so an async in-memory warm can
+    // store-if-newer and never clobber a fresher commit (see RemoteConfigCommitListener). Distinct from `epoch`,
+    // which only advances on identity change and can't order a disk warm against an ordinary version bump.
+    private val generation = AtomicInteger(0)
+
+    /** The current commit generation; see [generation]. */
+    val configGeneration: Int
+        get() = generation.get()
+
+    private val listeners = CopyOnWriteArrayList<RemoteConfigCommitListener>()
+
+    /** Registers a [RemoteConfigCommitListener]; safe to call at construction/wiring time. */
+    fun registerListener(listener: RemoteConfigCommitListener) {
+        listeners.add(listener)
+    }
 
     fun refreshRemoteConfigIfStale(
         appInBackground: Boolean,
@@ -160,6 +184,7 @@ internal class RemoteConfigManager(
         }
         var requestEpoch = 0
         var requestAppUserID = appUserID
+        var requestFetchContext = fetchContext
         // Acquire the in-flight guard and capture the epoch together under the lock that also guards
         // clearCache()'s epoch bump + guard release. Otherwise an identity change could slip its bump
         // between getAndSet(true) and epoch.get(), stranding this request with a stale epoch: its
@@ -188,6 +213,7 @@ internal class RemoteConfigManager(
                     isRefreshing.set(true)
                     requestEpoch = epoch.get()
                     requestAppUserID = currentAppUserID ?: appUserID
+                    requestFetchContext = fetchContextForRequest(fetchContext)
                     refreshCompletion = CompletableDeferred()
                     true
                 }
@@ -203,7 +229,7 @@ internal class RemoteConfigManager(
         backend.getRemoteConfig(
             appInBackground = appInBackground,
             appUserID = requestAppUserID,
-            fetchContext = fetchContext,
+            fetchContext = requestFetchContext,
             domain = domain,
             // Opaque manifest replayed verbatim; null on the first run when nothing is persisted yet.
             manifest = persisted?.manifest,
@@ -226,6 +252,12 @@ internal class RemoteConfigManager(
     private fun isRefreshAttemptCooldownElapsed(now: Date): Boolean {
         val lastAttempt = lastRefreshAttemptAt
         return lastAttempt == null || Duration.between(lastAttempt, now) >= REFRESH_ATTEMPT_COOLDOWN
+    }
+
+    // Overrides a request's context to AppStart until the session's first config is committed. Must be called within
+    // [cacheLock].
+    private fun fetchContextForRequest(requested: RemoteConfigFetchContext): RemoteConfigFetchContext {
+        return if (hasCommittedInitialConfig) requested else RemoteConfigFetchContext.AppStart
     }
 
     /**
@@ -335,6 +367,7 @@ internal class RemoteConfigManager(
         synchronized(cacheLock) {
             if (epoch.get() == requestEpoch) {
                 lastRefreshedAt = dateProvider.now
+                hasCommittedInitialConfig = true
                 isRefreshing.set(false)
                 completeRefresh()
             }
@@ -353,11 +386,17 @@ internal class RemoteConfigManager(
         error: PurchasesError,
         behavior: GetRemoteConfigErrorHandlingBehavior,
     ) {
-        if (behavior == GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE) {
+        if (behavior == GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE && !disabled) {
             // A 4xx: disable the endpoint for the rest of the session. This is an endpoint-level fact, so set it
             // regardless of epoch ownership (a late response for an old identity is still a valid signal that the
-            // endpoint refuses this app's requests).
+            // endpoint refuses this app's requests). Reads now return null, so drop any in-memory caches too.
             disabled = true
+            val invalidatedGeneration = generation.incrementAndGet()
+            listeners.forEach { it.onConfigInvalidated(invalidatedGeneration) }
+            // Distinct one-shot signal (this branch runs once, guarded by !disabled): lets consumers refetch
+            // offerings so paywall components — skipped while the endpoint was live — get decoded for the
+            // fallback render path.
+            listeners.forEach { it.onRemoteConfigDisabled(invalidatedGeneration) }
         }
         if (releaseGuardIfOwned(requestEpoch)) {
             errorLog(error)
@@ -386,6 +425,10 @@ internal class RemoteConfigManager(
             diskCache.clear()
             blobStore.clear()
             sourceProvider.clear()
+            // Identity change wiped the committed state: advance the generation and tell listeners to drop
+            // their in-memory caches. A warm started for an older generation is rejected by store-if-newer.
+            val invalidatedGeneration = generation.incrementAndGet()
+            listeners.forEach { it.onConfigInvalidated(invalidatedGeneration) }
         }
     }
 
@@ -482,6 +525,18 @@ internal class RemoteConfigManager(
      */
     suspend fun topic(topic: RemoteConfigTopic): ConfigTopic? = withContext(ioDispatcher) {
         committedTopic(topic)
+    }
+
+    /**
+     * A topic's already-committed item index, or `null` when nothing is committed for [topic] yet or the
+     * endpoint is [isDisabled]. Unlike [topic], this **never** waits for or triggers a `/v1/config` sync: it is
+     * a pure read of whatever is currently committed (in-memory snapshot / disk). Used by cache-warming, which
+     * must not kick off a network fetch (e.g. on a cold-disk SDK init, before any user is known). Once a topic
+     * is committed, subsequent [blobData]/[mergeItemsBlobData] reads for its items also resolve without
+     * triggering a sync. Reads disk on [ioDispatcher].
+     */
+    suspend fun committedTopicOrNull(topic: RemoteConfigTopic): ConfigTopic? = withContext(ioDispatcher) {
+        if (disabled) null else topicStore.topic(topic)
     }
 
     /**
@@ -761,6 +816,7 @@ internal class RemoteConfigManager(
 
         if (persisted) {
             lastRefreshedAt = dateProvider.now
+            hasCommittedInitialConfig = true
             debugLog {
                 "Persisted remote config (domain=${response.domain}, ${response.activeTopics.size} active topics, " +
                     "${blobRefsToKeep.size} blobs wanted)."
@@ -768,6 +824,11 @@ internal class RemoteConfigManager(
             container?.let { extractInlineBlobs(it, blobRefsToKeep) }
             blobStore.retainOnly(blobRefsToKeep)
             prefetchBlobs(response, mergedTopics)
+            // A new version is committed: advance the generation and let listeners re-warm their in-memory
+            // caches. Runs under cacheLock (both persist callers hold it), so the bump+notify is serialized
+            // against clearCache()'s bump+notify.
+            val committedGeneration = generation.incrementAndGet()
+            listeners.forEach { it.onConfigCommitted(committedGeneration) }
         } else {
             errorLog { "Skipping remote config blob sync: failed to persist the configuration." }
         }
