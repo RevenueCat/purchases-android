@@ -812,10 +812,9 @@ internal class PaywallViewModelImpl(
                 return
             } catch (e: PurchasesException) {
                 // The workflow could not be served — the config endpoint is disabled for the session
-                // (4xx kill switch), unreachable, or the offering has no workflow yet. Degrade to the
-                // paywall /offerings already delivered so the app still shows something; rethrow
-                // (→ PaywallState.Error) only when there is nothing to fall back to.
-                if (selectedOffering.paywallComponents == null) throw e
+                // (4xx kill switch), unreachable, or the offering has no workflow yet. Degrade to the normal
+                // paywall path so the app still shows something. If no paywall data was delivered either,
+                // updatePaywallState will generate the default paywall for the offering.
                 // A prior render on this ViewModel may have been a successful workflow, leaving
                 // _workflowState non-null. InternalPaywall renders the workflow UI whenever workflowState
                 // is non-null, so without clearing it the stale workflow would mask the offerings fallback
@@ -823,7 +822,7 @@ internal class PaywallViewModelImpl(
                 clearWorkflowState()
                 Logger.w(
                     "Paywalls: Failed to fetch workflow for offering '${selectedOffering.identifier}' " +
-                        "(${e.message}). Falling back to the offerings-provided paywall.",
+                        "(${e.message}). Falling back to the offerings-provided or default paywall.",
                 )
             }
         }

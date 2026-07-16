@@ -3226,7 +3226,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `when useWorkflows is true and the workflow fetch fails with no fallback paywall, surfaces the error`() {
+    fun `when useWorkflows is true and the workflow fetch fails with no fallback paywall, renders the default paywall`() {
         val offeringWithoutPaywallData = Offering(
             identifier = "offering-no-paywall-data",
             serverDescription = "description",
@@ -3250,7 +3250,7 @@ class PaywallViewModelTest {
             useWorkflowsEndpoint = true,
         )
 
-        assertThat(model.state.value).isInstanceOf(PaywallState.Error::class.java)
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
         coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
     }
 
