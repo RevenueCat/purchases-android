@@ -31,7 +31,7 @@ import java.nio.charset.CodingErrorAction
 internal class ETagPayloadStore(
     private val directory: File,
 ) {
-    constructor(context: Context) : this(File(context.cacheDir, DIRECTORY_NAME))
+    constructor(context: Context) : this(File(File(context.cacheDir, VENDOR_DIRECTORY), DIRECTORY_NAME))
 
     /**
      * Returns the payload's size in bytes once the file is in place, or `null` when the write failed;
@@ -150,7 +150,8 @@ internal class ETagPayloadStore(
     }
 
     private companion object {
-        const val DIRECTORY_NAME = "rc_etag_payloads"
+        const val VENDOR_DIRECTORY = "RevenueCat"
+        const val DIRECTORY_NAME = "etag_payloads"
         const val TEMP_SUFFIX = ".tmp"
         const val TRASH_SUFFIX = ".trash"
         const val CHUNK_CHARS = 64 * 1024
