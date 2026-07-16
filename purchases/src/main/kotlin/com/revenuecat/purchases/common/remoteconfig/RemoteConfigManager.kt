@@ -105,6 +105,12 @@ internal class RemoteConfigManager(
     @Volatile
     private var lastRefreshAttemptAt: Date? = null
 
+    // Forces requests to report AppStart until the session's first config is committed, regardless of the caller's
+    // context, so the backend always sees app_start on a fresh app open. Guarded by [cacheLock]; set only once config
+    // is durably committed (persisted from a 200 or the fallback) or confirmed current (204), so a failed request or
+    // an undecodable/unpersistable 200 keeps forcing AppStart until a later attempt actually commits config.
+    private var hasCommittedInitialConfig = false
+
     // The app user a cold on-demand read should sync for, rebound by clearCache() under [cacheLock] atomically
     // with the epoch bump, so it can never lag the identity change the way [appUserIDProvider] (backed by the
     // device cache) can. Null until the first identity change; awaitConfigForRead() falls back to the provider
@@ -180,6 +186,7 @@ internal class RemoteConfigManager(
         }
         var requestEpoch = 0
         var requestAppUserID = appUserID
+        var requestFetchContext = fetchContext
         // Acquire the in-flight guard and capture the epoch together under the lock that also guards
         // clearCache()'s epoch bump + guard release. Otherwise an identity change could slip its bump
         // between getAndSet(true) and epoch.get(), stranding this request with a stale epoch: its
@@ -208,6 +215,7 @@ internal class RemoteConfigManager(
                     isRefreshing.set(true)
                     requestEpoch = epoch.get()
                     requestAppUserID = currentAppUserID ?: appUserID
+                    requestFetchContext = fetchContextForRequest(fetchContext)
                     refreshCompletion = CompletableDeferred()
                     true
                 }
@@ -223,7 +231,7 @@ internal class RemoteConfigManager(
         backend.getRemoteConfig(
             appInBackground = appInBackground,
             appUserID = requestAppUserID,
-            fetchContext = fetchContext,
+            fetchContext = requestFetchContext,
             domain = domain,
             // Opaque manifest replayed verbatim; null on the first run when nothing is persisted yet.
             manifest = persisted?.manifest,
@@ -246,6 +254,12 @@ internal class RemoteConfigManager(
     private fun isRefreshAttemptCooldownElapsed(now: Date): Boolean {
         val lastAttempt = lastRefreshAttemptAt
         return lastAttempt == null || Duration.between(lastAttempt, now) >= REFRESH_ATTEMPT_COOLDOWN
+    }
+
+    // Overrides a request's context to AppStart until the session's first config is committed. Must be called within
+    // [cacheLock].
+    private fun fetchContextForRequest(requested: RemoteConfigFetchContext): RemoteConfigFetchContext {
+        return if (hasCommittedInitialConfig) requested else RemoteConfigFetchContext.AppStart
     }
 
     /**
@@ -355,6 +369,7 @@ internal class RemoteConfigManager(
         synchronized(cacheLock) {
             if (epoch.get() == requestEpoch) {
                 lastRefreshedAt = dateProvider.now
+                hasCommittedInitialConfig = true
                 isRefreshing.set(false)
                 completeRefresh()
             }
@@ -803,6 +818,7 @@ internal class RemoteConfigManager(
 
         if (persisted) {
             lastRefreshedAt = dateProvider.now
+            hasCommittedInitialConfig = true
             debugLog {
                 "Persisted remote config (domain=${response.domain}, ${response.activeTopics.size} active topics, " +
                     "${blobRefsToKeep.size} blobs wanted)."
