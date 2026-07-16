@@ -1,5 +1,3 @@
-@file:OptIn(InternalRevenueCatAPI::class)
-
 package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
