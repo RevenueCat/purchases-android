@@ -21,6 +21,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.common.workflows.WorkflowScreen
 import com.revenuecat.purchases.common.workflows.WorkflowScreenType
 import com.revenuecat.purchases.common.workflows.WorkflowStep
@@ -920,7 +921,7 @@ class PaywallViewModelWorkflowTest {
         val immediateMain = UnconfinedTestDispatcher()
         Dispatchers.setMain(immediateMain)
         try {
-            coEvery { purchases.workflowIdForOfferingId(offeringId) } returns workflow.id
+            coEvery { purchases.resolveWorkflow(offeringId) } returns WorkflowResolution.Found(workflow.id)
             coEvery { purchases.awaitGetWorkflow(workflow.id) } returns fetchResult
             coEvery { purchases.awaitGetUiConfig() } returns uiConfig
             coEvery { purchases.awaitOfferings() } returns testOfferings
@@ -940,7 +941,7 @@ class PaywallViewModelWorkflowTest {
     fun `a cold cache shows Loading then the loaded workflow after the async read`() = runTest {
         // A cold read really suspends; the same single path shows Loading until it resolves.
         val gate = CompletableDeferred<Unit>()
-        coEvery { purchases.workflowIdForOfferingId(any()) } returns workflow.id
+        coEvery { purchases.resolveWorkflow(any()) } returns WorkflowResolution.Found(workflow.id)
         coEvery { purchases.awaitGetWorkflow(any()) } coAnswers { gate.await(); fetchResult }
         coEvery { purchases.awaitGetUiConfig() } returns uiConfig
         coEvery { purchases.awaitOfferings() } returns testOfferings

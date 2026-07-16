@@ -57,6 +57,7 @@ import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
+import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
@@ -624,8 +625,8 @@ internal class PurchasesOrchestrator(
         return manager.getWorkflow(workflowId)
     }
 
-    suspend fun workflowIdForOfferingId(offeringId: String): String? =
-        workflowManager?.workflowIdForOfferingId(offeringId)
+    suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
+        workflowManager?.resolveWorkflow(offeringId) ?: WorkflowResolution.NoWorkflow
 
     suspend fun getUiConfig(): UiConfig {
         val provider = uiConfigProvider
