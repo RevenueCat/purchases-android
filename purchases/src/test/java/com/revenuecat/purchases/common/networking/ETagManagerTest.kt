@@ -11,6 +11,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.spyk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -31,7 +32,7 @@ class ETagManagerTest {
             get() = testDate
     }
     private val mockedPrefs = mockk<SharedPreferences>()
-    private val payloadStore: ETagPayloadStore by lazy { ETagPayloadStore(temporaryFolder.newFolder()) }
+    private val payloadStore: ETagPayloadStore by lazy { spyk(ETagPayloadStore(temporaryFolder.newFolder())) }
     private val underTest: ETagManager by lazy {
         ETagManager(mockk(), lazy { mockedPrefs }, testDateProvider, payloadStore)
     }
@@ -60,6 +61,9 @@ class ETagManagerTest {
         every {
             mockEditor.apply()
         } just Runs
+        every {
+            mockEditor.commit()
+        } returns true
         every {
             mockEditor.clear()
         } returns mockEditor
@@ -207,14 +211,14 @@ class ETagManagerTest {
     // endregion ETag headers usage verification tests
 
     @Test
-    fun `getETagHeaders does not need the cached payload`() {
+    fun `getETagHeaders does not read the cached payload`() {
         val urlString = "http://localhost:100/v1/subscribers/appUserID"
         mockCachedHTTPResult(expectedETag = "etag", urlString = urlString)
-        payloadStore.clear()
 
         val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
 
         assertThat(eTagHeaders[HTTPRequest.ETAG_HEADER_NAME]).isEqualTo("etag")
+        verify(exactly = 0) { payloadStore.read(any()) }
     }
 
     @Test
@@ -349,6 +353,18 @@ class ETagManagerTest {
         // (ETagManagerMemoryTest gates the allocation cost of this path.)
         assertThat(payloadStore.read(urlString)).isEqualTo(payload)
         assertThat(putStringKeys).containsExactly(urlString)
+    }
+
+    @Test
+    fun `storeBackendResultIfNoError drops a stale prefs payload left by an earlier release`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        val result = HTTPResult.createResult(payload = "{\"fresh\":true}")
+
+        underTest.storeBackendResultIfNoError(urlString, result, eTagInResponse = "etag")
+
+        // Without this, the stale prefs payload would stay parsed in the prefs in-memory map and could be
+        // resurrected by the prefs-payload migration if the payload file is later purged.
+        assertThat(removedKeys).containsExactly(ETagManager.payloadKey(urlString))
     }
 
     @Test
@@ -663,6 +679,7 @@ class ETagManagerTest {
             verificationResult = VERIFIED,
             isLoadShedderResponse = true,
             isFallbackURL = true,
+            payloadSizeBytes = 12345L,
         )
 
         val deserialized = ETagCacheMetadata.deserialize(metadata.serialize())
@@ -723,6 +740,20 @@ class ETagManagerTest {
         val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
 
         assertThat(eTagHeaders[HTTPRequest.ETAG_HEADER_NAME]).isEmpty()
+    }
+
+    @Test
+    fun `a payload file whose size does not match the metadata is treated as a miss`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        val payload = "{\"key\":\"value\"}"
+        val metadata = ETagCacheMetadata.fromResult(
+            HTTPResult.createResult(payload = payload, origin = HTTPResult.Origin.CACHE),
+            ETagData("etag", testDate),
+        ).copy(payloadSizeBytes = payload.length + 100L)
+        every { mockedPrefs.getString(urlString, null) } returns metadata.serialize()
+        payloadStore.write(urlString, payload)
+
+        assertThat(underTest.getStoredResult(urlString)).isNull()
     }
 
     @Test
@@ -835,6 +866,7 @@ class ETagManagerTest {
         assertThat(metadata!!.eTagData.eTag).isEqualTo(eTagInResponse)
         assertThat(metadata.eTagData.lastRefreshTime?.time).isEqualTo(lastRefreshTime?.time)
         assertThat(metadata.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+        assertThat(metadata.payloadSizeBytes).isEqualTo(responsePayload.toByteArray().size.toLong())
 
         assertThat(payloadStore.read(urlString)).isEqualTo(responsePayload)
     }

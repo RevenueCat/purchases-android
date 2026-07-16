@@ -30,8 +30,28 @@ class ETagPayloadStoreTest {
     fun `write and read round-trip a payload`() {
         val payload = "{\"offerings\":[{\"id\":\"premium\",\"desc\":\"a \\\"quoted\\\" name\"}]}\nwith\nnewlines"
 
-        assertThat(underTest.write(url, payload)).isTrue
+        assertThat(underTest.write(url, payload)).isNotNull
         assertThat(underTest.read(url)).isEqualTo(payload)
+    }
+
+    @Test
+    fun `write returns the encoded size which read verifies`() {
+        val payload = "ascii payload"
+
+        val sizeBytes = underTest.write(url, payload)
+
+        assertThat(sizeBytes).isEqualTo(payload.length.toLong())
+        assertThat(underTest.read(url, expectedSizeBytes = sizeBytes)).isEqualTo(payload)
+    }
+
+    @Test
+    fun `a payload file with an unexpected size reads back as a miss`() {
+        val sizeBytes = underTest.write(url, "the full payload")!!
+        val payloadFile = File(directory, directory.list()!!.single())
+        payloadFile.writeText("the full pay")
+
+        assertThat(underTest.read(url, expectedSizeBytes = sizeBytes)).isNull()
+        assertThat(underTest.read(url)).isEqualTo("the full pay")
     }
 
     @Test
@@ -47,7 +67,7 @@ class ETagPayloadStoreTest {
             append("\"}")
         }
 
-        assertThat(underTest.write(url, payload)).isTrue
+        assertThat(underTest.write(url, payload)).isNotNull
         assertThat(underTest.read(url)).isEqualTo(payload)
     }
 
@@ -79,11 +99,59 @@ class ETagPayloadStoreTest {
     }
 
     @Test
+    fun `a leftover temp file from a crashed write does not affect reads or later writes`() {
+        underTest.write(url, "good")
+        val payloadFileName = directory.list()!!.single()
+        File(directory, "$payloadFileName.tmp").writeText("partial write from a crashed process")
+
+        assertThat(underTest.read(url)).isEqualTo("good")
+        assertThat(underTest.write(url, "newer")).isNotNull
+        assertThat(underTest.read(url)).isEqualTo("newer")
+    }
+
+    @Test
     fun `write works again after clear`() {
         underTest.write(url, "payload")
         underTest.clear()
 
-        assertThat(underTest.write(url, "again")).isTrue
+        assertThat(underTest.write(url, "again")).isNotNull
         assertThat(underTest.read(url)).isEqualTo("again")
+    }
+
+    @Test
+    fun `write returns null when the directory cannot be used`() {
+        val blockedByFile = ETagPayloadStore(temporaryFolder.newFile())
+
+        assertThat(blockedByFile.write(url, "payload")).isNull()
+        assertThat(blockedByFile.read(url)).isNull()
+    }
+
+    @Test
+    fun `an empty payload round-trips with a zero size`() {
+        val sizeBytes = underTest.write(url, "")
+
+        assertThat(sizeBytes).isEqualTo(0L)
+        assertThat(underTest.read(url, expectedSizeBytes = 0L)).isEqualTo("")
+
+        underTest.clear()
+        // A missing file also has length 0: the size check alone must not turn it into a hit.
+        assertThat(underTest.read(url, expectedSizeBytes = 0L)).isNull()
+    }
+
+    @Test
+    fun `a payload the encoder cannot represent fails the write instead of being altered`() {
+        val payloadWithUnpairedSurrogate = "{\"key\":\"\uD83C\"}"
+
+        assertThat(underTest.write(url, payloadWithUnpairedSurrogate)).isNull()
+        assertThat(underTest.read(url)).isNull()
+    }
+
+    @Test
+    fun `a corrupt payload file reads back as a miss instead of garbage`() {
+        underTest.write(url, "valid")
+        val payloadFile = File(directory, directory.list()!!.single())
+        payloadFile.writeBytes(byteArrayOf(0x7B, -1, -2, 0x22))
+
+        assertThat(underTest.read(url)).isNull()
     }
 }

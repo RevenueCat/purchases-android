@@ -98,8 +98,8 @@ class ETagManagerMemoryTest {
         // Regression gates for #3628. Store and header reads must not allocate anywhere near payload size
         // (the legacy combined format allocated tens of MB per operation on this 5MB payload; the store's
         // encoder writes through a fixed buffer). The 304 read rebuilds the payload string from its file, so
-        // its cost is payload-proportional by design — the deliberate tradeoff for not retaining the payload
-        // in the SharedPreferences in-memory map for the process lifetime — but bounded to a small multiple.
+        // its cost is payload-proportional by design (the deliberate tradeoff for not retaining the payload
+        // in the SharedPreferences in-memory map for the process lifetime) but bounded to a small multiple.
         val maxAllowedBytes = 1024L * 1024L
         assertThat(storeBytes).isLessThan(maxAllowedBytes)
         assertThat(headerBytes).isLessThan(maxAllowedBytes)
