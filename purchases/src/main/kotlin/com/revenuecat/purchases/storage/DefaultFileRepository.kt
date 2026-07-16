@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.models.Checksum
 import com.revenuecat.purchases.models.toHexString
+import com.revenuecat.purchases.utils.DEFAULT_CONNECTION_TIMEOUT_MS
 import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
 import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
@@ -130,7 +131,11 @@ internal class DefaultFileRepository(
     private fun downloadFile(url: URL): UrlConnection = try {
         verboseLog { "Downloading remote file from $url" }
 
-        val connection = urlConnectionFactory.createConnection(url.toString())
+        val connection = urlConnectionFactory.createConnection(
+            url.toString(),
+            DEFAULT_CONNECTION_TIMEOUT_MS,
+            DEFAULT_CONNECTION_TIMEOUT_MS,
+        )
 
         if (connection.responseCode != HttpURLConnection.HTTP_OK) {
             connection.disconnect()
