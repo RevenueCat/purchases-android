@@ -46,8 +46,7 @@ internal data class ETagCacheMetadata(
     val isFallbackURL: Boolean,
     /**
      * Expected byte size of the stored payload file, used to detect files truncated by a power loss
-     * (payload writes are not fsynced). `null` skips the check (entries whose payload was migrated
-     * rather than freshly stored).
+     * (payload writes are not fsynced). `null` (absent from the serialized entry) skips the check.
      */
     val payloadSizeBytes: Long? = null,
 ) {
@@ -209,39 +208,14 @@ internal class ETagManager(
             // payload read makes the size check fail, so the worst case is one spurious cache miss (and its
             // refresh retry) under concurrent same-URL traffic; accepted to keep reads lock-free. (Reads
             // only take the monitor while an entry still needs migrating to the file store.)
-            val payload = readPayload(urlString, metadata) ?: return null
+            // The size check matters because a truncated payload would not read as a miss on its own: it
+            // fails to parse only downstream, where HTTPResult.body swallows the JSONException, and the
+            // server keeps answering 304 for its eTag, so the entry would error indefinitely instead of
+            // healing as a miss here.
+            val payload = payloadStore.read(urlString, metadata.payloadSizeBytes) ?: return null
             return metadata.toHTTPResult(payload)
         }
         return null
-    }
-
-    /**
-     * The size check matters because a truncated payload would not read as a miss on its own: it fails
-     * to parse only downstream, where [HTTPResult.body] swallows the JSONException, and the server keeps
-     * answering 304 for its eTag, so the entry would error indefinitely instead of healing as a miss here.
-     */
-    private fun readPayload(urlString: String, metadata: ETagCacheMetadata): String? {
-        return payloadStore.read(urlString, metadata.payloadSizeBytes)
-            ?: migratePrefsPayload(urlString, metadata.payloadSizeBytes)
-    }
-
-    /**
-     * A release that included the split-prefs cache format but not this file store (if one ships between
-     * the two) stored the payload under a second SharedPreferences key. Move such payloads to the file
-     * store on first read; the prefs key is only removed once the file write succeeds, so a failed
-     * write retries on the next read.
-     */
-    @Synchronized
-    private fun migratePrefsPayload(urlString: String, expectedSizeBytes: Long?): String? {
-        // No prefs payload: re-check the file under the monitor, since a concurrent store or migration
-        // may have created it after the caller's lock-free read missed. The size check still applies:
-        // without it, a truncated file rejected by the caller would be served through this fallback.
-        val prefsPayload = prefs.value.getString(payloadKey(urlString), null)
-            ?: return payloadStore.read(urlString, expectedSizeBytes)
-        if (payloadStore.write(urlString, prefsPayload) != null) {
-            prefs.value.edit().remove(payloadKey(urlString)).apply()
-        }
-        return prefsPayload
     }
 
     internal fun storeBackendResultIfNoError(
@@ -279,15 +253,12 @@ internal class ETagManager(
     /**
      * Persists a split-format entry: payload file first, and metadata only once that write succeeded, so
      * metadata present always implies its payload was written. The metadata records the payload's byte
-     * size, which reads verify to catch files truncated by a power loss. The same edit drops any payload
-     * stored under the legacy prefs key, so a stale copy can neither linger in the prefs in-memory map nor
-     * be resurrected by [migratePrefsPayload] after the payload file is purged.
+     * size, which reads verify to catch files truncated by a power loss.
      */
     private fun persistEntry(urlString: String, metadata: ETagCacheMetadata, payload: String) {
         val payloadSizeBytes = payloadStore.write(urlString, payload) ?: return
         prefs.value.edit()
             .putString(urlString, metadata.copy(payloadSizeBytes = payloadSizeBytes).serialize())
-            .remove(payloadKey(urlString))
             .apply()
     }
 
@@ -314,15 +285,6 @@ internal class ETagManager(
     }
 
     companion object {
-        // Where an earlier release kept the payload in SharedPreferences. Only read (and removed) by
-        // [migratePrefsPayload]; new payloads go to [ETagPayloadStore]. Cache keys are endpoint URLs
-        // from URL(baseURL, path).toString(), which never carry a '#' fragment, so this suffix cannot
-        // collide with another URL's entry.
-        private const val PAYLOAD_KEY_SUFFIX = "#rc_payload"
-
-        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        internal fun payloadKey(urlString: String): String = "$urlString$PAYLOAD_KEY_SUFFIX"
-
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
                 "${context.packageName}_preferences_etags",

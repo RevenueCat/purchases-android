@@ -38,7 +38,6 @@ class ETagManagerTest {
     }
     private val putStringKeys = mutableListOf<String>()
     private val putStringValues = mutableListOf<String>()
-    private val removedKeys = mutableListOf<String>()
     private val mockEditor = mockk<SharedPreferences.Editor>()
 
     @get:Rule
@@ -54,9 +53,6 @@ class ETagManagerTest {
         } returns null
         every {
             mockEditor.putString(capture(putStringKeys), capture(putStringValues))
-        } returns mockEditor
-        every {
-            mockEditor.remove(capture(removedKeys))
         } returns mockEditor
         every {
             mockEditor.apply()
@@ -353,18 +349,6 @@ class ETagManagerTest {
         // (ETagManagerMemoryTest gates the allocation cost of this path.)
         assertThat(payloadStore.read(urlString)).isEqualTo(payload)
         assertThat(putStringKeys).containsExactly(urlString)
-    }
-
-    @Test
-    fun `storeBackendResultIfNoError drops a stale prefs payload left by an earlier release`() {
-        val urlString = "http://localhost:100/v1/subscribers/appUserID"
-        val result = HTTPResult.createResult(payload = "{\"fresh\":true}")
-
-        underTest.storeBackendResultIfNoError(urlString, result, eTagInResponse = "etag")
-
-        // Without this, the stale prefs payload would stay parsed in the prefs in-memory map and could be
-        // resurrected by the prefs-payload migration if the payload file is later purged.
-        assertThat(removedKeys).containsExactly(ETagManager.payloadKey(urlString))
     }
 
     @Test
@@ -764,27 +748,8 @@ class ETagManagerTest {
             ETagData("etag", testDate),
         )
         every { mockedPrefs.getString(urlString, null) } returns metadata.serialize()
-        every { mockedPrefs.getString(ETagManager.payloadKey(urlString), null) } returns null
 
         assertThat(underTest.getStoredResult(urlString)).isNull()
-    }
-
-    @Test
-    fun `a payload stored in prefs by an earlier release is served and moved to the payload store`() {
-        val urlString = "http://localhost:100/v1/subscribers/appUserID"
-        val payload = "{\"fromPrefs\":true}"
-        val metadata = ETagCacheMetadata.fromResult(
-            HTTPResult.createResult(payload = payload, origin = HTTPResult.Origin.CACHE),
-            ETagData("etag", testDate),
-        )
-        every { mockedPrefs.getString(urlString, null) } returns metadata.serialize()
-        every { mockedPrefs.getString(ETagManager.payloadKey(urlString), null) } returns payload
-
-        val storedResult = underTest.getStoredResult(urlString)
-
-        assertThat(storedResult?.payloadText).isEqualTo(payload)
-        assertThat(payloadStore.read(urlString)).isEqualTo(payload)
-        assertThat(removedKeys).containsExactly(ETagManager.payloadKey(urlString))
     }
 
     @Test
