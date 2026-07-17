@@ -243,9 +243,16 @@ internal class WorkflowsConfigProvider(
         // Warm the loaded workflows' assets (images + ui_config fonts) at load time — fire-and-forget so it
         // never blocks warm() or the getOfferings readiness gate. resolveWorkflowBody decodes transiently: it
         // reads bytes + parses without touching the retained Lazy above, so prewarming keeps the cache
-        // raw-bytes-only.
+        // raw-bytes-only. Prewarming is sequential, so announce the current offering's workflow first: it is the
+        // one most likely to be presented, so its assets should be cached before the prefetch-only workflows'.
         onWorkflowsLoaded?.let { notify ->
-            scope.launch { notify(workflows.keys, ::resolveWorkflowBody) }
+            val currentWorkflowId = currentOfferingId?.let { offeringToWorkflowId[it] }
+            val orderedIds = if (currentWorkflowId != null && workflows.containsKey(currentWorkflowId)) {
+                linkedSetOf(currentWorkflowId).apply { addAll(workflows.keys) }
+            } else {
+                workflows.keys
+            }
+            scope.launch { notify(orderedIds, ::resolveWorkflowBody) }
         }
     }
 

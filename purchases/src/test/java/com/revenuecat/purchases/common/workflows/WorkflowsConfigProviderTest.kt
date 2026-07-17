@@ -356,7 +356,7 @@ internal class WorkflowsConfigProviderTest {
         }
 
     @Test
-    fun `warm notifies onWorkflowsLoaded with the loaded eligible workflow ids`() = runTest {
+    fun `warm notifies onWorkflowsLoaded with the current offering's workflow first`() = runTest {
         var announcedIds: Set<String>? = null
         val providerWithListener = WorkflowsConfigProvider(
             manager,
@@ -370,8 +370,10 @@ internal class WorkflowsConfigProviderTest {
 
         providerWithListener.warm(generation = 0)
 
-        // Only the eligible (prefetch + current-offering) ids are announced; the ineligible one was not loaded.
-        assertThat(announcedIds).isEqualTo(setOf(WF_PREFETCH, WF_CURRENT))
+        // Only the eligible (prefetch + current-offering) ids are announced, and the current offering's workflow
+        // leads — even though it comes after the prefetch entry in topic order — so its assets warm first. The
+        // ineligible workflow was not loaded.
+        assertThat(announcedIds).containsExactly(WF_CURRENT, WF_PREFETCH)
     }
 
     private fun stubTopic() {
