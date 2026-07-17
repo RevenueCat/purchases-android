@@ -132,6 +132,31 @@ class ETagPayloadStoreTest {
     }
 
     @Test
+    fun `write returns null when the directory cannot be created`() {
+        val fileAsParent = temporaryFolder.newFile()
+        val blocked = ETagPayloadStore(File(fileAsParent, "payloads"))
+
+        assertThat(blocked.write(url, "payload")).isNull()
+    }
+
+    @Test
+    fun `write returns null when the payload file cannot be replaced`() {
+        val payloadFileName = underTest.write(url, "original").let { directory.list()!!.single() }
+        val blockingDirectory = File(directory, payloadFileName)
+        blockingDirectory.deleteRecursively()
+        File(blockingDirectory, "child").apply { parentFile!!.mkdirs(); writeText("blocks the rename") }
+
+        assertThat(underTest.write(url, "new payload")).isNull()
+    }
+
+    @Test
+    fun `clear on a store that never wrote is a no-op`() {
+        underTest.clear()
+
+        assertThat(underTest.read(url)).isNull()
+    }
+
+    @Test
     fun `write returns null when the directory cannot be used`() {
         val blockedByFile = ETagPayloadStore(temporaryFolder.newFile())
 

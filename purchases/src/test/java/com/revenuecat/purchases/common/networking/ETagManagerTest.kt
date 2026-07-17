@@ -753,6 +753,24 @@ class ETagManagerTest {
     }
 
     @Test
+    fun `a corrupt versioned entry reads as a miss for cached results`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        every { mockedPrefs.getString(ETagManager.metadataKey(urlString), null) } returns "not json"
+
+        assertThat(underTest.getStoredResult(urlString)).isNull()
+    }
+
+    @Test
+    fun `metadata is not stored when the payload write fails`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        every { payloadStore.write(urlString, any()) } returns null
+
+        underTest.storeBackendResultIfNoError(urlString, HTTPResult.createResult(), eTagInResponse = "etag")
+
+        assertThat(putStringKeys).isEmpty()
+    }
+
+    @Test
     fun `ETagCacheMetadata toHTTPResult rebuilds the result with CACHE origin`() {
         val metadata = ETagCacheMetadata.fromResult(
             HTTPResult.createResult(
