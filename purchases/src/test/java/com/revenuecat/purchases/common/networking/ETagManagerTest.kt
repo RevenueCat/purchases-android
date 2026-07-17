@@ -667,6 +667,15 @@ class ETagManagerTest {
     }
 
     @Test
+    fun `a legacy combined entry reads as unparseable metadata`() {
+        // Pre-split format: eTag and lastRefreshTime at the top level, everything else nested inside an
+        // escaped httpResult string. Must never parse as split-format metadata.
+        val legacyEntry = """{"eTag":"etag","lastRefreshTime":1675954145,"httpResult":"{\"responseCode\":200}"}"""
+
+        assertThat(ETagCacheMetadata.deserialize(legacyEntry)).isNull()
+    }
+
+    @Test
     fun `ETagCacheMetadata deserialize returns null for unparseable data`() {
         assertThat(ETagCacheMetadata.deserialize("not json")).isNull()
     }
