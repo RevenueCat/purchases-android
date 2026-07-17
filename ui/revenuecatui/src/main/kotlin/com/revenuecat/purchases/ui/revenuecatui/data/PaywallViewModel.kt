@@ -900,6 +900,12 @@ internal class PaywallViewModelImpl(
             WorkflowResolution.Disabled -> {
                 // A 4xx kill switch disabled remote config. The offering was parsed with its components skipped,
                 // so reload it from /offerings — which now re-parse with those components — to recover its paywall.
+                // When the resolved offering already carries decoded components (the cache was repopulated when the
+                // kill switch first tripped), render it directly instead of reloading offerings on every present.
+                if (workflowOffering.paywallComponents != null) {
+                    clearWorkflowState()
+                    return WorkflowOutcome.Fallback(workflowOffering, preloadedOfferings)
+                }
                 Logger.w(
                     "Paywalls: Workflows unavailable for offering '${workflowOffering.identifier}' after a " +
                         "remote config disable. Falling back to the offerings-provided paywall.",
