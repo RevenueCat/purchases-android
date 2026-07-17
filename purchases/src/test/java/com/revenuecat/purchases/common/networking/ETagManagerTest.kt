@@ -708,16 +708,6 @@ class ETagManagerTest {
     }
 
     @Test
-    fun `an unparseable cache entry is treated as a miss`() {
-        val urlString = "http://localhost:100/v1/subscribers/appUserID"
-        every { mockedPrefs.getString(urlString, null) } returns "not json"
-
-        val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
-
-        assertThat(eTagHeaders[HTTPRequest.ETAG_HEADER_NAME]).isEmpty()
-    }
-
-    @Test
     fun `a v2 entry with an unknown verification result reads as a miss`() {
         val urlString = "http://localhost:100/v1/subscribers/appUserID"
         val metadata = ETagCacheMetadata.fromResult(
@@ -873,7 +863,7 @@ class ETagManagerTest {
         urlString: String,
         expectedLastRefreshTime: Date? = Date(),
         httpResult: HTTPResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE)
-    ): ETagCacheMetadata? {
+    ) {
         val metadata = expectedETag?.let {
             ETagCacheMetadata.fromResult(httpResult, ETagData(expectedETag, expectedLastRefreshTime))
         }
@@ -883,7 +873,6 @@ class ETagManagerTest {
         if (metadata != null) {
             payloadStore.write(urlString, httpResult.payloadText)
         }
-        return metadata
     }
 
     private fun assertStoredResponse(

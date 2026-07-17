@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.networking
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.annotation.VisibleForTesting
+import androidx.core.content.edit
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.DateProvider
@@ -284,9 +285,7 @@ internal class ETagManager(
         internal fun removeLegacyEntries(prefs: SharedPreferences) {
             val legacyKeys = prefs.all.keys.filterNot { it.startsWith(METADATA_KEY_PREFIX) }
             if (legacyKeys.isNotEmpty()) {
-                val editor = prefs.edit()
-                legacyKeys.forEach(editor::remove)
-                editor.apply()
+                prefs.edit { legacyKeys.forEach(::remove) }
             }
         }
 
