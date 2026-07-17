@@ -194,51 +194,6 @@ internal class WebViewEnvelopeTest {
     }
 
     @Test
-    fun `rejects oversized payload`() {
-        val hugeValue = "x".repeat(WebViewEnvelope.MAX_PAYLOAD_BYTES + 1)
-        val raw = envelope(
-            kind = WebViewEnvelope.KIND_MESSAGE,
-            type = WebViewMessageType.ERROR,
-            payload = """{"error":"$hugeValue"}""",
-        )
-        assertThat(raw.toByteArray(Charsets.UTF_8).size).isGreaterThan(WebViewEnvelope.MAX_PAYLOAD_BYTES)
-        assertThat(WebViewEnvelope.parse(raw)).isNull()
-    }
-
-    @Test
-    fun `accepts frame depth at MAX_NESTING_DEPTH plus one before recursive parsing`() {
-        // Envelope object (+1) plus a payload tree of MAX_NESTING_DEPTH → MAX_FRAME_DEPTH.
-        val depth = WebViewEnvelope.MAX_NESTING_DEPTH + 1
-
-        assertThat(WebViewEnvelope.exceedsMaxDepth(nestedArray(depth))).isFalse()
-    }
-
-    @Test
-    fun `rejects frame depth beyond MAX_NESTING_DEPTH plus one before recursive parsing`() {
-        val depth = WebViewEnvelope.MAX_NESTING_DEPTH + 2
-
-        assertThat(WebViewEnvelope.exceedsMaxDepth(nestedArray(depth))).isTrue()
-    }
-
-    @Test
-    fun `rejects a hostile deeply nested frame before recursive parsing`() {
-        // ~30k nesting levels fit inside the 64 KiB frame limit; the pre-parse structural scan
-        // must reject this before org.json's recursive tokenizer ever runs (stack-overflow guard).
-        val depth = 30_000
-        val nested = "[".repeat(depth) + "]".repeat(depth)
-
-        val parsed = WebViewEnvelope.parse(
-            envelope(
-                kind = WebViewEnvelope.KIND_MESSAGE,
-                type = WebViewMessageType.STEP_COMPLETE,
-                payload = """{"responses":{"deep":$nested}}""",
-            ),
-        )
-
-        assertThat(parsed).isNull()
-    }
-
-    @Test
     fun `build emits required and optional fields`() {
         val payload = JSONObject("""{"responses":{"ok":true}}""")
         val json = WebViewEnvelope.build(
@@ -276,8 +231,6 @@ internal class WebViewEnvelopeTest {
         assertThat(json.has(WebViewMessageField.PAYLOAD)).isFalse()
         assertThat(json.has(WebViewMessageField.ERROR)).isFalse()
     }
-
-    private fun nestedArray(depth: Int): String = "[".repeat(depth) + "0" + "]".repeat(depth)
 
     private fun envelope(
         kind: String,

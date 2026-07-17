@@ -22,15 +22,6 @@ internal object WebViewEnvelope {
     const val RECEIVE_FUNCTION: String = "__rcWebComponentsReceive"
     const val DEFAULT_PROTOCOL_VERSION: Int = 1
 
-    /** Maximum UTF-8 byte length accepted for a single inbound frame. */
-    const val MAX_PAYLOAD_BYTES: Int = 65_536
-
-    /**
-     * Maximum nesting depth for a payload tree. The whole-frame pre-parse scan allows one extra
-     * level for the envelope object itself ([MAX_FRAME_DEPTH]).
-     */
-    const val MAX_NESTING_DEPTH: Int = 16
-
     const val KIND_CONNECT: String = "connect"
     const val KIND_INIT: String = "init"
     const val KIND_REJECT: String = "reject"
@@ -59,23 +50,8 @@ internal object WebViewEnvelope {
         val error: String?,
     )
 
-    /**
-     * Coarse structural depth budget for a whole inbound frame: the envelope object itself plus a
-     * payload tree of at most [MAX_NESTING_DEPTH] levels. The precise per-tree limit is still
-     * enforced during app-message conversion; this scan exists only to stop hostile input before
-     * recursion happens.
-     */
-    private const val MAX_FRAME_DEPTH: Int = MAX_NESTING_DEPTH + 1
-
     @Suppress("ReturnCount", "CyclomaticComplexMethod")
     fun parse(rawJson: String): Parsed? {
-        if (rawJson.toByteArray(Charsets.UTF_8).size > MAX_PAYLOAD_BYTES) return null
-
-        // Enforce the nesting budget BEFORE org.json parses: JSONTokener recurses per nesting
-        // level, and tens of thousands of levels fit inside the 64 KiB frame limit, so a hostile
-        // deeply-nested frame could otherwise overflow the stack before any post-parse check runs.
-        if (exceedsMaxDepth(rawJson)) return null
-
         val json = try {
             JSONObject(rawJson)
         } catch (@Suppress("SwallowedException") _: org.json.JSONException) {
@@ -116,40 +92,6 @@ internal object WebViewEnvelope {
             payload = payload,
             error = error,
         )
-    }
-
-    /**
-     * Non-recursive scan of the raw JSON characters, tracking `{`/`[` nesting outside string
-     * literals (honoring `\` escapes). Returns `true` when the depth exceeds [MAX_FRAME_DEPTH].
-     */
-    @Suppress("LoopWithTooManyJumpStatements")
-    fun exceedsMaxDepth(rawJson: String): Boolean {
-        var depth = 0
-        var inString = false
-        var escaped = false
-
-        for (char in rawJson) {
-            if (inString) {
-                when {
-                    escaped -> escaped = false
-                    char == '\\' -> escaped = true
-                    char == '"' -> inString = false
-                }
-                continue
-            }
-
-            when (char) {
-                '"' -> inString = true
-                '{', '[' -> {
-                    depth += 1
-                    if (depth > MAX_FRAME_DEPTH) return true
-                }
-                '}', ']' -> depth -= 1
-                else -> Unit
-            }
-        }
-
-        return false
     }
 
     @Suppress("LongParameterList")
