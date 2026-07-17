@@ -24,7 +24,8 @@ internal data class ETagData(
 /**
  * Everything the ETag cache persists about a response except its payload, stored as a small flat JSON
  * under [ETagManager.metadataKey]; the payload lives in an [ETagPayloadStore] file. The versioned key
- * keeps downgrades safe: older SDKs only read the bare URL key and simply refetch.
+ * keeps downgrades safe: older SDKs only read the bare URL key and simply refetch, and anything they
+ * wrote there is swept at the next upgraded launch ([ETagManager.removeLegacyEntries]).
  *
  * `origin` is intentionally not persisted: stored results always read back as [HTTPResult.Origin.CACHE].
  */
@@ -124,7 +125,9 @@ internal data class ETagCacheMetadata(
 @Suppress("TooManyFunctions")
 internal class ETagManager(
     context: Context,
-    private val prefs: Lazy<SharedPreferences> = lazy { initializeSharedPreferences(context) },
+    private val prefs: Lazy<SharedPreferences> = lazy {
+        initializeSharedPreferences(context).also(::removeLegacyEntries)
+    },
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val payloadStore: ETagPayloadStore = ETagPayloadStore(context),
 ) {
@@ -247,7 +250,6 @@ internal class ETagManager(
         return prefs.value.getString(metadataKey(urlString), null)?.let { ETagCacheMetadata.deserialize(it) }
     }
 
-
     private fun shouldStoreBackendResult(resultFromBackend: HTTPResult): Boolean {
         val responseCode = resultFromBackend.responseCode
         return responseCode != RCHTTPStatusCodes.NOT_MODIFIED &&
@@ -271,6 +273,22 @@ internal class ETagManager(
 
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         internal fun metadataKey(urlString: String): String = METADATA_KEY_PREFIX + urlString
+
+        /**
+         * Removes entries from older SDK formats (bare URL keys), which are dropped rather than
+         * migrated: their values would otherwise stay parsed in the prefs in-memory map for the
+         * process lifetime. Runs on the already-loaded key set and never parses a value; the edit
+         * only happens when something is stale.
+         */
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal fun removeLegacyEntries(prefs: SharedPreferences) {
+            val legacyKeys = prefs.all.keys.filterNot { it.startsWith(METADATA_KEY_PREFIX) }
+            if (legacyKeys.isNotEmpty()) {
+                val editor = prefs.edit()
+                legacyKeys.forEach(editor::remove)
+                editor.apply()
+            }
+        }
 
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(

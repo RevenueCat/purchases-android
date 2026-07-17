@@ -38,6 +38,7 @@ class ETagManagerTest {
     }
     private val putStringKeys = mutableListOf<String>()
     private val putStringValues = mutableListOf<String>()
+    private val removedKeys = mutableListOf<String>()
     private val mockEditor = mockk<SharedPreferences.Editor>()
 
     @get:Rule
@@ -53,6 +54,9 @@ class ETagManagerTest {
         } returns null
         every {
             mockEditor.putString(capture(putStringKeys), capture(putStringValues))
+        } returns mockEditor
+        every {
+            mockEditor.remove(capture(removedKeys))
         } returns mockEditor
         every {
             mockEditor.apply()
@@ -768,6 +772,34 @@ class ETagManagerTest {
         underTest.storeBackendResultIfNoError(urlString, HTTPResult.createResult(), eTagInResponse = "etag")
 
         assertThat(putStringKeys).isEmpty()
+    }
+
+    @Test
+    fun `legacy entries are swept without parsing their values`() {
+        val v2Key = ETagManager.metadataKey("http://localhost:100/v1/subscribers/appUserID")
+        every { mockedPrefs.all } returns mapOf(
+            v2Key to "{}",
+            "http://localhost:100/v1/subscribers/appUserID" to "huge legacy blob",
+            "http://localhost:100/v1/offerings#rc_payload" to "stale dev payload",
+        )
+
+        ETagManager.removeLegacyEntries(mockedPrefs)
+
+        assertThat(removedKeys).containsExactlyInAnyOrder(
+            "http://localhost:100/v1/subscribers/appUserID",
+            "http://localhost:100/v1/offerings#rc_payload",
+        )
+    }
+
+    @Test
+    fun `the sweep does not edit prefs when nothing is stale`() {
+        every { mockedPrefs.all } returns mapOf(
+            ETagManager.metadataKey("http://localhost:100/v1/subscribers/appUserID") to "{}",
+        )
+
+        ETagManager.removeLegacyEntries(mockedPrefs)
+
+        verify(exactly = 0) { mockedPrefs.edit() }
     }
 
     @Test
