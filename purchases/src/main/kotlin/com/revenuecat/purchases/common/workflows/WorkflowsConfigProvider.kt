@@ -46,6 +46,14 @@ import kotlinx.serialization.json.JsonPrimitive
 internal class WorkflowsConfigProvider(
     private val manager: RemoteConfigManager,
     private val currentOfferingIdProvider: () -> String? = { null },
+    // Called after warm() loads the current offering's workflow, so a collaborator can warm that workflow's
+    // assets at load time — mirroring the offerings path, which pre-downloads only the current offering's assets.
+    // The second argument decodes a workflow from the config layer WITHOUT populating this provider's retained
+    // decode cache, so prewarming never forces the memory-first Lazy the render path holds — the in-memory cache
+    // stays raw-bytes-only.
+    private val onCurrentWorkflowLoaded: (
+        suspend (workflowId: String, transientDecode: suspend (String) -> PublishedWorkflow?) -> Unit
+    )? = null,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) : RemoteConfigCommitListener {
 
@@ -232,6 +240,22 @@ internal class WorkflowsConfigProvider(
                 "${offeringToWorkflowId.size} offering mapping(s)."
         }
         cache.store(generation, Cached(workflows, offeringToWorkflowId))
+
+        // Warm the current offering's workflow assets (images + ui_config fonts) at load time — mirrors the
+        // offerings path, which pre-downloads only the current offering's assets, never other offerings'. So a
+        // prefetch-flagged workflow that isn't the current offering's has its bytes cached (above) but not its
+        // assets: it isn't the paywall about to be shown. Fire-and-forget so it never blocks warm() or the
+        // getOfferings readiness gate. resolveWorkflowBody decodes transiently: it reads bytes + parses without
+        // touching the retained Lazy above, so prewarming keeps the cache raw-bytes-only.
+        onCurrentWorkflowLoaded?.let { notify ->
+            // Notify whenever the current offering maps to a workflow — do NOT gate on `workflows` (the byte-warm
+            // map), whose parallel preload can miss a body that hasn't finished its LOW-priority prefetch yet.
+            // resolveWorkflowBody fetches the body on demand, so gating here would drop the current offering's
+            // asset prewarm purely on preload timing.
+            currentOfferingId?.let { offeringToWorkflowId[it] }?.let { currentWorkflowId ->
+                scope.launch { notify(currentWorkflowId, ::resolveWorkflowBody) }
+            }
+        }
     }
 
     /** Warms at the current config generation; used by the offerings readiness gate. */

@@ -9,7 +9,6 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
-import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -35,7 +34,7 @@ import kotlinx.coroutines.launch
 internal class WorkflowManager(
     private val workflowsConfigProvider: WorkflowsConfigProvider,
     private val uiConfigProvider: UiConfigProvider,
-    private val workflowAssetPreDownloader: WorkflowAssetPreDownloader,
+    private val workflowAssetPrewarmer: WorkflowAssetPrewarmer,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
 
@@ -84,7 +83,7 @@ internal class WorkflowManager(
         // topic rather than a uiConfig embedded in the workflow body.
         scope.launch {
             runCatching {
-                workflowAssetPreDownloader.preDownloadWorkflowAssets(workflow, uiConfig)
+                workflowAssetPrewarmer.preDownloadWorkflowAssets(workflow, uiConfig)
             }.onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
         }
         return workflow

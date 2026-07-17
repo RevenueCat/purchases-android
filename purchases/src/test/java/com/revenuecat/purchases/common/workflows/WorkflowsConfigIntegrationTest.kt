@@ -361,14 +361,14 @@ class WorkflowsConfigIntegrationTest {
         }
 
     // Asset prewarming is out of scope here (covered by WorkflowManagerTest), so the manager gets a stubbed
-    // ui-config provider and a no-op pre-downloader.
+    // ui-config provider and a no-op prewarmer.
     private fun workflowManagerWith(provider: WorkflowsConfigProvider) = WorkflowManager(
         workflowsConfigProvider = provider,
         uiConfigProvider = mockk {
             every { isWarm() } returns false
             coEvery { getUiConfig() } returns emptyUiConfig()
         },
-        workflowAssetPreDownloader = mockk(relaxed = true),
+        workflowAssetPrewarmer = mockk(relaxed = true),
         scope = testScope,
     )
 
