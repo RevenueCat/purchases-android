@@ -16,6 +16,9 @@ import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSource
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.Runs
 import io.mockk.every
@@ -64,6 +67,198 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.method).isEqualTo("GET")
         assertThat(request.path).isEqualTo("/v1/subscribers/identify")
     }
+
+    // region API source base host
+
+    @Test
+    fun `performRequest resolves base host from the API source provider when baseURL is the default host`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        val provider = FakeAPISourceProvider(listOf(server.url("/").toString()))
+        val client = createClient(
+            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            apiSourceProvider = provider,
+        )
+        enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult())
+
+        client.performRequest(
+            URL(AppConfig.baseUrlString),
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        val request = server.takeRequest()
+        assertThat(request.path).isEqualTo("/v1/subscribers/test_user_id")
+        assertThat(server.requestCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `performRequest ignores the API source provider when usesRemoteConfigAPISources is disabled`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        // The setting is disabled by default, so the provider must never be consulted and requests keep
+        // targeting the provided base URL.
+        val provider = mockk<RemoteConfigSourceProvider>(relaxed = true)
+        val client = createClient(
+            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = false),
+            apiSourceProvider = provider,
+        )
+        enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult())
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        val request = server.takeRequest()
+        assertThat(request.path).isEqualTo("/v1/subscribers/test_user_id")
+        assertThat(server.requestCount).isEqualTo(1)
+        verify(exactly = 0) { provider.getCurrent(any()) }
+    }
+
+    @Test
+    fun `performRequest uses the provided base URL when there is no API source provider`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        val client = createClient(
+            appConfig = createAppConfig(proxyURL = null),
+            apiSourceProvider = null,
+        )
+        enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult())
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        val request = server.takeRequest()
+        assertThat(request.path).isEqualTo("/v1/subscribers/test_user_id")
+        assertThat(server.requestCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `performRequest bypasses the API source provider when the base URL is not the default host`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        // An overridden/proxy base URL pins the host; the API source (a different server) must not be used.
+        val apiSourceServer = MockWebServer()
+        val provider = FakeAPISourceProvider(listOf(apiSourceServer.url("/").toString()))
+        val client = createClient(
+            appConfig = createAppConfig(usesRemoteConfigAPISources = true),
+            apiSourceProvider = provider,
+        )
+        enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult())
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        val request = server.takeRequest()
+        assertThat(request.path).isEqualTo("/v1/subscribers/test_user_id")
+        assertThat(server.requestCount).isEqualTo(1)
+        assertThat(apiSourceServer.requestCount).isEqualTo(0)
+        apiSourceServer.shutdown()
+    }
+
+    @Test
+    fun `performRequest ETag retry targets the same API source host`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        // GetCustomerInfo has no endpoint fallback URL, isolating API-source host resolution.
+        assert(!endpoint.supportsFallbackBaseURLs)
+
+        val provider = FakeAPISourceProvider(listOf(server.url("/").toString()))
+        val client = createClient(
+            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            apiSourceProvider = provider,
+        )
+
+        val urlString = server.url("/v1/subscribers/test_user_id").toString()
+
+        // First attempt: an ETag cache miss (null result) forces a refresh retry.
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                RCHTTPStatusCodes.NOT_MODIFIED,
+                payload = "",
+                eTagHeader = any(),
+                urlString = urlString,
+                refreshETag = false,
+                requestDate = null,
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
+                isFallbackURL = false,
+            )
+        } returns null
+
+        val expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS)
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                expectedResult.responseCode,
+                payload = expectedResult.payloadText,
+                eTagHeader = any(),
+                urlString = urlString,
+                refreshETag = true,
+                requestDate = null,
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
+                isFallbackURL = false,
+            )
+        } returns expectedResult
+
+        server.enqueue(MockResponse().setResponseCode(RCHTTPStatusCodes.NOT_MODIFIED))
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(expectedResult.responseCode)
+                .setBody(expectedResult.payloadText),
+        )
+
+        val result = client.performRequest(
+            URL(AppConfig.baseUrlString),
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        // Both the initial request and the ETag refresh retry must hit the API source host resolved from the
+        // provider, not fall back to AppConfig.baseUrlString. If the retry ignored the API source, this server
+        // would only see one request.
+        val firstRequest = server.takeRequest()
+        val secondRequest = server.takeRequest()
+        assertThat(firstRequest.path).isEqualTo("/v1/subscribers/test_user_id")
+        assertThat(secondRequest.path).isEqualTo("/v1/subscribers/test_user_id")
+        assertThat(server.requestCount).isEqualTo(2)
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+    }
+
+    /** A minimal [RemoteConfigSourceProvider] whose current API source is the first of [urls]. */
+    private class FakeAPISourceProvider(urls: List<String>) : RemoteConfigSourceProvider {
+        private val handles = urls.mapIndexed { index, url ->
+            RemoteConfigSourceHandle(
+                purpose = RemoteConfigSourceHandle.Purpose.API,
+                source = RemoteConfigSource(url = url, priority = index, weight = 1),
+                token = index,
+            )
+        }
+
+        override fun getCurrent(purpose: RemoteConfigSourceHandle.Purpose): RemoteConfigSourceHandle? =
+            handles.firstOrNull()
+
+        override fun reportUnhealthy(handle: RemoteConfigSourceHandle) = Unit
+
+        override fun restart(purpose: RemoteConfigSourceHandle.Purpose) = Unit
+
+        override fun restartIfExhausted(purpose: RemoteConfigSourceHandle.Purpose): Boolean = false
+    }
+
+    // endregion
 
     @Test
     fun forwardsTheResponseCode() {

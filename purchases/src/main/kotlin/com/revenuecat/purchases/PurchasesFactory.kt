@@ -36,9 +36,11 @@ import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineCustomerInfoCalculator
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetcher
+import com.revenuecat.purchases.common.remoteconfig.DefaultRemoteConfigSourceProvider
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDiskCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopicStore
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
@@ -199,12 +201,24 @@ internal class PurchasesFactory(
             val cache = DeviceCache(prefs, apiKey)
 
             val localeProvider = DefaultLocaleProvider()
+
+            // useWorkflows implies the config layer: workflows are served from `/v1/config`, so the manager
+            // must exist whenever workflows are on. Not applicable to the customEntitlementComputation flavor,
+            // which doesn't serve paywalls this way.
+            val remoteConfigEnabled = appConfig.useWorkflows && !appConfig.customEntitlementComputation
+            val remoteConfigDiskCache = if (remoteConfigEnabled) RemoteConfigDiskCache(contextForStorage) else null
+            val remoteConfigTopicStore = RemoteConfigTopicStore {
+                remoteConfigDiskCache?.read()?.topics?.get(it.wireName)
+            }
+            val apiSourceProvider = DefaultRemoteConfigSourceProvider(remoteConfigTopicStore)
+
             val httpClient = HTTPClient(
                 appConfig,
                 eTagManager,
                 diagnosticsTracker,
                 signingManager,
                 cache,
+                apiSourceProvider,
                 localeProvider = localeProvider,
                 forceServerErrorStrategy = forceServerErrorStrategy,
             )
@@ -272,14 +286,13 @@ internal class PurchasesFactory(
                 localeProvider = localeProvider,
             )
 
-            // useWorkflows implies the config layer: workflows are served from `/v1/config`, so the manager
-            // must exist whenever workflows are on. Not applicable to the customEntitlementComputation flavor,
-            // which doesn't serve paywalls this way.
-            val remoteConfigManager = if (appConfig.useWorkflows && !appConfig.customEntitlementComputation) {
+            val remoteConfigManager = if (remoteConfigDiskCache != null) {
                 RemoteConfigManager(
                     backend = backend,
-                    diskCache = RemoteConfigDiskCache(contextForStorage),
+                    diskCache = remoteConfigDiskCache,
                     blobStore = RemoteConfigBlobStore(contextForStorage),
+                    topicStore = remoteConfigTopicStore,
+                    sourceProvider = apiSourceProvider,
                     // Bootstrap source for a cold on-demand read's self-triggered sync (see blobData()); after
                     // the first identity change the manager syncs for the user clearCache() binds instead.
                     appUserIDProvider = { cache.getCachedAppUserID() },
