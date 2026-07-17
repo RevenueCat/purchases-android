@@ -1185,6 +1185,72 @@ class StyleFactoryTests {
     }
 
     @Test
+    fun `Should apply top window insets to the hero z-stack even when an overlay child contains a stack`() {
+        // Arrange
+        val imageUrls = ThemeImageUrls(
+            light = ImageUrls(
+                original = URL("https://assets.pawwalls.com/1151049_1732039548.png"),
+                webp = URL("https://assets.pawwalls.com/1151049_1732039548.webp"),
+                webpLowRes = URL("https://assets.pawwalls.com/1151049_low_res_1732039548.webp"),
+                width = 547.toUInt(),
+                height = 257.toUInt(),
+            ),
+        )
+        // Mirrors a hero header: a z-stack with a full-width image and a close button overlay. The
+        // button wraps its own stack, which is built before the z-stack's style is.
+        val closeButton = ButtonComponent(
+            action = ButtonComponent.Action.NavigateBack,
+            stack = StackComponent(
+                components = listOf(
+                    ImageComponent(
+                        source = imageUrls,
+                        size = Size(width = SizeConstraint.Fixed(32u), height = SizeConstraint.Fixed(32u)),
+                    ),
+                ),
+                dimension = Dimension.Vertical(
+                    alignment = HorizontalAlignment.TRAILING,
+                    distribution = FlexDistribution.SPACE_BETWEEN,
+                ),
+            ),
+        )
+        val stackComponent = StackComponent(
+            components = listOf(
+                StackComponent(
+                    components = listOf(
+                        ImageComponent(
+                            source = imageUrls,
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fixed(150u)),
+                        ),
+                        closeButton,
+                    ),
+                    dimension = Dimension.ZLayer(
+                        alignment = TwoDimensionalAlignment.TOP_TRAILING,
+                    )
+                ),
+            ),
+            dimension = Dimension.Vertical(
+                alignment = HorizontalAlignment.LEADING,
+                distribution = FlexDistribution.START,
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(style.applyTopWindowInsets).isFalse()
+        val zStack = style.children[0] as StackComponentStyle
+        assertThat(zStack.applyTopWindowInsets).isTrue()
+        val heroImage = zStack.children[0] as ImageComponentStyle
+        assertThat(heroImage.ignoreTopWindowInsets).isTrue()
+        // The button's inner stack must not consume the insets meant for the z-stack.
+        val buttonStyle = zStack.children[1] as ButtonComponentStyle
+        assertThat(buttonStyle.stackComponentStyle.applyTopWindowInsets).isFalse()
+    }
+
+    @Test
     fun `Should not ignore top window insets for the first image in the first z-stack if it is not full-width`() {
         // Arrange
         val imageUrls = ThemeImageUrls(
