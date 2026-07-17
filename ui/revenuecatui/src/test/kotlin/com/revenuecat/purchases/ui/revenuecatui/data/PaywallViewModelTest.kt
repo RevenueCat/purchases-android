@@ -3256,6 +3256,72 @@ class PaywallViewModelTest {
         val reloadedOffering = (model.state.value as PaywallState.Loaded.Components).offering
         assertThat(reloadedOffering.identifier).isEqualTo(offeringWithWPL.identifier)
         assertThat(reloadedOffering.paywallComponents).isNotNull()
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
+        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
+    }
+
+    @Test
+    fun `when disabled by a 4xx and the offering already carries components, renders without reloading offerings`() {
+        // Once the kill switch has repopulated the offerings cache with decoded components, re-presenting the
+        // paywall renders the resolved offering directly instead of reloading offerings on every presentation.
+        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Disabled
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithWPL)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            useWorkflowsEndpoint = true,
+        )
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        val offering = (model.state.value as PaywallState.Loaded.Components).offering
+        assertThat(offering.identifier).isEqualTo(offeringWithWPL.identifier)
+        assertThat(offering.paywallComponents).isNotNull()
+        coVerify(exactly = 0) { purchases.awaitOfferings() }
+        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
+    }
+
+    @Test
+    fun `when disabled by a 4xx and presented by offering id, renders without a redundant offerings reload`() {
+        // The launcher path resolves the offering via awaitOfferings() up front, which after the disable already
+        // carries components. The disabled fallback must not reload offerings a second time.
+        val presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = offeringWithWPL.identifier)
+        val offerings = Offerings(
+            current = offeringWithWPL,
+            all = mapOf(offeringWithWPL.identifier to offeringWithWPL),
+        )
+        coEvery { purchases.awaitOfferings() } returns offerings
+        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Disabled
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOfferingIdAndPresentedOfferingContext(
+                    OfferingSelection.IdAndPresentedOfferingContext(
+                        offeringId = offeringWithWPL.identifier,
+                        presentedOfferingContext = presentedOfferingContext,
+                    ),
+                )
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            useWorkflowsEndpoint = true,
+        )
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        val offering = (model.state.value as PaywallState.Loaded.Components).offering
+        assertThat(offering.identifier).isEqualTo(offeringWithWPL.identifier)
+        assertThat(offering.paywallComponents).isNotNull()
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
         coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
     }
 
