@@ -377,6 +377,30 @@ internal class WorkflowsConfigProviderTest {
     }
 
     @Test
+    fun `warm notifies onCurrentWorkflowLoaded even when the workflow body was not byte-warmed`() = runTest {
+        var announcedId: String? = null
+        val providerWithListener = WorkflowsConfigProvider(
+            manager,
+            currentOfferingIdProvider = { currentOfferingId },
+            onCurrentWorkflowLoaded = { workflowId, _ -> announcedId = workflowId },
+            scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+        )
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        // The current offering's workflow body isn't ready during the parallel preload (e.g. its prefetch blob
+        // hasn't landed), so it is dropped from the byte-warm cache...
+        coEvery {
+            manager.blobData(RemoteConfigTopic.Workflows, WF_CURRENT, any<(ByteArray) -> ByteArray?>())
+        } returns null
+
+        providerWithListener.warm(generation = 0)
+
+        // ...but it must still be announced for asset prewarming — resolveWorkflowBody fetches the body on demand,
+        // so gating on the byte-warm cache would drop it purely on preload timing.
+        assertThat(announcedId).isEqualTo(WF_CURRENT)
+    }
+
+    @Test
     fun `warm does not notify onCurrentWorkflowLoaded when the current offering has no workflow`() = runTest {
         var announced = false
         currentOfferingId = "offering_without_workflow"
