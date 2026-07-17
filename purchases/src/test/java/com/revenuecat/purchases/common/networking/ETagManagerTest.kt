@@ -1,6 +1,8 @@
 package com.revenuecat.purchases.common.networking
 
+import android.content.Context
 import android.content.SharedPreferences
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.VerificationResult.*
@@ -772,6 +774,22 @@ class ETagManagerTest {
         underTest.storeBackendResultIfNoError(urlString, HTTPResult.createResult(), eTagInResponse = "etag")
 
         assertThat(putStringKeys).isEmpty()
+    }
+
+    @Test
+    fun `legacy entries are swept when the default prefs initialize`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        val realPrefs = ETagManager.initializeSharedPreferences(context)
+        realPrefs.edit()
+            .putString(urlString, "legacy blob")
+            .putString(ETagManager.metadataKey(urlString), "{}")
+            .commit()
+
+        ETagManager(context).getETagHeaders(urlString, verificationRequested = false)
+
+        assertThat(realPrefs.contains(urlString)).isFalse
+        assertThat(realPrefs.contains(ETagManager.metadataKey(urlString))).isTrue
     }
 
     @Test
