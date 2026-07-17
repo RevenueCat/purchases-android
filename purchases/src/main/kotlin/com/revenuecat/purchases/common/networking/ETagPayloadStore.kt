@@ -4,7 +4,9 @@ import android.content.Context
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.models.Checksum
+import java.io.DataInputStream
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
@@ -62,20 +64,27 @@ internal class ETagPayloadStore(
      * Returns the payload, or `null` for a miss: no file, undecodable bytes, or a size mismatch
      * against [expectedSizeBytes] (the size [write] returned; `null` skips the check).
      */
-    @Suppress("SwallowedException")
+    @Suppress("SwallowedException", "ReturnCount")
     fun read(urlString: String, expectedSizeBytes: Long? = null): String? {
-        val file = fileFor(urlString)
         return try {
-            if (expectedSizeBytes != null && file.length() != expectedSizeBytes) {
-                return null
+            FileInputStream(fileFor(urlString)).use { input ->
+                // The open descriptor pins one file identity, so a concurrent rename cannot swap the
+                // payload between the size check and the read.
+                val sizeBytes = input.channel.size()
+                val size = sizeBytes.toInt()
+                if ((expectedSizeBytes != null && sizeBytes != expectedSizeBytes) || size.toLong() != sizeBytes) {
+                    return null
+                }
+                val bytes = ByteArray(size)
+                DataInputStream(input).readFully(bytes)
+                // Strict decoding (unlike String(bytes), which silently substitutes U+FFFD) so a corrupt
+                // file reads back as a cache miss instead of serving garbage as a valid cached response.
+                Charsets.UTF_8.newDecoder()
+                    .onMalformedInput(CodingErrorAction.REPORT)
+                    .onUnmappableCharacter(CodingErrorAction.REPORT)
+                    .decode(ByteBuffer.wrap(bytes))
+                    .toString()
             }
-            // Strict decoding (unlike String(bytes), which silently substitutes U+FFFD) so a corrupt file
-            // reads back as a cache miss instead of serving garbage as a valid cached response.
-            Charsets.UTF_8.newDecoder()
-                .onMalformedInput(CodingErrorAction.REPORT)
-                .onUnmappableCharacter(CodingErrorAction.REPORT)
-                .decode(ByteBuffer.wrap(file.readBytes()))
-                .toString()
         } catch (e: FileNotFoundException) {
             // No payload for this URL: a plain cache miss, not an error.
             null
