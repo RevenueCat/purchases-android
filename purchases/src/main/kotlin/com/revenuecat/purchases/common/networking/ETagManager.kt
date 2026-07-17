@@ -3,14 +3,15 @@ package com.revenuecat.purchases.common.networking
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.annotation.VisibleForTesting
-import androidx.core.content.edit
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.NetworkStrings
+import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.utils.optNullableLong
 import org.json.JSONException
 import org.json.JSONObject
@@ -24,9 +25,9 @@ internal data class ETagData(
 
 /**
  * Everything the ETag cache persists about a response except its payload, stored as a small flat JSON
- * under [ETagManager.metadataKey]; the payload lives in an [ETagPayloadStore] file. The versioned key
- * keeps downgrades safe: older SDKs only read the bare URL key and simply refetch, and anything they
- * wrote there is swept at the next upgraded launch ([ETagManager.removeLegacyEntries]).
+ * under the URL key; the payload lives in an [ETagPayloadStore] file. The prefs file name is versioned,
+ * which keeps downgrades safe: older SDKs read their own file and simply refetch, and their file is
+ * deleted, unparsed, at the next upgraded launch ([ETagManager.deleteLegacyPreferencesFile]).
  *
  * `origin` is intentionally not persisted: stored results always read back as [HTTPResult.Origin.CACHE].
  */
@@ -127,7 +128,10 @@ internal data class ETagCacheMetadata(
 internal class ETagManager(
     context: Context,
     private val prefs: Lazy<SharedPreferences> = lazy {
-        initializeSharedPreferences(context).also(::removeLegacyEntries)
+        // The unlink is negligible next to the blocking prefs load that follows, and the first prefs
+        // touch is normally an ETag header read on a dispatcher thread anyway.
+        deleteLegacyPreferencesFile(context)
+        initializeSharedPreferences(context)
     },
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val payloadStore: ETagPayloadStore = ETagPayloadStore(context),
@@ -195,7 +199,7 @@ internal class ETagManager(
 
     @Suppress("ReturnCount")
     internal fun getStoredResult(urlString: String): HTTPResult? {
-        val serialized = prefs.value.getString(metadataKey(urlString), null) ?: return null
+        val serialized = prefs.value.getString(urlString, null) ?: return null
         val metadata = ETagCacheMetadata.deserialize(serialized) ?: return null
         // Lock-free read: a store racing between the metadata and payload reads fails the size check,
         // costing one spurious miss plus its refresh retry. The size check itself is what turns a
@@ -243,12 +247,12 @@ internal class ETagManager(
     private fun persistEntry(urlString: String, metadata: ETagCacheMetadata, payload: String) {
         val payloadSizeBytes = payloadStore.write(urlString, payload) ?: return
         prefs.value.edit()
-            .putString(metadataKey(urlString), metadata.copy(payloadSizeBytes = payloadSizeBytes).serialize())
+            .putString(urlString, metadata.copy(payloadSizeBytes = payloadSizeBytes).serialize())
             .apply()
     }
 
     private fun getStoredMetadata(urlString: String): ETagCacheMetadata? {
-        return prefs.value.getString(metadataKey(urlString), null)?.let { ETagCacheMetadata.deserialize(it) }
+        return prefs.value.getString(urlString, null)?.let { ETagCacheMetadata.deserialize(it) }
     }
 
     private fun shouldStoreBackendResult(resultFromBackend: HTTPResult): Boolean {
@@ -268,30 +272,29 @@ internal class ETagManager(
     }
 
     companion object {
-        // Downgrade safety: older SDKs look up the bare URL key, so versioned entries are inert to
-        // them and they simply refetch. URLs are always absolute, so no URL starts with "v2:".
-        private const val METADATA_KEY_PREFIX = "v2:"
-
-        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        internal fun metadataKey(urlString: String): String = METADATA_KEY_PREFIX + urlString
+        private const val LEGACY_PREFERENCES_FILE_SUFFIX = "_preferences_etags"
+        private const val PREFERENCES_FILE_SUFFIX = "_preferences_etags_v2"
 
         /**
-         * Removes entries from older SDK formats (bare URL keys), which are dropped rather than
-         * migrated: their values would otherwise stay parsed in the prefs in-memory map for the
-         * process lifetime. Runs on the already-loaded key set and never parses a value; the edit
-         * only happens when something is stale.
+         * Deletes the pre-split-format prefs file without ever loading it, so its multi-MB payload
+         * values are dropped rather than parsed into memory. Not supported below API 24; the stale
+         * file is left in place there.
          */
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        internal fun removeLegacyEntries(prefs: SharedPreferences) {
-            val legacyKeys = prefs.all.keys.filterNot { it.startsWith(METADATA_KEY_PREFIX) }
-            if (legacyKeys.isNotEmpty()) {
-                prefs.edit { legacyKeys.forEach(::remove) }
+        internal fun deleteLegacyPreferencesFile(context: Context) {
+            if (isAndroidNOrNewer()) {
+                try {
+                    context.deleteSharedPreferences("${context.packageName}$LEGACY_PREFERENCES_FILE_SUFFIX")
+                } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                    // Best-effort cleanup: a failure here must never break the cache itself.
+                    errorLog(e) { "Failed to delete the legacy ETag preferences file." }
+                }
             }
         }
 
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
-                "${context.packageName}_preferences_etags",
+                "${context.packageName}$PREFERENCES_FILE_SUFFIX",
                 Context.MODE_PRIVATE,
             )
     }

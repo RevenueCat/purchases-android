@@ -4,7 +4,6 @@ import android.content.Context
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
-import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.remoteconfig.DefaultRemoteConfigSourceProvider
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobFetcher
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
@@ -61,7 +60,7 @@ internal class ProductionRemoteConfigFallbackIntegrationTest : BaseBackendIntegr
             // The fallback endpoint is a plain-JSON GET, so its response is ETag-cached under the fallback URL,
             // confirming the exact host + path we hit.
             sharedPreferencesEditor.putString(
-                ETagManager.metadataKey("https://api-production.8-lives-cat.io/v1/config/app"),
+                "https://api-production.8-lives-cat.io/v1/config/app",
                 any(),
             )
         }
@@ -109,7 +108,7 @@ internal class ProductionRemoteConfigFallbackIntegrationTest : BaseBackendIntegr
         // one write to the fallback URL key proves the ETag round-trip happened (a plain re-fetch would store twice).
         verify(exactly = 1) {
             sharedPreferencesEditor.putString(
-                ETagManager.metadataKey("https://api-production.8-lives-cat.io/v1/config/app"),
+                "https://api-production.8-lives-cat.io/v1/config/app",
                 any(),
             )
         }

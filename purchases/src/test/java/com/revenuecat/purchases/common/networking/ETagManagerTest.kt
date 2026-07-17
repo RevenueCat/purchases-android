@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.networking
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.VerificationResult
@@ -40,7 +41,6 @@ class ETagManagerTest {
     }
     private val putStringKeys = mutableListOf<String>()
     private val putStringValues = mutableListOf<String>()
-    private val removedKeys = mutableListOf<String>()
     private val mockEditor = mockk<SharedPreferences.Editor>()
 
     @get:Rule
@@ -56,9 +56,6 @@ class ETagManagerTest {
         } returns null
         every {
             mockEditor.putString(capture(putStringKeys), capture(putStringValues))
-        } returns mockEditor
-        every {
-            mockEditor.remove(capture(removedKeys))
         } returns mockEditor
         every {
             mockEditor.apply()
@@ -354,7 +351,7 @@ class ETagManagerTest {
         // Byte-for-byte what we received: never escaped, and never written into the prefs JSON.
         // (ETagManagerMemoryTest gates the allocation cost of this path.)
         assertThat(payloadStore.read(urlString)).isEqualTo(payload)
-        assertThat(putStringKeys).containsExactly(ETagManager.metadataKey(urlString))
+        assertThat(putStringKeys).containsExactly(urlString)
     }
 
     @Test
@@ -694,15 +691,6 @@ class ETagManagerTest {
     }
 
     @Test
-    fun `a legacy combined entry reads as unparseable metadata`() {
-        // Pre-split format: eTag and lastRefreshTime at the top level, everything else nested inside an
-        // escaped httpResult string. Must never parse as split-format metadata.
-        val legacyEntry = """{"eTag":"etag","lastRefreshTime":1675954145,"httpResult":"{\"responseCode\":200}"}"""
-
-        assertThat(ETagCacheMetadata.deserialize(legacyEntry)).isNull()
-    }
-
-    @Test
     fun `ETagCacheMetadata deserialize returns null for unparseable data`() {
         assertThat(ETagCacheMetadata.deserialize("not json")).isNull()
     }
@@ -715,7 +703,7 @@ class ETagManagerTest {
             ETagData("etag", testDate),
         )
         val corrupted = metadata.serialize().replace("NOT_REQUESTED", "SOMETHING_UNKNOWN")
-        every { mockedPrefs.getString(ETagManager.metadataKey(urlString), null) } returns corrupted
+        every { mockedPrefs.getString(urlString, null) } returns corrupted
 
         val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
 
@@ -730,7 +718,7 @@ class ETagManagerTest {
             HTTPResult.createResult(payload = payload, origin = HTTPResult.Origin.CACHE),
             ETagData("etag", testDate),
         ).copy(payloadSizeBytes = payload.length + 100L)
-        every { mockedPrefs.getString(ETagManager.metadataKey(urlString), null) } returns metadata.serialize()
+        every { mockedPrefs.getString(urlString, null) } returns metadata.serialize()
         payloadStore.write(urlString, payload)
 
         assertThat(underTest.getStoredResult(urlString)).isNull()
@@ -743,7 +731,7 @@ class ETagManagerTest {
             HTTPResult.createResult(origin = HTTPResult.Origin.CACHE),
             ETagData("etag", testDate),
         )
-        every { mockedPrefs.getString(ETagManager.metadataKey(urlString), null) } returns metadata.serialize()
+        every { mockedPrefs.getString(urlString, null) } returns metadata.serialize()
 
         assertThat(underTest.getStoredResult(urlString)).isNull()
     }
@@ -751,7 +739,7 @@ class ETagManagerTest {
     @Test
     fun `a corrupt versioned entry reads as a miss for cached results`() {
         val urlString = "http://localhost:100/v1/subscribers/appUserID"
-        every { mockedPrefs.getString(ETagManager.metadataKey(urlString), null) } returns "not json"
+        every { mockedPrefs.getString(urlString, null) } returns "not json"
 
         assertThat(underTest.getStoredResult(urlString)).isNull()
     }
@@ -767,48 +755,53 @@ class ETagManagerTest {
     }
 
     @Test
-    fun `legacy entries are swept when the default prefs initialize`() {
+    fun `deleting the legacy prefs file drops its entries and leaves the current file untouched`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val urlString = "http://localhost:100/v1/subscribers/appUserID"
-        val realPrefs = ETagManager.initializeSharedPreferences(context)
-        realPrefs.edit()
-            .putString(urlString, "legacy blob")
-            .putString(ETagManager.metadataKey(urlString), "{}")
-            .commit()
+        legacyPrefs(context).edit().putString(urlString, "legacy blob").commit()
+        ETagManager.initializeSharedPreferences(context).edit().putString(urlString, "{}").commit()
+
+        ETagManager.deleteLegacyPreferencesFile(context)
+
+        assertThat(legacyPrefs(context).all).isEmpty()
+        assertThat(ETagManager.initializeSharedPreferences(context).contains(urlString)).isTrue
+    }
+
+    @Test
+    fun `a failure deleting the legacy prefs file is swallowed`() {
+        val context = mockk<Context>()
+        every { context.packageName } returns "com.test"
+        every { context.deleteSharedPreferences(any()) } throws RuntimeException("boom")
+
+        ETagManager.deleteLegacyPreferencesFile(context)
+    }
+
+    @Test
+    fun `the legacy prefs file is deleted when the default prefs initialize`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        legacyPrefs(context).edit().putString(urlString, "legacy blob").commit()
 
         ETagManager(context).getETagHeaders(urlString, verificationRequested = false)
 
-        assertThat(realPrefs.contains(urlString)).isFalse
-        assertThat(realPrefs.contains(ETagManager.metadataKey(urlString))).isTrue
+        assertThat(legacyPrefs(context).all).isEmpty()
     }
 
+    @Config(sdk = [Build.VERSION_CODES.M])
     @Test
-    fun `legacy entries are swept without parsing their values`() {
-        val v2Key = ETagManager.metadataKey("http://localhost:100/v1/subscribers/appUserID")
-        every { mockedPrefs.all } returns mapOf(
-            v2Key to "{}",
-            "http://localhost:100/v1/subscribers/appUserID" to "huge legacy blob",
-            "http://localhost:100/v1/offerings#rc_payload" to "stale dev payload",
-        )
+    fun `below API 24 the legacy prefs file is left in place`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        legacyPrefs(context).edit().putString(urlString, "legacy blob").commit()
 
-        ETagManager.removeLegacyEntries(mockedPrefs)
+        ETagManager.deleteLegacyPreferencesFile(context)
 
-        assertThat(removedKeys).containsExactlyInAnyOrder(
-            "http://localhost:100/v1/subscribers/appUserID",
-            "http://localhost:100/v1/offerings#rc_payload",
-        )
+        assertThat(legacyPrefs(context).contains(urlString)).isTrue
     }
 
-    @Test
-    fun `the sweep does not edit prefs when nothing is stale`() {
-        every { mockedPrefs.all } returns mapOf(
-            ETagManager.metadataKey("http://localhost:100/v1/subscribers/appUserID") to "{}",
-        )
-
-        ETagManager.removeLegacyEntries(mockedPrefs)
-
-        verify(exactly = 0) { mockedPrefs.edit() }
-    }
+    // Hardcoded on purpose: this is the name older SDK versions wrote, it must never change.
+    private fun legacyPrefs(context: Context): SharedPreferences =
+        context.getSharedPreferences("${context.packageName}_preferences_etags", Context.MODE_PRIVATE)
 
     @Test
     fun `ETagCacheMetadata toHTTPResult rebuilds the result with CACHE origin`() {
@@ -868,7 +861,7 @@ class ETagManagerTest {
             ETagCacheMetadata.fromResult(httpResult, ETagData(expectedETag, expectedLastRefreshTime))
         }
         every {
-            mockedPrefs.getString(ETagManager.metadataKey(urlString), null)
+            mockedPrefs.getString(urlString, null)
         } returns metadata?.serialize()
         if (metadata != null) {
             payloadStore.write(urlString, httpResult.payloadText)
@@ -883,7 +876,7 @@ class ETagManagerTest {
     ) {
         val storedByKey = putStringKeys.zip(putStringValues).toMap()
 
-        val metadata = ETagCacheMetadata.deserialize(storedByKey.getValue(ETagManager.metadataKey(urlString)))
+        val metadata = ETagCacheMetadata.deserialize(storedByKey.getValue(urlString))
         assertThat(metadata).isNotNull
         assertThat(metadata!!.eTagData.eTag).isEqualTo(eTagInResponse)
         assertThat(metadata.eTagData.lastRefreshTime?.time).isEqualTo(lastRefreshTime?.time)
