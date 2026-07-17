@@ -667,77 +667,8 @@ class ETagManagerTest {
     }
 
     @Test
-    fun `ETagCacheMetadata deserialize returns null for a legacy combined entry`() {
-        val legacyEntry = HTTPResultWithETag(
-            ETagData("etag", testDate),
-            HTTPResult.createResult(origin = HTTPResult.Origin.CACHE),
-        )
-
-        assertThat(ETagCacheMetadata.deserialize(legacyEntry.serialize())).isNull()
-    }
-
-    @Test
     fun `ETagCacheMetadata deserialize returns null for unparseable data`() {
         assertThat(ETagCacheMetadata.deserialize("not json")).isNull()
-    }
-
-    @Test
-    fun `a legacy combined entry still provides ETag headers and is rewritten in the split format`() {
-        val urlString = "http://localhost:100/v1/subscribers/appUserID"
-        val legacyEntry = HTTPResultWithETag(
-            ETagData("etag", testDate),
-            HTTPResult.createResult(payload = "{\"legacy\":true}", origin = HTTPResult.Origin.CACHE),
-        )
-        every { mockedPrefs.getString(urlString, null) } returns legacyEntry.serialize()
-
-        val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
-
-        assertThat(eTagHeaders[HTTPRequest.ETAG_HEADER_NAME]).isEqualTo("etag")
-        val storedByKey = putStringKeys.zip(putStringValues).toMap()
-        val migrated = ETagCacheMetadata.deserialize(storedByKey.getValue(urlString))
-        assertThat(migrated).isNotNull
-        assertThat(migrated!!.eTagData.eTag).isEqualTo("etag")
-        assertThat(migrated.eTagData.lastRefreshTime?.time).isEqualTo(testDate.time)
-        assertThat(storedByKey.getValue(ETagManager.payloadKey(urlString))).isEqualTo("{\"legacy\":true}")
-    }
-
-    @Test
-    fun `a legacy combined entry serves the cached payload on 304`() {
-        val urlString = "http://localhost:100/v1/subscribers/appUserID"
-        val legacyEntry = HTTPResultWithETag(
-            ETagData("etag", testDate),
-            HTTPResult.createResult(payload = "{\"legacy\":true}", origin = HTTPResult.Origin.CACHE),
-        )
-        every { mockedPrefs.getString(urlString, null) } returns legacyEntry.serialize()
-
-        val result = underTest.getHTTPResultFromCacheOrBackend(
-            responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
-            payload = "",
-            eTagHeader = "etag",
-            urlString = urlString,
-            refreshETag = false,
-            requestDate = null,
-            verificationResult = NOT_REQUESTED,
-            isLoadShedderResponse = false,
-            isFallbackURL = false,
-        )
-
-        assertThat(result).isNotNull
-        assertThat(result!!.payloadText).isEqualTo("{\"legacy\":true}")
-        assertThat(result.origin).isEqualTo(HTTPResult.Origin.CACHE)
-    }
-
-    @Test
-    fun `a legacy entry cleared between read and migration is not resurrected`() {
-        val urlString = "http://localhost:100/v1/subscribers/appUserID"
-        val legacyEntry = HTTPResultWithETag(
-            ETagData("etag", testDate),
-            HTTPResult.createResult(payload = "{\"legacy\":true}", origin = HTTPResult.Origin.CACHE),
-        )
-        every { mockedPrefs.getString(urlString, null) } returnsMany listOf(legacyEntry.serialize(), null)
-
-        assertThat(underTest.getStoredResult(urlString)).isNull()
-        assertThat(putStringKeys).isEmpty()
     }
 
     @Test
