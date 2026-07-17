@@ -1,9 +1,9 @@
 ## RevenueCat SDK
 ### 🐞 Bugfixes
 * fix: store ETag cache payload verbatim to avoid OOM on large responses (#3774) via Cesar de la Vega (@vegaro)
-* fix(remote-config): lazy-decode workflows cache to reduce memory (#3793) via Toni Rico (@tonidero)
 
 ### 🔄 Other Changes
+* fix(remote-config): lazy-decode workflows cache to reduce memory (#3793) via Toni Rico (@tonidero)
 * Eagerly prewarm offering's workflow assets (#3775) via Cesar de la Vega (@vegaro)
 * fix(remote-config): Avoid redundant offerings reload on disabled paywall re-presentation (#3802) via Toni Rico (@tonidero)
 * test: Remove backend golden response verification (#3801) via Toni Rico (@tonidero)
