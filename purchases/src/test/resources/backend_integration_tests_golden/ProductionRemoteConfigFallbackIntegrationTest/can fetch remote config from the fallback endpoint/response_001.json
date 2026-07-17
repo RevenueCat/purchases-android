@@ -50,20 +50,20 @@
       },
       "ui_config": {
         "app": {
-          "prefetch": true,
-          "blob_ref": "Ewnl-09gwxiodIR5CRhrhFzGFZmV6-1i"
-        },
-        "custom_variables": {
-          "prefetch": true,
-          "blob_ref": "RBNvo1WzZ4oRRq0W9-hknpT7T8If536D"
+          "blob_ref": "Ewnl-09gwxiodIR5CRhrhFzGFZmV6-1i",
+          "prefetch": true
         },
         "localizations": {
-          "prefetch": true,
-          "blob_ref": "JewnfTkEoy4-m-Z6PTP01zML1fpVPwp7"
+          "blob_ref": "JewnfTkEoy4-m-Z6PTP01zML1fpVPwp7",
+          "prefetch": true
         },
         "variable_config": {
-          "prefetch": true,
-          "blob_ref": "xXyp4pHaDNzyBOTRgrLJCxjuBSG21a1p"
+          "blob_ref": "xXyp4pHaDNzyBOTRgrLJCxjuBSG21a1p",
+          "prefetch": true
+        },
+        "custom_variables": {
+          "blob_ref": "RBNvo1WzZ4oRRq0W9-hknpT7T8If536D",
+          "prefetch": true
         }
       },
       "workflows": {
