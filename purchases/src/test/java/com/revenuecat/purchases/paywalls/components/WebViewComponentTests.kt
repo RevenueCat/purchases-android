@@ -40,7 +40,7 @@ class WebViewComponentTests {
         assertThat(webView.visible).isTrue()
         assertThat(webView.protocolVersion).isEqualTo(1)
         assertThat(webView.url).isEqualTo("https://assets.pawwalls.com/web_bundles/123/index.html")
-        assertThat(webView.size).isEqualTo(Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit))
+        assertThat(webView.size).isEqualTo(Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()))
     }
 
     @Test
@@ -136,7 +136,7 @@ class WebViewComponentTests {
             actual,
         )
         assertThat(actual.protocolVersion).isNull()
-        assertThat(actual.size).isEqualTo(Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit))
+        assertThat(actual.size).isEqualTo(Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()))
     }
 
     @Test

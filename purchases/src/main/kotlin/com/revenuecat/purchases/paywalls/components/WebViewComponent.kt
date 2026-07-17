@@ -35,5 +35,5 @@ public class WebViewComponent(
     @get:JvmSynthetic
     public val protocolVersion: Int? = null,
     @get:JvmSynthetic
-    public val size: Size = Size(width = Fill, height = SizeConstraint.Fit),
+    public val size: Size = Size(width = Fill, height = SizeConstraint.Fit()),
 ) : PaywallComponent
