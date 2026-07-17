@@ -44,6 +44,9 @@ internal interface RemoteConfigSourceProvider {
     /** The current healthy source for [purpose], or null once all of its sources are reported unhealthy. */
     fun getCurrent(purpose: RemoteConfigSourceHandle.Purpose): RemoteConfigSourceHandle?
 
+    /** The current healthy API base source, or null once every API source has been reported unhealthy. */
+    fun currentAPISource(): RemoteConfigSourceHandle? = getCurrent(RemoteConfigSourceHandle.Purpose.API)
+
     /** Falls back to the next source for the handle's purpose. No-op if [handle] is no longer current. */
     fun reportUnhealthy(handle: RemoteConfigSourceHandle)
 

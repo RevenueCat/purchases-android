@@ -189,4 +189,35 @@ internal sealed class Endpoint(
 
     val supportsFallbackBaseURLs: Boolean
         get() = fallbackPath != null
+
+    /**
+     * Whether this endpoint resolves its base host from the API source provider (the main-API host
+     * list, with failover) rather than the app's static base URL. Endpoints hosted elsewhere
+     * (diagnostics, events) opt out.
+     */
+    val usesAPISources: Boolean
+        get() = when (this) {
+            is GetCustomerInfo,
+            LogIn,
+            PostReceipt,
+            is GetOfferings,
+            is AliasUsers,
+            is PostAttributes,
+            is GetAmazonReceipt,
+            GetProductEntitlementMapping,
+            is GetCustomerCenterConfig,
+            is GetRemoteConfig,
+            PostCreateSupportTicket,
+            PostRedeemWebPurchase,
+            is GetVirtualCurrencies,
+            is GetRewardVerification,
+            is WebBillingGetProducts,
+            ->
+                true
+            PostDiagnostics,
+            PostEvents,
+            is GetRemoteConfigFallback,
+            ->
+                false
+        }
 }

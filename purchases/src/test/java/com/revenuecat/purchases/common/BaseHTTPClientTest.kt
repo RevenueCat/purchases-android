@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.interfaces.StorefrontProvider
 import io.mockk.clearAllMocks
@@ -70,6 +71,7 @@ internal abstract class BaseHTTPClientTest {
         eTagManager: ETagManager = mockETagManager,
         signingManager: SigningManager? = null,
         storefrontProvider: StorefrontProvider = mockStorefrontProvider,
+        apiSourceProvider: RemoteConfigSourceProvider? = null,
         localeProvider: LocaleProvider = DefaultLocaleProvider(),
         forceServerErrorStrategy: ForceServerErrorStrategy? = null,
         timeoutManager: HTTPTimeoutManager? = null,
@@ -79,6 +81,7 @@ internal abstract class BaseHTTPClientTest {
         diagnosticsTracker,
         signingManager ?: mockSigningManager,
         storefrontProvider,
+        apiSourceProvider,
         dateProvider,
         localeProvider = localeProvider,
         forceServerErrorStrategy = forceServerErrorStrategy,
@@ -95,6 +98,7 @@ internal abstract class BaseHTTPClientTest {
         isDebugBuild: Boolean = false,
         customEntitlementComputation: Boolean = false,
         uiPreviewMode: Boolean = false,
+        usesRemoteConfigAPISources: Boolean = false,
         forceSigningErrors: Boolean = false,
         baseUrlString: String = AppConfig.baseUrlString
     ): AppConfig {
@@ -110,6 +114,7 @@ internal abstract class BaseHTTPClientTest {
             dangerousSettings = DangerousSettings(
                 customEntitlementComputation = customEntitlementComputation,
                 uiPreviewMode = uiPreviewMode,
+                usesRemoteConfigAPISources = usesRemoteConfigAPISources,
             ),
             runningTests = true,
             forceSigningErrors = forceSigningErrors,

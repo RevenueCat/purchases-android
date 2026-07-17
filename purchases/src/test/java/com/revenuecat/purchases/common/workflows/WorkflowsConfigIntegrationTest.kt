@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopicStore
 import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
 import io.mockk.coEvery
@@ -94,6 +95,8 @@ class WorkflowsConfigIntegrationTest {
             blobFetcher = fetcher,
             scope = testScope,
             ioDispatcher = testDispatcher,
+            topicStore = RemoteConfigTopicStore { diskCache.read()?.topics?.get(it.wireName) },
+            sourceProvider = FakeBlobSourceProvider,
         )
         provider = WorkflowsConfigProvider(manager)
 
