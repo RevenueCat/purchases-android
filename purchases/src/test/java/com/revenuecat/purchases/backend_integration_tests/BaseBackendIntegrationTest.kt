@@ -126,6 +126,7 @@ internal abstract class BaseBackendIntegrationTest {
             diagnosticsTrackerIfEnabled = null,
             signingManager,
             deviceCache,
+            apiSourceProvider = null,
             localeProvider = DefaultLocaleProvider(),
             forceServerErrorStrategy = forceServerErrorStrategy,
             requestResponseListener = goldenFileRecorder

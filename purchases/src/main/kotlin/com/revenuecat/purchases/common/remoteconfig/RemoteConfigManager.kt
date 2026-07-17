@@ -80,10 +80,8 @@ internal class RemoteConfigManager(
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-    private val topicStore: RemoteConfigTopicStore =
-        RemoteConfigTopicStore { diskCache.read()?.topics?.get(it.wireName) },
-    private val sourceProvider: RemoteConfigSourceProvider =
-        DefaultRemoteConfigSourceProvider(topicStore),
+    private val topicStore: RemoteConfigTopicStore,
+    private val sourceProvider: RemoteConfigSourceProvider,
     private val blobFetcher: RemoteConfigBlobFetcher = RemoteConfigBlobFetcher(blobStore, sourceProvider),
     private val appUserIDProvider: () -> String? = { null },
 ) {

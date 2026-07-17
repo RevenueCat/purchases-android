@@ -24,6 +24,7 @@ import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamE
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
@@ -70,6 +71,7 @@ internal class HTTPClient(
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     val signingManager: SigningManager,
     private val storefrontProvider: StorefrontProvider,
+    private val apiSourceProvider: RemoteConfigSourceProvider?,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val mapConverter: MapConverter = MapConverter(),
     private val localeProvider: LocaleProvider,
@@ -191,6 +193,8 @@ internal class HTTPClient(
 
         val isMainBackend = fallbackURLIndex == 0
 
+        val requestBaseURL = apiSourceURL(endpoint, baseURL, isFallbackAttempt = !isMainBackend) ?: baseURL
+
         var callSuccessful = false
         val requestStartTime = dateProvider.now
         var callResult: HTTPResult? = null
@@ -199,7 +203,7 @@ internal class HTTPClient(
 
         try {
             callResult = performCall(
-                baseURL,
+                requestBaseURL,
                 fallbackURLIndex > 0,
                 endpoint,
                 body,
@@ -232,7 +236,7 @@ internal class HTTPClient(
             timeoutManager.recordRequestResult(requestResult)
 
             trackHttpRequestPerformedIfNeeded(
-                baseURL,
+                requestBaseURL,
                 endpoint,
                 requestStartTime,
                 callSuccessful,
@@ -258,6 +262,26 @@ internal class HTTPClient(
             callResult = performRequestToFallbackURL()
         }
         return callResult
+    }
+
+    /**
+     * The API base URL to use for [endpoint], or null to keep using [baseURL].
+     *
+     * API sources apply only when the `usesRemoteConfigAPISources` dangerous setting is enabled, this is not
+     * an endpoint fallback-host attempt, the endpoint opts in via [Endpoint.usesAPISources], and [baseURL] is
+     * still the default host (a proxy or an overridden base URL pins the host and bypasses API sources).
+     */
+    private fun apiSourceURL(endpoint: Endpoint, baseURL: URL, isFallbackAttempt: Boolean): URL? {
+        val provider = apiSourceProvider ?: return null
+        val eligible = appConfig.usesRemoteConfigAPISources &&
+            !isFallbackAttempt &&
+            endpoint.usesAPISources &&
+            baseURL.toString() == AppConfig.baseUrlString
+        return if (eligible) {
+            provider.currentAPISource()?.url?.let { runCatching { URL(it) }.getOrNull() }
+        } else {
+            null
+        }
     }
 
     @Suppress("ThrowsCount", "LongParameterList", "LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth")

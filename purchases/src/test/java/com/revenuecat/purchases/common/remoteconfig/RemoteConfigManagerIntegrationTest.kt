@@ -70,12 +70,15 @@ class RemoteConfigManagerIntegrationTest {
         blobStore = RemoteConfigBlobStore(applicationContext)
         // This suite exercises the real disk/blob-store path; network prefetch is unit-tested separately, so the
         // fetcher is mocked here to keep the test hermetic (no real CDN calls from the background worker pool).
+        val topicStore = RemoteConfigTopicStore { diskCache.read()?.topics?.get(it.wireName) }
         manager = RemoteConfigManager(
             backend,
             diskCache,
             blobStore,
             dateProvider = FixedDateProvider,
             scope = testScope,
+            topicStore = topicStore,
+            sourceProvider = DefaultRemoteConfigSourceProvider(topicStore),
             blobFetcher = mockk(relaxed = true),
         )
 
