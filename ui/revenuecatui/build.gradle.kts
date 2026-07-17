@@ -99,6 +99,7 @@ dependencies {
     implementation(libs.compose.ui.google.fonts)
 
     implementation(libs.androidx.core)
+    implementation(libs.androidx.webkit)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
