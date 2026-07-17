@@ -1,8 +1,0 @@
-{
-  "statusCode": 304,
-  "headers": {
-    "Connection": "keep-alive",
-    "Server": "cloudflare"
-  },
-  "body": null
-}
