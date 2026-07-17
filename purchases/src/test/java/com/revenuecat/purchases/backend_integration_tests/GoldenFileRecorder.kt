@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.backend_integration_tests
 
 import com.revenuecat.purchases.common.RequestResponseListener
-import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
@@ -113,40 +112,6 @@ class GoldenFileRecorder(
         )
 
         recordGoldenFile(sequenceNumber, request, response)
-    }
-
-    private fun navigateAndFilter(current: Any, parts: List<String>, index: Int) {
-        if (index >= parts.size) return
-
-        val part = parts[index]
-        val isLast = index == parts.size - 1
-
-        // Check if this part is an array field accessor like "[fieldName]"
-        if (part.startsWith("[") && part.endsWith("]")) {
-            val fieldName = part.substring(1, part.length - 1)
-            if (current is JSONArray) {
-                // Apply to each element in the array
-                for (i in 0 until current.length()) {
-                    val element = current.get(i)
-                    if (element is JSONObject && element.has(fieldName)) {
-                        if (isLast) {
-                            element.put(fieldName, "TEST_STATIC_VALUE")
-                        } else {
-                            navigateAndFilter(element.get(fieldName), parts, index + 1)
-                        }
-                    }
-                }
-            }
-        } else {
-            // Regular field access
-            if (current is JSONObject && current.has(part)) {
-                if (isLast) {
-                    current.put(part, "TEST_STATIC_VALUE")
-                } else {
-                    navigateAndFilter(current.get(part), parts, index + 1)
-                }
-            }
-        }
     }
 
     private fun recordGoldenFile(sequenceNumber: String, request: RecordedRequest, response: RecordedResponse) {
