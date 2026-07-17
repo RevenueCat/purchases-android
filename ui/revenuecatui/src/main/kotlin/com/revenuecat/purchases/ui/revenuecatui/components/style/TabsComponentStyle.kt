@@ -52,7 +52,7 @@ internal class TabControlToggleComponentStyle(
     val componentName: String? = null,
 ) : ComponentStyle {
     override val visible: Boolean = true
-    override val size: Size = Size(width = Fit, height = Fit)
+    override val size: Size = Size(width = Fit(), height = Fit())
 }
 
 @Immutable

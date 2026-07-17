@@ -224,7 +224,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         // This is a temporary hack to make the root component fill the screen. This will be removed once we have a
         // definite solution for positioning the root component.
         val rootComponent = (backendRootComponent as? StackComponentStyle)
-            ?.takeIf { it.size.height == SizeConstraint.Fit }
+            ?.takeIf { it.size.height is SizeConstraint.Fit }
             ?.copy(size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill))
             ?: backendRootComponent
 

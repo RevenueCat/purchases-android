@@ -225,7 +225,7 @@ private fun TextComponentView_Preview_SerifFont() {
             text = "Hello, world",
             color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             fontSpec = FontSpec.Generic.Serif,
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fit(), height = Fit()),
         ),
         state = previewEmptyState(),
     )
@@ -239,7 +239,7 @@ private fun TextComponentView_Preview_SansSerifFont() {
             text = "Hello, world",
             color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             fontSpec = FontSpec.Generic.SansSerif,
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fit(), height = Fit()),
         ),
         state = previewEmptyState(),
     )
@@ -253,7 +253,7 @@ private fun TextComponentView_Preview_MonospaceFont() {
             text = "Hello, world",
             color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             fontSpec = FontSpec.Generic.Monospace,
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fit(), height = Fit()),
         ),
         state = previewEmptyState(),
     )
@@ -267,7 +267,7 @@ private fun TextComponentView_Preview_FontSize() {
             text = "Hello, world",
             color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
             fontSize = 28,
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fit(), height = Fit()),
         ),
         state = previewEmptyState(),
     )
@@ -280,7 +280,7 @@ private fun TextComponentView_Preview_HorizontalAlignment() {
         style = previewTextComponentStyle(
             text = "Hello, world",
             color = ColorStyles(light = ColorStyle.Solid(Color.Black)),
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fit(), height = Fit()),
             horizontalAlignment = HorizontalAlignment.TRAILING,
         ),
         state = previewEmptyState(),
@@ -351,7 +351,7 @@ private fun TextComponentView_Preview_LinearGradient() {
             fontWeight = FontWeight.MEDIUM,
             textAlign = HorizontalAlignment.LEADING,
             backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Black)),
-            size = Size(width = SizeConstraint.Fixed(200.toUInt()), height = Fit),
+            size = Size(width = SizeConstraint.Fixed(200.toUInt()), height = Fit()),
             padding = Padding(top = 10.0, bottom = 10.0, leading = 20.0, trailing = 20.0),
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
         ),
@@ -388,7 +388,7 @@ private fun TextComponentView_Preview_RadialGradient() {
             fontWeight = FontWeight.MEDIUM,
             textAlign = HorizontalAlignment.LEADING,
             backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Black)),
-            size = Size(width = SizeConstraint.Fixed(200.toUInt()), height = Fit),
+            size = Size(width = SizeConstraint.Fixed(200.toUInt()), height = Fit()),
             padding = Padding(top = 10.0, bottom = 10.0, leading = 20.0, trailing = 20.0),
             margin = Padding(top = 20.0, bottom = 20.0, leading = 10.0, trailing = 10.0),
         ),

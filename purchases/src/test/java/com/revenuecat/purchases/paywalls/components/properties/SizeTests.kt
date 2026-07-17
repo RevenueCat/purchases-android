@@ -33,7 +33,7 @@ internal class SizeTests {
                               "type": "fit"
                             }
                         """.trimIndent(),
-                        expected = SizeConstraint.Fit
+                        expected = SizeConstraint.Fit()
                     )
                 ),
                 arrayOf(
@@ -45,7 +45,31 @@ internal class SizeTests {
                               "value": null
                             }
                         """.trimIndent(),
-                        expected = SizeConstraint.Fit
+                        expected = SizeConstraint.Fit()
+                    )
+                ),
+                arrayOf(
+                    "fit - default null",
+                    Args(
+                        json = """
+                            {
+                              "type": "fit",
+                              "default": null
+                            }
+                        """.trimIndent(),
+                        expected = SizeConstraint.Fit()
+                    )
+                ),
+                arrayOf(
+                    "fit - default positive",
+                    Args(
+                        json = """
+                            {
+                              "type": "fit",
+                              "default": 2
+                            }
+                        """.trimIndent(),
+                        expected = SizeConstraint.Fit(default = 2u)
                     )
                 ),
                 arrayOf(
@@ -108,7 +132,7 @@ internal class SizeTests {
                               "type": "some_unknown_type"
                             }
                         """.trimIndent(),
-                        expected = SizeConstraint.Fit
+                        expected = SizeConstraint.Fit()
                     )
                 )
             )
@@ -155,7 +179,7 @@ internal class SizeTests {
                             }
                         """.trimIndent(),
                         expected = Size(
-                            width = SizeConstraint.Fit,
+                            width = SizeConstraint.Fit(),
                             height = SizeConstraint.Fill,
                         )
                     )
@@ -180,6 +204,46 @@ internal class SizeTests {
                             height = SizeConstraint.Fixed(
                                 value = 123.toUInt()
                             ),
+                        )
+                    )
+                ),
+                arrayOf(
+                    "fit with default x fill",
+                    Args(
+                        json = """
+                            {
+                              "width": {
+                                "type": "fit",
+                                "default": 2
+                              },
+                              "height": {
+                                "type": "fill"
+                              }
+                            }
+                        """.trimIndent(),
+                        expected = Size(
+                            width = SizeConstraint.Fit(default = 2u),
+                            height = SizeConstraint.Fill,
+                        )
+                    )
+                ),
+                arrayOf(
+                    "fill x fit with default",
+                    Args(
+                        json = """
+                            {
+                              "width": {
+                                "type": "fill"
+                              },
+                              "height": {
+                                "type": "fit",
+                                "default": 2
+                              }
+                            }
+                        """.trimIndent(),
+                        expected = Size(
+                            width = SizeConstraint.Fill,
+                            height = SizeConstraint.Fit(default = 2u),
                         )
                     )
                 ),

@@ -972,7 +972,7 @@ private fun StackComponentView_Preview_Vertical() {
                     distribution = FlexDistribution.START,
                 ),
                 visible = true,
-                size = Size(width = Fit, height = Fit),
+                size = Size(width = Fit(), height = Fit()),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
                     ColorStyles(
@@ -1022,7 +1022,7 @@ private fun StackComponentView_Preview_NegativePaddingAndMarginClamped() {
                     distribution = FlexDistribution.START,
                 ),
                 visible = true,
-                size = Size(width = Fit, height = Fit),
+                size = Size(width = Fit(), height = Fit()),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
                     ColorStyles(
@@ -1065,7 +1065,7 @@ private fun StackComponentView_Preview_Scroll_VerticalStack_VerticalScroll() {
                 light = ColorStyle.Solid(Color.Blue),
             ),
             visible = true,
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fit(), height = Fit()),
             padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
         )
     }
@@ -1080,7 +1080,7 @@ private fun StackComponentView_Preview_Scroll_VerticalStack_VerticalScroll() {
                     distribution = FlexDistribution.START,
                 ),
                 visible = true,
-                size = Size(width = Fit, height = Fit),
+                size = Size(width = Fit(), height = Fit()),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
                     ColorStyles(
@@ -1147,7 +1147,7 @@ private fun StackComponentView_Preview_Overlay_Badge(
                     distribution = FlexDistribution.START,
                 ),
                 visible = true,
-                size = Size(width = Fixed(200u), height = Fit),
+                size = Size(width = Fixed(200u), height = Fit()),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
                     ColorStyles(
@@ -1227,7 +1227,7 @@ private fun StackComponentView_Preview_Pill_EdgeToEdge_Badge(
                     distribution = FlexDistribution.START,
                 ),
                 visible = true,
-                size = Size(width = Fixed(200u), height = Fit),
+                size = Size(width = Fixed(200u), height = Fit()),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
                     ColorStyles(
@@ -1282,7 +1282,7 @@ private fun StackComponentView_Preview_Nested_Badge(
                     distribution = FlexDistribution.START,
                 ),
                 visible = true,
-                size = Size(width = Fixed(200u), height = Fit),
+                size = Size(width = Fixed(200u), height = Fit()),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
                     ColorStyles(
@@ -1328,7 +1328,7 @@ private fun StackComponentView_Preview_Horizontal() {
                     distribution = FlexDistribution.START,
                 ),
                 visible = true,
-                size = Size(width = Fit, height = Fit),
+                size = Size(width = Fit(), height = Fit()),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
                     ColorStyles(
@@ -1391,7 +1391,7 @@ private fun StackComponentView_Preview_Children_Extend_Over_Parent() {
                     distribution = FlexDistribution.START,
                 ),
                 visible = true,
-                size = Size(width = Fit, height = Fit),
+                size = Size(width = Fit(), height = Fit()),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
                     ColorStyles(
@@ -1429,7 +1429,7 @@ private fun StackComponentView_Preview_Scroll_HorizontalStack_HorizontalScroll()
                 light = ColorStyle.Solid(Color.Blue),
             ),
             visible = true,
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fit(), height = Fit()),
             padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
         )
     }
@@ -1444,7 +1444,7 @@ private fun StackComponentView_Preview_Scroll_HorizontalStack_HorizontalScroll()
                     distribution = FlexDistribution.START,
                 ),
                 visible = true,
-                size = Size(width = Fit, height = Fit),
+                size = Size(width = Fit(), height = Fit()),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
                     ColorStyles(
@@ -1493,7 +1493,7 @@ private fun StackComponentView_Preview_ZLayer() {
                             light = ColorStyle.Solid(Color.Yellow),
                             dark = ColorStyle.Solid(Color.Red),
                         ),
-                        size = Size(width = Fit, height = Fit),
+                        size = Size(width = Fit(), height = Fit()),
                         padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
                         margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0),
                     ),
@@ -1502,13 +1502,13 @@ private fun StackComponentView_Preview_ZLayer() {
                         backgroundColor = ColorStyles(
                             light = ColorStyle.Solid(Color.Blue),
                         ),
-                        size = Size(width = Fit, height = Fit),
+                        size = Size(width = Fit(), height = Fit()),
                         padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
                     ),
                 ),
                 dimension = Dimension.ZLayer(alignment = TwoDimensionalAlignment.BOTTOM_TRAILING),
                 visible = true,
-                size = Size(width = Fit, height = Fit),
+                size = Size(width = Fit(), height = Fit()),
                 spacing = 16.dp,
                 background = BackgroundStyles.Color(
                     ColorStyles(
@@ -1549,12 +1549,12 @@ private fun StackComponentView_Preview_HorizontalChildrenFillWidth() {
                 previewTextComponentStyle(
                     text = "Hello",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Yellow)),
-                    size = Size(width = Fill, height = Fit),
+                    size = Size(width = Fill, height = Fit()),
                 ),
                 previewTextComponentStyle(
                     text = "World",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Blue)),
-                    size = Size(width = Fill, height = Fit),
+                    size = Size(width = Fill, height = Fit()),
                 ),
             ),
             dimension = Dimension.Horizontal(
@@ -1562,7 +1562,7 @@ private fun StackComponentView_Preview_HorizontalChildrenFillWidth() {
                 distribution = FlexDistribution.START,
             ),
             visible = true,
-            size = Size(width = Fixed(200u), height = Fit),
+            size = Size(width = Fixed(200u), height = Fit()),
             spacing = 16.dp,
             background = BackgroundStyles.Color(ColorStyles(light = ColorStyle.Solid(Color.Red))),
             padding = PaddingValues(all = 16.dp),
@@ -1592,12 +1592,12 @@ private fun StackComponentView_Preview_VerticalChildrenFillHeight() {
                 previewTextComponentStyle(
                     text = "Hello",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Yellow)),
-                    size = Size(width = Fit, height = Fill),
+                    size = Size(width = Fit(), height = Fill),
                 ),
                 previewTextComponentStyle(
                     text = "World",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Blue)),
-                    size = Size(width = Fit, height = Fill),
+                    size = Size(width = Fit(), height = Fill),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1605,7 +1605,7 @@ private fun StackComponentView_Preview_VerticalChildrenFillHeight() {
                 distribution = FlexDistribution.START,
             ),
             visible = true,
-            size = Size(width = Fit, height = Fixed(200u)),
+            size = Size(width = Fit(), height = Fixed(200u)),
             spacing = 16.dp,
             background = BackgroundStyles.Color(ColorStyles(light = ColorStyle.Solid(Color.Red))),
             padding = PaddingValues(all = 16.dp),
@@ -1654,23 +1654,23 @@ private fun StackComponentView_Preview_Distribution_Without_Spacing_Fit_Size(
                 previewTextComponentStyle(
                     text = "Hello",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Yellow)),
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                 ),
                 previewTextComponentStyle(
                     text = distribution?.name ?: "null",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Green)),
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                 ),
                 previewTextComponentStyle(
                     text = "World",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Blue)),
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                 ),
             ),
             dimension = dimension,
             visible = true,
             // It's all set to Fit, because we want to see the `spacing` being interpreted as a minimum.
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fit(), height = Fit()),
             spacing = 0.dp,
             background = BackgroundStyles.Color(ColorStyles(light = ColorStyle.Solid(Color.Red))),
             padding = PaddingValues(all = 0.dp),
@@ -1707,17 +1707,17 @@ private fun StackComponentView_Preview_Distribution_Without_Spacing(
                 previewTextComponentStyle(
                     text = "Hello",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Yellow)),
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                 ),
                 previewTextComponentStyle(
                     text = distribution?.name ?: "null",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Green)),
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                 ),
                 previewTextComponentStyle(
                     text = "World",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Blue)),
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                 ),
             ),
             dimension = dimension,
@@ -1753,17 +1753,17 @@ private fun StackComponentView_Preview_Distribution_SpaceAround_With_Fill_Childr
                 previewTextComponentStyle(
                     text = "Hello",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Yellow)),
-                    size = Size(width = Fill, height = Fit),
+                    size = Size(width = Fill, height = Fit()),
                 ),
                 previewTextComponentStyle(
                     text = "SPACE_AROUND",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Green)),
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                 ),
                 previewTextComponentStyle(
                     text = "World",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Blue)),
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                 ),
             ),
             dimension = Dimension.Horizontal(
@@ -1809,17 +1809,17 @@ private fun StackComponentView_Preview_Distribution_With_Spacing(
                 previewTextComponentStyle(
                     text = "Hello",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Yellow)),
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                 ),
                 previewTextComponentStyle(
                     text = distribution?.name ?: "null",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Green)),
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                 ),
                 previewTextComponentStyle(
                     text = "World",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Blue)),
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                 ),
             ),
             dimension = dimension,
@@ -1940,10 +1940,10 @@ private fun StackComponentView_Preview_Clickable_With_Overflowing_Child_Shadow()
                     children = listOf(
                         previewTextComponentStyle(
                             text = "Nested",
-                            size = Size(width = Fit, height = Fit),
+                            size = Size(width = Fit(), height = Fit()),
                         ),
                     ),
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                     padding = PaddingValues(all = 16.dp),
                     margin = PaddingValues(all = 0.dp),
                     background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.White))),
@@ -1957,7 +1957,7 @@ private fun StackComponentView_Preview_Clickable_With_Overflowing_Child_Shadow()
                     ),
                 ),
             ),
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fit(), height = Fit()),
             padding = PaddingValues(all = 0.dp),
             margin = PaddingValues(all = 32.dp),
             shape = Shape.Rectangle(CornerRadiuses.Dp(all = 32.0)),
@@ -1980,10 +1980,10 @@ private fun StackComponentView_Preview_NestedBadge_Caller_Modifier_Applied_Twice
             children = listOf(
                 previewTextComponentStyle(
                     text = "Inner content",
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                 ),
             ),
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fit(), height = Fit()),
             padding = PaddingValues(all = 12.dp),
             margin = PaddingValues(all = 0.dp),
             background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.White))),
@@ -2011,10 +2011,10 @@ private fun StackComponentView_Preview_EdgeToEdgeBadge_Caller_Modifier_Applied_T
             children = listOf(
                 previewTextComponentStyle(
                     text = "Inner content",
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                 ),
             ),
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fit(), height = Fit()),
             padding = PaddingValues(all = 12.dp),
             margin = PaddingValues(all = 0.dp),
             background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.White))),
@@ -2039,7 +2039,7 @@ private fun previewChildren() = listOf(
         backgroundColor = ColorStyles(
             light = ColorStyle.Solid(Color.Blue),
         ),
-        size = Size(width = Fit, height = Fit),
+        size = Size(width = Fit(), height = Fit()),
         padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
     ),
     previewTextComponentStyle(
@@ -2047,7 +2047,7 @@ private fun previewChildren() = listOf(
         backgroundColor = ColorStyles(
             light = ColorStyle.Solid(Color.Blue),
         ),
-        size = Size(width = Fit, height = Fit),
+        size = Size(width = Fit(), height = Fit()),
         padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
     ),
 )
@@ -2065,7 +2065,7 @@ private fun previewBadge(
             children = listOf(
                 previewTextComponentStyle(
                     text = "Badge",
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                     padding = Padding(
                         top = 8.0,
                         bottom = 8.0,
@@ -2079,7 +2079,7 @@ private fun previewBadge(
                 distribution = FlexDistribution.CENTER,
             ),
             visible = true,
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fit(), height = Fit()),
             spacing = 0.dp,
             background = BackgroundStyles.Color(
                 ColorStyles(
