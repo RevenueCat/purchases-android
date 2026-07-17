@@ -46,6 +46,13 @@ import kotlinx.serialization.json.JsonPrimitive
 internal class WorkflowsConfigProvider(
     private val manager: RemoteConfigManager,
     private val currentOfferingIdProvider: () -> String? = { null },
+    // Called after warm() (re)loads the eligible workflow set, so a collaborator can warm those workflows'
+    // assets at load time. The second argument decodes a workflow from the config layer WITHOUT populating this
+    // provider's retained decode cache, so prewarming never forces the memory-first Lazy the render path holds —
+    // the in-memory cache stays raw-bytes-only.
+    private val onWorkflowsLoaded: (
+        suspend (eligibleWorkflowIds: Set<String>, transientDecode: suspend (String) -> PublishedWorkflow?) -> Unit
+    )? = null,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) : RemoteConfigCommitListener {
 
@@ -232,6 +239,14 @@ internal class WorkflowsConfigProvider(
                 "${offeringToWorkflowId.size} offering mapping(s)."
         }
         cache.store(generation, Cached(workflows, offeringToWorkflowId))
+
+        // Warm the loaded workflows' assets (images + ui_config fonts) at load time — fire-and-forget so it
+        // never blocks warm() or the getOfferings readiness gate. resolveWorkflowBody decodes transiently: it
+        // reads bytes + parses without touching the retained Lazy above, so prewarming keeps the cache
+        // raw-bytes-only.
+        onWorkflowsLoaded?.let { notify ->
+            scope.launch { notify(workflows.keys, ::resolveWorkflowBody) }
+        }
     }
 
     /** Warms at the current config generation; used by the offerings readiness gate. */

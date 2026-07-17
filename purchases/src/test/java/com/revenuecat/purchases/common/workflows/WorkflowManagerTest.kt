@@ -8,7 +8,6 @@ import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.emptyUiConfig
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
-import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -38,7 +37,7 @@ class WorkflowManagerTest {
 
     private val mockProvider: WorkflowsConfigProvider = mockk()
     private val mockUiConfigProvider: UiConfigProvider = mockk()
-    private val mockAssetPreDownloader: WorkflowAssetPreDownloader = mockk()
+    private val mockAssetPreDownloader: WorkflowAssetPrewarmer = mockk()
     private val uiConfig = emptyUiConfig()
     private val testScope = TestScope(UnconfinedTestDispatcher())
     private lateinit var workflowManager: WorkflowManager

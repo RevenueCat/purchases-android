@@ -13,6 +13,8 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.verify
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -352,6 +354,25 @@ internal class WorkflowsConfigProviderTest {
 
             assertThat(provider.resolveWorkflow(CURRENT_OFFERING)).isEqualTo(WorkflowResolution.Unavailable)
         }
+
+    @Test
+    fun `warm notifies onWorkflowsLoaded with the loaded eligible workflow ids`() = runTest {
+        var announcedIds: Set<String>? = null
+        val providerWithListener = WorkflowsConfigProvider(
+            manager,
+            currentOfferingIdProvider = { currentOfferingId },
+            onWorkflowsLoaded = { ids, _ -> announcedIds = ids },
+            scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+        )
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        stubWorkflowBody(WF_CURRENT)
+
+        providerWithListener.warm(generation = 0)
+
+        // Only the eligible (prefetch + current-offering) ids are announced; the ineligible one was not loaded.
+        assertThat(announcedIds).isEqualTo(setOf(WF_PREFETCH, WF_CURRENT))
+    }
 
     private fun stubTopic() {
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.Workflows) } returns topicWith(
