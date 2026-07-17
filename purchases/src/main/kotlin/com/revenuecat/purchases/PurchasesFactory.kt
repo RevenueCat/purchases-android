@@ -313,9 +313,10 @@ internal class PurchasesFactory(
             // ones the manager warms on commit. Registered as commit listeners; a null manager means workflows
             // are off, so neither exists.
             val uiConfigProvider = remoteConfigManager?.let { UiConfigProvider(it) }
-            // Warms a workflow's assets (images + ui_config fonts) once — eagerly at load time (keyed per loaded
-            // workflow, honoring the backend's `prefetch` flag, transiently so the cache stays byte-only) and on
-            // the render path. Shared with WorkflowManager so both dedup against one set of warmed workflow ids.
+            // Warms a workflow's assets (images + ui_config fonts) once — eagerly at load time for the current
+            // offering's workflow (transiently so the cache stays byte-only, mirroring how offerings pre-download
+            // only the current offering's assets) and on the render path. Shared with WorkflowManager so both
+            // dedup against one set of warmed workflow ids.
             val workflowAssetPrewarmer = uiConfigProvider?.let {
                 WorkflowAssetPrewarmer(it, paywallComponentsImagePreDownloader, offeringFontPreDownloader)
             }
@@ -323,7 +324,7 @@ internal class PurchasesFactory(
                 WorkflowsConfigProvider(
                     it,
                     currentOfferingIdProvider = { offeringsCache.cachedOfferings?.current?.identifier },
-                    onWorkflowsLoaded = workflowAssetPrewarmer?.let { it::onWorkflowsLoaded },
+                    onCurrentWorkflowLoaded = workflowAssetPrewarmer?.let { it::onCurrentWorkflowLoaded },
                 )
             }
             if (remoteConfigManager != null && uiConfigProvider != null && workflowsConfigProvider != null) {

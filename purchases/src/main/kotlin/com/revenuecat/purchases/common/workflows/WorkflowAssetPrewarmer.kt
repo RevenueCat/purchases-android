@@ -16,13 +16,12 @@ import kotlinx.coroutines.CancellationException
  *
  * - **Render path** — [preDownloadWorkflowAssets]: `WorkflowManager.getWorkflow` already has the decoded
  *   workflow and resolved `ui_config`, so it hands them straight in.
- * - **Load path** — [onWorkflowsLoaded]: wired as [WorkflowsConfigProvider]'s load callback, it runs whenever
- *   the config layer (re)loads its eligible set (`prefetch`-flagged + current offering), keyed per workflow
- *   (honoring the backend's `prefetch` intent). It dedups by id **before** decoding, decodes each fresh workflow
- *   **transiently** (via the decoder the provider hands it, which never populates the provider's retained decode
- *   cache — the workflows cache stays raw-bytes-only), and decodes **sequentially** so peak memory is a single
- *   workflow graph. Because both paths share [warmedWorkflowIds], a workflow already warmed on render is skipped
- *   here before it is ever decoded.
+ * - **Load path** — [onCurrentWorkflowLoaded]: wired as [WorkflowsConfigProvider]'s load callback, it runs when
+ *   the config layer loads the **current offering's** workflow — mirroring the offerings path, which
+ *   pre-downloads only the current offering's assets, not every offering's. It dedups by id **before** decoding,
+ *   then decodes **transiently** (via the decoder the provider hands it, which never populates the provider's
+ *   retained decode cache — the workflows cache stays raw-bytes-only). Because both paths share
+ *   [warmedWorkflowIds], a workflow already warmed on render is skipped here before it is ever decoded.
  */
 internal class WorkflowAssetPrewarmer(
     private val uiConfigProvider: UiConfigProvider,
@@ -49,37 +48,36 @@ internal class WorkflowAssetPrewarmer(
     }
 
     /** Load-path callback for [WorkflowsConfigProvider]; see the class KDoc. */
-    suspend fun onWorkflowsLoaded(
-        eligibleWorkflowIds: Set<String>,
+    suspend fun onCurrentWorkflowLoaded(
+        workflowId: String,
         transientDecode: suspend (String) -> PublishedWorkflow?,
     ) {
-        val fresh = synchronized(warmedWorkflowIds) {
-            eligibleWorkflowIds.filterNot { warmedWorkflowIds.contains(it) }
-        }
-        if (fresh.isEmpty()) return
+        // Dedup before decoding, so a workflow the render path already warmed is never transiently decoded here.
+        val alreadyWarmed = synchronized(warmedWorkflowIds) { warmedWorkflowIds.contains(workflowId) }
+        if (alreadyWarmed) return
 
-        // Resolved once for the whole batch: fonts are shared across workflows via the ui_config topic. A missing
-        // ui_config skips the batch (retried on the next commit, since nothing was marked warmed).
-        val uiConfig = try {
+        // Fonts come from the ui_config topic, not the workflow body. A missing ui_config skips this attempt
+        // (retried on the next commit, since nothing was marked warmed).
+        val uiConfig = loadUiConfig() ?: return
+
+        // A decode that returns null (or throws) leaves the id unmarked, so it is retried on the next commit.
+        try {
+            transientDecode(workflowId)?.let { preDownloadWorkflowAssets(it, uiConfig) }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            errorLog(e) { "Failed to prewarm assets for workflow '$workflowId'." }
+        }
+    }
+
+    /** Resolves `ui_config`, swallowing non-cancellation failures to null so a prewarm can be retried later. */
+    private suspend fun loadUiConfig(): UiConfig? =
+        try {
             uiConfigProvider.getUiConfig()
         } catch (e: CancellationException) {
             throw e
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             errorLog(e) { "Failed to load ui_config; skipping workflow asset prewarm." }
             null
-        } ?: return
-
-        // Sequential on purpose: peak memory is one decoded workflow graph, not the whole eligible set. A decode
-        // that returns null (or throws) leaves the id unmarked, so it is retried on the next commit.
-        for (workflowId in fresh) {
-            try {
-                val workflow = transientDecode(workflowId) ?: continue
-                preDownloadWorkflowAssets(workflow, uiConfig)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                errorLog(e) { "Failed to prewarm assets for workflow '$workflowId'." }
-            }
         }
-    }
 }

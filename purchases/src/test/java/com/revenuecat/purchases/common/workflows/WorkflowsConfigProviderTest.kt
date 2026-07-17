@@ -356,12 +356,12 @@ internal class WorkflowsConfigProviderTest {
         }
 
     @Test
-    fun `warm notifies onWorkflowsLoaded with the current offering's workflow first`() = runTest {
-        var announcedIds: Set<String>? = null
+    fun `warm notifies onCurrentWorkflowLoaded with only the current offering's workflow`() = runTest {
+        var announcedId: String? = null
         val providerWithListener = WorkflowsConfigProvider(
             manager,
             currentOfferingIdProvider = { currentOfferingId },
-            onWorkflowsLoaded = { ids, _ -> announcedIds = ids },
+            onCurrentWorkflowLoaded = { workflowId, _ -> announcedId = workflowId },
             scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
         stubTopic()
@@ -370,10 +370,28 @@ internal class WorkflowsConfigProviderTest {
 
         providerWithListener.warm(generation = 0)
 
-        // Only the eligible (prefetch + current-offering) ids are announced, and the current offering's workflow
-        // leads — even though it comes after the prefetch entry in topic order — so its assets warm first. The
-        // ineligible workflow was not loaded.
-        assertThat(announcedIds).containsExactly(WF_CURRENT, WF_PREFETCH)
+        // Mirrors the offerings path: only the current offering's workflow is announced for asset prewarming.
+        // WF_PREFETCH's bytes are cached too, but a prefetch-only workflow (not the current offering's) is not
+        // the paywall about to be shown, so its assets are not warmed.
+        assertThat(announcedId).isEqualTo(WF_CURRENT)
+    }
+
+    @Test
+    fun `warm does not notify onCurrentWorkflowLoaded when the current offering has no workflow`() = runTest {
+        var announced = false
+        currentOfferingId = "offering_without_workflow"
+        val providerWithListener = WorkflowsConfigProvider(
+            manager,
+            currentOfferingIdProvider = { currentOfferingId },
+            onCurrentWorkflowLoaded = { _, _ -> announced = true },
+            scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+        )
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+
+        providerWithListener.warm(generation = 0)
+
+        assertThat(announced).isFalse
     }
 
     private fun stubTopic() {

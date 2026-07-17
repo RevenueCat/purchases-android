@@ -46,12 +46,13 @@ import kotlinx.serialization.json.JsonPrimitive
 internal class WorkflowsConfigProvider(
     private val manager: RemoteConfigManager,
     private val currentOfferingIdProvider: () -> String? = { null },
-    // Called after warm() (re)loads the eligible workflow set, so a collaborator can warm those workflows'
-    // assets at load time. The second argument decodes a workflow from the config layer WITHOUT populating this
-    // provider's retained decode cache, so prewarming never forces the memory-first Lazy the render path holds —
-    // the in-memory cache stays raw-bytes-only.
-    private val onWorkflowsLoaded: (
-        suspend (eligibleWorkflowIds: Set<String>, transientDecode: suspend (String) -> PublishedWorkflow?) -> Unit
+    // Called after warm() loads the current offering's workflow, so a collaborator can warm that workflow's
+    // assets at load time — mirroring the offerings path, which pre-downloads only the current offering's assets.
+    // The second argument decodes a workflow from the config layer WITHOUT populating this provider's retained
+    // decode cache, so prewarming never forces the memory-first Lazy the render path holds — the in-memory cache
+    // stays raw-bytes-only.
+    private val onCurrentWorkflowLoaded: (
+        suspend (workflowId: String, transientDecode: suspend (String) -> PublishedWorkflow?) -> Unit
     )? = null,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) : RemoteConfigCommitListener {
@@ -240,19 +241,17 @@ internal class WorkflowsConfigProvider(
         }
         cache.store(generation, Cached(workflows, offeringToWorkflowId))
 
-        // Warm the loaded workflows' assets (images + ui_config fonts) at load time — fire-and-forget so it
-        // never blocks warm() or the getOfferings readiness gate. resolveWorkflowBody decodes transiently: it
-        // reads bytes + parses without touching the retained Lazy above, so prewarming keeps the cache
-        // raw-bytes-only. Prewarming is sequential, so announce the current offering's workflow first: it is the
-        // one most likely to be presented, so its assets should be cached before the prefetch-only workflows'.
-        onWorkflowsLoaded?.let { notify ->
+        // Warm the current offering's workflow assets (images + ui_config fonts) at load time — mirrors the
+        // offerings path, which pre-downloads only the current offering's assets, never other offerings'. So a
+        // prefetch-flagged workflow that isn't the current offering's has its bytes cached (above) but not its
+        // assets: it isn't the paywall about to be shown. Fire-and-forget so it never blocks warm() or the
+        // getOfferings readiness gate. resolveWorkflowBody decodes transiently: it reads bytes + parses without
+        // touching the retained Lazy above, so prewarming keeps the cache raw-bytes-only.
+        onCurrentWorkflowLoaded?.let { notify ->
             val currentWorkflowId = currentOfferingId?.let { offeringToWorkflowId[it] }
-            val orderedIds = if (currentWorkflowId != null && workflows.containsKey(currentWorkflowId)) {
-                linkedSetOf(currentWorkflowId).apply { addAll(workflows.keys) }
-            } else {
-                workflows.keys
+            if (currentWorkflowId != null && workflows.containsKey(currentWorkflowId)) {
+                scope.launch { notify(currentWorkflowId, ::resolveWorkflowBody) }
             }
-            scope.launch { notify(orderedIds, ::resolveWorkflowBody) }
         }
     }
 

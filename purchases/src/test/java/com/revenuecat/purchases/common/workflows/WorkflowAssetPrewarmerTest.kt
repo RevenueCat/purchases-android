@@ -88,26 +88,27 @@ class WorkflowAssetPrewarmerTest {
 
     // endregion render path
 
-    // region load path (onWorkflowsLoaded)
+    // region load path (onCurrentWorkflowLoaded)
 
     @Test
-    fun `decodes and prewarms each fresh workflow, resolving ui_config once`() = runTest {
-        val decoded = mapOf("wf_1" to createWorkflow("wf_1"), "wf_2" to createWorkflow("wf_2"))
+    fun `onCurrentWorkflowLoaded decodes and prewarms the workflow, resolving ui_config once`() = runTest {
+        val screenConfig = mockk<PaywallComponentsConfig>()
+        val workflow = createWorkflow("wf_1", screens = mapOf("screen_1" to createScreen(screenConfig)))
 
-        prewarmer.onWorkflowsLoaded(setOf("wf_1", "wf_2")) { id -> decoded[id] }
+        prewarmer.onCurrentWorkflowLoaded("wf_1") { workflow }
 
-        // Font pre-download is invoked once per warmed workflow; ui_config is resolved a single time for the batch.
-        verify(exactly = 2) { fontPreDownloader.preDownloadFontsIfNeeded(any()) }
+        verify(exactly = 1) { imagePreDownloader.preDownloadImages(screenConfig) }
+        verify(exactly = 1) { fontPreDownloader.preDownloadFontsIfNeeded(any()) }
         coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
     }
 
     @Test
-    fun `dedups by id before decoding on a re-warm`() = runTest {
+    fun `onCurrentWorkflowLoaded dedups by id before decoding on a re-warm`() = runTest {
         var decodeCount = 0
         val decode: suspend (String) -> PublishedWorkflow? = { id -> decodeCount++; createWorkflow(id) }
 
-        prewarmer.onWorkflowsLoaded(setOf("wf_1"), decode)
-        prewarmer.onWorkflowsLoaded(setOf("wf_1"), decode)
+        prewarmer.onCurrentWorkflowLoaded("wf_1", decode)
+        prewarmer.onCurrentWorkflowLoaded("wf_1", decode)
 
         // Second warm never decodes wf_1 again (dedup happens before the transient decode).
         assertThat(decodeCount).isEqualTo(1)
@@ -115,47 +116,27 @@ class WorkflowAssetPrewarmerTest {
     }
 
     @Test
-    fun `does not resolve ui_config when there are no fresh workflows`() = runTest {
-        prewarmer.onWorkflowsLoaded(emptySet()) { null }
-
-        coVerify(exactly = 0) { mockUiConfigProvider.getUiConfig() }
-    }
-
-    @Test
-    fun `skips the batch when ui_config is unavailable, then retries on the next warm`() = runTest {
+    fun `onCurrentWorkflowLoaded skips when ui_config is unavailable, then retries on the next warm`() = runTest {
         coEvery { mockUiConfigProvider.getUiConfig() } returns null
 
-        prewarmer.onWorkflowsLoaded(setOf("wf_1")) { id -> createWorkflow(id) }
+        prewarmer.onCurrentWorkflowLoaded("wf_1") { id -> createWorkflow(id) }
         verify(exactly = 0) { fontPreDownloader.preDownloadFontsIfNeeded(any()) }
 
         // ui_config now available: the workflow was not marked warmed, so it is retried.
         coEvery { mockUiConfigProvider.getUiConfig() } returns uiConfig
-        prewarmer.onWorkflowsLoaded(setOf("wf_1")) { id -> createWorkflow(id) }
+        prewarmer.onCurrentWorkflowLoaded("wf_1") { id -> createWorkflow(id) }
         verify(exactly = 1) { fontPreDownloader.preDownloadFontsIfNeeded(any()) }
     }
 
     @Test
-    fun `skips a workflow that fails to decode without marking it warmed`() = runTest {
+    fun `onCurrentWorkflowLoaded skips a workflow that fails to decode without marking it warmed`() = runTest {
         // First warm: decode returns null (bytes missing / parse fail) -> skipped, not marked.
-        prewarmer.onWorkflowsLoaded(setOf("wf_1")) { null }
+        prewarmer.onCurrentWorkflowLoaded("wf_1") { null }
         verify(exactly = 0) { fontPreDownloader.preDownloadFontsIfNeeded(any()) }
 
         // Second warm: decode now succeeds -> warmed (proves the failed attempt did not mark it).
-        prewarmer.onWorkflowsLoaded(setOf("wf_1")) { id -> createWorkflow(id) }
+        prewarmer.onCurrentWorkflowLoaded("wf_1") { id -> createWorkflow(id) }
         verify(exactly = 1) { fontPreDownloader.preDownloadFontsIfNeeded(any()) }
-    }
-
-    @Test
-    fun `keeps prewarming the remaining workflows when one fails`() = runTest {
-        val screenConfig = mockk<PaywallComponentsConfig>()
-        every { imagePreDownloader.preDownloadImages(screenConfig) } throws RuntimeException("boom")
-        val wf1 = createWorkflow("wf_1", screens = mapOf("screen_1" to createScreen(screenConfig)))
-        val wf2 = createWorkflow("wf_2")
-
-        // Insertion-ordered set so wf_1 (whose image download throws) is attempted before wf_2.
-        prewarmer.onWorkflowsLoaded(linkedSetOf("wf_1", "wf_2")) { id -> if (id == "wf_1") wf1 else wf2 }
-
-        verify(exactly = 1) { fontPreDownloader.preDownloadFontsIfNeeded(uiConfig.app.fonts.values) }
     }
 
     // endregion load path
@@ -167,7 +148,7 @@ class WorkflowAssetPrewarmerTest {
 
         // ...so the load path skips it before decoding — the concrete win of the shared dedup set.
         var decodeCount = 0
-        prewarmer.onWorkflowsLoaded(setOf("wf_1")) { id -> decodeCount++; createWorkflow(id) }
+        prewarmer.onCurrentWorkflowLoaded("wf_1") { id -> decodeCount++; createWorkflow(id) }
 
         assertThat(decodeCount).isEqualTo(0)
     }
