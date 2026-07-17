@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.networking
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.annotation.VisibleForTesting
+import androidx.core.content.edit
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.DateProvider
@@ -10,6 +11,7 @@ import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.NetworkStrings
+import com.revenuecat.purchases.utils.optNullableLong
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
@@ -21,17 +23,12 @@ internal data class ETagData(
 )
 
 /**
- * Everything the ETag cache persists about a response except its payload. Stored as a small flat JSON
- * under the URL key, while the payload is stored verbatim under a separate key ([ETagManager.payloadKey])
- * so caching a large response never re-encodes a string we already hold in memory
- * (https://github.com/RevenueCat/purchases-android/issues/3628).
+ * Everything the ETag cache persists about a response except its payload, stored as a small flat JSON
+ * under [ETagManager.metadataKey]; the payload lives in an [ETagPayloadStore] file. The versioned key
+ * keeps downgrades safe: older SDKs only read the bare URL key and simply refetch, and anything they
+ * wrote there is swept at the next upgraded launch ([ETagManager.removeLegacyEntries]).
  *
  * `origin` is intentionally not persisted: stored results always read back as [HTTPResult.Origin.CACHE].
- *
- * Downgrade note: older SDK versions cannot parse this format — after a downgrade, reads of split
- * entries fail (as request errors, not crashes) and do not self-heal until the cache is cleared
- * (e.g. identity change) since the failure happens before any response could overwrite the entry.
- * Accepted tradeoff for keeping the URL as the metadata key; see PR #3774.
  */
 @OptIn(InternalRevenueCatAPI::class)
 @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
@@ -42,6 +39,8 @@ internal data class ETagCacheMetadata(
     val verificationResult: VerificationResult,
     val isLoadShedderResponse: Boolean,
     val isFallbackURL: Boolean,
+    /** Verified on read to detect truncated payload files; `null` skips the check. */
+    val payloadSizeBytes: Long? = null,
 ) {
     fun serialize(): String {
         return JSONObject().apply {
@@ -52,6 +51,7 @@ internal data class ETagCacheMetadata(
             put(SERIALIZATION_NAME_VERIFICATION_RESULT, verificationResult.name)
             put(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE, isLoadShedderResponse)
             put(SERIALIZATION_NAME_IS_FALLBACK_URL, isFallbackURL)
+            payloadSizeBytes?.let { put(SERIALIZATION_NAME_PAYLOAD_SIZE_BYTES, it) }
         }.toString()
     }
 
@@ -75,6 +75,7 @@ internal data class ETagCacheMetadata(
         private const val SERIALIZATION_NAME_VERIFICATION_RESULT = "verificationResult"
         private const val SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE = "isLoadShedderResponse"
         private const val SERIALIZATION_NAME_IS_FALLBACK_URL = "isFallbackURL"
+        private const val SERIALIZATION_NAME_PAYLOAD_SIZE_BYTES = "payloadSizeBytes"
 
         fun fromResult(result: HTTPResult, eTagData: ETagData): ETagCacheMetadata {
             return ETagCacheMetadata(
@@ -110,6 +111,7 @@ internal data class ETagCacheMetadata(
                     verificationResult = verificationResult,
                     isLoadShedderResponse = jsonObject.optBoolean(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE, false),
                     isFallbackURL = jsonObject.optBoolean(SERIALIZATION_NAME_IS_FALLBACK_URL, false),
+                    payloadSizeBytes = jsonObject.optNullableLong(SERIALIZATION_NAME_PAYLOAD_SIZE_BYTES),
                 )
             } catch (e: JSONException) {
                 null
@@ -124,8 +126,11 @@ internal data class ETagCacheMetadata(
 @Suppress("TooManyFunctions")
 internal class ETagManager(
     context: Context,
-    private val prefs: Lazy<SharedPreferences> = lazy { initializeSharedPreferences(context) },
+    private val prefs: Lazy<SharedPreferences> = lazy {
+        initializeSharedPreferences(context).also(::removeLegacyEntries)
+    },
     private val dateProvider: DateProvider = DefaultDateProvider(),
+    private val payloadStore: ETagPayloadStore = ETagPayloadStore(context),
 ) {
 
     internal fun getETagHeaders(
@@ -190,17 +195,14 @@ internal class ETagManager(
 
     @Suppress("ReturnCount")
     internal fun getStoredResult(urlString: String): HTTPResult? {
-        val serialized = prefs.value.getString(urlString, null) ?: return null
-        val metadata = ETagCacheMetadata.deserialize(serialized)
-        if (metadata != null) {
-            // Read without the monitor: a concurrent storeResult() landing between the two getString calls can
-            // pair the old metadata with the new payload for this one read. The window is nanoseconds, requires
-            // concurrent same-URL traffic, and the worst case is one response served with the previous entry's
-            // metadata fields — accepted to keep reads lock-free.
-            val payload = prefs.value.getString(payloadKey(urlString), null) ?: return null
-            return metadata.toHTTPResult(payload)
-        }
-        return null
+        val serialized = prefs.value.getString(metadataKey(urlString), null) ?: return null
+        val metadata = ETagCacheMetadata.deserialize(serialized) ?: return null
+        // Lock-free read: a store racing between the metadata and payload reads fails the size check,
+        // costing one spurious miss plus its refresh retry. The size check itself is what turns a
+        // truncated file into a miss here: downstream, HTTPResult.body swallows the parse failure and
+        // the server keeps answering 304 for its eTag, so a bad entry would never heal.
+        val payload = payloadStore.read(urlString, metadata.payloadSizeBytes) ?: return null
+        return metadata.toHTTPResult(payload)
     }
 
     internal fun storeBackendResultIfNoError(
@@ -215,7 +217,10 @@ internal class ETagManager(
 
     @Synchronized
     internal fun clearCaches() {
+        // Metadata first: its in-memory clear is immediate, so readers miss before ever touching files.
+        // A crash before the async disk flush leaves metadata without payloads, a self-healing miss.
         prefs.value.edit().clear().apply()
+        payloadStore.clear()
     }
 
     @Synchronized
@@ -224,19 +229,26 @@ internal class ETagManager(
         result: HTTPResult,
         eTag: String,
     ) {
-        val metadata = ETagCacheMetadata.fromResult(result, ETagData(eTag, dateProvider.now))
+        persistEntry(
+            urlString,
+            ETagCacheMetadata.fromResult(result, ETagData(eTag, dateProvider.now)),
+            result.payloadText,
+        )
+    }
+
+    /**
+     * Payload file first, metadata only once that write succeeded: metadata present always implies its
+     * payload was written.
+     */
+    private fun persistEntry(urlString: String, metadata: ETagCacheMetadata, payload: String) {
+        val payloadSizeBytes = payloadStore.write(urlString, payload) ?: return
         prefs.value.edit()
-            .putString(urlString, metadata.serialize())
-            // The payload is stored verbatim under its own key: embedding it inside the metadata JSON
-            // would re-escape a multi-MB string we already hold, which OOMed on large /offerings
-            // responses (https://github.com/RevenueCat/purchases-android/issues/3628).
-            .putString(payloadKey(urlString), result.payloadText)
+            .putString(metadataKey(urlString), metadata.copy(payloadSizeBytes = payloadSizeBytes).serialize())
             .apply()
     }
 
     private fun getStoredMetadata(urlString: String): ETagCacheMetadata? {
-        val serialized = prefs.value.getString(urlString, null) ?: return null
-        return ETagCacheMetadata.deserialize(serialized)
+        return prefs.value.getString(metadataKey(urlString), null)?.let { ETagCacheMetadata.deserialize(it) }
     }
 
     private fun shouldStoreBackendResult(resultFromBackend: HTTPResult): Boolean {
@@ -256,12 +268,26 @@ internal class ETagManager(
     }
 
     companion object {
-        // Cache keys are endpoint URLs from URL(baseURL, path).toString(), which never carry a '#'
-        // fragment, so this suffix cannot collide with another URL's entry.
-        private const val PAYLOAD_KEY_SUFFIX = "#rc_payload"
+        // Downgrade safety: older SDKs look up the bare URL key, so versioned entries are inert to
+        // them and they simply refetch. URLs are always absolute, so no URL starts with "v2:".
+        private const val METADATA_KEY_PREFIX = "v2:"
 
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-        internal fun payloadKey(urlString: String): String = "$urlString$PAYLOAD_KEY_SUFFIX"
+        internal fun metadataKey(urlString: String): String = METADATA_KEY_PREFIX + urlString
+
+        /**
+         * Removes entries from older SDK formats (bare URL keys), which are dropped rather than
+         * migrated: their values would otherwise stay parsed in the prefs in-memory map for the
+         * process lifetime. Runs on the already-loaded key set and never parses a value; the edit
+         * only happens when something is stale.
+         */
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal fun removeLegacyEntries(prefs: SharedPreferences) {
+            val legacyKeys = prefs.all.keys.filterNot { it.startsWith(METADATA_KEY_PREFIX) }
+            if (legacyKeys.isNotEmpty()) {
+                prefs.edit { legacyKeys.forEach(::remove) }
+            }
+        }
 
         fun initializeSharedPreferences(context: Context): SharedPreferences =
             context.getSharedPreferences(
