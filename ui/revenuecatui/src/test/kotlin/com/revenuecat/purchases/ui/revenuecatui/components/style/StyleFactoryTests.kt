@@ -22,6 +22,7 @@ import com.revenuecat.purchases.paywalls.components.TabControlComponent
 import com.revenuecat.purchases.paywalls.components.TabControlToggleComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -116,6 +117,28 @@ class StyleFactoryTests {
             .isEqualTo(localizations.getValue(localeId)[LOCALIZATION_KEY_TEXT_1]!!.value)
         val colorStyle = style.color.light as ColorStyle.Solid
         assertThat(colorStyle.color).isEqualTo(expectedColor)
+    }
+
+    @Test
+    fun `Should return null style for WebViewComponent until style factory is wired`() {
+        // Stub arm mirrors FallbackHeaderComponent: createInternal returns Result.Success(null),
+        // so a web_view nested in a stack is filtered out. Real WebViewComponentStyle lands later.
+        val stackComponent = StackComponent(
+            components = listOf(
+                WebViewComponent(url = "https://paywalls.revenuecat.com/index.html"),
+                TextComponent(
+                    text = LOCALIZATION_KEY_TEXT_1,
+                    color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+                ),
+            ),
+        )
+
+        val result = styleFactory.create(stackComponent)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(style.children).hasSize(1)
+        assertThat(style.children[0]).isInstanceOf(TextComponentStyle::class.java)
     }
 
     @Test
