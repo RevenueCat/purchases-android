@@ -1244,6 +1244,30 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
+                "state: string condition vs number store value evaluates as not equal",
+                stateArgs(
+                    condition = stateCondition(ComponentOverride.EqualityOperator.EQUALS, "tab", JsonPrimitive("2")),
+                    stateValues = mapOf("tab" to JsonPrimitive(2)),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "state: boolean condition vs number store value evaluates as not equal",
+                stateArgs(
+                    condition = stateCondition(ComponentOverride.EqualityOperator.EQUALS, "open", JsonPrimitive(true)),
+                    stateValues = mapOf("open" to JsonPrimitive(2)),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "state: number condition vs boolean store value evaluates as not equal",
+                stateArgs(
+                    condition = stateCondition(ComponentOverride.EqualityOperator.EQUALS, "slide", JsonPrimitive(2)),
+                    stateValues = mapOf("slide" to JsonPrimitive(true)),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
                 "state: missing value falls back to the declared default",
                 stateArgs(
                     condition = stateCondition(ComponentOverride.EqualityOperator.EQUALS, "open", JsonPrimitive(true)),
