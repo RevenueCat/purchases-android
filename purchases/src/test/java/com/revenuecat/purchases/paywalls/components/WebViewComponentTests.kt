@@ -4,7 +4,9 @@ import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.utils.filter
+import kotlinx.serialization.SerializationException
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -64,6 +66,71 @@ class WebViewComponentTests {
             WebViewComponent(url = "https://paywalls.revenuecat.com/index.html"),
             actual,
         )
+    }
+
+    @Test
+    fun `unsupported protocol_version renders the fallback component`() {
+        // A version this SDK cannot service is treated like an unrecognized component: the author's
+        // fallback is rendered instead of the web view.
+        @Language("json")
+        val json = """
+            {
+              "type": "web_view",
+              "protocol_version": 2,
+              "url": "https://paywalls.revenuecat.com/index.html",
+              "fallback": {
+                "type": "stack",
+                "name": "web_view_fallback",
+                "components": []
+              }
+            }
+            """
+
+        val actual = JsonTools.json.decodeFromString<PaywallComponent>(json)
+
+        assertThat(actual).isInstanceOf(StackComponent::class.java)
+        // Prove it is the author's fallback that came back, not some other stack.
+        assertThat((actual as StackComponent).name).isEqualTo("web_view_fallback")
+    }
+
+    @Test
+    fun `unsupported protocol_version renders the fallback even when the body is not valid v1 schema`() {
+        // Forward-compat: a future protocol version may ship an incompatible body (here, no `url`,
+        // which v1 requires). The version gate must route to the fallback BEFORE attempting to decode
+        // the body as today's WebViewComponent, so this must not throw.
+        @Language("json")
+        val json = """
+            {
+              "type": "web_view",
+              "protocol_version": 2,
+              "entrypoint": "https://paywalls.revenuecat.com/v2-bundle/index.html",
+              "fallback": {
+                "type": "stack",
+                "name": "web_view_fallback",
+                "components": []
+              }
+            }
+            """
+
+        val actual = JsonTools.json.decodeFromString<PaywallComponent>(json)
+
+        assertThat(actual).isInstanceOf(StackComponent::class.java)
+        assertThat((actual as StackComponent).name).isEqualTo("web_view_fallback")
+    }
+
+    @Test
+    fun `unsupported protocol_version without a fallback throws`() {
+        @Language("json")
+        val json = """
+            {
+              "type": "web_view",
+              "protocol_version": 2,
+              "url": "https://paywalls.revenuecat.com/index.html"
+            }
+            """
+
+        assertThatThrownBy { JsonTools.json.decodeFromString<PaywallComponent>(json) }
+            .isInstanceOf(SerializationException::class.java)
     }
 
     @Test
