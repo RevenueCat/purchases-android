@@ -876,7 +876,8 @@ jobs:
           avd_name: test-e2e-workflow-tester
           # The workflow project key is baked in at build time (BuildConfig.WORKFLOWS_API_KEY),
           # which makes E2ETestsApplication configure against the workflow project with
-          # DangerousSettings.forWorkflows(). This is a separate build from the annual flow.
+          # DangerousSettings.forWorkflows(). A single APK can only target one project, so this
+          # is built and run separately from run-maestro-e2e-tests.
           post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug -PE2E_WORKFLOWS_API_KEY=$WORKFLOWS_TEST_STORE_API_KEY
       - android/restore_gradle_cache
       - run:
