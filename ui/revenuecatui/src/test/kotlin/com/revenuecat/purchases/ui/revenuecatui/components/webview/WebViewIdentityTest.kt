@@ -238,17 +238,15 @@ private fun TestWebViewSlot(
         AndroidView(
             factory = {
                 WebView(context).apply {
-                    val bridge = identity.componentId?.let { id ->
-                        WebViewJavaScriptBridge(
-                            webView = this,
-                            componentId = id,
-                            expectedUrl = identity.resolvedUrl,
-                            sizeToContentWidth = identity.sizeToContentWidth,
-                            sizeToContentHeight = identity.sizeToContentHeight,
-                        ).also { created ->
-                            created.attach()
-                            onBridgeCreated(created)
-                        }
+                    val bridge = WebViewJavaScriptBridge(
+                        webView = this,
+                        componentId = identity.componentId,
+                        expectedUrl = identity.resolvedUrl,
+                        sizeToContentWidth = identity.sizeToContentWidth,
+                        sizeToContentHeight = identity.sizeToContentHeight,
+                    ).also { created ->
+                        created.attach()
+                        onBridgeCreated(created)
                     }
                     bridgeHolder.bridge = bridge
                     onCreated(identity.componentId)

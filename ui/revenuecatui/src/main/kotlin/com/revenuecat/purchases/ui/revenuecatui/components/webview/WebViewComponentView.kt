@@ -41,7 +41,7 @@ internal fun WebViewComponentView(
 
     val componentId = style.componentId
     // workflow-web-components-sdk requires a host-assigned component id for the handshake.
-    if (componentId.isNullOrBlank()) return
+    if (componentId.isBlank()) return
     val sizeToContentWidth = style.size.width is Fit
     val sizeToContentHeight = style.size.height is Fit
 
