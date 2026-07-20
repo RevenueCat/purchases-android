@@ -24,7 +24,9 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 
 @JvmSynthetic
 @Composable
-@Suppress("LongMethod", "ReturnCount")
+// `state` is unused in v1 (no variables passed into the content) but kept for the uniform
+// ComponentView signature; it carries locale/variables again when that lands.
+@Suppress("LongMethod", "ReturnCount", "UnusedParameter")
 internal fun WebViewComponentView(
     style: WebViewComponentStyle,
     state: PaywallState.Loaded.Components,
@@ -40,7 +42,6 @@ internal fun WebViewComponentView(
     val componentId = style.componentId
     // workflow-web-components-sdk requires a host-assigned component id for the handshake.
     if (componentId.isNullOrBlank()) return
-    val locale = state.locale.toLanguageTag()
     val sizeToContentWidth = style.size.width is Fit
     val sizeToContentHeight = style.size.height is Fit
 
@@ -78,7 +79,6 @@ internal fun WebViewComponentView(
                             webView = this,
                             componentId = componentId,
                             expectedUrl = resolvedUrl,
-                            locale = locale,
                             sizeToContentWidth = sizeToContentWidth,
                             sizeToContentHeight = sizeToContentHeight,
                             onContentResize = { widthCssPx, heightCssPx ->
@@ -109,11 +109,6 @@ internal fun WebViewComponentView(
                         )
                         loadUrl(resolvedUrl)
                     }
-                },
-                update = {
-                    bridgeHolder.bridge?.update(
-                        locale = locale,
-                    )
                 },
                 onRelease = { webView ->
                     // Only release the bridge that this view installed into this holder.
