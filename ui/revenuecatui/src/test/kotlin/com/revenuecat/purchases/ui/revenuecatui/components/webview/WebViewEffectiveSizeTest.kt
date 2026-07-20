@@ -22,6 +22,18 @@ internal class WebViewEffectiveSizeTest {
     }
 
     @Test
+    fun `fit axes use schema default until the content reports a size`() {
+        val size = webViewEffectiveSize(
+            declaredSize = Size(width = Fit(default = 400u), height = Fit(default = 250u)),
+            contentWidthCssPx = 0,
+            contentHeightCssPx = 0,
+        )
+
+        assertThat(size.width).isEqualTo(Fixed(400u))
+        assertThat(size.height).isEqualTo(Fixed(250u))
+    }
+
+    @Test
     fun `fit axes use the reported content size once available`() {
         val size = webViewEffectiveSize(
             declaredSize = Size(width = Fit(), height = Fit()),

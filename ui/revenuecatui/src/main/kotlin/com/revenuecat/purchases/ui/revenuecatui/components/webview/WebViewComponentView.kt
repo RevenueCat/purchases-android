@@ -38,6 +38,8 @@ internal fun WebViewComponentView(
     if (resolvedUrl == null) return
 
     val componentId = style.componentId
+    // workflow-web-components-sdk requires a host-assigned component id for the handshake.
+    if (componentId.isNullOrBlank()) return
     val locale = state.locale.toLanguageTag()
     val sizeToContentWidth = style.size.width is Fit
     val sizeToContentHeight = style.size.height is Fit
@@ -72,29 +74,27 @@ internal fun WebViewComponentView(
             AndroidView(
                 factory = { context ->
                     WebView(context).apply {
-                        val bridge = componentId?.let { id ->
-                            WebViewJavaScriptBridge(
-                                webView = this,
-                                componentId = id,
-                                expectedUrl = resolvedUrl,
-                                locale = locale,
-                                sizeToContentWidth = sizeToContentWidth,
-                                sizeToContentHeight = sizeToContentHeight,
-                                onContentResize = { widthCssPx, heightCssPx ->
-                                    widthCssPx?.takeIf { it > 0 }?.let { contentWidthCssPx = it }
-                                    heightCssPx?.takeIf { it > 0 }?.let { contentHeightCssPx = it }
-                                },
-                                onDocumentReset = {
-                                    contentWidthCssPx = 0
-                                    contentHeightCssPx = 0
-                                },
-                                onSecureMessagingUnsupported = {
-                                    if (failureFlag.markFailed()) {
-                                        loadFailed = true
-                                    }
-                                },
-                            ).also { createdBridge -> createdBridge.attach() }
-                        }
+                        val bridge = WebViewJavaScriptBridge(
+                            webView = this,
+                            componentId = componentId,
+                            expectedUrl = resolvedUrl,
+                            locale = locale,
+                            sizeToContentWidth = sizeToContentWidth,
+                            sizeToContentHeight = sizeToContentHeight,
+                            onContentResize = { widthCssPx, heightCssPx ->
+                                widthCssPx?.takeIf { it > 0 }?.let { contentWidthCssPx = it }
+                                heightCssPx?.takeIf { it > 0 }?.let { contentHeightCssPx = it }
+                            },
+                            onDocumentReset = {
+                                contentWidthCssPx = 0
+                                contentHeightCssPx = 0
+                            },
+                            onSecureMessagingUnsupported = {
+                                if (failureFlag.markFailed()) {
+                                    loadFailed = true
+                                }
+                            },
+                        ).also { createdBridge -> createdBridge.attach() }
                         bridgeHolder.bridge = bridge
                         configure(
                             expectedOrigin = resolvedUrl.toOriginOrNull(),
@@ -134,10 +134,10 @@ internal fun WebViewComponentView(
 }
 
 /**
- * Placeholder sizes for a `fit` axis until the content reports its size over the bridge — a
- * WebView has no meaningful intrinsic size, so `fit` would otherwise collapse. 100 (height)
- * matches the iOS implementation; 300 (width) matches the web implementation's
- * `FIT_FALLBACK_SIZE_PX`.
+ * Default placeholder sizes for a `fit` axis until the content reports its size over the bridge — a
+ * WebView has no meaningful intrinsic size, so `fit` would otherwise collapse. Used when the schema
+ * omits `fit.default`. 100 (height) matches the iOS implementation; 300 (width) matches the web
+ * implementation's `FIT_FALLBACK_SIZE_PX`.
  */
 internal const val FIT_PLACEHOLDER_HEIGHT: UInt = 100u
 internal const val FIT_PLACEHOLDER_WIDTH: UInt = 300u
@@ -147,13 +147,25 @@ internal fun webViewEffectiveSize(
     contentWidthCssPx: Int,
     contentHeightCssPx: Int,
 ): Size {
-    val width = when (declaredSize.width) {
-        is Fit -> Fixed(if (contentWidthCssPx > 0) contentWidthCssPx.toUInt() else FIT_PLACEHOLDER_WIDTH)
-        else -> declaredSize.width
+    val width = when (val widthConstraint = declaredSize.width) {
+        is Fit -> Fixed(
+            if (contentWidthCssPx > 0) {
+                contentWidthCssPx.toUInt()
+            } else {
+                widthConstraint.default ?: FIT_PLACEHOLDER_WIDTH
+            },
+        )
+        else -> widthConstraint
     }
-    val height = when (declaredSize.height) {
-        is Fit -> Fixed(if (contentHeightCssPx > 0) contentHeightCssPx.toUInt() else FIT_PLACEHOLDER_HEIGHT)
-        else -> declaredSize.height
+    val height = when (val heightConstraint = declaredSize.height) {
+        is Fit -> Fixed(
+            if (contentHeightCssPx > 0) {
+                contentHeightCssPx.toUInt()
+            } else {
+                heightConstraint.default ?: FIT_PLACEHOLDER_HEIGHT
+            },
+        )
+        else -> heightConstraint
     }
     return Size(width = width, height = height)
 }
