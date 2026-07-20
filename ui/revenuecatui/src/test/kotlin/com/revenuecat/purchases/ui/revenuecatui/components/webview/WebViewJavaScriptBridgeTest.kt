@@ -7,10 +7,6 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.webkit.WebMessageCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
-import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewController
-import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessage
-import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessageHandler
-import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -36,13 +32,11 @@ internal class WebViewJavaScriptBridgeTest {
 
     private lateinit var webView: WebView
     private lateinit var shadowWebView: ShadowWebView
-    private val received = mutableListOf<PaywallWebViewMessage>()
 
     @Before
     fun setUp() {
         webView = WebView(ApplicationProvider.getApplicationContext())
         shadowWebView = shadowOf(webView)
-        received.clear()
     }
 
     @Before
@@ -59,7 +53,6 @@ internal class WebViewJavaScriptBridgeTest {
     }
 
     private fun bridge(
-        handler: PaywallWebViewMessageHandler? = PaywallWebViewMessageHandler { message, _ -> received.add(message) },
         locale: String = "en-US",
         navigateTo: String? = expectedUrl,
         sizeToContentWidth: Boolean = false,
@@ -73,7 +66,6 @@ internal class WebViewJavaScriptBridgeTest {
             componentId = componentId,
             expectedUrl = expectedUrl,
             locale = locale,
-            messageHandler = handler,
             sizeToContentWidth = sizeToContentWidth,
             sizeToContentHeight = sizeToContentHeight,
             onContentResize = onContentResize,
@@ -127,6 +119,11 @@ internal class WebViewJavaScriptBridgeTest {
             """.trimIndent()
     }
 
+    private fun requestVariables(bridge: WebViewJavaScriptBridge) {
+        bridge.postFromWeb(appMessage(WebViewMessageType.REQUEST_VARIABLES))
+        idleMainLooper()
+    }
+
     @Test
     fun `completes connect handshake with init`() {
         val bridge = bridge()
@@ -166,34 +163,19 @@ internal class WebViewJavaScriptBridgeTest {
     }
 
     @Test
-    fun `delivers valid message after handshake`() {
-        val bridge = bridge()
-        connect(bridge)
-        bridge.postFromWeb(appMessage(WebViewMessageType.STEP_LOADED))
-        idleMainLooper()
+    fun `ignores app frames before handshake`() {
+        requestVariables(bridge())
 
-        assertThat(received).hasSize(1)
-        assertThat(received.single().componentId).isEqualTo("promo_web_view")
-        assertThat(received.single().type).isEqualTo("rc:step-loaded")
+        // Nothing is sent: no init, no variables reply.
+        assertThat(shadowWebView.lastEvaluatedJavascript).isNull()
     }
-
-    @Test
-    fun `ignores app messages before handshake`() {
-        bridge().postFromWeb(appMessage(WebViewMessageType.STEP_LOADED))
-        idleMainLooper()
-
-        assertThat(received).isEmpty()
-    }
-
 
     @Test
     fun `request-variables auto-sends rc variables with locale only`() {
         val bridge = bridge()
         connect(bridge)
-        bridge.postFromWeb(appMessage(WebViewMessageType.REQUEST_VARIABLES))
-        idleMainLooper()
+        requestVariables(bridge)
 
-        assertThat(received.single().type).isEqualTo("rc:request-variables")
         val script = shadowWebView.lastEvaluatedJavascript
         assertThat(script).contains("window.__rcWebComponentsReceive(")
         assertThat(script).contains("\"kind\":\"message\"")
@@ -224,63 +206,14 @@ internal class WebViewJavaScriptBridgeTest {
     }
 
     @Test
-    fun `app can reply with extra variables through the controller`() {
-        val handler = PaywallWebViewMessageHandler { message, controller ->
-            received.add(message)
-            if (message.type == WebViewMessageType.REQUEST_VARIABLES) {
-                controller.postVariables(
-                    componentId = message.componentId,
-                    variables = mapOf(
-                        "custom" to PaywallWebViewValue.Object(
-                            mapOf("app_segment" to PaywallWebViewValue.String("high_intent")),
-                        ),
-                    ),
-                )
-            }
-        }
-        val bridge = bridge(handler = handler)
-        connect(bridge)
-        bridge.postFromWeb(appMessage(WebViewMessageType.REQUEST_VARIABLES))
-        idleMainLooper()
-
-        val script = shadowWebView.lastEvaluatedJavascript
-        assertThat(script).contains("\"rc:variables\"")
-        assertThat(script).contains("\"app_segment\":\"high_intent\"")
-    }
-
-    @Test
-    fun `controller postVariables drops reserved keys`() {
-        val controllerHolder = arrayOfNulls<PaywallWebViewController>(1)
-        val handler = PaywallWebViewMessageHandler { _, controller -> controllerHolder[0] = controller }
-        val bridge = bridge(handler = handler)
-        connect(bridge)
-        bridge.postFromWeb(appMessage(WebViewMessageType.STEP_LOADED))
-        idleMainLooper()
-
-        controllerHolder[0]!!.postVariables(
-            componentId = componentId,
-            variables = mapOf(
-                "locale" to PaywallWebViewValue.String("zz-ZZ"),
-                "custom" to PaywallWebViewValue.Object(mapOf("k" to PaywallWebViewValue.String("v"))),
-            ),
-        )
-        idleMainLooper()
-
-        val script = shadowWebView.lastEvaluatedJavascript
-        assertThat(script).doesNotContain("zz-ZZ")
-        assertThat(script).contains("\"k\":\"v\"")
-    }
-
-    @Test
-    fun `does not deliver messages after release`() {
+    fun `does not reply to app frames after release`() {
         val bridge = bridge()
         connect(bridge)
         bridge.release()
 
-        bridge.postFromWeb(appMessage(WebViewMessageType.STEP_LOADED))
-        idleMainLooper()
+        requestVariables(bridge)
 
-        assertThat(received).isEmpty()
+        assertThat(shadowWebView.lastEvaluatedJavascript).doesNotContain("\"rc:variables\"")
     }
 
     @Test
@@ -288,18 +221,14 @@ internal class WebViewJavaScriptBridgeTest {
         val bridge = bridge()
         connect(bridge)
         val background = Thread {
-            bridge.postMessage(
-                componentId = componentId,
-                type = "rc:queued",
-                variables = mapOf("foo" to PaywallWebViewValue.String("bar")),
-            )
+            bridge.postFromWeb(appMessage(WebViewMessageType.REQUEST_VARIABLES))
         }
         background.start()
         background.join()
         bridge.release()
         idleMainLooper()
 
-        assertThat(shadowWebView.lastEvaluatedJavascript).doesNotContain("rc:queued")
+        assertThat(shadowWebView.lastEvaluatedJavascript).doesNotContain("\"rc:variables\"")
     }
 
     @Test
@@ -308,7 +237,7 @@ internal class WebViewJavaScriptBridgeTest {
         connect(bridge)
         val background = Thread {
             bridge.postFromWeb(
-                json = appMessage(WebViewMessageType.STEP_LOADED),
+                json = appMessage(WebViewMessageType.REQUEST_VARIABLES),
                 sourceOrigin = Uri.parse("https://evil.example.org"),
                 isMainFrame = true,
             )
@@ -317,7 +246,7 @@ internal class WebViewJavaScriptBridgeTest {
         background.join()
         idleMainLooper()
 
-        assertThat(received).isEmpty()
+        assertThat(shadowWebView.lastEvaluatedJavascript).doesNotContain("\"rc:variables\"")
     }
 
     @Test
@@ -327,169 +256,99 @@ internal class WebViewJavaScriptBridgeTest {
             val navigateTo: String = expectedUrl,
             val sourceOrigin: String = expectedOrigin,
             val isMainFrame: Boolean = true,
-            val expectedReceived: Int,
+            val expectReply: Boolean,
         )
         listOf(
-            Case("wrong origin", sourceOrigin = "https://evil.example.org", expectedReceived = 0),
-            Case("subframe", isMainFrame = false, expectedReceived = 0),
+            Case("wrong origin", sourceOrigin = "https://evil.example.org", expectReply = false),
+            Case("subframe", isMainFrame = false, expectReply = false),
             Case(
                 "case-insensitive host",
                 navigateTo = "https://Assets.Example.COM/promo/index.html",
                 sourceOrigin = "https://Assets.Example.COM",
-                expectedReceived = 1,
+                expectReply = true,
             ),
         ).forEach { case ->
-            received.clear()
             val bridge = bridge(navigateTo = case.navigateTo)
             connect(bridge)
             bridge.postFromWeb(
-                json = appMessage(WebViewMessageType.STEP_LOADED),
+                json = appMessage(WebViewMessageType.REQUEST_VARIABLES),
                 sourceOrigin = Uri.parse(case.sourceOrigin),
                 isMainFrame = case.isMainFrame,
             )
             idleMainLooper()
-            assertThat(received).describedAs(case.name).hasSize(case.expectedReceived)
+            val script = shadowWebView.lastEvaluatedJavascript
+            if (case.expectReply) {
+                assertThat(script).describedAs(case.name).contains("\"rc:variables\"")
+            } else {
+                assertThat(script).describedAs(case.name).doesNotContain("\"rc:variables\"")
+            }
         }
+    }
 
-        // Default https port: outbound from :443 top-level URL is same-origin.
+    @Test
+    fun `default https port is treated as same-origin`() {
         val bridge = bridge(navigateTo = "https://assets.example.com:443/promo/index.html")
         connect(bridge)
-        bridge.postMessage(
-            componentId = componentId,
-            type = "rc:custom",
-            variables = mapOf("foo" to PaywallWebViewValue.String("bar")),
-        )
-        idleMainLooper()
-        assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"type\":\"rc:custom\"")
+        requestVariables(bridge)
+
+        assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"rc:variables\"")
     }
 
     @Test
     fun `allows messages from the same origin on a different path`() {
         val bridge = bridge(navigateTo = "https://assets.example.com/promo/step-two.html")
         connect(bridge)
-        bridge.postFromWeb(appMessage(WebViewMessageType.STEP_LOADED))
-        idleMainLooper()
+        requestVariables(bridge)
 
-        assertThat(received).hasSize(1)
+        assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"rc:variables\"")
     }
 
     @Test
     fun `does not deliver outbound messages after navigation to an unexpected origin`() {
         val bridge = bridge(navigateTo = "https://evil.example.org/phish.html")
         connect(bridge)
-        bridge.postMessage(
-            componentId = componentId,
-            type = "rc:custom",
-            variables = mapOf("foo" to PaywallWebViewValue.String("bar")),
-        )
-        idleMainLooper()
+        // Inbound source is spoofed as the expected origin, but the top-level URL left the origin;
+        // the outbound defense-in-depth check drops every outbound frame (even the init handshake),
+        // so nothing is ever evaluated.
+        requestVariables(bridge)
 
         assertThat(shadowWebView.lastEvaluatedJavascript).isNull()
     }
 
     @Test
-    fun `delivers rc step-complete responses to the handler without sending an outbound message`() {
-        val bridge = bridge()
-        connect(bridge)
-        val scriptAfterConnect = shadowWebView.lastEvaluatedJavascript
-        bridge.postFromWeb(
-            appMessage(
-                type = WebViewMessageType.STEP_COMPLETE,
-                payload = """{"responses":{"selected_plan":"annual","accepted_terms":true}}""",
-            ),
-        )
-        idleMainLooper()
-
-        val message = received.single()
-        assertThat(message.type).isEqualTo("rc:step-complete")
-        assertThat(message.responses?.get("selected_plan")).isEqualTo(PaywallWebViewValue.String("annual"))
-        assertThat(message.responses?.get("accepted_terms")).isEqualTo(PaywallWebViewValue.Boolean(true))
-        assertThat(shadowWebView.lastEvaluatedJavascript).isEqualTo(scriptAfterConnect)
-    }
-
-    @Test
-    fun `delivers rc error to the handler`() {
-        val bridge = bridge()
-        connect(bridge)
-        bridge.postFromWeb(
-            appMessage(
-                type = WebViewMessageType.ERROR,
-                payload = """{"error":"Something went wrong"}""",
-            ),
-        )
-        idleMainLooper()
-
-        val message = received.single()
-        assertThat(message.type).isEqualTo("rc:error")
-        assertThat(message.error).isEqualTo("Something went wrong")
-    }
-
-    @Test
     fun `rejects invalid inbound protocol frames`() {
-        val nested = "[".repeat(30_000) + "]".repeat(30_000)
-        // name to frames; missing-request-id also asserts no variables auto-reply.
+        // Each frame is an rc:request-variables variant that must NOT produce a variables reply.
         val cases = listOf(
-            "wrong channel" to listOf(
-                """{"channel":"other","protocol_version":1,"kind":"message","component_id":"$componentId","type":"rc:step-loaded"}""",
-            ),
-            "unknown kind" to listOf(
-                """{"channel":"rc-web-components","protocol_version":1,"kind":"ping","component_id":"$componentId","type":"rc:step-loaded"}""",
-            ),
-            "malformed json" to listOf("""not even json"""),
-            "wrong component id" to listOf(
-                appMessage(type = WebViewMessageType.STEP_LOADED).replace(componentId, "other_web_view"),
-            ),
-            "missing request id" to listOf(
-                appMessage(type = WebViewMessageType.STEP_LOADED, kind = WebViewEnvelope.KIND_REQUEST),
+            "wrong channel" to
+                """{"channel":"other","protocol_version":1,"kind":"message","component_id":"$componentId","type":"rc:request-variables"}""",
+            "unknown kind" to
+                """{"channel":"rc-web-components","protocol_version":1,"kind":"ping","component_id":"$componentId","type":"rc:request-variables"}""",
+            "malformed json" to """not even json""",
+            "wrong component id" to
+                appMessage(type = WebViewMessageType.REQUEST_VARIABLES).replace(componentId, "other_web_view"),
+            "request missing id" to
                 appMessage(type = WebViewMessageType.REQUEST_VARIABLES, kind = WebViewEnvelope.KIND_REQUEST),
-            ),
-            "hostile nested payload" to listOf(
-                appMessage(
-                    type = WebViewMessageType.STEP_COMPLETE,
-                    payload = """{"responses":{"deep":$nested}}""",
-                ),
-            ),
         )
 
-        cases.forEach { (name, frames) ->
-            received.clear()
+        cases.forEach { (name, frame) ->
             val bridge = bridge()
             connect(bridge)
-            frames.forEach { bridge.postFromWeb(it) }
+            bridge.postFromWeb(frame)
             idleMainLooper()
-            assertThat(received).describedAs(name).isEmpty()
-            if (name == "missing request id") {
-                assertThat(shadowWebView.lastEvaluatedJavascript)
-                    .describedAs(name)
-                    .doesNotContain("rc:variables")
-            }
+            assertThat(shadowWebView.lastEvaluatedJavascript)
+                .describedAs(name)
+                .doesNotContain("\"rc:variables\"")
+                .doesNotContain("\"kind\":\"response\"")
         }
-    }
-
-    @Test
-    fun `auto-sends rc variables even when no handler is set`() {
-        val bridge = bridge(handler = null)
-        connect(bridge)
-        bridge.postFromWeb(appMessage(WebViewMessageType.REQUEST_VARIABLES))
-        idleMainLooper()
-
-        assertThat(received).isEmpty()
-        val script = shadowWebView.lastEvaluatedJavascript
-        assertThat(script).contains("\"rc:variables\"")
-        assertThat(script).contains("\"locale\":\"en-US\"")
     }
 
     @Test
     fun `update refreshes the variables sent on a subsequent request`() {
         val bridge = bridge(locale = "en-US")
         connect(bridge)
-        bridge.update(
-            locale = "fr-FR",
-            messageHandler = null,
-        )
+        bridge.update(locale = "fr-FR")
 
-        bridge.postFromWeb(appMessage(WebViewMessageType.REQUEST_VARIABLES))
-        idleMainLooper()
+        requestVariables(bridge)
 
         val script = shadowWebView.lastEvaluatedJavascript
         assertThat(script).contains("\"locale\":\"fr-FR\"")
@@ -497,36 +356,12 @@ internal class WebViewJavaScriptBridgeTest {
     }
 
     @Test
-    fun `generic postMessage sends transport envelope with payload`() {
-        val bridge = bridge()
-        connect(bridge)
-        bridge.postMessage(
-            componentId = componentId,
-            type = "rc:custom",
-            variables = mapOf("foo" to PaywallWebViewValue.String("bar")),
-        )
-        idleMainLooper()
-
-        val script = shadowWebView.lastEvaluatedJavascript
-        assertThat(script).contains("window.__rcWebComponentsReceive(")
-        assertThat(script).contains("\"kind\":\"message\"")
-        assertThat(script).contains("\"type\":\"rc:custom\"")
-        assertThat(script).contains("\"component_id\":\"promo_web_view\"")
-        assertThat(script).contains("\"payload\":{\"foo\":\"bar\"}")
-    }
-
-    @Test
     fun `escapes line and paragraph separators in outbound payloads`() {
-        val raw = "a\u2028b\u2029c"
-        val bridge = bridge()
+        // U+2028/U+2029 are valid in JSON strings but terminate JS statements; the outbound
+        // variables reply (the only remaining outbound content path) must escape them.
+        val bridge = bridge(locale = "en\u2028\u2029US")
         connect(bridge)
-        bridge.postVariables(
-            componentId = componentId,
-            variables = mapOf(
-                "custom" to PaywallWebViewValue.Object(mapOf("note" to PaywallWebViewValue.String(raw))),
-            ),
-        )
-        idleMainLooper()
+        requestVariables(bridge)
 
         val script = shadowWebView.lastEvaluatedJavascript
         assertThat(script).doesNotContain("\u2028")
@@ -615,10 +450,8 @@ internal class WebViewJavaScriptBridgeTest {
                 listOf(200 to 300, null to 301),
             ),
         ).forEach { case ->
-            received.clear()
             val resizes = mutableListOf<Pair<Int?, Int?>>()
             val bridge = bridge(
-                handler = null,
                 sizeToContentWidth = case.fitW,
                 sizeToContentHeight = case.fitH,
                 onContentResize = { w, h -> resizes.add(w to h) },
@@ -627,12 +460,11 @@ internal class WebViewJavaScriptBridgeTest {
             case.payloads.forEach { bridge.postFromWeb(appMessage(type = WebViewMessageType.RESIZE, payload = it)) }
             idleMainLooper()
             assertThat(resizes).describedAs(case.name).containsExactlyElementsOf(case.expected)
-            assertThat(received).describedAs(case.name).isEmpty()
         }
     }
 
     @Test
-    fun `handles resize sent as a transport request without forwarding to the app handler`() {
+    fun `handles resize sent as a transport request`() {
         var reportedHeight: Int? = null
         val bridge = bridge(
             sizeToContentHeight = true,
@@ -650,7 +482,6 @@ internal class WebViewJavaScriptBridgeTest {
         idleMainLooper()
 
         assertThat(reportedHeight).isEqualTo(250)
-        assertThat(received).isEmpty()
     }
 
     @Test
@@ -680,10 +511,9 @@ internal class WebViewJavaScriptBridgeTest {
         connect(bridge)
         bridge.onMainFrameNavigationStarted("https://assets.example.com/promo/step-two.html")
 
-        bridge.postFromWeb(appMessage(WebViewMessageType.STEP_LOADED))
-        idleMainLooper()
+        requestVariables(bridge)
 
-        assertThat(received).isEmpty()
+        assertThat(shadowWebView.lastEvaluatedJavascript).doesNotContain("\"rc:variables\"")
     }
 
     @Test
@@ -695,15 +525,14 @@ internal class WebViewJavaScriptBridgeTest {
 
         bridge.onMainFrameNavigationStarted("https://assets.example.com/promo/step-two.html")
         webView.loadUrl("https://assets.example.com/promo/step-two.html")
-        bridge.postFromWeb(appMessage(WebViewMessageType.STEP_LOADED))
-        idleMainLooper()
-        assertThat(received).isEmpty()
+        requestVariables(bridge)
+        // Channel closed after navigation: no reply until reconnect.
+        assertThat(shadowWebView.lastEvaluatedJavascript).doesNotContain("\"rc:variables\"")
 
         connect(bridge)
         assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"kind\":\"init\"")
-        bridge.postFromWeb(appMessage(WebViewMessageType.STEP_LOADED))
-        idleMainLooper()
-        assertThat(received).hasSize(1)
+        requestVariables(bridge)
+        assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"rc:variables\"")
     }
 
     @Test
@@ -726,7 +555,6 @@ internal class WebViewJavaScriptBridgeTest {
     fun `resize threshold state is reset between documents`() {
         val resizes = mutableListOf<Pair<Int?, Int?>>()
         val bridge = bridge(
-            handler = null,
             sizeToContentHeight = true,
             onContentResize = { widthCssPx, heightCssPx -> resizes.add(widthCssPx to heightCssPx) },
         )
@@ -785,18 +613,14 @@ internal class WebViewJavaScriptBridgeTest {
         bridge.onMainFrameNavigationStarted(expectedUrl)
         connect(bridge)
         val background = Thread {
-            bridge.postMessage(
-                componentId = componentId,
-                type = "rc:x",
-                variables = mapOf("foo" to PaywallWebViewValue.String("bar")),
-            )
+            bridge.postFromWeb(appMessage(WebViewMessageType.REQUEST_VARIABLES))
         }
         background.start()
         background.join()
         bridge.onMainFrameNavigationStarted(null)
         idleMainLooper()
 
-        assertThat(shadowWebView.lastEvaluatedJavascript).doesNotContain("rc:x")
+        assertThat(shadowWebView.lastEvaluatedJavascript).doesNotContain("\"rc:variables\"")
     }
 
     @Test
@@ -805,15 +629,12 @@ internal class WebViewJavaScriptBridgeTest {
         bridge.onMainFrameNavigationStarted(expectedUrl)
         connect(bridge)
         bridge.onMainFrameNavigationStarted(expectedUrl) // reload
-        bridge.postFromWeb(appMessage(WebViewMessageType.STEP_LOADED))
-        idleMainLooper()
-        assertThat(received).isEmpty()
+        requestVariables(bridge)
+        assertThat(shadowWebView.lastEvaluatedJavascript).doesNotContain("\"rc:variables\"")
 
         connect(bridge)
-        bridge.postFromWeb(appMessage(WebViewMessageType.STEP_LOADED))
-        idleMainLooper()
-
-        assertThat(received).hasSize(1)
         assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"kind\":\"init\"")
+        requestVariables(bridge)
+        assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"rc:variables\"")
     }
 }
