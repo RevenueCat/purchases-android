@@ -48,7 +48,6 @@ internal class WebViewJavaScriptBridge(
     webView: WebView,
     private val componentId: String,
     expectedUrl: String,
-    locale: String,
     private val sizeToContentWidth: Boolean = false,
     private val sizeToContentHeight: Boolean = false,
     private val onContentResize: (widthCssPx: Int?, heightCssPx: Int?) -> Unit = { _, _ -> },
@@ -64,9 +63,6 @@ internal class WebViewJavaScriptBridge(
     // host must never accept a handshake for a version it cannot service, even if a future schema
     // declares one.
     private val protocolVersion: Int = WebViewEnvelope.DEFAULT_PROTOCOL_VERSION
-
-    // Refreshed from the latest paywall state on every recomposition via update().
-    private var locale: String = locale
 
     private var released: Boolean = false
 
@@ -124,15 +120,6 @@ internal class WebViewJavaScriptBridge(
             webMessageListener,
         )
         messageListenerInstalled = true
-    }
-
-    /**
-     * Refreshes the locale from the latest paywall state. Call from `AndroidView`'s update block.
-     */
-    fun update(
-        locale: String,
-    ) {
-        this.locale = locale
     }
 
     /**
@@ -252,48 +239,10 @@ internal class WebViewJavaScriptBridge(
     private fun handleAppFrame(envelope: WebViewEnvelope.Parsed) {
         if (!channelOpen) return
 
-        // Any transport `request` without a correlation `id` is undeliverable — drop it before
-        // any handling, matching iOS and the web host.
-        if (envelope.kind == WebViewEnvelope.KIND_REQUEST && envelope.id == null) {
-            Logger.w("Dropping inbound web view message: transport request is missing 'id'.")
-            return
-        }
-
-        if (envelope.componentId != componentId) {
-            Logger.w("Dropping web view message: 'component_id' does not match the rendered web_view.")
-            return
-        }
-
-        // `resize` is SDK-internal; it drives content-fit sizing.
+        // `resize` is the only app frame the SDK services in v1; it drives content-fit sizing.
+        // Everything else is ignored (no app-facing message handler, no variables).
         if (envelope.type == WebViewMessageType.RESIZE) {
             handleResize(envelope)
-            return
-        }
-
-        // The variables request is the only app frame the SDK services. Everything else is ignored:
-        // v1 ships without an app-facing message handler.
-        if (envelope.type == WebViewMessageType.REQUEST_VARIABLES) {
-            replyWithVariables(envelope)
-        }
-    }
-
-    @MainThread
-    private fun replyWithVariables(envelope: WebViewEnvelope.Parsed) {
-        val variables = PaywallWebViewVariablesProvider.sdkManagedVariables(locale = locale)
-        val requestId = if (envelope.kind == WebViewEnvelope.KIND_REQUEST) envelope.id else null
-        if (requestId != null) {
-            deliverEnvelope(
-                WebViewEnvelope.build(
-                    kind = WebViewEnvelope.KIND_RESPONSE,
-                    protocolVersion = protocolVersion,
-                    componentId = componentId,
-                    type = envelope.type,
-                    id = requestId,
-                    payload = JSONObject(variables),
-                ),
-            )
-        } else {
-            postVariablesMessage(componentId = componentId, variables = variables)
         }
     }
 
@@ -329,27 +278,6 @@ internal class WebViewJavaScriptBridge(
             return null
         }
         return reported
-    }
-
-    private fun postVariablesMessage(componentId: String, variables: Map<String, String>) {
-        postAppMessage(
-            componentId = componentId,
-            type = WebViewMessageType.VARIABLES,
-            payload = JSONObject(variables),
-        )
-    }
-
-    private fun postAppMessage(componentId: String, type: String, payload: JSONObject) {
-        if (!channelOpen) return
-        deliverEnvelope(
-            WebViewEnvelope.build(
-                kind = WebViewEnvelope.KIND_MESSAGE,
-                protocolVersion = protocolVersion,
-                componentId = componentId,
-                type = type,
-                payload = payload,
-            ),
-        )
     }
 
     private fun deliverEnvelope(envelope: JSONObject) {
