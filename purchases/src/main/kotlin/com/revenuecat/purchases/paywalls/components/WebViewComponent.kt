@@ -26,14 +26,14 @@ public class WebViewComponent(
     @get:JvmSynthetic
     public val url: String,
     @get:JvmSynthetic
-    public val id: String? = null,
+    public val id: String,
     @get:JvmSynthetic
     public val name: String? = null,
     @get:JvmSynthetic
     public val visible: Boolean? = null,
     @SerialName("protocol_version")
     @get:JvmSynthetic
-    public val protocolVersion: Int? = null,
+    public val protocolVersion: Int,
     @get:JvmSynthetic
     public val size: Size = Size(width = Fill, height = SizeConstraint.Fit()),
 ) : PaywallComponent
