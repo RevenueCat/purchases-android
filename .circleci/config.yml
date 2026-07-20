@@ -1080,6 +1080,8 @@ workflows:
           requires:
             - prepare-tests
       - run-maestro-workflow-tests:
+          context:
+            - maestro
           requires:
             - prepare-tests
       - run-integration-tests:
