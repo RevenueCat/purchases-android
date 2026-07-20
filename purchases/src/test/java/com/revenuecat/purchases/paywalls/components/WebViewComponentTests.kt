@@ -5,6 +5,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.utils.filter
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import kotlin.test.assertEquals
@@ -51,6 +52,8 @@ class WebViewComponentTests {
         val json = """
             {
               "type": "web_view",
+              "id": "promo_web_view",
+              "protocol_version": 1,
               "url": "https://paywalls.revenuecat.com/index.html",
               "fallback": {
                 "type": "stack",
@@ -62,7 +65,7 @@ class WebViewComponentTests {
         val actual = JsonTools.json.decodeFromString<WebViewComponent>(json)
 
         assertEquals(
-            WebViewComponent(url = "https://paywalls.revenuecat.com/index.html"),
+            WebViewComponent(url = "https://paywalls.revenuecat.com/index.html", id = "promo_web_view", protocolVersion = 1),
             actual,
         )
     }
@@ -75,6 +78,8 @@ class WebViewComponentTests {
         val json = """
             {
               "type": "web_view",
+              "id": "promo_web_view",
+              "protocol_version": 1,
               "url": "https://paywalls.revenuecat.com/index.html",
               "capabilities": {
                 "network_access": { "allowed_domains": ["api.segment.io"] },
@@ -90,7 +95,7 @@ class WebViewComponentTests {
         val actual = JsonTools.json.decodeFromString<WebViewComponent>(json)
 
         assertEquals(
-            WebViewComponent(url = "https://paywalls.revenuecat.com/index.html"),
+            WebViewComponent(url = "https://paywalls.revenuecat.com/index.html", id = "promo_web_view", protocolVersion = 1),
             actual,
         )
     }
@@ -101,6 +106,7 @@ class WebViewComponentTests {
         val templateJson = """
             {
               "type": "web_view",
+              "id": "promo_web_view",
               "protocol_version": 1,
               "url": "https://paywalls.revenuecat.com/{{ custom.animal }}.html"
             }
@@ -111,6 +117,7 @@ class WebViewComponentTests {
         assertEquals(
             WebViewComponent(
                 url = "https://paywalls.revenuecat.com/{{ custom.animal }}.html",
+                id = "promo_web_view",
                 protocolVersion = 1,
             ),
             actual,
@@ -118,31 +125,65 @@ class WebViewComponentTests {
     }
 
     @Test
-    fun `deserializes minimal shape with defaults for missing optional fields`() {
-        // Older/partial configs may omit protocol_version and size. These should still
-        // decode without crashing, using defaults.
+    fun `deserializes required shape with defaults for missing optional fields`() {
+        // Only name, visible, and size are optional; id, url, and protocol_version are required.
         @Language("json")
-        val minimalJson = """
+        val json = """
             {
               "type": "web_view",
+              "id": "promo_web_view",
+              "protocol_version": 1,
               "url": "https://paywalls.revenuecat.com/index.html"
             }
             """
 
-        val actual = JsonTools.json.decodeFromString<WebViewComponent>(minimalJson)
+        val actual = JsonTools.json.decodeFromString<WebViewComponent>(json)
 
         assertEquals(
-            WebViewComponent(url = "https://paywalls.revenuecat.com/index.html"),
+            WebViewComponent(url = "https://paywalls.revenuecat.com/index.html", id = "promo_web_view", protocolVersion = 1),
             actual,
         )
-        assertThat(actual.protocolVersion).isNull()
+        assertThat(actual.name).isNull()
+        assertThat(actual.visible).isNull()
         assertThat(actual.size).isEqualTo(Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()))
+    }
+
+    @Test
+    fun `fails to decode when required id is missing`() {
+        @Language("json")
+        val json = """
+            {
+              "type": "web_view",
+              "protocol_version": 1,
+              "url": "https://paywalls.revenuecat.com/index.html"
+            }
+            """
+
+        assertThatThrownBy { JsonTools.json.decodeFromString<WebViewComponent>(json) }
+    }
+
+    @Test
+    fun `fails to decode when required protocol_version is missing`() {
+        @Language("json")
+        val json = """
+            {
+              "type": "web_view",
+              "id": "promo_web_view",
+              "url": "https://paywalls.revenuecat.com/index.html"
+            }
+            """
+
+        assertThatThrownBy { JsonTools.json.decodeFromString<WebViewComponent>(json) }
     }
 
     @Test
     fun `filter treats web_view as a leaf component`() {
         // web_view has no child components, so filtering a tree should return only the component itself.
-        val webView = WebViewComponent(url = "https://paywalls.revenuecat.com/index.html")
+        val webView = WebViewComponent(
+            url = "https://paywalls.revenuecat.com/index.html",
+            id = "promo_web_view",
+            protocolVersion = 1,
+        )
 
         val matches = webView.filter { it is WebViewComponent }
 
