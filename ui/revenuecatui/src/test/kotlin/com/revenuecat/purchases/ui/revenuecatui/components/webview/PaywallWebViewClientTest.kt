@@ -68,16 +68,18 @@ internal class PaywallWebViewClientTest {
         // POST navigations skip shouldOverrideUrlLoading; onPageStarted is the backstop.
         client.onPageStarted(webView, "https://evil.example.org/phish.html", null)
 
-        assertThat(navigations).containsExactly("https://evil.example.org/phish.html")
+        assertThat(navigations).isEmpty()
         assertThat(webView.stopLoadingCount).isEqualTo(1)
+        assertThat(failureCount).isEqualTo(1)
     }
 
     @Test
     fun `onPageStarted stops blocked non-https loads`() {
         client.onPageStarted(webView, "http://assets.example.com/promo/insecure.html", null)
 
-        assertThat(navigations).containsExactly("http://assets.example.com/promo/insecure.html")
+        assertThat(navigations).isEmpty()
         assertThat(webView.stopLoadingCount).isEqualTo(1)
+        assertThat(failureCount).isEqualTo(1)
     }
 
     @Test

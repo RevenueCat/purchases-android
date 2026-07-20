@@ -32,8 +32,6 @@ internal class PaywallWebViewClient(
 
     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
         super.onPageStarted(view, url, favicon)
-        // onPageStarted is main-frame only and marks a new JavaScript document.
-        onMainFrameNavigationStarted(url)
         // shouldOverrideUrlLoading is not called for POST navigations, so re-check the policy
         // here and kill any main-frame load that slipped through (cross-origin / non-HTTPS).
         if (shouldBlockWebViewNavigation(
@@ -43,7 +41,11 @@ internal class PaywallWebViewClient(
             )
         ) {
             view.stopLoading()
+            markFailed()
+            return
         }
+        // onPageStarted is main-frame only and marks a new JavaScript document.
+        onMainFrameNavigationStarted(url)
     }
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -69,7 +71,7 @@ internal class PaywallWebViewClient(
         request: WebResourceRequest,
         errorResponse: WebResourceResponse,
     ) {
-        if (request.isForMainFrame && errorResponse.statusCode >= HTTP_ERROR_STATUS_MIN) {
+        if (request.isForMainFrame) {
             markFailed()
         }
     }
@@ -79,9 +81,5 @@ internal class PaywallWebViewClient(
         // Returning true tells the platform we handled the dead renderer; the dead WebView must not
         // be reused. Composition removes it via the failure path + AndroidView.onRelease.
         return true
-    }
-
-    private companion object {
-        private const val HTTP_ERROR_STATUS_MIN = 400
     }
 }

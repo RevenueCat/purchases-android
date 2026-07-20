@@ -67,4 +67,15 @@ class WebViewNavigationPolicyTest {
             shouldBlockWebViewNavigation(url = null, isMainFrame = true, expectedOrigin = "https://a.example"),
         ).isTrue()
     }
+
+    @Test
+    fun `normalizes expected origin casing and default port`() {
+        assertThat(
+            shouldBlockWebViewNavigation(
+                url = "https://assets.example.com/promo/index.html",
+                isMainFrame = true,
+                expectedOrigin = "https://Assets.Example.COM:443",
+            ),
+        ).isFalse()
+    }
 }

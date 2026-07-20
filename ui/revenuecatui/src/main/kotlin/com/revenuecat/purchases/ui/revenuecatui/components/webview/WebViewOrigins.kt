@@ -57,5 +57,6 @@ internal fun shouldBlockWebViewNavigation(
 ): Boolean {
     val origin = url?.toOriginOrNull() ?: return true
     if (!origin.startsWith("https://")) return true
-    return isMainFrame && origin != expectedOrigin
+    val normalizedExpectedOrigin = expectedOrigin?.toOriginOrNull()
+    return isMainFrame && origin != normalizedExpectedOrigin
 }
