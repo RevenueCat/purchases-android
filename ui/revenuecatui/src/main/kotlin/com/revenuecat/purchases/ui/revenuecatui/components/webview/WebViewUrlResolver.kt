@@ -11,7 +11,7 @@ internal object WebViewUrlResolver {
 
         val uri = Uri.parse(url)
         return url.takeIf {
-            uri.scheme == HTTPS_SCHEME && !uri.host.isNullOrBlank()
+            uri.scheme.equals(HTTPS_SCHEME, ignoreCase = true) && !uri.host.isNullOrBlank()
         }
     }
 
