@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -82,17 +84,23 @@ internal fun TabsComponentView(
         paywallState = state,
     )
 
-    if (!tabsState.visible) return
-
     // State-driven paywalls: publish the selected tab id into the state store so components that react to it via a
     // `state_condition` override recompose. Gated behind visibility (parity with iOS): a hidden Tabs never
-    // publishes. Runs on first composition (seed) and whenever the selection changes.
+    // publishes. Seeds once and then publishes only when the selection actually changes. Remembering the last
+    // published id above the visibility gate keeps a hidden -> visible transition from republishing and
+    // clobbering a value another component already set (mirrors iOS's didSeedInitialState). The declared state
+    // default is expected to match default_tab_id.
     val selectedTabId = style.tabs[state.selectedTabIndex.coerceIn(0..style.tabs.lastIndex)].id
-    LaunchedEffect(selectedTabId) {
+    val lastPublishedTabId = remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(tabsState.visible, selectedTabId) {
+        if (!tabsState.visible || selectedTabId == lastPublishedTabId.value) return@LaunchedEffect
+        lastPublishedTabId.value = selectedTabId
         style.stateUpdates?.takeIf { it.isNotEmpty() }?.let { updates ->
             state.stateStore.applyUpdates(updates, payload = JsonPrimitive(selectedTabId))
         }
     }
+
+    if (!tabsState.visible) return
 
     val backgroundStyle = tabsState.background?.let { rememberBackgroundStyle(it) }
     val borderStyle = tabsState.border?.let { rememberBorderStyle(border = it) }

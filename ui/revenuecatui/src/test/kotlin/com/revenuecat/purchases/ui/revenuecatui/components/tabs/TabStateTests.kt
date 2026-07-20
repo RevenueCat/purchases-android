@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.tabs
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.assertHasClickAction
@@ -242,4 +243,92 @@ class TabStateTests {
 
         assertThat(state.stateStore.currentValueOrDefault(stateKey)).isEqualTo(JsonPrimitive("monthly"))
     }
+
+    @Test
+    fun `Becoming visible again does not republish and clobber a value another component set`(): Unit =
+        with(composeTestRule) {
+            val tab0LabelKey = LocalizationKey("tab0_label")
+            val tab1LabelKey = LocalizationKey("tab1_label")
+            val localizations = nonEmptyMapOf(
+                localeId to nonEmptyMapOf(
+                    tab0LabelKey to LocalizationData.Text("Monthly"),
+                    tab1LabelKey to LocalizationData.Text("Annual"),
+                ),
+            )
+            val tabControlButtons = listOf(tab0LabelKey, tab1LabelKey).mapIndexed { index, labelKey ->
+                TabControlButtonComponent(
+                    tabIndex = index,
+                    tabId = listOf("monthly", "annual")[index],
+                    stack = StackComponent(components = listOf(TextComponent(text = labelKey, color = textColor))),
+                )
+            }
+            fun tabsComponent(visible: Boolean) = TabsComponent(
+                visible = visible,
+                tabs = listOf("monthly", "annual").map { id ->
+                    TabsComponent.Tab(id = id, stack = StackComponent(components = listOf(TabControlComponent)))
+                },
+                control = TabsComponent.TabControl.Buttons(stack = StackComponent(components = tabControlButtons)),
+                defaultTabId = "monthly",
+                stateUpdates = listOf(StateUpdate.Set(stateKey, StateUpdateValue.PayloadReference)),
+            )
+            val visibleTabs = tabsComponent(visible = true)
+            val data = PaywallComponentsData(
+                id = "paywall_id",
+                templateName = "template",
+                assetBaseURL = assetBaseURL,
+                componentsConfig = ComponentsConfig(
+                    base = PaywallComponentsConfig(
+                        stack = StackComponent(components = listOf(visibleTabs)),
+                        background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                        stickyFooter = null,
+                    ),
+                ),
+                componentsLocalizations = localizations,
+                defaultLocaleIdentifier = localeId,
+                stateDeclarations = mapOf(
+                    stateKey to StateDeclaration(type = StateDeclaration.ValueType.STRING, defaultValue = JsonPrimitive("monthly")),
+                ),
+            )
+            val offering = Offering(
+                identifier = "offering-id",
+                serverDescription = "description",
+                metadata = emptyMap(),
+                availablePackages = listOf(TestData.Packages.monthly),
+                paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+            )
+            val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+            val state = offering.toComponentsPaywallState(validated)
+            val styleFactory = StyleFactory(localizations = localizations, offering = offering)
+            val visibleStyle = styleFactory.create(visibleTabs).getOrThrow().componentStyle as TabsComponentStyle
+            val hiddenStyle =
+                styleFactory.create(tabsComponent(visible = false)).getOrThrow().componentStyle as TabsComponentStyle
+
+            // Toggle visibility at the same call site so the composable stays mounted (only its internal
+            // visibility gate flips), reproducing a hidden -> visible transition rather than a full remount.
+            val visible = mutableStateOf(true)
+            setContent {
+                TabsComponentView(
+                    style = if (visible.value) visibleStyle else hiddenStyle,
+                    state = state,
+                    clickHandler = { },
+                )
+            }
+            waitForIdle()
+
+            // Another component sets the key to a value no tab would ever publish.
+            state.stateStore.applyUpdates(
+                listOf(StateUpdate.Set(stateKey, StateUpdateValue.PayloadReference)),
+                payload = JsonPrimitive("external"),
+            )
+            waitForIdle()
+            assertThat(state.stateStore.currentValueOrDefault(stateKey)).isEqualTo(JsonPrimitive("external"))
+
+            visible.value = false
+            waitForIdle()
+            visible.value = true
+            waitForIdle()
+
+            // Selection never changed, so becoming visible again must not republish and overwrite "external".
+            assertThat(state.stateStore.currentValueOrDefault(stateKey)).isEqualTo(JsonPrimitive("external"))
+        }
 }
