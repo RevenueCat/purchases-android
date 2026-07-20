@@ -8,11 +8,7 @@ import androidx.annotation.MainThread
 import androidx.annotation.VisibleForTesting
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
-import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewController
-import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessageHandler
-import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
-import com.revenuecat.purchases.ui.revenuecatui.toJsonObject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -53,13 +49,12 @@ internal class WebViewJavaScriptBridge(
     private val componentId: String,
     expectedUrl: String,
     locale: String,
-    messageHandler: PaywallWebViewMessageHandler?,
     private val sizeToContentWidth: Boolean = false,
     private val sizeToContentHeight: Boolean = false,
     private val onContentResize: (widthCssPx: Int?, heightCssPx: Int?) -> Unit = { _, _ -> },
     private val onDocumentReset: () -> Unit = {},
     private val onSecureMessagingUnsupported: () -> Unit = {},
-) : PaywallWebViewController {
+) {
 
     private val webViewRef = WeakReference(webView)
     private val expectedOrigin: String? = expectedUrl.toOriginOrNull()
@@ -72,8 +67,6 @@ internal class WebViewJavaScriptBridge(
 
     // Refreshed from the latest paywall state on every recomposition via update().
     private var locale: String = locale
-
-    private var messageHandler: PaywallWebViewMessageHandler? = messageHandler
 
     private var released: Boolean = false
 
@@ -134,15 +127,12 @@ internal class WebViewJavaScriptBridge(
     }
 
     /**
-     * Refreshes the locale and the app message handler from the latest paywall state. Call from
-     * `AndroidView`'s update block.
+     * Refreshes the locale from the latest paywall state. Call from `AndroidView`'s update block.
      */
     fun update(
         locale: String,
-        messageHandler: PaywallWebViewMessageHandler?,
     ) {
         this.locale = locale
-        this.messageHandler = messageHandler
     }
 
     /**
@@ -269,39 +259,42 @@ internal class WebViewJavaScriptBridge(
             return
         }
 
-        // `resize` is SDK-internal regardless of kind; it never reaches the app handler.
+        if (envelope.componentId != componentId) {
+            Logger.w("Dropping web view message: 'component_id' does not match the rendered web_view.")
+            return
+        }
+
+        // `resize` is SDK-internal; it drives content-fit sizing.
         if (envelope.type == WebViewMessageType.RESIZE) {
             handleResize(envelope)
             return
         }
 
-        val parsed = WebViewMessageParser.parse(
-            envelope = envelope,
-            expectedComponentId = componentId,
-        ) ?: return
-
-        val message = parsed.message
-
-        if (message.type == WebViewMessageType.REQUEST_VARIABLES) {
-            val variables = PaywallWebViewVariablesProvider.sdkManagedVariables(locale = locale)
-            val requestId = parsed.requestId
-            if (requestId != null) {
-                deliverEnvelope(
-                    WebViewEnvelope.build(
-                        kind = WebViewEnvelope.KIND_RESPONSE,
-                        protocolVersion = protocolVersion,
-                        componentId = componentId,
-                        type = parsed.requestType,
-                        id = requestId,
-                        payload = variables.toJsonObject(),
-                    ),
-                )
-            } else {
-                postVariablesMessage(componentId = componentId, variables = variables)
-            }
+        // The variables request is the only app frame the SDK services. Everything else is ignored:
+        // v1 ships without an app-facing message handler.
+        if (envelope.type == WebViewMessageType.REQUEST_VARIABLES) {
+            replyWithVariables(envelope)
         }
+    }
 
-        messageHandler?.onMessage(message, this)
+    @MainThread
+    private fun replyWithVariables(envelope: WebViewEnvelope.Parsed) {
+        val variables = PaywallWebViewVariablesProvider.sdkManagedVariables(locale = locale)
+        val requestId = if (envelope.kind == WebViewEnvelope.KIND_REQUEST) envelope.id else null
+        if (requestId != null) {
+            deliverEnvelope(
+                WebViewEnvelope.build(
+                    kind = WebViewEnvelope.KIND_RESPONSE,
+                    protocolVersion = protocolVersion,
+                    componentId = componentId,
+                    type = envelope.type,
+                    id = requestId,
+                    payload = JSONObject(variables),
+                ),
+            )
+        } else {
+            postVariablesMessage(componentId = componentId, variables = variables)
+        }
     }
 
     @MainThread
@@ -338,26 +331,11 @@ internal class WebViewJavaScriptBridge(
         return reported
     }
 
-    override fun postVariables(componentId: String, variables: Map<String, PaywallWebViewValue>) {
-        postVariablesMessage(
-            componentId = componentId,
-            variables = PaywallWebViewVariablesProvider.sanitizeAppProvidedVariables(variables),
-        )
-    }
-
-    override fun postMessage(componentId: String, type: String, variables: Map<String, PaywallWebViewValue>) {
-        postAppMessage(
-            componentId = componentId,
-            type = type,
-            payload = variables.toJsonObject(),
-        )
-    }
-
-    private fun postVariablesMessage(componentId: String, variables: Map<String, PaywallWebViewValue>) {
+    private fun postVariablesMessage(componentId: String, variables: Map<String, String>) {
         postAppMessage(
             componentId = componentId,
             type = WebViewMessageType.VARIABLES,
-            payload = variables.toJsonObject(),
+            payload = JSONObject(variables),
         )
     }
 
