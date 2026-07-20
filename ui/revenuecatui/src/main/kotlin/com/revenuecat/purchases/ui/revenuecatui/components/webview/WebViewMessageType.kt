@@ -21,9 +21,8 @@ internal object WebViewMessageType {
 }
 
 /**
- * Field names used in the flat message envelope. The envelope is intentionally flat: message-specific
- * fields such as [RESPONSES], [ERROR] and [VARIABLES] live at the top level rather than under a
- * generic `payload` key.
+ * Field names used in the transport envelope parsed by [WebViewEnvelope]. Application data lives under
+ * [PAYLOAD]; [ERROR] is used on `error` / `reject` frames.
  */
 internal object WebViewMessageField {
     const val CHANNEL = "channel"
@@ -33,7 +32,5 @@ internal object WebViewMessageField {
     const val COMPONENT_ID = "component_id"
     const val ID = "id"
     const val PAYLOAD = "payload"
-    const val RESPONSES = "responses"
     const val ERROR = "error"
-    const val VARIABLES = "variables"
 }
