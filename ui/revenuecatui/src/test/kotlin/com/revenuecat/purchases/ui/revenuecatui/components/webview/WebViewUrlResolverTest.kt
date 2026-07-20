@@ -44,6 +44,13 @@ class WebViewUrlResolverTest {
     }
 
     @Test
+    fun `resolves https url with uppercase scheme`() {
+        val result = WebViewUrlResolver.resolve("HTTPS://paywalls.revenuecat.com/index.html")
+
+        assertThat(result).isEqualTo("HTTPS://paywalls.revenuecat.com/index.html")
+    }
+
+    @Test
     fun `returns null for non https url`() {
         val result = WebViewUrlResolver.resolve("http://paywalls.revenuecat.com/index.html")
 
