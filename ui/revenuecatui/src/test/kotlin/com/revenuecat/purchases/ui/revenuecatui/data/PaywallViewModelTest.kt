@@ -34,6 +34,9 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
+import com.revenuecat.purchases.paywalls.components.common.StateUpdateValue
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
@@ -85,6 +88,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -1509,6 +1513,27 @@ class PaywallViewModelTest {
 
         coVerify(exactly = 1) { purchases.awaitGetWorkflow(any()) }
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+    }
+
+    @Test
+    fun `standalone state store is reused across a color-scheme refresh`() {
+        val model = create(offering = offeringWithWPL)
+        val initialState = model.state.value as PaywallState.Loaded.Components
+        initialState.stateStore.registerDeclarations(
+            mapOf("flag" to StateDeclaration(type = StateDeclaration.ValueType.BOOLEAN, defaultValue = JsonPrimitive(false))),
+        )
+        initialState.stateStore.applyUpdates(
+            listOf(StateUpdate.Set("flag", StateUpdateValue.Literal(JsonPrimitive(true)))),
+        )
+
+        model.refreshStateIfColorsChanged(
+            colorScheme = TestData.Constants.currentColorScheme.copy(primary = Color.Black),
+            isDark = true,
+        )
+
+        val refreshedState = model.state.value as PaywallState.Loaded.Components
+        assertThat(refreshedState.stateStore).isSameAs(initialState.stateStore)
+        assertThat(refreshedState.stateStore.currentValueOrDefault("flag")).isEqualTo(JsonPrimitive(true))
     }
 
     // region events

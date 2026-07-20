@@ -645,6 +645,25 @@ class PaywallViewModelWorkflowTest {
         ).isEqualTo("gold")
     }
 
+    @Test
+    fun `swapping workflow sessions before the previous prewarm starts does not pollute the new cache`() = runTest {
+        val vm = createVm()
+
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        val staleStore = (vm.state.value as PaywallState.Loaded.Components).stateStore
+
+        // A second session starts before the first session's prewarm job has run at all: cancel() marks the
+        // still-unscheduled job so its body (and any writes tied to staleStore) never executes.
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        val currentStore = (vm.state.value as PaywallState.Loaded.Components).stateStore
+        assertThat(currentStore).isNotSameAs(staleStore)
+
+        advanceUntilIdle()
+
+        val cachedStep2Store = vm.workflowState.value?.stepStates?.get("step-2")?.stateStore
+        assertThat(cachedStep2Store).isSameAs(currentStore)
+    }
+
     // endregion
 
     // region onTransitionComplete
