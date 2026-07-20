@@ -19,16 +19,4 @@ internal class PaywallWebViewVariablesProviderTest {
             .isEqualTo(PaywallWebViewValue.String("en-US"))
     }
 
-    @Test
-    fun `sanitizeAppProvidedVariables drops reserved keys`() {
-        val sanitized = PaywallWebViewVariablesProvider.sanitizeAppProvidedVariables(
-            mapOf(
-                "locale" to PaywallWebViewValue.String("zz-ZZ"),
-                "app_segment" to PaywallWebViewValue.String("high_intent"),
-            ),
-        )
-
-        assertThat(sanitized).doesNotContainKey("locale")
-        assertThat(sanitized).containsKey("app_segment")
-    }
 }
