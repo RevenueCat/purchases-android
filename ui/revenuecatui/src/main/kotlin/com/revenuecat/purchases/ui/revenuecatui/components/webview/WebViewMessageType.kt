@@ -7,12 +7,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components.webview
  * These mirror the shapes used by the web implementation and must not diverge.
  */
 internal object WebViewMessageType {
-    const val STEP_LOADED = "rc:step-loaded"
-    const val STEP_COMPLETE = "rc:step-complete"
-    const val REQUEST_VARIABLES = "rc:request-variables"
-    const val ERROR = "rc:error"
-    const val VARIABLES = "rc:variables"
-
     /** Host → content: which axes the native host sizes to the content (`fit`). */
     const val FIT = "fit"
 

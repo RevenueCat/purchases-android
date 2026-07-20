@@ -16,7 +16,7 @@ internal class WebViewEnvelopeTest {
         val parsed = WebViewEnvelope.parse(
             envelope(
                 kind = WebViewEnvelope.KIND_MESSAGE,
-                type = WebViewMessageType.STEP_LOADED,
+                type = WebViewMessageType.RESIZE,
             ),
         )
 
@@ -24,7 +24,7 @@ internal class WebViewEnvelopeTest {
         assertThat(parsed!!.kind).isEqualTo(WebViewEnvelope.KIND_MESSAGE)
         assertThat(parsed.protocolVersion).isEqualTo(1)
         assertThat(parsed.componentId).isEqualTo(componentId)
-        assertThat(parsed.type).isEqualTo(WebViewMessageType.STEP_LOADED)
+        assertThat(parsed.type).isEqualTo(WebViewMessageType.RESIZE)
         assertThat(parsed.id).isNull()
         assertThat(parsed.payload).isNull()
         assertThat(parsed.error).isNull()
@@ -35,7 +35,7 @@ internal class WebViewEnvelopeTest {
         val parsed = WebViewEnvelope.parse(
             envelope(
                 kind = WebViewEnvelope.KIND_REQUEST,
-                type = WebViewMessageType.REQUEST_VARIABLES,
+                type = WebViewMessageType.RESIZE,
                 id = "req-1",
                 payload = """{"responses":{"selected_plan":"annual"}}""",
             ),
@@ -200,7 +200,7 @@ internal class WebViewEnvelopeTest {
             kind = WebViewEnvelope.KIND_RESPONSE,
             protocolVersion = WebViewEnvelope.DEFAULT_PROTOCOL_VERSION,
             componentId = componentId,
-            type = WebViewMessageType.VARIABLES,
+            type = WebViewMessageType.RESIZE,
             id = "req-1",
             payload = payload,
             error = "boom",
@@ -211,7 +211,7 @@ internal class WebViewEnvelopeTest {
             .isEqualTo(WebViewEnvelope.DEFAULT_PROTOCOL_VERSION)
         assertThat(json.getString(WebViewMessageField.KIND)).isEqualTo(WebViewEnvelope.KIND_RESPONSE)
         assertThat(json.getString(WebViewMessageField.COMPONENT_ID)).isEqualTo(componentId)
-        assertThat(json.getString(WebViewMessageField.TYPE)).isEqualTo(WebViewMessageType.VARIABLES)
+        assertThat(json.getString(WebViewMessageField.TYPE)).isEqualTo(WebViewMessageType.RESIZE)
         assertThat(json.getString(WebViewMessageField.ID)).isEqualTo("req-1")
         assertThat(json.getJSONObject(WebViewMessageField.PAYLOAD).toString())
             .isEqualTo(payload.toString())
