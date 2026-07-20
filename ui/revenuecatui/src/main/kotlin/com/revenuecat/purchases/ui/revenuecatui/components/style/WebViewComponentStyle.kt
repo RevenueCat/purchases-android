@@ -11,9 +11,8 @@ internal data class WebViewComponentStyle(
     override val visible: Boolean,
     override val size: Size,
     /**
-     * The canonical component id from the schema (`web_view.id`), used to scope bidirectional
-     * messages. May be null for legacy/partial configs that omit it, in which case the message bridge
-     * is not installed.
+     * The canonical component id from the schema (`web_view.id`), assigned to the content during the
+     * bridge handshake. Required to render; configs that omit it render nothing.
      */
     val componentId: String? = null,
     /**
