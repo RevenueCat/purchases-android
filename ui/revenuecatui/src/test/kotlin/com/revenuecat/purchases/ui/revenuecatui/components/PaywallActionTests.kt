@@ -262,6 +262,49 @@ class PaywallActionTests {
         assertEquals(1, viewModel.closePaywallCallCount)
     }
 
+    @Test
+    fun `LaunchWebCheckout with autoDismiss notifies listener and closes paywall`(): Unit =
+        with(composeTestRule) {
+            // Arrange
+            val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+            val defaultLocale = LocaleId("en_US")
+            val localizationKey = LocalizationKey("web_checkout")
+            val localizationData = LocalizationData.Text("web checkout")
+            val localizations = nonEmptyMapOf(
+                defaultLocale to nonEmptyMapOf(localizationKey to localizationData),
+            )
+            val components = listOf(
+                PurchaseButtonComponent(
+                    stack = StackComponent(
+                        components = listOf(TextComponent(text = localizationKey, color = textColor)),
+                    ),
+                    method = PurchaseButtonComponent.Method.WebCheckout(autoDismiss = true),
+                ),
+            )
+            val offering = FakeOffering(components, localizations)
+            val viewModel = MockViewModel(
+                offering = offering,
+                allowsPurchases = true,
+                webCheckoutUrl = "https://checkout.example.com",
+            )
+            val options = PaywallOptions.Builder(dismissRequest = {}).setOffering(offering).build()
+
+            // Act
+            setContent { InternalPaywall(options, viewModel) }
+            // Buttons appear once in main content and once in sticky footer
+            onAllNodesWithText(localizationData.value)
+                .assertCountEquals(2)
+                .get(0)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+            waitForIdle()
+
+            // Assert: listener notified once, paywall dismissed generically (no new result type)
+            assertEquals(1, viewModel.notifyWebCheckoutOpenedCallCount)
+            assertEquals(1, viewModel.closePaywallCallCount)
+        }
+
     @Suppress("TestFunctionName")
     private fun FakeOffering(data: PaywallComponentsData): Offering =
         Offering(

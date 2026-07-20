@@ -186,6 +186,10 @@ internal class PaywallActivity : ComponentActivity() {
                 userListener?.onRestoreError(error)
                 setResult(RESULT_OK, createResultIntent(PaywallResult.Error(error)))
             }
+
+            override fun onWebCheckoutOpened() {
+                userListener?.onWebCheckoutOpened()
+            }
         }
 
         val edgeToEdge = args?.edgeToEdge == true

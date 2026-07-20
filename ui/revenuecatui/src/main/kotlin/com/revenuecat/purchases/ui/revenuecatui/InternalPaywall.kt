@@ -395,6 +395,7 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                     } else {
                         viewModel.invalidateCustomerInfoCache()
                         context.handleUrlDestination(url, action.openMethod)
+                        viewModel.notifyWebCheckoutOpened()
                         if (action.autoDismiss) {
                             Logger.d("Auto-dismissing paywall after launching web checkout.")
                             viewModel.closePaywall()
