@@ -39,7 +39,6 @@ internal fun WebViewComponentView(
 
     val componentId = style.componentId
     val locale = state.locale.toLanguageTag()
-    val messageHandler = state.webViewMessageHandler
     val sizeToContentWidth = style.size.width is Fit
     val sizeToContentHeight = style.size.height is Fit
 
@@ -79,7 +78,6 @@ internal fun WebViewComponentView(
                                 componentId = id,
                                 expectedUrl = resolvedUrl,
                                 locale = locale,
-                                messageHandler = messageHandler,
                                 sizeToContentWidth = sizeToContentWidth,
                                 sizeToContentHeight = sizeToContentHeight,
                                 onContentResize = { widthCssPx, heightCssPx ->
@@ -115,7 +113,6 @@ internal fun WebViewComponentView(
                 update = {
                     bridgeHolder.bridge?.update(
                         locale = locale,
-                        messageHandler = messageHandler,
                     )
                 },
                 onRelease = { webView ->

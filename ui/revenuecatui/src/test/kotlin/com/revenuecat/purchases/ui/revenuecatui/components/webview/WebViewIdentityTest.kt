@@ -15,7 +15,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
-import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewMessageHandler
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -112,7 +111,6 @@ internal class WebViewIdentityTest {
             TestWebViewSlot(
                 identity = identity,
                 locale = "en-US",
-                messageHandler = null,
                 onCreated = { creations.add(it) },
                 onReleased = { releases.add(it) },
             )
@@ -143,7 +141,6 @@ internal class WebViewIdentityTest {
             TestWebViewSlot(
                 identity = identity,
                 locale = "en-US",
-                messageHandler = null,
                 onCreated = { creations.add(identity) },
                 onReleased = {},
             )
@@ -161,7 +158,7 @@ internal class WebViewIdentityTest {
     }
 
     @Test
-    fun `locale and handler only updates do not recreate the web view`() {
+    fun `locale only updates do not recreate the web view`() {
         val creations = mutableListOf<Int>()
         var identity by mutableStateOf(
             WebViewIdentity(
@@ -172,30 +169,24 @@ internal class WebViewIdentityTest {
             ),
         )
         var locale by mutableStateOf("en-US")
-        var handler by mutableStateOf<PaywallWebViewMessageHandler?>(null)
-        val updates = mutableListOf<Pair<String, PaywallWebViewMessageHandler?>>()
+        val updates = mutableListOf<String>()
 
         composeTestRule.setContent {
             TestWebViewSlot(
                 identity = identity,
                 locale = locale,
-                messageHandler = handler,
                 onCreated = { creations.add(creations.size) },
                 onReleased = {},
-                onUpdated = { loc, msg -> updates.add(loc to msg) },
+                onUpdated = { loc -> updates.add(loc) },
             )
         }
         composeTestRule.waitForIdle()
 
         locale = "fr-FR"
         composeTestRule.waitForIdle()
-        val newHandler = PaywallWebViewMessageHandler { _, _ -> }
-        handler = newHandler
-        composeTestRule.waitForIdle()
 
         assertThat(creations).hasSize(1)
-        assertThat(updates.map { it.first }).contains("fr-FR")
-        assertThat(updates.map { it.second }).contains(newHandler)
+        assertThat(updates).contains("fr-FR")
     }
 
     @Test
@@ -215,7 +206,6 @@ internal class WebViewIdentityTest {
             TestWebViewSlot(
                 identity = identity,
                 locale = "en-US",
-                messageHandler = null,
                 onCreated = {},
                 onReleased = {},
                 onBridgeCreated = { liveBridges.add(it) },
@@ -273,10 +263,9 @@ internal class WebViewIdentityTest {
 private fun TestWebViewSlot(
     identity: WebViewIdentity,
     locale: String,
-    messageHandler: PaywallWebViewMessageHandler?,
     onCreated: (String?) -> Unit,
     onReleased: (String?) -> Unit,
-    onUpdated: (String, PaywallWebViewMessageHandler?) -> Unit = { _, _ -> },
+    onUpdated: (String) -> Unit = { },
     onBridgeCreated: (WebViewJavaScriptBridge) -> Unit = {},
     onBridgeReleased: (WebViewJavaScriptBridge) -> Unit = {},
 ) {
@@ -292,7 +281,6 @@ private fun TestWebViewSlot(
                             componentId = id,
                             expectedUrl = identity.resolvedUrl,
                             locale = locale,
-                            messageHandler = messageHandler,
                             sizeToContentWidth = identity.sizeToContentWidth,
                             sizeToContentHeight = identity.sizeToContentHeight,
                         ).also { created ->
@@ -305,8 +293,8 @@ private fun TestWebViewSlot(
                 }
             },
             update = {
-                bridgeHolder.bridge?.update(locale = locale, messageHandler = messageHandler)
-                onUpdated(locale, messageHandler)
+                bridgeHolder.bridge?.update(locale = locale)
+                onUpdated(locale)
             },
             onRelease = { webView ->
                 val bridge = bridgeHolder.bridge
