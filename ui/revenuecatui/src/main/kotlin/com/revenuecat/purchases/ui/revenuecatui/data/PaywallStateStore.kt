@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap
 internal class PaywallStateStore(declarations: Map<String, StateDeclaration>) {
 
     private val declaredTypes = ConcurrentHashMap<String, StateDeclaration.ValueType>()
-    private val declaredDefaults = mutableStateMapOf<String, JsonPrimitive>()
+    private val declaredDefaults = ConcurrentHashMap<String, JsonPrimitive>()
 
     // Per-key MutableState so mutating one key doesn't invalidate derivedStateOf blocks reading other keys.
     private val currentValues = mutableStateMapOf<String, MutableState<JsonPrimitive>>()
@@ -38,7 +38,7 @@ internal class PaywallStateStore(declarations: Map<String, StateDeclaration>) {
     @Synchronized
     fun registerDeclarations(declarations: Map<String, StateDeclaration>) {
         declarations.forEach { (key, declaration) ->
-            if (key !in declaredDefaults) {
+            if (!declaredDefaults.containsKey(key)) {
                 declaredTypes[key] = declaration.type
                 declaredDefaults[key] = declaration.defaultValue
                 currentValues[key] = mutableStateOf(declaration.defaultValue)
