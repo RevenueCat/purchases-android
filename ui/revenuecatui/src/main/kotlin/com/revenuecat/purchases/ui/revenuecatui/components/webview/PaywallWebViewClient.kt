@@ -30,8 +30,14 @@ internal class PaywallWebViewClient(
         onMainFrameLoadFailed()
     }
 
+    @Suppress("ReturnCount")
     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
         super.onPageStarted(view, url, favicon)
+        // Terminal failure is one-shot: once failed, suppress any later document-start signals.
+        if (failed) return
+        // about:blank and other host-less / null documents are not paywall loads; ignore them
+        // instead of treating them as a blocked navigation (which would fire a false failure).
+        if (url?.toOriginOrNull() == null) return
         // shouldOverrideUrlLoading is not called for POST navigations, so re-check the policy
         // here and kill any main-frame load that slipped through (cross-origin / non-HTTPS).
         if (shouldBlockWebViewNavigation(

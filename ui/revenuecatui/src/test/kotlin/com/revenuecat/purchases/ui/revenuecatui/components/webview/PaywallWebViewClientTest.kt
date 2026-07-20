@@ -83,6 +83,37 @@ internal class PaywallWebViewClientTest {
     }
 
     @Test
+    fun `onPageStarted ignores about blank without failing`() {
+        client.onPageStarted(webView, "about:blank", null)
+
+        assertThat(navigations).isEmpty()
+        assertThat(webView.stopLoadingCount).isEqualTo(0)
+        assertThat(failureCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `onPageStarted ignores a null url without failing`() {
+        client.onPageStarted(webView, null, null)
+
+        assertThat(navigations).isEmpty()
+        assertThat(webView.stopLoadingCount).isEqualTo(0)
+        assertThat(failureCount).isEqualTo(0)
+    }
+
+    @Test
+    fun `onPageStarted suppresses document start after a terminal failure`() {
+        val request = mockk<WebResourceRequest>()
+        every { request.isForMainFrame } returns true
+        client.onReceivedError(webView, request, mockk(relaxed = true))
+        assertThat(failureCount).isEqualTo(1)
+
+        client.onPageStarted(webView, "https://assets.example.com/promo/index.html", null)
+
+        assertThat(navigations).isEmpty()
+        assertThat(failureCount).isEqualTo(1)
+    }
+
+    @Test
     fun `onRenderProcessGone returns true and activates failure once`() {
         val detail = mockk<RenderProcessGoneDetail>(relaxed = true)
 
