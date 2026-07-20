@@ -34,4 +34,16 @@ public class WebViewComponent(
     public val protocolVersion: Int,
     @get:JvmSynthetic
     public val size: Size,
-) : PaywallComponent
+) : PaywallComponent {
+
+    public companion object {
+        /**
+         * The host<->component bridge protocol version this SDK implements. A config declaring any
+         * other version is treated as an unrecognized component (rendered via its `fallback`). This is
+         * the single source of truth: `WebViewEnvelope.DEFAULT_PROTOCOL_VERSION` in `:ui:revenuecatui`
+         * derives from it, so the schema gate and the runtime handshake can never disagree.
+         */
+        @InternalRevenueCatAPI
+        public const val SUPPORTED_PROTOCOL_VERSION: Int = 1
+    }
+}
