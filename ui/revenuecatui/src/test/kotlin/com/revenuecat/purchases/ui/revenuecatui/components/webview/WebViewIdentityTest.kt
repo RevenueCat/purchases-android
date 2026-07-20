@@ -110,7 +110,6 @@ internal class WebViewIdentityTest {
         composeTestRule.setContent {
             TestWebViewSlot(
                 identity = identity,
-                locale = "en-US",
                 onCreated = { creations.add(it) },
                 onReleased = { releases.add(it) },
             )
@@ -140,7 +139,6 @@ internal class WebViewIdentityTest {
         composeTestRule.setContent {
             TestWebViewSlot(
                 identity = identity,
-                locale = "en-US",
                 onCreated = { creations.add(identity) },
                 onReleased = {},
             )
@@ -155,38 +153,6 @@ internal class WebViewIdentityTest {
         assertThat(creations).hasSize(3)
         assertThat(creations[1].sizeToContentWidth).isTrue()
         assertThat(creations[2].sizeToContentHeight).isTrue()
-    }
-
-    @Test
-    fun `locale only updates do not recreate the web view`() {
-        val creations = mutableListOf<Int>()
-        var identity by mutableStateOf(
-            WebViewIdentity(
-                resolvedUrl = "https://assets.example.com/a.html",
-                componentId = "one",
-                sizeToContentWidth = false,
-                sizeToContentHeight = false,
-            ),
-        )
-        var locale by mutableStateOf("en-US")
-        val updates = mutableListOf<String>()
-
-        composeTestRule.setContent {
-            TestWebViewSlot(
-                identity = identity,
-                locale = locale,
-                onCreated = { creations.add(creations.size) },
-                onReleased = {},
-                onUpdated = { loc -> updates.add(loc) },
-            )
-        }
-        composeTestRule.waitForIdle()
-
-        locale = "fr-FR"
-        composeTestRule.waitForIdle()
-
-        assertThat(creations).hasSize(1)
-        assertThat(updates).contains("fr-FR")
     }
 
     @Test
@@ -205,7 +171,6 @@ internal class WebViewIdentityTest {
         composeTestRule.setContent {
             TestWebViewSlot(
                 identity = identity,
-                locale = "en-US",
                 onCreated = {},
                 onReleased = {},
                 onBridgeCreated = { liveBridges.add(it) },
@@ -262,10 +227,8 @@ internal class WebViewIdentityTest {
 @Composable
 private fun TestWebViewSlot(
     identity: WebViewIdentity,
-    locale: String,
     onCreated: (String?) -> Unit,
     onReleased: (String?) -> Unit,
-    onUpdated: (String) -> Unit = { },
     onBridgeCreated: (WebViewJavaScriptBridge) -> Unit = {},
     onBridgeReleased: (WebViewJavaScriptBridge) -> Unit = {},
 ) {
@@ -280,7 +243,6 @@ private fun TestWebViewSlot(
                             webView = this,
                             componentId = id,
                             expectedUrl = identity.resolvedUrl,
-                            locale = locale,
                             sizeToContentWidth = identity.sizeToContentWidth,
                             sizeToContentHeight = identity.sizeToContentHeight,
                         ).also { created ->
@@ -291,10 +253,6 @@ private fun TestWebViewSlot(
                     bridgeHolder.bridge = bridge
                     onCreated(identity.componentId)
                 }
-            },
-            update = {
-                bridgeHolder.bridge?.update(locale = locale)
-                onUpdated(locale)
             },
             onRelease = { webView ->
                 val bridge = bridgeHolder.bridge
