@@ -2,8 +2,6 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
-import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue
-
 /**
  * Builds the `variables` payload sent to a `web_view` component in response to `rc:request-variables`.
  *
@@ -27,7 +25,7 @@ internal object PaywallWebViewVariablesProvider {
      */
     fun sdkManagedVariables(
         locale: String,
-    ): Map<String, PaywallWebViewValue> = linkedMapOf(
-        KEY_LOCALE to PaywallWebViewValue.String(locale),
+    ): Map<String, String> = mapOf(
+        KEY_LOCALE to locale,
     )
 }

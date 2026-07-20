@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
-import com.revenuecat.purchases.ui.revenuecatui.PaywallWebViewValue
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -15,8 +14,6 @@ internal class PaywallWebViewVariablesProviderTest {
 
         // Only the locale system variable is exposed; nothing else is passed across the bridge in v1.
         assertThat(variables).hasSize(1)
-        assertThat(variables[PaywallWebViewVariablesProvider.KEY_LOCALE])
-            .isEqualTo(PaywallWebViewValue.String("en-US"))
+        assertThat(variables[PaywallWebViewVariablesProvider.KEY_LOCALE]).isEqualTo("en-US")
     }
-
 }
