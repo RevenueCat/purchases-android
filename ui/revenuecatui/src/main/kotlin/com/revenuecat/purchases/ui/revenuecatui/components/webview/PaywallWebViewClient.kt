@@ -33,13 +33,13 @@ internal class PaywallWebViewClient(
     @Suppress("ReturnCount")
     override fun onPageStarted(view: WebView, url: String?, favicon: Bitmap?) {
         super.onPageStarted(view, url, favicon)
-        // Terminal failure is one-shot: once failed, suppress any later document-start signals.
+        // Once failed, emit no further document-start signals.
         if (failed) return
-        // about:blank and other host-less / null documents are not paywall loads; ignore them
-        // instead of treating them as a blocked navigation (which would fire a false failure).
+        // about:blank / host-less documents aren't paywall loads; ignore them (shouldBlock would
+        // otherwise treat them as a failure).
         if (url?.toOriginOrNull() == null) return
-        // shouldOverrideUrlLoading is not called for POST navigations, so re-check the policy
-        // here and kill any main-frame load that slipped through (cross-origin / non-HTTPS).
+        // POST navigations skip shouldOverrideUrlLoading; re-check here to kill any main-frame load
+        // that slipped through.
         if (shouldBlockWebViewNavigation(
                 url = url,
                 isMainFrame = true,
@@ -50,7 +50,6 @@ internal class PaywallWebViewClient(
             markFailed()
             return
         }
-        // onPageStarted is main-frame only and marks a new JavaScript document.
         onMainFrameNavigationStarted(url)
     }
 
@@ -84,8 +83,7 @@ internal class PaywallWebViewClient(
 
     override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
         markFailed()
-        // Returning true tells the platform we handled the dead renderer; the dead WebView must not
-        // be reused. Composition removes it via the failure path + AndroidView.onRelease.
+        // true = handled; the dead WebView must not be reused (removed via the failure path).
         return true
     }
 }

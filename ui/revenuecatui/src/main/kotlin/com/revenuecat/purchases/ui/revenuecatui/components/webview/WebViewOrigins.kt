@@ -24,17 +24,11 @@ internal fun String.toOriginOrNull(): String? {
 internal fun Uri.toOriginOrNull(): String? {
     val scheme = scheme?.lowercase(Locale.US) ?: return null
     val host = host?.takeIf { it.isNotBlank() }?.lowercase(Locale.US) ?: return null
-    val effectivePort = when {
-        port != -1 -> port
-        scheme == "https" -> 443
-        scheme == "http" -> 80
-        else -> -1
-    }
     val portSuffix = when {
-        effectivePort == -1 -> ""
-        scheme == "https" && effectivePort == 443 -> ""
-        scheme == "http" && effectivePort == 80 -> ""
-        else -> ":$effectivePort"
+        port == -1 -> ""
+        scheme == "https" && port == 443 -> ""
+        scheme == "http" && port == 80 -> ""
+        else -> ":$port"
     }
     return "$scheme://$host$portSuffix"
 }
