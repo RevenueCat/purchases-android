@@ -10,7 +10,6 @@ import kotlinx.serialization.descriptors.buildClassSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
-import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -61,16 +60,12 @@ internal class PaywallComponentSerializer : KSerializer<PaywallComponent> {
             "video" -> jsonDecoder.json.decodeFromJsonElement<VideoComponent>(json)
             "countdown" -> jsonDecoder.json.decodeFromJsonElement<CountdownComponent>(json)
             "web_view" -> {
-                // Gate on the raw protocol_version BEFORE decoding, so an unsupported (and possibly
-                // forward-incompatible) version falls back like an unrecognized component instead of
-                // failing to decode against today's schema. The backend also rejects
-                // protocol_version != 1 at publish time; this is client-side defense in depth.
-                val versionElement = json["protocol_version"]
-                val declaredVersion = (versionElement as? JsonPrimitive)?.intOrNull
-                val versionSupported = versionElement == null ||
-                    versionElement is JsonNull ||
-                    declaredVersion == WebViewComponent.SUPPORTED_PROTOCOL_VERSION
-                if (versionSupported) {
+                // protocol_version is required; gate on the raw value BEFORE decoding so an absent,
+                // malformed, or unsupported (forward-incompatible) version falls back like an
+                // unrecognized component instead of failing to decode. The backend also guarantees
+                // protocol_version == 1 at publish time; this is client-side defense in depth.
+                val declaredVersion = (json["protocol_version"] as? JsonPrimitive)?.intOrNull
+                if (declaredVersion == WebViewComponent.SUPPORTED_PROTOCOL_VERSION) {
                     jsonDecoder.json.decodeFromJsonElement<WebViewComponent>(json)
                 } else {
                     decodeFallback(
