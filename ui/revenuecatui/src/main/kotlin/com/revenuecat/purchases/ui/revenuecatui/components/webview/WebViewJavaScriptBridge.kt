@@ -19,30 +19,15 @@ import java.lang.ref.WeakReference
 import kotlin.math.abs
 
 /**
- * Installs and drives the bidirectional bridge between a Paywalls V2 `web_view` component and native
- * code. One bridge is created per rendered `web_view`.
+ * Bidirectional bridge between a Paywalls V2 `web_view` component and native code, one per rendered
+ * `web_view`. Implements the `workflow-web-components-sdk` host contract on the `rc-web-components`
+ * channel: JS→native via [WebViewCompat.addWebMessageListener], native→JS via
+ * `window.__rcWebComponentsReceive` ([WebView.evaluateJavascript]).
  *
- * ## Transport
- * Implements the native Android host contract from `workflow-web-components-sdk`:
- * - JS → native: `rcWebComponents.postMessage(jsonString)` via [WebViewCompat.addWebMessageListener]
- * - native → JS: `window.__rcWebComponentsReceive(data)` via [WebView.evaluateJavascript]
- * - Wire format: `{ channel: "rc-web-components", kind, protocol_version, component_id, … }`
- *
- * Inbound frames are validated against the message listener's `sourceOrigin` and `isMainFrame` —
- * the WebView's top-level URL alone is not sufficient (same-origin subframes and navigation races).
- *
- * ## Document lifecycle
- * Each main-frame navigation creates a new JavaScript document that must re-handshake. Call
- * [onMainFrameNavigationStarted] from `WebViewClient.onPageStarted` so a fresh `connect` is accepted
- * and work queued for the previous document's [documentScope] is cancelled.
- *
- * ## Lifecycle & threading
- * The bridge holds only a [WeakReference] to the [WebView] (no Activity/Context), and stops delivering
- * messages once [release] is called. All main-thread work for the current JavaScript document runs on
- * a per-document [CoroutineScope] (`Dispatchers.Main.immediate`); that scope is cancelled and replaced
- * on every main-frame navigation and cancelled permanently on [release], so work queued for a dead
- * document or a released bridge never runs. App callbacks and all WebView interactions happen on the
- * main thread.
+ * Inbound frames are trusted by the listener's `sourceOrigin` + `isMainFrame`, not the top-level URL.
+ * Each main-frame navigation is a new document that must re-handshake: [onMainFrameNavigationStarted]
+ * (from `WebViewClient.onPageStarted`) resets state and cancels the previous [documentScope]. The
+ * bridge holds only a [WeakReference] to the [WebView] and goes inert after [release]. Main thread only.
  */
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class WebViewJavaScriptBridge(
@@ -59,10 +44,8 @@ internal class WebViewJavaScriptBridge(
     private val webViewRef = WeakReference(webView)
     private val expectedOrigin: String? = expectedUrl.toOriginOrNull()
 
-    // The single protocol version this SDK build implements. Deliberately NOT the schema's
-    // `protocol_version`: the envelope version is the wire+SDK major the CONTENT speaks, and the
-    // host must never accept a handshake for a version it cannot service, even if a future schema
-    // declares one.
+    // The version this SDK build implements — deliberately NOT the schema's `protocol_version`:
+    // never accept a handshake for a version we can't service.
     private val protocolVersion: Int = WebViewEnvelope.DEFAULT_PROTOCOL_VERSION
 
     private var released: Boolean = false
@@ -71,21 +54,13 @@ internal class WebViewJavaScriptBridge(
 
     private var messageListenerInstalled: Boolean = false
 
-    // Deliberately no CoroutineExceptionHandler: uncaught exceptions should crash like the old
-    // Handler.post path — do not swallow bugs in a security-sensitive path.
+    // No CoroutineExceptionHandler on purpose: don't swallow bugs in a security-sensitive path.
     private fun newDocumentScope(): CoroutineScope =
         CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
-    /**
-     * Scope for all main-thread work belonging to the CURRENT JavaScript document.
-     * Cancelled and replaced on every main-frame navigation (see
-     * [onMainFrameNavigationStarted]) and cancelled permanently on [release] —
-     * cancellation is what guarantees that work queued for a dead document or a
-     * released bridge never runs.
-     */
+    /** Work for the current JS document; cancelled+replaced on navigation and on [release]. */
     private var documentScope: CoroutineScope = newDocumentScope()
 
-    // Last content sizes applied per fit axis (main thread only), for the resize apply-threshold.
     private var lastAppliedWidthCssPx: Int? = null
     private var lastAppliedHeightCssPx: Int? = null
 
@@ -102,9 +77,8 @@ internal class WebViewJavaScriptBridge(
     }
 
     /**
-     * Registers the secure message listener on the WebView. Call once, when the WebView is created.
-     * If [WebViewFeature.WEB_MESSAGE_LISTENER] is unavailable, invokes [onSecureMessagingUnsupported]
-     * so the host can take the terminal failure path.
+     * Registers the secure message listener. Call once on WebView creation. Falls back to
+     * [onSecureMessagingUnsupported] when [WebViewFeature.WEB_MESSAGE_LISTENER] is missing.
      */
     @MainThread
     fun attach() {
@@ -124,9 +98,8 @@ internal class WebViewJavaScriptBridge(
     }
 
     /**
-     * Marks the start of a new main-frame JavaScript document (initial load, same-origin
-     * navigation, or reload). Resets the handshake and fit/resize threshold state so the new
-     * document can `connect` again.
+     * Starts a new main-frame document (load, same-origin nav, or reload): resets handshake and
+     * resize state so it can `connect` again.
      */
     @MainThread
     @Suppress("UnusedParameter")
@@ -140,10 +113,7 @@ internal class WebViewJavaScriptBridge(
         onDocumentReset()
     }
 
-    /**
-     * Stops the bridge. After this call no further inbound messages are delivered and no outbound
-     * messages are sent. Call from `AndroidView`'s onRelease block.
-     */
+    /** Stops the bridge: no further inbound/outbound messages. Call from `AndroidView` onRelease. */
     @MainThread
     fun release() {
         released = true
@@ -156,9 +126,6 @@ internal class WebViewJavaScriptBridge(
         }
     }
 
-    /**
-     * Processes an inbound transport frame. Production traffic arrives via [webMessageListener].
-     */
     @MainThread
     @Suppress("ReturnCount")
     private fun handleInboundMessage(
@@ -226,8 +193,7 @@ internal class WebViewJavaScriptBridge(
             if (sizeToContentWidth) put("width", true)
             if (sizeToContentHeight) put("height", true)
         }
-        // Part of the handshake (sent immediately after init), so it shares init's
-        // allow-before-navigation exception; see [deliverEnvelope].
+        // Handshake frame (sent right after init) → shares init's allow-before-navigation exception.
         deliverEnvelope(
             WebViewEnvelope.build(
                 kind = WebViewEnvelope.KIND_MESSAGE,
@@ -251,8 +217,7 @@ internal class WebViewJavaScriptBridge(
             return
         }
 
-        // `resize` is the only app frame the SDK services in v1; it drives content-fit sizing.
-        // Everything else is ignored (no app-facing message handler, no variables).
+        // resize is the only app frame serviced in v1 (no message handler, no variables).
         if (envelope.type == WebViewMessageType.RESIZE) {
             handleResize(envelope)
         }
@@ -278,10 +243,8 @@ internal class WebViewJavaScriptBridge(
     }
 
     /**
-     * Returns the value to apply for one axis, or `null` when there is nothing new to apply:
-     * missing/invalid report, non-fit axis, or a change smaller than [RESIZE_APPLY_THRESHOLD_CSS_PX]
-     * against the last applied value (guards report/apply feedback loops — HTML content's reported
-     * width often just echoes the imposed viewport width).
+     * New value to apply for one axis, or `null` when unchanged within
+     * [RESIZE_APPLY_THRESHOLD_CSS_PX] — guards resize report/apply feedback loops.
      */
     @Suppress("ReturnCount")
     private fun applyResize(reported: Int?, lastApplied: Int?): Int? {
@@ -294,15 +257,13 @@ internal class WebViewJavaScriptBridge(
 
     /**
      * Delivers a host-to-content frame. [allowBeforeNavigation] relaxes the outbound origin check for
-     * handshake replies (`init` / `reject` / the follow-up `fit`): those are triggered by a `connect`
-     * already gated on the authoritative sender-frame origin, but the WebView's top-level `url` may
-     * not be populated that early. Every later (post-handshake) send must pass `false`.
+     * handshake replies (`init`/`reject`/`fit`), whose triggering `connect` was already origin-gated
+     * but may arrive before the top-level `url` is populated. Post-handshake sends must pass `false`.
      */
     private fun deliverEnvelope(envelope: JSONObject, allowBeforeNavigation: Boolean) {
         documentScope.launch {
             val webView = webViewRef.get() ?: return@launch
-            // Defense in depth: drop outbound work if the top-level URL left the expected origin
-            // (e.g. after a policy hole). Inbound validation uses sourceOrigin separately.
+            // Defense in depth: drop outbound work if the top-level URL left the expected origin.
             if (!isCurrentUrlTrusted(webView, allowBeforeNavigation = allowBeforeNavigation)) {
                 Logger.w(
                     "Dropping outbound web view message: current origin does not match the " +
@@ -320,10 +281,7 @@ internal class WebViewJavaScriptBridge(
         }
     }
 
-    /**
-     * Whether [sourceOrigin] matches the resolved component origin and the frame is the main frame.
-     * Subframe messages are always rejected — isolation for those is expected from the server CSP.
-     */
+    /** Trusted iff the sender is the main frame on the resolved origin; subframes rely on server CSP. */
     @MainThread
     @Suppress("ReturnCount")
     private fun isSourceTrusted(sourceOrigin: Uri?, isMainFrame: Boolean): Boolean {
@@ -333,10 +291,7 @@ internal class WebViewJavaScriptBridge(
         return origin == expectedOrigin
     }
 
-    /**
-     * Whether the WebView's current top-level URL still has the expected origin. Used only as an
-     * outbound defense-in-depth check; inbound traffic is gated by [isSourceTrusted].
-     */
+    /** Outbound-only defense in depth: whether the top-level URL still has the expected origin. */
     @MainThread
     private fun isCurrentUrlTrusted(webView: WebView, allowBeforeNavigation: Boolean): Boolean {
         if (expectedOrigin == null) return false
@@ -355,9 +310,8 @@ internal class WebViewJavaScriptBridge(
         private const val RESIZE_APPLY_THRESHOLD_CSS_PX = 1
 
         /**
-         * A validated, clamped resize dimension, or `null` when absent, not a JSON number, non-finite,
-         * or not positive. Only genuine JSON numbers are accepted: a stringified `"300"` or a boolean
-         * is rejected rather than coerced.
+         * Clamped positive resize dimension, or `null` unless the value is a genuine finite JSON
+         * number (a stringified `"300"` or a boolean is rejected, not coerced).
          */
         @Suppress("ReturnCount")
         fun JSONObject.resizeDimension(key: String): Int? {
@@ -366,10 +320,7 @@ internal class WebViewJavaScriptBridge(
             return value.coerceAtMost(MAX_RESIZE_CSS_PX).toInt()
         }
 
-        /**
-         * JSON is a subset of JS object-literal syntax, but the U+2028/U+2029 separators are valid in
-         * JSON strings yet terminate JS statements. Escape them so the payload is safe to embed.
-         */
+        /** U+2028/U+2029 are valid in JSON strings but terminate JS statements; escape before embedding. */
         fun String.escapeForJavaScript(): String =
             replace("\u2028", "\\u2028").replace("\u2029", "\\u2029")
     }
