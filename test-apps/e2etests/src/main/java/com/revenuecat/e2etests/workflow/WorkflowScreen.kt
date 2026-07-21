@@ -26,6 +26,7 @@ import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -40,7 +41,10 @@ private sealed interface OfferingState {
 }
 
 @Composable
-fun WorkflowScreen(modifier: Modifier = Modifier) {
+fun WorkflowScreen(
+    modifier: Modifier = Modifier,
+    usersCountOverride: Int? = null,
+) {
     var offeringState by remember { mutableStateOf<OfferingState>(OfferingState.Loading) }
     var showPaywall by remember { mutableStateOf(false) }
     var customerInfo by remember { mutableStateOf<CustomerInfo?>(null) }
@@ -73,18 +77,10 @@ fun WorkflowScreen(modifier: Modifier = Modifier) {
 
     val loaded = offeringState
     if (showPaywall && loaded is OfferingState.Loaded) {
-        Paywall(
-            options = PaywallOptions.Builder(dismissRequest = { showPaywall = false })
-                .setOffering(loaded.offering)
-                .setListener(object : PaywallListener {
-                    override fun onPurchaseCompleted(
-                        customerInfo: CustomerInfo,
-                        storeTransaction: StoreTransaction,
-                    ) {
-                        showPaywall = false
-                    }
-                })
-                .build(),
+        WorkflowPaywall(
+            offering = loaded.offering,
+            usersCountOverride = usersCountOverride,
+            onDismiss = { showPaywall = false },
         )
         return
     }
@@ -111,6 +107,34 @@ fun WorkflowScreen(modifier: Modifier = Modifier) {
 
         Text(text = "entitlement ($ENTITLEMENT_ID): ${entitlementStatus(customerInfo)}")
     }
+}
+
+@Composable
+private fun WorkflowPaywall(
+    offering: Offering,
+    usersCountOverride: Int?,
+    onDismiss: () -> Unit,
+) {
+    Paywall(
+        options = PaywallOptions.Builder(dismissRequest = onDismiss)
+            .setOffering(offering)
+            .apply {
+                if (usersCountOverride != null) {
+                    setCustomVariables(
+                        mapOf("users_count" to CustomVariableValue.Number(usersCountOverride.toDouble())),
+                    )
+                }
+            }
+            .setListener(object : PaywallListener {
+                override fun onPurchaseCompleted(
+                    customerInfo: CustomerInfo,
+                    storeTransaction: StoreTransaction,
+                ) {
+                    onDismiss()
+                }
+            })
+            .build(),
+    )
 }
 
 private fun entitlementStatus(customerInfo: CustomerInfo?): String {
