@@ -113,7 +113,7 @@ internal class WebViewJavaScriptBridgeTest {
     private fun appMessage(
         type: String,
         payload: String? = null,
-        kind: String = WebViewEnvelope.KIND_MESSAGE,
+        kind: String = "message",
         id: String? = null,
         componentId: String = this.componentId,
     ): String {
@@ -481,7 +481,7 @@ internal class WebViewJavaScriptBridgeTest {
             appMessage(
                 type = WebViewMessageType.RESIZE,
                 payload = """{"height":250}""",
-                kind = WebViewEnvelope.KIND_REQUEST,
+                kind = "request",
                 id = "resize-1",
             ),
         )
@@ -498,7 +498,7 @@ internal class WebViewJavaScriptBridgeTest {
             appMessage(
                 type = WebViewMessageType.RESIZE,
                 payload = """{"height":250}""",
-                kind = WebViewEnvelope.KIND_REQUEST,
+                kind = "request",
                 // no id → must be dropped for response-correlation safety
             ),
         )
