@@ -6,6 +6,8 @@ package com.revenuecat.e2etests
  */
 internal enum class E2ETestFlow(val rawValue: String) {
     OPEN_WORKFLOW("open_workflow"),
+    OPEN_WORKFLOW_PRESENTED("open_workflow_presented"),
+    OPEN_NO_PAYWALL("open_no_paywall"),
     ;
 
     companion object {
