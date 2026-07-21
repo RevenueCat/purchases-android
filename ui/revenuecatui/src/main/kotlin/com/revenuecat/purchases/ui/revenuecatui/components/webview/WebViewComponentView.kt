@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import android.graphics.Color
+import android.view.View
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -14,6 +15,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.viewinterop.AndroidView
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
@@ -120,7 +122,9 @@ internal fun WebViewComponentView(
                     webView.webViewClient = WebViewClient()
                     webView.destroy()
                 },
-                modifier = modifier.size(effectiveSize),
+                // Content can momentarily overflow the exact frame mid-resize (fit axes animate
+                // through placeholder -> measured); never paint outside the component's box.
+                modifier = modifier.size(effectiveSize).clipToBounds(),
             )
         }
         // Terminal failure: render nothing rather than retain a dead/unusable WebView.
@@ -181,6 +185,10 @@ private fun WebView.configure(
     setBackgroundColor(Color.TRANSPARENT)
     isVerticalScrollBarEnabled = false
     isHorizontalScrollBarEnabled = false
+    // Match iOS's non-scrolling web view: no overscroll glow/bounce. Native panning of overflowing
+    // fixed-size content is not hard-disabled (that would swallow touchmove from interactive content);
+    // fit axes size to content, so the common case never overflows.
+    overScrollMode = View.OVER_SCROLL_NEVER
     settings.allowContentAccess = false
     settings.allowFileAccess = false
     settings.cacheMode = WebSettings.LOAD_DEFAULT
@@ -188,6 +196,11 @@ private fun WebView.configure(
     settings.javaScriptEnabled = true
     settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
     settings.setGeolocationEnabled(false)
+    // Lock zoom (parity with iOS's injected `maximum-scale=1, user-scalable=no`). The device-width
+    // viewport is left to the content bundle's own `<meta viewport>`, which the backend controls.
+    settings.setSupportZoom(false)
+    settings.builtInZoomControls = false
+    settings.displayZoomControls = false
     webViewClient = PaywallWebViewClient(
         expectedOrigin = expectedOrigin,
         onMainFrameNavigationStarted = onMainFrameNavigationStarted,
