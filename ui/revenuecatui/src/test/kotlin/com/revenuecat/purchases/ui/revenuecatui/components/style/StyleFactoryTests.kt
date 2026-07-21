@@ -129,6 +129,7 @@ class StyleFactoryTests {
                     url = "https://paywalls.revenuecat.com/index.html",
                     id = "promo_web_view",
                     protocolVersion = 1,
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                 ),
                 TextComponent(
                     text = LOCALIZATION_KEY_TEXT_1,
