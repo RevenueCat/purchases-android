@@ -27,8 +27,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 
 @JvmSynthetic
 @Composable
-// `state` is unused in v1 (no variables passed into the content) but kept for the uniform
-// ComponentView signature; it carries locale/variables again when that lands.
+// `state` is unused in v1 but kept for the uniform ComponentView signature (variables land later).
 @Suppress("LongMethod", "ReturnCount", "UnusedParameter")
 internal fun WebViewComponentView(
     style: WebViewComponentStyle,
@@ -55,14 +54,13 @@ internal fun WebViewComponentView(
         sizeToContentHeight = sizeToContentHeight,
     )
 
-    // Identity-scoped state: when any immutable bridge field changes, Compose disposes the previous
-    // key subtree (WebView + bridge + measured sizes + failure flag) and creates a fresh one.
+    // key(identity): any change to an immutable bridge field disposes this subtree (WebView + bridge
+    // + measured sizes) and builds a fresh one.
     key(identity) {
         var contentWidthCssPx by remember { mutableIntStateOf(0) }
         var contentHeightCssPx by remember { mutableIntStateOf(0) }
         var loadFailed by remember { mutableStateOf(false) }
-        // Holder is remembered inside the identity key so an old AndroidView.onRelease can only
-        // clear/release the bridge that belonged to that specific view instance.
+        // Remembered inside key(identity) so a stale onRelease can only release its own view's bridge.
         val bridgeHolder = remember { WebViewBridgeHolder() }
 
         val effectiveSize = remember(style.size, contentWidthCssPx, contentHeightCssPx) {
@@ -113,22 +111,17 @@ internal fun WebViewComponentView(
                     webView.webViewClient = WebViewClient()
                     webView.destroy()
                 },
-                // Content can momentarily overflow the exact frame mid-resize (fit axes animate
-                // through placeholder -> measured); never paint outside the component's box.
+                // Clip: content can briefly overflow while a fit axis animates placeholder -> measured.
                 modifier = modifier.size(effectiveSize).clipToBounds(),
             )
         }
-        // Terminal failure: render nothing rather than retain a dead/unusable WebView.
-        // There is intentionally no native fallback stack — apps must use an SDK that
-        // supports web_view.
+        // Terminal failure renders nothing; there is intentionally no native fallback.
     }
 }
 
 /**
- * Default placeholder sizes for a `fit` axis until the content reports its size over the bridge — a
- * WebView has no meaningful intrinsic size, so `fit` would otherwise collapse. Used when the schema
- * omits `fit.default`. 100 (height) matches the iOS implementation; 300 (width) matches the web
- * implementation's `FIT_FALLBACK_SIZE_PX`.
+ * Placeholder `fit`-axis sizes used before content reports a size (a WebView has no intrinsic size)
+ * and the schema omits `fit.default`. 100 (height) matches iOS; 300 (width) matches web.
  */
 internal const val FIT_PLACEHOLDER_HEIGHT: UInt = 100u
 internal const val FIT_PLACEHOLDER_WIDTH: UInt = 300u
@@ -152,7 +145,7 @@ private fun resolveFitAxis(constraint: SizeConstraint, contentCssPx: Int, placeh
         else -> constraint
     }
 
-/** Mutable holder for the per-WebView bridge instance, shared across factory/update/onRelease. */
+/** Holds the per-WebView bridge so factory and onRelease share one instance. */
 internal class WebViewBridgeHolder {
     var bridge: WebViewJavaScriptBridge? = null
 }
@@ -165,9 +158,8 @@ private fun WebView.configure(
     setBackgroundColor(Color.TRANSPARENT)
     isVerticalScrollBarEnabled = false
     isHorizontalScrollBarEnabled = false
-    // Match iOS's non-scrolling web view: no overscroll glow/bounce. Native panning of overflowing
-    // fixed-size content is not hard-disabled (that would swallow touchmove from interactive content);
-    // fit axes size to content, so the common case never overflows.
+    // No overscroll glow/bounce (matches iOS). Native scroll isn't hard-disabled — that would eat
+    // touchmove from interactive content; fit axes size to content, so the common case can't overflow.
     overScrollMode = View.OVER_SCROLL_NEVER
     settings.allowContentAccess = false
     settings.allowFileAccess = false
@@ -176,8 +168,7 @@ private fun WebView.configure(
     settings.javaScriptEnabled = true
     settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
     settings.setGeolocationEnabled(false)
-    // Lock zoom (parity with iOS's injected `maximum-scale=1, user-scalable=no`). The device-width
-    // viewport is left to the content bundle's own `<meta viewport>`, which the backend controls.
+    // Lock zoom (parity with iOS `user-scalable=no`); the bundle sets its own viewport.
     settings.setSupportZoom(false)
     settings.builtInZoomControls = false
     settings.displayZoomControls = false
