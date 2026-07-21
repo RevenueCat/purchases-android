@@ -64,7 +64,6 @@ internal fun WebViewComponentView(
         // Holder is remembered inside the identity key so an old AndroidView.onRelease can only
         // clear/release the bridge that belonged to that specific view instance.
         val bridgeHolder = remember { WebViewBridgeHolder() }
-        val failureFlag = remember { LoadFailureFlag() }
 
         val effectiveSize = remember(style.size, contentWidthCssPx, contentHeightCssPx) {
             webViewEffectiveSize(
@@ -92,11 +91,7 @@ internal fun WebViewComponentView(
                                 contentWidthCssPx = 0
                                 contentHeightCssPx = 0
                             },
-                            onSecureMessagingUnsupported = {
-                                if (failureFlag.markFailed()) {
-                                    loadFailed = true
-                                }
-                            },
+                            onSecureMessagingUnsupported = { loadFailed = true },
                         ).also { createdBridge -> createdBridge.attach() }
                         bridgeHolder.bridge = bridge
                         configure(
@@ -104,11 +99,7 @@ internal fun WebViewComponentView(
                             onMainFrameNavigationStarted = { url ->
                                 bridgeHolder.bridge?.onMainFrameNavigationStarted(url)
                             },
-                            onMainFrameLoadFailed = {
-                                if (failureFlag.markFailed()) {
-                                    loadFailed = true
-                                }
-                            },
+                            onMainFrameLoadFailed = { loadFailed = true },
                         )
                         loadUrl(resolvedUrl)
                     }
@@ -164,17 +155,6 @@ private fun resolveFitAxis(constraint: SizeConstraint, contentCssPx: Int, placeh
 /** Mutable holder for the per-WebView bridge instance, shared across factory/update/onRelease. */
 internal class WebViewBridgeHolder {
     var bridge: WebViewJavaScriptBridge? = null
-}
-
-/** Idempotent failure latch shared by URL/HTTP/renderer/secure-messaging failure paths. */
-internal class LoadFailureFlag {
-    private var failed: Boolean = false
-
-    fun markFailed(): Boolean {
-        if (failed) return false
-        failed = true
-        return true
-    }
 }
 
 private fun WebView.configure(
