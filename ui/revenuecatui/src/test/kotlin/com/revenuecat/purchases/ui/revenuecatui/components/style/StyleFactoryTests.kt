@@ -125,7 +125,11 @@ class StyleFactoryTests {
         // so a web_view nested in a stack is filtered out. Real WebViewComponentStyle lands later.
         val stackComponent = StackComponent(
             components = listOf(
-                WebViewComponent(url = "https://paywalls.revenuecat.com/index.html"),
+                WebViewComponent(
+                    url = "https://paywalls.revenuecat.com/index.html",
+                    id = "promo_web_view",
+                    protocolVersion = 1,
+                ),
                 TextComponent(
                     text = LOCALIZATION_KEY_TEXT_1,
                     color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
