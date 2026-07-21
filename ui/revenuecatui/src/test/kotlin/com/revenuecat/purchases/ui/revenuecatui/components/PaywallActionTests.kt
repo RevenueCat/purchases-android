@@ -305,6 +305,95 @@ class PaywallActionTests {
             assertEquals(1, viewModel.closePaywallCallCount)
         }
 
+    @Test
+    fun `LaunchWebCheckout without autoDismiss notifies listener but keeps paywall open`(): Unit =
+        with(composeTestRule) {
+            // Arrange
+            val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+            val defaultLocale = LocaleId("en_US")
+            val localizationKey = LocalizationKey("web_checkout")
+            val localizationData = LocalizationData.Text("web checkout")
+            val localizations = nonEmptyMapOf(
+                defaultLocale to nonEmptyMapOf(localizationKey to localizationData),
+            )
+            val components = listOf(
+                PurchaseButtonComponent(
+                    stack = StackComponent(
+                        components = listOf(TextComponent(text = localizationKey, color = textColor)),
+                    ),
+                    method = PurchaseButtonComponent.Method.WebCheckout(autoDismiss = false),
+                ),
+            )
+            val offering = FakeOffering(components, localizations)
+            val viewModel = MockViewModel(
+                offering = offering,
+                allowsPurchases = true,
+                webCheckoutUrl = "https://checkout.example.com",
+            )
+            val options = PaywallOptions.Builder(dismissRequest = {}).setOffering(offering).build()
+
+            // Act
+            setContent { InternalPaywall(options, viewModel) }
+            // Buttons appear once in main content and once in sticky footer
+            onAllNodesWithText(localizationData.value)
+                .assertCountEquals(2)
+                .get(0)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+            waitForIdle()
+
+            // Assert: listener still notified, but the paywall is NOT dismissed
+            assertEquals(1, viewModel.notifyWebCheckoutOpenedCallCount)
+            assertEquals(0, viewModel.closePaywallCallCount)
+        }
+
+    @Test
+    fun `LaunchWebCheckout with unknown open method does not notify listener`(): Unit =
+        with(composeTestRule) {
+            // Arrange
+            val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+            val defaultLocale = LocaleId("en_US")
+            val localizationKey = LocalizationKey("web_checkout")
+            val localizationData = LocalizationData.Text("web checkout")
+            val localizations = nonEmptyMapOf(
+                defaultLocale to nonEmptyMapOf(localizationKey to localizationData),
+            )
+            val components = listOf(
+                PurchaseButtonComponent(
+                    stack = StackComponent(
+                        components = listOf(TextComponent(text = localizationKey, color = textColor)),
+                    ),
+                    method = PurchaseButtonComponent.Method.WebCheckout(
+                        autoDismiss = true,
+                        openMethod = ButtonComponent.UrlMethod.UNKNOWN,
+                    ),
+                ),
+            )
+            val offering = FakeOffering(components, localizations)
+            val viewModel = MockViewModel(
+                offering = offering,
+                allowsPurchases = true,
+                webCheckoutUrl = "https://checkout.example.com",
+            )
+            val options = PaywallOptions.Builder(dismissRequest = {}).setOffering(offering).build()
+
+            // Act
+            setContent { InternalPaywall(options, viewModel) }
+            // Buttons appear once in main content and once in sticky footer
+            onAllNodesWithText(localizationData.value)
+                .assertCountEquals(2)
+                .get(0)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+            waitForIdle()
+
+            // Assert: no URL was opened for an unrecognized method, so the listener must not be
+            // told a web checkout was launched
+            assertEquals(0, viewModel.notifyWebCheckoutOpenedCallCount)
+        }
+
     @Suppress("TestFunctionName")
     private fun FakeOffering(data: PaywallComponentsData): Offering =
         Offering(
