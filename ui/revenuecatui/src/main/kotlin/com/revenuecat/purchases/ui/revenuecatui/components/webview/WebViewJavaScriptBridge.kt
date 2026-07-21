@@ -203,6 +203,7 @@ internal class WebViewJavaScriptBridge(
                     error = "Unsupported protocol_version ${envelope.protocolVersion}; " +
                         "native host supports $protocolVersion",
                 ),
+                allowBeforeNavigation = true,
             )
             return
         }
@@ -214,6 +215,7 @@ internal class WebViewJavaScriptBridge(
                 protocolVersion = protocolVersion,
                 componentId = componentId,
             ),
+            allowBeforeNavigation = true,
         )
         sendFitIfNeeded()
     }
@@ -224,6 +226,8 @@ internal class WebViewJavaScriptBridge(
             if (sizeToContentWidth) put("width", true)
             if (sizeToContentHeight) put("height", true)
         }
+        // Part of the handshake (sent immediately after init), so it shares init's
+        // allow-before-navigation exception; see [deliverEnvelope].
         deliverEnvelope(
             WebViewEnvelope.build(
                 kind = WebViewEnvelope.KIND_MESSAGE,
@@ -232,6 +236,7 @@ internal class WebViewJavaScriptBridge(
                 type = WebViewMessageType.FIT,
                 payload = payload,
             ),
+            allowBeforeNavigation = true,
         )
     }
 
@@ -239,6 +244,12 @@ internal class WebViewJavaScriptBridge(
     @Suppress("ReturnCount")
     private fun handleAppFrame(envelope: WebViewEnvelope.Parsed) {
         if (!channelOpen) return
+
+        // A `request` frame must carry an id for response correlation; drop malformed ones.
+        if (envelope.kind == WebViewEnvelope.KIND_REQUEST && envelope.id == null) {
+            Logger.w("Dropping inbound web view message: request frame is missing an id.")
+            return
+        }
 
         // `resize` is the only app frame the SDK services in v1; it drives content-fit sizing.
         // Everything else is ignored (no app-facing message handler, no variables).
@@ -281,11 +292,15 @@ internal class WebViewJavaScriptBridge(
         return reported
     }
 
-    private fun deliverEnvelope(envelope: JSONObject) {
+    /**
+     * Delivers a host-to-content frame. [allowBeforeNavigation] relaxes the outbound origin check for
+     * handshake replies (`init` / `reject` / the follow-up `fit`): those are triggered by a `connect`
+     * already gated on the authoritative sender-frame origin, but the WebView's top-level `url` may
+     * not be populated that early. Every later (post-handshake) send must pass `false`.
+     */
+    private fun deliverEnvelope(envelope: JSONObject, allowBeforeNavigation: Boolean) {
         documentScope.launch {
             val webView = webViewRef.get() ?: return@launch
-            val kind = envelope.optString(WebViewMessageField.KIND)
-            val allowBeforeNavigation = kind in HANDSHAKE_OUTBOUND_KINDS
             // Defense in depth: drop outbound work if the top-level URL left the expected origin
             // (e.g. after a policy hole). Inbound validation uses sourceOrigin separately.
             if (!isCurrentUrlTrusted(webView, allowBeforeNavigation = allowBeforeNavigation)) {
@@ -333,22 +348,20 @@ internal class WebViewJavaScriptBridge(
     }
 
     private companion object {
-        private val HANDSHAKE_OUTBOUND_KINDS: Set<String> = setOf(
-            WebViewEnvelope.KIND_INIT,
-            WebViewEnvelope.KIND_REJECT,
-        )
-
         /** Cap a content-reported dimension so a buggy/hostile bundle can't blow up layout. */
         private const val MAX_RESIZE_CSS_PX = 10_000.0
 
         /** Minimum per-axis change (CSS px) before a new report is applied. */
         private const val RESIZE_APPLY_THRESHOLD_CSS_PX = 1
 
-        /** A validated, clamped resize dimension, or `null` when absent, non-finite, or not positive. */
+        /**
+         * A validated, clamped resize dimension, or `null` when absent, not a JSON number, non-finite,
+         * or not positive. Only genuine JSON numbers are accepted: a stringified `"300"` or a boolean
+         * is rejected rather than coerced.
+         */
         @Suppress("ReturnCount")
         fun JSONObject.resizeDimension(key: String): Int? {
-            if (!has(key)) return null
-            val value = optDouble(key)
+            val value = (opt(key) as? Number)?.toDouble() ?: return null
             if (!value.isFinite() || value <= 0) return null
             return value.coerceAtMost(MAX_RESIZE_CSS_PX).toInt()
         }
