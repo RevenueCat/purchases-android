@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
+import org.json.JSONException
 import org.json.JSONObject
 
 /**
@@ -54,7 +55,7 @@ internal object WebViewEnvelope {
     fun parse(rawJson: String): Parsed? {
         val json = try {
             JSONObject(rawJson)
-        } catch (@Suppress("SwallowedException") _: org.json.JSONException) {
+        } catch (@Suppress("SwallowedException") _: JSONException) {
             return null
         }
 
