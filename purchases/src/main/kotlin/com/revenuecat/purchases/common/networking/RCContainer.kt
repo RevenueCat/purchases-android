@@ -13,33 +13,38 @@ import java.nio.ByteOrder
  * Element:          checksum byte[24]  | element_size u32 | reserved u32 | element[element_size] | pad→8
  * ```
  * Elements repeat until the backing buffer is exhausted (the format stores no count). Element 0 is
- * always the [config]; the remaining elements are content-addressed by checksum.
+ * always the config; the remaining elements are content-addressed by checksum.
  *
  * The low byte of each element's `reserved` u32 is its content-encoding codec ([RCContentEncoding]):
  * `element_size` is then the **on-wire (compressed)** length, while the checksum covers the
  * **uncompressed** bytes. Header `flags` are parsed and ignored (forward-compatible).
  *
- * [config] and each [RCElement] expose read-only views that share the backing buffer, so parsing
- * copies no field bytes. The content-addressed [elements] map is built lazily: only its base64 keys
- * allocate, and only on first access. Element bodies are always zero-copy views.
+ * This class turns that raw form into usable content. [config] (always needed) is decoded and verified up
+ * front during [parse]. The content blobs — often large and mostly unwanted on a given sync — stay compressed
+ * in [contentElements]; a consumer iterates those and decodes (via [RCElement.decode], which verifies) only
+ * the ones it wants, one at a time, so the whole payload is never held uncompressed at once. Parsing of the
+ * content blobs stays zero-copy: [contentElements] are views over the backing buffer.
  */
 internal class RCContainer private constructor(
     /** Format version from the header (always [SUPPORTED_VERSION] for a successful parse). */
     val version: Int,
     /** Reserved header flags (compression/encryption/etc.); currently unused. */
     val flags: Int,
-    /** Element 0: the config. [RCElement.data] is a read-only, zero-copy view over the config bytes. */
-    val config: RCElement,
-    /** Elements 1..n in order. The zero-copy iteration path; no checksum keys are materialized. */
+    /**
+     * The decoded, verified config JSON bytes (element 0). The backend may GZIP the config once it crosses a
+     * size threshold; [parse] decodes it transparently, so callers get the uncompressed content regardless of
+     * the on-wire codec. Its bytes are hashed against the config element's checksum during [parse] (a mismatch,
+     * unsupported codec, or corrupt stream fails the parse); authentication remains the response signature over
+     * these bytes (in `HTTPClient`), with the checksum only guarding against accidental corruption.
+     */
+    val config: ByteArray,
+    /**
+     * Elements 1..n in wire order — the raw, on-wire, zero-copy content blobs. Decode the ones you want via
+     * [RCElement.decode] (which verifies) one at a time; decoding them all at once would hold the whole
+     * uncompressed payload in memory, and inline blobs can be large.
+     */
     val contentElements: List<RCElement>,
 ) {
-    /**
-     * The non-config elements addressed by their URL-safe base64 checksum (matching the backend's
-     * ref encoding in the config JSON / URLs). Built lazily from [contentElements]; identical
-     * payloads collapse to one entry (last wins). Element bodies remain the same zero-copy views as
-     * in [contentElements].
-     */
-    val elements: Map<String, RCElement> by lazy { contentElements.associateBy { it.checksumBase64() } }
 
     companion object {
         private const val MAGIC_R = 'R'.code.toByte()
@@ -65,9 +70,10 @@ internal class RCContainer private constructor(
         /**
          * Parses [buffer] from its current position. The buffer is consumed up to the end of the
          * last element. A defensive read-only duplicate is taken so the caller's position/limit
-         * are not modified.
+         * are not modified. The config element (element 0) is decoded and verified here, into [config].
          *
-         * @throws RCContainerFormatException if the bytes are not a valid RC Container Format v1 payload.
+         * @throws RCContainerFormatException if the bytes are not a valid RC Container Format v1 payload, or
+         *   if the config element cannot be decoded/verified.
          */
         fun parse(buffer: ByteBuffer): RCContainer {
             // slice() (not duplicate()) so the working buffer's position 0 coincides with the
@@ -88,7 +94,7 @@ internal class RCContainer private constructor(
                     "Truncated element header: need $ELEMENT_HEADER_SIZE bytes, " +
                         "got ${source.remaining()}."
                 }
-                val checksum = source.sliceBytes(CHECKSUM_SIZE.toLong(), "checksum")
+                val checksum = ByteArray(CHECKSUM_SIZE).also { source.get(it) }
                 val size = source.readUnsignedInt()
                 val reserved = source.readUnsignedInt()
                 // The codec id lives in the low byte of the reserved u32; upper bytes stay reserved.
@@ -102,7 +108,7 @@ internal class RCContainer private constructor(
                 }
                 val data = source.sliceBytes(size, "element")
                 source.alignTo(ALIGNMENT)
-                parsed.add(RCElement(checksum = checksum, data = data, reserved = reserved, codec = codec))
+                parsed.add(RCElement(checksum = checksum, data = data, codec = codec))
             }
 
             if (parsed.isEmpty()) {
@@ -112,8 +118,9 @@ internal class RCContainer private constructor(
             return RCContainer(
                 version = version,
                 flags = flags,
-                config = parsed.first(),
-                // element 0 is the config; content elements are 1..n
+                // element 0 is the config (decoded and verified up front, since it is always needed);
+                // content elements are 1..n and stay compressed until consumed.
+                config = parsed.first().decode(),
                 contentElements = parsed.drop(1),
             )
         }

@@ -27,6 +27,7 @@ import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -573,6 +574,8 @@ internal class StyleFactory(
             is TabsComponent -> createTabsComponentStyle(component)
             is VideoComponent -> createVideoComponentStyle(component)
             is FallbackHeaderComponent -> Result.Success(null)
+            // Stub until Part 8 wires createWebViewComponentStyle; null style is filtered like FallbackHeader.
+            is WebViewComponent -> Result.Success(null)
             is CountdownComponent -> createCountdownComponentStyle(
                 component,
             )
@@ -1304,6 +1307,7 @@ internal class StyleFactory(
                         control = control,
                         tabs = tabs,
                         overrides = overrides,
+                        stateUpdates = component.stateUpdates,
                     )
                 }
             }
@@ -1347,7 +1351,7 @@ internal class StyleFactory(
             withTabIndex(tabIndex) {
                 withTabControl(control) {
                     createStackComponentStyle(componentTab.stack)
-                        .map { stack -> TabsComponentStyle.Tab(stack) }
+                        .map { stack -> TabsComponentStyle.Tab(id = componentTab.id, stack = stack) }
                 }
             }
         }

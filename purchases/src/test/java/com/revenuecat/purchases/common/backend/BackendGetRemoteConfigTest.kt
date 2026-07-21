@@ -111,8 +111,7 @@ class BackendGetRemoteConfigTest {
 
         val parsed = container ?: fail("Expected container to be non-null").let { return }
         assertThat(parsed.version).isEqualTo(1)
-        assertThat(parsed.config.data.let { buf -> ByteArray(buf.remaining()).also { buf.duplicate().get(it) } })
-            .isEqualTo(config)
+        assertThat(parsed.config).isEqualTo(config)
         assertThat(parsed.contentElements).hasSize(1)
         assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
     }

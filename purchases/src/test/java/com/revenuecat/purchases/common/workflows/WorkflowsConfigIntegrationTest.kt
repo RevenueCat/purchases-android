@@ -40,7 +40,6 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
-import java.nio.ByteBuffer
 import java.security.MessageDigest
 
 /**
@@ -362,14 +361,14 @@ class WorkflowsConfigIntegrationTest {
         }
 
     // Asset prewarming is out of scope here (covered by WorkflowManagerTest), so the manager gets a stubbed
-    // ui-config provider and a no-op pre-downloader.
+    // ui-config provider and a no-op prewarmer.
     private fun workflowManagerWith(provider: WorkflowsConfigProvider) = WorkflowManager(
         workflowsConfigProvider = provider,
         uiConfigProvider = mockk {
             every { isWarm() } returns false
             coEvery { getUiConfig() } returns emptyUiConfig()
         },
-        workflowAssetPreDownloader = mockk(relaxed = true),
+        workflowAssetPrewarmer = mockk(relaxed = true),
         scope = testScope,
     )
 
@@ -387,18 +386,15 @@ class WorkflowsConfigIntegrationTest {
     )
 
     private fun containerWith(configJson: String, vararg blobs: Pair<String, String>): RCContainer {
-        val configElement = mockk<RCElement>()
-        every { configElement.decode() } returns ByteBuffer.wrap(configJson.toByteArray())
-        val elements = blobs.associate { (ref, json) ->
+        val blobElements = blobs.map { (ref, json) ->
             val element = mockk<RCElement>()
-            val bytes = ByteBuffer.wrap(json.toByteArray())
-            every { element.decode() } returns bytes
-            every { element.matchesChecksum(any()) } returns true
-            ref to element
+            every { element.checksumBase64() } returns ref
+            every { element.decode() } returns json.toByteArray()
+            element
         }
         val container = mockk<RCContainer>()
-        every { container.config } returns configElement
-        every { container.elements } returns elements
+        every { container.config } returns configJson.toByteArray()
+        every { container.contentElements } returns blobElements
         return container
     }
 

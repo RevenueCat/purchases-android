@@ -45,13 +45,13 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.1.0
-  revenuecat: revenuecat/sdks-common-config@4.4.0
+  revenuecat: revenuecat/sdks-common-config@4.5.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
   action:
     type: enum
-    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_golden_requests_backend_integration_tests, update_error_codes]
+    enum: [default, bump, paywall_tester_release, rct_tester_release, deploy_snapshot_release, update_paywall_templates, update_error_codes]
     default: default
   paywall_tester_track:
     type: enum
@@ -387,7 +387,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.14.0-SNAPSHOT s3://purchases-docs/android/10.14.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/10.15.0-SNAPSHOT s3://purchases-docs/android/10.15.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -705,38 +705,6 @@ jobs:
           name: Run backend integration tests
           command: |
             bundle exec fastlane android run_backend_integration_tests
-      - run:
-          name: Verify no changes to golden test files
-          command: |
-            if ! git diff --quiet purchases/src/test/resources/backend_integration_tests_golden/; then
-              echo "ERROR: Golden test files have been modified!"
-              echo "The following changes have been found:"
-              git diff purchases/src/test/resources/backend_integration_tests_golden/
-              echo ""
-              echo "Golden test files should not be modified during test execution."
-              echo "If you need to update the golden files, commit the changes explicitly."
-              exit 1
-            fi
-            echo "Golden test files verification passed - no changes detected"
-      - android/save_build_cache
-      - store_test_results:
-          path: purchases/build/test-results
-
-  update-golden-requests-backend-integration-tests:
-    description: "Run backend integration tests and create PR if golden files change"
-    <<: *android-executor
-    steps:
-      - checkout
-      - install-mise-tools
-      - revenuecat/install-gem-unix-dependencies:
-          cache-version: v1
-      - revenuecat/setup-git-credentials
-      - revenuecat/trust-github-key
-      - android/restore_gradle_cache
-      - run:
-          name: Run backend integration tests and create PR if needed
-          command: |
-            bundle exec fastlane android update_golden_requests_backend_integration_tests
       - android/save_build_cache
       - store_test_results:
           path: purchases/build/test-results
@@ -886,11 +854,45 @@ jobs:
       - run:
           name: Run Maestro tests
           command: |
-            maestro test --format junit --output maestro/report.xml maestro/
+            maestro test --format junit --output maestro/report.xml maestro/e2e_tests/
       - store_artifacts:
           path: ~/.maestro/tests/
       - store_test_results:
           path: maestro/report.xml
+
+  run-maestro-workflow-tests:
+    description: "Run Maestro workflow (multipage paywall) tests for E2E Tester app"
+    <<: *android-machine-emulator
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - install-mise-tools
+      - android/create_avd:
+          avd_name: test-e2e-workflow-tester
+          system_image: system-images;android-32;google_apis;x86_64
+          install: true
+      - android/start_emulator:
+          avd_name: test-e2e-workflow-tester
+          # The workflow project key is baked in at build time (BuildConfig.WORKFLOWS_API_KEY),
+          # which makes E2ETestsApplication configure against the workflow project with
+          # DangerousSettings.forWorkflows(). A single APK can only target one project, so this
+          # is built and run separately from run-maestro-e2e-tests.
+          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug -PE2E_WORKFLOWS_API_KEY=$WORKFLOWS_TEST_STORE_API_KEY
+      - android/restore_gradle_cache
+      - run:
+          name: Install E2E Tester on emulator
+          command: |
+            adb install test-apps/e2etests/build/outputs/apk/debug/e2etests-debug.apk
+      - revenuecat/install-maestro
+      - run:
+          name: Run Maestro workflow tests
+          command: |
+            maestro test --format junit --output maestro/workflow-report.xml maestro/workflows/
+      - store_artifacts:
+          path: ~/.maestro/tests/
+      - store_test_results:
+          path: maestro/workflow-report.xml
 
   generate-baseline-profiles:
     description: "Generate baseline profiles using Gradle Managed Devices and open a PR"
@@ -1078,6 +1080,11 @@ workflows:
       - run-maestro-e2e-tests:
           requires:
             - prepare-tests
+      - run-maestro-workflow-tests:
+          context:
+            - maestro
+          requires:
+            - prepare-tests
       - run-integration-tests:
           requires:
             - prepare-tests
@@ -1102,6 +1109,7 @@ workflows:
             - assemble-paywall-tester-release
             - run-backend-integration-tests
             - run-maestro-e2e-tests
+            - run-maestro-workflow-tests
             - run-revenuecatui-ui-tests
             - run-integration-tests
             - run-purchases-integration-tests
@@ -1221,12 +1229,6 @@ workflows:
       equal: [ update_paywall_templates, << pipeline.parameters.action >> ]
     jobs:
       - update-paywall-preview-resources-submodule
-
-  manual-update-golden-requests-backend-integration-tests:
-    when:
-      equal: [ update_golden_requests_backend_integration_tests, << pipeline.parameters.action >> ]
-    jobs:
-      - update-golden-requests-backend-integration-tests
 
   update-error-codes:
     when:

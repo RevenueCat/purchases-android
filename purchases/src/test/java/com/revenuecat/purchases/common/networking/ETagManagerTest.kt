@@ -1,6 +1,9 @@
 package com.revenuecat.purchases.common.networking
 
+import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.VerificationResult.*
@@ -11,11 +14,13 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.slot
+import io.mockk.spyk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
@@ -30,10 +35,16 @@ class ETagManagerTest {
             get() = testDate
     }
     private val mockedPrefs = mockk<SharedPreferences>()
-    private val underTest = ETagManager(mockk(), lazy { mockedPrefs }, testDateProvider)
-    private val slotPutStringSharedPreferencesKey = slot<String>()
-    private val slotPutSharedPreferencesValue = slot<String>()
+    private val payloadStore: ETagPayloadStore by lazy { spyk(ETagPayloadStore(temporaryFolder.newFolder())) }
+    private val underTest: ETagManager by lazy {
+        ETagManager(mockk(), lazy { mockedPrefs }, testDateProvider, payloadStore)
+    }
+    private val putStringKeys = mutableListOf<String>()
+    private val putStringValues = mutableListOf<String>()
     private val mockEditor = mockk<SharedPreferences.Editor>()
+
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
 
     @Before
     fun setup() {
@@ -41,11 +52,17 @@ class ETagManagerTest {
             mockedPrefs.edit()
         } returns mockEditor
         every {
-            mockEditor.putString(capture(slotPutStringSharedPreferencesKey), capture(slotPutSharedPreferencesValue))
+            mockedPrefs.getString(any(), null)
+        } returns null
+        every {
+            mockEditor.putString(capture(putStringKeys), capture(putStringValues))
         } returns mockEditor
         every {
             mockEditor.apply()
         } just Runs
+        every {
+            mockEditor.commit()
+        } returns true
         every {
             mockEditor.clear()
         } returns mockEditor
@@ -193,6 +210,17 @@ class ETagManagerTest {
     // endregion ETag headers usage verification tests
 
     @Test
+    fun `getETagHeaders does not read the cached payload`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        mockCachedHTTPResult(expectedETag = "etag", urlString = urlString)
+
+        val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
+
+        assertThat(eTagHeaders[HTTPRequest.ETAG_HEADER_NAME]).isEqualTo("etag")
+        verify(exactly = 0) { payloadStore.read(any()) }
+    }
+
+    @Test
     fun `If response code is 304, cached version should be used`() {
         val shouldUse = underTest.shouldUseCachedVersion(RCHTTPStatusCodes.NOT_MODIFIED)
 
@@ -210,8 +238,9 @@ class ETagManagerTest {
     fun `Cached result is returned when calling getStoredResult`() {
         val urlString = "http://localhost:100/v1/subscribers/appUserID"
         val eTag = "eTag"
+        val cachedHTTPResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE)
 
-        val cachedHTTPResult = mockCachedHTTPResult(eTag, urlString)!!.httpResult
+        mockCachedHTTPResult(eTag, urlString, httpResult = cachedHTTPResult)
 
         val storedResult = underTest.getStoredResult(urlString)
 
@@ -240,8 +269,7 @@ class ETagManagerTest {
 
         underTest.storeBackendResultIfNoError(urlString, resultFromBackend, eTag)
 
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
+        assertThat(putStringKeys).isEmpty()
     }
 
     @Test
@@ -252,18 +280,10 @@ class ETagManagerTest {
         val resultFromBackend = HTTPResult.createResult(
             RCHTTPStatusCodes.SUCCESS, Responses.validEmptyPurchaserResponse
         )
-        val resultStored = resultFromBackend.copy(
-            origin = HTTPResult.Origin.CACHE
-        )
-        val resultStoredWithETag = HTTPResultWithETag(ETagData(eTag, testDate), resultStored)
 
         underTest.storeBackendResultIfNoError(urlString, resultFromBackend, eTag)
 
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isTrue
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isTrue
-
-        assertThat(slotPutStringSharedPreferencesKey.captured).isEqualTo(urlString)
-        assertThat(slotPutSharedPreferencesValue.captured).isEqualTo(resultStoredWithETag.serialize())
+        assertStoredResponse(urlString, eTag, testDate, Responses.validEmptyPurchaserResponse)
     }
 
     @Test
@@ -275,8 +295,7 @@ class ETagManagerTest {
 
         underTest.storeBackendResultIfNoError(urlString, resultFromBackend, eTag)
 
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
+        assertThat(putStringKeys).isEmpty()
     }
 
     @Test
@@ -291,8 +310,7 @@ class ETagManagerTest {
 
         underTest.storeBackendResultIfNoError(urlString, resultFromBackend, eTag)
 
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
+        assertThat(putStringKeys).isEmpty()
     }
 
     @Test
@@ -304,24 +322,55 @@ class ETagManagerTest {
             verificationResult = VERIFIED,
             payload = Responses.validEmptyPurchaserResponse
         )
-        val resultStored = resultFromBackend.copy(
-            origin = HTTPResult.Origin.CACHE
-        )
-        val resultStoredWithETag = HTTPResultWithETag(ETagData(eTag, testDate), resultStored)
 
         underTest.storeBackendResultIfNoError(urlString, resultFromBackend, eTag)
 
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isTrue
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isTrue
-
-        assertThat(slotPutStringSharedPreferencesKey.captured).isEqualTo(urlString)
-        assertThat(slotPutSharedPreferencesValue.captured).isEqualTo(resultStoredWithETag.serialize())
+        assertStoredResponse(urlString, eTag, testDate, Responses.validEmptyPurchaserResponse)
     }
 
     @Test
-    fun `Clearing caches removes all shared preferences`() {
+    fun `storeBackendResultIfNoError stores metadata in prefs and the payload in the payload store`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        val payload = "{\"key\":\"value\"}"
+        val result = HTTPResult.createResult(payload = payload)
+
+        underTest.storeBackendResultIfNoError(urlString, result, eTagInResponse = "etag")
+
+        assertStoredResponse(urlString, "etag", testDate, payload)
+    }
+
+    @Test
+    fun `storeBackendResultIfNoError stores the payload without JSON re-encoding`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        // Quote-dense payload: the legacy combined format would escape every quote twice.
+        val payload = "{\"offerings\":[{\"id\":\"premium\",\"desc\":\"a \\\"quoted\\\" name\"}]}"
+        val result = HTTPResult.createResult(payload = payload)
+
+        underTest.storeBackendResultIfNoError(urlString, result, eTagInResponse = "etag")
+
+        // Byte-for-byte what we received: never escaped, and never written into the prefs JSON.
+        // (ETagManagerMemoryTest gates the allocation cost of this path.)
+        assertThat(payloadStore.read(urlString)).isEqualTo(payload)
+        assertThat(putStringKeys).containsExactly(urlString)
+    }
+
+    @Test
+    fun `storeBackendResultIfNoError does not mutate the result being stored`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        val result = HTTPResult.createResult(origin = HTTPResult.Origin.BACKEND)
+
+        underTest.storeBackendResultIfNoError(urlString, result, eTagInResponse = "etag")
+
+        assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
+    }
+
+    @Test
+    fun `Clearing caches removes all shared preferences and stored payloads`() {
+        payloadStore.write("http://localhost:100/v1/subscribers/appUserID", "payload")
+
         underTest.clearCaches()
 
+        assertThat(payloadStore.read("http://localhost:100/v1/subscribers/appUserID")).isNull()
         verify {
             mockEditor.clear()
         }
@@ -380,8 +429,7 @@ class ETagManagerTest {
             isFallbackURL = false,
         )
 
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
+        assertThat(putStringKeys).isEmpty()
     }
 
     @Test
@@ -407,8 +455,7 @@ class ETagManagerTest {
         )
 
         assertThat(result).isNull()
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
+        assertThat(putStringKeys).isEmpty()
     }
 
     @Test
@@ -437,8 +484,7 @@ class ETagManagerTest {
         assertThat(result!!.responseCode).isEqualTo(RCHTTPStatusCodes.NOT_MODIFIED)
         assertThat(result.payloadText).isEqualTo(responsePayload)
         assertThat(result.origin).isEqualTo(HTTPResult.Origin.BACKEND)
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isFalse
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isFalse
+        assertThat(putStringKeys).isEmpty()
     }
 
     @Test
@@ -611,6 +657,174 @@ class ETagManagerTest {
         }
     }
 
+    @Test
+    fun `ETagCacheMetadata serialization round-trips all fields`() {
+        val metadata = ETagCacheMetadata(
+            eTagData = ETagData("etag", testDate),
+            responseCode = RCHTTPStatusCodes.SUCCESS,
+            requestDate = Date(1234567890),
+            verificationResult = VERIFIED,
+            isLoadShedderResponse = true,
+            isFallbackURL = true,
+            payloadSizeBytes = 12345L,
+        )
+
+        val deserialized = ETagCacheMetadata.deserialize(metadata.serialize())
+
+        assertThat(deserialized).isEqualTo(metadata)
+    }
+
+    @Test
+    fun `ETagCacheMetadata serialization round-trips null dates`() {
+        val metadata = ETagCacheMetadata(
+            eTagData = ETagData("etag", lastRefreshTime = null),
+            responseCode = RCHTTPStatusCodes.SUCCESS,
+            requestDate = null,
+            verificationResult = NOT_REQUESTED,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
+        )
+
+        val deserialized = ETagCacheMetadata.deserialize(metadata.serialize())
+
+        assertThat(deserialized).isEqualTo(metadata)
+    }
+
+    @Test
+    fun `ETagCacheMetadata deserialize returns null for unparseable data`() {
+        assertThat(ETagCacheMetadata.deserialize("not json")).isNull()
+    }
+
+    @Test
+    fun `a v2 entry with an unknown verification result reads as a miss`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        val metadata = ETagCacheMetadata.fromResult(
+            HTTPResult.createResult(origin = HTTPResult.Origin.CACHE),
+            ETagData("etag", testDate),
+        )
+        val corrupted = metadata.serialize().replace("NOT_REQUESTED", "SOMETHING_UNKNOWN")
+        every { mockedPrefs.getString(urlString, null) } returns corrupted
+
+        val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
+
+        assertThat(eTagHeaders[HTTPRequest.ETAG_HEADER_NAME]).isEmpty()
+    }
+
+    @Test
+    fun `a payload file whose size does not match the metadata is treated as a miss`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        val payload = "{\"key\":\"value\"}"
+        val metadata = ETagCacheMetadata.fromResult(
+            HTTPResult.createResult(payload = payload, origin = HTTPResult.Origin.CACHE),
+            ETagData("etag", testDate),
+        ).copy(payloadSizeBytes = payload.length + 100L)
+        every { mockedPrefs.getString(urlString, null) } returns metadata.serialize()
+        payloadStore.write(urlString, payload)
+
+        assertThat(underTest.getStoredResult(urlString)).isNull()
+    }
+
+    @Test
+    fun `metadata without a stored payload is treated as a miss on read`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        val metadata = ETagCacheMetadata.fromResult(
+            HTTPResult.createResult(origin = HTTPResult.Origin.CACHE),
+            ETagData("etag", testDate),
+        )
+        every { mockedPrefs.getString(urlString, null) } returns metadata.serialize()
+
+        assertThat(underTest.getStoredResult(urlString)).isNull()
+    }
+
+    @Test
+    fun `a corrupt versioned entry reads as a miss for cached results`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        every { mockedPrefs.getString(urlString, null) } returns "not json"
+
+        assertThat(underTest.getStoredResult(urlString)).isNull()
+    }
+
+    @Test
+    fun `metadata is not stored when the payload write fails`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        every { payloadStore.write(urlString, any()) } returns null
+
+        underTest.storeBackendResultIfNoError(urlString, HTTPResult.createResult(), eTagInResponse = "etag")
+
+        assertThat(putStringKeys).isEmpty()
+    }
+
+    @Test
+    fun `deleting the legacy prefs file drops its entries and leaves the current file untouched`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        legacyPrefs(context).edit().putString(urlString, "legacy blob").commit()
+        ETagManager.initializeSharedPreferences(context).edit().putString(urlString, "{}").commit()
+
+        ETagManager.deleteLegacyPreferencesFile(context)
+
+        assertThat(legacyPrefs(context).all).isEmpty()
+        assertThat(ETagManager.initializeSharedPreferences(context).contains(urlString)).isTrue
+    }
+
+    @Test
+    fun `a failure deleting the legacy prefs file is swallowed`() {
+        val context = mockk<Context>()
+        every { context.packageName } returns "com.test"
+        every { context.deleteSharedPreferences(any()) } throws RuntimeException("boom")
+
+        ETagManager.deleteLegacyPreferencesFile(context)
+    }
+
+    @Test
+    fun `the legacy prefs file is deleted when the default prefs initialize`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        legacyPrefs(context).edit().putString(urlString, "legacy blob").commit()
+
+        ETagManager(context).getETagHeaders(urlString, verificationRequested = false)
+
+        assertThat(legacyPrefs(context).all).isEmpty()
+    }
+
+    @Config(sdk = [Build.VERSION_CODES.M])
+    @Test
+    fun `below API 24 the legacy prefs file is left in place`() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        legacyPrefs(context).edit().putString(urlString, "legacy blob").commit()
+
+        ETagManager.deleteLegacyPreferencesFile(context)
+
+        assertThat(legacyPrefs(context).contains(urlString)).isTrue
+    }
+
+    // Hardcoded on purpose: this is the name older SDK versions wrote, it must never change.
+    private fun legacyPrefs(context: Context): SharedPreferences =
+        context.getSharedPreferences("${context.packageName}_preferences_etags", Context.MODE_PRIVATE)
+
+    @Test
+    fun `ETagCacheMetadata toHTTPResult rebuilds the result with CACHE origin`() {
+        val metadata = ETagCacheMetadata.fromResult(
+            HTTPResult.createResult(
+                responseCode = RCHTTPStatusCodes.SUCCESS,
+                payload = "{\"key\":\"value\"}",
+                origin = HTTPResult.Origin.BACKEND,
+                requestDate = Date(1000),
+                verificationResult = VERIFIED,
+            ),
+            ETagData("etag", testDate),
+        )
+
+        val result = metadata.toHTTPResult("{\"key\":\"value\"}")
+
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+        assertThat(result.payloadText).isEqualTo("{\"key\":\"value\"}")
+        assertThat(result.origin).isEqualTo(HTTPResult.Origin.CACHE)
+        assertThat(result.requestDate).isEqualTo(Date(1000))
+        assertThat(result.verificationResult).isEqualTo(VERIFIED)
+    }
+
     private fun assertCorrectVerificationResult(
         cachedVerificationResult: VerificationResult,
         backendVerificationResult: VerificationResult,
@@ -642,14 +856,16 @@ class ETagManagerTest {
         urlString: String,
         expectedLastRefreshTime: Date? = Date(),
         httpResult: HTTPResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE)
-    ): HTTPResultWithETag? {
-        val cachedResult = expectedETag?.let {
-            HTTPResultWithETag(ETagData(expectedETag, expectedLastRefreshTime), httpResult)
+    ) {
+        val metadata = expectedETag?.let {
+            ETagCacheMetadata.fromResult(httpResult, ETagData(expectedETag, expectedLastRefreshTime))
         }
         every {
             mockedPrefs.getString(urlString, null)
-        } returns cachedResult?.serialize()
-        return cachedResult
+        } returns metadata?.serialize()
+        if (metadata != null) {
+            payloadStore.write(urlString, httpResult.payloadText)
+        }
     }
 
     private fun assertStoredResponse(
@@ -658,17 +874,15 @@ class ETagManagerTest {
         lastRefreshTime: Date?,
         responsePayload: String
     ) {
-        assertThat(slotPutStringSharedPreferencesKey.isCaptured).isTrue
-        assertThat(slotPutSharedPreferencesValue.isCaptured).isTrue
+        val storedByKey = putStringKeys.zip(putStringValues).toMap()
 
-        assertThat(slotPutStringSharedPreferencesKey.captured).isEqualTo(urlString)
-        assertThat(slotPutSharedPreferencesValue.captured).isNotNull
+        val metadata = ETagCacheMetadata.deserialize(storedByKey.getValue(urlString))
+        assertThat(metadata).isNotNull
+        assertThat(metadata!!.eTagData.eTag).isEqualTo(eTagInResponse)
+        assertThat(metadata.eTagData.lastRefreshTime?.time).isEqualTo(lastRefreshTime?.time)
+        assertThat(metadata.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+        assertThat(metadata.payloadSizeBytes).isEqualTo(responsePayload.toByteArray().size.toLong())
 
-        val deserializedResult = HTTPResultWithETag.deserialize(slotPutSharedPreferencesValue.captured)
-        assertThat(deserializedResult.eTagData.eTag).isEqualTo(eTagInResponse)
-        assertThat(deserializedResult.eTagData.lastRefreshTime?.time).isEqualTo(lastRefreshTime?.time)
-        assertThat(deserializedResult.httpResult.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
-        assertThat(deserializedResult.httpResult.payloadText).isEqualTo(responsePayload)
-        assertThat(deserializedResult.httpResult.origin).isEqualTo(HTTPResult.Origin.CACHE)
+        assertThat(payloadStore.read(urlString)).isEqualTo(responsePayload)
     }
 }

@@ -42,6 +42,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDel
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateStore
 
 @Stable
 @JvmSynthetic
@@ -56,6 +57,7 @@ internal fun rememberUpdatedImageComponentState(
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
     customVariablesProvider = { paywallState.mergedCustomVariables },
+    stateStoreProvider = { paywallState.stateStore },
 )
 
 @Suppress("LongParameterList")
@@ -69,6 +71,7 @@ private fun rememberUpdatedImageComponentState(
     selectedTabIndexProvider: () -> Int,
     selectedOfferEligibilityProvider: () -> OfferEligibility,
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
+    stateStoreProvider: () -> PaywallStateStore,
 ): ImageComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val density = LocalDensity.current
@@ -87,6 +90,7 @@ private fun rememberUpdatedImageComponentState(
             selectedTabIndexProvider = selectedTabIndexProvider,
             selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
             customVariablesProvider = customVariablesProvider,
+            stateStoreProvider = stateStoreProvider,
         )
     }.apply {
         update(
@@ -111,6 +115,7 @@ internal class ImageComponentState(
     private val selectedTabIndexProvider: () -> Int,
     private val selectedOfferEligibilityProvider: () -> OfferEligibility,
     private val customVariablesProvider: () -> Map<String, CustomVariableValue> = { emptyMap() },
+    private val stateStoreProvider: () -> PaywallStateStore = { PaywallStateStore(emptyMap()) },
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private var density by mutableStateOf(initialDensity)
@@ -136,6 +141,7 @@ internal class ImageComponentState(
             conditionContext = ConditionContext(
                 selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
                 customVariables = customVariablesProvider(),
+                stateReader = stateStoreProvider()::currentValueOrDefault,
             ),
         )
     }

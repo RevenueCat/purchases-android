@@ -73,7 +73,7 @@ abstract class BasePurchasesIntegrationTest {
         get() = _activity ?: Assertions.fail("Expected activity to not be null")
     private var _activity: MainActivity? = null
 
-    private val eTagsSharedPreferencesNameTemplate = "%s_preferences_etags"
+    private val eTagsSharedPreferencesNameTemplate = "%s_preferences_etags_v2"
     private val diagnosticsSharedPreferencesNameTemplate = "com_revenuecat_purchases_%s_preferences_diagnostics"
     private val transactionMetadataSharedPrefsNameTemplate =
         "com.revenuecat.purchases.transaction_metadata.%s"

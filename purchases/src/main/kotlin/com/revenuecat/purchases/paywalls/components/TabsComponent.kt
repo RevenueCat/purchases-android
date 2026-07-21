@@ -77,7 +77,7 @@ public class TabsComponent(
     @get:JvmSynthetic
     public val visible: Boolean? = null,
     @get:JvmSynthetic
-    public val size: Size = Size(width = Fill, height = Fit),
+    public val size: Size = Size(width = Fill, height = Fit()),
     @get:JvmSynthetic
     public val padding: Padding = Padding.zero,
     @get:JvmSynthetic

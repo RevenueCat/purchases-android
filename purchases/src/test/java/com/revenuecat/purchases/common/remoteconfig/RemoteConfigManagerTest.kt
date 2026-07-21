@@ -38,7 +38,6 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import java.nio.ByteBuffer
 import java.util.Date
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -523,15 +522,16 @@ class RemoteConfigManagerTest {
               "topics": { "sources": { "default": { "blob_ref": "$REF_VALID" } } }
             }
         """.trimIndent()
-        val validData = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
+        val validData = byteArrayOf(1, 2, 3)
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
         onSuccess.invoke(
             containerWithConfig(
                 response,
-                elements = mapOf(
-                    REF_VALID to inlineElement(validData, checksumValid = true),
-                    REF_TAMPERED to inlineElement(ByteBuffer.wrap(byteArrayOf(9)), checksumValid = false),
+                blobs = listOf(
+                    inlineElement(REF_VALID, validData),
+                    // A tampered blob fails verification: its decode() throws, so it is skipped.
+                    inlineElement(REF_TAMPERED, decoded = null),
                 ),
             ),
             VerificationResult.VERIFIED,
@@ -553,16 +553,16 @@ class RemoteConfigManagerTest {
               "topics": { "sources": { "default": { "blob_ref": "$REF_VALID" } } }
             }
         """.trimIndent()
-        val wantedData = ByteBuffer.wrap(byteArrayOf(1, 2, 3))
+        val wantedData = byteArrayOf(1, 2, 3)
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
         onSuccess.invoke(
             containerWithConfig(
                 response,
-                elements = mapOf(
-                    REF_VALID to inlineElement(wantedData, checksumValid = true),
-                    // Valid bytes, but not in prefetch_blobs nor referenced by any active topic.
-                    REF_UNWANTED to inlineElement(ByteBuffer.wrap(byteArrayOf(7)), checksumValid = true),
+                blobs = listOf(
+                    inlineElement(REF_VALID, wantedData),
+                    // Valid bytes, but not in prefetch_blobs nor referenced by any active topic (never decoded).
+                    inlineElement(REF_UNWANTED, byteArrayOf(7)),
                 ),
             ),
             VerificationResult.VERIFIED,
@@ -590,7 +590,7 @@ class RemoteConfigManagerTest {
         onSuccess.invoke(
             containerWithConfig(
                 response,
-                elements = mapOf(REF_VALID to inlineElement(ByteBuffer.wrap(byteArrayOf(1, 2, 3)), checksumValid = true)),
+                blobs = listOf(inlineElement(REF_VALID, byteArrayOf(1, 2, 3))),
             ),
             VerificationResult.VERIFIED,
         )
@@ -2322,12 +2322,18 @@ class RemoteConfigManagerTest {
         topics = topics,
     )
 
-    private fun inlineElement(data: ByteBuffer, checksumValid: Boolean): RCElement {
+    /**
+     * A fake inline blob element for a container mock: [ref] is what the manager reads to decide whether it
+     * wants the blob; [decoded] is the bytes decode() yields, or null to model a bad blob whose decode() throws.
+     */
+    private fun inlineElement(ref: String, decoded: ByteArray?): RCElement {
         val element = mockk<RCElement>()
-        every { element.data } returns data
-        // The manager decodes (codec-aware) then verifies the decoded bytes against the checksum.
-        every { element.decode() } returns data
-        every { element.matchesChecksum(any()) } returns checksumValid
+        every { element.checksumBase64() } returns ref
+        if (decoded == null) {
+            every { element.decode() } throws RCContainerFormatException("checksum verification failed")
+        } else {
+            every { element.decode() } returns decoded
+        }
         return element
     }
 
@@ -2335,21 +2341,16 @@ class RemoteConfigManagerTest {
     private fun remoteConfiguration(json: String): RemoteConfiguration =
         RemoteConfiguration.parse(json.toByteArray())
 
-    private fun containerWithConfig(json: String, elements: Map<String, RCElement> = emptyMap()): RCContainer {
-        val element = mockk<RCElement>()
-        every { element.decode() } returns ByteBuffer.wrap(json.toByteArray())
+    private fun containerWithConfig(json: String, blobs: List<RCElement> = emptyList()): RCContainer {
         val container = mockk<RCContainer>()
-        every { container.config } returns element
-        every { container.elements } returns elements
+        every { container.config } returns json.toByteArray()
+        every { container.contentElements } returns blobs
         return container
     }
 
     private fun containerWithUndecodableConfig(): RCContainer {
-        val element = mockk<RCElement>()
-        every { element.decode() } throws RCContainerFormatException("Unsupported content encoding id 2.")
         val container = mockk<RCContainer>()
-        every { container.config } returns element
-        every { container.elements } returns emptyMap()
+        every { container.config } throws RCContainerFormatException("Unsupported content encoding id 2.")
         return container
     }
 

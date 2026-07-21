@@ -1,9 +1,0 @@
-{
-  "statusCode": 204,
-  "headers": {
-    "Connection": "keep-alive",
-    "Content-Type": "text\/html; charset=utf-8",
-    "server": "envoy"
-  },
-  "body": null
-}

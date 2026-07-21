@@ -475,7 +475,7 @@ private fun previewCarouselComponentStyle(
     initialPageIndex: Int = 0,
     alignment: Alignment.Vertical = Alignment.CenterVertically,
     visible: Boolean = true,
-    size: Size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fit),
+    size: Size = Size(width = SizeConstraint.Fit(), height = SizeConstraint.Fit()),
     sidePagePeek: Dp = 20.dp,
     spacing: Dp = 8.dp,
     backgroundColor: Color = Color.LightGray,
