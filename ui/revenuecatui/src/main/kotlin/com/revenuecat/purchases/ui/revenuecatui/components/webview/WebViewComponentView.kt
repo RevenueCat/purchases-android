@@ -92,14 +92,18 @@ internal fun WebViewComponentView(
                             onSecureMessagingUnsupported = { loadFailed = true },
                         ).also { createdBridge -> createdBridge.attach() }
                         bridgeHolder.bridge = bridge
-                        configure(
-                            expectedOrigin = resolvedUrl.toOriginOrNull(),
-                            onMainFrameNavigationStarted = { url ->
-                                bridgeHolder.bridge?.onMainFrameNavigationStarted(url)
-                            },
-                            onMainFrameLoadFailed = { loadFailed = true },
-                        )
-                        loadUrl(resolvedUrl)
+                        // attach() may synchronously flag terminal failure (secure messaging
+                        // unsupported); don't start a JS-enabled load we're about to tear down.
+                        if (!loadFailed) {
+                            configure(
+                                expectedOrigin = resolvedUrl.toOriginOrNull(),
+                                onMainFrameNavigationStarted = { url ->
+                                    bridgeHolder.bridge?.onMainFrameNavigationStarted(url)
+                                },
+                                onMainFrameLoadFailed = { loadFailed = true },
+                            )
+                            loadUrl(resolvedUrl)
+                        }
                     }
                 },
                 onRelease = { webView ->
