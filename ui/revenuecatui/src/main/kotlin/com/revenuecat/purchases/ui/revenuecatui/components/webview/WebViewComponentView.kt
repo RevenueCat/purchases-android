@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
@@ -141,29 +142,20 @@ internal fun webViewEffectiveSize(
     declaredSize: Size,
     contentWidthCssPx: Int,
     contentHeightCssPx: Int,
-): Size {
-    val width = when (val widthConstraint = declaredSize.width) {
-        is Fit -> Fixed(
-            if (contentWidthCssPx > 0) {
-                contentWidthCssPx.toUInt()
-            } else {
-                widthConstraint.default ?: FIT_PLACEHOLDER_WIDTH
-            },
-        )
-        else -> widthConstraint
+): Size = Size(
+    width = resolveFitAxis(declaredSize.width, contentWidthCssPx, FIT_PLACEHOLDER_WIDTH),
+    height = resolveFitAxis(declaredSize.height, contentHeightCssPx, FIT_PLACEHOLDER_HEIGHT),
+)
+
+/**
+ * A `fit` axis resolves to the content-reported size once known, else the schema's `fit.default`, else
+ * [placeholder]. Non-fit axes pass through unchanged.
+ */
+private fun resolveFitAxis(constraint: SizeConstraint, contentCssPx: Int, placeholder: UInt): SizeConstraint =
+    when (constraint) {
+        is Fit -> Fixed(if (contentCssPx > 0) contentCssPx.toUInt() else constraint.default ?: placeholder)
+        else -> constraint
     }
-    val height = when (val heightConstraint = declaredSize.height) {
-        is Fit -> Fixed(
-            if (contentHeightCssPx > 0) {
-                contentHeightCssPx.toUInt()
-            } else {
-                heightConstraint.default ?: FIT_PLACEHOLDER_HEIGHT
-            },
-        )
-        else -> heightConstraint
-    }
-    return Size(width = width, height = height)
-}
 
 /** Mutable holder for the per-WebView bridge instance, shared across factory/update/onRelease. */
 internal class WebViewBridgeHolder {
