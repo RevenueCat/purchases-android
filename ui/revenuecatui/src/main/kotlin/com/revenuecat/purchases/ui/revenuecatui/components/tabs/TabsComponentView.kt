@@ -11,6 +11,9 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -63,6 +66,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteract
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import kotlinx.serialization.json.JsonPrimitive
 
 private const val DURATION_MS_CROSS_FADE = 220
 
@@ -79,6 +83,23 @@ internal fun TabsComponentView(
         style = style,
         paywallState = state,
     )
+
+    // State-driven paywalls: publish the selected tab id into the state store so components that react to it via a
+    // `state_condition` override recompose. Gated behind visibility (parity with iOS): a hidden Tabs never
+    // publishes. Seeds once and then publishes only when the selection actually changes. Remembering the last
+    // published id above the visibility gate keeps a hidden -> visible transition from republishing and
+    // clobbering a value another component already set (mirrors iOS's didSeedInitialState). The declared state
+    // default is expected to match default_tab_id.
+    val selectedTabId = style.tabs[state.selectedTabIndex.coerceIn(0..style.tabs.lastIndex)].id
+    val lastPublishedTabId = remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(tabsState.visible, selectedTabId) {
+        if (!tabsState.visible || selectedTabId == lastPublishedTabId.value) return@LaunchedEffect
+        lastPublishedTabId.value = selectedTabId
+        style.stateUpdates?.takeIf { it.isNotEmpty() }?.let { updates ->
+            state.stateStore.applyUpdates(updates, payload = JsonPrimitive(selectedTabId))
+        }
+    }
+
     if (!tabsState.visible) return
 
     val backgroundStyle = tabsState.background?.let { rememberBackgroundStyle(it) }
@@ -214,6 +235,7 @@ private fun TabsComponentView_Preview() {
             control = TabControlStyle.Buttons(stack = previewStackComponentStyle(emptyList())),
             tabs = nonEmptyListOf(
                 TabsComponentStyle.Tab(
+                    id = "tab1",
                     stack = previewStackComponentStyle(
                         children = listOf(
                             controlButtons,
@@ -228,6 +250,7 @@ private fun TabsComponentView_Preview() {
                     ),
                 ),
                 TabsComponentStyle.Tab(
+                    id = "tab2",
                     stack = previewStackComponentStyle(
                         children = listOf(
                             controlButtons,
@@ -242,6 +265,7 @@ private fun TabsComponentView_Preview() {
                     ),
                 ),
                 TabsComponentStyle.Tab(
+                    id = "tab3",
                     stack = previewStackComponentStyle(
                         children = listOf(
                             controlButtons,

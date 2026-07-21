@@ -1307,6 +1307,7 @@ internal class StyleFactory(
                         control = control,
                         tabs = tabs,
                         overrides = overrides,
+                        stateUpdates = component.stateUpdates,
                     )
                 }
             }
@@ -1350,7 +1351,7 @@ internal class StyleFactory(
             withTabIndex(tabIndex) {
                 withTabControl(control) {
                     createStackComponentStyle(componentTab.stack)
-                        .map { stack -> TabsComponentStyle.Tab(stack) }
+                        .map { stack -> TabsComponentStyle.Tab(id = componentTab.id, stack = stack) }
                 }
             }
         }

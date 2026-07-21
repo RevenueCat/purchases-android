@@ -211,6 +211,13 @@ internal class PaywallViewModelImpl(
     private var currentWorkflowPresentedOfferingContext: PresentedOfferingContext? = null
     private var currentWorkflowStepTracksPaywallEvents = true
     private val workflowStepStateCache = mutableMapOf<String, PaywallState.Loaded.Components>()
+
+    // Shared across all screens of a workflow presentation so state-driven values survive screen navigation.
+    private var currentWorkflowStateStore: PaywallStateStore? = null
+
+    // Reused across full state refreshes (e.g. color changes) of a standalone paywall so its state-driven values
+    // are not lost. Tied to this ViewModel's lifetime, so it resets when the paywall is presented again.
+    private var standaloneStateStore: PaywallStateStore? = null
     private var preWarmJob: Job? = null
     private var transitionIdCounter: Int = 0
 
@@ -343,6 +350,7 @@ internal class PaywallViewModelImpl(
             trackExitOffer(ExitOfferType.DISMISS, exitOffering.identifier)
         }
         paywallPresentationData = null
+        standaloneStateStore = null
         clearWorkflowState()
         val dismissWithExitOffering = options.dismissRequestWithExitOffering
         if (dismissWithExitOffering != null) {
@@ -371,6 +379,7 @@ internal class PaywallViewModelImpl(
         currentWorkflowPresentedOfferingContext = null
         currentWorkflowStepTracksPaywallEvents = true
         workflowStepStateCache.clear()
+        currentWorkflowStateStore = null
         _workflowState.value = null
         // The dismiss is the session boundary: the next presentation on this ViewModel is a new session,
         // so completion from this one must not suppress its abandonment. Runs after closePaywall has
@@ -1007,11 +1016,14 @@ internal class PaywallViewModelImpl(
                 "You do not have a current offering configured in the RevenueCat dashboard.",
             )
         } else {
+            val stateStore = standaloneStateStore
+                ?: PaywallStateStore(emptyMap()).also { standaloneStateStore = it }
             _state.value = calculateState(
                 currentOffering,
                 _colorScheme.value,
                 purchases.storefrontCountryCode,
                 options.mode,
+                stateStore = stateStore,
             )
         }
     }
@@ -1114,6 +1126,9 @@ internal class PaywallViewModelImpl(
         _workflowState.value = null
         if (isNewWorkflowImpression) {
             workflowTraceId = UUID.randomUUID().toString()
+            // Fresh presentation: start the shared store empty; each step registers its declarations as it builds.
+            // Rebuilds (navigation, color change) reuse the existing store so values persist across screens.
+            currentWorkflowStateStore = PaywallStateStore(emptyMap())
         }
 
         // Pre-compute the package step so its default package is available in cache
@@ -1152,7 +1167,15 @@ internal class PaywallViewModelImpl(
         shouldApplyState: Boolean = true,
     ) {
         val cached = workflowStepStateCache[step.id]
-        val newState = cached ?: computeStateForStep(step, workflow, uiConfig, offerings, presentedOfferingContext)
+        val newState = cached
+            ?: computeStateForStep(
+                step,
+                workflow,
+                uiConfig,
+                offerings,
+                presentedOfferingContext,
+                currentWorkflowStateStore,
+            )
         if (cached == null && newState is PaywallState.Loaded.Components) {
             workflowStepStateCache[step.id] = newState
         }
@@ -1213,6 +1236,7 @@ internal class PaywallViewModelImpl(
         uiConfig: UiConfig,
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
+        stateStore: PaywallStateStore?,
     ): PaywallState {
         val screenId = step.screenId
             ?: return PaywallState.Error("Step '${step.id}' has no screen_id in workflow '${workflow.id}'")
@@ -1239,6 +1263,7 @@ internal class PaywallViewModelImpl(
             colorScheme = _colorScheme.value,
             storefrontCountryCode = purchases.storefrontCountryCode,
             mode = options.mode,
+            stateStore = stateStore,
         )
     }
 
@@ -1252,12 +1277,18 @@ internal class PaywallViewModelImpl(
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
+        // Capture on the main thread: cancellation is cooperative and can't stop an in-flight
+        // computeStateForStep, so a late prewarm must not write into a store swapped in by a newer session.
+        val stateStore = currentWorkflowStateStore
         preWarmJob = viewModelScope.launch {
             for ((stepId, step) in workflow.steps) {
                 if (stepId in workflowStepStateCache) continue
                 val computed = withContext(backgroundDispatcher) {
-                    computeStateForStep(step, workflow, uiConfig, offerings, presentedOfferingContext)
+                    computeStateForStep(step, workflow, uiConfig, offerings, presentedOfferingContext, stateStore)
                 }
+                // A newer presentation may have swapped in a different session store while we computed.
+                // Abandon this stale prewarm so we never cache a step bound to the old store.
+                if (stateStore !== currentWorkflowStateStore) return@launch
                 if (computed is PaywallState.Loaded.Components && stepId !in workflowStepStateCache) {
                     workflowStepStateCache[stepId] = computed
                     computed.update(localeList = _lastLocaleList.value.toFrameworkLocaleList())
@@ -1495,6 +1526,7 @@ internal class PaywallViewModelImpl(
         colorScheme: ColorScheme,
         storefrontCountryCode: String?,
         mode: PaywallMode,
+        stateStore: PaywallStateStore? = null,
     ): PaywallState {
         if (offering.availablePackages.isEmpty()) {
             return PaywallState.Error("No packages available")
@@ -1533,6 +1565,7 @@ internal class PaywallViewModelImpl(
                 purchases = purchases,
                 customVariables = options.customVariables,
                 defaultCustomVariables = extractDefaultCustomVariables(offering),
+                stateStore = stateStore,
             )
         }
     }

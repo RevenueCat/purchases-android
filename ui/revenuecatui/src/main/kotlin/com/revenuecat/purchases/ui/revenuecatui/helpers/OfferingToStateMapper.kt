@@ -44,6 +44,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateStore
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PackageConfigurationType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
@@ -245,6 +246,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
                 ?: headerResult?.defaultTabIndex
                 ?: stickyFooterResult?.defaultTabIndex,
             mainStackHasHeroImage = backendRootComponentResult.heroImageDetected,
+            stateDeclarations = componentsData.stateDeclarations.orEmpty(),
         )
     }
 }
@@ -367,10 +369,17 @@ internal fun Offering.toComponentsPaywallState(
     purchases: PurchasesType,
     customVariables: Map<String, CustomVariableValue> = emptyMap(),
     defaultCustomVariables: Map<String, CustomVariableValue> = emptyMap(),
+    stateStore: PaywallStateStore? = null,
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
         !validationResult.zeroDecimalPlaceCountries.contains(it)
     } ?: true
+
+    // A workflow shares one store across its screens, accumulating each screen's declarations; a standalone paywall
+    // gets its own store seeded from its declarations.
+    val resolvedStateStore = stateStore
+        ?.also { it.registerDeclarations(validationResult.stateDeclarations) }
+        ?: PaywallStateStore(validationResult.stateDeclarations)
 
     return PaywallState.Loaded.Components(
         stack = validationResult.stack,
@@ -390,6 +399,7 @@ internal fun Offering.toComponentsPaywallState(
         initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
         mainStackHasHeroImage = validationResult.mainStackHasHeroImage,
         purchases = purchases,
+        stateStore = resolvedStateStore,
     )
 }
 
