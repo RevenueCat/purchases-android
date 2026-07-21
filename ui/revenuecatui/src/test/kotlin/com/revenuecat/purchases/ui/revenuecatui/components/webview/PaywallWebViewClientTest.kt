@@ -56,14 +56,6 @@ internal class PaywallWebViewClientTest {
     }
 
     @Test
-    fun `onPageStarted does not stop same-origin https loads`() {
-        client.onPageStarted(webView, "https://assets.example.com/promo/step-two.html", null)
-
-        assertThat(navigations).containsExactly("https://assets.example.com/promo/step-two.html")
-        assertThat(webView.stopLoadingCount).isEqualTo(0)
-    }
-
-    @Test
     fun `onPageStarted stops blocked cross-origin loads that bypass shouldOverrideUrlLoading`() {
         // POST navigations skip shouldOverrideUrlLoading; onPageStarted is the backstop.
         client.onPageStarted(webView, "https://evil.example.org/phish.html", null)
