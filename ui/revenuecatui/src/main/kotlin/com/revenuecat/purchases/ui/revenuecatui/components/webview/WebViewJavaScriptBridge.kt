@@ -16,6 +16,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import java.lang.ref.WeakReference
+import kotlin.math.abs
 
 /**
  * Installs and drives the bidirectional bridge between a Paywalls V2 `web_view` component and native
@@ -274,7 +275,7 @@ internal class WebViewJavaScriptBridge(
     @Suppress("ReturnCount")
     private fun applyResize(reported: Int?, lastApplied: Int?): Int? {
         if (reported == null) return null
-        if (lastApplied != null && kotlin.math.abs(reported - lastApplied) < RESIZE_APPLY_THRESHOLD_CSS_PX) {
+        if (lastApplied != null && abs(reported - lastApplied) < RESIZE_APPLY_THRESHOLD_CSS_PX) {
             return null
         }
         return reported
