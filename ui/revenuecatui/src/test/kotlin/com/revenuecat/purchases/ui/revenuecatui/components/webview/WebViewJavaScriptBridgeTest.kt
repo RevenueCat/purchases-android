@@ -375,6 +375,35 @@ internal class WebViewJavaScriptBridgeTest {
     }
 
     @Test
+    fun `sends fit message before the web view URL is available`() {
+        // The fit frame is part of the handshake, so it must be delivered in the pre-navigation
+        // window like init — even before the top-level URL is populated.
+        val bridge = bridge(navigateTo = null, sizeToContentHeight = true)
+        assertThat(webView.url).isNull()
+
+        bridge.connect()
+
+        val script = shadowWebView.lastEvaluatedJavascript
+        assertThat(script).contains("\"type\":\"fit\"")
+        assertThat(script).contains("\"height\":true")
+    }
+
+    @Test
+    fun `ignores resize dimensions that are not json numbers`() {
+        listOf(
+            "string height" to """{"height":"300"}""",
+            "boolean height" to """{"height":true}""",
+        ).forEach { (name, payload) ->
+            resizes.clear()
+            val bridge = bridge(sizeToContentHeight = true)
+            bridge.connect()
+            bridge.postFromWeb(appMessage(type = WebViewMessageType.RESIZE, payload = payload))
+            idleMainLooper()
+            assertThat(resizes).describedAs(name).isEmpty()
+        }
+    }
+
+    @Test
     fun `resize matrix covers fit axes, clamp, and threshold`() {
         data class Case(
             val name: String,
@@ -424,6 +453,23 @@ internal class WebViewJavaScriptBridgeTest {
         idleMainLooper()
 
         assertThat(resizes).containsExactly(null to 250)
+    }
+
+    @Test
+    fun `drops a request frame without an id`() {
+        val bridge = bridge(sizeToContentHeight = true)
+        bridge.connect()
+        bridge.postFromWeb(
+            appMessage(
+                type = WebViewMessageType.RESIZE,
+                payload = """{"height":250}""",
+                kind = WebViewEnvelope.KIND_REQUEST,
+                // no id → must be dropped for response-correlation safety
+            ),
+        )
+        idleMainLooper()
+
+        assertThat(resizes).isEmpty()
     }
 
     // --- Document lifecycle ---
