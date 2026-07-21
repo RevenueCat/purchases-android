@@ -16,6 +16,8 @@ import kotlin.test.assertEquals
  */
 class WebViewComponentTests {
 
+    private val fillFitSize = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit())
+
     @Language("json")
     private val fullJson = """
         {
@@ -41,7 +43,7 @@ class WebViewComponentTests {
         assertThat(webView.visible).isTrue()
         assertThat(webView.protocolVersion).isEqualTo(1)
         assertThat(webView.url).isEqualTo("https://assets.pawwalls.com/web_bundles/123/index.html")
-        assertThat(webView.size).isEqualTo(Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()))
+        assertThat(webView.size).isEqualTo(fillFitSize)
     }
 
     @Test
@@ -55,6 +57,7 @@ class WebViewComponentTests {
               "id": "promo_web_view",
               "protocol_version": 1,
               "url": "https://paywalls.revenuecat.com/index.html",
+              "size": { "width": { "type": "fill" }, "height": { "type": "fit" } },
               "fallback": {
                 "type": "stack",
                 "components": []
@@ -65,7 +68,12 @@ class WebViewComponentTests {
         val actual = JsonTools.json.decodeFromString<WebViewComponent>(json)
 
         assertEquals(
-            WebViewComponent(url = "https://paywalls.revenuecat.com/index.html", id = "promo_web_view", protocolVersion = 1),
+            WebViewComponent(
+                url = "https://paywalls.revenuecat.com/index.html",
+                id = "promo_web_view",
+                protocolVersion = 1,
+                size = fillFitSize,
+            ),
             actual,
         )
     }
@@ -81,6 +89,7 @@ class WebViewComponentTests {
               "id": "promo_web_view",
               "protocol_version": 1,
               "url": "https://paywalls.revenuecat.com/index.html",
+              "size": { "width": { "type": "fill" }, "height": { "type": "fit" } },
               "capabilities": {
                 "network_access": { "allowed_domains": ["api.segment.io"] },
                 "camera": true,
@@ -95,7 +104,12 @@ class WebViewComponentTests {
         val actual = JsonTools.json.decodeFromString<WebViewComponent>(json)
 
         assertEquals(
-            WebViewComponent(url = "https://paywalls.revenuecat.com/index.html", id = "promo_web_view", protocolVersion = 1),
+            WebViewComponent(
+                url = "https://paywalls.revenuecat.com/index.html",
+                id = "promo_web_view",
+                protocolVersion = 1,
+                size = fillFitSize,
+            ),
             actual,
         )
     }
@@ -108,7 +122,8 @@ class WebViewComponentTests {
               "type": "web_view",
               "id": "promo_web_view",
               "protocol_version": 1,
-              "url": "https://paywalls.revenuecat.com/{{ custom.animal }}.html"
+              "url": "https://paywalls.revenuecat.com/{{ custom.animal }}.html",
+              "size": { "width": { "type": "fill" }, "height": { "type": "fit" } }
             }
             """
 
@@ -119,33 +134,39 @@ class WebViewComponentTests {
                 url = "https://paywalls.revenuecat.com/{{ custom.animal }}.html",
                 id = "promo_web_view",
                 protocolVersion = 1,
+                size = fillFitSize,
             ),
             actual,
         )
     }
 
     @Test
-    fun `deserializes required shape with defaults for missing optional fields`() {
-        // Only name, visible, and size are optional; id, url, and protocol_version are required.
+    fun `decodes with defaults for missing name and visible`() {
+        // Only name and visible are optional; id, url, protocol_version, and size are required.
         @Language("json")
         val json = """
             {
               "type": "web_view",
               "id": "promo_web_view",
               "protocol_version": 1,
-              "url": "https://paywalls.revenuecat.com/index.html"
+              "url": "https://paywalls.revenuecat.com/index.html",
+              "size": { "width": { "type": "fill" }, "height": { "type": "fit" } }
             }
             """
 
         val actual = JsonTools.json.decodeFromString<WebViewComponent>(json)
 
         assertEquals(
-            WebViewComponent(url = "https://paywalls.revenuecat.com/index.html", id = "promo_web_view", protocolVersion = 1),
+            WebViewComponent(
+                url = "https://paywalls.revenuecat.com/index.html",
+                id = "promo_web_view",
+                protocolVersion = 1,
+                size = fillFitSize,
+            ),
             actual,
         )
         assertThat(actual.name).isNull()
         assertThat(actual.visible).isNull()
-        assertThat(actual.size).isEqualTo(Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()))
     }
 
     @Test
@@ -155,7 +176,8 @@ class WebViewComponentTests {
             {
               "type": "web_view",
               "protocol_version": 1,
-              "url": "https://paywalls.revenuecat.com/index.html"
+              "url": "https://paywalls.revenuecat.com/index.html",
+              "size": { "width": { "type": "fill" }, "height": { "type": "fit" } }
             }
             """
 
@@ -169,6 +191,22 @@ class WebViewComponentTests {
             {
               "type": "web_view",
               "id": "promo_web_view",
+              "url": "https://paywalls.revenuecat.com/index.html",
+              "size": { "width": { "type": "fill" }, "height": { "type": "fit" } }
+            }
+            """
+
+        assertThatThrownBy { JsonTools.json.decodeFromString<WebViewComponent>(json) }
+    }
+
+    @Test
+    fun `fails to decode when required size is missing`() {
+        @Language("json")
+        val json = """
+            {
+              "type": "web_view",
+              "id": "promo_web_view",
+              "protocol_version": 1,
               "url": "https://paywalls.revenuecat.com/index.html"
             }
             """
@@ -183,6 +221,7 @@ class WebViewComponentTests {
             url = "https://paywalls.revenuecat.com/index.html",
             id = "promo_web_view",
             protocolVersion = 1,
+            size = fillFitSize,
         )
 
         val matches = webView.filter { it is WebViewComponent }
