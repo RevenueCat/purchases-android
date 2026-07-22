@@ -41,7 +41,6 @@ class WebViewOfferingToStateTest {
         val webViewStyle = rootStack.children.filterIsInstance<WebViewComponentStyle>().single()
         assertThat(webViewStyle.url).isEqualTo(webViewUrl)
         assertThat(webViewStyle.componentId).isEqualTo(webViewId)
-        assertThat(webViewStyle.protocolVersion).isEqualTo(1)
         assertThat(webViewStyle.size).isEqualTo(size)
         assertThat(webViewStyle.visible).isTrue()
     }

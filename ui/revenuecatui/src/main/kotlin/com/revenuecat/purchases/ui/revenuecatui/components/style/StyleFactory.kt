@@ -590,7 +590,6 @@ internal class StyleFactory(
                 visible = component.visible ?: DEFAULT_VISIBILITY,
                 size = component.size,
                 componentId = component.id,
-                protocolVersion = component.protocolVersion,
             ),
         )
 
