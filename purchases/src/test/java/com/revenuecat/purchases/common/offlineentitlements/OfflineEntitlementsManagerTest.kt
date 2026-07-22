@@ -11,12 +11,21 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import io.mockk.CapturingSlot
 import io.mockk.Runs
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.invoke
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
 import org.junit.Before
@@ -26,6 +35,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
+@OptIn(ExperimentalCoroutinesApi::class)
 class OfflineEntitlementsManagerTest {
 
     private val appUserID = "test-app-user-id"
@@ -439,6 +449,111 @@ class OfflineEntitlementsManagerTest {
     }
 
     @Test
+    fun `updateProductEntitlementMappingCacheIfStale does no remote config or legacy work if cache not stale`() {
+        val topicProvider = mockk<EntitlementMappingTopicProvider>()
+        offlineEntitlementsManager = managerWithTopicProvider(topicProvider)
+        every { deviceCache.isProductEntitlementMappingCacheStale() } returns false
+
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+
+        coVerify(exactly = 0) { topicProvider.getProductEntitlementMapping() }
+        verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
+    }
+
+    @Test
+    fun `updateProductEntitlementMappingCacheIfStale caches remote config mapping and skips legacy endpoint`() {
+        val topicProvider = mockk<EntitlementMappingTopicProvider>()
+        val mapping = createProductEntitlementMapping()
+        offlineEntitlementsManager = managerWithTopicProvider(topicProvider)
+        every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
+        every { deviceCache.cacheProductEntitlementMapping(mapping) } just Runs
+        coEvery { topicProvider.getProductEntitlementMapping() } returns currentResult(mapping)
+        var completionCallCount = 0
+
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale {
+            assertThat(it).isNull()
+            completionCallCount++
+        }
+
+        assertThat(completionCallCount).isEqualTo(1)
+        coVerify(exactly = 1) { topicProvider.getProductEntitlementMapping() }
+        verify(exactly = 1) { deviceCache.cacheProductEntitlementMapping(mapping) }
+        verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
+    }
+
+    @Test
+    fun `updateProductEntitlementMappingCacheIfStale falls back when remote config mapping is unavailable`() {
+        val topicProvider = mockk<EntitlementMappingTopicProvider>()
+        val mapping = createProductEntitlementMapping()
+        offlineEntitlementsManager = managerWithTopicProvider(topicProvider)
+        every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
+        every { deviceCache.cacheProductEntitlementMapping(mapping) } just Runs
+        coEvery { topicProvider.getProductEntitlementMapping() } returns null
+        var completionCallCount = 0
+
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale {
+            assertThat(it).isNull()
+            completionCallCount++
+        }
+
+        coVerify(exactly = 1) { topicProvider.getProductEntitlementMapping() }
+        verify(exactly = 1) { backend.getProductEntitlementMapping(any(), any()) }
+        backendSuccessSlot.captured(mapping)
+        assertThat(completionCallCount).isEqualTo(1)
+        verify(exactly = 1) { deviceCache.cacheProductEntitlementMapping(mapping) }
+    }
+
+    @Test
+    fun `updateProductEntitlementMappingCacheIfStale reports legacy error after remote config is unavailable`() {
+        val topicProvider = mockk<EntitlementMappingTopicProvider>()
+        val error = PurchasesError(PurchasesErrorCode.UnknownBackendError, "legacy failed")
+        offlineEntitlementsManager = managerWithTopicProvider(topicProvider)
+        every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
+        coEvery { topicProvider.getProductEntitlementMapping() } returns null
+        var reportedError: PurchasesError? = null
+
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale { reportedError = it }
+        backendErrorSlot.captured(error)
+
+        assertThat(reportedError).isEqualTo(error)
+        verify(exactly = 0) { deviceCache.cacheProductEntitlementMapping(any()) }
+    }
+
+    @Test
+    fun `updateProductEntitlementMappingCacheIfStale does not cache mapping invalidated after provider read`() {
+        val topicProvider = mockk<EntitlementMappingTopicProvider>()
+        val mapping = mockk<ProductEntitlementMapping>()
+        coEvery { topicProvider.getProductEntitlementMapping() } returns
+            ProductEntitlementMappingResult(mapping) { false }
+        offlineEntitlementsManager = managerWithTopicProvider(topicProvider)
+        every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
+
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+
+        verify(exactly = 0) { deviceCache.cacheProductEntitlementMapping(any()) }
+        verify(exactly = 1) { backend.getProductEntitlementMapping(any(), any()) }
+    }
+
+    @Test
+    fun `close cancels an in-flight remote config mapping read without starting legacy fallback`() = runTest {
+        val topicProvider = mockk<EntitlementMappingTopicProvider>()
+        val result = CompletableDeferred<ProductEntitlementMappingResult?>()
+        val managerScope = CoroutineScope(SupervisorJob() + StandardTestDispatcher(testScheduler))
+        offlineEntitlementsManager = managerWithTopicProvider(topicProvider, managerScope)
+        every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
+        coEvery { topicProvider.getProductEntitlementMapping() } coAnswers { result.await() }
+
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+        testScheduler.runCurrent()
+        offlineEntitlementsManager.close()
+        result.complete(currentResult(createProductEntitlementMapping()))
+        testScheduler.advanceUntilIdle()
+
+        verify(exactly = 0) { deviceCache.cacheProductEntitlementMapping(any()) }
+        verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
+    }
+
+    @Test
     fun `updateProductEntitlementMappingCacheIfStale does nothing if not finishing transactions`() {
         every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
         every { appConfig.finishTransactions } returns false
@@ -469,7 +584,7 @@ class OfflineEntitlementsManagerTest {
     }
 
     @Test
-    fun `updateProductEntitlementMappingCacheIfStale caches mapping from backend if request successful`() {
+    fun `updateProductEntitlementMappingCacheIfStale uses backend when remote config is disabled`() {
         every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
         every { deviceCache.cacheProductEntitlementMapping(any()) } just Runs
         var completionCallCount = 0
@@ -494,6 +609,25 @@ class OfflineEntitlementsManagerTest {
     // endregion
 
     // region helpers
+
+    private fun managerWithTopicProvider(
+        topicProvider: EntitlementMappingTopicProvider,
+        managerScope: CoroutineScope = CoroutineScope(UnconfinedTestDispatcher()),
+    ): OfflineEntitlementsManager = OfflineEntitlementsManager(
+        backend,
+        offlineEntitlementsCalculator,
+        deviceCache,
+        appConfig,
+        diagnosticsTracker,
+        topicProvider,
+        managerScope,
+    )
+
+    private fun currentResult(mapping: ProductEntitlementMapping) =
+        ProductEntitlementMappingResult(mapping) { action ->
+            action(mapping)
+            true
+        }
 
     private fun mockCalculateOfflineEntitlements(
         successCustomerInfo: CustomerInfo? = null,

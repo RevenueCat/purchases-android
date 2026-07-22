@@ -9,6 +9,8 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerTestData
 import com.revenuecat.purchases.common.networking.RCContentEncoding
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMappingTopicProvider
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
@@ -45,6 +47,7 @@ class RemoteConfigManagerIntegrationTest {
     private lateinit var backend: Backend
     private lateinit var diskCache: RemoteConfigDiskCache
     private lateinit var blobStore: RemoteConfigBlobStore
+    private lateinit var blobFetcher: RemoteConfigBlobFetcher
     private lateinit var manager: RemoteConfigManager
 
     // Unconfined so the launched 200-path coroutine runs eagerly: settle(onSuccess) then assert still works.
@@ -71,6 +74,7 @@ class RemoteConfigManagerIntegrationTest {
         // This suite exercises the real disk/blob-store path; network prefetch is unit-tested separately, so the
         // fetcher is mocked here to keep the test hermetic (no real CDN calls from the background worker pool).
         val topicStore = RemoteConfigTopicStore { diskCache.read()?.topics?.get(it.wireName) }
+        blobFetcher = mockk(relaxed = true)
         manager = RemoteConfigManager(
             backend,
             diskCache,
@@ -79,7 +83,8 @@ class RemoteConfigManagerIntegrationTest {
             scope = testScope,
             topicStore = topicStore,
             sourceProvider = DefaultRemoteConfigSourceProvider(topicStore),
-            blobFetcher = mockk(relaxed = true),
+            blobFetcher = blobFetcher,
+            appUserIDProvider = { "integration-test-user" },
         )
 
         every {
@@ -289,6 +294,74 @@ class RemoteConfigManagerIntegrationTest {
         assertThat(body).isNull()
     }
 
+    @Test
+    fun `a synced product entitlement mapping blob decodes through its topic provider`() {
+        val blob = """
+            {
+              "product_entitlement_mapping": {
+                "monthly": {
+                  "product_identifier": "monthly",
+                  "base_plan_id": "monthly-base-plan",
+                  "entitlements": ["pro"]
+                }
+              }
+            }
+        """.trimIndent().toByteArray()
+        val ref = RCContainerTestData.refOf(blob)
+        coEvery { blobFetcher.ensureDownloaded(ref) } returns true
+
+        sync(container(productEntitlementMappingConfig(ref), blob))
+
+        val mapping = runBlocking {
+            ProductEntitlementMappingTopicProvider(manager).getProductEntitlementMapping()
+        }
+        assertThat(mapping?.mapping?.mappings).containsOnlyKeys("monthly")
+        assertThat(mapping?.mapping?.mappings?.get("monthly")?.entitlements).containsExactly("pro")
+        assertThat(blobStore.read(ref)).isEqualTo(blob)
+    }
+
+    @Test
+    fun `product entitlement mapping provider returns null when its blob download fails`() {
+        val blob = """{"product_entitlement_mapping":{}}""".toByteArray()
+        val ref = RCContainerTestData.refOf(blob)
+        coEvery { blobFetcher.ensureDownloaded(ref) } returns false
+        sync(container(productEntitlementMappingConfig(ref)))
+
+        val mapping = runBlocking {
+            ProductEntitlementMappingTopicProvider(manager).getProductEntitlementMapping()
+        }
+
+        assertThat(mapping).isNull()
+    }
+
+    @Test
+    fun `a cold product entitlement mapping read returns the config fetched on demand`() {
+        val blob = """
+            {
+              "product_entitlement_mapping": {
+                "monthly": {
+                  "product_identifier": "monthly",
+                  "entitlements": ["pro"]
+                }
+              }
+            }
+        """.trimIndent().toByteArray()
+        val ref = RCContainerTestData.refOf(blob)
+        val response = container(productEntitlementMappingConfig(ref), blob)
+        coEvery { blobFetcher.ensureDownloaded(ref) } returns true
+        every {
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any())
+        } answers {
+            arg<(RCContainer?, VerificationResult) -> Unit>(6).invoke(response, VerificationResult.VERIFIED)
+        }
+
+        val mapping = runBlocking {
+            ProductEntitlementMappingTopicProvider(manager).getProductEntitlementMapping()
+        }
+
+        assertThat(mapping?.mapping?.mappings).containsOnlyKeys("monthly")
+    }
+
     /** Builds a workflows-topic config. Each item maps an item key to its `blob_ref`, or `null` for inline-only. */
     private fun workflowsConfig(
         manifest: String = "v1.1.workflows:etag1",
@@ -314,6 +387,21 @@ class RemoteConfigManagerIntegrationTest {
             }
         """.trimIndent()
     }
+
+    private fun productEntitlementMappingConfig(ref: String): String =
+        """
+            {
+              "domain": "app",
+              "manifest": "v1.1.product_entitlement_mapping:etag1",
+              "active_topics": ["product_entitlement_mapping"],
+              "prefetch_blobs": [],
+              "topics": {
+                "product_entitlement_mapping": {
+                  "default": { "blob_ref": "$ref" }
+                }
+              }
+            }
+        """.trimIndent()
 
     private fun container(
         configJson: String,
