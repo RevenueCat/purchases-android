@@ -512,7 +512,7 @@ internal class WebViewJavaScriptBridgeTest {
     @Test
     fun `initial document connect produces one init`() {
         val bridge = bridge()
-        bridge.onMainFrameNavigationStarted(expectedUrl)
+        bridge.onMainFrameNavigationStarted()
         bridge.connect()
 
         assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"kind\":\"init\"")
@@ -521,7 +521,7 @@ internal class WebViewJavaScriptBridgeTest {
     @Test
     fun `duplicate connect in the same document is ignored`() {
         val bridge = bridge()
-        bridge.onMainFrameNavigationStarted(expectedUrl)
+        bridge.onMainFrameNavigationStarted()
         bridge.connect()
         val afterFirst = shadowWebView.lastEvaluatedJavascript
         bridge.connect()
@@ -532,9 +532,9 @@ internal class WebViewJavaScriptBridgeTest {
     @Test
     fun `after navigation starts app frames are rejected until reconnect`() {
         val bridge = bridge(sizeToContentHeight = true)
-        bridge.onMainFrameNavigationStarted(expectedUrl)
+        bridge.onMainFrameNavigationStarted()
         bridge.connect()
-        bridge.onMainFrameNavigationStarted("https://assets.example.com/promo/step-two.html")
+        bridge.onMainFrameNavigationStarted()
 
         bridge.resize(300)
 
@@ -544,10 +544,10 @@ internal class WebViewJavaScriptBridgeTest {
     @Test
     fun `new document reconnects and services app frames again`() {
         val bridge = bridge(sizeToContentHeight = true)
-        bridge.onMainFrameNavigationStarted(expectedUrl)
+        bridge.onMainFrameNavigationStarted()
         bridge.connect()
 
-        bridge.onMainFrameNavigationStarted("https://assets.example.com/promo/step-two.html")
+        bridge.onMainFrameNavigationStarted()
         webView.loadUrl("https://assets.example.com/promo/step-two.html")
         bridge.resize(300)
         assertThat(resizes).describedAs("channel closed after navigation").isEmpty()
@@ -560,11 +560,11 @@ internal class WebViewJavaScriptBridgeTest {
     @Test
     fun `rc fit is resent after reconnect when height is fit`() {
         val bridge = bridge(sizeToContentHeight = true)
-        bridge.onMainFrameNavigationStarted(expectedUrl)
+        bridge.onMainFrameNavigationStarted()
         bridge.connect()
         assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"type\":\"fit\"")
 
-        bridge.onMainFrameNavigationStarted("https://assets.example.com/promo/step-two.html")
+        bridge.onMainFrameNavigationStarted()
         webView.loadUrl("https://assets.example.com/promo/step-two.html")
         bridge.connect()
 
@@ -576,12 +576,12 @@ internal class WebViewJavaScriptBridgeTest {
     @Test
     fun `resize threshold state is reset between documents`() {
         val bridge = bridge(sizeToContentHeight = true)
-        bridge.onMainFrameNavigationStarted(expectedUrl)
+        bridge.onMainFrameNavigationStarted()
         bridge.connect()
         bridge.resize(300)
         assertThat(resizes).containsExactly(null to 300)
 
-        bridge.onMainFrameNavigationStarted("https://assets.example.com/promo/step-two.html")
+        bridge.onMainFrameNavigationStarted()
         webView.loadUrl("https://assets.example.com/promo/step-two.html")
         bridge.connect()
         // Same height as before the document reset — must apply again because threshold state cleared.
@@ -594,8 +594,8 @@ internal class WebViewJavaScriptBridgeTest {
     fun `document reset clears compose content dimensions`() {
         var resets = 0
         val bridge = bridge(onDocumentReset = { resets += 1 })
-        bridge.onMainFrameNavigationStarted(expectedUrl)
-        bridge.onMainFrameNavigationStarted("https://assets.example.com/promo/reload.html")
+        bridge.onMainFrameNavigationStarted()
+        bridge.onMainFrameNavigationStarted()
 
         assertThat(resets).isEqualTo(2)
     }
@@ -606,7 +606,7 @@ internal class WebViewJavaScriptBridgeTest {
         val background = Thread { bridge.postFromWeb(connectJson()) }
         background.start()
         background.join()
-        bridge.onMainFrameNavigationStarted(null)
+        bridge.onMainFrameNavigationStarted()
         idleMainLooper()
 
         // Stale connect was cancelled with the old document scope — channel stays closed.
@@ -616,11 +616,11 @@ internal class WebViewJavaScriptBridgeTest {
     @Test
     fun `outbound message queued before document reset is dropped`() {
         val bridge = bridge()
-        bridge.onMainFrameNavigationStarted(expectedUrl)
+        bridge.onMainFrameNavigationStarted()
         val background = Thread { bridge.postFromWeb(connectJson()) }
         background.start()
         background.join()
-        bridge.onMainFrameNavigationStarted(null)
+        bridge.onMainFrameNavigationStarted()
         idleMainLooper()
 
         assertThat(shadowWebView.lastEvaluatedJavascript).isNull()
@@ -629,9 +629,9 @@ internal class WebViewJavaScriptBridgeTest {
     @Test
     fun `reload follows the same reconnect behavior`() {
         val bridge = bridge(sizeToContentHeight = true)
-        bridge.onMainFrameNavigationStarted(expectedUrl)
+        bridge.onMainFrameNavigationStarted()
         bridge.connect()
-        bridge.onMainFrameNavigationStarted(expectedUrl) // reload
+        bridge.onMainFrameNavigationStarted() // reload
         bridge.resize(300)
         assertThat(resizes).describedAs("channel closed after reload").isEmpty()
 

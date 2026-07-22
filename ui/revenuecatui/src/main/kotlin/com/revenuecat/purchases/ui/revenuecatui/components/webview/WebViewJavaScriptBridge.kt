@@ -117,8 +117,7 @@ internal class WebViewJavaScriptBridge(
      * resize state so it can `connect` again.
      */
     @MainThread
-    @Suppress("UnusedParameter")
-    fun onMainFrameNavigationStarted(url: String?) {
+    fun onMainFrameNavigationStarted() {
         if (released) return
         documentScope.cancel()
         documentScope = newDocumentScope()
