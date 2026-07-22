@@ -77,14 +77,29 @@ internal class WebViewJavaScriptBridge(
     }
 
     /**
-     * Registers the secure message listener. Call once on WebView creation. Falls back to
-     * [onSecureMessagingUnsupported] when [WebViewFeature.WEB_MESSAGE_LISTENER] is missing.
+     * Registers the secure message listener. Idempotent; safe to call more than once. Falls back to
+     * [onSecureMessagingUnsupported] when the expected origin is invalid (a config error) or
+     * [WebViewFeature.WEB_MESSAGE_LISTENER] is missing (an old System WebView) — logged distinctly.
      */
     @MainThread
+    @Suppress("ReturnCount")
     fun attach() {
+        if (messageListenerInstalled) return
         val webView = webViewRef.get() ?: return
         val origin = expectedOrigin
-        if (origin == null || !WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+        if (origin == null) {
+            Logger.w(
+                "Paywalls V2 web_view expected origin is not a valid origin; the bridge cannot " +
+                    "verify message provenance and will reject all messages.",
+            )
+            onSecureMessagingUnsupported()
+            return
+        }
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
+            Logger.d(
+                "Paywalls V2 web_view secure messaging is unsupported on this System WebView " +
+                    "(missing WEB_MESSAGE_LISTENER); falling back.",
+            )
             onSecureMessagingUnsupported()
             return
         }
@@ -153,11 +168,14 @@ internal class WebViewJavaScriptBridge(
             WebViewEnvelope.KIND_MESSAGE,
             WebViewEnvelope.KIND_REQUEST,
             -> handleAppFrame(envelope)
-            else -> Unit
+            else -> Logger.w(
+                "Dropping inbound web view message: unexpected envelope kind '${envelope.kind}'.",
+            )
         }
     }
 
     @MainThread
+    @Suppress("ReturnCount")
     private fun handleConnect(envelope: WebViewEnvelope.Parsed) {
         if (channelOpen || released) return
 
@@ -175,8 +193,10 @@ internal class WebViewJavaScriptBridge(
             return
         }
 
-        channelOpen = true
-        deliverEnvelope(
+        // Open the channel only once `init` has actually gone out (matches the web host's
+        // post-then-open order): a handshake whose init is dropped by the outbound origin/webView
+        // check can then be retried by a later `connect` instead of wedging the bridge half-open.
+        val initDelivered = deliverEnvelopeNow(
             WebViewEnvelope.build(
                 kind = WebViewEnvelope.KIND_INIT,
                 protocolVersion = protocolVersion,
@@ -184,6 +204,9 @@ internal class WebViewJavaScriptBridge(
             ),
             allowBeforeNavigation = true,
         )
+        if (!initDelivered) return
+
+        channelOpen = true
         sendFitIfNeeded()
     }
 
@@ -209,7 +232,10 @@ internal class WebViewJavaScriptBridge(
     @MainThread
     @Suppress("ReturnCount")
     private fun handleAppFrame(envelope: WebViewEnvelope.Parsed) {
-        if (!channelOpen) return
+        if (!channelOpen) {
+            Logger.w("Dropping inbound web view message: channel is not open.")
+            return
+        }
 
         // A `request` frame must carry an id for response correlation; drop malformed ones.
         if (envelope.kind == WebViewEnvelope.KIND_REQUEST && envelope.id == null) {
@@ -220,12 +246,17 @@ internal class WebViewJavaScriptBridge(
         // resize is the only app frame serviced in v1 (no message handler, no variables).
         if (envelope.type == WebViewMessageType.RESIZE) {
             handleResize(envelope)
+        } else {
+            Logger.w("Dropping inbound web view message: unsupported message type '${envelope.type}'.")
         }
     }
 
     @MainThread
     private fun handleResize(envelope: WebViewEnvelope.Parsed) {
-        if (envelope.componentId != componentId) return
+        if (envelope.componentId != componentId) {
+            Logger.w("Dropping inbound web view message: resize component id does not match.")
+            return
+        }
         val payload = envelope.payload ?: return
 
         val width = applyResize(
@@ -262,23 +293,34 @@ internal class WebViewJavaScriptBridge(
      */
     private fun deliverEnvelope(envelope: JSONObject, allowBeforeNavigation: Boolean) {
         documentScope.launch {
-            val webView = webViewRef.get() ?: return@launch
-            // Defense in depth: drop outbound work if the top-level URL left the expected origin.
-            if (!isCurrentUrlTrusted(webView, allowBeforeNavigation = allowBeforeNavigation)) {
-                Logger.w(
-                    "Dropping outbound web view message: current origin does not match the " +
-                        "resolved component origin.",
-                )
-                return@launch
-            }
-            val payload = envelope.toString().escapeForJavaScript()
-            webView.evaluateJavascript(
-                "if (window.${WebViewEnvelope.RECEIVE_FUNCTION}) { " +
-                    "window.${WebViewEnvelope.RECEIVE_FUNCTION}($payload); " +
-                    "}",
-                null,
-            )
+            deliverEnvelopeNow(envelope, allowBeforeNavigation = allowBeforeNavigation)
         }
+    }
+
+    /**
+     * Synchronously attempts to deliver a host-to-content frame; returns whether it went out. Used
+     * directly by the handshake so [channelOpen] flips only once `init` has actually been sent.
+     */
+    @MainThread
+    @Suppress("ReturnCount")
+    private fun deliverEnvelopeNow(envelope: JSONObject, allowBeforeNavigation: Boolean): Boolean {
+        val webView = webViewRef.get() ?: return false
+        // Defense in depth: drop outbound work if the top-level URL left the expected origin.
+        if (!isCurrentUrlTrusted(webView, allowBeforeNavigation = allowBeforeNavigation)) {
+            Logger.w(
+                "Dropping outbound web view message: current origin does not match the " +
+                    "resolved component origin.",
+            )
+            return false
+        }
+        val payload = envelope.toString().escapeForJavaScript()
+        webView.evaluateJavascript(
+            "if (typeof window.${WebViewEnvelope.RECEIVE_FUNCTION} === 'function') { " +
+                "window.${WebViewEnvelope.RECEIVE_FUNCTION}($payload); " +
+                "}",
+            null,
+        )
+        return true
     }
 
     /** Trusted iff the sender is the main frame on the resolved origin; subframes rely on server CSP. */

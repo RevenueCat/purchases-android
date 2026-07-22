@@ -361,6 +361,41 @@ internal class WebViewJavaScriptBridgeTest {
         }
     }
 
+    @Test
+    fun `attach is idempotent`() {
+        val bridge = bridge() // calls attach() once
+
+        bridge.attach()
+        bridge.attach()
+
+        verify(exactly = 1) { WebViewCompat.addWebMessageListener(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `reopens the channel when a handshake init could not be delivered`() {
+        // First connect while the top-level URL is off-origin: the outbound defense-in-depth check
+        // drops init, so the channel must NOT latch open.
+        val bridge = bridge(navigateTo = "https://evil.example.org/phish.html")
+        bridge.connect()
+        assertThat(shadowWebView.lastEvaluatedJavascript).isNull()
+
+        // URL returns to the expected origin (without a navigation reset); a retried connect must
+        // now complete the handshake rather than being ignored as a duplicate.
+        webView.loadUrl(expectedUrl)
+        bridge.connect()
+
+        assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"kind\":\"init\"")
+    }
+
+    @Test
+    fun `outbound script guards the receive function with a typeof check`() {
+        val bridge = bridge()
+        bridge.connect()
+
+        assertThat(shadowWebView.lastEvaluatedJavascript)
+            .contains("typeof window.__rcWebComponentsReceive === 'function'")
+    }
+
     // --- Sizing (fit / resize) ---
 
     @Test
