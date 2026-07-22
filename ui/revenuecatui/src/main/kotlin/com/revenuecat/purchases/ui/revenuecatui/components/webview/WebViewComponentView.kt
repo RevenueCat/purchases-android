@@ -17,6 +17,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.webkit.ProfileStore
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
@@ -24,6 +27,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 @JvmSynthetic
 @Composable
@@ -75,6 +79,8 @@ internal fun WebViewComponentView(
             AndroidView(
                 factory = { context ->
                     WebView(context).apply {
+                        // Must precede attach()/loadUrl: setProfile throws once the WebView has been used.
+                        applyPaywallProfile()
                         val bridge = WebViewJavaScriptBridge(
                             webView = this,
                             componentId = componentId,
@@ -181,4 +187,21 @@ private fun WebView.configure(
         onMainFrameNavigationStarted = onMainFrameNavigationStarted,
         onMainFrameLoadFailed = onMainFrameLoadFailed,
     )
+}
+
+// Dedicated persistent profile isolating paywall WebView storage from the host app; shared across paywalls.
+private const val PAYWALL_PROFILE_NAME: String = "com.revenuecat.paywall"
+
+private fun WebView.applyPaywallProfile() {
+    // Unsupported System WebViews (< 113) keep the Default profile; setProfile would otherwise throw.
+    if (!WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) return
+    // Isolation is an enhancement: on failure fall back to the Default profile rather than failing the render.
+    try {
+        ProfileStore.getInstance().getOrCreateProfile(PAYWALL_PROFILE_NAME)
+        WebViewCompat.setProfile(this, PAYWALL_PROFILE_NAME)
+    } catch (error: IllegalStateException) {
+        Logger.w("Paywalls V2 web_view could not use an isolated profile; using the default. $error")
+    } catch (error: UnsupportedOperationException) {
+        Logger.w("Paywalls V2 web_view could not use an isolated profile; using the default. $error")
+    }
 }
