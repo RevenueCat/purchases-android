@@ -192,16 +192,15 @@ private fun WebView.configure(
 // Dedicated persistent profile isolating paywall WebView storage from the host app; shared across paywalls.
 internal const val PAYWALL_PROFILE_NAME: String = "com.revenuecat.paywall"
 
+// Isolation is an enhancement: on any failure fall back to the Default profile rather than failing the render.
+@Suppress("TooGenericExceptionCaught")
 internal fun WebView.applyPaywallProfile() {
     // Unsupported System WebViews (< 113) keep the Default profile; setProfile would otherwise throw.
     if (!WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) return
-    // Isolation is an enhancement: on failure fall back to the Default profile rather than failing the render.
     try {
         ProfileStore.getInstance().getOrCreateProfile(PAYWALL_PROFILE_NAME)
         WebViewCompat.setProfile(this, PAYWALL_PROFILE_NAME)
-    } catch (error: IllegalStateException) {
-        Logger.w("Paywalls V2 web_view could not use an isolated profile; using the default. $error")
-    } catch (error: UnsupportedOperationException) {
+    } catch (error: RuntimeException) {
         Logger.w("Paywalls V2 web_view could not use an isolated profile; using the default. $error")
     }
 }

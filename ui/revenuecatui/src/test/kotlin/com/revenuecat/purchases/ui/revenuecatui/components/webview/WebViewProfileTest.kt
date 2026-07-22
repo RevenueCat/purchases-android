@@ -51,11 +51,13 @@ internal class WebViewProfileTest {
 
     @Test
     fun `does not fail the render when profile setup throws`() {
+        val profileStore = mockk<ProfileStore>()
+        every { ProfileStore.getInstance() } returns profileStore
         every { WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE) } returns true
-        every { WebViewCompat.setProfile(any(), any()) } throws IllegalStateException("WebView already used")
+        every { profileStore.getOrCreateProfile(any()) } throws IllegalArgumentException("invalid profile name")
 
         webView.applyPaywallProfile()
 
-        verify { WebViewCompat.setProfile(webView, PAYWALL_PROFILE_NAME) }
+        verify { profileStore.getOrCreateProfile(PAYWALL_PROFILE_NAME) }
     }
 }
