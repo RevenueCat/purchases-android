@@ -153,7 +153,7 @@ internal class OfflineEntitlementsManager(
         completion?.invoke(null)
     }
 
-    // We disable offline entitlements in observer mode (finishTransactions = true) since it doesn't
+    // We disable offline entitlements in observer mode (finishTransactions = false) since it doesn't
     // provide any value and simplifies operations in that mode. Also on test store, since we don't have a store
     // to store purchases in the client.
     private fun isOfflineEntitlementsEnabled() = appConfig.finishTransactions &&
