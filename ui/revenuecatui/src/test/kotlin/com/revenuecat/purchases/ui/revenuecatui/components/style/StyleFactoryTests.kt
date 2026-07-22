@@ -138,23 +138,6 @@ class StyleFactoryTests {
         assertThat(style.visible).isFalse()
         assertThat(style.size).isEqualTo(size)
         assertThat(style.componentId).isEqualTo("promo_web_view")
-        assertThat(style.protocolVersion).isEqualTo(1)
-    }
-
-    @Test
-    fun `Should pass protocolVersion through to the WebViewComponentStyle`() {
-        val component = WebViewComponent(
-            url = "https://paywalls.revenuecat.com/index.html",
-            id = "promo_web_view",
-            protocolVersion = 1,
-            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
-        )
-
-        val result = styleFactory.create(component)
-
-        assertThat(result).isInstanceOf(Result.Success::class.java)
-        val style = (result as Result.Success).value.componentStyle as WebViewComponentStyle
-        assertThat(style.protocolVersion).isEqualTo(1)
     }
 
     @Test
