@@ -1,4 +1,5 @@
 @file:OptIn(InternalRevenueCatAPI::class)
+@file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui
 
@@ -388,22 +389,7 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                         )
                     }
 
-                is PaywallAction.External.LaunchWebCheckout -> {
-                    val url = viewModel.getWebCheckoutUrl(action)
-                    if (url == null) {
-                        Logger.e("Web checkout URL cannot be found, not launching web checkout.")
-                    } else {
-                        viewModel.invalidateCustomerInfoCache()
-                        val opened = context.handleUrlDestination(url, action.openMethod)
-                        if (opened) {
-                            viewModel.notifyWebCheckoutOpened()
-                        }
-                        if (action.autoDismiss) {
-                            Logger.d("Auto-dismissing paywall after launching web checkout.")
-                            viewModel.closePaywall()
-                        }
-                    }
-                }
+                is PaywallAction.External.LaunchWebCheckout -> handleLaunchWebCheckout(context, viewModel, action)
 
                 is PaywallAction.External.NavigateBack -> {
                     if (!viewModel.handleBackNavigation()) {
@@ -427,6 +413,27 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                 }
             }
         }
+    }
+}
+
+private fun handleLaunchWebCheckout(
+    context: Context,
+    viewModel: PaywallViewModel,
+    action: PaywallAction.External.LaunchWebCheckout,
+) {
+    val url = viewModel.getWebCheckoutUrl(action)
+    if (url == null) {
+        Logger.e("Web checkout URL cannot be found, not launching web checkout.")
+        return
+    }
+    viewModel.invalidateCustomerInfoCache()
+    val opened = context.handleUrlDestination(url, action.openMethod)
+    if (opened) {
+        viewModel.notifyWebCheckoutOpened()
+    }
+    if (action.autoDismiss) {
+        Logger.d("Auto-dismissing paywall after launching web checkout.")
+        viewModel.closePaywall()
     }
 }
 
