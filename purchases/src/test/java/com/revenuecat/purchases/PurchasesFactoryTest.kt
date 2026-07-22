@@ -6,6 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMappingTopicProvider
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -189,6 +191,26 @@ class PurchasesFactoryTest {
     fun `shouldInitializeDiagnostics returns false when both diagnostics disabled and preview mode on`() {
         assertThat(PurchasesFactory.shouldInitializeDiagnostics(diagnosticsEnabled = false, uiPreviewMode = true))
             .isFalse
+    }
+
+    @Test
+    fun `remote config enabled creates product entitlement mapping topic provider`() {
+        val provider = PurchasesFactory.createProductEntitlementMappingTopicProvider(
+            remoteConfigEnabled = true,
+            remoteConfigManager = mockk<RemoteConfigManager>(),
+        )
+
+        assertThat(provider).isInstanceOf(ProductEntitlementMappingTopicProvider::class.java)
+    }
+
+    @Test
+    fun `remote config disabled does not create product entitlement mapping topic provider`() {
+        val provider = PurchasesFactory.createProductEntitlementMappingTopicProvider(
+            remoteConfigEnabled = false,
+            remoteConfigManager = mockk<RemoteConfigManager>(),
+        )
+
+        assertThat(provider).isNull()
     }
 
     // endregion
