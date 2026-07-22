@@ -422,6 +422,37 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(result.payloadText).isEqualTo("{'response': 'OK'}")
     }
 
+    @Test
+    fun `forceServerErrorStrategy applies even when runningTests is false`() {
+        val client = createClient(
+            appConfig = createAppConfig(runningTests = false),
+            forceServerErrorStrategy = object : ForceServerErrorStrategy {
+                override val serverErrorURL: String
+                    get() = server.url("force-server-error").toString()
+                override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
+                    return true
+                }
+            },
+        )
+
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint.getPath(),
+            expectedResult = HTTPResult.createResult(responseCode = 502, payload = "Some error xml")
+        )
+        enqueue(
+            "force-server-error",
+            expectedResult = HTTPResult.createResult(responseCode = 502, payload = "Some error xml")
+        )
+
+        val result = client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.requestUrl?.toString()).isEqualTo("${server.url("")}force-server-error")
+        assertThat(result.responseCode).isEqualTo(502)
+    }
+
     // endregion forceServerErrors
 
     // Headers

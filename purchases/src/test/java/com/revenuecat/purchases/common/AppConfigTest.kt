@@ -509,7 +509,8 @@ class AppConfigTest {
                 "uiPreviewMode=false, " +
                 "applyObfuscatedAccountIdToSubscriptionChanges=false, " +
                 "usesRemoteConfigAPISources=false, " +
-                "useWorkflows=false), " +
+                "useWorkflows=false, " +
+                "forceServerErrorMode=null), " +
                 "languageTag='', " +
                 "versionName='', " +
                 "packageName='', " +

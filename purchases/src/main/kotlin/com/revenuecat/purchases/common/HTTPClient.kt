@@ -303,7 +303,10 @@ internal class HTTPClient(
         val postFieldsToSignHeader: String?
         val fullURL: URL
 
-        if (appConfig.runningTests) {
+        // Gate on the strategy being present (not just runningTests): the workflow E2E app injects a
+        // strategy via DangerousSettings through the public configure path, where runningTests is false.
+        // In production the strategy is always null, so this stays inert.
+        if (appConfig.runningTests || forceServerErrorStrategy != null) {
             forceServerErrorStrategy?.fakeResponseWithoutPerformingRequest(baseURL, endpoint)?.let {
                 warnLog { "Faking response for request to ${endpoint.getPath()}" }
                 return it
@@ -311,7 +314,7 @@ internal class HTTPClient(
         }
 
         try {
-            fullURL = if (appConfig.runningTests &&
+            fullURL = if ((appConfig.runningTests || forceServerErrorStrategy != null) &&
                 forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true
             ) {
                 warnLog { "Forcing server error for request to ${URL(baseURL, path)}" }
