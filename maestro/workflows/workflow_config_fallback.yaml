@@ -1,0 +1,31 @@
+# Forces a 4xx on /v1/config (remote_config_not_found kill-switch). The SDK falls back to the classic
+# single-page paywall (the workflow's last page), never crashing. The force_server_error_strategy
+# launch argument is read in E2ETestsApplication (onActivityPreCreated) and applied via DangerousSettings.
+#
+# Run locally against the test store:
+#   maestro test -e MAESTRO_STORE=test_store maestro/workflows/workflow_config_fallback.yaml
+
+appId: com.revenuecat.e2etests
+name: Workflow offering falls back to the classic paywall on config failure
+env:
+  MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
+
+---
+- launchApp:
+    clearState: true
+    arguments:
+      e2e_test_flow: open_workflow
+      force_server_error_strategy: remote_config_not_found
+- extendedWaitUntil:
+    visible: "Present Paywall"
+    timeout: 15000
+- tapOn:
+    text: "Present Paywall"
+
+# With /v1/config failing, the classic single-page paywall is shown directly.
+- extendedWaitUntil:
+    visible: "People Who Meditate Daily Sleep 40% Better"
+    timeout: 15000
+# The multipage workflow entry screen is never rendered in the fallback path.
+- assertNotVisible: "Start Your Free Week And Reclaim 30+ Minutes Daily"
+- takeScreenshot: "workflow_config_fallback - classic paywall"
