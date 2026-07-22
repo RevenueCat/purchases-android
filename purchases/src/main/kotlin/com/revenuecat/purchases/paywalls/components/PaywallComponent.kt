@@ -59,24 +59,29 @@ internal class PaywallComponentSerializer : KSerializer<PaywallComponent> {
             "tabs" -> jsonDecoder.json.decodeFromJsonElement<TabsComponent>(json)
             "video" -> jsonDecoder.json.decodeFromJsonElement<VideoComponent>(json)
             "countdown" -> jsonDecoder.json.decodeFromJsonElement<CountdownComponent>(json)
-            "web_view" -> {
-                // protocol_version is required; gate on the raw value BEFORE decoding so an absent,
-                // malformed, or unsupported (forward-incompatible) version falls back like an
-                // unrecognized component instead of failing to decode. The backend also guarantees
-                // protocol_version == 1 at publish time; this is client-side defense in depth.
-                val declaredVersion = (json["protocol_version"] as? JsonPrimitive)?.intOrNull
-                if (declaredVersion == WebViewComponent.SUPPORTED_PROTOCOL_VERSION) {
-                    jsonDecoder.json.decodeFromJsonElement<WebViewComponent>(json)
-                } else {
-                    decodeFallback(
-                        jsonDecoder,
-                        json,
-                        "No fallback provided for web_view with unsupported protocol_version: $declaredVersion",
-                    )
-                }
-            }
+            "web_view" -> decodeWebViewOrFallback(jsonDecoder, json)
             "fallback_header" -> FallbackHeaderComponent
             else -> decodeFallback(jsonDecoder, json, "No fallback provided for unknown type: $type")
+        }
+    }
+
+    // Gate on the raw protocol_version BEFORE decoding so an absent, malformed, or unsupported
+    // (forward-incompatible) version falls back like an unrecognized component instead of failing to
+    // decode the whole paywall. The backend also guarantees protocol_version == 1 at publish time; this
+    // is client-side defense in depth.
+    private fun decodeWebViewOrFallback(
+        jsonDecoder: JsonDecoder,
+        json: JsonObject,
+    ): PaywallComponent {
+        val declaredVersion = (json["protocol_version"] as? JsonPrimitive)?.intOrNull
+        return if (declaredVersion == WebViewComponent.SUPPORTED_PROTOCOL_VERSION) {
+            jsonDecoder.json.decodeFromJsonElement<WebViewComponent>(json)
+        } else {
+            decodeFallback(
+                jsonDecoder,
+                json,
+                "No fallback provided for web_view with unsupported protocol_version: $declaredVersion",
+            )
         }
     }
 
