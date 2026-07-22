@@ -12,6 +12,4 @@ internal data class WebViewComponentStyle(
     override val size: Size,
     /** Schema `web_view.id`, sent to the content during the handshake. A blank id renders nothing. */
     val componentId: String,
-    /** Schema-declared `protocol_version`, preserved for future use; the bridge advertises its own. */
-    val protocolVersion: Int,
 ) : ComponentStyle
