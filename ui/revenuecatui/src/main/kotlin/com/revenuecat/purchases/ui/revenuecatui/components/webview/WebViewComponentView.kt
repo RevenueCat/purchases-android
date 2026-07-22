@@ -122,7 +122,9 @@ internal fun WebViewComponentView(
                     webView.destroy()
                 },
                 // Clip: content can briefly overflow while a fit axis animates placeholder -> measured.
-                modifier = modifier.size(effectiveSize).clipToBounds(),
+                modifier = modifier
+                    .size(effectiveSize)
+                    .clipToBounds(),
             )
         }
         // Terminal failure renders nothing; there is intentionally no native fallback.
@@ -187,6 +189,23 @@ private fun WebView.configure(
         onMainFrameNavigationStarted = onMainFrameNavigationStarted,
         onMainFrameLoadFailed = onMainFrameLoadFailed,
     )
+    disableTapHighlight(expectedOrigin)
+}
+
+// Android draws a translucent tap-highlight scrim (blue on most themes) over tapped clickable content;
+// iOS WKWebView does not. Set `-webkit-tap-highlight-color: transparent` as an inherited default at the
+// document root. A bundle can still override it per element (inheritance loses to any explicit value).
+internal fun WebView.disableTapHighlight(expectedOrigin: String?) {
+    if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
+    try {
+        WebViewCompat.addDocumentStartJavaScript(
+            this,
+            "document.documentElement.style.webkitTapHighlightColor = 'transparent';",
+            setOf(expectedOrigin ?: "*"),
+        )
+    } catch (error: RuntimeException) {
+        Logger.w("Failed to disable webkit tap highlight: $error")
+    }
 }
 
 // Dedicated persistent profile isolating paywall WebView storage from the host app; shared across paywalls.
