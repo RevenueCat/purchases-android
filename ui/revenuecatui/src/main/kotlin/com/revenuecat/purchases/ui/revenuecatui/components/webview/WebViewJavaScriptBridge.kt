@@ -14,7 +14,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import org.json.JSONObject
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.put
 import java.lang.ref.WeakReference
 import kotlin.math.abs
 
@@ -164,9 +168,9 @@ internal class WebViewJavaScriptBridge(
         }
 
         when (envelope.kind) {
-            WebViewEnvelope.KIND_CONNECT -> handleConnect(envelope)
-            WebViewEnvelope.KIND_MESSAGE,
-            WebViewEnvelope.KIND_REQUEST,
+            WebViewEnvelope.Kind.CONNECT -> handleConnect(envelope)
+            WebViewEnvelope.Kind.MESSAGE,
+            WebViewEnvelope.Kind.REQUEST,
             -> handleAppFrame(envelope)
             else -> Logger.w(
                 "Dropping inbound web view message: unexpected envelope kind '${envelope.kind}'.",
@@ -176,13 +180,13 @@ internal class WebViewJavaScriptBridge(
 
     @MainThread
     @Suppress("ReturnCount")
-    private fun handleConnect(envelope: WebViewEnvelope.Parsed) {
+    private fun handleConnect(envelope: WebViewEnvelope) {
         if (channelOpen || released) return
 
         if (envelope.protocolVersion != protocolVersion) {
             deliverEnvelopeNow(
-                WebViewEnvelope.build(
-                    kind = WebViewEnvelope.KIND_REJECT,
+                WebViewEnvelope(
+                    kind = WebViewEnvelope.Kind.REJECT,
                     protocolVersion = protocolVersion,
                     componentId = "",
                     error = "Unsupported protocol_version ${envelope.protocolVersion}; " +
@@ -197,8 +201,8 @@ internal class WebViewJavaScriptBridge(
         // post-then-open order): a handshake whose init is dropped by the outbound origin/webView
         // check can then be retried by a later `connect` instead of wedging the bridge half-open.
         val initDelivered = deliverEnvelopeNow(
-            WebViewEnvelope.build(
-                kind = WebViewEnvelope.KIND_INIT,
+            WebViewEnvelope(
+                kind = WebViewEnvelope.Kind.INIT,
                 protocolVersion = protocolVersion,
                 componentId = componentId,
             ),
@@ -212,14 +216,14 @@ internal class WebViewJavaScriptBridge(
 
     private fun sendFitIfNeeded() {
         if (!sizeToContentWidth && !sizeToContentHeight) return
-        val payload = JSONObject().apply {
+        val payload = buildJsonObject {
             if (sizeToContentWidth) put("width", true)
             if (sizeToContentHeight) put("height", true)
         }
         // Handshake frame (sent right after init) → shares init's allow-before-navigation exception.
         deliverEnvelopeNow(
-            WebViewEnvelope.build(
-                kind = WebViewEnvelope.KIND_MESSAGE,
+            WebViewEnvelope(
+                kind = WebViewEnvelope.Kind.MESSAGE,
                 protocolVersion = protocolVersion,
                 componentId = componentId,
                 type = WebViewMessageType.FIT,
@@ -231,14 +235,14 @@ internal class WebViewJavaScriptBridge(
 
     @MainThread
     @Suppress("ReturnCount")
-    private fun handleAppFrame(envelope: WebViewEnvelope.Parsed) {
+    private fun handleAppFrame(envelope: WebViewEnvelope) {
         if (!channelOpen) {
             Logger.w("Dropping inbound web view message: channel is not open.")
             return
         }
 
         // A `request` frame must carry an id for response correlation; drop malformed ones.
-        if (envelope.kind == WebViewEnvelope.KIND_REQUEST && envelope.id == null) {
+        if (envelope.kind == WebViewEnvelope.Kind.REQUEST && envelope.id == null) {
             Logger.w("Dropping inbound web view message: request frame is missing an id.")
             return
         }
@@ -252,7 +256,7 @@ internal class WebViewJavaScriptBridge(
     }
 
     @MainThread
-    private fun handleResize(envelope: WebViewEnvelope.Parsed) {
+    private fun handleResize(envelope: WebViewEnvelope) {
         if (envelope.componentId != componentId) {
             Logger.w("Dropping inbound web view message: resize component id does not match.")
             return
@@ -297,7 +301,7 @@ internal class WebViewJavaScriptBridge(
      */
     @MainThread
     @Suppress("ReturnCount")
-    private fun deliverEnvelopeNow(envelope: JSONObject, allowBeforeNavigation: Boolean): Boolean {
+    private fun deliverEnvelopeNow(envelope: WebViewEnvelope, allowBeforeNavigation: Boolean): Boolean {
         val webView = webViewRef.get() ?: return false
         // Defense in depth: drop outbound work if the top-level URL left the expected origin.
         if (!isCurrentUrlTrusted(webView, allowBeforeNavigation = allowBeforeNavigation)) {
@@ -307,7 +311,7 @@ internal class WebViewJavaScriptBridge(
             )
             return false
         }
-        val payload = envelope.toString().escapeForJavaScript()
+        val payload = envelope.toJsonString().escapeForJavaScript()
         webView.evaluateJavascript(
             "if (typeof window.${WebViewEnvelope.RECEIVE_FUNCTION} === 'function') { " +
                 "window.${WebViewEnvelope.RECEIVE_FUNCTION}($payload); " +
@@ -350,8 +354,10 @@ internal class WebViewJavaScriptBridge(
          * number (a stringified `"300"` or a boolean is rejected, not coerced).
          */
         @Suppress("ReturnCount")
-        fun JSONObject.resizeDimension(key: String): Int? {
-            val value = (opt(key) as? Number)?.toDouble() ?: return null
+        fun JsonObject.resizeDimension(key: String): Int? {
+            val primitive = this[key] as? JsonPrimitive ?: return null
+            if (primitive.isString) return null
+            val value = primitive.doubleOrNull ?: return null
             if (!value.isFinite() || value <= 0) return null
             return value.coerceAtMost(MAX_RESIZE_CSS_PX).toInt()
         }

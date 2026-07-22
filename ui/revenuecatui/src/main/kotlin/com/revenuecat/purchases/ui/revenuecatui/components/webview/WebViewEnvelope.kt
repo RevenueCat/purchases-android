@@ -2,11 +2,15 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
-import org.json.JSONException
-import org.json.JSONObject
+import kotlinx.serialization.Required
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 
 /**
- * Wire-format envelopes for the `workflow-web-components-sdk` transport layer.
+ * Wire-format envelope for the `workflow-web-components-sdk` transport layer.
  *
  * Matches [RevenueCat/workflow-web-components-sdk](https://github.com/RevenueCat/workflow-web-components-sdk):
  * channel `rc-web-components`, handshake kinds `connect` / `init` / `reject`, and app frames
@@ -16,102 +20,65 @@ import org.json.JSONObject
  * frames carry a platform `sourceOrigin` / `isMainFrame`. The content still calls
  * `rcWebComponents.postMessage(jsonString)`.
  */
-internal object WebViewEnvelope {
+@Serializable
+internal data class WebViewEnvelope(
+    // @Required: a frame missing `channel` must fail to decode despite the construction-side default.
+    @Required val channel: String = CHANNEL,
+    @SerialName("protocol_version") val protocolVersion: Int,
+    val kind: Kind,
+    @SerialName("component_id") val componentId: String,
+    val type: String? = null,
+    val id: String? = null,
+    val payload: JsonObject? = null,
+    val error: String? = null,
+) {
 
-    const val CHANNEL: String = "rc-web-components"
-    const val NATIVE_OBJECT_NAME: String = "rcWebComponents"
-    const val RECEIVE_FUNCTION: String = "__rcWebComponentsReceive"
-    const val DEFAULT_PROTOCOL_VERSION: Int = 1
+    @Serializable
+    enum class Kind {
+        @SerialName("connect")
+        CONNECT,
 
-    const val KIND_CONNECT: String = "connect"
-    const val KIND_INIT: String = "init"
-    const val KIND_REJECT: String = "reject"
-    const val KIND_MESSAGE: String = "message"
-    const val KIND_REQUEST: String = "request"
-    const val KIND_RESPONSE: String = "response"
-    const val KIND_ERROR: String = "error"
+        @SerialName("init")
+        INIT,
 
-    private val ENVELOPE_KINDS: Set<String> = setOf(
-        KIND_CONNECT,
-        KIND_INIT,
-        KIND_REJECT,
-        KIND_MESSAGE,
-        KIND_REQUEST,
-        KIND_RESPONSE,
-        KIND_ERROR,
-    )
+        @SerialName("reject")
+        REJECT,
 
-    internal data class Parsed(
-        val kind: String,
-        val protocolVersion: Int,
-        val componentId: String,
-        val type: String?,
-        val id: String?,
-        val payload: JSONObject?,
-        val error: String?,
-    )
+        @SerialName("message")
+        MESSAGE,
 
-    @Suppress("ReturnCount", "CyclomaticComplexMethod")
-    fun parse(rawJson: String): Parsed? {
-        val json = try {
-            JSONObject(rawJson)
-        } catch (@Suppress("SwallowedException") _: JSONException) {
-            return null
-        }
+        @SerialName("request")
+        REQUEST,
 
-        if (json.opt(WebViewMessageField.CHANNEL) != CHANNEL) return null
+        @SerialName("response")
+        RESPONSE,
 
-        val protocolVersion = json.opt(WebViewMessageField.PROTOCOL_VERSION)
-        if (protocolVersion !is Number || !protocolVersion.toDouble().isFinite()) return null
-
-        val kind = json.opt(WebViewMessageField.KIND) as? String
-        if (kind == null || kind !in ENVELOPE_KINDS) return null
-
-        val componentId = json.opt(WebViewMessageField.COMPONENT_ID) as? String ?: return null
-
-        val type = json.opt(WebViewMessageField.TYPE) as? String
-        if (json.has(WebViewMessageField.TYPE) && type == null) return null
-
-        val id = json.opt(WebViewMessageField.ID) as? String
-        if (json.has(WebViewMessageField.ID) && id == null) return null
-
-        val error = json.opt(WebViewMessageField.ERROR) as? String
-        if (json.has(WebViewMessageField.ERROR) && error == null) return null
-
-        val payload = when (val payloadValue = json.opt(WebViewMessageField.PAYLOAD)) {
-            null, JSONObject.NULL -> null
-            is JSONObject -> payloadValue
-            else -> return null
-        }
-
-        return Parsed(
-            kind = kind,
-            protocolVersion = protocolVersion.toInt(),
-            componentId = componentId,
-            type = type,
-            id = id,
-            payload = payload,
-            error = error,
-        )
+        @SerialName("error")
+        ERROR,
     }
 
-    @Suppress("LongParameterList")
-    fun build(
-        kind: String,
-        protocolVersion: Int,
-        componentId: String,
-        type: String? = null,
-        id: String? = null,
-        payload: JSONObject? = null,
-        error: String? = null,
-    ): JSONObject = JSONObject().apply {
-        put(WebViewMessageField.CHANNEL, CHANNEL)
-        put(WebViewMessageField.PROTOCOL_VERSION, protocolVersion)
-        put(WebViewMessageField.KIND, kind)
-        put(WebViewMessageField.COMPONENT_ID, componentId)
-        type?.let { put(WebViewMessageField.TYPE, it) }
-        id?.let { put(WebViewMessageField.ID, it) }
-        payload?.let { put(WebViewMessageField.PAYLOAD, it) }
-        error?.let { put(WebViewMessageField.ERROR, it) }
+    fun toJsonString(): String = json.encodeToString(serializer(), this)
+
+    companion object {
+        const val CHANNEL: String = "rc-web-components"
+        const val NATIVE_OBJECT_NAME: String = "rcWebComponents"
+        const val RECEIVE_FUNCTION: String = "__rcWebComponentsReceive"
+        const val DEFAULT_PROTOCOL_VERSION: Int = 1
+
+        private val json = Json {
+            ignoreUnknownKeys = true
+            explicitNulls = false
+        }
+
+        /**
+         * Parses an inbound frame, or `null` when it is not a valid `rc-web-components` envelope:
+         * malformed JSON, wrong or missing `channel`, unknown `kind`, or any field whose JSON type
+         * does not match the schema.
+         */
+        fun parse(rawJson: String): WebViewEnvelope? = try {
+            json.decodeFromString(serializer(), rawJson).takeIf { it.channel == CHANNEL }
+        } catch (@Suppress("SwallowedException") _: SerializationException) {
+            null
+        }
     }
 }
