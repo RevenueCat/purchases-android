@@ -77,9 +77,10 @@ internal class WebViewJavaScriptBridge(
     }
 
     /**
-     * Registers the secure message listener. Idempotent; safe to call more than once. Falls back to
-     * [onSecureMessagingUnsupported] when the expected origin is invalid (a config error) or
-     * [WebViewFeature.WEB_MESSAGE_LISTENER] is missing (an old System WebView) — logged distinctly.
+     * Registers the secure message listener. Idempotent once installed; a no-op on later calls after
+     * success. If installation fails — invalid expected origin (a config error) or missing
+     * [WebViewFeature.WEB_MESSAGE_LISTENER] (an old System WebView) — it falls back to
+     * [onSecureMessagingUnsupported], logged distinctly, and a later call will retry.
      */
     @MainThread
     @Suppress("ReturnCount")
@@ -179,7 +180,7 @@ internal class WebViewJavaScriptBridge(
         if (channelOpen || released) return
 
         if (envelope.protocolVersion != protocolVersion) {
-            deliverEnvelope(
+            deliverEnvelopeNow(
                 WebViewEnvelope.build(
                     kind = WebViewEnvelope.KIND_REJECT,
                     protocolVersion = protocolVersion,
@@ -216,7 +217,7 @@ internal class WebViewJavaScriptBridge(
             if (sizeToContentHeight) put("height", true)
         }
         // Handshake frame (sent right after init) → shares init's allow-before-navigation exception.
-        deliverEnvelope(
+        deliverEnvelopeNow(
             WebViewEnvelope.build(
                 kind = WebViewEnvelope.KIND_MESSAGE,
                 protocolVersion = protocolVersion,
@@ -286,19 +287,13 @@ internal class WebViewJavaScriptBridge(
     }
 
     /**
-     * Delivers a host-to-content frame. [allowBeforeNavigation] relaxes the outbound origin check for
-     * handshake replies (`init`/`reject`/`fit`), whose triggering `connect` was already origin-gated
-     * but may arrive before the top-level `url` is populated. Post-handshake sends must pass `false`.
-     */
-    private fun deliverEnvelope(envelope: JSONObject, allowBeforeNavigation: Boolean) {
-        documentScope.launch {
-            deliverEnvelopeNow(envelope, allowBeforeNavigation = allowBeforeNavigation)
-        }
-    }
-
-    /**
-     * Synchronously attempts to deliver a host-to-content frame; returns whether it went out. Used
-     * directly by the handshake so [channelOpen] flips only once `init` has actually been sent.
+     * Delivers a host-to-content frame on the caller's main-thread coroutine; returns whether it went
+     * out. Callers already run on [documentScope], and the handshake needs the result so [channelOpen]
+     * flips only once `init` has actually been sent.
+     *
+     * [allowBeforeNavigation] relaxes the outbound origin check for handshake replies (`init`/`reject`/
+     * `fit`), whose triggering `connect` was already origin-gated but may arrive before the top-level
+     * `url` is populated. Post-handshake sends must pass `false`.
      */
     @MainThread
     @Suppress("ReturnCount")
