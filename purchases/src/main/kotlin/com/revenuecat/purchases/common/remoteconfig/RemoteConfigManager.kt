@@ -87,6 +87,9 @@ internal class RemoteConfigManager(
 ) {
     private val isRefreshing = AtomicBoolean(false)
 
+    @Volatile
+    private var isClosed = false
+
     // Bumped by clearCache() on every identity change. A request captures the epoch when it starts; once it
     // changes, the in-flight request's callbacks drop their result (the /v1/config request itself cannot be
     // socket-cancelled), so an old user's response can never persist over the wiped cache.
@@ -390,13 +393,16 @@ internal class RemoteConfigManager(
             // A 4xx: disable the endpoint for the rest of the session. This is an endpoint-level fact, so set it
             // regardless of epoch ownership (a late response for an old identity is still a valid signal that the
             // endpoint refuses this app's requests). Reads now return null, so drop any in-memory caches too.
-            disabled = true
-            val invalidatedGeneration = generation.incrementAndGet()
-            listeners.forEach { it.onConfigInvalidated(invalidatedGeneration) }
-            // Distinct one-shot signal (this branch runs once, guarded by !disabled): lets consumers refetch
-            // offerings so paywall components — skipped while the endpoint was live — get decoded for the
-            // fallback render path.
-            listeners.forEach { it.onRemoteConfigDisabled(invalidatedGeneration) }
+            synchronized(cacheLock) {
+                if (!disabled) {
+                    disabled = true
+                    val invalidatedGeneration = generation.incrementAndGet()
+                    listeners.forEach { it.onConfigInvalidated(invalidatedGeneration) }
+                    // Distinct one-shot signal: lets consumers refetch offerings so paywall components — skipped
+                    // while the endpoint was live — get decoded for the fallback render path.
+                    listeners.forEach { it.onRemoteConfigDisabled(invalidatedGeneration) }
+                }
+            }
         }
         if (releaseGuardIfOwned(requestEpoch)) {
             errorLog(error)
@@ -435,6 +441,8 @@ internal class RemoteConfigManager(
     fun close() {
         scope.cancel()
         synchronized(cacheLock) {
+            isClosed = true
+            generation.incrementAndGet()
             isRefreshing.set(false)
             completeRefresh()
         }
@@ -644,8 +652,58 @@ internal class RemoteConfigManager(
         itemKey: String,
         transform: (ByteArray) -> T?,
     ): T? = withContext(ioDispatcher) {
-        resolveBlobBytes(topic, itemKey)?.let(transform)
+        blobDataSnapshot(topic, itemKey, transform)?.value
     }
+
+    /** Resolves a blob and retains the committed-config identity that produced it. */
+    suspend fun <T> blobDataSnapshot(
+        topic: RemoteConfigTopic,
+        itemKey: String,
+        transform: (ByteArray) -> T?,
+    ): RemoteConfigBlobData<T>? = withContext(ioDispatcher) {
+        val item = committedItem(topic, itemKey) ?: return@withContext null
+        val readState = synchronized(cacheLock) {
+            val currentRef = topicStore.topic(topic)?.get(itemKey)?.blobRef
+            if (disabled || isClosed) {
+                null
+            } else if (currentRef == null || currentRef != item.blobRef) {
+                null
+            } else {
+                RemoteConfigReadState(epoch.get(), generation.get(), currentRef)
+            }
+        } ?: return@withContext null
+
+        val bytes = resolveBlobBytes(readState.blobRef, itemKey) ?: return@withContext null
+        val value = transform(bytes) ?: return@withContext null
+        synchronized(cacheLock) {
+            if (!isCurrent(topic, itemKey, readState)) {
+                null
+            } else {
+                RemoteConfigBlobData(value, topic, itemKey, readState)
+            }
+        }
+    }
+
+    /** Runs [action] only while [blobData] still belongs to the current committed config. */
+    fun <T> useIfCurrent(blobData: RemoteConfigBlobData<T>, action: (T) -> Unit): Boolean =
+        synchronized(cacheLock) {
+            if (!isCurrent(blobData.topic, blobData.itemKey, blobData.readState)) {
+                false
+            } else {
+                action(blobData.value)
+                true
+            }
+        }
+
+    private fun isCurrent(
+        topic: RemoteConfigTopic,
+        itemKey: String,
+        readState: RemoteConfigReadState,
+    ): Boolean = !disabled &&
+        !isClosed &&
+        epoch.get() == readState.epoch &&
+        generation.get() == readState.generation &&
+        topicStore.topic(topic)?.get(itemKey)?.blobRef == readState.blobRef
 
     /**
      * Resolves the blobs for every key in [itemKeys] within [topic] **concurrently**, builds a single JSON
@@ -746,11 +804,15 @@ internal class RemoteConfigManager(
         }
         verboseLog { "Reading remote config blob (topic='${topic.wireName}', item='$itemKey')." }
         val ref = committedItem(topic, itemKey)?.blobRef
-        return when {
-            ref == null -> {
+        return ref?.let { resolveBlobBytes(it, itemKey) }.also {
+            if (ref == null) {
                 verboseLog { "Remote config item '$itemKey' is missing or has no blob ref; returning null." }
-                null
             }
+        }
+    }
+
+    private suspend fun resolveBlobBytes(ref: String, itemKey: String): ByteArray? {
+        return when {
             blobFetcher.ensureDownloaded(ref) -> {
                 blobStore.read(ref).also { bytes ->
                     if (bytes != null) {
@@ -881,6 +943,19 @@ internal class RemoteConfigManager(
         private val REFRESH_ATTEMPT_COOLDOWN = 1.minutes
     }
 }
+
+internal data class RemoteConfigReadState(
+    val epoch: Int,
+    val generation: Int,
+    val blobRef: String,
+)
+
+internal class RemoteConfigBlobData<T> internal constructor(
+    val value: T,
+    internal val topic: RemoteConfigTopic,
+    internal val itemKey: String,
+    internal val readState: RemoteConfigReadState,
+)
 
 /** The blob refs each topic's items reference, keyed by topic name (empty list for inline-only topics). */
 internal fun Map<String, ConfigTopic>.toTopicBlobRefs(): Map<String, List<String>> =
