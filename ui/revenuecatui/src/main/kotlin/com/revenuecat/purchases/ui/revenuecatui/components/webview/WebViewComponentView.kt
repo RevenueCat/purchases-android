@@ -97,8 +97,8 @@ internal fun WebViewComponentView(
                         if (!loadFailed) {
                             configure(
                                 expectedOrigin = resolvedUrl.toOriginOrNull(),
-                                onMainFrameNavigationStarted = { url ->
-                                    bridgeHolder.bridge?.onMainFrameNavigationStarted(url)
+                                onMainFrameNavigationStarted = {
+                                    bridgeHolder.bridge?.onMainFrameNavigationStarted()
                                 },
                                 onMainFrameLoadFailed = { loadFailed = true },
                             )
@@ -156,7 +156,7 @@ internal class WebViewBridgeHolder {
 
 private fun WebView.configure(
     expectedOrigin: String?,
-    onMainFrameNavigationStarted: (url: String?) -> Unit,
+    onMainFrameNavigationStarted: () -> Unit,
     onMainFrameLoadFailed: () -> Unit,
 ) {
     setBackgroundColor(Color.TRANSPARENT)
