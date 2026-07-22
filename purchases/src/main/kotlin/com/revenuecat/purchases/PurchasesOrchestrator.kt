@@ -885,6 +885,7 @@ internal class PurchasesOrchestrator(
         synchronized(this@PurchasesOrchestrator) {
             state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
         }
+        this.offlineEntitlementsManager.close()
         this.backend.close()
         this.remoteConfigManager?.close()
         this.workflowManager?.close()

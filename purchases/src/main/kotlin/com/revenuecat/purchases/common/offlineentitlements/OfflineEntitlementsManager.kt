@@ -13,14 +13,22 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 @OptIn(InternalRevenueCatAPI::class)
+@Suppress("LongParameterList")
 internal class OfflineEntitlementsManager(
     private val backend: Backend,
     private val offlineCustomerInfoCalculator: OfflineCustomerInfoCalculator,
     private val deviceCache: DeviceCache,
     private val appConfig: AppConfig,
     private val diagnosticsTracker: DiagnosticsTracker?,
+    private val productEntitlementMappingTopicProvider: EntitlementMappingTopicProvider? = null,
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
     // We cache the offline customer info in memory, so it's not persisted.
     val offlineCustomerInfo: CustomerInfo?
@@ -101,20 +109,48 @@ internal class OfflineEntitlementsManager(
     fun updateProductEntitlementMappingCacheIfStale(completion: ((PurchasesError?) -> Unit)? = null) {
         if (isOfflineEntitlementsEnabled() && deviceCache.isProductEntitlementMappingCacheStale()) {
             debugLog { OfflineEntitlementsStrings.UPDATING_PRODUCT_ENTITLEMENT_MAPPING }
-            backend.getProductEntitlementMapping(
-                onSuccessHandler = { productEntitlementMapping ->
-                    deviceCache.cacheProductEntitlementMapping(productEntitlementMapping)
+            val topicProvider = productEntitlementMappingTopicProvider
+            if (topicProvider == null) {
+                fetchLegacyProductEntitlementMapping(completion)
+                return
+            }
+            scope.launch {
+                val result = topicProvider.getProductEntitlementMapping()
+                if (result != null && result.cacheIfCurrent(deviceCache::cacheProductEntitlementMapping)) {
                     debugLog { OfflineEntitlementsStrings.SUCCESSFULLY_UPDATED_PRODUCT_ENTITLEMENTS }
                     completion?.invoke(null)
-                },
-                onErrorHandler = { e ->
-                    errorLog { OfflineEntitlementsStrings.ERROR_UPDATING_PRODUCT_ENTITLEMENTS.format(e) }
-                    completion?.invoke(e)
-                },
-            )
+                } else {
+                    fetchLegacyProductEntitlementMapping(completion)
+                }
+            }
         } else {
             completion?.invoke(null)
         }
+    }
+
+    fun close() {
+        scope.cancel()
+    }
+
+    private fun fetchLegacyProductEntitlementMapping(completion: ((PurchasesError?) -> Unit)?) {
+        backend.getProductEntitlementMapping(
+            onSuccessHandler = { productEntitlementMapping ->
+                cacheProductEntitlementMapping(productEntitlementMapping, completion)
+            },
+            onErrorHandler = { e ->
+                errorLog { OfflineEntitlementsStrings.ERROR_UPDATING_PRODUCT_ENTITLEMENTS.format(e) }
+                completion?.invoke(e)
+            },
+        )
+    }
+
+    private fun cacheProductEntitlementMapping(
+        productEntitlementMapping: ProductEntitlementMapping,
+        completion: ((PurchasesError?) -> Unit)?,
+    ) {
+        deviceCache.cacheProductEntitlementMapping(productEntitlementMapping)
+        debugLog { OfflineEntitlementsStrings.SUCCESSFULLY_UPDATED_PRODUCT_ENTITLEMENTS }
+        completion?.invoke(null)
     }
 
     // We disable offline entitlements in observer mode (finishTransactions = true) since it doesn't
