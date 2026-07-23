@@ -29,7 +29,7 @@ internal class OfflineEntitlementsManager(
     private val deviceCache: DeviceCache,
     private val appConfig: AppConfig,
     private val diagnosticsTracker: DiagnosticsTracker?,
-    private val productEntitlementMappingTopicProvider: EntitlementMappingTopicProvider? = null,
+    private val productEntitlementMappingTopicProvider: ProductEntitlementMappingTopicProvider? = null,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
     // We cache the offline customer info in memory, so it's not persisted.
@@ -132,7 +132,7 @@ internal class OfflineEntitlementsManager(
     }
 
     private fun startProductEntitlementMappingUpdate(
-        topicProvider: EntitlementMappingTopicProvider,
+        topicProvider: ProductEntitlementMappingTopicProvider,
         completion: ((PurchasesError?) -> Unit)?,
     ) {
         fun finishUpdate(updateJob: Job): Boolean =
@@ -159,8 +159,9 @@ internal class OfflineEntitlementsManager(
                 val currentJob = coroutineContext[Job] ?: return@launch
                 var waitingForLegacyResult = false
                 try {
-                    val result = topicProvider.getProductEntitlementMapping()
-                    if (result?.cacheIfCurrent(deviceCache::cacheProductEntitlementMapping) == true) {
+                    val mapping = topicProvider.getProductEntitlementMapping()
+                    if (mapping != null) {
+                        deviceCache.cacheProductEntitlementMapping(mapping)
                         debugLog { OfflineEntitlementsStrings.SUCCESSFULLY_UPDATED_PRODUCT_ENTITLEMENTS }
                         completeUpdate(currentJob, null)
                     } else {
