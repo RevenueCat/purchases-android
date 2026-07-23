@@ -3,7 +3,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import android.graphics.Bitmap
+import android.net.http.SslError
 import android.webkit.RenderProcessGoneDetail
+import android.webkit.SslErrorHandler
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -69,6 +71,14 @@ internal class PaywallWebViewClient(
         if (request.isForMainFrame) {
             markFailed()
         }
+    }
+
+    // The default implementation cancels the load but leaves the component mounted and blank; whether
+    // a subsequent onReceivedError fires is undocumented and provider-dependent. Cancel (never show
+    // content over a bad certificate) and fail terminally so the WebView is removed deterministically.
+    override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
+        handler.cancel()
+        markFailed()
     }
 
     override fun onReceivedHttpError(
