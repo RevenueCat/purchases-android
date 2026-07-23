@@ -652,7 +652,7 @@ internal class RemoteConfigManager(
         itemKey: String,
         transform: (ByteArray) -> T?,
     ): T? = withContext(ioDispatcher) {
-        blobDataSnapshot(topic, itemKey, transform)?.value
+        resolveBlobBytes(topic, itemKey)?.let(transform)
     }
 
     /** Resolves a blob and retains the committed-config generation that produced it. */

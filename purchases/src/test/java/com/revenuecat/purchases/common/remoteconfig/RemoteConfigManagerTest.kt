@@ -1847,7 +1847,7 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `blobData discards bytes when identity changes during blob resolution`() = runTest {
+    fun `blobData retains legacy behavior when identity changes during blob resolution`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",
             activeTopics = listOf("workflows"),
@@ -1863,11 +1863,11 @@ class RemoteConfigManagerTest {
 
         val result = manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }
 
-        assertThat(result).isNull()
+        assertThat(result).isEqualTo(byteArrayOf(4, 2))
     }
 
     @Test
-    fun `blobData discards bytes when the item ref changes during blob resolution`() = runTest {
+    fun `blobData retains legacy behavior when the item ref changes during blob resolution`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",
             activeTopics = listOf("workflows"),
@@ -1895,6 +1895,39 @@ class RemoteConfigManagerTest {
         }
 
         val result = manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }
+
+        assertThat(result).isEqualTo(byteArrayOf(4, 2))
+    }
+
+    @Test
+    fun `blobDataSnapshot discards bytes when the item ref changes during blob resolution`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        every { blobStore.read(REF_VALID) } returns byteArrayOf(4, 2)
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = DEFAULT_FETCH_CONTEXT,
+        )
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } answers {
+            val response = """
+                {
+                  "domain": "app",
+                  "manifest": "v2",
+                  "active_topics": ["workflows"],
+                  "topics": { "workflows": { "wf1": { "blob_ref": "$REF_TAMPERED" } } }
+                }
+            """.trimIndent()
+            onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+            true
+        }
+
+        val result = manager.blobDataSnapshot(RemoteConfigTopic.Workflows, "wf1") { it }
 
         assertThat(result).isNull()
     }
