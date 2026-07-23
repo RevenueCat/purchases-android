@@ -5,6 +5,8 @@ package com.revenuecat.purchases.ui.revenuecatui.components.webview
 import android.graphics.Color
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -21,10 +23,13 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.ProfileStore
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import com.revenuecat.purchases.LogLevel
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
+import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -44,11 +49,17 @@ internal fun WebViewComponentView(
     val resolvedUrl = remember(style.url) {
         WebViewUrlResolver.resolve(style.url)
     }
-    if (resolvedUrl == null) return
+    if (resolvedUrl == null) {
+        Logger.w("Paywalls V2 web_view not rendered: URL must be https with no '{{' markers: '${style.url}'")
+        return
+    }
 
     val componentId = style.componentId
     // workflow-web-components-sdk requires a host-assigned component id for the handshake.
-    if (componentId.isBlank()) return
+    if (componentId.isBlank()) {
+        Logger.w("Paywalls V2 web_view not rendered: componentId is blank.")
+        return
+    }
     val sizeToContentWidth = style.size.width is Fit
     val sizeToContentHeight = style.size.height is Fit
 
@@ -201,6 +212,21 @@ private fun WebView.configure(
         onMainFrameNavigationStarted = onMainFrameNavigationStarted,
         onMainFrameLoadFailed = onMainFrameLoadFailed,
     )
+    // Inspect the bundle from Chrome DevTools in debug builds only; process-global, never in release.
+    if (BuildConfig.DEBUG) WebView.setWebContentsDebuggingEnabled(true)
+    // Surface the bundle's own JS console in logcat when the SDK is on DEBUG/VERBOSE, so authors can
+    // diagnose their content without a debugger attached.
+    if (Purchases.logLevel <= LogLevel.DEBUG) {
+        webChromeClient = object : WebChromeClient() {
+            override fun onConsoleMessage(message: ConsoleMessage): Boolean {
+                Logger.d(
+                    "Paywalls V2 web_view console [${message.messageLevel()}] ${message.message()} " +
+                        "(${message.sourceId()}:${message.lineNumber()})",
+                )
+                return true
+            }
+        }
+    }
     disableTapHighlight(expectedOrigin)
 }
 

@@ -220,6 +220,7 @@ internal class WebViewJavaScriptBridge(
         if (!initDelivered) return
 
         channelOpen = true
+        Logger.d("Paywalls V2 web_view handshake complete, channel open (componentId='$componentId').")
         sendFitIfNeeded()
     }
 

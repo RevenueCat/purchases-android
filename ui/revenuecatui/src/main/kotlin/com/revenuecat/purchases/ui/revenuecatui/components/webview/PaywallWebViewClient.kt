@@ -11,6 +11,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 /**
  * [WebViewClient] for Paywalls V2 `web_view` components. Owns navigation policy, main-frame document
@@ -26,9 +27,10 @@ internal class PaywallWebViewClient(
     @Volatile
     private var failed: Boolean = false
 
-    private fun markFailed() {
+    private fun markFailed(reason: String) {
         if (failed) return
         failed = true
+        Logger.w("Paywalls V2 web_view load failed terminally, removing the component: $reason")
         onMainFrameLoadFailed()
     }
 
@@ -49,7 +51,7 @@ internal class PaywallWebViewClient(
             )
         ) {
             view.stopLoading()
-            markFailed()
+            markFailed("blocked main-frame navigation to '$url' (expectedOrigin=$expectedOrigin)")
             return
         }
         onMainFrameNavigationStarted()
@@ -69,7 +71,7 @@ internal class PaywallWebViewClient(
         error: WebResourceError,
     ) {
         if (request.isForMainFrame) {
-            markFailed()
+            markFailed("resource error code=${error.errorCode} '${error.description}'")
         }
     }
 
@@ -78,7 +80,7 @@ internal class PaywallWebViewClient(
     // content over a bad certificate) and fail terminally so the WebView is removed deterministically.
     override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
         handler.cancel()
-        markFailed()
+        markFailed("SSL error: $error")
     }
 
     override fun onReceivedHttpError(
@@ -87,12 +89,12 @@ internal class PaywallWebViewClient(
         errorResponse: WebResourceResponse,
     ) {
         if (request.isForMainFrame) {
-            markFailed()
+            markFailed("HTTP error status=${errorResponse.statusCode}")
         }
     }
 
     override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
-        markFailed()
+        markFailed("render process gone (didCrash=${detail.didCrash()})")
         // true = handled; the dead WebView must not be reused (removed via the failure path).
         return true
     }
