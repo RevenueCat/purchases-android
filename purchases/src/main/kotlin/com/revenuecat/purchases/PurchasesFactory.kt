@@ -35,6 +35,7 @@ import com.revenuecat.purchases.common.offerings.OfferingsFactory
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineCustomerInfoCalculator
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMappingTopicProvider
 import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetcher
 import com.revenuecat.purchases.common.remoteconfig.DefaultRemoteConfigSourceProvider
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
@@ -267,20 +268,6 @@ internal class PurchasesFactory(
                 automaticDeviceIdentifierCollectionEnabled,
             )
 
-            val offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
-                PurchasedProductsFetcher(cache, billing),
-                appConfig,
-                diagnosticsTracker,
-            )
-
-            val offlineEntitlementsManager = OfflineEntitlementsManager(
-                backend,
-                offlineCustomerInfoCalculator,
-                cache,
-                appConfig,
-                diagnosticsTracker,
-            )
-
             val offeringsCache = OfferingsCache(
                 deviceCache = cache,
                 localeProvider = localeProvider,
@@ -300,6 +287,25 @@ internal class PurchasesFactory(
             } else {
                 null
             }
+            val productEntitlementMappingTopicProvider = createProductEntitlementMappingTopicProvider(
+                remoteConfigEnabled,
+                remoteConfigManager,
+            )
+
+            val offlineCustomerInfoCalculator = OfflineCustomerInfoCalculator(
+                PurchasedProductsFetcher(cache, billing),
+                appConfig,
+                diagnosticsTracker,
+            )
+
+            val offlineEntitlementsManager = OfflineEntitlementsManager(
+                backend,
+                offlineCustomerInfoCalculator,
+                cache,
+                appConfig,
+                diagnosticsTracker,
+                productEntitlementMappingTopicProvider,
+            )
 
             val fontLoader = FontLoader(
                 context = contextForStorage,
@@ -630,6 +636,16 @@ internal class PurchasesFactory(
     }
 
     companion object {
+        @VisibleForTesting
+        internal fun createProductEntitlementMappingTopicProvider(
+            remoteConfigEnabled: Boolean,
+            remoteConfigManager: RemoteConfigManager?,
+        ): ProductEntitlementMappingTopicProvider? = if (remoteConfigEnabled) {
+            remoteConfigManager?.let(::ProductEntitlementMappingTopicProvider)
+        } else {
+            null
+        }
+
         @VisibleForTesting
         internal fun shouldInitializeDiagnostics(
             diagnosticsEnabled: Boolean,

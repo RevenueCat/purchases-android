@@ -390,13 +390,16 @@ internal class RemoteConfigManager(
             // A 4xx: disable the endpoint for the rest of the session. This is an endpoint-level fact, so set it
             // regardless of epoch ownership (a late response for an old identity is still a valid signal that the
             // endpoint refuses this app's requests). Reads now return null, so drop any in-memory caches too.
-            disabled = true
-            val invalidatedGeneration = generation.incrementAndGet()
-            listeners.forEach { it.onConfigInvalidated(invalidatedGeneration) }
-            // Distinct one-shot signal (this branch runs once, guarded by !disabled): lets consumers refetch
-            // offerings so paywall components — skipped while the endpoint was live — get decoded for the
-            // fallback render path.
-            listeners.forEach { it.onRemoteConfigDisabled(invalidatedGeneration) }
+            synchronized(cacheLock) {
+                if (!disabled) {
+                    disabled = true
+                    val invalidatedGeneration = generation.incrementAndGet()
+                    listeners.forEach { it.onConfigInvalidated(invalidatedGeneration) }
+                    // Distinct one-shot signal: lets consumers refetch offerings so paywall components — skipped
+                    // while the endpoint was live — get decoded for the fallback render path.
+                    listeners.forEach { it.onRemoteConfigDisabled(invalidatedGeneration) }
+                }
+            }
         }
         if (releaseGuardIfOwned(requestEpoch)) {
             errorLog(error)
@@ -746,11 +749,15 @@ internal class RemoteConfigManager(
         }
         verboseLog { "Reading remote config blob (topic='${topic.wireName}', item='$itemKey')." }
         val ref = committedItem(topic, itemKey)?.blobRef
-        return when {
-            ref == null -> {
+        return ref?.let { resolveBlobBytes(it, itemKey) }.also {
+            if (ref == null) {
                 verboseLog { "Remote config item '$itemKey' is missing or has no blob ref; returning null." }
-                null
             }
+        }
+    }
+
+    private suspend fun resolveBlobBytes(ref: String, itemKey: String): ByteArray? {
+        return when {
             blobFetcher.ensureDownloaded(ref) -> {
                 blobStore.read(ref).also { bytes ->
                     if (bytes != null) {
