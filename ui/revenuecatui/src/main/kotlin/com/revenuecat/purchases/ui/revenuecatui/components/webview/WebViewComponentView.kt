@@ -4,6 +4,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import android.graphics.Color
 import android.view.View
+import android.view.ViewGroup
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -79,6 +80,7 @@ internal fun WebViewComponentView(
             AndroidView(
                 factory = { context ->
                     WebView(context).apply {
+                        applyFullSizeLayoutParams()
                         // Must precede attach()/loadUrl: setProfile throws once the WebView has been used.
                         applyPaywallProfile()
                         val bridge = WebViewJavaScriptBridge(
@@ -160,6 +162,16 @@ private fun resolveFitAxis(constraint: SizeConstraint, contentCssPx: Int, placeh
 /** Holds the per-WebView bridge so factory and onRelease share one instance. */
 internal class WebViewBridgeHolder {
     var bridge: WebViewJavaScriptBridge? = null
+}
+
+// WebView drives Chromium's force_zero_layout_height off its LayoutParams: with the WRAP_CONTENT
+// defaults AndroidView assigns, CSS % and vh heights resolve to 0 and content renders blank. Compose
+// sizes the view from exact constraints, so MATCH_PARENT is safe and only flips the Chromium flag.
+internal fun WebView.applyFullSizeLayoutParams() {
+    layoutParams = ViewGroup.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT,
+        ViewGroup.LayoutParams.MATCH_PARENT,
+    )
 }
 
 private fun WebView.configure(
