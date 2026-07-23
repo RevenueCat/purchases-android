@@ -4,6 +4,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import android.graphics.Bitmap
 import android.net.http.SslError
+import android.os.Build
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.SslErrorHandler
 import android.webkit.WebResourceError
@@ -11,6 +12,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.annotation.RequiresApi
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 /**
@@ -93,6 +95,8 @@ internal class PaywallWebViewClient(
         }
     }
 
+    // RenderProcessGoneDetail and this callback exist only on API 26+; the framework never invokes it below.
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
         markFailed("render process gone (didCrash=${detail.didCrash()})")
         // true = handled; the dead WebView must not be reused (removed via the failure path).
