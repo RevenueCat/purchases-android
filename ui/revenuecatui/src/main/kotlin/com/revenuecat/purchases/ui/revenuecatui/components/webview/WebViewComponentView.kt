@@ -195,6 +195,7 @@ private fun WebView.configure(
 // Android draws a translucent tap-highlight scrim (blue on most themes) over tapped clickable content;
 // iOS WKWebView does not. Set `-webkit-tap-highlight-color: transparent` as an inherited default at the
 // document root. A bundle can still override it per element (inheritance loses to any explicit value).
+@Suppress("TooGenericExceptionCaught")
 internal fun WebView.disableTapHighlight(expectedOrigin: String?) {
     if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
     try {
