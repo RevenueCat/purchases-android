@@ -1,5 +1,8 @@
 package com.revenuecat.purchases.common.remoteconfig
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.warnLog
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -78,11 +81,19 @@ internal interface RemoteConfigSourceProvider {
  * sources have no embedded default: they are only useful alongside a fetched config, which carries
  * its own. Sources are deduped by url and ordered via [WeightedSourceSelector].
  *
+ * The api list additionally restarts on its own once [API_FAILOVER_RESTART_INTERVAL_MS] has elapsed
+ * since it first failed over, so the SDK periodically returns to the primary source (or re-arms an
+ * exhausted list) instead of sticking on a backup forever. During a persistent outage this retries
+ * the primary at most once per interval. Blob failover has no such timer: it is restarted per fetch
+ * cycle by its callers.
+ *
  * Thread-safe.
  */
+@OptIn(InternalRevenueCatAPI::class)
 internal class DefaultRemoteConfigSourceProvider(
     private val topicStore: RemoteConfigTopicStore,
     private val random: Random = Random.Default,
+    private val dateProvider: DateProvider = DefaultDateProvider(),
 ) : RemoteConfigSourceProvider {
 
     private val lock = Any()
@@ -90,6 +101,11 @@ internal class DefaultRemoteConfigSourceProvider(
     // Content hash of the `sources` topic the current failovers were built from. Null means there is no
     // sources topic (absent, or none seen yet), in which case the failovers hold the embedded defaults.
     private var builtHash: String? = null
+
+    // When the api failover first advanced past the top of its list, or null while it sits at the top.
+    // Stamped on the first advance (not the latest) so a flapping source can't postpone the periodic
+    // return to the primary indefinitely.
+    private var apiFailoverStartedAtMs: Long? = null
     private var api = SourceFailover(
         RemoteConfigSourceHandle.Purpose.API,
         dedupe(sourcesFor(null, RemoteConfigSourceHandle.Purpose.API)),
@@ -104,14 +120,21 @@ internal class DefaultRemoteConfigSourceProvider(
     override fun getCurrent(purpose: RemoteConfigSourceHandle.Purpose): RemoteConfigSourceHandle? =
         synchronized(lock) {
             rebuildIfChanged()
+            restartAPIIfExpired()
             failoverFor(purpose).current
         }
 
     override fun reportUnhealthy(handle: RemoteConfigSourceHandle) {
         synchronized(lock) {
             // Rebuild happened, no need to report unhealthy
-            if (!rebuildIfChanged()) {
-                failoverFor(handle.purpose).reportUnhealthy(handle)
+            if (rebuildIfChanged()) return
+            restartAPIIfExpired()
+            val advanced = failoverFor(handle.purpose).reportUnhealthy(handle)
+            if (advanced &&
+                handle.purpose == RemoteConfigSourceHandle.Purpose.API &&
+                apiFailoverStartedAtMs == null
+            ) {
+                apiFailoverStartedAtMs = dateProvider.now.time
             }
         }
     }
@@ -121,6 +144,9 @@ internal class DefaultRemoteConfigSourceProvider(
             // Rebuild happened, no need to restart
             if (!rebuildIfChanged()) {
                 failoverFor(purpose).restart()
+                if (purpose == RemoteConfigSourceHandle.Purpose.API) {
+                    apiFailoverStartedAtMs = null
+                }
             }
         }
     }
@@ -129,9 +155,13 @@ internal class DefaultRemoteConfigSourceProvider(
         synchronized(lock) {
             // A config change already re-armed both lists from the top; nothing more to do here.
             if (rebuildIfChanged()) return true
+            restartAPIIfExpired()
             val failover = failoverFor(purpose)
             if (failover.current == null) {
                 failover.restart()
+                if (purpose == RemoteConfigSourceHandle.Purpose.API) {
+                    apiFailoverStartedAtMs = null
+                }
                 true
             } else {
                 false
@@ -149,6 +179,20 @@ internal class DefaultRemoteConfigSourceProvider(
             RemoteConfigSourceHandle.Purpose.API -> api
             RemoteConfigSourceHandle.Purpose.BLOB -> blob
         }
+
+    /**
+     * Restarts the api failover once [API_FAILOVER_RESTART_INTERVAL_MS] has elapsed since it first
+     * advanced, so a backup (or an exhausted list) periodically retries the primary source. The
+     * restart bumps the token, so handles from before it can no longer advance the list. Callers
+     * must hold [lock].
+     */
+    private fun restartAPIIfExpired() {
+        val startedAtMs = apiFailoverStartedAtMs ?: return
+        if (dateProvider.now.time - startedAtMs >= API_FAILOVER_RESTART_INTERVAL_MS) {
+            api.restart()
+            apiFailoverStartedAtMs = null
+        }
+    }
 
     /**
      * Rebuilds both failovers from the latest `sources` topic when its hash changed, returning whether
@@ -179,9 +223,11 @@ internal class DefaultRemoteConfigSourceProvider(
             nextToken,
         )
         builtHash = topic?.contentHash
+        apiFailoverStartedAtMs = null
     }
 
     private companion object {
+        private const val API_FAILOVER_RESTART_INTERVAL_MS = 600_000L
         private const val API_ITEM = "api"
         private const val BLOB_ITEM = "blob"
         private const val SOURCES_KEY = "sources"
@@ -288,10 +334,12 @@ private class SourceFailover(
     val current: RemoteConfigSourceHandle?
         get() = selector.current?.let { RemoteConfigSourceHandle(purpose, it, token) }
 
-    fun reportUnhealthy(handle: RemoteConfigSourceHandle) {
-        if (handle.token != token) return
+    /** Advances past the handle's source, returning whether it did (stale reports are ignored). */
+    fun reportUnhealthy(handle: RemoteConfigSourceHandle): Boolean {
+        if (handle.token != token) return false
         selector.advance()
         token++
+        return true
     }
 
     fun restart() {
