@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common.offlineentitlements
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobData
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
-import com.revenuecat.purchases.common.remoteconfig.RemoteConfigReadState
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -115,12 +114,7 @@ internal class ProductEntitlementMappingTopicProviderTest {
         } answers {
             val value = thirdArg<(ByteArray) -> ProductEntitlementMapping?>().invoke(blob)
             value?.let {
-                RemoteConfigBlobData(
-                    it,
-                    RemoteConfigTopic.ProductEntitlementMapping,
-                    "default",
-                    RemoteConfigReadState(0, 0, "ref"),
-                )
+                RemoteConfigBlobData(it, 0)
             }
         }
     }
