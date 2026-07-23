@@ -11,6 +11,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -49,17 +50,20 @@ internal fun WebViewComponentView(
     val resolvedUrl = remember(style.url) {
         WebViewUrlResolver.resolve(style.url)
     }
-    if (resolvedUrl == null) {
-        Logger.w("Paywalls V2 web_view not rendered: URL must be https with no '{{' markers: '${style.url}'")
-        return
+    val componentId = style.componentId
+
+    LaunchedEffect(style.url, componentId) {
+        when {
+            resolvedUrl == null ->
+                Logger.w("Paywalls V2 web_view not rendered: URL must be https with no '{{' markers: '${style.url}'")
+            componentId.isBlank() ->
+                Logger.w("Paywalls V2 web_view not rendered: componentId is blank.")
+        }
     }
 
-    val componentId = style.componentId
+    if (resolvedUrl == null) return
     // workflow-web-components-sdk requires a host-assigned component id for the handshake.
-    if (componentId.isBlank()) {
-        Logger.w("Paywalls V2 web_view not rendered: componentId is blank.")
-        return
-    }
+    if (componentId.isBlank()) return
     val sizeToContentWidth = style.size.width is Fit
     val sizeToContentHeight = style.size.height is Fit
 
