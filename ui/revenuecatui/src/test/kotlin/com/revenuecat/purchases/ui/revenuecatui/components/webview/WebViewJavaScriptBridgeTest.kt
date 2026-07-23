@@ -343,6 +343,22 @@ internal class WebViewJavaScriptBridgeTest {
     }
 
     @Test
+    fun `attach reports unsupported secure messaging when listener installation throws`() {
+        every {
+            WebViewCompat.addWebMessageListener(any(), any(), any(), any())
+        } throws IllegalArgumentException("invalid origin rule")
+        var unsupportedCount = 0
+
+        val bridge = bridge(onSecureMessagingUnsupported = { unsupportedCount += 1 })
+        assertThat(unsupportedCount).isEqualTo(1)
+
+        // Installation did not latch as successful: a later attach retries (and fails again here).
+        bridge.attach()
+        assertThat(unsupportedCount).isEqualTo(2)
+        verify(exactly = 2) { WebViewCompat.addWebMessageListener(any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `release removes the web message listener`() {
         val bridge = bridge()
         verify(exactly = 1) {

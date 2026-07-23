@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import android.content.Context
 import android.webkit.RenderProcessGoneDetail
+import android.webkit.SslErrorHandler
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -9,6 +10,7 @@ import android.webkit.WebView
 import androidx.test.core.app.ApplicationProvider
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -114,6 +116,17 @@ internal class PaywallWebViewClientTest {
 
         assertThat(first).isTrue()
         assertThat(second).isTrue()
+        assertThat(failureCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `onReceivedSslError cancels the load and activates the terminal failure path`() {
+        val handler = mockk<SslErrorHandler>(relaxed = true)
+
+        client.onReceivedSslError(webView, handler, mockk(relaxed = true))
+
+        verify(exactly = 1) { handler.cancel() }
+        verify(exactly = 0) { handler.proceed() }
         assertThat(failureCount).isEqualTo(1)
     }
 

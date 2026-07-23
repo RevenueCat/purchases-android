@@ -4,10 +4,14 @@ package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import android.graphics.Color
 import android.view.View
+import android.view.ViewGroup
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -20,10 +24,13 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.ProfileStore
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import com.revenuecat.purchases.LogLevel
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
+import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -43,9 +50,18 @@ internal fun WebViewComponentView(
     val resolvedUrl = remember(style.url) {
         WebViewUrlResolver.resolve(style.url)
     }
-    if (resolvedUrl == null) return
-
     val componentId = style.componentId
+
+    LaunchedEffect(style.url, componentId) {
+        when {
+            resolvedUrl == null ->
+                Logger.w("Paywalls V2 web_view not rendered: URL must be https with no '{{' markers: '${style.url}'")
+            componentId.isBlank() ->
+                Logger.w("Paywalls V2 web_view not rendered: componentId is blank.")
+        }
+    }
+
+    if (resolvedUrl == null) return
     // workflow-web-components-sdk requires a host-assigned component id for the handshake.
     if (componentId.isBlank()) return
     val sizeToContentWidth = style.size.width is Fit
@@ -79,6 +95,7 @@ internal fun WebViewComponentView(
             AndroidView(
                 factory = { context ->
                     WebView(context).apply {
+                        applyFullSizeLayoutParams()
                         // Must precede attach()/loadUrl: setProfile throws once the WebView has been used.
                         applyPaywallProfile()
                         val bridge = WebViewJavaScriptBridge(
@@ -122,7 +139,9 @@ internal fun WebViewComponentView(
                     webView.destroy()
                 },
                 // Clip: content can briefly overflow while a fit axis animates placeholder -> measured.
-                modifier = modifier.size(effectiveSize).clipToBounds(),
+                modifier = modifier
+                    .size(effectiveSize)
+                    .clipToBounds(),
             )
         }
         // Terminal failure renders nothing; there is intentionally no native fallback.
@@ -160,6 +179,16 @@ internal class WebViewBridgeHolder {
     var bridge: WebViewJavaScriptBridge? = null
 }
 
+// WebView drives Chromium's force_zero_layout_height off its LayoutParams: with the WRAP_CONTENT
+// defaults AndroidView assigns, CSS % and vh heights resolve to 0 and content renders blank. Compose
+// sizes the view from exact constraints, so MATCH_PARENT is safe and only flips the Chromium flag.
+internal fun WebView.applyFullSizeLayoutParams() {
+    layoutParams = ViewGroup.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT,
+        ViewGroup.LayoutParams.MATCH_PARENT,
+    )
+}
+
 private fun WebView.configure(
     expectedOrigin: String?,
     onMainFrameNavigationStarted: () -> Unit,
@@ -182,11 +211,45 @@ private fun WebView.configure(
     settings.setSupportZoom(false)
     settings.builtInZoomControls = false
     settings.displayZoomControls = false
+    settings.mediaPlaybackRequiresUserGesture = false
     webViewClient = PaywallWebViewClient(
         expectedOrigin = expectedOrigin,
         onMainFrameNavigationStarted = onMainFrameNavigationStarted,
         onMainFrameLoadFailed = onMainFrameLoadFailed,
     )
+    // Inspect the bundle from Chrome DevTools in debug builds only; process-global, never in release.
+    if (BuildConfig.DEBUG) WebView.setWebContentsDebuggingEnabled(true)
+    // Surface the bundle's own JS console in logcat when the SDK is on DEBUG/VERBOSE, so authors can
+    // diagnose their content without a debugger attached.
+    if (Purchases.logLevel <= LogLevel.DEBUG) {
+        webChromeClient = object : WebChromeClient() {
+            override fun onConsoleMessage(message: ConsoleMessage): Boolean {
+                Logger.d(
+                    "Paywalls V2 web_view console [${message.messageLevel()}] ${message.message()} " +
+                        "(${message.sourceId()}:${message.lineNumber()})",
+                )
+                return true
+            }
+        }
+    }
+    disableTapHighlight(expectedOrigin)
+}
+
+// Android draws a translucent tap-highlight scrim (blue on most themes) over tapped clickable content;
+// iOS WKWebView does not. Set `-webkit-tap-highlight-color: transparent` as an inherited default at the
+// document root. A bundle can still override it per element (inheritance loses to any explicit value).
+@Suppress("TooGenericExceptionCaught")
+internal fun WebView.disableTapHighlight(expectedOrigin: String?) {
+    if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
+    try {
+        WebViewCompat.addDocumentStartJavaScript(
+            this,
+            "document.documentElement.style.webkitTapHighlightColor = 'transparent';",
+            setOf(expectedOrigin ?: "*"),
+        )
+    } catch (error: RuntimeException) {
+        Logger.w("Failed to disable webkit tap highlight: $error")
+    }
 }
 
 // Dedicated persistent profile isolating paywall WebView storage from the host app; shared across paywalls.

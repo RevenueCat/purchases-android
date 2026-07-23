@@ -3,12 +3,17 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import android.graphics.Bitmap
+import android.net.http.SslError
+import android.os.Build
 import android.webkit.RenderProcessGoneDetail
+import android.webkit.SslErrorHandler
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.annotation.RequiresApi
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 /**
  * [WebViewClient] for Paywalls V2 `web_view` components. Owns navigation policy, main-frame document
@@ -24,9 +29,10 @@ internal class PaywallWebViewClient(
     @Volatile
     private var failed: Boolean = false
 
-    private fun markFailed() {
+    private fun markFailed(reason: String) {
         if (failed) return
         failed = true
+        Logger.w("Paywalls V2 web_view load failed terminally, removing the component: $reason")
         onMainFrameLoadFailed()
     }
 
@@ -47,7 +53,7 @@ internal class PaywallWebViewClient(
             )
         ) {
             view.stopLoading()
-            markFailed()
+            markFailed("blocked main-frame navigation to '$url' (expectedOrigin=$expectedOrigin)")
             return
         }
         onMainFrameNavigationStarted()
@@ -67,8 +73,16 @@ internal class PaywallWebViewClient(
         error: WebResourceError,
     ) {
         if (request.isForMainFrame) {
-            markFailed()
+            markFailed("resource error code=${error.errorCode} '${error.description}'")
         }
+    }
+
+    // The default implementation cancels the load but leaves the component mounted and blank; whether
+    // a subsequent onReceivedError fires is undocumented and provider-dependent. Cancel (never show
+    // content over a bad certificate) and fail terminally so the WebView is removed deterministically.
+    override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
+        handler.cancel()
+        markFailed("SSL error: $error")
     }
 
     override fun onReceivedHttpError(
@@ -77,12 +91,14 @@ internal class PaywallWebViewClient(
         errorResponse: WebResourceResponse,
     ) {
         if (request.isForMainFrame) {
-            markFailed()
+            markFailed("HTTP error status=${errorResponse.statusCode}")
         }
     }
 
+    // RenderProcessGoneDetail and this callback exist only on API 26+; the framework never invokes it below.
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
-        markFailed()
+        markFailed("render process gone (didCrash=${detail.didCrash()})")
         // true = handled; the dead WebView must not be reused (removed via the failure path).
         return true
     }
