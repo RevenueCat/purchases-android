@@ -482,7 +482,7 @@ class OfflineEntitlementsManagerTest {
     }
 
     @Test
-    fun `concurrent mapping updates share one remote config job and complete every caller`() = runTest {
+    fun `mapping update does nothing when a remote config job is already pending`() = runTest {
         val topicProvider = mockk<EntitlementMappingTopicProvider>()
         val result = CompletableDeferred<ProductEntitlementMappingResult?>()
         val mapping = createProductEntitlementMapping()
@@ -491,10 +491,11 @@ class OfflineEntitlementsManagerTest {
         every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
         every { deviceCache.cacheProductEntitlementMapping(mapping) } just Runs
         coEvery { topicProvider.getProductEntitlementMapping() } coAnswers { result.await() }
-        var completionCallCount = 0
+        var firstCompletionCallCount = 0
+        var secondCompletionCallCount = 0
 
-        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale { completionCallCount++ }
-        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale { completionCallCount++ }
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale { firstCompletionCallCount++ }
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale { secondCompletionCallCount++ }
         testScheduler.runCurrent()
         result.complete(currentResult(mapping))
         testScheduler.advanceUntilIdle()
@@ -502,7 +503,8 @@ class OfflineEntitlementsManagerTest {
         coVerify(exactly = 1) { topicProvider.getProductEntitlementMapping() }
         verify(exactly = 1) { deviceCache.cacheProductEntitlementMapping(mapping) }
         verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
-        assertThat(completionCallCount).isEqualTo(2)
+        assertThat(firstCompletionCallCount).isEqualTo(1)
+        assertThat(secondCompletionCallCount).isZero()
     }
 
     @Test
