@@ -207,6 +207,7 @@ private fun WebView.configure(
     settings.setSupportZoom(false)
     settings.builtInZoomControls = false
     settings.displayZoomControls = false
+    settings.mediaPlaybackRequiresUserGesture = false
     webViewClient = PaywallWebViewClient(
         expectedOrigin = expectedOrigin,
         onMainFrameNavigationStarted = onMainFrameNavigationStarted,
