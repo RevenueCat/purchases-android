@@ -112,52 +112,16 @@ internal class OfflineEntitlementsManager(
     }
 
     fun updateProductEntitlementMappingCacheIfStale(completion: ((PurchasesError?) -> Unit)? = null) {
-        if (isOfflineEntitlementsEnabled() && deviceCache.isProductEntitlementMappingCacheStale()) {
-            debugLog { OfflineEntitlementsStrings.UPDATING_PRODUCT_ENTITLEMENT_MAPPING }
-            val topicProvider = productEntitlementMappingTopicProvider
-            if (topicProvider == null) {
-                fetchLegacyProductEntitlementMapping(completion)
-                return
-            }
-
-            val updateJob = synchronized(productEntitlementMappingUpdateLock) {
-                if (productEntitlementMappingUpdateJob != null) {
-                    null
-                } else {
-                    lateinit var newUpdateJob: Job
-                    newUpdateJob = scope.launch(start = CoroutineStart.LAZY) {
-                        var waitingForLegacyResult = false
-                        try {
-                            val result = topicProvider.getProductEntitlementMapping()
-                            if (result != null &&
-                                result.cacheIfCurrent(deviceCache::cacheProductEntitlementMapping)
-                            ) {
-                                debugLog { OfflineEntitlementsStrings.SUCCESSFULLY_UPDATED_PRODUCT_ENTITLEMENTS }
-                                if (finishProductEntitlementMappingUpdate(newUpdateJob)) {
-                                    completion?.invoke(null)
-                                }
-                            } else {
-                                waitingForLegacyResult = true
-                                fetchLegacyProductEntitlementMapping {
-                                    if (finishProductEntitlementMappingUpdate(newUpdateJob)) {
-                                        completion?.invoke(it)
-                                    }
-                                }
-                            }
-                        } finally {
-                            if (!waitingForLegacyResult) {
-                                finishProductEntitlementMappingUpdate(newUpdateJob)
-                            }
-                        }
-                    }
-                    productEntitlementMappingUpdateJob = newUpdateJob
-                    newUpdateJob
-                }
-            }
-            updateJob?.start()
-        } else {
+        if (!isOfflineEntitlementsEnabled() || !deviceCache.isProductEntitlementMappingCacheStale()) {
             completion?.invoke(null)
+            return
         }
+
+        debugLog { OfflineEntitlementsStrings.UPDATING_PRODUCT_ENTITLEMENT_MAPPING }
+        val topicProvider = productEntitlementMappingTopicProvider
+            ?: return fetchLegacyProductEntitlementMapping(completion)
+
+        startProductEntitlementMappingUpdate(topicProvider, completion)
     }
 
     fun close() {
@@ -167,15 +131,53 @@ internal class OfflineEntitlementsManager(
         scope.cancel()
     }
 
-    private fun finishProductEntitlementMappingUpdate(updateJob: Job): Boolean =
-        synchronized(productEntitlementMappingUpdateLock) {
-            if (productEntitlementMappingUpdateJob !== updateJob) {
-                false
-            } else {
-                productEntitlementMappingUpdateJob = null
-                true
+    private fun startProductEntitlementMappingUpdate(
+        topicProvider: EntitlementMappingTopicProvider,
+        completion: ((PurchasesError?) -> Unit)?,
+    ) {
+        fun finishUpdate(updateJob: Job): Boolean =
+            synchronized(productEntitlementMappingUpdateLock) {
+                if (productEntitlementMappingUpdateJob !== updateJob) {
+                    false
+                } else {
+                    productEntitlementMappingUpdateJob = null
+                    true
+                }
+            }
+
+        val completeUpdate: (Job, PurchasesError?) -> Unit = { updateJob, error ->
+            if (finishUpdate(updateJob)) {
+                completion?.invoke(error)
             }
         }
+        val updateJob = synchronized(productEntitlementMappingUpdateLock) {
+            if (productEntitlementMappingUpdateJob != null) {
+                return
+            }
+
+            scope.launch(start = CoroutineStart.LAZY) {
+                val currentJob = coroutineContext[Job] ?: return@launch
+                var waitingForLegacyResult = false
+                try {
+                    val result = topicProvider.getProductEntitlementMapping()
+                    if (result?.cacheIfCurrent(deviceCache::cacheProductEntitlementMapping) == true) {
+                        debugLog { OfflineEntitlementsStrings.SUCCESSFULLY_UPDATED_PRODUCT_ENTITLEMENTS }
+                        completeUpdate(currentJob, null)
+                    } else {
+                        waitingForLegacyResult = true
+                        fetchLegacyProductEntitlementMapping { completeUpdate(currentJob, it) }
+                    }
+                } finally {
+                    if (!waitingForLegacyResult) {
+                        finishUpdate(currentJob)
+                    }
+                }
+            }.also {
+                productEntitlementMappingUpdateJob = it
+            }
+        }
+        updateJob.start()
+    }
 
     private fun fetchLegacyProductEntitlementMapping(completion: ((PurchasesError?) -> Unit)?) {
         backend.getProductEntitlementMapping(
