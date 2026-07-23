@@ -11,35 +11,18 @@ import org.json.JSONObject
 @OptIn(InternalRevenueCatAPI::class)
 internal class ProductEntitlementMappingTopicProvider(
     private val manager: RemoteConfigManager,
-) : EntitlementMappingTopicProvider {
-    override suspend fun getProductEntitlementMapping(): ProductEntitlementMappingResult? {
-        val blobData = manager.blobDataSnapshot(RemoteConfigTopic.ProductEntitlementMapping, ITEM_KEY) { bytes ->
+) {
+    suspend fun getProductEntitlementMapping(): ProductEntitlementMapping? =
+        manager.blobData(RemoteConfigTopic.ProductEntitlementMapping, ITEM_KEY) { bytes ->
             try {
                 ProductEntitlementMapping.fromJson(JSONObject(bytes.decodeToString()))
             } catch (e: JSONException) {
                 errorLog(e) { "Failed to parse product entitlement mapping from remote config." }
                 null
             }
-        } ?: return null
-        return ProductEntitlementMappingResult(blobData.value) { action ->
-            manager.useIfCurrent(blobData, action)
         }
-    }
 
     private companion object {
         private const val ITEM_KEY = "default"
     }
-}
-
-@OptIn(InternalRevenueCatAPI::class)
-internal interface EntitlementMappingTopicProvider {
-    suspend fun getProductEntitlementMapping(): ProductEntitlementMappingResult?
-}
-
-@OptIn(InternalRevenueCatAPI::class)
-internal class ProductEntitlementMappingResult(
-    val mapping: ProductEntitlementMapping,
-    private val useIfCurrent: ((ProductEntitlementMapping) -> Unit) -> Boolean,
-) {
-    fun cacheIfCurrent(action: (ProductEntitlementMapping) -> Unit): Boolean = useIfCurrent.invoke(action)
 }

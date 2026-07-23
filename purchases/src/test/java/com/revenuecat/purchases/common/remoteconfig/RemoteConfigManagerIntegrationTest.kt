@@ -315,8 +315,8 @@ class RemoteConfigManagerIntegrationTest {
         val mapping = runBlocking {
             ProductEntitlementMappingTopicProvider(manager).getProductEntitlementMapping()
         }
-        assertThat(mapping?.mapping?.mappings).containsOnlyKeys("monthly")
-        assertThat(mapping?.mapping?.mappings?.get("monthly")?.entitlements).containsExactly("pro")
+        assertThat(mapping?.mappings).containsOnlyKeys("monthly")
+        assertThat(mapping?.mappings?.get("monthly")?.entitlements).containsExactly("pro")
         assertThat(blobStore.read(ref)).isEqualTo(blob)
     }
 
@@ -359,7 +359,7 @@ class RemoteConfigManagerIntegrationTest {
             ProductEntitlementMappingTopicProvider(manager).getProductEntitlementMapping()
         }
 
-        assertThat(mapping?.mapping?.mappings).containsOnlyKeys("monthly")
+        assertThat(mapping?.mappings).containsOnlyKeys("monthly")
     }
 
     /** Builds a workflows-topic config. Each item maps an item key to its `blob_ref`, or `null` for inline-only. */

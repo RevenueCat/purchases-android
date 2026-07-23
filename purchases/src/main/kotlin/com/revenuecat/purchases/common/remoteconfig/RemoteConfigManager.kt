@@ -87,9 +87,6 @@ internal class RemoteConfigManager(
 ) {
     private val isRefreshing = AtomicBoolean(false)
 
-    @Volatile
-    private var isClosed = false
-
     // Bumped by clearCache() on every identity change. A request captures the epoch when it starts; once it
     // changes, the in-flight request's callbacks drop their result (the /v1/config request itself cannot be
     // socket-cancelled), so an old user's response can never persist over the wiped cache.
@@ -441,8 +438,6 @@ internal class RemoteConfigManager(
     fun close() {
         scope.cancel()
         synchronized(cacheLock) {
-            isClosed = true
-            generation.incrementAndGet()
             isRefreshing.set(false)
             completeRefresh()
         }
@@ -654,46 +649,6 @@ internal class RemoteConfigManager(
     ): T? = withContext(ioDispatcher) {
         resolveBlobBytes(topic, itemKey)?.let(transform)
     }
-
-    /** Resolves a blob and retains the committed-config generation that produced it. */
-    suspend fun <T> blobDataSnapshot(
-        topic: RemoteConfigTopic,
-        itemKey: String,
-        transform: (ByteArray) -> T?,
-    ): RemoteConfigBlobData<T>? = withContext(ioDispatcher) {
-        val item = committedItem(topic, itemKey) ?: return@withContext null
-        val (readGeneration, blobRef) = synchronized(cacheLock) {
-            val currentRef = topicStore.topic(topic)?.get(itemKey)?.blobRef
-            if (disabled || isClosed) {
-                null
-            } else if (currentRef == null || currentRef != item.blobRef) {
-                null
-            } else {
-                generation.get() to currentRef
-            }
-        } ?: return@withContext null
-
-        val bytes = resolveBlobBytes(blobRef, itemKey) ?: return@withContext null
-        val value = transform(bytes) ?: return@withContext null
-        synchronized(cacheLock) {
-            if (disabled || isClosed || generation.get() != readGeneration) {
-                null
-            } else {
-                RemoteConfigBlobData(value, readGeneration)
-            }
-        }
-    }
-
-    /** Runs [action] only while [blobData] still belongs to the current committed config. */
-    fun <T> useIfCurrent(blobData: RemoteConfigBlobData<T>, action: (T) -> Unit): Boolean =
-        synchronized(cacheLock) {
-            if (disabled || isClosed || generation.get() != blobData.generation) {
-                false
-            } else {
-                action(blobData.value)
-                true
-            }
-        }
 
     /**
      * Resolves the blobs for every key in [itemKeys] within [topic] **concurrently**, builds a single JSON
@@ -933,11 +888,6 @@ internal class RemoteConfigManager(
         private val REFRESH_ATTEMPT_COOLDOWN = 1.minutes
     }
 }
-
-internal class RemoteConfigBlobData<T> internal constructor(
-    val value: T,
-    internal val generation: Int,
-)
 
 /** The blob refs each topic's items reference, keyed by topic name (empty list for inline-only topics). */
 internal fun Map<String, ConfigTopic>.toTopicBlobRefs(): Map<String, List<String>> =

@@ -33,7 +33,6 @@ import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offerings.OfferingsFactory
 import com.revenuecat.purchases.common.offerings.OfferingsManager
-import com.revenuecat.purchases.common.offlineentitlements.EntitlementMappingTopicProvider
 import com.revenuecat.purchases.common.offlineentitlements.OfflineCustomerInfoCalculator
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMappingTopicProvider
@@ -641,7 +640,7 @@ internal class PurchasesFactory(
         internal fun createProductEntitlementMappingTopicProvider(
             remoteConfigEnabled: Boolean,
             remoteConfigManager: RemoteConfigManager?,
-        ): EntitlementMappingTopicProvider? = if (remoteConfigEnabled) {
+        ): ProductEntitlementMappingTopicProvider? = if (remoteConfigEnabled) {
             remoteConfigManager?.let(::ProductEntitlementMappingTopicProvider)
         } else {
             null
