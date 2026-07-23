@@ -17,7 +17,7 @@ import android.webkit.WebViewClient
  */
 internal class PaywallWebViewClient(
     private val expectedOrigin: String?,
-    private val onMainFrameNavigationStarted: (url: String?) -> Unit,
+    private val onMainFrameNavigationStarted: () -> Unit,
     private val onMainFrameLoadFailed: () -> Unit,
 ) : WebViewClient() {
 
@@ -50,7 +50,7 @@ internal class PaywallWebViewClient(
             markFailed()
             return
         }
-        onMainFrameNavigationStarted(url)
+        onMainFrameNavigationStarted()
     }
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
