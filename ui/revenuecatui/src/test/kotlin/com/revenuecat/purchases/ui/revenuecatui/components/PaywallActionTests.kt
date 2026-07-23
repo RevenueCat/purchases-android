@@ -394,6 +394,62 @@ class PaywallActionTests {
             assertEquals(0, viewModel.notifyWebCheckoutOpenedCallCount)
         }
 
+    @Test
+    fun `LaunchWebCheckout with a recognized method that fails to actually open does not notify listener`(): Unit =
+        with(composeTestRule) {
+            // Arrange
+            val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+            val defaultLocale = LocaleId("en_US")
+            val localizationKey = LocalizationKey("web_checkout")
+            val localizationData = LocalizationData.Text("web checkout")
+            val localizations = nonEmptyMapOf(
+                defaultLocale to nonEmptyMapOf(localizationKey to localizationData),
+            )
+            val components = listOf(
+                PurchaseButtonComponent(
+                    stack = StackComponent(
+                        components = listOf(TextComponent(text = localizationKey, color = textColor)),
+                    ),
+                    method = PurchaseButtonComponent.Method.WebCheckout(
+                        autoDismiss = true,
+                        openMethod = ButtonComponent.UrlMethod.DEEP_LINK,
+                    ),
+                ),
+            )
+            val offering = FakeOffering(components, localizations)
+            val viewModel = MockViewModel(
+                offering = offering,
+                allowsPurchases = true,
+                // No app on the test device/Robolectric sandbox registers this custom scheme, so the
+                // real Android URL-opening machinery genuinely fails here (unlike the other tests'
+                // https:// URLs, which resolve successfully).
+                webCheckoutUrl = "com.revenuecat.nonexistent-test-scheme://checkout",
+            )
+            val options = PaywallOptions.Builder(dismissRequest = {}).setOffering(offering).build()
+
+            // Robolectric's default shadow accepts any startActivity call as "successful" regardless of
+            // whether a real component could handle it. Enable strict validation so this custom scheme
+            // genuinely throws ActivityNotFoundException, like it would on a real device.
+            org.robolectric.Shadows.shadowOf(
+                ApplicationProvider.getApplicationContext<android.app.Application>(),
+            ).checkActivities(true)
+
+            // Act
+            setContent { InternalPaywall(options, viewModel) }
+            // Buttons appear once in main content and once in sticky footer
+            onAllNodesWithText(localizationData.value)
+                .assertCountEquals(2)
+                .get(0)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+            waitForIdle()
+
+            // Assert: even though DEEP_LINK is a recognized method, the URL genuinely failed to open
+            // (no matching activity), so the listener must not be told a web checkout was launched
+            assertEquals(0, viewModel.notifyWebCheckoutOpenedCallCount)
+        }
+
     @Suppress("TestFunctionName")
     private fun FakeOffering(data: PaywallComponentsData): Offering =
         Offering(

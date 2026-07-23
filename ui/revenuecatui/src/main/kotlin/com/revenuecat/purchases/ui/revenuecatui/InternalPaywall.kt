@@ -452,8 +452,7 @@ private fun Context.handleUrlDestination(url: String, method: ButtonComponent.Ur
         }
     }
 
-    URLOpener.openURL(this, url, openingMethod)
-    return true
+    return URLOpener.openURL(this, url, openingMethod)
 }
 
 private fun Modifier.screenModeBackground(isInFullScreenMode: Boolean, backgroundColor: Color): Modifier = this
