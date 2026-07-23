@@ -482,6 +482,30 @@ class OfflineEntitlementsManagerTest {
     }
 
     @Test
+    fun `concurrent mapping updates share one remote config job and complete every caller`() = runTest {
+        val topicProvider = mockk<EntitlementMappingTopicProvider>()
+        val result = CompletableDeferred<ProductEntitlementMappingResult?>()
+        val mapping = createProductEntitlementMapping()
+        val managerScope = CoroutineScope(SupervisorJob() + StandardTestDispatcher(testScheduler))
+        offlineEntitlementsManager = managerWithTopicProvider(topicProvider, managerScope)
+        every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
+        every { deviceCache.cacheProductEntitlementMapping(mapping) } just Runs
+        coEvery { topicProvider.getProductEntitlementMapping() } coAnswers { result.await() }
+        var completionCallCount = 0
+
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale { completionCallCount++ }
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale { completionCallCount++ }
+        testScheduler.runCurrent()
+        result.complete(currentResult(mapping))
+        testScheduler.advanceUntilIdle()
+
+        coVerify(exactly = 1) { topicProvider.getProductEntitlementMapping() }
+        verify(exactly = 1) { deviceCache.cacheProductEntitlementMapping(mapping) }
+        verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
+        assertThat(completionCallCount).isEqualTo(2)
+    }
+
+    @Test
     fun `updateProductEntitlementMappingCacheIfStale falls back when remote config mapping is unavailable`() {
         val topicProvider = mockk<EntitlementMappingTopicProvider>()
         val mapping = createProductEntitlementMapping()

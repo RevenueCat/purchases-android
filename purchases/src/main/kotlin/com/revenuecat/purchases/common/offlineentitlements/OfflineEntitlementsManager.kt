@@ -14,7 +14,9 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -38,6 +40,10 @@ internal class OfflineEntitlementsManager(
     private var _offlineCustomerInfo: CustomerInfo? = null
 
     private val offlineCustomerInfoCallbackCache = mutableMapOf<String, List<OfflineCustomerInfoCallback>>()
+
+    private val productEntitlementMappingUpdateLock = Any()
+    private var productEntitlementMappingUpdateJob: Job? = null
+    private val productEntitlementMappingUpdateCompletions = mutableListOf<(PurchasesError?) -> Unit>()
 
     @Synchronized
     fun resetOfflineCustomerInfoCache() {
@@ -114,22 +120,71 @@ internal class OfflineEntitlementsManager(
                 fetchLegacyProductEntitlementMapping(completion)
                 return
             }
-            scope.launch {
-                val result = topicProvider.getProductEntitlementMapping()
-                if (result != null && result.cacheIfCurrent(deviceCache::cacheProductEntitlementMapping)) {
-                    debugLog { OfflineEntitlementsStrings.SUCCESSFULLY_UPDATED_PRODUCT_ENTITLEMENTS }
-                    completion?.invoke(null)
+
+            val updateJob = synchronized(productEntitlementMappingUpdateLock) {
+                completion?.let(productEntitlementMappingUpdateCompletions::add)
+                if (productEntitlementMappingUpdateJob != null) {
+                    null
                 } else {
-                    fetchLegacyProductEntitlementMapping(completion)
+                    lateinit var newUpdateJob: Job
+                    newUpdateJob = scope.launch(start = CoroutineStart.LAZY) {
+                        var waitingForLegacyResult = false
+                        try {
+                            val result = topicProvider.getProductEntitlementMapping()
+                            if (result != null &&
+                                result.cacheIfCurrent(deviceCache::cacheProductEntitlementMapping)
+                            ) {
+                                debugLog { OfflineEntitlementsStrings.SUCCESSFULLY_UPDATED_PRODUCT_ENTITLEMENTS }
+                                finishProductEntitlementMappingUpdate(newUpdateJob, null)
+                            } else {
+                                waitingForLegacyResult = true
+                                fetchLegacyProductEntitlementMapping {
+                                    finishProductEntitlementMappingUpdate(newUpdateJob, it)
+                                }
+                            }
+                        } finally {
+                            if (!waitingForLegacyResult) {
+                                finishProductEntitlementMappingUpdate(newUpdateJob, null, notifyCompletions = false)
+                            }
+                        }
+                    }
+                    productEntitlementMappingUpdateJob = newUpdateJob
+                    newUpdateJob
                 }
             }
+            updateJob?.start()
         } else {
             completion?.invoke(null)
         }
     }
 
     fun close() {
+        synchronized(productEntitlementMappingUpdateLock) {
+            productEntitlementMappingUpdateJob = null
+            productEntitlementMappingUpdateCompletions.clear()
+        }
         scope.cancel()
+    }
+
+    private fun finishProductEntitlementMappingUpdate(
+        updateJob: Job,
+        error: PurchasesError?,
+        notifyCompletions: Boolean = true,
+    ) {
+        val completions = synchronized(productEntitlementMappingUpdateLock) {
+            if (productEntitlementMappingUpdateJob !== updateJob) {
+                return@synchronized emptyList()
+            }
+            productEntitlementMappingUpdateJob = null
+            productEntitlementMappingUpdateCompletions
+                .takeIf { notifyCompletions }
+                .orEmpty()
+                .toList()
+                .also {
+                    productEntitlementMappingUpdateCompletions.clear()
+                }
+        }
+        completions.forEach { it(error) }
     }
 
     private fun fetchLegacyProductEntitlementMapping(completion: ((PurchasesError?) -> Unit)?) {
