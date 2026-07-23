@@ -1739,6 +1739,114 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `useIfCurrent executes exactly once for a current blob snapshot`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
+        every { blobStore.read(REF_VALID) } returns byteArrayOf(4, 2)
+        val manager = readManager()
+        val snapshot = manager.blobDataSnapshot(RemoteConfigTopic.Workflows, "wf1") { it }
+        var invocationCount = 0
+
+        val used = manager.useIfCurrent(snapshot!!) {
+            invocationCount++
+            assertThat(it).isEqualTo(byteArrayOf(4, 2))
+        }
+
+        assertThat(used).isTrue
+        assertThat(invocationCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `useIfCurrent rejects a blob snapshot after identity invalidation`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
+        every { blobStore.read(REF_VALID) } returns byteArrayOf(4, 2)
+        val manager = readManager()
+        val snapshot = manager.blobDataSnapshot(RemoteConfigTopic.Workflows, "wf1") { it }
+        manager.clearCache("new-user")
+        var invoked = false
+
+        assertThat(manager.useIfCurrent(snapshot!!) { invoked = true }).isFalse()
+        assertThat(invoked).isFalse()
+    }
+
+    @Test
+    fun `useIfCurrent rejects a blob snapshot after a newer config commit`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
+        every { blobStore.read(REF_VALID) } returns byteArrayOf(4, 2)
+        val manager = readManager()
+        val snapshot = manager.blobDataSnapshot(RemoteConfigTopic.Workflows, "wf1") { it }
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = DEFAULT_FETCH_CONTEXT,
+        )
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v2",
+              "active_topics": ["workflows"],
+              "topics": { "workflows": { "wf1": { "blob_ref": "$REF_TAMPERED" } } }
+            }
+        """.trimIndent()
+        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        var invoked = false
+
+        assertThat(manager.useIfCurrent(snapshot!!) { invoked = true }).isFalse()
+        assertThat(invoked).isFalse()
+    }
+
+    @Test
+    fun `useIfCurrent rejects a blob snapshot after disabling or closing the manager`() = runTest {
+        every { diskCache.read() } returns persisted(
+            manifest = "m",
+            activeTopics = listOf("workflows"),
+            topics = mapOf(
+                "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
+            ),
+        )
+        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
+        every { blobStore.read(REF_VALID) } returns byteArrayOf(4, 2)
+
+        val disabledManager = readManager()
+        val disabledSnapshot = disabledManager.blobDataSnapshot(RemoteConfigTopic.Workflows, "wf1") { it }
+        disabledManager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = DEFAULT_FETCH_CONTEXT,
+        )
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+        )
+        assertThat(disabledManager.useIfCurrent(disabledSnapshot!!) {}).isFalse()
+
+        val closedManager = readManager()
+        val closedSnapshot = closedManager.blobDataSnapshot(RemoteConfigTopic.Workflows, "wf1") { it }
+        closedManager.close()
+        assertThat(closedManager.useIfCurrent(closedSnapshot!!) {}).isFalse()
+    }
+
+    @Test
     fun `blobData discards bytes when identity changes during blob resolution`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",

@@ -655,31 +655,31 @@ internal class RemoteConfigManager(
         blobDataSnapshot(topic, itemKey, transform)?.value
     }
 
-    /** Resolves a blob and retains the committed-config identity that produced it. */
+    /** Resolves a blob and retains the committed-config generation that produced it. */
     suspend fun <T> blobDataSnapshot(
         topic: RemoteConfigTopic,
         itemKey: String,
         transform: (ByteArray) -> T?,
     ): RemoteConfigBlobData<T>? = withContext(ioDispatcher) {
         val item = committedItem(topic, itemKey) ?: return@withContext null
-        val readState = synchronized(cacheLock) {
+        val (readGeneration, blobRef) = synchronized(cacheLock) {
             val currentRef = topicStore.topic(topic)?.get(itemKey)?.blobRef
             if (disabled || isClosed) {
                 null
             } else if (currentRef == null || currentRef != item.blobRef) {
                 null
             } else {
-                RemoteConfigReadState(epoch.get(), generation.get(), currentRef)
+                generation.get() to currentRef
             }
         } ?: return@withContext null
 
-        val bytes = resolveBlobBytes(readState.blobRef, itemKey) ?: return@withContext null
+        val bytes = resolveBlobBytes(blobRef, itemKey) ?: return@withContext null
         val value = transform(bytes) ?: return@withContext null
         synchronized(cacheLock) {
-            if (!isCurrent(topic, itemKey, readState)) {
+            if (disabled || isClosed || generation.get() != readGeneration) {
                 null
             } else {
-                RemoteConfigBlobData(value, topic, itemKey, readState)
+                RemoteConfigBlobData(value, readGeneration)
             }
         }
     }
@@ -687,23 +687,13 @@ internal class RemoteConfigManager(
     /** Runs [action] only while [blobData] still belongs to the current committed config. */
     fun <T> useIfCurrent(blobData: RemoteConfigBlobData<T>, action: (T) -> Unit): Boolean =
         synchronized(cacheLock) {
-            if (!isCurrent(blobData.topic, blobData.itemKey, blobData.readState)) {
+            if (disabled || isClosed || generation.get() != blobData.generation) {
                 false
             } else {
                 action(blobData.value)
                 true
             }
         }
-
-    private fun isCurrent(
-        topic: RemoteConfigTopic,
-        itemKey: String,
-        readState: RemoteConfigReadState,
-    ): Boolean = !disabled &&
-        !isClosed &&
-        epoch.get() == readState.epoch &&
-        generation.get() == readState.generation &&
-        topicStore.topic(topic)?.get(itemKey)?.blobRef == readState.blobRef
 
     /**
      * Resolves the blobs for every key in [itemKeys] within [topic] **concurrently**, builds a single JSON
@@ -944,17 +934,9 @@ internal class RemoteConfigManager(
     }
 }
 
-internal data class RemoteConfigReadState(
-    val epoch: Int,
-    val generation: Int,
-    val blobRef: String,
-)
-
 internal class RemoteConfigBlobData<T> internal constructor(
     val value: T,
-    internal val topic: RemoteConfigTopic,
-    internal val itemKey: String,
-    internal val readState: RemoteConfigReadState,
+    internal val generation: Int,
 )
 
 /** The blob refs each topic's items reference, keyed by topic name (empty list for inline-only topics). */
