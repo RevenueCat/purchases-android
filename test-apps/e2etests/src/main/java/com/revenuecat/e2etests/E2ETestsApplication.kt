@@ -9,6 +9,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
+import java.util.Locale
 
 class E2ETestsApplication : Application() {
 
@@ -35,6 +36,11 @@ class E2ETestsApplication : Application() {
         @OptIn(InternalRevenueCatAPI::class)
         override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
             if (Purchases.isConfigured) return
+            // Set the app locale before configuring so the SDK (which reads the default locale list
+            // dynamically) requests localized workflow config. Works on all API levels, no appcompat.
+            activity.intent?.getStringExtra(APP_LOCALE_EXTRA_KEY)?.let { tag ->
+                Locale.setDefault(Locale.forLanguageTag(tag))
+            }
             val mode = when (activity.intent?.getStringExtra(FORCE_SERVER_ERROR_EXTRA_KEY)) {
                 "remote_config_not_found" -> ForceServerErrorMode.REMOTE_CONFIG_NOT_FOUND
                 "remote_config_network_error" -> ForceServerErrorMode.REMOTE_CONFIG_NETWORK_ERROR
@@ -54,6 +60,7 @@ class E2ETestsApplication : Application() {
     private companion object {
         const val WORKFLOWS_API_KEY_PLACEHOLDER = "workflows_api_key_to_replace"
         const val FORCE_SERVER_ERROR_EXTRA_KEY = "force_server_error_strategy"
+        const val APP_LOCALE_EXTRA_KEY = "app_locale"
     }
 }
 
