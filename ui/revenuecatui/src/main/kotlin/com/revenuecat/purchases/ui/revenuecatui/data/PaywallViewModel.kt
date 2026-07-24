@@ -877,7 +877,8 @@ internal class PaywallViewModelImpl(
     /**
      * Resolves [workflowOffering] to its workflow and either presents it or decides how to fall back: a
      * workflowless offering renders its own paywall, a 4xx kill switch reloads offerings to recover the
-     * components skipped during the workflows-enabled parse, and any other failure throws (→ error state).
+     * components skipped during the workflows-enabled parse, and a transient topic failure renders the default
+     * paywall.
      */
     @Suppress("ReturnCount")
     private suspend fun presentWorkflowOrResolveFallback(
@@ -923,15 +924,16 @@ internal class PaywallViewModelImpl(
                 return WorkflowOutcome.Fallback(reloaded.offering, reloaded.offerings)
             }
             WorkflowResolution.Unavailable -> {
-                // The workflows topic could not be read and remote config is not disabled (a transient failure),
-                // so whether this offering has a workflow is unknown and reloading would recover nothing. Surface
-                // an error rather than silently degrading to the default paywall.
-                throw PurchasesException(
-                    PurchasesError(
-                        PurchasesErrorCode.UnknownError,
-                        "Could not resolve the workflow for offering '${workflowOffering.identifier}'.",
-                    ),
+                // The workflows topic could not be read for a transient reason (e.g. a network failure) with
+                // nothing cached, so whether this offering has a workflow is unknown. Rather than surfacing an
+                // error, degrade to the offering's default paywall. The offering's components were skipped
+                // during the workflows-enabled parse, so validatedPaywall renders the default template.
+                Logger.w(
+                    "Paywalls: Workflows topic unavailable for offering '${workflowOffering.identifier}' " +
+                        "(transient failure). Falling back to the default paywall.",
                 )
+                clearWorkflowState()
+                return WorkflowOutcome.Fallback(workflowOffering, preloadedOfferings)
             }
         }
     }
