@@ -101,8 +101,8 @@ internal class WorkflowsConfigProvider(
         verboseLog { "workflows topic ${if (topic == null) "is absent" else "has ${topic.size} item(s)"}" }
         // A null topic means it could not be read. If the /v1/config endpoint is disabled (4xx kill switch) the
         // offering was parsed with its components skipped, so the caller can reload offerings to recover them;
-        // any other (transient) failure is unrecoverable and should surface an error. Either way this is not the
-        // same as a genuinely workflowless offering.
+        // any other (transient) failure should fall back to the offering's default paywall. Either way this is not
+        // the same as a genuinely workflowless offering.
         return if (topic == null) {
             if (manager.isDisabled) {
                 verboseLog { "Workflows topic unavailable (remote config disabled) resolving offering '$offeringId'" }
