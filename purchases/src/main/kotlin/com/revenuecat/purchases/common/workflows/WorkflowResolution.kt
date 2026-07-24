@@ -14,7 +14,8 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
  *   4xx kill switch. The offering was parsed with its paywall components skipped while workflows were enabled,
  *   so the caller should reload offerings — which now re-parse with those components — to recover its paywall.
  * - [Unavailable]: the topic could not be read for some other (transient) reason, so whether the offering has a
- *   workflow is unknown and reloading would not recover anything. The caller should surface an error.
+ *   workflow is unknown and reloading would not recover anything. The caller should fall back to the offering's
+ *   default paywall (matching iOS), not surface an error.
  */
 @InternalRevenueCatAPI
 public sealed class WorkflowResolution {
