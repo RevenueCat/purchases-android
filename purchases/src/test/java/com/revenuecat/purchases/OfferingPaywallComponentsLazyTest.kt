@@ -164,6 +164,15 @@ internal class OfferingPaywallComponentsLazyTest {
     }
 
     @Test
+    fun `dataOrNull returns the decoded data on success`() {
+        val data = mockk<PaywallComponentsData>()
+        val components = Offering.PaywallComponents(uiConfig = mockk(), data = data)
+
+        assertThat(components.dataOrNull).isSameAs(data)
+        assertThat(components.data).isSameAs(data)
+    }
+
+    @Test
     fun `data re-throws the decode failure while dataOrNull returns null, decoding only once`() {
         var decodeCount = 0
         val components = Offering.PaywallComponents(uiConfig = mockk(), componentsHash = "hash") {
