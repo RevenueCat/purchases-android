@@ -237,6 +237,41 @@ private fun WebView.configure(
         }
     }
     disableTapHighlight(expectedOrigin)
+    hideAutoplayVideoUntilPlaying(expectedOrigin)
+}
+
+// Fallback reveal for an autoplay <video> that never emits `playing`; long enough that a normal clip plays first.
+private const val AUTOPLAY_REVEAL_FALLBACK_MS = 5000
+
+// Android WebView flashes a play-button placeholder over an autoplay <video> until its first frame
+// paints. The placeholder isn't a stable UA element across Chromium versions, so rather than target it
+// we hide autoplay videos until they emit `playing`, with a fallback reveal so one that never plays
+// can't stay hidden.
+@Suppress("TooGenericExceptionCaught")
+internal fun WebView.hideAutoplayVideoUntilPlaying(expectedOrigin: String?) {
+    if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
+    try {
+        WebViewCompat.addDocumentStartJavaScript(
+            this,
+            """
+            (function () {
+              var style = document.createElement('style');
+              style.textContent = 'video[autoplay]:not([data-rc-playing]){opacity:0!important}';
+              document.documentElement.appendChild(style);
+              function reveal(video) { video.setAttribute('data-rc-playing', ''); }
+              document.addEventListener('playing', function (event) { reveal(event.target); }, true);
+              // Armed per element on `loadstart` so videos added after load are covered too.
+              document.addEventListener('loadstart', function (event) {
+                var video = event.target;
+                setTimeout(function () { reveal(video); }, $AUTOPLAY_REVEAL_FALLBACK_MS);
+              }, true);
+            })();
+            """.trimIndent(),
+            setOf(expectedOrigin ?: "*"),
+        )
+    } catch (error: RuntimeException) {
+        Logger.w("Failed to install web_view autoplay video reveal: $error")
+    }
 }
 
 // Android draws a translucent tap-highlight scrim (blue on most themes) over tapped clickable content;
