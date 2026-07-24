@@ -125,6 +125,9 @@ internal fun WebViewComponentView(
                                 },
                                 onMainFrameLoadFailed = { loadFailed = true },
                             )
+                            installGestureOwnershipProbe(
+                                expectedOrigin = resolvedUrl.toOriginOrNull(),
+                            ) { wantsGesture -> this@apply.onContentGestureVerdict(wantsGesture) }
                             loadUrl(resolvedUrl)
                         }
                     }
@@ -134,6 +137,7 @@ internal fun WebViewComponentView(
                     val bridge = bridgeHolder.bridge
                     bridgeHolder.bridge = null
                     bridge?.release()
+                    webView.removeGestureOwnershipProbe()
                     webView.stopLoading()
                     webView.webViewClient = WebViewClient()
                     webView.destroy()
