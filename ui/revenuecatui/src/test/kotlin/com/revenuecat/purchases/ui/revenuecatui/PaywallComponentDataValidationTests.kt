@@ -191,8 +191,7 @@ class PaywallComponentDataValidationTests {
     @Test
     fun `Should fall back to the default paywall when the component tree fails to decode`() {
         val failingComponents = mockk<Offering.PaywallComponents>(relaxed = true) {
-            every { data } throws SerializationException("decode failed")
-            every { dataOrNull } returns null
+            every { data } returns Result.failure(SerializationException("decode failed"))
         }
         val offering = Offering(
             identifier = "identifier",

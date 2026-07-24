@@ -711,7 +711,7 @@ class OfferingsTest {
         // Assert
         val paywallComponents = offerings.all.values.first().paywallComponents ?: fail("paywallComponents is null")
         // Accessing `data` forces the deferred decode of the raw JSON captured at parse time.
-        assertThat(paywallComponents.data.defaultLocaleIdentifier).isEqualTo(LocaleId("en_US"))
+        assertThat(paywallComponents.data.getOrThrow().defaultLocaleIdentifier).isEqualTo(LocaleId("en_US"))
     }
 
     @Test

@@ -70,6 +70,6 @@ class WorkflowScreenMapperTest {
         val paywallComponents = WorkflowScreenMapper.toPaywallComponents(screen, screenId, uiConfig)
 
         assertThat(paywallComponents.uiConfig).isEqualTo(uiConfig)
-        assertThat(paywallComponents.data).isEqualTo(WorkflowScreenMapper.toPaywallComponentsData(screen, screenId))
+        assertThat(paywallComponents.data.getOrThrow()).isEqualTo(WorkflowScreenMapper.toPaywallComponentsData(screen, screenId))
     }
 }

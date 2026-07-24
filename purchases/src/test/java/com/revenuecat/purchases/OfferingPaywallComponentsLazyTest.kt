@@ -169,24 +169,24 @@ internal class OfferingPaywallComponentsLazyTest {
         val components = Offering.PaywallComponents(uiConfig = mockk(), data = data)
 
         assertThat(components.dataOrNull).isSameAs(data)
-        assertThat(components.data).isSameAs(data)
+        assertThat(components.data.getOrNull()).isSameAs(data)
     }
 
     @Test
-    fun `data re-throws the decode failure while dataOrNull returns null, decoding only once`() {
+    fun `data surfaces the decode failure as a failed Result while dataOrNull returns null, decoding only once`() {
         var decodeCount = 0
         val components = Offering.PaywallComponents(uiConfig = mockk(), componentsHash = "hash") {
             decodeCount++
             JsonTools.json.decodeFromString<PaywallComponentsData>(COMPONENTS_JSON_UNKNOWN_TYPE_NO_FALLBACK)
         }
 
-        val firstThrow = runCatching { components.data }.exceptionOrNull()
-        val secondThrow = runCatching { components.data }.exceptionOrNull()
+        val firstResult = components.data
+        val secondResult = components.data
 
-        // `data` surfaces the real deserializer failure (production behavior for intentional catchers)...
-        assertThat(firstThrow).isInstanceOf(SerializationException::class.java)
-        assertThat(firstThrow?.message).contains("fake_unknown_type_for_test")
-        assertThat(secondThrow).isInstanceOf(SerializationException::class.java)
+        // `data` surfaces the real deserializer failure as a Result.failure (no throwing accessor to misuse)...
+        assertThat(firstResult.exceptionOrNull()).isInstanceOf(SerializationException::class.java)
+        assertThat(firstResult.exceptionOrNull()?.message).contains("fake_unknown_type_for_test")
+        assertThat(secondResult.exceptionOrNull()).isInstanceOf(SerializationException::class.java)
         // ...while `dataOrNull` returns null, so best-effort readers can't crash.
         assertThat(components.dataOrNull).isNull()
         // The failing decode is memoized: it runs once, not on every access.

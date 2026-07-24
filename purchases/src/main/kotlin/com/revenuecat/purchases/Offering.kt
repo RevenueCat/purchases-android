@@ -83,9 +83,11 @@ constructor(
             dataProvider: () -> PaywallComponentsData,
         ) : this(uiConfig, componentsHash, lazy(LazyThreadSafetyMode.SYNCHRONIZED) { runCatching(dataProvider) })
 
-        // Decoded once on first access; the outcome (success or failure) is memoized. [data] re-throws the
-        // cached failure; [dataOrNull] returns null instead, for best-effort reads that must not crash.
-        public val data: PaywallComponentsData get() = dataResult.value.getOrThrow()
+        // Decoded once on first access; the outcome (success or failure) is memoized. [data] exposes that
+        // outcome as a [Result] so callers must handle a decode failure explicitly (there is deliberately no
+        // throwing accessor to reach for by mistake). [dataOrNull] is the convenience for best-effort reads
+        // that treat a failure as absence.
+        public val data: Result<PaywallComponentsData> get() = dataResult.value
 
         public val dataOrNull: PaywallComponentsData? get() = dataResult.value.getOrNull()
 

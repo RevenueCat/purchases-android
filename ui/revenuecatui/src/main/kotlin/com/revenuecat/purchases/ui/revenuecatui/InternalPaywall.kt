@@ -157,8 +157,8 @@ internal fun InternalPaywall(
             if (paywallComponents != null) {
                 LaunchedEffect(
                     state.offering.identifier,
-                    paywallComponents.data.id,
-                    paywallComponents.data.revision,
+                    paywallComponents.dataOrNull?.id,
+                    paywallComponents.dataOrNull?.revision,
                     options.mode,
                     state.locale.toString(),
                     isDark,
@@ -167,7 +167,7 @@ internal fun InternalPaywall(
                 }
             }
             PaywallFontScaling(
-                automaticallyScaleFontSize = state.offering.paywallComponents?.data?.automaticallyScaleFontSize ?: true,
+                automaticallyScaleFontSize = paywallComponents?.dataOrNull?.automaticallyScaleFontSize ?: true,
             ) {
                 val workflowState = viewModel.workflowState.value
                 if (workflowState != null) {

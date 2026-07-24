@@ -632,7 +632,7 @@ internal class PaywallViewModelImpl(
                         offerEligibility = calculateOfferEligibility(resolvedOffer, it),
                     )
                 } ?: currentState.selectedPackageInfo
-                val productChangeConfig = currentState.offering.paywallComponents?.data?.productChangeConfig
+                val productChangeConfig = currentState.offering.paywallComponents?.dataOrNull?.productChangeConfig
                 performPurchaseIfNecessary(activity, selectedPackageInfo, productChangeConfig)
             }
             is PaywallState.Error,
@@ -972,7 +972,7 @@ internal class PaywallViewModelImpl(
         when (offeringSelection) {
             is OfferingSelection.OfferingType -> {
                 val hasExitOffer = offeringSelection.offeringType.paywallComponents
-                    ?.data?.exitOffers?.dismiss?.offeringId != null
+                    ?.dataOrNull?.exitOffers?.dismiss?.offeringId != null
                 val offerings = if (hasExitOffer) {
                     try {
                         purchases.awaitOfferings()
@@ -1696,14 +1696,14 @@ internal class PaywallViewModelImpl(
         stepId: String?,
     ): PaywallEvent.Data? {
         val offering = offering
-        val paywallData = this.offering.paywallComponents ?: run {
+        val paywallData = this.offering.paywallComponents?.dataOrNull ?: run {
             Logger.e("Null paywall revision trying to create event data")
             return null
         }
         return PaywallEvent.Data(
-            paywallIdentifier = paywallData.data.id,
+            paywallIdentifier = paywallData.id,
             presentedOfferingContext = offering.presentedOfferingContextOrDefault,
-            paywallRevision = paywallData.data.revision,
+            paywallRevision = paywallData.revision,
             sessionIdentifier = UUID.randomUUID(),
             displayMode = mode.name.lowercase(),
             localeIdentifier = locale.toString(),
@@ -1753,11 +1753,11 @@ internal class PaywallViewModelImpl(
         mode: PaywallMode,
         darkMode: Boolean,
     ): PaywallPresentationFingerprint? {
-        val paywallData = offering.paywallComponents ?: return null
+        val paywallData = offering.paywallComponents?.dataOrNull ?: return null
         return PaywallPresentationFingerprint(
-            paywallIdentifier = paywallData.data.id,
+            paywallIdentifier = paywallData.id,
             presentedOfferingContext = offering.presentedOfferingContextOrDefault,
-            paywallRevision = paywallData.data.revision,
+            paywallRevision = paywallData.revision,
             displayMode = mode.name.lowercase(),
             localeIdentifier = locale.toString(),
             darkMode = darkMode,
