@@ -120,30 +120,24 @@ class StyleFactoryTests {
     }
 
     @Test
-    fun `Should return null style for WebViewComponent until style factory is wired`() {
-        // Stub arm mirrors FallbackHeaderComponent: createInternal returns Result.Success(null),
-        // so a web_view nested in a stack is filtered out. Real WebViewComponentStyle lands later.
-        val stackComponent = StackComponent(
-            components = listOf(
-                WebViewComponent(
-                    url = "https://paywalls.revenuecat.com/index.html",
-                    id = "promo_web_view",
-                    protocolVersion = 1,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
-                ),
-                TextComponent(
-                    text = LOCALIZATION_KEY_TEXT_1,
-                    color = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
-                ),
-            ),
+    fun `Should create a WebViewComponentStyle for a WebViewComponent`() {
+        val size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit())
+        val component = WebViewComponent(
+            url = "https://paywalls.revenuecat.com/{{ custom.animal }}.html",
+            id = "promo_web_view",
+            protocolVersion = 1,
+            visible = false,
+            size = size,
         )
 
-        val result = styleFactory.create(stackComponent)
+        val result = styleFactory.create(component)
 
         assertThat(result).isInstanceOf(Result.Success::class.java)
-        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
-        assertThat(style.children).hasSize(1)
-        assertThat(style.children[0]).isInstanceOf(TextComponentStyle::class.java)
+        val style = (result as Result.Success).value.componentStyle as WebViewComponentStyle
+        assertThat(style.url).isEqualTo("https://paywalls.revenuecat.com/{{ custom.animal }}.html")
+        assertThat(style.visible).isFalse()
+        assertThat(style.size).isEqualTo(size)
+        assertThat(style.componentId).isEqualTo("promo_web_view")
     }
 
     @Test
