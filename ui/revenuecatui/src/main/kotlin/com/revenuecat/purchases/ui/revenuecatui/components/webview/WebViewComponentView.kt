@@ -94,7 +94,7 @@ internal fun WebViewComponentView(
         if (!loadFailed) {
             AndroidView(
                 factory = { context ->
-                    WebView(context).apply {
+                    PaywallWebView(context).apply {
                         applyFullSizeLayoutParams()
                         // Must precede attach()/loadUrl: setProfile throws once the WebView has been used.
                         applyPaywallProfile()
