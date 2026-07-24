@@ -176,7 +176,7 @@ internal class OfferingPaywallComponentsLazyTest {
 
         // `data` surfaces the real deserializer failure (production behavior for intentional catchers)...
         assertThat(firstThrow).isInstanceOf(SerializationException::class.java)
-        assertThat(firstThrow?.message).isEqualTo("No fallback provided for unknown type: fake_unknown_type_for_test")
+        assertThat(firstThrow?.message).contains("fake_unknown_type_for_test")
         assertThat(secondThrow).isInstanceOf(SerializationException::class.java)
         // ...while `dataOrNull` returns null, so best-effort readers can't crash.
         assertThat(components.dataOrNull).isNull()

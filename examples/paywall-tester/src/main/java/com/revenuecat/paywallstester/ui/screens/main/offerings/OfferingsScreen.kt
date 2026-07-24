@@ -422,7 +422,7 @@ private fun OfferingRow(
 ) {
     val subtitle = if (showSubtitle) {
         offering.paywall?.let { "Template ${it.templateName}" }
-            ?: offering.paywallComponents?.let { "Components ${it.data.templateName}" }
+            ?: offering.paywallComponents?.dataOrNull?.templateName?.let { "Components $it" }
             ?: "No paywall"
     } else {
         null
