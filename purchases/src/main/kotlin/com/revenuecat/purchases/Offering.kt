@@ -66,14 +66,14 @@ constructor(
         // Offering.equals/hashCode/toString — which are @Poko-generated over `paywallComponents` — from forcing
         // a decode of every offering's component tree (e.g. when the cache compares cached vs network offerings).
         private val componentsHash: String,
-        dataProvider: Lazy<PaywallComponentsData>,
+        private val dataResult: Lazy<Result<PaywallComponentsData>>,
     ) {
         /**
          * Constructor for callers that already hold decoded [PaywallComponentsData] (e.g. previews, tests,
          * hybrid SDKs).
          */
         public constructor(uiConfig: UiConfig, data: PaywallComponentsData) :
-            this(uiConfig, data.hashCode().toString(), lazyOf(data))
+            this(uiConfig, data.hashCode().toString(), lazyOf(Result.success(data)))
 
         // Used by the parser: the component tree is decoded lazily on first [data] access, not at load time.
         // [componentsHash] is a cheap content hash of the raw JSON, used for equality so comparisons never decode.
@@ -81,9 +81,15 @@ constructor(
             uiConfig: UiConfig,
             componentsHash: String,
             dataProvider: () -> PaywallComponentsData,
-        ) : this(uiConfig, componentsHash, lazy(LazyThreadSafetyMode.SYNCHRONIZED, dataProvider))
+        ) : this(uiConfig, componentsHash, lazy(LazyThreadSafetyMode.SYNCHRONIZED) { runCatching(dataProvider) })
 
-        public val data: PaywallComponentsData by dataProvider
+        // Decoded once on first access; the outcome (success or failure) is memoized. [data] exposes that
+        // outcome as a [Result] so callers must handle a decode failure explicitly (there is deliberately no
+        // throwing accessor to reach for by mistake). [dataOrNull] is the convenience for best-effort reads
+        // that treat a failure as absence.
+        public val data: Result<PaywallComponentsData> get() = dataResult.value
+
+        public val dataOrNull: PaywallComponentsData? get() = dataResult.value.getOrNull()
 
         // Hand-written instead of @Poko so equality/hash/toString compare [componentsHash], never the lazy [data].
         override fun equals(other: Any?): Boolean =

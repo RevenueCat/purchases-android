@@ -129,11 +129,8 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
     // Force the (lazily-decoded) component tree up front. If decoding fails — e.g. a tree that passed the cheap
     // shape check at parse time but is structurally invalid — treat it as "no components paywall" so the caller
     // falls back, mirroring the previous eager-parse behavior where a decode failure yielded null paywallComponents.
-    @Suppress("TooGenericExceptionCaught")
-    val componentsData: PaywallComponentsData = try {
-        paywallComponents.data
-    } catch (e: Throwable) {
-        Logger.e("Error deserializing paywall components data. Falling back to default paywall.", e)
+    val componentsData: PaywallComponentsData = paywallComponents.data.getOrElse { error ->
+        Logger.e("Error deserializing paywall components data. Falling back to default paywall.", error)
         return null
     }
 
@@ -462,7 +459,7 @@ private val PaywallComponentsData.defaultLocalization: Map<LocalizationKey, Loca
     get() = componentsLocalizations.getBestMatch(defaultLocaleIdentifier)
 
 private val Offering.PaywallComponents.defaultVariableLocalization: Map<VariableLocalizationKey, String>?
-    get() = uiConfig.localizations.getBestMatch(data.defaultLocaleIdentifier)
+    get() = dataOrNull?.defaultLocaleIdentifier?.let { uiConfig.localizations.getBestMatch(it) }
 
 /**
  * Recursively checks whether any component override in the paywall config contains an
