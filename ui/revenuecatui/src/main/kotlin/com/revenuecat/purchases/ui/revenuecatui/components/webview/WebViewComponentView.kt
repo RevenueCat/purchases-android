@@ -10,6 +10,7 @@ import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -94,7 +95,7 @@ internal fun WebViewComponentView(
         if (!loadFailed) {
             AndroidView(
                 factory = { context ->
-                    PaywallWebView(context).apply {
+                    val webView = PaywallWebView(context).apply {
                         applyFullSizeLayoutParams()
                         // Must precede attach()/loadUrl: setProfile throws once the WebView has been used.
                         applyPaywallProfile()
@@ -131,8 +132,10 @@ internal fun WebViewComponentView(
                             loadUrl(resolvedUrl)
                         }
                     }
+                    webView.hostedInFrameLayout()
                 },
-                onRelease = { webView ->
+                onRelease = { container ->
+                    val webView = (container as FrameLayout).getChildAt(0) as WebView
                     // Only release the bridge that this view installed into this holder.
                     val bridge = bridgeHolder.bridge
                     bridgeHolder.bridge = null
@@ -182,6 +185,20 @@ private fun resolveFitAxis(constraint: SizeConstraint, contentCssPx: Int, placeh
 internal class WebViewBridgeHolder {
     var bridge: WebViewJavaScriptBridge? = null
 }
+
+// A hardware WebView drawn while fully off-screen (e.g. a non-visible carousel page) composites its GL
+// functor into an offscreen layer that has no surface, crashing the RenderThread in
+// SkSurface::getCanvas(). Hosting it inside a FrameLayout rather than directly in the AndroidView
+// isolates the functor from Compose's offscreen compositing while keeping hardware acceleration (a
+// software layer would avoid the crash but break video and WebGL).
+internal fun WebView.hostedInFrameLayout(): FrameLayout =
+    FrameLayout(context).apply {
+        layoutParams = ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT,
+        )
+        addView(this@hostedInFrameLayout)
+    }
 
 // WebView drives Chromium's force_zero_layout_height off its LayoutParams: with the WRAP_CONTENT
 // defaults AndroidView assigns, CSS % and vh heights resolve to 0 and content renders blank. Compose
