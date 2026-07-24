@@ -245,11 +245,12 @@ private fun WebView.configure(
 @Suppress("TooGenericExceptionCaught")
 internal fun WebView.disableTapHighlight(expectedOrigin: String?) {
     if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
+    val origin = expectedOrigin ?: return
     try {
         WebViewCompat.addDocumentStartJavaScript(
             this,
             "document.documentElement.style.webkitTapHighlightColor = 'transparent';",
-            setOf(expectedOrigin ?: "*"),
+            setOf(origin),
         )
     } catch (error: RuntimeException) {
         Logger.w("Failed to disable webkit tap highlight: $error")

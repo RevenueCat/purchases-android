@@ -46,12 +46,12 @@ internal class WebViewTapHighlightTest {
     }
 
     @Test
-    fun `falls back to any origin when the expected origin is unknown`() {
+    fun `does nothing when the expected origin is unknown`() {
         every { WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT) } returns true
 
         webView.disableTapHighlight(null)
 
-        verify { WebViewCompat.addDocumentStartJavaScript(webView, any(), setOf("*")) }
+        verify(exactly = 0) { WebViewCompat.addDocumentStartJavaScript(any(), any(), any()) }
     }
 
     @Test
