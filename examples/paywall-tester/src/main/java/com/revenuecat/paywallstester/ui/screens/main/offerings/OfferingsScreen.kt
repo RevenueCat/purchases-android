@@ -158,11 +158,11 @@ private fun OfferingsListScreen(
             allOfferings.filter { offering ->
                 offering.identifier.lowercase().contains(query) ||
                     offering.paywall?.templateName?.lowercase()?.contains(query) == true ||
-                    offering.paywallComponents?.data?.templateName?.lowercase()?.contains(query) == true
+                    offering.paywallComponents?.dataOrNull?.templateName?.lowercase()?.contains(query) == true
             }
         }
         filtered.groupBy { offering ->
-            offering.paywallComponents?.data?.templateName?.let { "V2 — $it" }
+            offering.paywallComponents?.dataOrNull?.templateName?.let { "V2 — $it" }
                 ?: offering.paywall?.templateName?.let { "Template $it" }
                 ?: "No paywall"
         }.toSortedMap(

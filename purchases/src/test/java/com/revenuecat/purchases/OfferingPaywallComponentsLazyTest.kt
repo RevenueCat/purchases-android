@@ -2,6 +2,8 @@ package com.revenuecat.purchases
 
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import io.mockk.mockk
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.decodeFromString
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -159,5 +161,55 @@ internal class OfferingPaywallComponentsLazyTest {
         val second = Offering.PaywallComponents(uiConfig = uiConfig, data = mockk())
 
         assertThat(first == second).isFalse()
+    }
+
+    @Test
+    fun `data re-throws the decode failure while dataOrNull returns null, decoding only once`() {
+        var decodeCount = 0
+        val components = Offering.PaywallComponents(uiConfig = mockk(), componentsHash = "hash") {
+            decodeCount++
+            JsonTools.json.decodeFromString<PaywallComponentsData>(COMPONENTS_JSON_UNKNOWN_TYPE_NO_FALLBACK)
+        }
+
+        val firstThrow = runCatching { components.data }.exceptionOrNull()
+        val secondThrow = runCatching { components.data }.exceptionOrNull()
+
+        // `data` surfaces the real deserializer failure (production behavior for intentional catchers)...
+        assertThat(firstThrow).isInstanceOf(SerializationException::class.java)
+        assertThat(firstThrow?.message).isEqualTo("No fallback provided for unknown type: fake_unknown_type_for_test")
+        assertThat(secondThrow).isInstanceOf(SerializationException::class.java)
+        // ...while `dataOrNull` returns null, so best-effort readers can't crash.
+        assertThat(components.dataOrNull).isNull()
+        // The failing decode is memoized: it runs once, not on every access.
+        assertThat(decodeCount).isEqualTo(1)
+    }
+
+    private companion object {
+        // A component tree whose stack holds an unknown component type with no `fallback`, so the real
+        // PaywallComponentSerializer throws exactly as in production. The type name is deliberately synthetic
+        // (not a real-but-unreleased one) so the test stays valid as new component types ship.
+        val COMPONENTS_JSON_UNKNOWN_TYPE_NO_FALLBACK = """
+            {
+              "id": "paywall_id",
+              "template_name": "components",
+              "asset_base_url": "https://assets.pawwalls.com",
+              "components_config": {
+                "base": {
+                  "stack": {
+                    "type": "stack",
+                    "components": [
+                      { "type": "fake_unknown_type_for_test" }
+                    ]
+                  },
+                  "background": {
+                    "type": "color",
+                    "value": { "light": { "type": "alias", "value": "primary" } }
+                  }
+                }
+              },
+              "components_localizations": { "en_US": { "ZvS4Ck5hGM": "Hello" } },
+              "default_locale": "en_US"
+            }
+        """.trimIndent()
     }
 }

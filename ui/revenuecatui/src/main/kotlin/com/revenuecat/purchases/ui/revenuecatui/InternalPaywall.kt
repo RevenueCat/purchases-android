@@ -232,8 +232,8 @@ private fun LoadedPaywall(
     val configuration = LocalConfiguration.current
     val localeLanguageTags = configuration.locales.toLanguageTags()
     val offering = state.offering
-    val paywallRevision = offering.paywall?.revision ?: offering.paywallComponents?.data?.revision
-    val paywallIdentifier = offering.paywall?.id ?: offering.paywallComponents?.data?.id
+    val paywallRevision = offering.paywall?.revision ?: offering.paywallComponents?.dataOrNull?.revision
+    val paywallIdentifier = offering.paywall?.id ?: offering.paywallComponents?.dataOrNull?.id
     LaunchedEffect(
         offering.identifier,
         paywallIdentifier,

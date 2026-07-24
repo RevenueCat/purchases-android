@@ -828,7 +828,7 @@ internal class PaywallViewModelImpl(
             }
         }
 
-        val exitOfferingId = selectedOffering?.paywallComponents?.data?.exitOffers?.dismiss?.offeringId
+        val exitOfferingId = selectedOffering?.paywallComponents?.dataOrNull?.exitOffers?.dismiss?.offeringId
 
         val offerings = offeringsForExitOfferLookup
         updateExitOfferData(
@@ -1672,11 +1672,11 @@ internal class PaywallViewModelImpl(
 
     private fun PaywallState.Loaded.Legacy.createEventData(workflowId: String?, stepId: String?): PaywallEvent.Data? {
         val offering = offering
-        val revision = this.offering.paywall?.revision ?: this.offering.paywallComponents?.data?.revision ?: run {
+        val revision = this.offering.paywall?.revision ?: this.offering.paywallComponents?.dataOrNull?.revision ?: run {
             Logger.e("Null paywall revision trying to create event data")
             return null
         }
-        val paywallId = this.offering.paywall?.id ?: this.offering.paywallComponents?.data?.id
+        val paywallId = this.offering.paywall?.id ?: this.offering.paywallComponents?.dataOrNull?.id
         val locale = _lastLocaleList.value.get(0) ?: Locale.getDefault()
         return PaywallEvent.Data(
             paywallIdentifier = paywallId,
@@ -1735,9 +1735,9 @@ internal class PaywallViewModelImpl(
         darkMode: Boolean,
     ): PaywallPresentationFingerprint? {
         val revision = offering.paywall?.revision
-            ?: offering.paywallComponents?.data?.revision
+            ?: offering.paywallComponents?.dataOrNull?.revision
             ?: return null
-        val paywallId = offering.paywall?.id ?: offering.paywallComponents?.data?.id
+        val paywallId = offering.paywall?.id ?: offering.paywallComponents?.dataOrNull?.id
         val locale = localeList.get(0) ?: Locale.getDefault()
         return PaywallPresentationFingerprint(
             paywallIdentifier = paywallId,
