@@ -17,7 +17,8 @@ private val GESTURE_PROBE_SCRIPT =
     (function () {
       var name = '$GESTURE_PROBE_OBJECT_NAME';
       function consumesGesture(el) {
-        for (var n = el; n && n.nodeType === 1; n = n.parentElement) {
+        var node = el && el.nodeType === 1 ? el : (el ? el.parentElement : null);
+        for (var n = node; n && n.nodeType === 1; n = n.parentElement) {
           var s = getComputedStyle(n);
           if (s.touchAction && s.touchAction !== 'auto' && s.touchAction !== 'manipulation') return true;
           if ((s.overflowY === 'auto' || s.overflowY === 'scroll') && n.scrollHeight > n.clientHeight) return true;
