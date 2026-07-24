@@ -212,6 +212,11 @@ internal class PurchasesFactory(
             }
             val apiSourceProvider = DefaultRemoteConfigSourceProvider(remoteConfigTopicStore)
 
+            // The explicit param (integration tests) wins; otherwise honor a mode set via
+            // DangerousSettings (used by the workflow E2E app, which configures via the public API).
+            val effectiveForceServerErrorStrategy =
+                forceServerErrorStrategy ?: dangerousSettings.forceServerErrorMode?.toForceServerErrorStrategy()
+
             val httpClient = HTTPClient(
                 appConfig,
                 eTagManager,
@@ -220,7 +225,7 @@ internal class PurchasesFactory(
                 cache,
                 apiSourceProvider,
                 localeProvider = localeProvider,
-                forceServerErrorStrategy = forceServerErrorStrategy,
+                forceServerErrorStrategy = effectiveForceServerErrorStrategy,
             )
             val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(

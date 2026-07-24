@@ -9,7 +9,9 @@ import kotlinx.parcelize.Parcelize
  */
 @Parcelize
 @Poko
-public class DangerousSettings internal constructor(
+public class DangerousSettings
+@OptIn(InternalRevenueCatAPI::class)
+internal constructor(
     /**
      * Disable or enable syncing purchases automatically. If this is disabled, RevenueCat will not sync any purchase
      * automatically, and you will have to call syncPurchases whenever a new purchase is completed in order to send it
@@ -35,6 +37,13 @@ public class DangerousSettings internal constructor(
      */
     @InternalRevenueCatAPI
     public val useWorkflows: Boolean = false,
+
+    /**
+     * Test-only: forces server errors on the remote-config endpoint so workflow fallback paths can be
+     * exercised in E2E tests. Internal RevenueCat use only.
+     */
+    @InternalRevenueCatAPI
+    public val forceServerErrorMode: ForceServerErrorMode? = null,
 ) : Parcelable {
     @OptIn(InternalRevenueCatAPI::class)
     public constructor(autoSyncPurchases: Boolean = true) : this(
@@ -67,12 +76,16 @@ public class DangerousSettings internal constructor(
          */
         @InternalRevenueCatAPI
         @JvmStatic
-        public fun forWorkflows(autoSyncPurchases: Boolean = true): DangerousSettings = DangerousSettings(
+        public fun forWorkflows(
+            autoSyncPurchases: Boolean = true,
+            forceServerErrorMode: ForceServerErrorMode? = null,
+        ): DangerousSettings = DangerousSettings(
             autoSyncPurchases = autoSyncPurchases,
             customEntitlementComputation = false,
             uiPreviewMode = false,
             applyObfuscatedAccountIdToSubscriptionChanges = false,
             useWorkflows = true,
+            forceServerErrorMode = forceServerErrorMode,
         )
     }
 }

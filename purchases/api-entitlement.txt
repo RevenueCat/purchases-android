@@ -76,8 +76,10 @@ package com.revenuecat.purchases {
   @dev.drewhamilton.poko.Poko @kotlinx.parcelize.Parcelize public final class DangerousSettings implements android.os.Parcelable {
     ctor public DangerousSettings(optional boolean autoSyncPurchases);
     method public boolean getAutoSyncPurchases();
+    method public com.revenuecat.purchases.ForceServerErrorMode? getForceServerErrorMode();
     method public boolean getUseWorkflows();
     property public final boolean autoSyncPurchases;
+    property public final com.revenuecat.purchases.ForceServerErrorMode? forceServerErrorMode;
     property public final boolean useWorkflows;
     field public static final com.revenuecat.purchases.DangerousSettings.Companion Companion;
   }

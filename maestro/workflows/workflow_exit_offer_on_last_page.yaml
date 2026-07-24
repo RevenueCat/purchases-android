@@ -1,0 +1,40 @@
+# Navigates a workflow to its last page (the exit-offer step) and closes it; the configured exit
+# offer (offering `default`) must be presented. Presented via PaywallActivityLauncher (the
+# exit-offer-aware Activity path; the embedded Paywall composable does not surface exit offers).
+# The close control is an unlabeled icon tapped by coordinate (top-left).
+#
+# NOTE: the close-icon coordinate below is from the workflow paywall's top-left close control
+# ([0,0][168,300] observed on a Pixel 6a). Re-confirm on the target device/emulator if it fails.
+#
+# Run locally against the test store:
+#   maestro test -e MAESTRO_STORE=test_store maestro/workflows/workflow_exit_offer_on_last_page.yaml
+
+appId: com.revenuecat.e2etests
+name: Workflow exit offer is shown when closing the last page
+env:
+  MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
+
+---
+- launchApp:
+    clearState: true
+    arguments:
+      e2e_test_flow: open_workflow_presented
+- extendedWaitUntil: { visible: "Present Paywall", timeout: 15000 }
+- tapOn: { text: "Present Paywall" }
+- extendedWaitUntil:
+    visible: "Start Your Free Week And Reclaim 30+ Minutes Daily"
+    timeout: 15000
+- tapOn: { text: "Continue" }
+- extendedWaitUntil:
+    visible: "Most People Feel Calmer After Just 3 Sessions"
+    timeout: 15000
+- tapOn: { text: "Continue" }
+- extendedWaitUntil:
+    visible: "People Who Meditate Daily Sleep 40% Better"
+    timeout: 15000
+# Close the last page (unlabeled close icon, top-left) -> the exit offer paywall is presented.
+- tapOn: { point: "8%,6%" }
+- extendedWaitUntil:
+    visible: "Paywall V2"
+    timeout: 15000
+- takeScreenshot: "workflow_exit_offer_on_last_page"
