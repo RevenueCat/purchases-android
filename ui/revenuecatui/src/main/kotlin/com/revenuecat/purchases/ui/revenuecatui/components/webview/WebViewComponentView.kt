@@ -94,7 +94,7 @@ internal fun WebViewComponentView(
         if (!loadFailed) {
             AndroidView(
                 factory = { context ->
-                    WebView(context).apply {
+                    PaywallWebView(context).apply {
                         applyFullSizeLayoutParams()
                         // Must precede attach()/loadUrl: setProfile throws once the WebView has been used.
                         applyPaywallProfile()
@@ -125,6 +125,9 @@ internal fun WebViewComponentView(
                                 },
                                 onMainFrameLoadFailed = { loadFailed = true },
                             )
+                            installGestureOwnershipProbe(
+                                expectedOrigin = resolvedUrl.toOriginOrNull(),
+                            ) { wantsGesture -> this@apply.onContentGestureVerdict(wantsGesture) }
                             loadUrl(resolvedUrl)
                         }
                     }
@@ -134,6 +137,7 @@ internal fun WebViewComponentView(
                     val bridge = bridgeHolder.bridge
                     bridgeHolder.bridge = null
                     bridge?.release()
+                    webView.removeGestureOwnershipProbe()
                     webView.stopLoading()
                     webView.webViewClient = WebViewClient()
                     webView.destroy()
@@ -241,11 +245,12 @@ private fun WebView.configure(
 @Suppress("TooGenericExceptionCaught")
 internal fun WebView.disableTapHighlight(expectedOrigin: String?) {
     if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
+    val origin = expectedOrigin ?: return
     try {
         WebViewCompat.addDocumentStartJavaScript(
             this,
             "document.documentElement.style.webkitTapHighlightColor = 'transparent';",
-            setOf(expectedOrigin ?: "*"),
+            setOf(origin),
         )
     } catch (error: RuntimeException) {
         Logger.w("Failed to disable webkit tap highlight: $error")
