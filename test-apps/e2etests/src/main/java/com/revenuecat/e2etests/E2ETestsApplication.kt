@@ -6,6 +6,7 @@ import android.os.Bundle
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
+import java.util.Locale
 
 class E2ETestsApplication : Application() {
 
@@ -15,8 +16,9 @@ class E2ETestsApplication : Application() {
 
         // The workflow E2E flows are built with E2E_WORKFLOWS_API_KEY set (surfaced as
         // BuildConfig.WORKFLOWS_API_KEY). When it's present we defer configuration until the first Activity
-        // is created, so a Maestro launch argument can select the initial debug-only failure strategy. The
-        // default build configures eagerly, keeping the CI test_store_annual_purchase flow untouched.
+        // is created, so Maestro launch arguments can select the app locale and initial debug-only failure
+        // strategy. The default build configures eagerly, keeping the CI test_store_annual_purchase flow
+        // untouched.
         if (BuildConfig.WORKFLOWS_API_KEY != WORKFLOWS_API_KEY_PLACEHOLDER) {
             registerActivityLifecycleCallbacks(ConfigureOnFirstActivity())
         } else {
@@ -29,6 +31,9 @@ class E2ETestsApplication : Application() {
     private inner class ConfigureOnFirstActivity : ActivityLifecycleCallbacksAdapter() {
         override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
             if (!Purchases.isConfigured) {
+                activity.intent?.getStringExtra(APP_LOCALE_EXTRA_KEY)?.let { tag ->
+                    Locale.setDefault(Locale.forLanguageTag(tag))
+                }
                 configurePurchases(
                     PurchasesConfiguration.Builder(
                         context = this@E2ETestsApplication,
@@ -43,6 +48,7 @@ class E2ETestsApplication : Application() {
 
     internal companion object {
         private const val WORKFLOWS_API_KEY_PLACEHOLDER = "workflows_api_key_to_replace"
+        private const val APP_LOCALE_EXTRA_KEY = "app_locale"
         private const val FORCE_SERVER_ERROR_EXTRA_KEY = "force_server_error_strategy"
 
         fun forceConfigKillSwitch() {
