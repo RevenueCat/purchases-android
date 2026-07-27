@@ -3,17 +3,17 @@ package com.revenuecat.purchases.rules
 /**
  * Logging facade for the rules engine.
  */
-public interface RulesEngineLogger {
+internal interface RulesEngineLogger {
     /**
      * Carries engine diagnostics (missing variables, unsupported
      * operators, type mismatches).
      */
-    public fun warn(message: String)
+    fun warn(message: String)
 
     /**
      * Carries pass-through output from the JSON Logic `log` operator.
      */
-    public fun log(message: String)
+    fun log(message: String)
 }
 
 /** Default logger for [RulesEngine.logger]. */
