@@ -220,8 +220,7 @@ dependencies {
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.playServices.ads.identifier)
     testImplementation(libs.testJUnitParams)
-    // `org.json` is provided by the Android platform for the main source set; this adds a real
-    // implementation to the JVM unit-test classpath, exercising the production `ValueJson` parser.
+    // Android stubs `org.json` in unit tests; add a real impl so ValueJson's tests exercise the parser.
     testImplementation(libs.json)
 
     androidTestImplementation(libs.androidx.appcompat)
