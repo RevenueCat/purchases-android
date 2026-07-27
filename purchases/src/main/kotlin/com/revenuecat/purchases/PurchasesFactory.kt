@@ -30,6 +30,7 @@ import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.APISourceFailover
+import com.revenuecat.purchases.common.networking.DeviceConnectivityChecker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.SourceHealthChecker
 import com.revenuecat.purchases.common.offerings.OfferingsCache
@@ -213,7 +214,12 @@ internal class PurchasesFactory(
                 remoteConfigDiskCache?.read()?.topics?.get(it.wireName)
             }
             val apiSourceProvider = DefaultRemoteConfigSourceProvider(remoteConfigTopicStore)
-            val apiSourceFailover = APISourceFailover(appConfig, apiSourceProvider, SourceHealthChecker())
+            val apiSourceFailover = APISourceFailover(
+                appConfig,
+                apiSourceProvider,
+                SourceHealthChecker(),
+                DeviceConnectivityChecker(application),
+            )
 
             val httpClient = HTTPClient(
                 appConfig,

@@ -75,6 +75,7 @@ internal abstract class BaseHTTPClientTest {
         storefrontProvider: StorefrontProvider = mockStorefrontProvider,
         apiSourceProvider: RemoteConfigSourceProvider? = null,
         sourceHealthChecker: SourceHealthChecker = SourceHealthChecker(),
+        deviceOffline: Boolean = false,
         localeProvider: LocaleProvider = DefaultLocaleProvider(),
         forceServerErrorStrategy: ForceServerErrorStrategy? = null,
         timeoutManager: HTTPTimeoutManager? = null,
@@ -84,7 +85,14 @@ internal abstract class BaseHTTPClientTest {
         diagnosticsTracker,
         signingManager ?: mockSigningManager,
         storefrontProvider,
-        apiSourceProvider?.let { APISourceFailover(appConfig, it, sourceHealthChecker) },
+        apiSourceProvider?.let {
+            APISourceFailover(
+                appConfig,
+                it,
+                sourceHealthChecker,
+                mockk { every { isDeviceOffline() } returns deviceOffline },
+            )
+        },
         dateProvider,
         localeProvider = localeProvider,
         forceServerErrorStrategy = forceServerErrorStrategy,

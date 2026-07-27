@@ -365,6 +365,40 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
+    fun `performRequest does not fail over nor health check on 5xx while the device is offline`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        val secondSourceServer = MockWebServer()
+        val provider = FakeAPISourceProvider(
+            listOf(server.url("/").toString(), secondSourceServer.url("/").toString()),
+        )
+        val healthFactory = TestUrlConnectionFactory(
+            connectionProvider = { throw IOException("health endpoint unreachable") },
+        )
+        val client = createClient(
+            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            apiSourceProvider = provider,
+            sourceHealthChecker = SourceHealthChecker(healthFactory),
+            deviceOffline = true,
+        )
+        enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.ERROR))
+
+        val result = client.performRequest(
+            URL(AppConfig.baseUrlString),
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.ERROR)
+        assertThat(server.requestCount).isEqualTo(1)
+        assertThat(secondSourceServer.requestCount).isEqualTo(0)
+        assertThat(healthFactory.createdConnections).isEmpty()
+        assertThat(provider.unhealthyReports).isEmpty()
+        secondSourceServer.shutdown()
+    }
+
+    @Test
     fun `performRequest does not fail over on 4xx and never health checks`() {
         val endpoint = Endpoint.GetCustomerInfo("test_user_id")
         val secondSourceServer = MockWebServer()

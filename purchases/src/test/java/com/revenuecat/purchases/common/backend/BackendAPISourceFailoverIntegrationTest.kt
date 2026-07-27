@@ -197,6 +197,36 @@ internal class BackendAPISourceFailoverIntegrationTest {
         assertThat(sourceBServer.requestCount).isEqualTo(0)
     }
 
+    @Test
+    fun `getCustomerInfo does not fail over nor health check while the device is offline`() {
+        // Both the endpoint and the health check would report source A unhealthy, so failover WOULD
+        // happen if the offline gate didn't short-circuit it.
+        sourceAServer.routeResponses(endpoint = response(500), health = response(503))
+        sourceBServer.routeResponses(endpoint = customerInfoResponse(), health = response(200))
+        var deviceOffline = true
+        val backend = createBackend(
+            sourceAServer.url("/").toString(),
+            sourceBServer.url("/").toString(),
+            deviceOffline = { deviceOffline },
+        )
+
+        val result = fetchCustomerInfo(backend)
+
+        assertThat(result).isInstanceOf(FetchResult.Error::class.java)
+        assertThat((result as FetchResult.Error).isServerError).isTrue()
+        assertThat(sourceAServer.recordedPaths()).containsExactly(customerInfoPath)
+        assertThat(sourceBServer.requestCount).isEqualTo(0)
+
+        // Back online, the same failure health-checks and fails over from the same, unconsumed source.
+        deviceOffline = false
+        val secondResult = fetchCustomerInfo(backend)
+
+        assertThat(secondResult).isInstanceOf(FetchResult.Success::class.java)
+        assertThat(sourceAServer.requestCount).isEqualTo(3)
+        assertThat(sourceBServer.requestCount).isEqualTo(1)
+        assertThat(sourceBServer.takeRequest(1, TimeUnit.SECONDS)?.path).isEqualTo(customerInfoPath)
+    }
+
     // region Helpers
 
     private fun fetchCustomerInfo(backend: Backend): FetchResult {
@@ -211,13 +241,18 @@ internal class BackendAPISourceFailoverIntegrationTest {
     }
 
     /** Wires the full real stack: sources come from a `sources` topic pointing at [sourceUrls] in order. */
-    private fun createBackend(vararg sourceUrls: String): Backend {
+    private fun createBackend(vararg sourceUrls: String, deviceOffline: () -> Boolean = { false }): Backend {
         val appConfig = createAppConfig()
         val topic = sourcesTopic(sourceUrls.toList())
         val sourceProvider = DefaultRemoteConfigSourceProvider(
             { requestedTopic -> topic.takeIf { requestedTopic == RemoteConfigTopic.Sources } },
         )
-        val apiSourceFailover = APISourceFailover(appConfig, sourceProvider, SourceHealthChecker())
+        val apiSourceFailover = APISourceFailover(
+            appConfig,
+            sourceProvider,
+            SourceHealthChecker(),
+            mockk { every { isDeviceOffline() } answers { deviceOffline() } },
+        )
         val sharedPreferencesEditor = mockk<SharedPreferences.Editor>().apply {
             every { putString(any(), any()) } returns this
             every { remove(any()) } returns this
