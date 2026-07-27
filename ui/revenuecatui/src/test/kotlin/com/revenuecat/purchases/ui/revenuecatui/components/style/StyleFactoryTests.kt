@@ -15,6 +15,7 @@ import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialPackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
+import com.revenuecat.purchases.paywalls.components.PartialWebViewComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TabControlButtonComponent
@@ -138,6 +139,33 @@ class StyleFactoryTests {
         assertThat(style.visible).isFalse()
         assertThat(style.size).isEqualTo(size)
         assertThat(style.componentId).isEqualTo("promo_web_view")
+        assertThat(style.overrides).isEmpty()
+    }
+
+    @Test
+    fun `WebViewComponentStyle overrides are populated from component overrides`() {
+        // Arrange
+        val webViewComponent = WebViewComponent(
+            url = "https://paywalls.revenuecat.com/index.html",
+            id = "promo_web_view",
+            protocolVersion = 1,
+            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Selected),
+                    properties = PartialWebViewComponent(visible = false),
+                ),
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(webViewComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as WebViewComponentStyle
+        assertThat(style.overrides).hasSize(1)
+        assertThat(style.overrides[0].properties.partial.visible).isFalse()
     }
 
     @Test

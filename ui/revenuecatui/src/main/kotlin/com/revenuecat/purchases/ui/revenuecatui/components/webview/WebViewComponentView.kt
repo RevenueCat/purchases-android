@@ -42,14 +42,14 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 @JvmSynthetic
 @Composable
-// `state` is unused in v1 but kept for the uniform ComponentView signature (variables land later).
-@Suppress("LongMethod", "ReturnCount", "UnusedParameter")
+@Suppress("LongMethod", "ReturnCount")
 internal fun WebViewComponentView(
     style: WebViewComponentStyle,
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
 ) {
-    if (!style.visible) return
+    val webViewState = rememberUpdatedWebViewComponentState(style, state)
+    if (!webViewState.visible) return
 
     val resolvedUrl = remember(style.url) {
         WebViewUrlResolver.resolve(style.url)
