@@ -35,6 +35,23 @@ internal fun shouldWebViewOwnGesture(
 }
 
 /**
+ * The tracked finger's total drag delta from [downX]/[downY], or `null` once that finger is no longer
+ * in [event] (lifted, or another pointer's index shifted it out). Reading [MotionEvent.getX]/[getY]
+ * unconditionally (pointer index 0) would silently jump to a different finger's position once the
+ * original one lifts mid-gesture.
+ */
+internal fun trackedPointerDelta(
+    event: MotionEvent,
+    trackedPointerId: Int,
+    downX: Float,
+    downY: Float,
+): Pair<Float, Float>? {
+    val pointerIndex = event.findPointerIndex(trackedPointerId)
+    if (pointerIndex == -1) return null
+    return (event.getX(pointerIndex) - downX) to (event.getY(pointerIndex) - downY)
+}
+
+/**
  * A [WebView] that claims a drag from the paywall scroll it's embedded in, via
  * [android.view.ViewParent.requestDisallowInterceptTouchEvent]. Compose won't hand a gesture back once
  * decided, so we never pre-claim and claim exactly once, when [shouldWebViewOwnGesture] says so.
@@ -50,6 +67,7 @@ internal class PaywallWebView(context: Context) : WebView(context) {
 
     private var downX = 0f
     private var downY = 0f
+    private var trackedPointerId = MotionEvent.INVALID_POINTER_ID
     private var lastTotalDx = 0f
     private var lastTotalDy = 0f
     private var webContentWantsGesture: Boolean? = null
@@ -64,6 +82,7 @@ internal class PaywallWebView(context: Context) : WebView(context) {
             MotionEvent.ACTION_DOWN -> {
                 downX = event.x
                 downY = event.y
+                trackedPointerId = event.getPointerId(0)
                 lastTotalDx = 0f
                 lastTotalDy = 0f
                 webContentWantsGesture = null
@@ -71,8 +90,10 @@ internal class PaywallWebView(context: Context) : WebView(context) {
                 gestureActive = true
             }
             MotionEvent.ACTION_MOVE -> {
-                lastTotalDx = event.x - downX
-                lastTotalDy = event.y - downY
+                val delta = trackedPointerDelta(event, trackedPointerId, downX, downY)
+                    ?: return super.onTouchEvent(event)
+                lastTotalDx = delta.first
+                lastTotalDy = delta.second
                 claimForWebViewIfNeeded()
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> gestureActive = false
