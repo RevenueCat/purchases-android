@@ -21,6 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.ProfileStore
 import androidx.webkit.WebViewCompat
@@ -29,6 +30,7 @@ import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
@@ -84,11 +86,27 @@ internal fun WebViewComponentView(
         // Remembered inside key(identity) so a stale onRelease can only release its own view's bridge.
         val bridgeHolder = remember { WebViewBridgeHolder() }
 
-        val effectiveSize = remember(style.size, contentWidthCssPx, contentHeightCssPx) {
+        // A `fill` axis genuinely unbounded at measure time (e.g. an ancestor scrolls, or a `Fit`-sized
+        // container sits under one that does) would otherwise collapse to zero — `fillMaxWidth/Height`
+        // passes an unbounded constraint straight through, and a bare WebView has no intrinsic size to
+        // fall back on. Tracked here and fed the same content-size/placeholder fallback `fit` already
+        // uses; see the `Modifier.layout` probe below.
+        var widthAxisUnbounded by remember { mutableStateOf(false) }
+        var heightAxisUnbounded by remember { mutableStateOf(false) }
+
+        val effectiveSize = remember(
+            style.size,
+            contentWidthCssPx,
+            contentHeightCssPx,
+            widthAxisUnbounded,
+            heightAxisUnbounded,
+        ) {
             webViewEffectiveSize(
                 declaredSize = style.size,
                 contentWidthCssPx = contentWidthCssPx,
                 contentHeightCssPx = contentHeightCssPx,
+                widthAxisUnbounded = widthAxisUnbounded,
+                heightAxisUnbounded = heightAxisUnbounded,
             )
         }
 
@@ -147,6 +165,16 @@ internal fun WebViewComponentView(
                 },
                 // Clip: content can briefly overflow while a fit axis animates placeholder -> measured.
                 modifier = modifier
+                    .layout { measurable, constraints ->
+                        val newWidthUnbounded = !constraints.hasBoundedWidth
+                        val newHeightUnbounded = !constraints.hasBoundedHeight
+                        if (newWidthUnbounded != widthAxisUnbounded) widthAxisUnbounded = newWidthUnbounded
+                        if (newHeightUnbounded != heightAxisUnbounded) heightAxisUnbounded = newHeightUnbounded
+                        val placeable = measurable.measure(constraints)
+                        layout(placeable.width, placeable.height) {
+                            placeable.place(0, 0)
+                        }
+                    }
                     .size(effectiveSize)
                     .clipToBounds(),
             )
@@ -166,18 +194,31 @@ internal fun webViewEffectiveSize(
     declaredSize: Size,
     contentWidthCssPx: Int,
     contentHeightCssPx: Int,
+    widthAxisUnbounded: Boolean = false,
+    heightAxisUnbounded: Boolean = false,
 ): Size = Size(
-    width = resolveFitAxis(declaredSize.width, contentWidthCssPx, FIT_PLACEHOLDER_WIDTH),
-    height = resolveFitAxis(declaredSize.height, contentHeightCssPx, FIT_PLACEHOLDER_HEIGHT),
+    width = resolveAxis(declaredSize.width, contentWidthCssPx, FIT_PLACEHOLDER_WIDTH, widthAxisUnbounded),
+    height = resolveAxis(declaredSize.height, contentHeightCssPx, FIT_PLACEHOLDER_HEIGHT, heightAxisUnbounded),
 )
 
 /**
- * A `fit` axis resolves to the content-reported size once known, else the schema's `fit.default`, else
- * [placeholder]. Non-fit axes pass through unchanged.
+ * A `fit` axis always resolves to the content-reported size once known, else the schema's
+ * `fit.default`, else [placeholder]. A `fill` axis normally passes through unchanged (it fills its
+ * parent), but a bare WebView has no intrinsic size of its own to fall back on, so a `fill` axis
+ * that turns out to be [unbounded] at measure time (an ancestor scrolls, or a `Fit`-sized container
+ * sits under one that does) gets the same content/placeholder fallback `fit` uses — otherwise it
+ * would collapse to zero, since `fillMaxWidth`/`fillMaxHeight` just pass an unbounded constraint
+ * through. `fixed` axes, and a bounded `fill` axis, are untouched either way.
  */
-private fun resolveFitAxis(constraint: SizeConstraint, contentCssPx: Int, placeholder: UInt): SizeConstraint =
-    when (constraint) {
-        is Fit -> Fixed(if (contentCssPx > 0) contentCssPx.toUInt() else constraint.default ?: placeholder)
+internal fun resolveAxis(
+    constraint: SizeConstraint,
+    contentCssPx: Int,
+    placeholder: UInt,
+    unbounded: Boolean,
+): SizeConstraint =
+    when {
+        constraint is Fit -> Fixed(if (contentCssPx > 0) contentCssPx.toUInt() else constraint.default ?: placeholder)
+        constraint is Fill && unbounded -> Fixed(if (contentCssPx > 0) contentCssPx.toUInt() else placeholder)
         else -> constraint
     }
 

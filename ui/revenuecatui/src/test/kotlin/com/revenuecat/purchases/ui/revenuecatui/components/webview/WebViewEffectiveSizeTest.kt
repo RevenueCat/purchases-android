@@ -56,4 +56,80 @@ internal class WebViewEffectiveSizeTest {
         assertThat(size.width).isEqualTo(Fill)
         assertThat(size.height).isEqualTo(Fixed(200u))
     }
+
+    @Test
+    fun `bounded fill axes are left untouched`() {
+        val size = webViewEffectiveSize(
+            declaredSize = Size(width = Fill, height = Fill),
+            contentWidthCssPx = 0,
+            contentHeightCssPx = 0,
+            widthAxisUnbounded = false,
+            heightAxisUnbounded = false,
+        )
+
+        assertThat(size.width).isEqualTo(Fill)
+        assertThat(size.height).isEqualTo(Fill)
+    }
+
+    @Test
+    fun `unbounded fill axes use the placeholder until the content reports a size`() {
+        // A bare WebView has no intrinsic size, so a fill axis that's genuinely unbounded at
+        // measure time (an ancestor scrolls, or a Fit container sits under one that does) would
+        // otherwise collapse to zero, since fillMaxWidth/Height just passes the unbounded
+        // constraint through.
+        val size = webViewEffectiveSize(
+            declaredSize = Size(width = Fill, height = Fill),
+            contentWidthCssPx = 0,
+            contentHeightCssPx = 0,
+            widthAxisUnbounded = true,
+            heightAxisUnbounded = true,
+        )
+
+        assertThat(size.width).isEqualTo(Fixed(FIT_PLACEHOLDER_WIDTH))
+        assertThat(size.height).isEqualTo(Fixed(FIT_PLACEHOLDER_HEIGHT))
+    }
+
+    @Test
+    fun `unbounded fill axes use the reported content size once available`() {
+        val size = webViewEffectiveSize(
+            declaredSize = Size(width = Fill, height = Fill),
+            contentWidthCssPx = 320,
+            contentHeightCssPx = 480,
+            widthAxisUnbounded = true,
+            heightAxisUnbounded = true,
+        )
+
+        assertThat(size.width).isEqualTo(Fixed(320u))
+        assertThat(size.height).isEqualTo(Fixed(480u))
+    }
+
+    @Test
+    fun `unbounded fill axes have no schema default to fall back on, unlike fit`() {
+        // Fill (unlike Fit) carries no `default` field in the schema, so an unbounded Fill axis
+        // with no reported content size falls straight to the hardcoded placeholder.
+        val size = webViewEffectiveSize(
+            declaredSize = Size(width = Fill, height = Fill),
+            contentWidthCssPx = 0,
+            contentHeightCssPx = 0,
+            widthAxisUnbounded = true,
+            heightAxisUnbounded = true,
+        )
+
+        assertThat(size.width).isEqualTo(Fixed(FIT_PLACEHOLDER_WIDTH))
+        assertThat(size.height).isEqualTo(Fixed(FIT_PLACEHOLDER_HEIGHT))
+    }
+
+    @Test
+    fun `fixed axes are never affected by unbounded tracking`() {
+        val size = webViewEffectiveSize(
+            declaredSize = Size(width = Fixed(200u), height = Fixed(300u)),
+            contentWidthCssPx = 320,
+            contentHeightCssPx = 480,
+            widthAxisUnbounded = true,
+            heightAxisUnbounded = true,
+        )
+
+        assertThat(size.width).isEqualTo(Fixed(200u))
+        assertThat(size.height).isEqualTo(Fixed(300u))
+    }
 }

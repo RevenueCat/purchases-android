@@ -31,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -98,6 +99,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentS
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
+import com.revenuecat.purchases.ui.revenuecatui.extensions.trackMainAxisUnbounded
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import kotlin.math.roundToInt
 import androidx.compose.ui.geometry.Size as ComposeSize
@@ -614,63 +616,83 @@ private fun MainStackComponent(
             )
         } else {
             when (val dimension = stackState.dimension) {
-                is Dimension.Horizontal -> HorizontalStack(
-                    size = stackState.size,
-                    dimension = dimension,
-                    spacing = stackState.spacing,
-                    modifier = outerModifier
-                        .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
-                        .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                            scrollable(state, orientation)
+                is Dimension.Horizontal -> {
+                    // Tracks whether this Row's own main-axis (width) constraint ends up unbounded (e.g. an
+                    // ancestor scrolls, or a `Fit`-sized container sits under one that does). A `weight`-ed
+                    // Fill child would otherwise collapse to zero width in that case (Compose's weight
+                    // distribution falls back to the axis minimum, which is 0 once relaxed by scroll/Fit) — see
+                    // Modifier.trackMainAxisUnbounded for the full rationale.
+                    val mainAxisUnbounded = remember { mutableStateOf(false) }
+                    HorizontalStack(
+                        size = stackState.size,
+                        dimension = dimension,
+                        spacing = stackState.spacing,
+                        modifier = outerModifier
+                            .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
+                            .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                                scrollable(state, orientation)
+                            }
+                            .then(rootModifier)
+                            .trackMainAxisUnbounded(isHorizontal = true, unboundedState = mainAxisUnbounded),
+                    ) {
+                        items(stackState.children) { _, child ->
+                            ComponentView(
+                                style = child,
+                                state = state,
+                                onClick = clickHandler,
+                                componentInteractionTracker = componentInteractionTracker,
+                                modifier = Modifier
+                                    .conditional(child.size.width == Fill && !mainAxisUnbounded.value) {
+                                        Modifier.weight(1f)
+                                    }
+                                    .conditional(
+                                        stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets,
+                                    ) {
+                                        windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
+                                    }
+                                    .alpha(contentAlpha),
+                            )
                         }
-                        .then(rootModifier),
-                ) {
-                    items(stackState.children) { _, child ->
-                        ComponentView(
-                            style = child,
-                            state = state,
-                            onClick = clickHandler,
-                            componentInteractionTracker = componentInteractionTracker,
-                            modifier = Modifier
-                                .conditional(child.size.width == Fill) { Modifier.weight(1f) }
-                                .conditional(stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets) {
-                                    windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
-                                }
-                                .alpha(contentAlpha),
-                        )
                     }
                 }
 
-                is Dimension.Vertical -> VerticalStack(
-                    size = stackState.size,
-                    dimension = dimension,
-                    spacing = stackState.spacing,
-                    modifier = outerModifier
-                        .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
-                        .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                            scrollable(state, orientation)
+                is Dimension.Vertical -> {
+                    // See the Horizontal branch above for why this exists.
+                    val mainAxisUnbounded = remember { mutableStateOf(false) }
+                    VerticalStack(
+                        size = stackState.size,
+                        dimension = dimension,
+                        spacing = stackState.spacing,
+                        modifier = outerModifier
+                            .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
+                            .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                                scrollable(state, orientation)
+                            }
+                            .then(rootModifier)
+                            .trackMainAxisUnbounded(isHorizontal = false, unboundedState = mainAxisUnbounded),
+                    ) {
+                        items(stackState.children) { index, child ->
+                            ComponentView(
+                                style = child,
+                                state = state,
+                                onClick = clickHandler,
+                                componentInteractionTracker = componentInteractionTracker,
+                                modifier = Modifier
+                                    .conditional(child.size.height == Fill && !mainAxisUnbounded.value) {
+                                        Modifier.weight(1f)
+                                    }
+                                    .conditional(
+                                        // In a Vertical container, we only want to apply topSystemBarsPadding to the
+                                        // first child, except when that child has `ignoreTopWindowInsets` set to true.
+                                        stackState.applyTopWindowInsets &&
+                                            index == 0 &&
+                                            !child.shouldIgnoreTopWindowInsets,
+                                    ) {
+                                        windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
+                                    }
+                                    .alpha(contentAlpha),
+                            )
                         }
-                        .then(rootModifier),
-                ) {
-                    items(stackState.children) { index, child ->
-                        ComponentView(
-                            style = child,
-                            state = state,
-                            onClick = clickHandler,
-                            componentInteractionTracker = componentInteractionTracker,
-                            modifier = Modifier
-                                .conditional(child.size.height == Fill) { Modifier.weight(1f) }
-                                .conditional(
-                                    // In a Vertical container, we only want to apply topSystemBarsPadding to the first
-                                    // child, except when that child has `ignoreTopWindowInsets` set to true.
-                                    stackState.applyTopWindowInsets &&
-                                        index == 0 &&
-                                        !child.shouldIgnoreTopWindowInsets,
-                                ) {
-                                    windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
-                                }
-                                .alpha(contentAlpha),
-                        )
                     }
                 }
 

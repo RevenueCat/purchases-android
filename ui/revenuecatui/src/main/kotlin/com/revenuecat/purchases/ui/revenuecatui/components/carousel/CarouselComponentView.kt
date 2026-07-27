@@ -47,6 +47,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
@@ -158,6 +159,7 @@ internal fun CarouselComponentView(
 
     Column(
         modifier = modifier
+            .size(carouselState.size)
             .padding(carouselState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, carouselState.shape) }
             .applyIfNotNull(backgroundColorStyle) { background(it, carouselState.shape) }
