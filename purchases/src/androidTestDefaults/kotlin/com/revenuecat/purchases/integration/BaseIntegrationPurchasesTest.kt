@@ -515,7 +515,7 @@ abstract class BaseIntegrationPurchasesTest : BasePurchasesIntegrationTest() {
                     return "test-storefront"
                 }
             },
-            apiSourceProvider = null,
+            apiSourceFailover = null,
             localeProvider = DefaultLocaleProvider(),
         )
     }

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.remoteconfig
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle.Purpose
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -10,10 +11,12 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.util.Date
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.random.Random
 
 @RunWith(AndroidJUnit4::class)
@@ -366,6 +369,145 @@ class RemoteConfigSourceProviderTest {
 
     // endregion
 
+    // region API restart interval (TTL re-arm)
+
+    @Test
+    fun `advanced api list restarts from the top after the restart interval`() {
+        val dateProvider = FakeDateProvider()
+        val provider = apiProvider(listOf(source("a"), source("b")), dateProvider)
+
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
+
+        dateProvider.advanceTime(600_000L)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
+    }
+
+    @Test
+    fun `advanced api list keeps its position just under the restart interval`() {
+        val dateProvider = FakeDateProvider()
+        val provider = apiProvider(listOf(source("a"), source("b")), dateProvider)
+
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b
+
+        dateProvider.advanceTime(599_999L)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
+    }
+
+    @Test
+    fun `exhausted api list re-arms after the restart interval`() {
+        val dateProvider = FakeDateProvider()
+        val provider = apiProvider(listOf(source("a"), source("b")), dateProvider)
+
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // b -> exhausted
+        assertThat(provider.getCurrent(Purpose.API)).isNull()
+
+        dateProvider.advanceTime(599_999L)
+        assertThat(provider.getCurrent(Purpose.API)).isNull()
+
+        dateProvider.advanceTime(1L)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
+    }
+
+    @Test
+    fun `the restart interval counts from the first advance, not the latest`() {
+        // A flapping list must not postpone the periodic return to the primary: advancing again
+        // mid-interval does not reset the timer.
+        val dateProvider = FakeDateProvider()
+        val provider = apiProvider(listOf(source("a"), source("b"), source("c")), dateProvider)
+
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b, timer starts
+        dateProvider.advanceTime(500_000L)
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // b -> c, timer unchanged
+
+        dateProvider.advanceTime(100_000L) // 600s since the first advance
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
+    }
+
+    @Test
+    fun `handle from before the interval restart is stale`() {
+        val dateProvider = FakeDateProvider()
+        val provider = apiProvider(listOf(source("a"), source("b")), dateProvider)
+
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b
+        val stale = provider.getCurrent(Purpose.API)
+        assertThat(stale?.url).isEqualTo(url("b"))
+
+        dateProvider.advanceTime(600_000L)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
+
+        // The pre-restart handle belongs to the previous cycle, so it must not advance the list.
+        provider.reportUnhealthy(stale!!)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
+    }
+
+    @Test
+    fun `a new failover cycle after an interval restart needs a full interval again`() {
+        val dateProvider = FakeDateProvider()
+        val provider = apiProvider(listOf(source("a"), source("b")), dateProvider)
+
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b
+        dateProvider.advanceTime(600_000L)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
+
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b, new timer
+        dateProvider.advanceTime(599_999L)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
+
+        dateProvider.advanceTime(1L)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
+    }
+
+    @Test
+    fun `explicit restart resets the interval timer`() {
+        val dateProvider = FakeDateProvider()
+        val provider = apiProvider(listOf(source("a"), source("b")), dateProvider)
+
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b, timer starts
+        dateProvider.advanceTime(500_000L)
+        provider.restart(Purpose.API) // timer cleared
+
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b, fresh timer
+        dateProvider.advanceTime(599_999L) // over 600s since the ORIGINAL advance, under since the fresh one
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
+    }
+
+    @Test
+    fun `a changed sources topic resets the interval timer`() {
+        val dateProvider = FakeDateProvider()
+        val store = FakeTopicStore(sourcesTopic(api = listOf(source("a"), source("b")), blob = emptyList()))
+        val provider = DefaultRemoteConfigSourceProvider(store, FakeRandom(0), dateProvider)
+
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b, timer starts
+        dateProvider.advanceTime(500_000L)
+
+        store.sources = sourcesTopic(api = listOf(source("x"), source("y")), blob = emptyList())
+        provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // x -> y, fresh timer
+
+        dateProvider.advanceTime(599_999L)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("y"))
+
+        dateProvider.advanceTime(1L)
+        assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("x"))
+    }
+
+    @Test
+    fun `blob progress is unaffected by elapsed time`() {
+        val dateProvider = FakeDateProvider()
+        val provider = provider(
+            api = listOf(source("api1")),
+            blob = listOf(source("blob1", priority = 0), source("blob2", priority = 10)),
+            dateProvider = dateProvider,
+        )
+
+        provider.reportUnhealthy(provider.getCurrent(Purpose.BLOB)!!) // blob1 -> blob2
+        dateProvider.advanceTime(600_000L)
+        assertThat(provider.getCurrent(Purpose.BLOB)?.url).isEqualTo(url("blob2"))
+    }
+
+    // endregion
+
     // region Sources topic changes
 
     @Test
@@ -488,14 +630,18 @@ class RemoteConfigSourceProviderTest {
     private fun source(host: String, priority: Int = 0, weight: Int = 0): RemoteConfigSource =
         RemoteConfigSource(url = url(host), priority = priority, weight = weight)
 
-    private fun apiProvider(sources: List<RemoteConfigSource>): RemoteConfigSourceProvider =
-        provider(api = sources, blob = emptyList())
+    private fun apiProvider(
+        sources: List<RemoteConfigSource>,
+        dateProvider: DateProvider = FakeDateProvider(),
+    ): RemoteConfigSourceProvider =
+        provider(api = sources, blob = emptyList(), dateProvider = dateProvider)
 
     private fun provider(
         api: List<RemoteConfigSource>,
         blob: List<RemoteConfigSource>,
+        dateProvider: DateProvider = FakeDateProvider(),
     ): RemoteConfigSourceProvider =
-        DefaultRemoteConfigSourceProvider(FakeTopicStore(sourcesTopic(api, blob)), FakeRandom(0))
+        DefaultRemoteConfigSourceProvider(FakeTopicStore(sourcesTopic(api, blob)), FakeRandom(0), dateProvider)
 
     /** Builds a `sources` ConfigTopic matching the backend shape: api entries use `url`, blob use `url_format`. */
     private fun sourcesTopic(api: List<RemoteConfigSource>, blob: List<RemoteConfigSource>): ConfigTopic {
@@ -518,6 +664,15 @@ class RemoteConfigSourceProviderTest {
     private class FakeTopicStore(var sources: ConfigTopic?) : RemoteConfigTopicStore {
         override fun topic(topic: RemoteConfigTopic): ConfigTopic? =
             if (topic == RemoteConfigTopic.Sources) sources else null
+    }
+
+    private class FakeDateProvider(private val currentTime: AtomicLong = AtomicLong(1_000_000L)) : DateProvider {
+        override val now: Date
+            get() = Date(currentTime.get())
+
+        fun advanceTime(millis: Long) {
+            currentTime.addAndGet(millis)
+        }
     }
 
     private fun runConcurrently(iterations: Int, block: () -> Unit) {
