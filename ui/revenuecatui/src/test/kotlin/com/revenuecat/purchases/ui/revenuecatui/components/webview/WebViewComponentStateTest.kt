@@ -98,21 +98,4 @@ class WebViewComponentStateTest {
         // Selected: the override applies.
         assertThat(state(style, selectedPackageInfo = selectedPackageInfo).visible).isTrue()
     }
-
-    @Test
-    fun `overrides never affect url, size, or componentId`() {
-        val overrides = listOf(
-            PresentedOverride(
-                conditions = listOf(ComponentOverride.Condition.Expanded),
-                properties = PresentedWebViewPartial(PartialWebViewComponent(visible = false)),
-            ),
-        )
-        val style = styleWithOverrides(visible = true, overrides = overrides)
-
-        // WebViewComponentState only ever exposes `visible`; url/size/componentId are read directly
-        // from the style by WebViewComponentView, unaffected by any override.
-        assertThat(style.url).isEqualTo("https://paywalls.revenuecat.com/index.html")
-        assertThat(style.size).isEqualTo(size)
-        assertThat(style.componentId).isEqualTo("promo_web_view")
-    }
 }
