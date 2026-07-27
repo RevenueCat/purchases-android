@@ -8,6 +8,10 @@ internal object RulesEngine {
     internal val logger: RulesEngineLogger
         get() = _logger
 
+    // The rules engine deliberately owns its own logging abstraction ([RulesEngineLogger]) instead
+    // of routing through the SDK-wide logger. This keeps it self-contained so it can be extracted
+    // back into a standalone module as mechanically as it was folded in. If we commit to it living
+    // in core long-term, consider bridging this to the SDK's logging system instead.
     @Synchronized
     fun setLogger(logger: RulesEngineLogger) {
         _logger = logger
