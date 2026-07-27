@@ -158,9 +158,7 @@ internal fun CarouselComponentView(
         }
     }
 
-    // Only steps in for a Fit-height carousel: an explicit Fixed/Fill declaration is a deliberate author
-    // choice and must not be overridden by this fallback.
-    val fixedSiblingHeight = carouselState.maxFixedPageHeight.takeIf { carouselState.size.height is SizeConstraint.Fit }
+    val fixedSiblingHeight = carouselState.fixedSiblingHeightOrNull()
 
     Column(
         modifier = modifier
@@ -418,6 +416,12 @@ internal fun nextAutoAdvanceTargetPage(
         currentPage + 1
     }
 }
+
+// Only applies for a Fit-height carousel: an explicit Fixed/Fill declaration is a deliberate
+// author choice and must not be overridden by this fallback. Checked first so the page scan is
+// skipped entirely for the common Fixed/Fill case.
+private fun CarouselComponentState.fixedSiblingHeightOrNull(): Dp? =
+    if (size.height is SizeConstraint.Fit) maxFixedPageHeight else null
 
 private fun getInitialPage(carouselState: CarouselComponentState) = if (carouselState.loop) {
     // When looping, we use a very large number of pages to allow for "infinite" scrolling

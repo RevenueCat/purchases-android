@@ -7,10 +7,11 @@ import androidx.compose.ui.layout.layout
 /**
  * Tracks, in [unboundedState], whether this modifier's incoming main-axis constraint is
  * unbounded (e.g. because an ancestor scrolls, or a `Fit`-sized container sits under one that
- * does). Meant to be the LAST modifier in a Row/Column's chain, right before the Row/Column
- * itself, so it observes the constraint the container's own sizing (and any scroll) actually
- * produces — not the raw constraint the container received from its parent, which a `Fixed` size
- * or scroll modifier further up this same chain may still turn bounded.
+ * does). Where to place it in the chain depends on what the caller needs to observe: last, right
+ * before a Row/Column, to see the constraint its own sizing (and any scroll) actually produces —
+ * not the raw constraint it received from its parent, which a `Fixed` size or scroll modifier
+ * further up this same chain may still turn bounded; or earlier, before a leaf's own `.size()`
+ * call, to see the raw incoming constraint that sizing decision needs to react to.
  *
  * A container whose main axis is unbounded can't give a `weight`-ed child a meaningful share of
  * space (Compose's weight distribution falls back to the axis minimum, which is 0 whenever an
@@ -21,10 +22,7 @@ internal fun Modifier.trackMainAxisUnbounded(
     isHorizontal: Boolean,
     unboundedState: MutableState<Boolean>,
 ): Modifier = this.layout { measurable, constraints ->
-    val unbounded = if (isHorizontal) !constraints.hasBoundedWidth else !constraints.hasBoundedHeight
-    if (unbounded != unboundedState.value) {
-        unboundedState.value = unbounded
-    }
+    unboundedState.value = if (isHorizontal) !constraints.hasBoundedWidth else !constraints.hasBoundedHeight
     val placeable = measurable.measure(constraints)
     layout(placeable.width, placeable.height) {
         placeable.place(0, 0)

@@ -621,7 +621,9 @@ private fun MainStackComponent(
                     // ancestor scrolls, or a `Fit`-sized container sits under one that does). A `weight`-ed
                     // Fill child would otherwise collapse to zero width in that case (Compose's weight
                     // distribution falls back to the axis minimum, which is 0 once relaxed by scroll/Fit) — see
-                    // Modifier.trackMainAxisUnbounded for the full rationale.
+                    // Modifier.trackMainAxisUnbounded for the full rationale. Only worth tracking (and paying
+                    // an extra measure hop for) when a Fill-width child could actually be affected.
+                    val hasFillWidthChild = stackState.children.any { it.size.width == Fill }
                     val mainAxisUnbounded = remember { mutableStateOf(false) }
                     HorizontalStack(
                         size = stackState.size,
@@ -633,7 +635,9 @@ private fun MainStackComponent(
                                 scrollable(state, orientation)
                             }
                             .then(rootModifier)
-                            .trackMainAxisUnbounded(isHorizontal = true, unboundedState = mainAxisUnbounded),
+                            .conditional(hasFillWidthChild) {
+                                trackMainAxisUnbounded(isHorizontal = true, unboundedState = mainAxisUnbounded)
+                            },
                     ) {
                         items(stackState.children) { _, child ->
                             ComponentView(
@@ -658,6 +662,7 @@ private fun MainStackComponent(
 
                 is Dimension.Vertical -> {
                     // See the Horizontal branch above for why this exists.
+                    val hasFillHeightChild = stackState.children.any { it.size.height == Fill }
                     val mainAxisUnbounded = remember { mutableStateOf(false) }
                     VerticalStack(
                         size = stackState.size,
@@ -669,7 +674,9 @@ private fun MainStackComponent(
                                 scrollable(state, orientation)
                             }
                             .then(rootModifier)
-                            .trackMainAxisUnbounded(isHorizontal = false, unboundedState = mainAxisUnbounded),
+                            .conditional(hasFillHeightChild) {
+                                trackMainAxisUnbounded(isHorizontal = false, unboundedState = mainAxisUnbounded)
+                            },
                     ) {
                         items(stackState.children) { index, child ->
                             ComponentView(

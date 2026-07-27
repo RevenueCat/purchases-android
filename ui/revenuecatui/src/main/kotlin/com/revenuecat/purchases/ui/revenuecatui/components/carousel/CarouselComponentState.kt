@@ -11,7 +11,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
-import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
@@ -24,6 +23,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDel
 import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.extensions.dpOrNull
 
 @Stable
 @JvmSynthetic
@@ -114,7 +114,7 @@ internal class CarouselComponentState(
     // front lets a Fill page stretch to match, instead of falling back to wrapping its own content.
     @get:JvmSynthetic
     val maxFixedPageHeight: Dp? by derivedStateOf {
-        pages.mapNotNull { (it.size.height as? SizeConstraint.Fixed)?.value }.maxOrNull()?.toInt()?.dp
+        pages.mapNotNull { it.size.height.dpOrNull() }.maxOrNull()
     }
 
     @get:JvmSynthetic

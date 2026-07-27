@@ -36,6 +36,7 @@ import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.trackMainAxisUnbounded
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
@@ -167,8 +168,13 @@ internal fun WebViewComponentView(
                 },
                 // Clip: content can briefly overflow while a fit axis animates placeholder -> measured.
                 modifier = modifier
-                    .trackMainAxisUnbounded(isHorizontal = true, unboundedState = widthAxisUnboundedState)
-                    .trackMainAxisUnbounded(isHorizontal = false, unboundedState = heightAxisUnboundedState)
+                    // Only Fill axes ever consult these (resolveAxis's Fixed/Fit branches ignore them).
+                    .conditional(style.size.width is Fill) {
+                        trackMainAxisUnbounded(isHorizontal = true, unboundedState = widthAxisUnboundedState)
+                    }
+                    .conditional(style.size.height is Fill) {
+                        trackMainAxisUnbounded(isHorizontal = false, unboundedState = heightAxisUnboundedState)
+                    }
                     .size(effectiveSize)
                     .clipToBounds(),
             )
