@@ -13,7 +13,6 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -79,11 +78,7 @@ class StackFillUnboundedCollapseTest {
         // bound, so its two Fill-height children must still split it 50/50 via weight(). If the
         // probe read the constraint BEFORE .size(), it would see the ambient unbounded axis and
         // wrongly disable weight() -- this test would then fail.
-        assertTwoFillSiblingsSplitEvenly(
-            dimension = Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START),
-            mainAxis = 200.dp,
-            crossAxis = 100.dp,
-        ) { content ->
+        assertTwoFillSiblingsSplitEvenly(horizontal = false) { content ->
             Box(Modifier.fillMaxSize().height(800.dp)) {
                 Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                     content()
@@ -94,11 +89,7 @@ class StackFillUnboundedCollapseTest {
 
     @Test
     fun `bounded Fill siblings still split proportionally, no scroll involved`() {
-        assertTwoFillSiblingsSplitEvenly(
-            dimension = Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START),
-            mainAxis = 200.dp,
-            crossAxis = 100.dp,
-        ) { content ->
+        assertTwoFillSiblingsSplitEvenly(horizontal = true) { content ->
             Box(Modifier.fillMaxSize().height(800.dp)) {
                 content()
             }
@@ -148,20 +139,19 @@ class StackFillUnboundedCollapseTest {
     }
 
     /**
-     * Renders a [dimension] stack of [mainAxis] x [crossAxis] with two `Fill` children (red, then
-     * blue) wrapped in [wrapper], and asserts each occupies its own half of the main axis -- i.e.
-     * that `Modifier.weight` is still doing real proportional distribution, not that one child
-     * silently took everything (which is what happens if `weight` gets disabled when it shouldn't).
-     * Pixel positions are derived from [mainAxis]/[crossAxis] via the current density so the
-     * assertions hold regardless of the screen density Robolectric runs at.
+     * Renders a [horizontal] (else vertical) stack of `mainAxis` x `crossAxis` with two `Fill`
+     * children (red, then blue) wrapped in [wrapper], and asserts each occupies its own half of the
+     * main axis -- i.e. that `Modifier.weight` is still doing real proportional distribution, not
+     * that one child silently took everything (which is what happens if `weight` gets disabled when
+     * it shouldn't). Pixel positions are derived via the current density so the assertions hold
+     * regardless of the screen density Robolectric runs at.
      */
     private fun assertTwoFillSiblingsSplitEvenly(
-        dimension: Dimension,
-        mainAxis: Dp,
-        crossAxis: Dp,
+        horizontal: Boolean,
         wrapper: @Composable (content: @Composable () -> Unit) -> Unit,
     ) {
-        val horizontal = dimension is Dimension.Horizontal
+        val mainAxis = 200.dp
+        val crossAxis = 100.dp
         val redChild = StackComponent(
             components = emptyList(),
             size = Size(width = Fill, height = Fill),
@@ -174,7 +164,11 @@ class StackFillUnboundedCollapseTest {
         )
         val stack = StackComponent(
             components = listOf(redChild, blueChild),
-            dimension = dimension,
+            dimension = if (horizontal) {
+                Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START)
+            } else {
+                Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START)
+            },
             size = if (horizontal) {
                 Size(width = Fixed(mainAxis.value.toUInt()), height = Fixed(crossAxis.value.toUInt()))
             } else {

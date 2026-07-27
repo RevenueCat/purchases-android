@@ -178,7 +178,8 @@ internal fun CarouselComponentView(
     // would have to compose every page (WebViews included) twice. Not worth it for one settle frame.
     val density = LocalDensity.current
     var pagerHeightPx by remember(carouselState.pages) { mutableIntStateOf(0) }
-    val fillPageHeight = fillPageHeightOrNull(carouselState.size.height, pagerHeightPx, density)
+    // Built once and reused across pages: every Fill page pins to the same height.
+    val fillPageModifier = fillPageModifierOrEmpty(carouselState.size.height, pagerHeightPx, density)
 
     Column(
         modifier = modifier
@@ -222,7 +223,7 @@ internal fun CarouselComponentView(
                 state = state,
                 clickHandler = clickHandler,
                 componentInteractionTracker = componentInteractionTracker,
-                modifier = fillPageHeightModifier(pageStyle.size.height, fillPageHeight),
+                modifier = pageHeightModifier(pageStyle.size.height, fillPageModifier),
             )
         }
 
@@ -439,19 +440,21 @@ internal fun nextAutoAdvanceTargetPage(
     }
 }
 
-// The height to pin Fill pages to, or null. Only a Fit carousel leaves pages unbounded at measure
-// time (Fixed/Fill already give the Column a bound to hand down), so only then is a pin needed.
-private fun fillPageHeightOrNull(carouselHeight: SizeConstraint, measuredHeightPx: Int, density: Density): Dp? =
+// The height modifier for Fill pages, or an empty Modifier. Only a Fit carousel leaves pages
+// unbounded at measure time (Fixed/Fill already give the Column a bound to hand down), so only then
+// is a pin built.
+private fun fillPageModifierOrEmpty(carouselHeight: SizeConstraint, measuredHeightPx: Int, density: Density): Modifier =
     if (carouselHeight is SizeConstraint.Fit && measuredHeightPx > 0) {
-        with(density) { measuredHeightPx.toDp() }
+        Modifier.height(with(density) { measuredHeightPx.toDp() })
     } else {
-        null
+        Modifier
     }
 
-// Pin only Fill-height pages: a Fit/Fixed page already resolves to a real height on its own, and
-// pinning those would also risk feeding the tallest sibling's height back into itself.
-private fun fillPageHeightModifier(pageHeight: SizeConstraint, pinnedHeight: Dp?): Modifier =
-    if (pinnedHeight != null && pageHeight is SizeConstraint.Fill) Modifier.height(pinnedHeight) else Modifier
+// Apply the shared fill modifier only to Fill-height pages: a Fit/Fixed page already resolves to a
+// real height on its own, and pinning those would risk feeding the tallest sibling's height back
+// into itself.
+private fun pageHeightModifier(pageHeight: SizeConstraint, fillPageModifier: Modifier): Modifier =
+    if (pageHeight is SizeConstraint.Fill) fillPageModifier else Modifier
 
 private fun getInitialPage(carouselState: CarouselComponentState) = if (carouselState.loop) {
     // When looping, we use a very large number of pages to allow for "infinite" scrolling
