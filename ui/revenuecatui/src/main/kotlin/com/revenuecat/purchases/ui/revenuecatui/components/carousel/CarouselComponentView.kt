@@ -163,22 +163,14 @@ internal fun CarouselComponentView(
         }
     }
 
-    // beyondViewportPageCount = pageCount below forces every page to measure together, so the Pager
-    // resolves its own height to the tallest page -- but each page is measured before that resolved
-    // height is known, so a Fill-height page only wraps its own (possibly much smaller) content
-    // instead of stretching to match. Capture the Pager's resolved height and, on the next frame,
-    // pin only the Fill-height pages to it so they stretch to match the tallest sibling. The Pager
-    // itself is left unpinned so it keeps tracking that sibling's real height (async-growing
-    // content like a WebView still grows it); Fill pages never drive the max, so this converges
-    // without latching the height to the first frame.
-    //
-    // ponytail: this is the measure -> state -> recompose reflow the Compose guidelines steer away
-    // from (a SubcomposeLayout single pass would avoid the extra frame), but HorizontalPager is a
-    // LazyLayout whose height only resolves after it co-measures its pages, so a single-pass wrap
-    // would have to compose every page (WebViews included) twice. Not worth it for one settle frame.
+    // A Fit carousel sizes to its tallest page, but each page is measured before that height is
+    // known, so a Fill page wraps its own (smaller) content instead of matching. Pin the Fill pages
+    // to the measured height; leave the Pager unpinned so it keeps tracking the tallest page as
+    // content grows (async WebView), which avoids latching to the first frame.
+    // ponytail: a SubcomposeLayout single pass would avoid this measure -> recompose reflow, but it
+    // would compose every page (WebViews included) twice -- not worth it for one settle frame.
     val density = LocalDensity.current
     var pagerHeightPx by remember(carouselState.pages) { mutableIntStateOf(0) }
-    // Built once and reused across pages: every Fill page pins to the same height.
     val fillPageModifier = fillPageModifierOrEmpty(carouselState.size.height, pagerHeightPx, density)
 
     Column(
@@ -440,9 +432,7 @@ internal fun nextAutoAdvanceTargetPage(
     }
 }
 
-// The height modifier for Fill pages, or an empty Modifier. Only a Fit carousel leaves pages
-// unbounded at measure time (Fixed/Fill already give the Column a bound to hand down), so only then
-// is a pin built.
+// Only a Fit carousel leaves pages unbounded at measure time; Fixed/Fill already bound them.
 private fun fillPageModifierOrEmpty(carouselHeight: SizeConstraint, measuredHeightPx: Int, density: Density): Modifier =
     if (carouselHeight is SizeConstraint.Fit && measuredHeightPx > 0) {
         Modifier.height(with(density) { measuredHeightPx.toDp() })
@@ -450,9 +440,8 @@ private fun fillPageModifierOrEmpty(carouselHeight: SizeConstraint, measuredHeig
         Modifier
     }
 
-// Apply the shared fill modifier only to Fill-height pages: a Fit/Fixed page already resolves to a
-// real height on its own, and pinning those would risk feeding the tallest sibling's height back
-// into itself.
+// Pin only Fill pages: a Fit/Fixed page resolves its own height, and pinning it would feed a
+// sibling's height back into itself.
 private fun pageHeightModifier(pageHeight: SizeConstraint, fillPageModifier: Modifier): Modifier =
     if (pageHeight is SizeConstraint.Fill) fillPageModifier else Modifier
 

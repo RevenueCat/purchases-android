@@ -617,12 +617,9 @@ private fun MainStackComponent(
         } else {
             when (val dimension = stackState.dimension) {
                 is Dimension.Horizontal -> {
-                    // Tracks whether this Row's own main-axis (width) constraint ends up unbounded (e.g. an
-                    // ancestor scrolls, or a `Fit`-sized container sits under one that does). A `weight`-ed
-                    // Fill child would otherwise collapse to zero width in that case (Compose's weight
-                    // distribution falls back to the axis minimum, which is 0 once relaxed by scroll/Fit) — see
-                    // Modifier.trackMainAxisUnbounded for the full rationale. Only worth tracking (and paying
-                    // an extra measure hop for) when a Fill-width child could actually be affected.
+                    // Skip weight() for a Fill child when this Row's width axis is unbounded (else it
+                    // collapses to zero). See Modifier.trackMainAxisUnbounded; only tracked when a Fill
+                    // child could be affected.
                     val hasFillWidthChild = stackState.children.any { it.size.width == Fill }
                     val mainAxisUnbounded = remember { mutableStateOf(false) }
                     HorizontalStack(

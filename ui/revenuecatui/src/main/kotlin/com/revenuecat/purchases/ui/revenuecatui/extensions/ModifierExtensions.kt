@@ -5,18 +5,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 
 /**
- * Tracks, in [unboundedState], whether this modifier's incoming main-axis constraint is
- * unbounded (e.g. because an ancestor scrolls, or a `Fit`-sized container sits under one that
- * does). Where to place it in the chain depends on what the caller needs to observe: last, right
- * before a Row/Column, to see the constraint its own sizing (and any scroll) actually produces —
- * not the raw constraint it received from its parent, which a `Fixed` size or scroll modifier
- * further up this same chain may still turn bounded; or earlier, before a leaf's own `.size()`
- * call, to see the raw incoming constraint that sizing decision needs to react to.
+ * Tracks in [unboundedState] whether this modifier's incoming main-axis constraint is unbounded (an
+ * ancestor scrolls, or a `Fit` container sits under one that does). Place it last in a Row/Column
+ * chain to observe the constraint after the container's own sizing/scroll, or before a leaf's
+ * `.size()` to observe the raw incoming one.
  *
- * A container whose main axis is unbounded can't give a `weight`-ed child a meaningful share of
- * space (Compose's weight distribution falls back to the axis minimum, which is 0 whenever an
- * ancestor scroll or `Fit` wrapping relaxed it) — callers use this to skip `weight` in that case
- * and let the child fall back to its own natural size instead of collapsing to zero.
+ * A `weight`-ed child under an unbounded main axis collapses to zero (Compose's weight distribution
+ * falls back to the axis minimum), so callers skip `weight` in that case and let the child take its
+ * natural size instead.
  */
 internal fun Modifier.trackMainAxisUnbounded(
     isHorizontal: Boolean,
