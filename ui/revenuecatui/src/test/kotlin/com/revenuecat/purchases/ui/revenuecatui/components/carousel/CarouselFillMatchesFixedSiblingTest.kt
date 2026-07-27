@@ -44,7 +44,8 @@ import org.robolectric.shadows.ShadowPixelCopy
 /**
  * Regression tests: a Fit-height carousel (the schema default) sizes itself to its tallest page,
  * and a Fill-height page must stretch to match rather than wrapping its own (much smaller) content
- * -- see `CarouselComponentView`'s Pager-height fixpoint for the mechanism.
+ * -- see `CarouselComponentView`, which leaves the Pager unpinned (so it keeps tracking the tallest
+ * page) and pins only the Fill pages to that measured height.
  */
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(shadows = [ShadowPixelCopy::class], sdk = [26])

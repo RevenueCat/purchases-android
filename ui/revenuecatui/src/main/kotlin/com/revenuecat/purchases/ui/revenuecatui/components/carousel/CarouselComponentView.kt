@@ -166,12 +166,11 @@ internal fun CarouselComponentView(
     // beyondViewportPageCount = pageCount below forces every page to measure together, so the Pager
     // resolves its own height to the tallest page -- but each page is measured before that resolved
     // height is known, so a Fill-height page only wraps its own (possibly much smaller) content
-    // instead of stretching to match. Pin the Pager to its own measured height so on the next frame
-    // it hands that bound down to every page, letting a Fill page stretch to it regardless of how
-    // the tallest sibling got there (a Fixed descendant partway down its tree, or just naturally
-    // tall content). Measured and applied on the same node so it converges to a fixpoint rather than
-    // oscillating (measuring the outer Column instead would fold its padding/page-control back into
-    // the loop each pass and never settle).
+    // instead of stretching to match. Capture the Pager's resolved height and, on the next frame,
+    // pin only the Fill-height pages to it so they stretch to match the tallest sibling. The Pager
+    // itself is left unpinned so it keeps tracking that sibling's real height (async-growing
+    // content like a WebView still grows it); Fill pages never drive the max, so this converges
+    // without latching the height to the first frame.
     //
     // ponytail: this is the measure -> state -> recompose reflow the Compose guidelines steer away
     // from (a SubcomposeLayout single pass would avoid the extra frame), but HorizontalPager is a
@@ -179,7 +178,7 @@ internal fun CarouselComponentView(
     // would have to compose every page (WebViews included) twice. Not worth it for one settle frame.
     val density = LocalDensity.current
     var pagerHeightPx by remember(carouselState.pages) { mutableIntStateOf(0) }
-    val pagerHeight = pagerHeightOrNull(carouselState.size.height, pagerHeightPx, density)
+    val fillPageHeight = fillPageHeightOrNull(carouselState.size.height, pagerHeightPx, density)
 
     Column(
         modifier = modifier
@@ -215,15 +214,15 @@ internal fun CarouselComponentView(
             beyondViewportPageCount = pageCount,
             pageSpacing = carouselState.pageSpacing,
             verticalAlignment = carouselState.pageAlignment,
-            modifier = Modifier
-                .applyIfNotNull(pagerHeight) { height(it) }
-                .onSizeChanged { pagerHeightPx = it.height },
+            modifier = Modifier.onSizeChanged { pagerHeightPx = it.height },
         ) { page ->
+            val pageStyle = carouselState.pages[page % pageCount]
             StackComponentView(
-                style = carouselState.pages[page % pageCount],
+                style = pageStyle,
                 state = state,
                 clickHandler = clickHandler,
                 componentInteractionTracker = componentInteractionTracker,
+                modifier = fillPageHeightModifier(pageStyle.size.height, fillPageHeight),
             )
         }
 
@@ -440,14 +439,19 @@ internal fun nextAutoAdvanceTargetPage(
     }
 }
 
-// Only a Fit height is unresolved at measure time (Fixed/Fill already give the Column a bound to
-// hand down), so only then do we pin the Pager to its measured height.
-private fun pagerHeightOrNull(heightConstraint: SizeConstraint, measuredHeightPx: Int, density: Density): Dp? =
-    if (heightConstraint is SizeConstraint.Fit && measuredHeightPx > 0) {
+// The height to pin Fill pages to, or null. Only a Fit carousel leaves pages unbounded at measure
+// time (Fixed/Fill already give the Column a bound to hand down), so only then is a pin needed.
+private fun fillPageHeightOrNull(carouselHeight: SizeConstraint, measuredHeightPx: Int, density: Density): Dp? =
+    if (carouselHeight is SizeConstraint.Fit && measuredHeightPx > 0) {
         with(density) { measuredHeightPx.toDp() }
     } else {
         null
     }
+
+// Pin only Fill-height pages: a Fit/Fixed page already resolves to a real height on its own, and
+// pinning those would also risk feeding the tallest sibling's height back into itself.
+private fun fillPageHeightModifier(pageHeight: SizeConstraint, pinnedHeight: Dp?): Modifier =
+    if (pinnedHeight != null && pageHeight is SizeConstraint.Fill) Modifier.height(pinnedHeight) else Modifier
 
 private fun getInitialPage(carouselState: CarouselComponentState) = if (carouselState.loop) {
     // When looping, we use a very large number of pages to allow for "infinite" scrolling

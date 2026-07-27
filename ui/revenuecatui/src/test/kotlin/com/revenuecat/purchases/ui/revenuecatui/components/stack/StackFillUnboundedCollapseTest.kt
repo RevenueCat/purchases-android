@@ -13,6 +13,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -45,8 +46,8 @@ import org.robolectric.shadows.ShadowPixelCopy
  * Regression tests for the `Fill`-child-collapses-under-an-unbounded-main-axis bug fixed via
  * `mainAxisUnbounded` tracking in `StackComponentView.kt`. See `CarouselFillCollapseTest` for the
  * broader real-world repro (a Carousel with no scroll declared at all); these focus on the
- * `Stack`-level mechanism directly, including the earlier, narrower "explicit `overflow: scroll`"
- * case this fix subsumes.
+ * `Stack`-level mechanism directly, on both axes, including the earlier, narrower "explicit
+ * `overflow: scroll`" case this fix subsumes.
  */
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
@@ -60,51 +61,29 @@ class StackFillUnboundedCollapseTest {
 
     @Test
     fun `Fit stack with explicit vertical scroll no longer collapses a Fill child`() {
-        // A real leaf with actual content: an empty decorative box has zero intrinsic size and
-        // would correctly measure to 0 under any unbounded constraint regardless of this fix
-        // (nothing to rescue there). The bug is that the CONTAINING stack collapses the incoming
-        // constraint itself via `weight`, hiding content that would otherwise render fine.
-        val child = TextComponent(
-            text = LocalizationKey("dummy"),
-            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
-            size = Size(width = Fill, height = Fill),
-        )
-        val stack = StackComponent(
-            components = listOf(child),
-            dimension = Dimension.Vertical(
-                alignment = HorizontalAlignment.CENTER,
-                distribution = FlexDistribution.START,
-            ),
-            size = Size(width = Fit(), height = Fit()),
-            overflow = StackComponent.Overflow.SCROLL,
-        )
-        val style = styleFactory.create(stack).getOrThrow().componentStyle as StackComponentStyle
-
-        var measuredHeight = -1
-        composeTestRule.setContent {
-            Box(Modifier.fillMaxSize().height(800.dp)) {
-                StackComponentView(
-                    style = style,
-                    state = FakePaywallState(components = emptyList()),
-                    clickHandler = {},
-                    modifier = Modifier.onGloballyPositioned { measuredHeight = it.size.height },
-                )
-            }
-        }
-
-        composeTestRule.waitForIdle()
-        // Before the fix, this measured exactly 0 (Modifier.weight's unbounded-constraint fallback).
-        assertThat(measuredHeight).isGreaterThan(0)
+        assertScrollingFitStackKeepsFillChild(vertical = true)
     }
 
     @Test
-    fun `Fixed stack under an ambient-unbounded scroll still distributes weight between Fill siblings`() {
+    fun `Fit stack with explicit horizontal scroll no longer collapses a Fill child`() {
+        // The horizontal counterpart of the fix path (StackComponentView's Horizontal branch): a
+        // Fill-width child under a Fit-width stack whose own width axis scrolls (so it's unbounded).
+        assertScrollingFitStackKeepsFillChild(vertical = false)
+    }
+
+    @Test
+    fun `Fixed-height vertical stack under an ambient vertical scroll still distributes weight`() {
         // Guards the probe's placement: it must observe the constraint AFTER this stack's own
-        // .size() is applied, not the raw incoming constraint. A Fixed-sized stack establishes its
-        // own bound regardless of what's above it, so its Fill children must keep real weight()
-        // distribution -- if the probe were placed before .size(), an ambient scroll would wrongly
-        // disable weight() even though Fixed(200) already gives the Row a real bound.
-        assertTwoFillSiblingsSplitEvenly(stackSize = Size(width = Fixed(200u), height = Fixed(50u))) { content ->
+        // .size() is applied, not the raw incoming one. Here the ambient verticalScroll relaxes the
+        // vertical (main) axis to unbounded, but the stack's own Fixed(200) height re-establishes a
+        // bound, so its two Fill-height children must still split it 50/50 via weight(). If the
+        // probe read the constraint BEFORE .size(), it would see the ambient unbounded axis and
+        // wrongly disable weight() -- this test would then fail.
+        assertTwoFillSiblingsSplitEvenly(
+            dimension = Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START),
+            mainAxis = 200.dp,
+            crossAxis = 100.dp,
+        ) { content ->
             Box(Modifier.fillMaxSize().height(800.dp)) {
                 Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                     content()
@@ -115,24 +94,74 @@ class StackFillUnboundedCollapseTest {
 
     @Test
     fun `bounded Fill siblings still split proportionally, no scroll involved`() {
-        assertTwoFillSiblingsSplitEvenly(stackSize = Size(width = Fixed(200u), height = Fixed(50u))) { content ->
+        assertTwoFillSiblingsSplitEvenly(
+            dimension = Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START),
+            mainAxis = 200.dp,
+            crossAxis = 100.dp,
+        ) { content ->
             Box(Modifier.fillMaxSize().height(800.dp)) {
                 content()
             }
         }
     }
 
+    private fun assertScrollingFitStackKeepsFillChild(vertical: Boolean) {
+        // A real leaf with actual content: an empty decorative box has zero intrinsic size and
+        // would correctly measure to 0 under any unbounded constraint regardless of this fix
+        // (nothing to rescue there). The bug is that the CONTAINING stack collapses the incoming
+        // constraint itself via `weight`, hiding content that would otherwise render fine.
+        val child = TextComponent(
+            text = LocalizationKey("dummy"),
+            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+            size = Size(width = Fill, height = Fill),
+        )
+        val dimension = if (vertical) {
+            Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START)
+        } else {
+            Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START)
+        }
+        val stack = StackComponent(
+            components = listOf(child),
+            dimension = dimension,
+            size = Size(width = Fit(), height = Fit()),
+            overflow = StackComponent.Overflow.SCROLL,
+        )
+        val style = styleFactory.create(stack).getOrThrow().componentStyle as StackComponentStyle
+
+        var measuredSize = -1
+        composeTestRule.setContent {
+            Box(Modifier.fillMaxSize().height(800.dp)) {
+                StackComponentView(
+                    style = style,
+                    state = FakePaywallState(components = emptyList()),
+                    clickHandler = {},
+                    modifier = Modifier.onGloballyPositioned {
+                        measuredSize = if (vertical) it.size.height else it.size.width
+                    },
+                )
+            }
+        }
+
+        composeTestRule.waitForIdle()
+        // Before the fix, this measured exactly 0 (Modifier.weight's unbounded-constraint fallback).
+        assertThat(measuredSize).isGreaterThan(0)
+    }
+
     /**
-     * Renders a horizontal stack of [stackSize] with two `Fill`-width children (red, then blue)
-     * wrapped in [wrapper], and asserts each occupies roughly its own half of the stack's width --
-     * i.e. that `Modifier.weight` is still doing real proportional distribution, not that one
-     * child silently took everything (which is what happens if `weight` gets disabled when it
-     * shouldn't be).
+     * Renders a [dimension] stack of [mainAxis] x [crossAxis] with two `Fill` children (red, then
+     * blue) wrapped in [wrapper], and asserts each occupies its own half of the main axis -- i.e.
+     * that `Modifier.weight` is still doing real proportional distribution, not that one child
+     * silently took everything (which is what happens if `weight` gets disabled when it shouldn't).
+     * Pixel positions are derived from [mainAxis]/[crossAxis] via the current density so the
+     * assertions hold regardless of the screen density Robolectric runs at.
      */
     private fun assertTwoFillSiblingsSplitEvenly(
-        stackSize: Size,
+        dimension: Dimension,
+        mainAxis: Dp,
+        crossAxis: Dp,
         wrapper: @Composable (content: @Composable () -> Unit) -> Unit,
     ) {
+        val horizontal = dimension is Dimension.Horizontal
         val redChild = StackComponent(
             components = emptyList(),
             size = Size(width = Fill, height = Fill),
@@ -145,8 +174,12 @@ class StackFillUnboundedCollapseTest {
         )
         val stack = StackComponent(
             components = listOf(redChild, blueChild),
-            dimension = Dimension.Horizontal(alignment = VerticalAlignment.CENTER, distribution = FlexDistribution.START),
-            size = stackSize,
+            dimension = dimension,
+            size = if (horizontal) {
+                Size(width = Fixed(mainAxis.value.toUInt()), height = Fixed(crossAxis.value.toUInt()))
+            } else {
+                Size(width = Fixed(crossAxis.value.toUInt()), height = Fixed(mainAxis.value.toUInt()))
+            },
         )
         val style = styleFactory.create(stack).getOrThrow().componentStyle as StackComponentStyle
 
@@ -162,11 +195,17 @@ class StackFillUnboundedCollapseTest {
         }
 
         composeTestRule.waitForIdle()
+        val (mainPx, crossPx) = with(composeTestRule.density) { mainAxis.roundToPx() to crossAxis.roundToPx() }
+        // Deep in the first main-axis quarter must be red, deep in the last quarter blue. If weight()
+        // were wrongly disabled the first Fill child would greedily take everything, so the last
+        // quarter would still be red.
+        val firstQuarter = mainPx / 4
+        val lastQuarter = mainPx * 3 / 4
+        val crossMid = crossPx / 2
+        val (redX, redY) = if (horizontal) firstQuarter to crossMid else crossMid to firstQuarter
+        val (blueX, blueY) = if (horizontal) lastQuarter to crossMid else crossMid to lastQuarter
         composeTestRule.onNodeWithTag("stack")
-            // Deep into the first quarter: must be red.
-            .assertPixelColorEquals(color = Color.Red, startX = 10, startY = 10, width = 1, height = 1)
-            // Deep into the last quarter: must be blue. Would still be red if weight() were
-            // incorrectly disabled (the first Fill child would greedily take the whole width).
-            .assertPixelColorEquals(color = Color.Blue, startX = 190, startY = 10, width = 1, height = 1)
+            .assertPixelColorEquals(color = Color.Red, startX = redX, startY = redY, width = 1, height = 1)
+            .assertPixelColorEquals(color = Color.Blue, startX = blueX, startY = blueY, width = 1, height = 1)
     }
 }
