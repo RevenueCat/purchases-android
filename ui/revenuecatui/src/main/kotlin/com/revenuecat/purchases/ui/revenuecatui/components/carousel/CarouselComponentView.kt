@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
@@ -157,8 +158,13 @@ internal fun CarouselComponentView(
         }
     }
 
+    // Only steps in for a Fit-height carousel: an explicit Fixed/Fill declaration is a deliberate author
+    // choice and must not be overridden by this fallback.
+    val fixedSiblingHeight = carouselState.maxFixedPageHeight.takeIf { carouselState.size.height is SizeConstraint.Fit }
+
     Column(
         modifier = modifier
+            .applyIfNotNull(fixedSiblingHeight) { height(it) }
             .size(carouselState.size)
             .padding(carouselState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, carouselState.shape) }
