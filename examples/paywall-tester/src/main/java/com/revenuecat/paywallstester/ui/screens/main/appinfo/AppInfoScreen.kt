@@ -239,7 +239,7 @@ private fun ApiKeyDialog(onApiKeyClick: (String) -> Unit, onDismissed: () -> Uni
                     apiKey = Constants.GOOGLE_API_KEY_A,
                     onClick = onApiKeyClick,
                 )
-
+                Spacer(Modifier.size(8.dp))
                 ApiKeyButton(
                     label = Constants.GOOGLE_API_KEY_B_LABEL,
                     apiKey = Constants.GOOGLE_API_KEY_B,
@@ -264,8 +264,11 @@ private fun ApiKeyDialog(onApiKeyClick: (String) -> Unit, onDismissed: () -> Uni
 
 @Composable
 private fun ApiKeyButton(label: String, apiKey: String, onClick: (String) -> Unit) {
-    TextButton(onClick = { onClick(apiKey) }) {
-        Column {
+    Button(
+        onClick = { onClick(apiKey) },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.fillMaxWidth()) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,

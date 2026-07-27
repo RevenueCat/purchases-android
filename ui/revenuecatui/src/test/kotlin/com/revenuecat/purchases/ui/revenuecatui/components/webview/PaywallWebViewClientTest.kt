@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import android.content.Context
 import android.webkit.RenderProcessGoneDetail
+import android.webkit.SslErrorHandler
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -9,6 +10,7 @@ import android.webkit.WebView
 import androidx.test.core.app.ApplicationProvider
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -20,7 +22,7 @@ internal class PaywallWebViewClientTest {
 
     private lateinit var webView: TrackingWebView
     private val expectedOrigin = "https://assets.example.com"
-    private val navigations = mutableListOf<String?>()
+    private var navigationStartedCount = 0
     private var failureCount = 0
 
     private lateinit var client: PaywallWebViewClient
@@ -38,11 +40,11 @@ internal class PaywallWebViewClientTest {
     @Before
     fun setUp() {
         webView = TrackingWebView(ApplicationProvider.getApplicationContext())
-        navigations.clear()
+        navigationStartedCount = 0
         failureCount = 0
         client = PaywallWebViewClient(
             expectedOrigin = expectedOrigin,
-            onMainFrameNavigationStarted = { navigations.add(it) },
+            onMainFrameNavigationStarted = { navigationStartedCount += 1 },
             onMainFrameLoadFailed = { failureCount += 1 },
         )
     }
@@ -51,7 +53,7 @@ internal class PaywallWebViewClientTest {
     fun `onPageStarted notifies main-frame document start`() {
         client.onPageStarted(webView, "https://assets.example.com/promo/index.html", null)
 
-        assertThat(navigations).containsExactly("https://assets.example.com/promo/index.html")
+        assertThat(navigationStartedCount).isEqualTo(1)
         assertThat(webView.stopLoadingCount).isEqualTo(0)
     }
 
@@ -60,7 +62,7 @@ internal class PaywallWebViewClientTest {
         // POST navigations skip shouldOverrideUrlLoading; onPageStarted is the backstop.
         client.onPageStarted(webView, "https://evil.example.org/phish.html", null)
 
-        assertThat(navigations).isEmpty()
+        assertThat(navigationStartedCount).isEqualTo(0)
         assertThat(webView.stopLoadingCount).isEqualTo(1)
         assertThat(failureCount).isEqualTo(1)
     }
@@ -69,7 +71,7 @@ internal class PaywallWebViewClientTest {
     fun `onPageStarted stops blocked non-https loads`() {
         client.onPageStarted(webView, "http://assets.example.com/promo/insecure.html", null)
 
-        assertThat(navigations).isEmpty()
+        assertThat(navigationStartedCount).isEqualTo(0)
         assertThat(webView.stopLoadingCount).isEqualTo(1)
         assertThat(failureCount).isEqualTo(1)
     }
@@ -78,7 +80,7 @@ internal class PaywallWebViewClientTest {
     fun `onPageStarted ignores about blank without failing`() {
         client.onPageStarted(webView, "about:blank", null)
 
-        assertThat(navigations).isEmpty()
+        assertThat(navigationStartedCount).isEqualTo(0)
         assertThat(webView.stopLoadingCount).isEqualTo(0)
         assertThat(failureCount).isEqualTo(0)
     }
@@ -87,7 +89,7 @@ internal class PaywallWebViewClientTest {
     fun `onPageStarted ignores a null url without failing`() {
         client.onPageStarted(webView, null, null)
 
-        assertThat(navigations).isEmpty()
+        assertThat(navigationStartedCount).isEqualTo(0)
         assertThat(webView.stopLoadingCount).isEqualTo(0)
         assertThat(failureCount).isEqualTo(0)
     }
@@ -101,7 +103,7 @@ internal class PaywallWebViewClientTest {
 
         client.onPageStarted(webView, "https://assets.example.com/promo/index.html", null)
 
-        assertThat(navigations).isEmpty()
+        assertThat(navigationStartedCount).isEqualTo(0)
         assertThat(failureCount).isEqualTo(1)
     }
 
@@ -114,6 +116,17 @@ internal class PaywallWebViewClientTest {
 
         assertThat(first).isTrue()
         assertThat(second).isTrue()
+        assertThat(failureCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `onReceivedSslError cancels the load and activates the terminal failure path`() {
+        val handler = mockk<SslErrorHandler>(relaxed = true)
+
+        client.onReceivedSslError(webView, handler, mockk(relaxed = true))
+
+        verify(exactly = 1) { handler.cancel() }
+        verify(exactly = 0) { handler.proceed() }
         assertThat(failureCount).isEqualTo(1)
     }
 

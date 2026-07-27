@@ -1,12 +1,12 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
-import org.json.JSONObject
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 
-@RunWith(RobolectricTestRunner::class)
 internal class WebViewEnvelopeTest {
 
     private val componentId = "promo_web_view"
@@ -15,13 +15,13 @@ internal class WebViewEnvelopeTest {
     fun `parses a valid message envelope`() {
         val parsed = WebViewEnvelope.parse(
             envelope(
-                kind = WebViewEnvelope.KIND_MESSAGE,
+                kind = "message",
                 type = WebViewMessageType.RESIZE,
             ),
         )
 
         assertThat(parsed).isNotNull
-        assertThat(parsed!!.kind).isEqualTo(WebViewEnvelope.KIND_MESSAGE)
+        assertThat(parsed!!.kind).isEqualTo(WebViewEnvelope.Kind.MESSAGE)
         assertThat(parsed.protocolVersion).isEqualTo(1)
         assertThat(parsed.componentId).isEqualTo(componentId)
         assertThat(parsed.type).isEqualTo(WebViewMessageType.RESIZE)
@@ -34,7 +34,7 @@ internal class WebViewEnvelopeTest {
     fun `parses optional envelope fields`() {
         val parsed = WebViewEnvelope.parse(
             envelope(
-                kind = WebViewEnvelope.KIND_REQUEST,
+                kind = "request",
                 type = WebViewMessageType.RESIZE,
                 id = "req-1",
                 payload = """{"responses":{"selected_plan":"annual"}}""",
@@ -44,7 +44,7 @@ internal class WebViewEnvelopeTest {
         assertThat(parsed).isNotNull
         assertThat(parsed!!.id).isEqualTo("req-1")
         assertThat(parsed.payload).isNotNull
-        assertThat(parsed.payload!!.getJSONObject("responses").getString("selected_plan"))
+        assertThat(parsed.payload!!.getValue("responses").jsonObject.getValue("selected_plan").jsonPrimitive.content)
             .isEqualTo("annual")
     }
 
@@ -57,8 +57,23 @@ internal class WebViewEnvelopeTest {
         )
 
         assertThat(parsed).isNotNull
-        assertThat(parsed!!.kind).isEqualTo(WebViewEnvelope.KIND_CONNECT)
+        assertThat(parsed!!.kind).isEqualTo(WebViewEnvelope.Kind.CONNECT)
         assertThat(parsed.componentId).isEmpty()
+    }
+
+    @Test
+    fun `parses explicit null optional fields as absent`() {
+        val parsed = WebViewEnvelope.parse(
+            """
+            {"channel":"rc-web-components","protocol_version":1,"kind":"message","component_id":"promo_web_view","type":null,"id":null,"payload":null,"error":null}
+            """.trimIndent(),
+        )
+
+        assertThat(parsed).isNotNull
+        assertThat(parsed!!.type).isNull()
+        assertThat(parsed.id).isNull()
+        assertThat(parsed.payload).isNull()
+        assertThat(parsed.error).isNull()
     }
 
     @Test
@@ -67,6 +82,17 @@ internal class WebViewEnvelopeTest {
             WebViewEnvelope.parse(
                 """
                 {"channel":"other","protocol_version":1,"kind":"message","component_id":"promo_web_view","type":"rc:step-loaded"}
+                """.trimIndent(),
+            ),
+        ).isNull()
+    }
+
+    @Test
+    fun `rejects missing channel`() {
+        assertThat(
+            WebViewEnvelope.parse(
+                """
+                {"protocol_version":1,"kind":"message","component_id":"promo_web_view","type":"rc:step-loaded"}
                 """.trimIndent(),
             ),
         ).isNull()
@@ -89,6 +115,17 @@ internal class WebViewEnvelopeTest {
             WebViewEnvelope.parse(
                 """
                 {"channel":"rc-web-components","protocol_version":NaN,"kind":"message","component_id":"promo_web_view","type":"rc:step-loaded"}
+                """.trimIndent(),
+            ),
+        ).isNull()
+    }
+
+    @Test
+    fun `rejects non-integer protocol_version`() {
+        assertThat(
+            WebViewEnvelope.parse(
+                """
+                {"channel":"rc-web-components","protocol_version":1.5,"kind":"message","component_id":"promo_web_view","type":"rc:step-loaded"}
                 """.trimIndent(),
             ),
         ).isNull()
@@ -162,24 +199,24 @@ internal class WebViewEnvelopeTest {
 
     @Test
     fun `accepts every whitelisted kind`() {
-        val kinds = listOf(
-            WebViewEnvelope.KIND_CONNECT,
-            WebViewEnvelope.KIND_INIT,
-            WebViewEnvelope.KIND_REJECT,
-            WebViewEnvelope.KIND_MESSAGE,
-            WebViewEnvelope.KIND_REQUEST,
-            WebViewEnvelope.KIND_RESPONSE,
-            WebViewEnvelope.KIND_ERROR,
+        val kinds = mapOf(
+            "connect" to WebViewEnvelope.Kind.CONNECT,
+            "init" to WebViewEnvelope.Kind.INIT,
+            "reject" to WebViewEnvelope.Kind.REJECT,
+            "message" to WebViewEnvelope.Kind.MESSAGE,
+            "request" to WebViewEnvelope.Kind.REQUEST,
+            "response" to WebViewEnvelope.Kind.RESPONSE,
+            "error" to WebViewEnvelope.Kind.ERROR,
         )
 
-        kinds.forEach { kind ->
+        kinds.forEach { (kind, expected) ->
             val parsed = WebViewEnvelope.parse(
                 """
                 {"channel":"rc-web-components","protocol_version":1,"kind":"$kind","component_id":"$componentId"}
                 """.trimIndent(),
             )
             assertThat(parsed).describedAs("kind=$kind").isNotNull
-            assertThat(parsed!!.kind).isEqualTo(kind)
+            assertThat(parsed!!.kind).isEqualTo(expected)
         }
     }
 
@@ -194,43 +231,52 @@ internal class WebViewEnvelopeTest {
     }
 
     @Test
-    fun `build emits required and optional fields`() {
-        val payload = JSONObject("""{"responses":{"ok":true}}""")
-        val json = WebViewEnvelope.build(
-            kind = WebViewEnvelope.KIND_RESPONSE,
+    fun `toJsonString emits required and optional fields`() {
+        val payload = Json.parseToJsonElement("""{"responses":{"ok":true}}""").jsonObject
+        val encoded = WebViewEnvelope(
+            kind = WebViewEnvelope.Kind.RESPONSE,
             protocolVersion = WebViewEnvelope.DEFAULT_PROTOCOL_VERSION,
             componentId = componentId,
             type = WebViewMessageType.RESIZE,
             id = "req-1",
             payload = payload,
             error = "boom",
-        )
+        ).toJsonString()
 
-        assertThat(json.getString(WebViewMessageField.CHANNEL)).isEqualTo(WebViewEnvelope.CHANNEL)
-        assertThat(json.getInt(WebViewMessageField.PROTOCOL_VERSION))
-            .isEqualTo(WebViewEnvelope.DEFAULT_PROTOCOL_VERSION)
-        assertThat(json.getString(WebViewMessageField.KIND)).isEqualTo(WebViewEnvelope.KIND_RESPONSE)
-        assertThat(json.getString(WebViewMessageField.COMPONENT_ID)).isEqualTo(componentId)
-        assertThat(json.getString(WebViewMessageField.TYPE)).isEqualTo(WebViewMessageType.RESIZE)
-        assertThat(json.getString(WebViewMessageField.ID)).isEqualTo("req-1")
-        assertThat(json.getJSONObject(WebViewMessageField.PAYLOAD).toString())
-            .isEqualTo(payload.toString())
-        assertThat(json.getString(WebViewMessageField.ERROR)).isEqualTo("boom")
+        val roundTripped = WebViewEnvelope.parse(encoded)
+        assertThat(roundTripped).isNotNull
+        assertThat(roundTripped!!.kind).isEqualTo(WebViewEnvelope.Kind.RESPONSE)
+        assertThat(roundTripped.protocolVersion).isEqualTo(WebViewEnvelope.DEFAULT_PROTOCOL_VERSION)
+        assertThat(roundTripped.componentId).isEqualTo(componentId)
+        assertThat(roundTripped.type).isEqualTo(WebViewMessageType.RESIZE)
+        assertThat(roundTripped.id).isEqualTo("req-1")
+        assertThat(roundTripped.payload).isEqualTo(payload)
+        assertThat(roundTripped.error).isEqualTo("boom")
     }
 
     @Test
-    fun `build omits null optional fields`() {
-        val json = WebViewEnvelope.build(
-            kind = WebViewEnvelope.KIND_INIT,
-            protocolVersion = WebViewEnvelope.DEFAULT_PROTOCOL_VERSION,
-            componentId = componentId,
-        )
+    fun `toJsonString emits required fields`() {
+        val json = Json.parseToJsonElement(encodedInitEnvelope()).jsonObject
 
-        assertThat(json.has(WebViewMessageField.TYPE)).isFalse()
-        assertThat(json.has(WebViewMessageField.ID)).isFalse()
-        assertThat(json.has(WebViewMessageField.PAYLOAD)).isFalse()
-        assertThat(json.has(WebViewMessageField.ERROR)).isFalse()
+        assertThat(json.getValue("channel").jsonPrimitive.content).isEqualTo(WebViewEnvelope.CHANNEL)
+        assertThat(json.getValue("protocol_version").jsonPrimitive.int)
+            .isEqualTo(WebViewEnvelope.DEFAULT_PROTOCOL_VERSION)
+        assertThat(json.getValue("kind").jsonPrimitive.content).isEqualTo("init")
+        assertThat(json.getValue("component_id").jsonPrimitive.content).isEqualTo(componentId)
     }
+
+    @Test
+    fun `toJsonString omits null optional fields`() {
+        val json = Json.parseToJsonElement(encodedInitEnvelope()).jsonObject
+
+        assertThat(json.keys).doesNotContain("type", "id", "payload", "error")
+    }
+
+    private fun encodedInitEnvelope(): String = WebViewEnvelope(
+        kind = WebViewEnvelope.Kind.INIT,
+        protocolVersion = WebViewEnvelope.DEFAULT_PROTOCOL_VERSION,
+        componentId = componentId,
+    ).toJsonString()
 
     private fun envelope(
         kind: String,

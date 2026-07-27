@@ -1,15 +1,13 @@
-## RevenueCat SDK
+## RevenueCatUI SDK
 ### 🐞 Bugfixes
-* fix: store ETag cache payload verbatim to avoid OOM on large responses (#3774) via Cesar de la Vega (@vegaro)
+* Fix crash when a paywall component tree fails to decode (#3826) via Álvaro Brey (@AlvaroBrey)
+* fix(RevenueCatUI): host web_view in a FrameLayout to prevent off-screen RenderThread crash (#3829) via Álvaro Brey (@AlvaroBrey)
+* Hide autoplay web_view video until it plays (#3824) via Álvaro Brey (@AlvaroBrey)
+### Paywalls_v2
+#### 🐞 Bugfixes
+* feat(RevenueCatUI): arbitrate web_view drag gestures with the paywall scroll (#3823) via Álvaro Brey (@AlvaroBrey)
+* fix(paywalls): misc webviewComponent bug fixes and debug improvements (#3819) via Álvaro Brey (@AlvaroBrey)
 
 ### 🔄 Other Changes
-* fix(remote-config): lazy-decode workflows cache to reduce memory (#3793) via Toni Rico (@tonidero)
-* Eagerly prewarm offering's workflow assets (#3775) via Cesar de la Vega (@vegaro)
-* fix(remote-config): Avoid redundant offerings reload on disabled paywall re-presentation (#3802) via Toni Rico (@tonidero)
-* test: Remove backend golden response verification (#3801) via Toni Rico (@tonidero)
-* feat(remote-config): source API base host from remote-config sources (#3715) via Antonio Pallares (@ajpallares)
-* Open the default paywall for offerings without a workflow (#3790) via Cesar de la Vega (@vegaro)
-* refactor(remote-config): RCContainer improvements (#3791) via bisho (@bisho)
-* Add Android workflow paywall Maestro flows (local only) (#3797) via Cesar de la Vega (@vegaro)
-* Trust user CAs in debug builds of paywalls tester for proxying (#3795) via Cesar de la Vega (@vegaro)
-* feat(remote-config): add internal usesRemoteConfigAPISources dangerous setting (#3792) via Antonio Pallares (@ajpallares)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `b52fca5` to `d392939` (#3828) via dependabot[bot] (@dependabot[bot])
+* fix(paywall-tester): make ApiKeyButton look and behave like a button (#3825) via Álvaro Brey (@AlvaroBrey)

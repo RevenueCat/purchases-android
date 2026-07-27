@@ -13,18 +13,3 @@ internal object WebViewMessageType {
     /** Content → host: reported content box size in CSS pixels. */
     const val RESIZE = "resize"
 }
-
-/**
- * Field names used in the transport envelope parsed by [WebViewEnvelope]. Application data lives under
- * [PAYLOAD]; [ERROR] is used on `error` / `reject` frames.
- */
-internal object WebViewMessageField {
-    const val CHANNEL = "channel"
-    const val PROTOCOL_VERSION = "protocol_version"
-    const val KIND = "kind"
-    const val TYPE = "type"
-    const val COMPONENT_ID = "component_id"
-    const val ID = "id"
-    const val PAYLOAD = "payload"
-    const val ERROR = "error"
-}
