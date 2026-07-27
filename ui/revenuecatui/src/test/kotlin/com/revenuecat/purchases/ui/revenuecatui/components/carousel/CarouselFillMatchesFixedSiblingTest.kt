@@ -12,6 +12,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
@@ -41,10 +42,9 @@ import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowPixelCopy
 
 /**
- * Regression test: a Fit-height carousel (the schema default) whose pages include a Fixed-height
- * sibling should size itself to that sibling and let a Fill-height page stretch to match, instead
- * of the container ending up tall (sized by the sibling) while the Fill page only wraps its own,
- * much smaller content -- see `CarouselComponentState.maxFixedPageHeight` for the fix.
+ * Regression tests: a Fit-height carousel (the schema default) sizes itself to its tallest page,
+ * and a Fill-height page must stretch to match rather than wrapping its own (much smaller) content
+ * -- see `CarouselComponentView`'s Pager-height fixpoint for the mechanism.
  */
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(shadows = [ShadowPixelCopy::class], sdk = [26])
@@ -80,51 +80,14 @@ class CarouselFillMatchesFixedSiblingTest {
             pageAlignment = VerticalAlignment.CENTER,
         )
 
-        val state = FakePaywallState(components = listOf(carousel))
-        val rootStack = state.stack as StackComponentStyle
-        val carouselStyle = rootStack.children.filterIsInstance<CarouselComponentStyle>().single()
-
-        var measuredHeightPx = -1
-
-        composeTestRule.setContent {
-            // Mirrors LoadedPaywallComponents.kt's real modifier chain on the root ComponentView.
-            Box(Modifier.fillMaxSize().height(800.dp)) {
-                Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-                    CarouselComponentView(
-                        style = carouselStyle,
-                        state = state,
-                        clickHandler = {},
-                        modifier = Modifier
-                            .testTag("carousel")
-                            .onGloballyPositioned { measuredHeightPx = it.size.height },
-                    )
-                }
-            }
-        }
-
-        composeTestRule.waitForIdle()
-
-        val expectedHeightPx = with(composeTestRule.density) { 300.dp.roundToPx() }
-        // Before the fix, this wrapped to the Fill page's own (much smaller) content height.
-        assertThat(measuredHeightPx).isEqualTo(expectedHeightPx)
-
-        // The visible page (index 0, Fill/Fill, blue) must stretch all the way to the bottom edge,
-        // not just wrap its content and leave the rest of the Fixed sibling's height blank.
-        composeTestRule.onNodeWithTag("carousel")
-            .assertPixelColorEquals(
-                color = Color.Blue,
-                startX = 10,
-                startY = expectedHeightPx - 10,
-                width = 1,
-                height = 1,
-            )
+        assertFillPageStretchesTo(carousel, expectedHeight = 300.dp)
     }
 
     @Test
     fun `Fill page stretches to match a sibling whose height comes from a nested Fixed descendant`() {
         // Matches a real customer paywall: the tall sibling page itself declares Fit/Fit, but wraps
-        // a Fixed(350)/Fixed(350) content stack -- there is no top-level Fixed page to read from the
-        // schema, only a real, naturally-tall measured page.
+        // a Fixed(350) content stack -- there is no top-level Fixed page to read from the schema,
+        // only a real, naturally-tall measured page.
         val fillPage = StackComponent(
             components = listOf(
                 StackComponent(
@@ -149,6 +112,15 @@ class CarouselFillMatchesFixedSiblingTest {
             pageAlignment = VerticalAlignment.CENTER,
         )
 
+        assertFillPageStretchesTo(carousel, expectedHeight = 350.dp)
+    }
+
+    /**
+     * Renders [carousel] under the real default root-scroll chain and asserts it measures to
+     * [expectedHeight] (the tallest page) and that the visible Fill page (blue) stretches all the
+     * way to the bottom edge, rather than wrapping its own content and leaving the rest blank.
+     */
+    private fun assertFillPageStretchesTo(carousel: CarouselComponent, expectedHeight: Dp) {
         val state = FakePaywallState(components = listOf(carousel))
         val rootStack = state.stack as StackComponentStyle
         val carouselStyle = rootStack.children.filterIsInstance<CarouselComponentStyle>().single()
@@ -156,6 +128,7 @@ class CarouselFillMatchesFixedSiblingTest {
         var measuredHeightPx = -1
 
         composeTestRule.setContent {
+            // Mirrors LoadedPaywallComponents.kt's real modifier chain on the root ComponentView.
             Box(Modifier.fillMaxSize().height(800.dp)) {
                 Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                     CarouselComponentView(
@@ -172,7 +145,8 @@ class CarouselFillMatchesFixedSiblingTest {
 
         composeTestRule.waitForIdle()
 
-        val expectedHeightPx = with(composeTestRule.density) { 350.dp.roundToPx() }
+        val expectedHeightPx = with(composeTestRule.density) { expectedHeight.roundToPx() }
+        // Before the fix, this wrapped to the Fill page's own (much smaller) content height.
         assertThat(measuredHeightPx).isEqualTo(expectedHeightPx)
 
         composeTestRule.onNodeWithTag("carousel")

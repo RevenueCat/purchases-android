@@ -33,7 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
@@ -172,9 +172,14 @@ internal fun CarouselComponentView(
     // tall content). Measured and applied on the same node so it converges to a fixpoint rather than
     // oscillating (measuring the outer Column instead would fold its padding/page-control back into
     // the loop each pass and never settle).
+    //
+    // ponytail: this is the measure -> state -> recompose reflow the Compose guidelines steer away
+    // from (a SubcomposeLayout single pass would avoid the extra frame), but HorizontalPager is a
+    // LazyLayout whose height only resolves after it co-measures its pages, so a single-pass wrap
+    // would have to compose every page (WebViews included) twice. Not worth it for one settle frame.
     val density = LocalDensity.current
     var pagerHeightPx by remember(carouselState.pages) { mutableIntStateOf(0) }
-    val pagerHeight = stabilizedHeightOrNull(carouselState, pagerHeightPx, density)
+    val pagerHeight = pagerHeightOrNull(carouselState.size.height, pagerHeightPx, density)
 
     Column(
         modifier = modifier
@@ -212,7 +217,7 @@ internal fun CarouselComponentView(
             verticalAlignment = carouselState.pageAlignment,
             modifier = Modifier
                 .applyIfNotNull(pagerHeight) { height(it) }
-                .onGloballyPositioned { pagerHeightPx = it.size.height },
+                .onSizeChanged { pagerHeightPx = it.height },
         ) { page ->
             StackComponentView(
                 style = carouselState.pages[page % pageCount],
@@ -435,14 +440,10 @@ internal fun nextAutoAdvanceTargetPage(
     }
 }
 
-// Only applies for a Fit-height carousel: an explicit Fixed/Fill declaration is a deliberate
-// author choice and must not be overridden by this fallback.
-private fun stabilizedHeightOrNull(
-    carouselState: CarouselComponentState,
-    measuredHeightPx: Int,
-    density: Density,
-): Dp? =
-    if (carouselState.size.height is SizeConstraint.Fit && measuredHeightPx > 0) {
+// Only a Fit height is unresolved at measure time (Fixed/Fill already give the Column a bound to
+// hand down), so only then do we pin the Pager to its measured height.
+private fun pagerHeightOrNull(heightConstraint: SizeConstraint, measuredHeightPx: Int, density: Density): Dp? =
+    if (heightConstraint is SizeConstraint.Fit && measuredHeightPx > 0) {
         with(density) { measuredHeightPx.toDp() }
     } else {
         null
