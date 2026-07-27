@@ -145,6 +145,44 @@ class WebViewComponentTests {
     }
 
     @Test
+    fun `protocol_version as a JSON string is treated as unsupported, not coerced`() {
+        // A quoted "1" must not slip past the version gate (intOrNull parses digits regardless of quoting).
+        @Language("json")
+        val json = """
+            {
+              "type": "web_view",
+              "protocol_version": "1",
+              "url": "https://paywalls.revenuecat.com/index.html",
+              "fallback": {
+                "type": "stack",
+                "name": "web_view_fallback",
+                "components": []
+              }
+            }
+            """
+
+        val actual = JsonTools.json.decodeFromString<PaywallComponent>(json)
+
+        assertThat(actual).isInstanceOf(StackComponent::class.java)
+        assertThat((actual as StackComponent).name).isEqualTo("web_view_fallback")
+    }
+
+    @Test
+    fun `supported protocol_version with another required field missing still throws`() {
+        @Language("json")
+        val json = """
+            {
+              "type": "web_view",
+              "protocol_version": 1,
+              "url": "https://paywalls.revenuecat.com/index.html"
+            }
+            """
+
+        assertThatThrownBy { JsonTools.json.decodeFromString<PaywallComponent>(json) }
+            .isInstanceOf(SerializationException::class.java)
+    }
+
+    @Test
     fun `missing protocol_version renders the fallback component`() {
         // protocol_version is required; an absent version is treated like an unsupported one and
         // routes to the author's fallback rather than decoding as a web view.
