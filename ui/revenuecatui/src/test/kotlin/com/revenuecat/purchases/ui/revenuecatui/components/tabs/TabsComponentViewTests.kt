@@ -1204,7 +1204,7 @@ class TabsComponentViewTests {
         StyleFactory(
             offering = offering,
             localizations = offering.paywallComponents
-                ?.data
+                ?.dataOrNull
                 ?.componentsLocalizations
                 ?.toNonEmptyMapOrNull()!!.mapValues { it.value.toNonEmptyMapOrNull()!! }
         )

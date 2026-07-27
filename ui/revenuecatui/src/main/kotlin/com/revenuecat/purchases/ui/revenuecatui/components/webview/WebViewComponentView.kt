@@ -4,10 +4,15 @@ package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import android.graphics.Color
 import android.view.View
+import android.view.ViewGroup
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.FrameLayout
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -20,10 +25,13 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.ProfileStore
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import com.revenuecat.purchases.LogLevel
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
+import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -43,9 +51,18 @@ internal fun WebViewComponentView(
     val resolvedUrl = remember(style.url) {
         WebViewUrlResolver.resolve(style.url)
     }
-    if (resolvedUrl == null) return
-
     val componentId = style.componentId
+
+    LaunchedEffect(style.url, componentId) {
+        when {
+            resolvedUrl == null ->
+                Logger.w("Paywalls V2 web_view not rendered: URL must be https with no '{{' markers: '${style.url}'")
+            componentId.isBlank() ->
+                Logger.w("Paywalls V2 web_view not rendered: componentId is blank.")
+        }
+    }
+
+    if (resolvedUrl == null) return
     // workflow-web-components-sdk requires a host-assigned component id for the handshake.
     if (componentId.isBlank()) return
     val sizeToContentWidth = style.size.width is Fit
@@ -78,7 +95,8 @@ internal fun WebViewComponentView(
         if (!loadFailed) {
             AndroidView(
                 factory = { context ->
-                    WebView(context).apply {
+                    val webView = PaywallWebView(context).apply {
+                        applyFullSizeLayoutParams()
                         // Must precede attach()/loadUrl: setProfile throws once the WebView has been used.
                         applyPaywallProfile()
                         val bridge = WebViewJavaScriptBridge(
@@ -108,21 +126,29 @@ internal fun WebViewComponentView(
                                 },
                                 onMainFrameLoadFailed = { loadFailed = true },
                             )
+                            installGestureOwnershipProbe(
+                                expectedOrigin = resolvedUrl.toOriginOrNull(),
+                            ) { wantsGesture -> this@apply.onContentGestureVerdict(wantsGesture) }
                             loadUrl(resolvedUrl)
                         }
                     }
+                    webView.hostedInFrameLayout()
                 },
-                onRelease = { webView ->
+                onRelease = { container ->
+                    val webView = (container as FrameLayout).getChildAt(0) as WebView
                     // Only release the bridge that this view installed into this holder.
                     val bridge = bridgeHolder.bridge
                     bridgeHolder.bridge = null
                     bridge?.release()
+                    webView.removeGestureOwnershipProbe()
                     webView.stopLoading()
                     webView.webViewClient = WebViewClient()
                     webView.destroy()
                 },
                 // Clip: content can briefly overflow while a fit axis animates placeholder -> measured.
-                modifier = modifier.size(effectiveSize).clipToBounds(),
+                modifier = modifier
+                    .size(effectiveSize)
+                    .clipToBounds(),
             )
         }
         // Terminal failure renders nothing; there is intentionally no native fallback.
@@ -160,6 +186,30 @@ internal class WebViewBridgeHolder {
     var bridge: WebViewJavaScriptBridge? = null
 }
 
+// A hardware WebView drawn while fully off-screen (e.g. a non-visible carousel page) composites its GL
+// functor into an offscreen layer that has no surface, crashing the RenderThread in
+// SkSurface::getCanvas(). Hosting it inside a FrameLayout rather than directly in the AndroidView
+// isolates the functor from Compose's offscreen compositing while keeping hardware acceleration (a
+// software layer would avoid the crash but break video and WebGL).
+internal fun WebView.hostedInFrameLayout(): FrameLayout =
+    FrameLayout(context).apply {
+        layoutParams = ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT,
+        )
+        addView(this@hostedInFrameLayout)
+    }
+
+// WebView drives Chromium's force_zero_layout_height off its LayoutParams: with the WRAP_CONTENT
+// defaults AndroidView assigns, CSS % and vh heights resolve to 0 and content renders blank. Compose
+// sizes the view from exact constraints, so MATCH_PARENT is safe and only flips the Chromium flag.
+internal fun WebView.applyFullSizeLayoutParams() {
+    layoutParams = ViewGroup.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT,
+        ViewGroup.LayoutParams.MATCH_PARENT,
+    )
+}
+
 private fun WebView.configure(
     expectedOrigin: String?,
     onMainFrameNavigationStarted: () -> Unit,
@@ -182,11 +232,81 @@ private fun WebView.configure(
     settings.setSupportZoom(false)
     settings.builtInZoomControls = false
     settings.displayZoomControls = false
+    settings.mediaPlaybackRequiresUserGesture = false
     webViewClient = PaywallWebViewClient(
         expectedOrigin = expectedOrigin,
         onMainFrameNavigationStarted = onMainFrameNavigationStarted,
         onMainFrameLoadFailed = onMainFrameLoadFailed,
     )
+    // Inspect the bundle from Chrome DevTools in debug builds only; process-global, never in release.
+    if (BuildConfig.DEBUG) WebView.setWebContentsDebuggingEnabled(true)
+    // Surface the bundle's own JS console in logcat when the SDK is on DEBUG/VERBOSE, so authors can
+    // diagnose their content without a debugger attached.
+    if (Purchases.logLevel <= LogLevel.DEBUG) {
+        webChromeClient = object : WebChromeClient() {
+            override fun onConsoleMessage(message: ConsoleMessage): Boolean {
+                Logger.d(
+                    "Paywalls V2 web_view console [${message.messageLevel()}] ${message.message()} " +
+                        "(${message.sourceId()}:${message.lineNumber()})",
+                )
+                return true
+            }
+        }
+    }
+    disableTapHighlight(expectedOrigin)
+    hideAutoplayVideoUntilPlaying(expectedOrigin)
+}
+
+// Fallback reveal for an autoplay <video> that never emits `playing`; long enough that a normal clip plays first.
+private const val AUTOPLAY_REVEAL_FALLBACK_MS = 5000
+
+// Android WebView flashes a play-button placeholder over an autoplay <video> until its first frame
+// paints. The placeholder isn't a stable UA element across Chromium versions, so rather than target it
+// we hide autoplay videos until they emit `playing`, with a fallback reveal so one that never plays
+// can't stay hidden.
+@Suppress("TooGenericExceptionCaught")
+internal fun WebView.hideAutoplayVideoUntilPlaying(expectedOrigin: String?) {
+    if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
+    try {
+        WebViewCompat.addDocumentStartJavaScript(
+            this,
+            """
+            (function () {
+              var style = document.createElement('style');
+              style.textContent = 'video[autoplay]:not([data-rc-playing]){opacity:0!important}';
+              document.documentElement.appendChild(style);
+              function reveal(video) { video.setAttribute('data-rc-playing', ''); }
+              document.addEventListener('playing', function (event) { reveal(event.target); }, true);
+              // Armed per element on `loadstart` so videos added after load are covered too.
+              document.addEventListener('loadstart', function (event) {
+                var video = event.target;
+                setTimeout(function () { reveal(video); }, $AUTOPLAY_REVEAL_FALLBACK_MS);
+              }, true);
+            })();
+            """.trimIndent(),
+            setOf(expectedOrigin ?: "*"),
+        )
+    } catch (error: RuntimeException) {
+        Logger.w("Failed to install web_view autoplay video reveal: $error")
+    }
+}
+
+// Android draws a translucent tap-highlight scrim (blue on most themes) over tapped clickable content;
+// iOS WKWebView does not. Set `-webkit-tap-highlight-color: transparent` as an inherited default at the
+// document root. A bundle can still override it per element (inheritance loses to any explicit value).
+@Suppress("TooGenericExceptionCaught")
+internal fun WebView.disableTapHighlight(expectedOrigin: String?) {
+    if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
+    val origin = expectedOrigin ?: return
+    try {
+        WebViewCompat.addDocumentStartJavaScript(
+            this,
+            "document.documentElement.style.webkitTapHighlightColor = 'transparent';",
+            setOf(origin),
+        )
+    } catch (error: RuntimeException) {
+        Logger.w("Failed to disable webkit tap highlight: $error")
+    }
 }
 
 // Dedicated persistent profile isolating paywall WebView storage from the host app; shared across paywalls.

@@ -1832,7 +1832,7 @@ class PaywallViewModelTest {
             eventType = PaywallEventType.CANCEL,
             times = 1,
             offeringIdentifier = offering.identifier,
-            paywallRevision = offering.paywallComponents!!.data.revision,
+            paywallRevision = offering.paywallComponents!!.data.getOrThrow().revision,
         )
         assertThat(model.actionError.value).isNull()
         verify(exactly = 0) { listener.onPurchaseError(any()) }

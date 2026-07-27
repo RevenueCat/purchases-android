@@ -82,12 +82,13 @@ internal class WebViewJavaScriptBridge(
 
     /**
      * Registers the secure message listener. Idempotent once installed; a no-op on later calls after
-     * success. If installation fails — invalid expected origin (a config error) or missing
-     * [WebViewFeature.WEB_MESSAGE_LISTENER] (an old System WebView) — it falls back to
-     * [onSecureMessagingUnsupported], logged distinctly, and a later call will retry.
+     * success. If installation fails — invalid expected origin (a config error), missing
+     * [WebViewFeature.WEB_MESSAGE_LISTENER] (an old System WebView), or the provider rejecting the
+     * registration — it falls back to [onSecureMessagingUnsupported], logged distinctly, and a later
+     * call will retry.
      */
     @MainThread
-    @Suppress("ReturnCount")
+    @Suppress("ReturnCount", "TooGenericExceptionCaught")
     fun attach() {
         if (messageListenerInstalled) return
         val webView = webViewRef.get() ?: return
@@ -108,12 +109,20 @@ internal class WebViewJavaScriptBridge(
             onSecureMessagingUnsupported()
             return
         }
-        WebViewCompat.addWebMessageListener(
-            webView,
-            WebViewEnvelope.NATIVE_OBJECT_NAME,
-            setOf(origin),
-            webMessageListener,
-        )
+        try {
+            WebViewCompat.addWebMessageListener(
+                webView,
+                WebViewEnvelope.NATIVE_OBJECT_NAME,
+                setOf(origin),
+                webMessageListener,
+            )
+        } catch (error: RuntimeException) {
+            // E.g. IllegalArgumentException: the resolved origin passed our lenient Uri parsing but is
+            // rejected by the WebView provider's stricter origin-rule parser. Never crash the host app.
+            Logger.w("Paywalls V2 web_view could not install the secure message listener; falling back. $error")
+            onSecureMessagingUnsupported()
+            return
+        }
         messageListenerInstalled = true
     }
 
@@ -211,6 +220,7 @@ internal class WebViewJavaScriptBridge(
         if (!initDelivered) return
 
         channelOpen = true
+        Logger.d("Paywalls V2 web_view handshake complete, channel open (componentId='$componentId').")
         sendFitIfNeeded()
     }
 
