@@ -6,34 +6,34 @@ package com.revenuecat.purchases.rules
  * Numbers are split into [IntValue] and [FloatValue] to preserve type intent.
  * Cross-type numeric comparisons still work — see [looseEq] and [strictEq].
  */
-public sealed class Value {
+internal sealed class Value {
 
     /** JSON `null`. */
-    public object Null : Value()
+    internal object Null : Value()
 
     /**
      * JS `undefined`. Not expressible in JSON. Only produced internally by
      * operators (e.g. `{"and": []}`, `{"or": []}`, `{"log": []}`).
      */
-    public object Undefined : Value()
+    internal object Undefined : Value()
 
     /** A JSON boolean. */
-    public data class BoolValue(val value: Boolean) : Value()
+    internal data class BoolValue(val value: Boolean) : Value()
 
     /** A JSON integer-valued number. */
-    public data class IntValue(val value: Long) : Value()
+    internal data class IntValue(val value: Long) : Value()
 
     /** A JSON fractional (non-integer) number. */
-    public data class FloatValue(val value: Double) : Value()
+    internal data class FloatValue(val value: Double) : Value()
 
     /** A JSON string. */
-    public data class StringValue(val value: String) : Value()
+    internal data class StringValue(val value: String) : Value()
 
     /** A JSON array. */
-    public data class ArrayValue(val items: List<Value>) : Value()
+    internal data class ArrayValue(val items: List<Value>) : Value()
 
     /** A JSON object. */
-    public data class ObjectValue(val entries: Map<String, Value>) : Value()
+    internal data class ObjectValue(val entries: Map<String, Value>) : Value()
 
     /**
      * JSON Logic truthiness rules:

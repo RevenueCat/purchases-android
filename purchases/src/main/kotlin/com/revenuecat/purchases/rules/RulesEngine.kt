@@ -1,7 +1,7 @@
 package com.revenuecat.purchases.rules
 
 /** Namespace for the RevenueCat rules engine. */
-public object RulesEngine {
+internal object RulesEngine {
     @Volatile
     private var _logger: RulesEngineLogger = PrintLogger
 
@@ -9,7 +9,7 @@ public object RulesEngine {
         get() = _logger
 
     @Synchronized
-    public fun setLogger(logger: RulesEngineLogger) {
+    fun setLogger(logger: RulesEngineLogger) {
         _logger = logger
     }
 
@@ -20,25 +20,25 @@ public object RulesEngine {
      * for them — per the JSON Logic spec, they resolve to `null` and a warning
      * is logged instead.
      */
-    public sealed class EvaluationException(message: String) : Exception(message) {
+    internal sealed class EvaluationException(message: String) : Exception(message) {
 
         /** The predicate JSON could not be parsed. */
-        public data class Parse(val reason: String) : EvaluationException("failed to parse predicate JSON: $reason")
+        internal data class Parse(val reason: String) : EvaluationException("failed to parse predicate JSON: $reason")
 
         /**
          * An operator was given arguments of the wrong shape (e.g. wrong arity)
          * or types that cannot be reconciled.
          */
-        public data class TypeMismatch(val detail: String) : EvaluationException("type mismatch: $detail")
+        internal data class TypeMismatch(val detail: String) : EvaluationException("type mismatch: $detail")
 
         /**
          * The predicate references a JSON Logic operator the engine does not
          * implement. Carries the operator name.
          */
-        public data class UnsupportedOperator(val name: String) : EvaluationException("unsupported operator: $name")
+        internal data class UnsupportedOperator(val name: String) : EvaluationException("unsupported operator: $name")
 
         /** An unexpected error that is not one of the structured cases above. */
-        public data class Unknown(val reason: String) : EvaluationException("unknown error: $reason")
+        internal data class Unknown(val reason: String) : EvaluationException("unknown error: $reason")
     }
 
     /**
@@ -50,7 +50,7 @@ public object RulesEngine {
      *  `false` otherwise, or [Result.failure] carrying an [EvaluationException]
      *  when parsing or evaluation fails.
      */
-    public fun evaluate(
+    fun evaluate(
         predicate: String,
         variables: Map<String, Value>,
     ): Result<Boolean> = try {
