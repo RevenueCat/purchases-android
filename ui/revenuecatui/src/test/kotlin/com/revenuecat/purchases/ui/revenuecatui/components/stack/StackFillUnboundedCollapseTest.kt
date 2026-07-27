@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -130,7 +131,7 @@ class StackFillUnboundedCollapseTest {
      */
     private fun assertTwoFillSiblingsSplitEvenly(
         stackSize: Size,
-        wrapper: @androidx.compose.runtime.Composable (content: @androidx.compose.runtime.Composable () -> Unit) -> Unit,
+        wrapper: @Composable (content: @Composable () -> Unit) -> Unit,
     ) {
         val redChild = StackComponent(
             components = emptyList(),

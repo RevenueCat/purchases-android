@@ -21,7 +21,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.ProfileStore
 import androidx.webkit.WebViewCompat
@@ -37,6 +36,7 @@ import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.extensions.trackMainAxisUnbounded
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 @JvmSynthetic
@@ -89,10 +89,12 @@ internal fun WebViewComponentView(
         // A `fill` axis genuinely unbounded at measure time (e.g. an ancestor scrolls, or a `Fit`-sized
         // container sits under one that does) would otherwise collapse to zero — `fillMaxWidth/Height`
         // passes an unbounded constraint straight through, and a bare WebView has no intrinsic size to
-        // fall back on. Tracked here and fed the same content-size/placeholder fallback `fit` already
-        // uses; see the `Modifier.layout` probe below.
-        var widthAxisUnbounded by remember { mutableStateOf(false) }
-        var heightAxisUnbounded by remember { mutableStateOf(false) }
+        // fall back on. Tracked here (reusing the same probe StackComponentView uses for its main axis)
+        // and fed the same content-size/placeholder fallback `fit` already uses.
+        val widthAxisUnboundedState = remember { mutableStateOf(false) }
+        val heightAxisUnboundedState = remember { mutableStateOf(false) }
+        val widthAxisUnbounded = widthAxisUnboundedState.value
+        val heightAxisUnbounded = heightAxisUnboundedState.value
 
         val effectiveSize = remember(
             style.size,
@@ -165,16 +167,8 @@ internal fun WebViewComponentView(
                 },
                 // Clip: content can briefly overflow while a fit axis animates placeholder -> measured.
                 modifier = modifier
-                    .layout { measurable, constraints ->
-                        val newWidthUnbounded = !constraints.hasBoundedWidth
-                        val newHeightUnbounded = !constraints.hasBoundedHeight
-                        if (newWidthUnbounded != widthAxisUnbounded) widthAxisUnbounded = newWidthUnbounded
-                        if (newHeightUnbounded != heightAxisUnbounded) heightAxisUnbounded = newHeightUnbounded
-                        val placeable = measurable.measure(constraints)
-                        layout(placeable.width, placeable.height) {
-                            placeable.place(0, 0)
-                        }
-                    }
+                    .trackMainAxisUnbounded(isHorizontal = true, unboundedState = widthAxisUnboundedState)
+                    .trackMainAxisUnbounded(isHorizontal = false, unboundedState = heightAxisUnboundedState)
                     .size(effectiveSize)
                     .clipToBounds(),
             )
@@ -216,10 +210,14 @@ internal fun resolveAxis(
     placeholder: UInt,
     unbounded: Boolean,
 ): SizeConstraint =
-    when {
-        constraint is Fit -> Fixed(if (contentCssPx > 0) contentCssPx.toUInt() else constraint.default ?: placeholder)
-        constraint is Fill && unbounded -> Fixed(if (contentCssPx > 0) contentCssPx.toUInt() else placeholder)
-        else -> constraint
+    when (constraint) {
+        is Fit -> Fixed(if (contentCssPx > 0) contentCssPx.toUInt() else constraint.default ?: placeholder)
+        is Fill -> if (unbounded) {
+            Fixed(if (contentCssPx > 0) contentCssPx.toUInt() else placeholder)
+        } else {
+            constraint
+        }
+        is Fixed -> constraint
     }
 
 /** Holds the per-WebView bridge so factory and onRelease share one instance. */
