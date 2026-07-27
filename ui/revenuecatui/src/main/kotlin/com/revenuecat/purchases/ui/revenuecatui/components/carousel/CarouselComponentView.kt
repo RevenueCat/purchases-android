@@ -167,8 +167,8 @@ internal fun CarouselComponentView(
     // known, so a Fill page wraps its own (smaller) content instead of matching. Pin the Fill pages
     // to the measured height; leave the Pager unpinned so it keeps tracking the tallest page as
     // content grows (async WebView), which avoids latching to the first frame.
-    // ponytail: a SubcomposeLayout single pass would avoid this measure -> recompose reflow, but it
-    // would compose every page (WebViews included) twice -- not worth it for one settle frame.
+    // A SubcomposeLayout single pass would avoid this measure -> recompose reflow, but it would
+    // compose every page (WebViews included) twice, so it isn't worth it for one settle frame.
     val density = LocalDensity.current
     var pagerHeightPx by remember(carouselState.pages) { mutableIntStateOf(0) }
     val fillPageModifier = fillPageModifierOrEmpty(carouselState.size.height, pagerHeightPx, density)
