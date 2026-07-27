@@ -42,8 +42,7 @@ public interface PaywallListener {
 
     /**
      * Called when the user taps a web checkout CTA and the external payment URL was opened.
-     * This is distinct from cancellation: the user has not cancelled, they left the app to
-     * complete payment externally.
+     * Distinct from cancellation: the user has not cancelled, they left to pay externally.
      */
     public fun onWebCheckoutOpened() {}
 }
