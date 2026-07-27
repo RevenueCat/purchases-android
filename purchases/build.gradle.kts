@@ -220,6 +220,8 @@ dependencies {
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.playServices.ads.identifier)
     testImplementation(libs.testJUnitParams)
+    // Android stubs `org.json` in unit tests; add a real impl so ValueJson's tests exercise the parser.
+    testImplementation(libs.json)
 
     androidTestImplementation(libs.androidx.appcompat)
     androidTestImplementation(libs.androidx.lifecycle.runtime.ktx)
