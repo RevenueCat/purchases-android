@@ -546,6 +546,57 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.body.readUtf8()).contains("\"fetch_token\":\"token\"")
     }
 
+    /**
+     * A provider whose source list re-arms on every unhealthy report (same url, fresh token), like a
+     * topic rebuild or interval restart landing mid-walk, so a walk would never exhaust on its own.
+     */
+    private class ReArmingAPISourceProvider(private val url: String) : RemoteConfigSourceProvider {
+        private var token = 0
+        var unhealthyReportCount = 0
+            private set
+
+        override fun getCurrent(purpose: RemoteConfigSourceHandle.Purpose): RemoteConfigSourceHandle =
+            RemoteConfigSourceHandle(purpose, RemoteConfigSource(url = url, priority = 0, weight = 1), token)
+
+        override fun reportUnhealthy(handle: RemoteConfigSourceHandle) {
+            unhealthyReportCount++
+            token++
+        }
+
+        override fun restart(purpose: RemoteConfigSourceHandle.Purpose) {
+            token++
+        }
+
+        override fun restartIfExhausted(purpose: RemoteConfigSourceHandle.Purpose): Boolean = false
+    }
+
+    @Test
+    fun `performRequest stops after MAX_API_SOURCE_ATTEMPTS when the source list re-arms mid-walk`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        val provider = ReArmingAPISourceProvider(server.url("/").toString())
+        val client = createClient(
+            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            apiSourceProvider = provider,
+            sourceHealthChecker = unreachableHealthChecker(),
+        )
+        repeat(HTTPClient.MAX_API_SOURCE_ATTEMPTS) {
+            enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.ERROR))
+        }
+
+        val result = client.performRequest(
+            URL(AppConfig.baseUrlString),
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.ERROR)
+        assertThat(server.requestCount).isEqualTo(HTTPClient.MAX_API_SOURCE_ATTEMPTS)
+        // The last attempt hits the cap without consulting the failover, so it is never reported.
+        assertThat(provider.unhealthyReportCount).isEqualTo(HTTPClient.MAX_API_SOURCE_ATTEMPTS - 1)
+    }
+
     // endregion
 
     @Test
