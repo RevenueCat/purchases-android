@@ -163,20 +163,21 @@ internal fun CarouselComponentView(
         }
     }
 
-    // A Fit-height carousel wraps to the Pager's own resolved height, which (since
-    // beyondViewportPageCount = pageCount above forces every page to measure together) already
-    // reflects the tallest page -- but each page is measured before that resolved height is known,
-    // so a Fill-height page only gets to wrap its own (possibly much smaller) content instead of
-    // stretching to match. Capturing the resolved height and feeding it back as an explicit bound
-    // on the next frame lets a Fill page stretch to it, regardless of how the tallest sibling got
-    // there (a Fixed descendant partway down its tree, or just naturally tall content).
+    // beyondViewportPageCount = pageCount below forces every page to measure together, so the Pager
+    // resolves its own height to the tallest page -- but each page is measured before that resolved
+    // height is known, so a Fill-height page only wraps its own (possibly much smaller) content
+    // instead of stretching to match. Pin the Pager to its own measured height so on the next frame
+    // it hands that bound down to every page, letting a Fill page stretch to it regardless of how
+    // the tallest sibling got there (a Fixed descendant partway down its tree, or just naturally
+    // tall content). Measured and applied on the same node so it converges to a fixpoint rather than
+    // oscillating (measuring the outer Column instead would fold its padding/page-control back into
+    // the loop each pass and never settle).
     val density = LocalDensity.current
-    var measuredHeightPx by remember(carouselState.pages) { mutableIntStateOf(0) }
-    val stabilizedHeight = stabilizedHeightOrNull(carouselState, measuredHeightPx, density)
+    var pagerHeightPx by remember(carouselState.pages) { mutableIntStateOf(0) }
+    val pagerHeight = stabilizedHeightOrNull(carouselState, pagerHeightPx, density)
 
     Column(
         modifier = modifier
-            .applyIfNotNull(stabilizedHeight) { height(it) }
             .size(carouselState.size)
             .padding(carouselState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, carouselState.shape) }
@@ -186,8 +187,7 @@ internal fun CarouselComponentView(
                 border(it, carouselState.shape)
                     .padding(it.width)
             }
-            .padding(carouselState.padding)
-            .onGloballyPositioned { measuredHeightPx = it.size.height },
+            .padding(carouselState.padding),
     ) {
         val pageControl = @Composable {
             carouselState.pageControl?.let {
@@ -210,6 +210,9 @@ internal fun CarouselComponentView(
             beyondViewportPageCount = pageCount,
             pageSpacing = carouselState.pageSpacing,
             verticalAlignment = carouselState.pageAlignment,
+            modifier = Modifier
+                .applyIfNotNull(pagerHeight) { height(it) }
+                .onGloballyPositioned { pagerHeightPx = it.size.height },
         ) { page ->
             StackComponentView(
                 style = carouselState.pages[page % pageCount],
