@@ -24,14 +24,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -158,11 +163,20 @@ internal fun CarouselComponentView(
         }
     }
 
-    val fixedSiblingHeight = carouselState.fixedSiblingHeightOrNull()
+    // A Fit-height carousel wraps to the Pager's own resolved height, which (since
+    // beyondViewportPageCount = pageCount above forces every page to measure together) already
+    // reflects the tallest page -- but each page is measured before that resolved height is known,
+    // so a Fill-height page only gets to wrap its own (possibly much smaller) content instead of
+    // stretching to match. Capturing the resolved height and feeding it back as an explicit bound
+    // on the next frame lets a Fill page stretch to it, regardless of how the tallest sibling got
+    // there (a Fixed descendant partway down its tree, or just naturally tall content).
+    val density = LocalDensity.current
+    var measuredHeightPx by remember(carouselState.pages) { mutableIntStateOf(0) }
+    val stabilizedHeight = stabilizedHeightOrNull(carouselState, measuredHeightPx, density)
 
     Column(
         modifier = modifier
-            .applyIfNotNull(fixedSiblingHeight) { height(it) }
+            .applyIfNotNull(stabilizedHeight) { height(it) }
             .size(carouselState.size)
             .padding(carouselState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, carouselState.shape) }
@@ -172,7 +186,8 @@ internal fun CarouselComponentView(
                 border(it, carouselState.shape)
                     .padding(it.width)
             }
-            .padding(carouselState.padding),
+            .padding(carouselState.padding)
+            .onGloballyPositioned { measuredHeightPx = it.size.height },
     ) {
         val pageControl = @Composable {
             carouselState.pageControl?.let {
@@ -418,10 +433,17 @@ internal fun nextAutoAdvanceTargetPage(
 }
 
 // Only applies for a Fit-height carousel: an explicit Fixed/Fill declaration is a deliberate
-// author choice and must not be overridden by this fallback. Checked first so the page scan is
-// skipped entirely for the common Fixed/Fill case.
-private fun CarouselComponentState.fixedSiblingHeightOrNull(): Dp? =
-    if (size.height is SizeConstraint.Fit) maxFixedPageHeight else null
+// author choice and must not be overridden by this fallback.
+private fun stabilizedHeightOrNull(
+    carouselState: CarouselComponentState,
+    measuredHeightPx: Int,
+    density: Density,
+): Dp? =
+    if (carouselState.size.height is SizeConstraint.Fit && measuredHeightPx > 0) {
+        with(density) { measuredHeightPx.toDp() }
+    } else {
+        null
+    }
 
 private fun getInitialPage(carouselState: CarouselComponentState) = if (carouselState.loop) {
     // When looping, we use a very large number of pages to allow for "infinite" scrolling

@@ -119,4 +119,69 @@ class CarouselFillMatchesFixedSiblingTest {
                 height = 1,
             )
     }
+
+    @Test
+    fun `Fill page stretches to match a sibling whose height comes from a nested Fixed descendant`() {
+        // Matches a real customer paywall: the tall sibling page itself declares Fit/Fit, but wraps
+        // a Fixed(350)/Fixed(350) content stack -- there is no top-level Fixed page to read from the
+        // schema, only a real, naturally-tall measured page.
+        val fillPage = StackComponent(
+            components = listOf(
+                StackComponent(
+                    components = emptyList(),
+                    size = Size(width = Fill, height = Fill),
+                    backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+                ),
+            ),
+            size = Size(width = Fill, height = Fill),
+        )
+        val nestedFixedSiblingPage = StackComponent(
+            components = listOf(
+                StackComponent(
+                    components = emptyList(),
+                    size = Size(width = Fixed(350u), height = Fixed(350u)),
+                ),
+            ),
+            size = Size(width = Fit(), height = Fit()),
+        )
+        val carousel = CarouselComponent(
+            pages = listOf(fillPage, nestedFixedSiblingPage),
+            pageAlignment = VerticalAlignment.CENTER,
+        )
+
+        val state = FakePaywallState(components = listOf(carousel))
+        val rootStack = state.stack as StackComponentStyle
+        val carouselStyle = rootStack.children.filterIsInstance<CarouselComponentStyle>().single()
+
+        var measuredHeightPx = -1
+
+        composeTestRule.setContent {
+            Box(Modifier.fillMaxSize().height(800.dp)) {
+                Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+                    CarouselComponentView(
+                        style = carouselStyle,
+                        state = state,
+                        clickHandler = {},
+                        modifier = Modifier
+                            .testTag("carousel")
+                            .onGloballyPositioned { measuredHeightPx = it.size.height },
+                    )
+                }
+            }
+        }
+
+        composeTestRule.waitForIdle()
+
+        val expectedHeightPx = with(composeTestRule.density) { 350.dp.roundToPx() }
+        assertThat(measuredHeightPx).isEqualTo(expectedHeightPx)
+
+        composeTestRule.onNodeWithTag("carousel")
+            .assertPixelColorEquals(
+                color = Color.Blue,
+                startX = 10,
+                startY = expectedHeightPx - 10,
+                width = 1,
+                height = 1,
+            )
+    }
 }
