@@ -5,20 +5,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 
 /**
- * Tracks in [unboundedState] whether this modifier's incoming main-axis constraint is unbounded (an
- * ancestor scrolls, or a `Fit` container sits under one that does). Place it last in a Row/Column
- * chain to observe the constraint after the container's own sizing/scroll, or before a leaf's
- * `.size()` to observe the raw incoming one.
+ * Tracks in [unboundedState] whether this modifier's main-axis constraint leaves `weight` no space to
+ * distribute. Place it last in a Row/Column chain to observe the constraint after the container's own
+ * sizing/scroll, or before a leaf's `.size()` to observe the raw incoming one.
  *
- * A `weight`-ed child under an unbounded main axis collapses to zero (Compose's weight distribution
- * falls back to the axis minimum), so callers skip `weight` in that case and let the child take its
- * natural size instead.
+ * That means max == Infinity *and* min == 0: Compose distributes `mainAxisMax`, or `mainAxisMin` when
+ * max is Infinity (see RowColumnMeasurePolicy), so weight only collapses a child to zero when both
+ * are gone. A scroll that keeps a non-zero min (the default root paywall scroll does) still leaves
+ * weight working and must not count here. Callers skip `weight` when this is true, letting the child
+ * take its natural size instead of collapsing.
  */
 internal fun Modifier.trackMainAxisUnbounded(
     isHorizontal: Boolean,
     unboundedState: MutableState<Boolean>,
 ): Modifier = this.layout { measurable, constraints ->
-    unboundedState.value = if (isHorizontal) !constraints.hasBoundedWidth else !constraints.hasBoundedHeight
+    unboundedState.value = if (isHorizontal) {
+        !constraints.hasBoundedWidth && constraints.minWidth == 0
+    } else {
+        !constraints.hasBoundedHeight && constraints.minHeight == 0
+    }
     val placeable = measurable.measure(constraints)
     layout(placeable.width, placeable.height) {
         placeable.place(0, 0)
