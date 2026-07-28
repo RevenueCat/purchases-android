@@ -29,13 +29,13 @@ internal class PackagePeriodExtensionsTest {
     }
 
     @Test
-    fun `isLifetime is true for a non-subscription product in a custom-identifier package`() {
+    fun `isLifetime is false for a non-subscription product in a custom-identifier package`() {
         val pkg = lifetimePackage(
             packageType = PackageType.CUSTOM,
             identifier = "custom_lifetime_tier_1",
         )
 
-        assertThat(pkg.isLifetime).isTrue()
+        assertThat(pkg.isLifetime).isFalse()
     }
 
     @Test
@@ -44,10 +44,35 @@ internal class PackagePeriodExtensionsTest {
     }
 
     @Test
-    fun `productPeriodAbbreviated returns the lifetime string for a custom-identifier lifetime package`() {
+    fun `hasNoBillingPeriod is true for a non-subscription product in a custom-identifier package`() {
         val pkg = lifetimePackage(
             packageType = PackageType.CUSTOM,
             identifier = "custom_lifetime_tier_1",
+        )
+
+        assertThat(pkg.hasNoBillingPeriod).isTrue()
+    }
+
+    @Test
+    fun `hasNoBillingPeriod is false for a subscription product`() {
+        assertThat(monthlyPackage().hasNoBillingPeriod).isFalse()
+    }
+
+    @Test
+    fun `productPeriodAbbreviated returns null for a custom-identifier lifetime package`() {
+        val pkg = lifetimePackage(
+            packageType = PackageType.CUSTOM,
+            identifier = "custom_lifetime_tier_1",
+        )
+
+        assertThat(pkg.productPeriodAbbreviated(localizedVariableKeys)).isNull()
+    }
+
+    @Test
+    fun `productPeriodAbbreviated returns the lifetime string for the predefined lifetime package`() {
+        val pkg = lifetimePackage(
+            packageType = PackageType.LIFETIME,
+            identifier = PackageType.LIFETIME.identifier!!,
         )
 
         assertThat(pkg.productPeriodAbbreviated(localizedVariableKeys)).isEqualTo("Lifetime")
