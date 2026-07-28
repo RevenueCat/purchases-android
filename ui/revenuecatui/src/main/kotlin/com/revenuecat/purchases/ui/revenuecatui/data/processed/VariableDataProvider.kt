@@ -133,20 +133,19 @@ internal class VariableDataProvider(
     }
 
     fun periodName(rcPackage: Package): String? {
-        if (rcPackage.packageType == PackageType.CUSTOM ||
-            rcPackage.packageType == PackageType.UNKNOWN
-        ) {
-            return rcPackage.identifier
-        }
-        val stringId = when (rcPackage.packageType) {
-            PackageType.LIFETIME -> R.string.lifetime
-            PackageType.ANNUAL -> R.string.annual
-            PackageType.SIX_MONTH -> R.string.semester
-            PackageType.THREE_MONTH -> R.string.quarter
-            PackageType.TWO_MONTH -> R.string.bimonthly
-            PackageType.MONTHLY -> R.string.monthly
-            PackageType.WEEKLY -> R.string.weekly
-            PackageType.UNKNOWN, PackageType.CUSTOM -> null
+        val stringId = when {
+            rcPackage.isLifetime -> R.string.lifetime
+            rcPackage.packageType == PackageType.CUSTOM ||
+                rcPackage.packageType == PackageType.UNKNOWN -> return rcPackage.identifier
+            else -> when (rcPackage.packageType) {
+                PackageType.ANNUAL -> R.string.annual
+                PackageType.SIX_MONTH -> R.string.semester
+                PackageType.THREE_MONTH -> R.string.quarter
+                PackageType.TWO_MONTH -> R.string.bimonthly
+                PackageType.MONTHLY -> R.string.monthly
+                PackageType.WEEKLY -> R.string.weekly
+                PackageType.LIFETIME, PackageType.UNKNOWN, PackageType.CUSTOM -> null
+            }
         }
         return stringId?.let { resourceProvider.getString(it) }
     }
