@@ -1,7 +1,8 @@
 # Opens the workflow paywall (offering `default_workflows`) with a Spanish locale and asserts the
 # workflow renders its Spanish localizations (from /v1/config) on the first and second steps,
 # including the CTA. The app_locale launch argument is read in E2ETestsApplication and applied via
-# Locale.setDefault before configure, so the SDK requests Spanish localizations.
+# Purchases.overridePreferredUILocale, which takes priority over the device locales when the paywall
+# resolves a localization.
 #
 # Run locally against the test store:
 #   maestro test -e MAESTRO_STORE=test_store maestro/workflows/workflow_localized_spanish.yaml

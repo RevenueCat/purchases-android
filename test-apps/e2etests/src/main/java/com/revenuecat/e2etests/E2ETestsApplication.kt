@@ -6,7 +6,6 @@ import android.os.Bundle
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
-import java.util.Locale
 
 class E2ETestsApplication : Application() {
 
@@ -16,9 +15,9 @@ class E2ETestsApplication : Application() {
 
         // The workflow E2E flows are built with E2E_WORKFLOWS_API_KEY set (surfaced as
         // BuildConfig.WORKFLOWS_API_KEY). When it's present we defer configuration until the first Activity
-        // is created, so Maestro launch arguments can select the app locale and initial debug-only failure
-        // strategy. The default build configures eagerly, keeping the CI test_store_annual_purchase flow
-        // untouched.
+        // is created, so Maestro launch arguments can select the initial debug-only failure strategy and apply
+        // the app locale right after configure. The default build configures eagerly, keeping the CI
+        // test_store_annual_purchase flow untouched.
         if (BuildConfig.WORKFLOWS_API_KEY != WORKFLOWS_API_KEY_PLACEHOLDER) {
             registerActivityLifecycleCallbacks(ConfigureOnFirstActivity())
         } else {
@@ -31,9 +30,6 @@ class E2ETestsApplication : Application() {
     private inner class ConfigureOnFirstActivity : ActivityLifecycleCallbacksAdapter() {
         override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
             if (!Purchases.isConfigured) {
-                activity.intent?.getStringExtra(APP_LOCALE_EXTRA_KEY)?.let { tag ->
-                    Locale.setDefault(Locale.forLanguageTag(tag))
-                }
                 configurePurchases(
                     PurchasesConfiguration.Builder(
                         context = this@E2ETestsApplication,
@@ -41,6 +37,13 @@ class E2ETestsApplication : Application() {
                     ).build(),
                     initialForceServerErrorStrategy = activity.intent?.getStringExtra(FORCE_SERVER_ERROR_EXTRA_KEY),
                 )
+                // The paywall resolves its localization from the Activity's Configuration.locales, which
+                // Locale.setDefault does not change. overridePreferredUILocale takes priority over the
+                // device locales every time the paywall resolves a localization, so it survives the
+                // Configuration-driven state updates the workflow paywall performs on each composition.
+                activity.intent?.getStringExtra(APP_LOCALE_EXTRA_KEY)?.let { tag ->
+                    Purchases.sharedInstance.overridePreferredUILocale(tag)
+                }
             }
             unregisterActivityLifecycleCallbacks(this)
         }
