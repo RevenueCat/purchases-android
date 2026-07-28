@@ -659,33 +659,28 @@ private fun MainStackComponent(
                 }
 
                 is Dimension.Vertical -> {
-                    // See the Horizontal branch above for why this exists.
-                    val hasFillHeightChild = stackState.children.any { it.size.height == Fill }
-                    val mainAxisUnbounded = remember { mutableStateOf(false) }
-                    VerticalStack(
-                        size = stackState.size,
-                        dimension = dimension,
-                        spacing = stackState.spacing,
-                        modifier = outerModifier
-                            .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
-                            .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
-                                scrollable(state, orientation)
-                            }
-                            .then(rootModifier)
-                            .conditional(hasFillHeightChild) {
-                                trackMainAxisUnbounded(isHorizontal = false, unboundedState = mainAxisUnbounded)
-                            },
-                    ) {
-                        items(stackState.children) { index, child ->
+                    // Fill-height children on a web view chain need their share of the space as a floor
+                    // rather than a weight: web content taller than the share must be able to push this
+                    // stack — and the scroll around it — past its minimum. GrowableVerticalStack hands
+                    // out floors; all other stacks keep the Column + weight path below.
+                    if (stackState.children.any { it.growsToWebViewContentHeight }) {
+                        GrowableVerticalStack(
+                            children = stackState.children,
+                            dimension = dimension,
+                            spacing = stackState.spacing,
+                            modifier = outerModifier
+                                .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
+                                .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                                    scrollable(state, orientation)
+                                }
+                                .then(rootModifier),
+                        ) { index, child, itemModifier ->
                             ComponentView(
                                 style = child,
                                 state = state,
                                 onClick = clickHandler,
                                 componentInteractionTracker = componentInteractionTracker,
-                                modifier = Modifier
-                                    .conditional(child.size.height == Fill && !mainAxisUnbounded.value) {
-                                        Modifier.weight(1f)
-                                    }
+                                modifier = itemModifier
                                     .conditional(
                                         // In a Vertical container, we only want to apply topSystemBarsPadding to the
                                         // first child, except when that child has `ignoreTopWindowInsets` set to true.
@@ -697,6 +692,48 @@ private fun MainStackComponent(
                                     }
                                     .alpha(contentAlpha),
                             )
+                        }
+                    } else {
+                        // See the Horizontal branch above for why this exists.
+                        val hasFillHeightChild = stackState.children.any { it.size.height == Fill }
+                        val mainAxisUnbounded = remember { mutableStateOf(false) }
+                        VerticalStack(
+                            size = stackState.size,
+                            dimension = dimension,
+                            spacing = stackState.spacing,
+                            modifier = outerModifier
+                                .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
+                                .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
+                                    scrollable(state, orientation)
+                                }
+                                .then(rootModifier)
+                                .conditional(hasFillHeightChild) {
+                                    trackMainAxisUnbounded(isHorizontal = false, unboundedState = mainAxisUnbounded)
+                                },
+                        ) {
+                            items(stackState.children) { index, child ->
+                                ComponentView(
+                                    style = child,
+                                    state = state,
+                                    onClick = clickHandler,
+                                    componentInteractionTracker = componentInteractionTracker,
+                                    modifier = Modifier
+                                        .conditional(child.size.height == Fill && !mainAxisUnbounded.value) {
+                                            Modifier.weight(1f)
+                                        }
+                                        .conditional(
+                                            // In a Vertical container, we only want to apply topSystemBarsPadding to
+                                            // the first child, except when that child has `ignoreTopWindowInsets` set
+                                            // to true.
+                                            stackState.applyTopWindowInsets &&
+                                                index == 0 &&
+                                                !child.shouldIgnoreTopWindowInsets,
+                                        ) {
+                                            windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
+                                        }
+                                        .alpha(contentAlpha),
+                                )
+                            }
                         }
                     }
                 }
@@ -975,6 +1012,24 @@ internal val FlexDistribution.usesAllAvailableSpace: Boolean
         FlexDistribution.END,
         FlexDistribution.CENTER,
         -> false
+    }
+
+/**
+ * Whether this component, given an unbounded height constraint, grows to the height of web content:
+ * a fill-height web view, or a fill-height stack that (recursively) contains one. Fill height passes
+ * an unbounded height constraint through, so the whole chain sizes to the web content. Stacks with
+ * such a child use [GrowableVerticalStack], which hands fill children their share of the space as a
+ * minimum instead of a `weight` — weight would measure them at an exact bounded size, leaving web
+ * content taller than the viewport nowhere to grow and the outer scroll nothing to scroll. A stack
+ * that scrolls vertically itself terminates the chain: it handles its own overflow and should keep
+ * filling the viewport.
+ */
+internal val ComponentStyle.growsToWebViewContentHeight: Boolean
+    get() = size.height == Fill && when (this) {
+        is WebViewComponentStyle -> true
+        is StackComponentStyle ->
+            scrollOrientation != Orientation.Vertical && children.any { it.growsToWebViewContentHeight }
+        else -> false
     }
 
 private val ComponentStyle.shouldIgnoreTopWindowInsets: Boolean

@@ -1,4 +1,5 @@
 @file:JvmSynthetic
+@file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
@@ -21,6 +22,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.ProfileStore
 import androidx.webkit.WebViewCompat
@@ -39,6 +42,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.trackMainAxisUnbounded
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import kotlin.math.max
 
 @JvmSynthetic
 @Composable
@@ -69,7 +73,7 @@ internal fun WebViewComponentView(
     // workflow-web-components-sdk requires a host-assigned component id for the handshake.
     if (componentId.isBlank()) return
     val sizeToContentWidth = style.size.width is Fit
-    val sizeToContentHeight = style.size.height is Fit
+    val sizeToContentHeight = shouldReportContentHeight(style.size.height)
 
     val identity = WebViewIdentity(
         resolvedUrl = resolvedUrl,
@@ -176,6 +180,9 @@ internal fun WebViewComponentView(
                         trackMainAxisUnbounded(isHorizontal = false, unboundedState = heightAxisUnboundedState)
                     }
                     .size(effectiveSize)
+                    .conditional(style.size.height is Fill) {
+                        webViewFillHeight(contentHeightCssPx)
+                    }
                     .clipToBounds(),
             )
         }
@@ -189,6 +196,32 @@ internal fun WebViewComponentView(
  */
 internal const val FIT_PLACEHOLDER_HEIGHT: UInt = 100u
 internal const val FIT_PLACEHOLDER_WIDTH: UInt = 300u
+
+internal fun shouldReportContentHeight(height: SizeConstraint): Boolean =
+    height is Fit || height is Fill
+
+/**
+ * Leaves bounded height measurement unchanged. With an unbounded maximum, uses the incoming minimum
+ * as the fill floor and grows to reported content; CSS values follow the density-aware dp convention
+ * used by fixed WebView sizes.
+ */
+internal fun Modifier.webViewFillHeight(contentHeightCssPx: Int): Modifier =
+    layout { measurable, constraints ->
+        val childConstraints = if (constraints.hasBoundedHeight) {
+            constraints
+        } else {
+            val contentHeightPx = contentHeightCssPx.dp.roundToPx()
+            val targetHeight = max(constraints.minHeight, contentHeightPx)
+            constraints.copy(
+                minHeight = targetHeight,
+                maxHeight = targetHeight,
+            )
+        }
+        val placeable = measurable.measure(childConstraints)
+        layout(placeable.width, placeable.height) {
+            placeable.place(0, 0)
+        }
+    }
 
 internal fun webViewEffectiveSize(
     declaredSize: Size,
