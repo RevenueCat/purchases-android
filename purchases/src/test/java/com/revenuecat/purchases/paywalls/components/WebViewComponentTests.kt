@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.utils.filter
@@ -301,5 +302,51 @@ class WebViewComponentTests {
         val matches = webView.filter { it is WebViewComponent }
 
         assertThat(matches).containsExactly(webView)
+    }
+
+    @Test
+    fun `decodes with no overrides by default`() {
+        val actual = JsonTools.json.decodeFromString<PaywallComponent>(fullJson) as WebViewComponent
+
+        assertThat(actual.overrides).isEmpty()
+    }
+
+    @Test
+    fun `decodes a rule-based visibility override, matching the dashboard-published shape`() {
+        // Regression test: a dashboard rule that shows/hides a web_view previously failed SDK
+        // decoding entirely with `extra_forbidden` on `...web_view.overrides` (PWENG-152).
+        @Language("json")
+        val json = """
+            {
+              "type": "web_view",
+              "id": "promo_web_view",
+              "protocol_version": 1,
+              "url": "https://paywalls.revenuecat.com/index.html",
+              "size": { "width": { "type": "fill" }, "height": { "type": "fit" } },
+              "overrides": [
+                {
+                  "conditions": [{ "type": "selected" }],
+                  "properties": { "visible": false }
+                },
+                {
+                  "conditions": [{ "type": "expanded" }],
+                  "properties": { "visible": true }
+                }
+              ]
+            }
+            """
+
+        val actual = JsonTools.json.decodeFromString<PaywallComponent>(json) as WebViewComponent
+
+        assertThat(actual.overrides).containsExactly(
+            ComponentOverride(
+                conditions = listOf(ComponentOverride.Condition.Selected),
+                properties = PartialWebViewComponent(visible = false),
+            ),
+            ComponentOverride(
+                conditions = listOf(ComponentOverride.Condition.Expanded),
+                properties = PartialWebViewComponent(visible = true),
+            ),
+        )
     }
 }

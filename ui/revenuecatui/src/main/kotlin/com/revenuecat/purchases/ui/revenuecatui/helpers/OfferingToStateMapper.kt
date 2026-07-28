@@ -524,7 +524,7 @@ internal fun PaywallComponent.containsUnsupportedCondition(): Boolean = when (th
     is TabControlToggleComponent -> false
     is TabControlComponent -> false
     is FallbackHeaderComponent -> false
-    is WebViewComponent -> false
+    is WebViewComponent -> overrides.hasUnsupportedCondition()
 }
 
 @JvmSynthetic

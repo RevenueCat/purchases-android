@@ -48,6 +48,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTabsPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelineItemPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelinePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedVideoPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedWebViewPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.imageForAllLocales
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.stringForAllLocales
@@ -576,15 +577,23 @@ internal class StyleFactory(
     private fun StyleFactoryScope.createWebViewComponentStyle(
         component: WebViewComponent,
     ): Result<WebViewComponentStyle, NonEmptyList<PaywallValidationError>> =
-        Result.Success(
-            WebViewComponentStyle(
-                url = component.url,
-                visible = component.visible ?: DEFAULT_VISIBILITY,
-                size = component.size,
-                componentId = component.id,
-                ignoreTopWindowInsets = ignoreTopWindowInsets,
-            ),
-        )
+        component.overrides
+            .toPresentedOverrides(stripRules) { partial -> Result.Success(PresentedWebViewPartial(partial)) }
+            .mapError { nonEmptyListOf(it) }
+            .map { presentedOverrides ->
+                WebViewComponentStyle(
+                    url = component.url,
+                    visible = component.visible ?: DEFAULT_VISIBILITY,
+                    size = component.size,
+                    componentId = component.id,
+                    overrides = presentedOverrides,
+                    rcPackage = rcPackage,
+                    resolvedOffer = resolvedOffer,
+                    tabIndex = tabControlIndex,
+                    offerEligibility = offerEligibility,
+                    ignoreTopWindowInsets = ignoreTopWindowInsets,
+                )
+            }
 
     private fun StyleFactoryScope.createCountdownComponentStyle(
         component: CountdownComponent,
