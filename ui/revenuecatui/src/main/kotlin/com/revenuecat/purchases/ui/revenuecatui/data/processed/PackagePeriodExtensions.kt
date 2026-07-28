@@ -7,7 +7,7 @@ import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationK
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 internal val Package.isLifetime: Boolean
-    get() = packageType == PackageType.LIFETIME
+    get() = packageType == PackageType.LIFETIME || product.period == null
 
 internal val Package.periodUnitLocalizationKey: VariableLocalizationKey?
     get() = if (isLifetime) VariableLocalizationKey.LIFETIME else product.period?.periodUnitLocalizationKey
