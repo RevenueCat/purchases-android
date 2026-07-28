@@ -661,7 +661,13 @@ private fun MainStackComponent(
                 is Dimension.Vertical -> {
                     // See the Horizontal branch above for why this exists.
                     val hasFillHeightChild = stackState.children.any { it.size.height == Fill }
+                    // web component views that are set to fill height need to be able to push the bounds
+                    // of the containing stack. If they cannot, we don't get the scrollability that is expected.
+                    val hasFillHeightWebViewChild = stackState.children.any {
+                        it is WebViewComponentStyle && it.size.height == Fill
+                    }
                     val mainAxisUnbounded = remember { mutableStateOf(false) }
+                    val webViewHeightAxisUnbounded = remember { mutableStateOf(false) }
                     VerticalStack(
                         size = stackState.size,
                         dimension = dimension,
@@ -674,6 +680,13 @@ private fun MainStackComponent(
                             .then(rootModifier)
                             .conditional(hasFillHeightChild) {
                                 trackMainAxisUnbounded(isHorizontal = false, unboundedState = mainAxisUnbounded)
+                            }
+                            .conditional(hasFillHeightWebViewChild) {
+                                trackMainAxisUnbounded(
+                                    isHorizontal = false,
+                                    unboundedState = webViewHeightAxisUnbounded,
+                                    includeNonZeroMinimum = true,
+                                )
                             },
                     ) {
                         items(stackState.children) { index, child ->
@@ -683,7 +696,11 @@ private fun MainStackComponent(
                                 onClick = clickHandler,
                                 componentInteractionTracker = componentInteractionTracker,
                                 modifier = Modifier
-                                    .conditional(child.size.height == Fill && !mainAxisUnbounded.value) {
+                                    .conditional(
+                                        child.size.height == Fill &&
+                                            !mainAxisUnbounded.value &&
+                                            !(child is WebViewComponentStyle && webViewHeightAxisUnbounded.value),
+                                    ) {
                                         Modifier.weight(1f)
                                     }
                                     .conditional(
