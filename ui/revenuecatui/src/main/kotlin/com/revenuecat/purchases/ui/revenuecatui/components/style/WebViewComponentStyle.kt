@@ -12,4 +12,5 @@ internal data class WebViewComponentStyle(
     override val size: Size,
     /** Schema `web_view.id`, sent to the content during the handshake. A blank id renders nothing. */
     val componentId: String,
+    val ignoreTopWindowInsets: Boolean = false,
 ) : ComponentStyle

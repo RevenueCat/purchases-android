@@ -95,6 +95,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.applyIfNotNull
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
@@ -954,6 +955,7 @@ private val ComponentStyle.shouldIgnoreTopWindowInsets: Boolean
     get() = when (this) {
         is ImageComponentStyle -> ignoreTopWindowInsets
         is VideoComponentStyle -> ignoreTopWindowInsets
+        is WebViewComponentStyle -> ignoreTopWindowInsets
         else -> false
     }
 
