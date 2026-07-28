@@ -188,7 +188,8 @@ internal class StyleFactory(
             var topWindowInsetsApplied = false
 
             /**
-             * Whether the first visual component in the tree is a full-width image or video (a "hero image").
+             * Whether the first visual component in the tree is a full-width image, video or web_view (a
+             * "hero image").
              * This is tracked separately from [topWindowInsetsApplied] because a hero image can appear
              * outside a ZLayer (e.g. directly in a Vertical stack), in which case it doesn't affect
              * top window insets application but still needs to be detected for header padding logic.
@@ -201,9 +202,9 @@ internal class StyleFactory(
             private var stillLookingForHeaderMedia = true
 
             /**
-             * This will be called for every component in the tree, and will determine whether we have a header image
-             * or video that needs special top-window-insets treatment. A header image is found if the first
-             * non-container component is an image component with a Fill width and a ZLayer parent stack.
+             * This will be called for every component in the tree, and will determine whether we have header media
+             * that needs special top-window-insets treatment. Header media is found if the first non-container
+             * component is an image, video or web_view component with a Fill width and a ZLayer parent stack.
              */
             fun handleHeaderMediaViewWindowInsets(component: PaywallComponent) {
                 when (component) {
@@ -222,18 +223,14 @@ internal class StyleFactory(
                         }
                     }
 
-                    is ImageComponent -> {
+                    is ImageComponent,
+                    is VideoComponent,
+                    is WebViewComponent,
+                    -> {
                         if (stillLookingForHeaderMedia) {
-                            ignoreTopWindowInsets = component.isHeaderImage
-                            heroImageDetected = component.isHeaderImage
-                        }
-                        stillLookingForHeaderMedia = false
-                    }
-
-                    is VideoComponent -> {
-                        if (stillLookingForHeaderMedia) {
-                            ignoreTopWindowInsets = component.isHeaderVideo
-                            heroImageDetected = component.isHeaderVideo
+                            val isHero = component.isHeaderMedia
+                            ignoreTopWindowInsets = isHero
+                            heroImageDetected = isHero
                         }
                         stillLookingForHeaderMedia = false
                     }
@@ -244,25 +241,20 @@ internal class StyleFactory(
             }
 
             private val PaywallComponent.isHeaderMedia: Boolean
-                get() = isHeaderImage || isHeaderVideo
+                get() = when (this) {
+                    is ImageComponent -> size.width.isFill
+                    is VideoComponent -> size.width.isFill
+                    is WebViewComponent -> size.width.isFill
+                    else -> false
+                }
 
-            private val PaywallComponent.isHeaderImage: Boolean
-                get() = this is ImageComponent &&
-                    when (size.width) {
-                        is SizeConstraint.Fill -> true
-                        is SizeConstraint.Fit,
-                        is SizeConstraint.Fixed,
-                        -> false
-                    }
-
-            private val PaywallComponent.isHeaderVideo: Boolean
-                get() = this is VideoComponent &&
-                    when (size.width) {
-                        is SizeConstraint.Fill -> true
-                        is SizeConstraint.Fit,
-                        is SizeConstraint.Fixed,
-                        -> false
-                    }
+            private val SizeConstraint.isFill: Boolean
+                get() = when (this) {
+                    is SizeConstraint.Fill -> true
+                    is SizeConstraint.Fit,
+                    is SizeConstraint.Fixed,
+                    -> false
+                }
         }
 
         val windowInsetsState = WindowInsetsState()
@@ -590,6 +582,7 @@ internal class StyleFactory(
                 visible = component.visible ?: DEFAULT_VISIBILITY,
                 size = component.size,
                 componentId = component.id,
+                ignoreTopWindowInsets = ignoreTopWindowInsets,
             ),
         )
 

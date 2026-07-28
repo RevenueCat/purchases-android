@@ -18,6 +18,7 @@ import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import kotlinx.serialization.SerializationException
@@ -947,6 +948,59 @@ class PaywallComponentDataValidationTests {
                                         height = 100u,
                                     ),
                                 )
+                            ),
+                            TestData.Components.monthlyPackageComponent,
+                        )
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    header = HeaderComponent(stack = StackComponent(components = emptyList())),
+                ),
+            ),
+            componentsLocalizations = mapOf(
+                defaultLocale to mapOf(LocalizationKey("key1") to LocalizationData.Text("value1")),
+            ),
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+
+        // Act
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+        // Assert
+        assertTrue(validated is PaywallValidationResult.Components)
+        assertNull(validated.errors)
+        val result = validated as PaywallValidationResult.Components
+        assertTrue(result.mainStackHasHeroImage)
+        assertNotNull(result.header)
+    }
+
+    @Test
+    fun `Should set mainStackHasHeroImage when header and full-width web_view coexist`() {
+        // Arrange - web_view directly in the root Vertical stack, not wrapped in a ZLayer
+        val defaultLocale = LocaleId("en_US")
+        val data = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        dimension = Dimension.Vertical(HorizontalAlignment.CENTER, START),
+                        components = listOf(
+                            WebViewComponent(
+                                url = "https://bundle-hash.components.revenuecat-static.com/index.html",
+                                id = "hero_web_view",
+                                protocolVersion = 1,
+                                size = Size(
+                                    width = SizeConstraint.Fill,
+                                    height = SizeConstraint.Fit(default = 400u),
+                                ),
                             ),
                             TestData.Components.monthlyPackageComponent,
                         )
