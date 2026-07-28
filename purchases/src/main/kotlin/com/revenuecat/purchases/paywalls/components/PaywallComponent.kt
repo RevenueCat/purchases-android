@@ -65,15 +65,17 @@ internal class PaywallComponentSerializer : KSerializer<PaywallComponent> {
         }
     }
 
-    // Gate on the raw protocol_version BEFORE decoding so an absent, malformed, or unsupported
-    // (forward-incompatible) version falls back like an unrecognized component instead of failing to
-    // decode the whole paywall. The backend also guarantees protocol_version == 1 at publish time; this
-    // is client-side defense in depth.
+    // Gate on the raw protocol_version before decoding, so an unsupported (forward-incompatible) version falls
+    // back without this SDK understanding that protocol's other fields. A missing or malformed version is a bad
+    // response rather than a newer protocol, so it fails the decode like an invalid v1 body would.
     private fun decodeWebViewOrFallback(
         jsonDecoder: JsonDecoder,
         json: JsonObject,
     ): PaywallComponent {
-        val declaredVersion = (json["protocol_version"] as? JsonPrimitive)?.intOrNull
+        val rawVersion = json["protocol_version"]
+        // intOrNull parses digits regardless of quoting, so exclude string primitives first.
+        val declaredVersion = (rawVersion as? JsonPrimitive)?.takeUnless { it.isString }?.intOrNull
+            ?: throw SerializationException("web_view protocol_version is missing or malformed: $rawVersion")
         return if (declaredVersion == WebViewComponent.SUPPORTED_PROTOCOL_VERSION) {
             jsonDecoder.json.decodeFromJsonElement<WebViewComponent>(json)
         } else {

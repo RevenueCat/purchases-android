@@ -145,14 +145,29 @@ class WebViewComponentTests {
     }
 
     @Test
-    fun `missing protocol_version renders the fallback component`() {
-        // protocol_version is required; an absent version is treated like an unsupported one and
-        // routes to the author's fallback rather than decoding as a web view.
-        @Language("json")
+    fun `missing protocol_version throws even with a fallback`() {
+        assertMalformedVersionThrows(protocolVersionField = "")
+    }
+
+    @Test
+    fun `quoted protocol_version throws instead of being coerced`() {
+        // intOrNull parses digits regardless of quoting, so a quoted "1" must not slip past the gate.
+        assertMalformedVersionThrows(""""protocol_version": "1",""")
+    }
+
+    @Test
+    fun `non-numeric protocol_version throws even with a fallback`() {
+        assertMalformedVersionThrows(""""protocol_version": true,""")
+    }
+
+    // A malformed version is a bad response rather than a newer protocol, so it fails the whole decode
+    // (default paywall) instead of rendering the author's fallback.
+    private fun assertMalformedVersionThrows(protocolVersionField: String) {
         val json = """
             {
               "type": "web_view",
               "id": "promo_web_view",
+              $protocolVersionField
               "url": "https://paywalls.revenuecat.com/index.html",
               "fallback": {
                 "type": "stack",
@@ -162,10 +177,23 @@ class WebViewComponentTests {
             }
             """
 
-        val actual = JsonTools.json.decodeFromString<PaywallComponent>(json)
+        assertThatThrownBy { JsonTools.json.decodeFromString<PaywallComponent>(json) }
+            .isInstanceOf(SerializationException::class.java)
+    }
 
-        assertThat(actual).isInstanceOf(StackComponent::class.java)
-        assertThat((actual as StackComponent).name).isEqualTo("web_view_fallback")
+    @Test
+    fun `supported protocol_version with another required field missing still throws`() {
+        @Language("json")
+        val json = """
+            {
+              "type": "web_view",
+              "protocol_version": 1,
+              "url": "https://paywalls.revenuecat.com/index.html"
+            }
+            """
+
+        assertThatThrownBy { JsonTools.json.decodeFromString<PaywallComponent>(json) }
+            .isInstanceOf(SerializationException::class.java)
     }
 
     @Test
