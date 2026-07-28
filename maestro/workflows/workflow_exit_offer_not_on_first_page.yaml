@@ -3,8 +3,9 @@
 # PaywallActivityLauncher (the exit-offer-aware Activity path). The close control is an unlabeled
 # icon tapped by coordinate (top-left).
 #
-# NOTE: the close-icon coordinate below is from the workflow paywall's top-left close control
-# ([0,0][168,300] observed on a Pixel 6a). Re-confirm on the target device/emulator if it fails.
+# NOTE: the first page's close control is horizontally centered, unlike the inner pages' top-left
+# one ([544,288][736,480] on a 1280x2856 emulator). It carries no text or accessibility label, so it
+# can only be tapped by coordinate. Re-confirm on the target device/emulator if it fails.
 #
 # Run locally against the test store:
 #   maestro test -e MAESTRO_STORE=test_store maestro/workflows/workflow_exit_offer_not_on_first_page.yaml
@@ -24,8 +25,8 @@ env:
 - extendedWaitUntil:
     visible: "Start Your Free Week And Reclaim 30+ Minutes Daily"
     timeout: 15000
-# Close the first page (unlabeled close icon, top-left).
-- tapOn: { point: "8%,6%" }
+# Close the first page (unlabeled close icon, horizontally centered).
+- tapOn: { point: "50%,13%" }
 - waitForAnimationToEnd: { timeout: 8000 }
 # Dismissed back to the launcher; the exit offer is NOT presented.
 - assertVisible: "Present Paywall"

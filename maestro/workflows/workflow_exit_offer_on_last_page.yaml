@@ -3,8 +3,8 @@
 # exit-offer-aware Activity path; the embedded Paywall composable does not surface exit offers).
 # The close control is an unlabeled icon tapped by coordinate (top-left).
 #
-# NOTE: the close-icon coordinate below is from the workflow paywall's top-left close control
-# ([0,0][168,300] observed on a Pixel 6a). Re-confirm on the target device/emulator if it fails.
+# NOTE: the inner pages' close control sits top-left ([0,0][192,348] on a 1280x2856 emulator), unlike
+# the first page's centered one. Re-confirm on the target device/emulator if it fails.
 #
 # Run locally against the test store:
 #   maestro test -e MAESTRO_STORE=test_store maestro/workflows/workflow_exit_offer_on_last_page.yaml
