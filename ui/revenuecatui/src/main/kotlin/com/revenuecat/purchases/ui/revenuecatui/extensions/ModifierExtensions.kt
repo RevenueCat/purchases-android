@@ -9,20 +9,20 @@ import androidx.compose.ui.layout.layout
  * distribute. Place it last in a Row/Column chain to observe the constraint after the container's own
  * sizing/scroll, or before a leaf's `.size()` to observe the raw incoming one.
  *
- * That means max == Infinity *and* min == 0: Compose distributes `mainAxisMax`, or `mainAxisMin` when
- * max is Infinity (see RowColumnMeasurePolicy), so weight only collapses a child to zero when both
- * are gone. A scroll that keeps a non-zero min (the default root paywall scroll does) still leaves
- * weight working and must not count here. Callers skip `weight` when this is true, letting the child
- * take its natural size instead of collapsing.
+ * By default that means max == Infinity *and* min == 0: Compose distributes `mainAxisMax`, or
+ * `mainAxisMin` when max is Infinity (see RowColumnMeasurePolicy), so weight only collapses a child
+ * to zero when both are gone. Set [includeNonZeroMinimum] when content also needs to grow beyond a
+ * finite minimum under an infinite maximum.
  */
 internal fun Modifier.trackMainAxisUnbounded(
     isHorizontal: Boolean,
     unboundedState: MutableState<Boolean>,
+    includeNonZeroMinimum: Boolean = false,
 ): Modifier = this.layout { measurable, constraints ->
     unboundedState.value = if (isHorizontal) {
-        !constraints.hasBoundedWidth && constraints.minWidth == 0
+        !constraints.hasBoundedWidth && (includeNonZeroMinimum || constraints.minWidth == 0)
     } else {
-        !constraints.hasBoundedHeight && constraints.minHeight == 0
+        !constraints.hasBoundedHeight && (includeNonZeroMinimum || constraints.minHeight == 0)
     }
     val placeable = measurable.measure(constraints)
     layout(placeable.width, placeable.height) {
