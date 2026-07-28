@@ -9,6 +9,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.intOrNull
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.hours
 
 /** A remote config source: a URL plus the metadata used to order sources. */
 internal data class RemoteConfigSource(
@@ -81,7 +82,7 @@ internal interface RemoteConfigSourceProvider {
  * sources have no embedded default: they are only useful alongside a fetched config, which carries
  * its own. Sources are deduped by url and ordered via [WeightedSourceSelector].
  *
- * The api list additionally restarts on its own once [API_FAILOVER_RESTART_INTERVAL_MS] has elapsed
+ * The api list additionally restarts on its own once [API_FAILOVER_RESTART_INTERVAL] has elapsed
  * since it first failed over, so the SDK periodically returns to the primary source (or re-arms an
  * exhausted list) instead of sticking on a backup forever. During a persistent outage this retries
  * the primary at most once per interval. Blob failover has no such timer: it is restarted per fetch
@@ -181,14 +182,14 @@ internal class DefaultRemoteConfigSourceProvider(
         }
 
     /**
-     * Restarts the api failover once [API_FAILOVER_RESTART_INTERVAL_MS] has elapsed since it first
+     * Restarts the api failover once [API_FAILOVER_RESTART_INTERVAL] has elapsed since it first
      * advanced, so a backup (or an exhausted list) periodically retries the primary source. The
      * restart bumps the token, so handles from before it can no longer advance the list. Callers
      * must hold [lock].
      */
     private fun restartAPIIfExpired() {
         val startedAtMs = apiFailoverStartedAtMs ?: return
-        if (dateProvider.now.time - startedAtMs >= API_FAILOVER_RESTART_INTERVAL_MS) {
+        if (dateProvider.now.time - startedAtMs >= API_FAILOVER_RESTART_INTERVAL.inWholeMilliseconds) {
             api.restart()
             apiFailoverStartedAtMs = null
         }
@@ -227,7 +228,7 @@ internal class DefaultRemoteConfigSourceProvider(
     }
 
     private companion object {
-        private const val API_FAILOVER_RESTART_INTERVAL_MS = 600_000L
+        private val API_FAILOVER_RESTART_INTERVAL = 2.hours
         private const val API_ITEM = "api"
         private const val BLOB_ITEM = "blob"
         private const val SOURCES_KEY = "sources"

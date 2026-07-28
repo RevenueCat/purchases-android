@@ -18,6 +18,10 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 import kotlin.random.Random
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.minutes
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -379,7 +383,7 @@ class RemoteConfigSourceProviderTest {
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
 
-        dateProvider.advanceTime(600_000L)
+        dateProvider.advanceTime(2.hours)
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
     }
 
@@ -390,7 +394,7 @@ class RemoteConfigSourceProviderTest {
 
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b
 
-        dateProvider.advanceTime(599_999L)
+        dateProvider.advanceTime(2.hours - 1.milliseconds)
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
     }
 
@@ -403,10 +407,10 @@ class RemoteConfigSourceProviderTest {
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // b -> exhausted
         assertThat(provider.getCurrent(Purpose.API)).isNull()
 
-        dateProvider.advanceTime(599_999L)
+        dateProvider.advanceTime(2.hours - 1.milliseconds)
         assertThat(provider.getCurrent(Purpose.API)).isNull()
 
-        dateProvider.advanceTime(1L)
+        dateProvider.advanceTime(1.milliseconds)
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
     }
 
@@ -418,10 +422,10 @@ class RemoteConfigSourceProviderTest {
         val provider = apiProvider(listOf(source("a"), source("b"), source("c")), dateProvider)
 
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b, timer starts
-        dateProvider.advanceTime(500_000L)
+        dateProvider.advanceTime(90.minutes)
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // b -> c, timer unchanged
 
-        dateProvider.advanceTime(100_000L) // 600s since the first advance
+        dateProvider.advanceTime(30.minutes) // 2h since the first advance
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
     }
 
@@ -434,7 +438,7 @@ class RemoteConfigSourceProviderTest {
         val stale = provider.getCurrent(Purpose.API)
         assertThat(stale?.url).isEqualTo(url("b"))
 
-        dateProvider.advanceTime(600_000L)
+        dateProvider.advanceTime(2.hours)
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
 
         // The pre-restart handle belongs to the previous cycle, so it must not advance the list.
@@ -448,14 +452,14 @@ class RemoteConfigSourceProviderTest {
         val provider = apiProvider(listOf(source("a"), source("b")), dateProvider)
 
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b
-        dateProvider.advanceTime(600_000L)
+        dateProvider.advanceTime(2.hours)
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
 
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b, new timer
-        dateProvider.advanceTime(599_999L)
+        dateProvider.advanceTime(2.hours - 1.milliseconds)
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
 
-        dateProvider.advanceTime(1L)
+        dateProvider.advanceTime(1.milliseconds)
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("a"))
     }
 
@@ -465,11 +469,11 @@ class RemoteConfigSourceProviderTest {
         val provider = apiProvider(listOf(source("a"), source("b")), dateProvider)
 
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b, timer starts
-        dateProvider.advanceTime(500_000L)
+        dateProvider.advanceTime(90.minutes)
         provider.restart(Purpose.API) // timer cleared
 
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b, fresh timer
-        dateProvider.advanceTime(599_999L) // over 600s since the ORIGINAL advance, under since the fresh one
+        dateProvider.advanceTime(2.hours - 1.milliseconds) // over 2h since the ORIGINAL advance, under since the fresh one
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("b"))
     }
 
@@ -480,15 +484,15 @@ class RemoteConfigSourceProviderTest {
         val provider = DefaultRemoteConfigSourceProvider(store, FakeRandom(0), dateProvider)
 
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // a -> b, timer starts
-        dateProvider.advanceTime(500_000L)
+        dateProvider.advanceTime(90.minutes)
 
         store.sources = sourcesTopic(api = listOf(source("x"), source("y")), blob = emptyList())
         provider.reportUnhealthy(provider.getCurrent(Purpose.API)!!) // x -> y, fresh timer
 
-        dateProvider.advanceTime(599_999L)
+        dateProvider.advanceTime(2.hours - 1.milliseconds)
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("y"))
 
-        dateProvider.advanceTime(1L)
+        dateProvider.advanceTime(1.milliseconds)
         assertThat(provider.getCurrent(Purpose.API)?.url).isEqualTo(url("x"))
     }
 
@@ -502,7 +506,7 @@ class RemoteConfigSourceProviderTest {
         )
 
         provider.reportUnhealthy(provider.getCurrent(Purpose.BLOB)!!) // blob1 -> blob2
-        dateProvider.advanceTime(600_000L)
+        dateProvider.advanceTime(2.hours)
         assertThat(provider.getCurrent(Purpose.BLOB)?.url).isEqualTo(url("blob2"))
     }
 
@@ -670,8 +674,8 @@ class RemoteConfigSourceProviderTest {
         override val now: Date
             get() = Date(currentTime.get())
 
-        fun advanceTime(millis: Long) {
-            currentTime.addAndGet(millis)
+        fun advanceTime(duration: Duration) {
+            currentTime.addAndGet(duration.inWholeMilliseconds)
         }
     }
 
