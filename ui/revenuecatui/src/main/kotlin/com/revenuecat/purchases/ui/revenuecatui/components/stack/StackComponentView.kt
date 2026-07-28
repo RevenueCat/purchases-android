@@ -661,11 +661,10 @@ private fun MainStackComponent(
                 is Dimension.Vertical -> {
                     // See the Horizontal branch above for why this exists.
                     val hasFillHeightChild = stackState.children.any { it.size.height == Fill }
-                    // web component views that are set to fill height need to be able to push the bounds
-                    // of the containing stack. If they cannot, we don't get the scrollability that is expected.
-                    val hasFillHeightWebViewChild = stackState.children.any {
-                        it is WebViewComponentStyle && it.size.height == Fill
-                    }
+                    // Web component views that are set to fill height — directly or through a chain of
+                    // fill-height stacks — need to be able to push the bounds of the containing stack.
+                    // If they cannot, we don't get the scrollability that is expected.
+                    val hasFillHeightWebViewChild = stackState.children.any { it.growsToWebViewContentHeight }
                     val mainAxisUnbounded = remember { mutableStateOf(false) }
                     val webViewHeightAxisUnbounded = remember { mutableStateOf(false) }
                     VerticalStack(
@@ -699,7 +698,7 @@ private fun MainStackComponent(
                                     .conditional(
                                         child.size.height == Fill &&
                                             !mainAxisUnbounded.value &&
-                                            !(child is WebViewComponentStyle && webViewHeightAxisUnbounded.value),
+                                            !(child.growsToWebViewContentHeight && webViewHeightAxisUnbounded.value),
                                     ) {
                                         Modifier.weight(1f)
                                     }
@@ -992,6 +991,23 @@ internal val FlexDistribution.usesAllAvailableSpace: Boolean
         FlexDistribution.END,
         FlexDistribution.CENTER,
         -> false
+    }
+
+/**
+ * Whether this component, given an unbounded height constraint, grows to the height of web content:
+ * a fill-height web view, or a fill-height stack that (recursively) contains one. Fill height passes
+ * an unbounded height constraint through, so the whole chain sizes to the web content. Callers skip
+ * `weight` for such children when the main axis is unbounded — weight would measure them at a
+ * bounded share of the viewport, hiding the unbounded constraint from the web view and preventing
+ * the outer scroll from reaching taller-than-screen content. A stack that scrolls vertically itself
+ * terminates the chain: it handles its own overflow and should keep filling the viewport.
+ */
+internal val ComponentStyle.growsToWebViewContentHeight: Boolean
+    get() = size.height == Fill && when (this) {
+        is WebViewComponentStyle -> true
+        is StackComponentStyle ->
+            scrollOrientation != Orientation.Vertical && children.any { it.growsToWebViewContentHeight }
+        else -> false
     }
 
 private val ComponentStyle.shouldIgnoreTopWindowInsets: Boolean
