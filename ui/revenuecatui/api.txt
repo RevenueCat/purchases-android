@@ -87,6 +87,7 @@ package com.revenuecat.purchases.ui.revenuecatui {
     method public default void onRestoreError(com.revenuecat.purchases.PurchasesError error);
     method public default void onRestoreInitiated(com.revenuecat.purchases.ui.revenuecatui.utils.Resumable resume);
     method public default void onRestoreStarted();
+    method public default void onWebCheckoutOpened();
   }
 
   @androidx.compose.runtime.Immutable @dev.drewhamilton.poko.Poko public final class PaywallOptions {

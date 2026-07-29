@@ -214,6 +214,10 @@ private class LoadingViewModel(
         return null
     }
 
+    override fun notifyWebCheckoutOpened() {
+        // no-op
+    }
+
     override fun invalidateCustomerInfoCache() {
         // no-op
     }
