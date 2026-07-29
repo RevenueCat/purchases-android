@@ -366,6 +366,19 @@ internal object TestData {
                 period = Period(value = 6, unit = Period.Unit.MONTH, iso8601 = "P6M"),
             ),
         )
+        val customLifetime = Package(
+            packageType = PackageType.CUSTOM,
+            identifier = "custom_lifetime",
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.custom_lifetime_product",
+                name = "Custom Lifetime",
+                title = "Custom Lifetime (App name)",
+                price = Price(amountMicros = 1_000_000_000, currencyCode = "USD", formatted = "$1,000"),
+                description = "Custom Lifetime",
+                period = null,
+            ),
+        )
         val unknown = Package(
             packageType = PackageType.UNKNOWN,
             identifier = "Unknown",

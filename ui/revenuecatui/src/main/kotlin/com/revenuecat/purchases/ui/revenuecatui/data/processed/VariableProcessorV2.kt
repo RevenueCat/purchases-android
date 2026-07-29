@@ -408,7 +408,7 @@ internal object VariableProcessorV2 {
             )?.let { price ->
                 val period = pkg.productPeriod(localizedVariableKeys)
                 when {
-                    pkg.isLifetime -> price
+                    pkg.hasNoBillingPeriod -> price
                     period != null -> "$price/$period"
                     else -> null
                 }
@@ -423,7 +423,7 @@ internal object VariableProcessorV2 {
             )?.let { price ->
                 val period = pkg.productPeriodAbbreviated(localizedVariableKeys)
                 when {
-                    pkg.isLifetime -> price
+                    pkg.hasNoBillingPeriod -> price
                     period != null -> "$price/$period"
                     else -> null
                 }
@@ -433,7 +433,8 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_PRICE_PER_DAY -> rcPackage?.let { pkg ->
             val showZeroDecimalPlacePrices = packageContext?.showZeroDecimalPlacePrices ?: false
             when {
-                pkg.isLifetime -> variableDataProvider?.localizedPrice(pkg, currencyLocale, showZeroDecimalPlacePrices)
+                pkg.hasNoBillingPeriod ->
+                    variableDataProvider?.localizedPrice(pkg, currencyLocale, showZeroDecimalPlacePrices)
                 else -> variableDataProvider?.localizedPricePerDay(pkg, currencyLocale, showZeroDecimalPlacePrices)
             }
         }
@@ -441,7 +442,8 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_PRICE_PER_WEEK -> rcPackage?.let { pkg ->
             val showZeroDecimalPlacePrices = packageContext?.showZeroDecimalPlacePrices ?: false
             when {
-                pkg.isLifetime -> variableDataProvider?.localizedPrice(pkg, currencyLocale, showZeroDecimalPlacePrices)
+                pkg.hasNoBillingPeriod ->
+                    variableDataProvider?.localizedPrice(pkg, currencyLocale, showZeroDecimalPlacePrices)
                 else -> variableDataProvider?.localizedPricePerWeek(pkg, currencyLocale, showZeroDecimalPlacePrices)
             }
         }
@@ -449,7 +451,8 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_PRICE_PER_MONTH -> rcPackage?.let { pkg ->
             val showZeroDecimalPlacePrices = packageContext?.showZeroDecimalPlacePrices ?: false
             when {
-                pkg.isLifetime -> variableDataProvider?.localizedPrice(pkg, currencyLocale, showZeroDecimalPlacePrices)
+                pkg.hasNoBillingPeriod ->
+                    variableDataProvider?.localizedPrice(pkg, currencyLocale, showZeroDecimalPlacePrices)
                 else -> variableDataProvider?.localizedPricePerMonth(pkg, currencyLocale, showZeroDecimalPlacePrices)
             }
         }
@@ -457,7 +460,8 @@ internal object VariableProcessorV2 {
         Variable.PRODUCT_PRICE_PER_YEAR -> rcPackage?.let { pkg ->
             val showZeroDecimalPlacePrices = packageContext?.showZeroDecimalPlacePrices ?: false
             when {
-                pkg.isLifetime -> variableDataProvider?.localizedPrice(pkg, currencyLocale, showZeroDecimalPlacePrices)
+                pkg.hasNoBillingPeriod ->
+                    variableDataProvider?.localizedPrice(pkg, currencyLocale, showZeroDecimalPlacePrices)
                 else -> variableDataProvider?.localizedPricePerYear(pkg, currencyLocale, showZeroDecimalPlacePrices)
             }
         }
