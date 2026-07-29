@@ -352,9 +352,9 @@ class RemoteConfigManagerIntegrationTest {
         val response = container(productEntitlementMappingConfig(ref), blob)
         coEvery { blobFetcher.ensureDownloaded(ref) } returns true
         every {
-            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any())
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any())
         } answers {
-            arg<(RCContainer?, VerificationResult) -> Unit>(6).invoke(response, VerificationResult.VERIFIED)
+            arg<(RCContainer?, VerificationResult) -> Unit>(7).invoke(response, VerificationResult.VERIFIED)
         }
 
         val mapping = runBlocking {
