@@ -214,7 +214,7 @@ internal class HTTPClient(
                 refreshETag = refreshETag,
             )
             if (outcome.canFailOverToNextSource) {
-                val nextSource = sourceToRetryOn(source, sourceAttempts, endpoint)
+                val nextSource = sourceToRetryOn(source, sourceAttempts, endpoint, outcome.connectionException)
                 if (nextSource != null) {
                     source = nextSource
                     continue
@@ -278,6 +278,10 @@ internal class HTTPClient(
                 is Failed -> true
                 is Completed -> result?.let { RCHTTPStatusCodes.isServerError(it.responseCode) } == true
             }
+
+        /** The connection-level failure this attempt hit, or null when the host actually responded. */
+        val connectionException: IOException?
+            get() = (this as? Failed)?.exception
     }
 
     /**
@@ -348,10 +352,11 @@ internal class HTTPClient(
         source: APISourceFailover.ResolvedSource?,
         sourceAttempts: Int,
         endpoint: Endpoint,
+        connectionException: IOException?,
     ): APISourceFailover.ResolvedSource? {
         val decision = source
             ?.takeIf { sourceAttempts < MAX_API_SOURCE_ATTEMPTS }
-            ?.let { apiSourceFailover?.onRequestFailure(it) }
+            ?.let { apiSourceFailover?.onRequestFailure(it, connectionException) }
         return (decision as? APISourceFailover.FailureDecision.RetryNextSource)?.next?.also {
             log(LogIntent.DEBUG) {
                 NetworkStrings.RETRYING_CALL_WITH_NEXT_API_SOURCE.format(endpoint.name, it.url)

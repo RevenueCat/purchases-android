@@ -365,7 +365,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
-    fun `performRequest does not fail over nor health check on 5xx while the device is offline`() {
+    fun `performRequest still fails over on 5xx while the device is offline`() {
         val endpoint = Endpoint.GetCustomerInfo("test_user_id")
         val secondSourceServer = MockWebServer()
         val provider = FakeAPISourceProvider(
@@ -381,6 +381,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             deviceOffline = true,
         )
         enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult(RCHTTPStatusCodes.ERROR))
+        enqueue(endpoint.getPath(), expectedResult = HTTPResult.createResult(), server = secondSourceServer)
 
         val result = client.performRequest(
             URL(AppConfig.baseUrlString),
@@ -390,12 +391,44 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             mapOf("" to ""),
         )
 
-        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.ERROR)
+        // A 5xx proves the source responded, so the offline signal is irrelevant.
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
         assertThat(server.requestCount).isEqualTo(1)
-        assertThat(secondSourceServer.requestCount).isEqualTo(0)
+        assertThat(secondSourceServer.requestCount).isEqualTo(1)
+        assertThat(healthFactory.createdConnections)
+            .containsExactly(server.url("/v1/health/connectivity").toString())
+        assertThat(provider.unhealthyReports).containsExactly(server.url("/").toString())
+        secondSourceServer.shutdown()
+    }
+
+    @Test
+    fun `performRequest does not fail over nor health check on a connection failure while offline`() {
+        val endpoint = Endpoint.GetCustomerInfo("test_user_id")
+        val unreachableUrl = unreachableSourceUrl()
+        val provider = FakeAPISourceProvider(listOf(unreachableUrl, server.url("/").toString()))
+        val healthFactory = TestUrlConnectionFactory(
+            connectionProvider = { throw IOException("health endpoint unreachable") },
+        )
+        val client = createClient(
+            appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true),
+            apiSourceProvider = provider,
+            sourceHealthChecker = SourceHealthChecker(healthFactory),
+            deviceOffline = true,
+        )
+
+        assertThatThrownBy {
+            client.performRequest(
+                URL(AppConfig.baseUrlString),
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+            )
+        }.isInstanceOf(IOException::class.java)
+
+        assertThat(server.requestCount).isEqualTo(0)
         assertThat(healthFactory.createdConnections).isEmpty()
         assertThat(provider.unhealthyReports).isEmpty()
-        secondSourceServer.shutdown()
     }
 
     @Test
