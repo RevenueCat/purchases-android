@@ -57,8 +57,22 @@ internal class DragGestureArbitrationTest {
     }
 
     @Test
-    fun `movement within touch slop does not claim without an own verdict`() {
-        assertThat(shouldOwn(dx = 7f, dy = -7f, canScrollUp = true)).isFalse()
+    fun `movement below half the touch slop does not claim without an own verdict`() {
+        assertThat(shouldOwn(dx = 0f, dy = -3f, canScrollDown = true)).isFalse()
+    }
+
+    // Compose's scrollable consumes the drag on the MOVE that crosses the system touch slop, and interop
+    // views only receive MOVEs in the Final pointer pass — so a claim decided at the full slop always
+    // loses (that MOVE arrives as ACTION_CANCEL). The claim must fire strictly below the system slop.
+    @Test
+    fun `native scrollability claims at half the touch slop, before Compose consumes at the full slop`() {
+        assertThat(shouldOwn(dx = 0f, dy = -4f, canScrollDown = true)).isTrue()
+        assertThat(shouldOwn(dx = 0f, dy = -7f, canScrollDown = true)).isTrue()
+    }
+
+    @Test
+    fun `half-slop claim still hands off to the paywall when the root cannot scroll that direction`() {
+        assertThat(shouldOwn(dx = 0f, dy = -4f, canScrollDown = false)).isFalse()
     }
 
     @Test
