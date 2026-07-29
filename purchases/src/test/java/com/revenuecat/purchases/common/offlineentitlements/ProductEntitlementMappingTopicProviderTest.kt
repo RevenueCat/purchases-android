@@ -80,6 +80,20 @@ internal class ProductEntitlementMappingTopicProviderTest {
         assertThat(provider.getProductEntitlementMapping()).isNull()
     }
 
+    @Test
+    fun `getProductEntitlementMapping returns an empty mapping for a valid empty blob`() = runTest {
+        stubBlobRead("""{"product_entitlement_mapping":{}}""".toByteArray())
+
+        assertThat(provider.getProductEntitlementMapping()?.mappings).isEmpty()
+    }
+
+    @Test
+    fun `getProductEntitlementMapping returns null when the mapping envelope is missing`() = runTest {
+        stubBlobRead("{}".toByteArray())
+
+        assertThat(provider.getProductEntitlementMapping()).isNull()
+    }
+
     private fun stubBlobRead(blob: ByteArray) {
         coEvery {
             manager.blobData(

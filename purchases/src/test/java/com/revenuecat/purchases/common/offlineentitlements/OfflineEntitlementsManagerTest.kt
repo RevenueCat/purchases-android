@@ -9,6 +9,8 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import io.mockk.CapturingSlot
 import io.mockk.Runs
 import io.mockk.coEvery
@@ -479,6 +481,56 @@ class OfflineEntitlementsManagerTest {
         coVerify(exactly = 1) { topicProvider.getProductEntitlementMapping() }
         verify(exactly = 1) { deviceCache.cacheProductEntitlementMapping(mapping) }
         verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
+    }
+
+    @Test
+    fun `valid empty remote config mapping is cached and skips legacy endpoint`() {
+        val remoteConfigManager = mockk<RemoteConfigManager>()
+        val topicProvider = ProductEntitlementMappingTopicProvider(remoteConfigManager)
+        val emptyMapping = ProductEntitlementMapping(emptyMap())
+        val blob = """{"product_entitlement_mapping":{}}""".toByteArray()
+        offlineEntitlementsManager = managerWithTopicProvider(topicProvider)
+        every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
+        every { deviceCache.cacheProductEntitlementMapping(emptyMapping) } just Runs
+        coEvery {
+            remoteConfigManager.blobData(
+                RemoteConfigTopic.ProductEntitlementMapping,
+                "default",
+                any<(ByteArray) -> ProductEntitlementMapping?>(),
+            )
+        } answers {
+            thirdArg<(ByteArray) -> ProductEntitlementMapping?>().invoke(blob)
+        }
+
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+
+        verify(exactly = 1) { deviceCache.cacheProductEntitlementMapping(emptyMapping) }
+        verify(exactly = 0) { backend.getProductEntitlementMapping(any(), any()) }
+    }
+
+    @Test
+    fun `empty remote config blob falls back to legacy endpoint`() {
+        val remoteConfigManager = mockk<RemoteConfigManager>()
+        val topicProvider = ProductEntitlementMappingTopicProvider(remoteConfigManager)
+        val legacyMapping = createProductEntitlementMapping()
+        offlineEntitlementsManager = managerWithTopicProvider(topicProvider)
+        every { deviceCache.isProductEntitlementMappingCacheStale() } returns true
+        every { deviceCache.cacheProductEntitlementMapping(legacyMapping) } just Runs
+        coEvery {
+            remoteConfigManager.blobData(
+                RemoteConfigTopic.ProductEntitlementMapping,
+                "default",
+                any<(ByteArray) -> ProductEntitlementMapping?>(),
+            )
+        } answers {
+            thirdArg<(ByteArray) -> ProductEntitlementMapping?>().invoke(byteArrayOf())
+        }
+
+        offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
+
+        verify(exactly = 1) { backend.getProductEntitlementMapping(any(), any()) }
+        backendSuccessSlot.captured(legacyMapping)
+        verify(exactly = 1) { deviceCache.cacheProductEntitlementMapping(legacyMapping) }
     }
 
     @Test
