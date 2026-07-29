@@ -651,6 +651,49 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
+    fun `an RC format response exposes the server request date, including on a 204`() {
+        val serverMillis = 1785161502351L
+        listOf(200, RCHTTPStatusCodes.NO_CONTENT).forEach { responseCode ->
+            server.enqueue(
+                MockResponse()
+                    .setResponseCode(responseCode)
+                    .setHeader(HTTPResult.REQUEST_TIME_HEADER_NAME, serverMillis)
+                    .setBody(Buffer().write(byteArrayOf('R'.code.toByte(), 'C'.code.toByte(), 1, 0, 0, 0, 0, 0))),
+            )
+
+            val result = client.performRequest(
+                baseURL,
+                Endpoint.GetRemoteConfig("app"),
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+            )
+
+            assertThat(result.requestDate).isEqualTo(Date(serverMillis))
+        }
+    }
+
+    @Test
+    fun `a non-numeric request time header yields no request date instead of throwing`() {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setHeader(HTTPResult.REQUEST_TIME_HEADER_NAME, "not-a-number")
+                .setBody(Buffer().write(byteArrayOf('R'.code.toByte(), 'C'.code.toByte(), 1, 0, 0, 0, 0, 0))),
+        )
+
+        val result = client.performRequest(
+            baseURL,
+            Endpoint.GetRemoteConfig("app"),
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        assertThat(result.requestDate).isNull()
+    }
+
+    @Test
     fun `GetRemoteConfig with a 204 and a missing body stream returns an empty payload instead of throwing`() {
         // On some Android devices a 204 yields no readable body stream (getInputStream returns null).
         // This must surface as a 204 with an empty payload, not as a network IOException.

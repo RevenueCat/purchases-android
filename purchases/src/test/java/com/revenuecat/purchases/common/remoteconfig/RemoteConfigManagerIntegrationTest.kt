@@ -53,7 +53,7 @@ class RemoteConfigManagerIntegrationTest {
     private var capturedManifest: String? = null
     private var capturedLastRefreshTime: Date? = null
     private var capturedPrefetchedBlobs: List<String>? = null
-    private lateinit var onSuccess: (RCContainer?, VerificationResult) -> Unit
+    private lateinit var onSuccess: (RCContainer?, Date?, VerificationResult) -> Unit
 
     @Before
     fun setup() {
@@ -351,7 +351,7 @@ class RemoteConfigManagerIntegrationTest {
     }
 
     private fun settle(container: RCContainer?) {
-        onSuccess.invoke(container, VerificationResult.VERIFIED)
+        onSuccess.invoke(container, Date(), VerificationResult.VERIFIED)
     }
 
     private companion object {

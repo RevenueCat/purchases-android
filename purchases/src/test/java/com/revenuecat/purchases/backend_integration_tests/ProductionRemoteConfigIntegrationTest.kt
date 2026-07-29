@@ -270,7 +270,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
                 manifest = manifest,
                 lastRefreshTime = lastRefreshTime,
                 prefetchedBlobs = prefetchedBlobs,
-                onSuccess = { rcContainer, verificationResult ->
+                onSuccess = { rcContainer, _, verificationResult ->
                     container = rcContainer
                     verification = verificationResult
                     latch.countDown()

@@ -26,6 +26,10 @@ import java.io.IOException
  * the server can optimize its response, which is why it is persisted next to the [manifest] it pairs with: an
  * app-start request must carry it too. Unlike the topic index it is recoverable metadata, not source of truth, so a
  * failed write only costs the next request a staler value.
+ *
+ * The value is always the **server's** own `X-RevenueCat-Request-Time`, never a device-clock reading: the server
+ * compares it against its own clock, so a skewed device would silently corrupt that comparison. A response without
+ * the header leaves the previous value in place rather than substituting local time.
  */
 @Serializable
 internal data class PersistedRemoteConfigurationState(

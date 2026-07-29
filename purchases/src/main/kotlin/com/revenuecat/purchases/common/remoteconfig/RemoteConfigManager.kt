@@ -250,7 +250,9 @@ internal class RemoteConfigManager(
             lastRefreshTime = persisted?.lastRefreshTime?.let(::Date),
             // Report only the prefetch blobs we actually hold, so the server stops re-inlining them.
             prefetchedBlobs = persisted?.prefetchBlobs?.filter { storedBlobs.contains(it) } ?: emptyList(),
-            onSuccess = { container, _ -> handleMainRefreshSuccess(requestEpoch, persisted, container) },
+            onSuccess = { container, requestDate, _ ->
+                handleMainRefreshSuccess(requestEpoch, persisted, container, requestDate)
+            },
             onError = { error, behavior ->
                 handleMainRefreshError(
                     requestEpoch,
@@ -279,11 +281,15 @@ internal class RemoteConfigManager(
      * Handles a successful **main** `/v1/config` response: a `204` keeps the cache (bookkeeping only), a `200`
      * parses the config element and commits it (on [scope] so [clearCache] can cancel the parse/persist). Drops
      * the result if the epoch changed meanwhile (an identity change already reset the guard via [clearCache]).
+     *
+     * [requestDate] is the server's own request time, which is what gets persisted and replayed as the refresh
+     * time — never a device-clock value the server cannot interpret. Null when the response carried no such header.
      */
     private fun handleMainRefreshSuccess(
         requestEpoch: Int,
         persisted: PersistedRemoteConfigurationState?,
         container: RCContainer?,
+        requestDate: Date?,
     ) {
         if (epoch.get() != requestEpoch) {
             // The cache was cleared (identity change) after this request started. Drop the stale
@@ -291,7 +297,7 @@ internal class RemoteConfigManager(
             return
         }
         if (container == null) {
-            handleNotModified(requestEpoch)
+            handleNotModified(requestEpoch, requestDate)
             return
         }
         scope.launch {
@@ -299,7 +305,12 @@ internal class RemoteConfigManager(
                 val response = RemoteConfiguration.parse(container.config)
                 synchronized(cacheLock) {
                     if (epoch.get() != requestEpoch) return@launch
-                    persist(previous = persisted, response = response, container = container)
+                    persist(
+                        previous = persisted,
+                        response = response,
+                        container = container,
+                        requestDate = requestDate,
+                    )
                 }
             } catch (e: SerializationException) {
                 errorLog(e) {
@@ -364,8 +375,10 @@ internal class RemoteConfigManager(
                     try {
                         synchronized(cacheLock) {
                             if (epoch.get() != requestEpoch) return@launch
-                            // No persisted state exists on the fallback path (it only runs on a cold start).
-                            persist(previous = null, response = response, container = null)
+                            // No persisted state exists on the fallback path (it only runs on a cold start). The
+                            // fallback host is not the main API, so its request time is not borrowed as the refresh
+                            // time: the value is only meaningful to the endpoint that issued it.
+                            persist(previous = null, response = response, container = null, requestDate = null)
                         }
                     } finally {
                         releaseGuardIfOwned(requestEpoch)
@@ -385,18 +398,20 @@ internal class RemoteConfigManager(
      * request, so a failed timestamp write must not hold back [hasCommittedInitialConfig], nor [lastRefreshedAt]
      * (which would re-arm the staleness gate immediately). It only costs the next request a staler header value.
      */
-    private fun handleNotModified(requestEpoch: Int) {
+    private fun handleNotModified(requestEpoch: Int, requestDate: Date?) {
         debugLog { "Remote config unchanged (204 Not Modified)." }
         scope.launch {
             try {
                 synchronized(cacheLock) {
                     if (epoch.get() != requestEpoch) return@launch
-                    val now = dateProvider.now
-                    lastRefreshedAt = now
+                    lastRefreshedAt = dateProvider.now
                     hasCommittedInitialConfig = true
-                    // Re-read instead of reusing the request's snapshot, and skip when nothing is persisted: a 204
-                    // must never write back state that was wiped, or resurrect a cleared cache.
-                    diskCache.read()?.let { diskCache.write(it.copy(lastRefreshTime = now.time)) }
+                    // Only the server's own time is worth persisting, so a response without it writes nothing and
+                    // the previous value carries forward. Re-read instead of reusing the request's snapshot, and
+                    // skip when nothing is persisted: a 204 must never resurrect a cache that was wiped meanwhile.
+                    if (requestDate != null) {
+                        diskCache.read()?.let { diskCache.write(it.copy(lastRefreshTime = requestDate.time)) }
+                    }
                 }
             } finally {
                 releaseGuardIfOwned(requestEpoch)
@@ -813,6 +828,8 @@ internal class RemoteConfigManager(
         // Null on the fallback path (plain-JSON response with no inlined blob elements to extract); the wanted
         // blobs are then fetched over the network by prefetchBlobs instead.
         container: RCContainer?,
+        // The server's own request time. Null when the response carried no such header, or on the fallback path.
+        requestDate: Date?,
     ) {
         debugLog {
             val changed = response.topics.entries.joinToString { (name, topic) ->
@@ -834,9 +851,6 @@ internal class RemoteConfigManager(
         // manifest the server diffs against is the source of truth, and persisting it IS the entire commit (the
         // manifest advances unconditionally). Inline blobs are recoverable over the network, so only touch the
         // blob store once the state is durably committed — a failed persist never orphans or evicts blobs.
-        // One instant for both the persisted refresh time (replayed in the request header) and the in-memory
-        // staleness gate, so they can never disagree about when this refresh happened.
-        val now = dateProvider.now
         val persisted = diskCache.write(
             PersistedRemoteConfigurationState(
                 domain = response.domain,
@@ -844,12 +858,16 @@ internal class RemoteConfigManager(
                 activeTopics = response.activeTopics,
                 prefetchBlobs = response.prefetchBlobs,
                 topics = mergedTopics,
-                lastRefreshTime = now.time,
+                // Server time only: a response without it carries the last server-supplied value forward rather
+                // than substituting a device-clock reading the server cannot compare against its own.
+                lastRefreshTime = requestDate?.time ?: previous?.lastRefreshTime,
             ),
         )
 
         if (persisted) {
-            lastRefreshedAt = now
+            // The staleness gate measures elapsed *local* time (isCacheStale subtracts from dateProvider.now), so
+            // it stays on the device clock and is deliberately not the value persisted above.
+            lastRefreshedAt = dateProvider.now
             hasCommittedInitialConfig = true
             debugLog {
                 "Persisted remote config (domain=${response.domain}, ${response.activeTopics.size} active topics, " +

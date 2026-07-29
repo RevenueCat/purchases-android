@@ -41,6 +41,7 @@ import org.robolectric.annotation.Config
 import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
 import java.security.MessageDigest
+import java.util.Date
 
 /**
  * End-to-end: drives a fake `/v1/config` sync through the **real** [RemoteConfigManager] (the single read
@@ -59,7 +60,7 @@ class WorkflowsConfigIntegrationTest {
     private lateinit var provider: WorkflowsConfigProvider
     private lateinit var manager: RemoteConfigManager
 
-    private lateinit var onSuccess: (RCContainer?, VerificationResult) -> Unit
+    private lateinit var onSuccess: (RCContainer?, Date?, VerificationResult) -> Unit
 
     /** Stateful stand-in for the persisted config file: write stashes, read returns the latest. */
     private var persistedState: PersistedRemoteConfigurationState? = null
@@ -374,7 +375,7 @@ class WorkflowsConfigIntegrationTest {
 
     private fun sync(configJson: String, vararg blobs: Pair<String, String>) {
         manager.refreshRemoteConfig(appInBackground = false, appUserID = "user-1", fetchContext = RemoteConfigFetchContext.AppStart)
-        onSuccess.invoke(containerWith(configJson, *blobs), VerificationResult.VERIFIED)
+        onSuccess.invoke(containerWith(configJson, *blobs), Date(), VerificationResult.VERIFIED)
     }
 
     private fun minimalWorkflow(id: String) = PublishedWorkflow(

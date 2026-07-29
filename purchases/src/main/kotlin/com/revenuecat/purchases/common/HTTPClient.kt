@@ -772,7 +772,9 @@ internal class HTTPClient(
     }
 
     private fun getRequestDateHeader(connection: URLConnection): Date? {
-        return getRequestTimeHeader(connection)?.toLong()?.let {
+        // toLongOrNull: a non-numeric header degrades to no date. Throwing here would escape every catch on the
+        // request path (they cover IOException and friends) and be rethrown on the main thread by the Dispatcher.
+        return getRequestTimeHeader(connection)?.toLongOrNull()?.let {
             Date(it)
         }
     }

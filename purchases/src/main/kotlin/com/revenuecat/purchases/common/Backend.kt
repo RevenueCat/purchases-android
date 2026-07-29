@@ -112,7 +112,7 @@ internal typealias RewardVerificationResultCallback =
     Pair<(RewardVerificationPollStatus) -> Unit, (RewardVerificationError) -> Unit>
 
 internal typealias RemoteConfigCallback = Pair<
-    (RCContainer?, VerificationResult) -> Unit,
+    (RCContainer?, requestDate: Date?, VerificationResult) -> Unit,
     (PurchasesError, errorHandlingBehavior: GetRemoteConfigErrorHandlingBehavior) -> Unit,
     >
 
@@ -1169,7 +1169,8 @@ internal class Backend(
         manifest: String?,
         lastRefreshTime: Date?,
         prefetchedBlobs: List<String>,
-        onSuccess: (RCContainer?, VerificationResult) -> Unit,
+        // The server's own request time, so the caller can replay it rather than a device-clock value.
+        onSuccess: (RCContainer?, Date?, VerificationResult) -> Unit,
         onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit,
     ) {
         val endpoint = Endpoint.GetRemoteConfig(domain)
@@ -1220,7 +1221,7 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         if (result.responseCode == RCHTTPStatusCodes.NO_CONTENT) {
                             // 204: nothing changed, no container to parse.
-                            onSuccessHandler(null, result.verificationResult)
+                            onSuccessHandler(null, result.requestDate, result.verificationResult)
                             return@forEach
                         }
                         val payload = result.payload
@@ -1236,7 +1237,11 @@ internal class Backend(
                             return@forEach
                         }
                         try {
-                            onSuccessHandler(RCContainer.parse(payload.bytes), result.verificationResult)
+                            onSuccessHandler(
+                                RCContainer.parse(payload.bytes),
+                                result.requestDate,
+                                result.verificationResult,
+                            )
                         } catch (e: RCContainerFormatException) {
                             // Parse failure of an otherwise-successful response; keep retrying.
                             onErrorHandler(

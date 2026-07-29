@@ -106,7 +106,7 @@ class BackendGetRemoteConfigTest {
             manifest = testManifest,
             lastRefreshTime = null,
             prefetchedBlobs = testPrefetchedBlobs,
-            onSuccess = { result, verificationResult ->
+            onSuccess = { result, _, verificationResult ->
                 container = result
                 verification = verificationResult
             },
@@ -156,7 +156,7 @@ class BackendGetRemoteConfigTest {
             manifest = testManifest,
             lastRefreshTime = null,
             prefetchedBlobs = testPrefetchedBlobs,
-            onSuccess = { result, _ -> container = result },
+            onSuccess = { result, _, _ -> container = result },
             onError = { error, _ -> fail("Expected success. Got error: $error") },
         )
 
@@ -180,7 +180,7 @@ class BackendGetRemoteConfigTest {
             manifest = testManifest,
             lastRefreshTime = null,
             prefetchedBlobs = testPrefetchedBlobs,
-            onSuccess = { _, _ -> fail("Expected error. Got success") },
+            onSuccess = { _, _, _ -> fail("Expected error. Got success") },
             onError = { error, behavior ->
                 obtainedError = error
                 obtainedBehavior = behavior
@@ -204,7 +204,7 @@ class BackendGetRemoteConfigTest {
             manifest = testManifest,
             lastRefreshTime = null,
             prefetchedBlobs = testPrefetchedBlobs,
-            onSuccess = { _, _ -> fail("Expected error. Got success") },
+            onSuccess = { _, _, _ -> fail("Expected error. Got success") },
             onError = { error, _ -> obtainedError = error },
         )
         assertThat(obtainedError).isNotNull
@@ -229,7 +229,7 @@ class BackendGetRemoteConfigTest {
             manifest = testManifest,
             lastRefreshTime = null,
             prefetchedBlobs = testPrefetchedBlobs,
-            onSuccess = { result, verificationResult ->
+            onSuccess = { result, _, verificationResult ->
                 callbackCount++
                 container = result
                 verification = verificationResult
@@ -240,6 +240,84 @@ class BackendGetRemoteConfigTest {
         assertThat(callbackCount).isEqualTo(1)
         assertThat(container).isNull()
         assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
+    }
+
+    @Test
+    fun `getRemoteConfig hands the server request date to the success callback on a 200`() {
+        val serverDate = Date(1785161502351L)
+        mockHttpResult(
+            payload = HTTPResult.Payload.RCFormat(buildContainer(config = "{}".toByteArray())),
+            requestDate = serverDate,
+        )
+
+        var obtained: Date? = null
+        backend.getRemoteConfig(
+            appInBackground = false,
+            appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
+            domain = testDomain,
+            manifest = testManifest,
+            lastRefreshTime = null,
+            prefetchedBlobs = testPrefetchedBlobs,
+            onSuccess = { _, requestDate, _ -> obtained = requestDate },
+            onError = { error, _ -> fail("Expected success. Got error: $error") },
+        )
+
+        assertThat(obtained).isEqualTo(serverDate)
+    }
+
+    @Test
+    fun `getRemoteConfig hands the server request date to the success callback on a 204`() {
+        val serverDate = Date(1785161502351L)
+        mockHttpResult(
+            responseCode = RCHTTPStatusCodes.NO_CONTENT,
+            payload = HTTPResult.Payload.RCFormat(ByteArray(0)),
+            requestDate = serverDate,
+        )
+
+        var obtained: Date? = null
+        backend.getRemoteConfig(
+            appInBackground = false,
+            appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
+            domain = testDomain,
+            manifest = testManifest,
+            lastRefreshTime = null,
+            prefetchedBlobs = testPrefetchedBlobs,
+            onSuccess = { _, requestDate, _ -> obtained = requestDate },
+            onError = { error, _ -> fail("Expected success. Got error: $error") },
+        )
+
+        assertThat(obtained).isEqualTo(serverDate)
+    }
+
+    @Test
+    fun `getRemoteConfig reports a null request date when the response carried no such header`() {
+        mockHttpResult(
+            responseCode = RCHTTPStatusCodes.NO_CONTENT,
+            payload = HTTPResult.Payload.RCFormat(ByteArray(0)),
+            requestDate = null,
+        )
+
+        var callbackCount = 0
+        var obtained: Date? = Date()
+        backend.getRemoteConfig(
+            appInBackground = false,
+            appUserID = testAppUserID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
+            domain = testDomain,
+            manifest = testManifest,
+            lastRefreshTime = null,
+            prefetchedBlobs = testPrefetchedBlobs,
+            onSuccess = { _, requestDate, _ ->
+                callbackCount++
+                obtained = requestDate
+            },
+            onError = { error, _ -> fail("Expected success. Got error: $error") },
+        )
+
+        assertThat(callbackCount).isEqualTo(1)
+        assertThat(obtained).isNull()
     }
 
     @Test
@@ -255,7 +333,7 @@ class BackendGetRemoteConfigTest {
             manifest = testManifest,
             lastRefreshTime = null,
             prefetchedBlobs = testPrefetchedBlobs,
-            onSuccess = { _, _ -> },
+            onSuccess = { _, _, _ -> },
             onError = { error, _ -> fail("Expected success. Got error: $error") },
         )
 
@@ -299,7 +377,7 @@ class BackendGetRemoteConfigTest {
             manifest = testManifest,
             lastRefreshTime = null,
             prefetchedBlobs = testPrefetchedBlobs,
-            onSuccess = { _, _ -> },
+            onSuccess = { _, _, _ -> },
             onError = { error, _ -> fail("Expected success. Got error: $error") },
         )
 
@@ -320,7 +398,7 @@ class BackendGetRemoteConfigTest {
             manifest = null,
             lastRefreshTime = null,
             prefetchedBlobs = emptyList(),
-            onSuccess = { _, _ -> },
+            onSuccess = { _, _, _ -> },
             onError = { error, _ -> fail("Expected success. Got error: $error") },
         )
 
@@ -342,7 +420,7 @@ class BackendGetRemoteConfigTest {
             manifest = testManifest,
             lastRefreshTime = Date(1785161502351L),
             prefetchedBlobs = testPrefetchedBlobs,
-            onSuccess = { _, _ -> },
+            onSuccess = { _, _, _ -> },
             onError = { error, _ -> fail("Expected success. Got error: $error") },
         )
 
@@ -364,7 +442,7 @@ class BackendGetRemoteConfigTest {
             manifest = null,
             lastRefreshTime = null,
             prefetchedBlobs = emptyList(),
-            onSuccess = { _, _ -> },
+            onSuccess = { _, _, _ -> },
             onError = { error, _ -> fail("Expected success. Got error: $error") },
         )
 
@@ -421,7 +499,7 @@ class BackendGetRemoteConfigTest {
             manifest = testManifest,
             lastRefreshTime = null,
             prefetchedBlobs = testPrefetchedBlobs,
-            onSuccess = { _, _ -> fail("Expected error. Got success") },
+            onSuccess = { _, _, _ -> fail("Expected error. Got success") },
             onError = { error, behavior ->
                 obtainedError = error
                 obtainedBehavior = behavior
@@ -448,7 +526,7 @@ class BackendGetRemoteConfigTest {
             manifest = testManifest,
             lastRefreshTime = null,
             prefetchedBlobs = testPrefetchedBlobs,
-            onSuccess = { _, _ -> fail("Expected error. Got success") },
+            onSuccess = { _, _, _ -> fail("Expected error. Got success") },
             onError = { error, behavior ->
                 obtainedError = error
                 obtainedBehavior = behavior
@@ -471,7 +549,7 @@ class BackendGetRemoteConfigTest {
             manifest = testManifest,
             lastRefreshTime = null,
             prefetchedBlobs = testPrefetchedBlobs,
-            onSuccess = { _, _ -> lock.countDown() },
+            onSuccess = { _, _, _ -> lock.countDown() },
             onError = { error, _ -> fail("Expected success. Got error: $error") },
         )
         asyncBackend.getRemoteConfig(
@@ -482,7 +560,7 @@ class BackendGetRemoteConfigTest {
             manifest = testManifest,
             lastRefreshTime = null,
             prefetchedBlobs = testPrefetchedBlobs,
-            onSuccess = { _, _ -> lock.countDown() },
+            onSuccess = { _, _, _ -> lock.countDown() },
             onError = { error, _ -> fail("Expected success. Got error: $error") },
         )
         lock.await(5.seconds.inWholeSeconds, TimeUnit.SECONDS)
@@ -510,7 +588,7 @@ class BackendGetRemoteConfigTest {
             manifest = testManifest,
             lastRefreshTime = null,
             prefetchedBlobs = testPrefetchedBlobs,
-            onSuccess = { _, _ -> lock.countDown() },
+            onSuccess = { _, _, _ -> lock.countDown() },
             onError = { error, _ -> fail("Expected success. Got error: $error") },
         )
         asyncBackend.getRemoteConfig(
@@ -521,7 +599,7 @@ class BackendGetRemoteConfigTest {
             manifest = testManifest,
             lastRefreshTime = null,
             prefetchedBlobs = testPrefetchedBlobs,
-            onSuccess = { _, _ -> lock.countDown() },
+            onSuccess = { _, _, _ -> lock.countDown() },
             onError = { error, _ -> fail("Expected success. Got error: $error") },
         )
         lock.await(5.seconds.inWholeSeconds, TimeUnit.SECONDS)
@@ -550,7 +628,7 @@ class BackendGetRemoteConfigTest {
             manifest = testManifest,
             lastRefreshTime = null,
             prefetchedBlobs = testPrefetchedBlobs,
-            onSuccess = { _, _ -> lock.countDown() },
+            onSuccess = { _, _, _ -> lock.countDown() },
             onError = { error, _ -> fail("Expected success. Got error: $error") },
         )
         asyncBackend.getRemoteConfig(
@@ -561,7 +639,7 @@ class BackendGetRemoteConfigTest {
             manifest = testManifest,
             lastRefreshTime = null,
             prefetchedBlobs = testPrefetchedBlobs,
-            onSuccess = { _, _ -> lock.countDown() },
+            onSuccess = { _, _, _ -> lock.countDown() },
             onError = { error, _ -> fail("Expected success. Got error: $error") },
         )
         lock.await(5.seconds.inWholeSeconds, TimeUnit.SECONDS)
@@ -743,6 +821,7 @@ class BackendGetRemoteConfigTest {
         payload: HTTPResult.Payload,
         delayMs: Long? = null,
         verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED,
+        requestDate: Date? = null,
     ) {
         every {
             httpClient.performRequest(
@@ -761,7 +840,7 @@ class BackendGetRemoteConfigTest {
                 responseCode,
                 payload,
                 HTTPResult.Origin.BACKEND,
-                requestDate = null,
+                requestDate = requestDate,
                 verificationResult,
                 isLoadShedderResponse = false,
                 isFallbackURL = false,
