@@ -54,6 +54,7 @@ internal class APISourceFailoverTest {
 
     private val defaultBaseURL = URL(AppConfig.baseUrlString)
     private val eligibleEndpoint = Endpoint.GetCustomerInfo("test-user-id")
+    private val connectionFailure = IOException("request never reached the source")
 
     private lateinit var appConfig: AppConfig
 
@@ -71,7 +72,13 @@ internal class APISourceFailoverTest {
         connectionFactory: TestUrlConnectionFactory = TestUrlConnectionFactory(
             connectionProvider = { healthConnection(200) },
         ),
-    ) = APISourceFailover(appConfig, provider, SourceHealthChecker(connectionFactory))
+        deviceOffline: () -> Boolean = { false },
+    ) = APISourceFailover(
+        appConfig,
+        provider,
+        SourceHealthChecker(connectionFactory),
+        mockk { every { isDeviceOffline() } answers { deviceOffline() } },
+    )
 
     // region currentSource eligibility
 
@@ -147,7 +154,7 @@ internal class APISourceFailoverTest {
         val failover = failover(provider, factory)
 
         val source = failover.currentSource(eligibleEndpoint, defaultBaseURL, isFallbackAttempt = false)!!
-        val decision = failover.onRequestFailure(source)
+        val decision = failover.onRequestFailure(source, connectionFailure)
 
         assertThat(decision).isEqualTo(FailureDecision.SourceHealthy)
         assertThat(provider.unhealthyReports).isEmpty()
@@ -160,7 +167,7 @@ internal class APISourceFailoverTest {
         val failover = failover(provider, factory)
 
         val source = failover.currentSource(eligibleEndpoint, defaultBaseURL, isFallbackAttempt = false)!!
-        val decision = failover.onRequestFailure(source)
+        val decision = failover.onRequestFailure(source, connectionFailure)
 
         assertThat(decision).isInstanceOf(FailureDecision.RetryNextSource::class.java)
         assertThat((decision as FailureDecision.RetryNextSource).next.url)
@@ -175,7 +182,7 @@ internal class APISourceFailoverTest {
         val failover = failover(provider, factory)
 
         val source = failover.currentSource(eligibleEndpoint, defaultBaseURL, isFallbackAttempt = false)!!
-        val decision = failover.onRequestFailure(source)
+        val decision = failover.onRequestFailure(source, connectionFailure)
 
         assertThat(decision).isInstanceOf(FailureDecision.RetryNextSource::class.java)
         assertThat((decision as FailureDecision.RetryNextSource).next.url)
@@ -189,7 +196,58 @@ internal class APISourceFailoverTest {
         val failover = failover(provider, factory)
 
         val source = failover.currentSource(eligibleEndpoint, defaultBaseURL, isFallbackAttempt = false)!!
-        assertThat(failover.onRequestFailure(source)).isEqualTo(FailureDecision.SourcesExhausted)
+        assertThat(failover.onRequestFailure(source, connectionFailure)).isEqualTo(FailureDecision.SourcesExhausted)
+        assertThat(provider.unhealthyReports.map { it.url }).containsExactly("https://a.revenuecat.com/")
+    }
+
+    @Test
+    fun `onRequestFailure does not fail over nor health-check while the device is offline`() {
+        val provider = FakeSourceProvider(listOf("https://a.revenuecat.com/", "https://b.revenuecat.com/"))
+        val factory = TestUrlConnectionFactory(connectionProvider = { healthConnection(503) })
+        val failover = failover(provider, factory, deviceOffline = { true })
+
+        val source = failover.currentSource(eligibleEndpoint, defaultBaseURL, isFallbackAttempt = false)!!
+        val decision = failover.onRequestFailure(source, connectionFailure)
+
+        assertThat(decision).isEqualTo(FailureDecision.DeviceOffline)
+        assertThat(factory.createdConnections).isEmpty()
+        assertThat(provider.unhealthyReports).isEmpty()
+        assertThat(failover.currentSource(eligibleEndpoint, defaultBaseURL, isFallbackAttempt = false)?.url)
+            .isEqualTo(URL("https://a.revenuecat.com/"))
+    }
+
+    @Test
+    fun `onRequestFailure resumes normal failover once the device is back online`() {
+        var deviceOffline = true
+        val provider = FakeSourceProvider(listOf("https://a.revenuecat.com/", "https://b.revenuecat.com/"))
+        val factory = TestUrlConnectionFactory(connectionProvider = { healthConnection(503) })
+        val failover = failover(provider, factory, deviceOffline = { deviceOffline })
+
+        val source = failover.currentSource(eligibleEndpoint, defaultBaseURL, isFallbackAttempt = false)!!
+        assertThat(failover.onRequestFailure(source, connectionFailure)).isEqualTo(FailureDecision.DeviceOffline)
+
+        deviceOffline = false
+        val decision = failover.onRequestFailure(source, connectionFailure)
+        assertThat(decision).isInstanceOf(FailureDecision.RetryNextSource::class.java)
+        assertThat((decision as FailureDecision.RetryNextSource).next.url)
+            .isEqualTo(URL("https://b.revenuecat.com/"))
+        assertThat(provider.unhealthyReports.map { it.url }).containsExactly("https://a.revenuecat.com/")
+    }
+
+    @Test
+    fun `onRequestFailure still fails over on a server error while the device is offline`() {
+        val provider = FakeSourceProvider(listOf("https://a.revenuecat.com/", "https://b.revenuecat.com/"))
+        val factory = TestUrlConnectionFactory(connectionProvider = { healthConnection(503) })
+        val failover = failover(provider, factory, deviceOffline = { true })
+
+        val source = failover.currentSource(eligibleEndpoint, defaultBaseURL, isFallbackAttempt = false)!!
+        val decision = failover.onRequestFailure(source, connectionException = null)
+
+        assertThat(decision).isInstanceOf(FailureDecision.RetryNextSource::class.java)
+        assertThat((decision as FailureDecision.RetryNextSource).next.url)
+            .isEqualTo(URL("https://b.revenuecat.com/"))
+        assertThat(factory.createdConnections)
+            .containsExactly("https://a.revenuecat.com/v1/health/connectivity")
         assertThat(provider.unhealthyReports.map { it.url }).containsExactly("https://a.revenuecat.com/")
     }
 
@@ -200,7 +258,7 @@ internal class APISourceFailoverTest {
         val failover = failover(provider, factory)
 
         val source = failover.currentSource(eligibleEndpoint, defaultBaseURL, isFallbackAttempt = false)!!
-        failover.onRequestFailure(source)
+        failover.onRequestFailure(source, connectionFailure)
 
         assertThat(factory.createdConnections)
             .containsExactly("https://a.revenuecat.com/v1/health/connectivity")
