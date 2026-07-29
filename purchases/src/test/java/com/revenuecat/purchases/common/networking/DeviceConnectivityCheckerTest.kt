@@ -28,7 +28,9 @@ internal class DeviceConnectivityCheckerTest {
 
     @Test
     fun `no active network is offline`() {
-        shadowOf(connectivityManager).setDefaultNetworkActive(false)
+        shadowOf(connectivityManager).setActiveNetworkInfo(null)
+
+        assertThat(connectivityManager.activeNetwork).isNull()
         assertThat(checker.isDeviceOffline()).isTrue()
     }
 
