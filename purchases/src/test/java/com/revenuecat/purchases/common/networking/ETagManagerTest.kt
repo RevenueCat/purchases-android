@@ -85,7 +85,7 @@ class ETagManagerTest {
         mockCachedHTTPResult(expectedETag = null, urlString = urlString)
 
         val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
-        val lastRefreshTimeHeader = eTagHeaders[HTTPRequest.ETAG_LAST_REFRESH_NAME]
+        val lastRefreshTimeHeader = eTagHeaders[HTTPRequest.LAST_REFRESH_TIME_HEADER_NAME]
         assertThat(lastRefreshTimeHeader).isNull()
     }
 
@@ -98,7 +98,7 @@ class ETagManagerTest {
         val eTagHeader = eTagHeaders[HTTPRequest.ETAG_HEADER_NAME]
         assertThat(eTagHeader).isEqualTo("etag")
 
-        val lastRefreshTimeHeader = eTagHeaders[HTTPRequest.ETAG_LAST_REFRESH_NAME]
+        val lastRefreshTimeHeader = eTagHeaders[HTTPRequest.LAST_REFRESH_TIME_HEADER_NAME]
         assertThat(lastRefreshTimeHeader).isNull()
     }
 
@@ -120,7 +120,7 @@ class ETagManagerTest {
         mockCachedHTTPResult(expectedETag = "etag", expectedLastRefreshTime = testDate, urlString = urlString)
 
         val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
-        val lastRefreshTimeHeader = eTagHeaders[HTTPRequest.ETAG_LAST_REFRESH_NAME]
+        val lastRefreshTimeHeader = eTagHeaders[HTTPRequest.LAST_REFRESH_TIME_HEADER_NAME]
         assertThat(lastRefreshTimeHeader).isEqualTo("1675954145")
     }
 

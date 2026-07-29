@@ -20,6 +20,12 @@ import java.io.IOException
  * `content`), which is the **source of truth**: persisting it is the whole sync commit, and consumers read their
  * topic metadata back from it. Only the heavy blob *bytes* live elsewhere (the content-addressed blob store,
  * keyed by `blob_ref`); the index holds the small metadata map per topic (an empty map for inline-only topics).
+ *
+ * [lastRefreshTime] is the epoch-millis instant of the last successful config request — a `200` *or* a `204`, since
+ * both confirm the cached configuration is current. It is replayed in the `X-RC-Last-Refresh-Time` request header so
+ * the server can optimize its response, which is why it is persisted next to the [manifest] it pairs with: an
+ * app-start request must carry it too. Unlike the topic index it is recoverable metadata, not source of truth, so a
+ * failed write only costs the next request a staler value.
  */
 @Serializable
 internal data class PersistedRemoteConfigurationState(
@@ -28,6 +34,7 @@ internal data class PersistedRemoteConfigurationState(
     val activeTopics: List<String> = emptyList(),
     val prefetchBlobs: List<String> = emptyList(),
     val topics: Map<String, ConfigTopic> = emptyMap(),
+    val lastRefreshTime: Long? = null,
 )
 
 /**

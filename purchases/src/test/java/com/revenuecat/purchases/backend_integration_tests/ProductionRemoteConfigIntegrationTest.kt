@@ -28,6 +28,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Test
 import java.io.File
+import java.util.Date
 
 internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTest() {
     override fun apiKey() = Constants.apiKey
@@ -230,6 +231,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         manifest: String?,
         prefetchedBlobs: List<String> = emptyList(),
         fetchContext: RemoteConfigFetchContext = RemoteConfigFetchContext.AppStart,
+        lastRefreshTime: Date? = null,
     ): Triple<PurchasesError?, RCContainer?, VerificationResult?> {
         every { appConfig.isDebugBuild } returns false
 
@@ -243,6 +245,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
                 fetchContext = fetchContext,
                 domain = "app",
                 manifest = manifest,
+                lastRefreshTime = lastRefreshTime,
                 prefetchedBlobs = prefetchedBlobs,
                 onSuccess = { rcContainer, verificationResult ->
                     container = rcContainer

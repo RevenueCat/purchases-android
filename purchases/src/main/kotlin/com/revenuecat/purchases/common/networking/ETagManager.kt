@@ -146,7 +146,7 @@ internal class ETagManager(
         val eTagData = metadata?.eTagData?.takeIf { shouldUseETag(metadata.verificationResult, verificationRequested) }
         return mapOf(
             HTTPRequest.ETAG_HEADER_NAME to eTagData?.eTag.orEmpty(),
-            HTTPRequest.ETAG_LAST_REFRESH_NAME to eTagData?.lastRefreshTime?.time?.toString(),
+            HTTPRequest.LAST_REFRESH_TIME_HEADER_NAME to eTagData?.lastRefreshTime?.time?.toString(),
         )
     }
 

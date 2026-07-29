@@ -101,9 +101,9 @@ class WorkflowsConfigIntegrationTest {
         provider = WorkflowsConfigProvider(manager)
 
         every {
-            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any())
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any())
         } answers {
-            onSuccess = arg(6)
+            onSuccess = arg(7)
         }
     }
 
@@ -357,7 +357,7 @@ class WorkflowsConfigIntegrationTest {
             assertThat(completed).isTrue()
             // The topic was already committed by the sync() above — onPaywallConfigReady must not trigger
             // another one; this is what keeps OfferingsManager's gate cheap on a warm cache.
-            verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+            verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
         }
 
     // Asset prewarming is out of scope here (covered by WorkflowManagerTest), so the manager gets a stubbed
