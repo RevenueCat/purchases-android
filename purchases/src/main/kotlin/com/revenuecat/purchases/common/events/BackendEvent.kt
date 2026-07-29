@@ -171,15 +171,19 @@ internal sealed class BackendEvent : Event {
         val paywallID: String? = null,
         @SerialName("workflow_id")
         val workflowID: String? = null,
+        @SerialName("trace_id")
+        val traceId: String? = null,
     ) {
         companion object {
             fun fromContext(
                 context: PresentedOfferingContext,
                 paywallId: String? = null,
                 workflowId: String? = null,
+                traceId: String? = null,
             ): PresentedOfferingContextData? {
                 val hasPlacement = context.placementIdentifier != null || context.targetingContext != null
-                if (!hasPlacement && paywallId == null && workflowId == null) {
+                val hasAttribution = paywallId != null || workflowId != null || traceId != null
+                if (!hasPlacement && !hasAttribution) {
                     return null
                 }
                 return PresentedOfferingContextData(
@@ -188,6 +192,7 @@ internal sealed class BackendEvent : Event {
                     targetingRuleId = context.targetingContext?.ruleId,
                     paywallID = paywallId,
                     workflowID = workflowId,
+                    traceId = traceId,
                 )
             }
         }

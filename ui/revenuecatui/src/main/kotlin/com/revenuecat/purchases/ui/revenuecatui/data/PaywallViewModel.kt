@@ -213,6 +213,12 @@ internal class PaywallViewModelImpl(
     private var currentWorkflowStepTracksPaywallEvents = true
     private val workflowStepStateCache = mutableMapOf<String, PaywallState.Loaded.Components>()
 
+    // The trace id to stamp on paywall events. [workflowTraceId] is always populated, but only identifies
+    // something when a workflow is being presented, so standalone paywalls must report null: sending an
+    // unrelated id would also force presented_offering_context to serialize where it is currently absent.
+    private val paywallEventTraceId: String?
+        get() = workflowTraceId.takeIf { currentWorkflow != null }
+
     // Shared across all screens of a workflow presentation so state-driven values survive screen navigation.
     private var currentWorkflowStateStore: PaywallStateStore? = null
 
@@ -1663,10 +1669,11 @@ internal class PaywallViewModelImpl(
     private fun createEventData(): PaywallEvent.Data? {
         val workflowId = currentWorkflow?.id
         val stepId = _workflowState.value?.currentStepId
+        val traceId = paywallEventTraceId
         return when (val currentState = state.value) {
-            is PaywallState.Loaded.Legacy -> currentState.createEventData(workflowId, stepId)
+            is PaywallState.Loaded.Legacy -> currentState.createEventData(workflowId, stepId, traceId)
 
-            is PaywallState.Loaded.Components -> currentState.createEventData(workflowId, stepId)
+            is PaywallState.Loaded.Components -> currentState.createEventData(workflowId, stepId, traceId)
 
             is PaywallState.Error,
             is PaywallState.Loading,
@@ -1677,7 +1684,11 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    private fun PaywallState.Loaded.Legacy.createEventData(workflowId: String?, stepId: String?): PaywallEvent.Data? {
+    private fun PaywallState.Loaded.Legacy.createEventData(
+        workflowId: String?,
+        stepId: String?,
+        traceId: String?,
+    ): PaywallEvent.Data? {
         val offering = offering
         val revision = this.offering.paywall?.revision ?: this.offering.paywallComponents?.dataOrNull?.revision ?: run {
             Logger.e("Null paywall revision trying to create event data")
@@ -1695,12 +1706,14 @@ internal class PaywallViewModelImpl(
             darkMode = isDarkMode,
             workflowId = workflowId,
             stepId = stepId,
+            traceId = traceId,
         )
     }
 
     private fun PaywallState.Loaded.Components.createEventData(
         workflowId: String?,
         stepId: String?,
+        traceId: String?,
     ): PaywallEvent.Data? {
         val offering = offering
         val paywallData = this.offering.paywallComponents?.dataOrNull ?: run {
@@ -1717,6 +1730,7 @@ internal class PaywallViewModelImpl(
             darkMode = isDarkMode,
             workflowId = workflowId,
             stepId = stepId,
+            traceId = traceId,
         )
     }
 
@@ -1784,10 +1798,11 @@ internal class PaywallViewModelImpl(
     private fun PaywallEvent.Data.withCurrentWorkflowMetadata(): PaywallEvent.Data {
         val workflowId = currentWorkflow?.id
         val stepId = _workflowState.value?.currentStepId
-        return if (this.workflowId == workflowId && this.stepId == stepId) {
+        val traceId = paywallEventTraceId
+        return if (this.workflowId == workflowId && this.stepId == stepId && this.traceId == traceId) {
             this
         } else {
-            copy(workflowId = workflowId, stepId = stepId)
+            copy(workflowId = workflowId, stepId = stepId, traceId = traceId)
         }
     }
 
