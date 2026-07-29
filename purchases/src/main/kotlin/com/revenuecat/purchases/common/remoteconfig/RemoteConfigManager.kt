@@ -222,6 +222,20 @@ internal class RemoteConfigManager(
         if (!shouldRefresh) {
             return
         }
+        issueConfigRequest(appInBackground, requestEpoch, requestAppUserID, requestFetchContext)
+    }
+
+    /**
+     * Issues the `/v1/config` request for a sync that already owns the in-flight guard, replaying the persisted
+     * sync bookkeeping the server diffs against: the opaque manifest, the last successful refresh time, and the
+     * prefetch blobs actually held.
+     */
+    private fun issueConfigRequest(
+        appInBackground: Boolean,
+        requestEpoch: Int,
+        requestAppUserID: String,
+        requestFetchContext: RemoteConfigFetchContext,
+    ) {
         val persisted = diskCache.read()
         val storedBlobs = blobStore.cachedRefs()
         val domain = persisted?.domain ?: DEFAULT_DOMAIN
@@ -233,6 +247,7 @@ internal class RemoteConfigManager(
             domain = domain,
             // Opaque manifest replayed verbatim; null on the first run when nothing is persisted yet.
             manifest = persisted?.manifest,
+            lastRefreshTime = persisted?.lastRefreshTime?.let(::Date),
             // Report only the prefetch blobs we actually hold, so the server stops re-inlining them.
             prefetchedBlobs = persisted?.prefetchBlobs?.filter { storedBlobs.contains(it) } ?: emptyList(),
             onSuccess = { container, _ -> handleMainRefreshSuccess(requestEpoch, persisted, container) },
@@ -361,15 +376,30 @@ internal class RemoteConfigManager(
         )
     }
 
-    /** Handles a `204 Not Modified`: nothing changed, so keep the cache and just advance the refresh bookkeeping. */
+    /**
+     * Handles a `204 Not Modified`: the cached configuration is confirmed current, so keep it and advance the refresh
+     * bookkeeping — including the persisted refresh time, since a 204 is as much a successful refresh as a 200. Runs
+     * on [scope] (like the 200 path) because that persist must not happen on the backend callback thread.
+     *
+     * The in-memory bookkeeping is unconditional: the configuration is already durably committed from an earlier
+     * request, so a failed timestamp write must not hold back [hasCommittedInitialConfig], nor [lastRefreshedAt]
+     * (which would re-arm the staleness gate immediately). It only costs the next request a staler header value.
+     */
     private fun handleNotModified(requestEpoch: Int) {
         debugLog { "Remote config unchanged (204 Not Modified)." }
-        synchronized(cacheLock) {
-            if (epoch.get() == requestEpoch) {
-                lastRefreshedAt = dateProvider.now
-                hasCommittedInitialConfig = true
-                isRefreshing.set(false)
-                completeRefresh()
+        scope.launch {
+            try {
+                synchronized(cacheLock) {
+                    if (epoch.get() != requestEpoch) return@launch
+                    val now = dateProvider.now
+                    lastRefreshedAt = now
+                    hasCommittedInitialConfig = true
+                    // Re-read instead of reusing the request's snapshot, and skip when nothing is persisted: a 204
+                    // must never write back state that was wiped, or resurrect a cleared cache.
+                    diskCache.read()?.let { diskCache.write(it.copy(lastRefreshTime = now.time)) }
+                }
+            } finally {
+                releaseGuardIfOwned(requestEpoch)
             }
         }
     }
@@ -804,6 +834,9 @@ internal class RemoteConfigManager(
         // manifest the server diffs against is the source of truth, and persisting it IS the entire commit (the
         // manifest advances unconditionally). Inline blobs are recoverable over the network, so only touch the
         // blob store once the state is durably committed — a failed persist never orphans or evicts blobs.
+        // One instant for both the persisted refresh time (replayed in the request header) and the in-memory
+        // staleness gate, so they can never disagree about when this refresh happened.
+        val now = dateProvider.now
         val persisted = diskCache.write(
             PersistedRemoteConfigurationState(
                 domain = response.domain,
@@ -811,11 +844,12 @@ internal class RemoteConfigManager(
                 activeTopics = response.activeTopics,
                 prefetchBlobs = response.prefetchBlobs,
                 topics = mergedTopics,
+                lastRefreshTime = now.time,
             ),
         )
 
         if (persisted) {
-            lastRefreshedAt = dateProvider.now
+            lastRefreshedAt = now
             hasCommittedInitialConfig = true
             debugLog {
                 "Persisted remote config (domain=${response.domain}, ${response.activeTopics.size} active topics, " +

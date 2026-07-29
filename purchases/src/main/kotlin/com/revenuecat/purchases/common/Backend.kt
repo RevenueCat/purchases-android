@@ -19,6 +19,7 @@ import com.revenuecat.purchases.backendName
 import com.revenuecat.purchases.common.caching.WorkflowMetadata
 import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.networking.RCContainer
@@ -48,6 +49,7 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.net.URL
+import java.util.Date
 
 internal const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
 internal const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
@@ -1165,6 +1167,7 @@ internal class Backend(
         fetchContext: RemoteConfigFetchContext,
         domain: String,
         manifest: String?,
+        lastRefreshTime: Date?,
         prefetchedBlobs: List<String>,
         onSuccess: (RCContainer?, VerificationResult) -> Unit,
         onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit,
@@ -1183,6 +1186,12 @@ internal class Backend(
             manifest?.let { put("manifest", it) }
             put("prefetched_blobs", prefetchedBlobs)
         }
+        // This endpoint is not ETag-cached, but the header the ETag path uses carries exactly what the server needs
+        // here, so it is reused verbatim: epoch millis, omitted entirely when there has been no successful refresh.
+        val requestHeaders = lastRefreshTime?.let {
+            backendHelper.authenticationHeaders +
+                (HTTPRequest.LAST_REFRESH_TIME_HEADER_NAME to it.time.toString())
+        } ?: backendHelper.authenticationHeaders
 
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
@@ -1191,7 +1200,7 @@ internal class Backend(
                     endpoint,
                     body = body,
                     postFieldsToSign = null,
-                    backendHelper.authenticationHeaders,
+                    requestHeaders,
                 )
             }
 

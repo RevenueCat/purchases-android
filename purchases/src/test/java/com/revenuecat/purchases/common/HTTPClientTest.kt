@@ -913,7 +913,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         } answers {
             mapOf(
                 HTTPRequest.ETAG_HEADER_NAME to "mock-etag",
-                HTTPRequest.ETAG_LAST_REFRESH_NAME to "1234567890"
+                HTTPRequest.LAST_REFRESH_TIME_HEADER_NAME to "1234567890"
             )
         }
 
@@ -927,7 +927,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val request = server.takeRequest()
 
         assertThat(request.getHeader(HTTPRequest.ETAG_HEADER_NAME)).isEqualTo("mock-etag")
-        assertThat(request.getHeader(HTTPRequest.ETAG_LAST_REFRESH_NAME)).isEqualTo("1234567890")
+        assertThat(request.getHeader(HTTPRequest.LAST_REFRESH_TIME_HEADER_NAME)).isEqualTo("1234567890")
     }
 
     @Test
@@ -940,7 +940,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         } answers {
             mapOf(
                 HTTPRequest.ETAG_HEADER_NAME to "mock-etag",
-                HTTPRequest.ETAG_LAST_REFRESH_NAME to null
+                HTTPRequest.LAST_REFRESH_TIME_HEADER_NAME to null
             )
         }
 
@@ -954,7 +954,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val request = server.takeRequest()
 
         assertThat(request.getHeader(HTTPRequest.ETAG_HEADER_NAME)).isEqualTo("mock-etag")
-        assertThat(request.headers.names().contains(HTTPRequest.ETAG_LAST_REFRESH_NAME)).isFalse
+        assertThat(request.headers.names().contains(HTTPRequest.LAST_REFRESH_TIME_HEADER_NAME)).isFalse
     }
 
     @Test
