@@ -26,6 +26,7 @@ import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.jsonObject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
+import org.junit.Assume
 import org.junit.Test
 import java.io.File
 
@@ -87,20 +88,42 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         val rcContainer = requireNotNull(container) { "Expected a 200 container, got 204 (no content)." }
 
         val config = RemoteConfiguration.parse(rcContainer.config)
+        val diagnostics = describe(config, rcContainer)
 
-        // The refs of workflows items whose bodies the container may have inlined.
-        val workflows = requireNotNull(config.topics["workflows"]) { "Expected a workflows topic." }
-        val wantedRefs = workflows.values.mapNotNull { it.blobRef }.toSet()
-
-        // Find an inlined workflows item and capture its decoded bytes. decode() uncompresses and checks the
-        // SHA-256 against the advertised ref, so the bytes are exactly the content the backend addressed there.
-        val element = requireNotNull(rcContainer.contentElements.firstOrNull { it.checksumBase64() in wantedRefs }) {
-            "Expected a workflows item with an inlined blob_ref."
+        // Every inlined element must be one the config asks for, and must decode: decode() uncompresses per the
+        // element's codec and checks the SHA-256 against the advertised ref, so this exercises the real backend
+        // bytes end to end regardless of which blobs the backend chose to inline on this response.
+        val advertisedRefs = config.prefetchBlobs.toSet() +
+            config.topics.values.flatMap { topic -> topic.values.mapNotNull { it.blobRef } }
+        rcContainer.contentElements.forEach { element ->
+            assertThat(element.checksumBase64()).describedAs(diagnostics).isIn(advertisedRefs)
+            assertThat(element.decode()).describedAs(diagnostics).isNotEmpty()
         }
 
+        // Inlining is a backend optimization, not a contract: a blob the config advertises may be served from the
+        // CDN instead. When the workflows blob isn't inlined there is nothing to decode here, so skip rather than
+        // fail, and report what the response did carry so the reason is identifiable.
+        val workflows = requireNotNull(config.topics["workflows"]) { "Expected a workflows topic. $diagnostics" }
+        val wantedRefs = workflows.values.mapNotNull { it.blobRef }.toSet()
+        val element = rcContainer.contentElements.firstOrNull { it.checksumBase64() in wantedRefs }
+        Assume.assumeTrue(
+            "Skipping: the backend inlined no workflows blob in this response. $diagnostics",
+            element != null,
+        )
+
         // The decoded bytes are real, structured content (a non-empty JSON object), not garbage.
-        val json = JsonProvider.defaultJson.parseToJsonElement(element.decode().decodeToString())
+        val json = JsonProvider.defaultJson.parseToJsonElement(element!!.decode().decodeToString())
         assertThat(json.jsonObject).isNotEmpty()
+    }
+
+    /** The response's advertised-vs-inlined state, for classifying a missing inline blob. */
+    private fun describe(config: RemoteConfiguration, container: RCContainer): String {
+        val workflowItems = config.topics["workflows"]?.entries?.joinToString { (key, item) ->
+            "$key -> ${item.blobRef}"
+        }
+        val inlined = container.contentElements.joinToString { "${it.checksumBase64()} (${it.data.remaining()}B)" }
+        return "activeTopics=${config.activeTopics}, prefetchBlobs=${config.prefetchBlobs}, " +
+            "workflowsItems=[$workflowItems], inlinedElements=[$inlined]"
     }
 
     @Test
