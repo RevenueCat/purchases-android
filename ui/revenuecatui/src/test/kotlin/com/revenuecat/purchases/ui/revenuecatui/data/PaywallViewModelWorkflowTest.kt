@@ -932,6 +932,21 @@ class PaywallViewModelWorkflowTest {
     // region memory-first single-path (no Loading flash)
 
     @Test
+    fun `Unavailable workflow resolution falls back to the default paywall instead of erroring`() = runTest {
+        // This models a workflow offering whose paywall data was skipped during the workflows-enabled parse,
+        // with no cached workflows topic available.
+        coEvery { purchases.resolveWorkflow(offeringId) } returns WorkflowResolution.Unavailable
+
+        val vm = createVm()
+        advanceUntilIdle()
+
+        assertThat(vm.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
+        assertThat(vm.state.value).isNotInstanceOf(PaywallState.Error::class.java)
+        assertThat(vm.workflowState.value).isNull()
+        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
+    }
+
+    @Test
     fun `warm cache renders the workflow on the first composition with no Loading state`() {
         // Model Dispatchers.Main.immediate with an unconfined main dispatcher so viewModelScope.launch runs
         // eagerly, as in production. On a warm cache every suspend read resolves without suspending (mockk
