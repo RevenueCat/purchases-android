@@ -15,6 +15,12 @@ import kotlin.math.abs
  * inner scroller or `touch-action` map that native can't see — wins; otherwise native root
  * scrollability decides. [canScrollVertically]/[canScrollHorizontally] mirror View: `direction > 0`
  * = down/end.
+ *
+ * The native-scrollability decision fires at half of [touchSlop], not the full slop: Compose's
+ * scrollable consumes the drag on the MOVE that crosses the full slop, and interop views only receive
+ * MOVEs in the Final pointer pass — so a claim decided at the full slop always loses (that MOVE
+ * arrives as ACTION_CANCEL and the view is cut off for the rest of the gesture). Half slop is early
+ * enough to win on a pre-slop MOVE while still reading a reliable drag direction.
  */
 @Suppress("ReturnCount", "LongParameterList")
 internal fun shouldWebViewOwnGesture(
@@ -26,7 +32,8 @@ internal fun shouldWebViewOwnGesture(
     canScrollVertically: (direction: Int) -> Boolean,
 ): Boolean {
     if (webContentWantsGesture == true) return true
-    if (abs(totalDx) < touchSlop && abs(totalDy) < touchSlop) return false
+    val claimThreshold = (touchSlop / 2).coerceAtLeast(1)
+    if (abs(totalDx) < claimThreshold && abs(totalDy) < claimThreshold) return false
     return if (abs(totalDy) >= abs(totalDx)) {
         canScrollVertically(if (totalDy < 0) 1 else -1)
     } else {
