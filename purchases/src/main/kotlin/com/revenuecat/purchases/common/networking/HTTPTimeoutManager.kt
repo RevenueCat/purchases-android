@@ -129,8 +129,6 @@ internal class HTTPTimeoutManager(
         val lastTimeout = lastTimeoutByHost[host] ?: return false
         val expired = dateProvider.now.time - lastTimeout >= TIMEOUT_RESET_INTERVAL_MS
         if (expired) {
-            // Conditional remove so a fresh timeout recorded by another thread between the read above and
-            // this prune isn't wiped: only drop the entry if it's still the expired one we observed.
             lastTimeoutByHost.remove(host, lastTimeout)
         }
         return !expired
