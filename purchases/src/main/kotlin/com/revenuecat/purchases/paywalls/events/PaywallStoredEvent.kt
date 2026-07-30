@@ -41,7 +41,6 @@ internal data class PaywallStoredEvent(
                 context = event.data.presentedOfferingContext,
                 paywallId = event.data.paywallIdentifier,
                 workflowId = event.data.workflowId,
-                traceId = event.data.traceId,
             ),
             exitOfferType = event.data.exitOfferType?.value,
             exitOfferingID = event.data.exitOfferingIdentifier,

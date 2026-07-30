@@ -8,7 +8,6 @@ import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.toBackendStoredEvent
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -647,7 +646,6 @@ class PaywallEventSerializationTests {
             BackendEvent.PresentedOfferingContextData(
                 paywallID = "paywallID",
                 workflowID = "workflow-xyz",
-                traceId = "trace-xyz",
             )
         )
     }
@@ -681,44 +679,15 @@ class PaywallEventSerializationTests {
     }
 
     @Test
-    fun `toBackendEvent sends trace_id nested in presented_offering_context, not at the top level`() {
+    fun `toBackendEvent does not send trace_id`() {
         val backendEvent = workflowImpressionEvent.toBackendEvent()
-        assertThat(backendEvent.presentedOfferingContext?.traceId).isEqualTo("trace-xyz")
 
-        // khepri treats presented_offering_context as an opaque blob and passes unknown keys through,
-        // so trace_id has to be nested there. A top-level trace_id would be dropped by the event model.
         val encoded = JsonProvider.defaultJson.encodeToJsonElement(
             BackendEvent.serializer(),
             backendEvent,
         ).jsonObject
         assertThat(encoded).doesNotContainKey("trace_id")
-        assertThat(encoded["presented_offering_context"]!!.jsonObject["trace_id"]!!.jsonPrimitive.content)
-            .isEqualTo("trace-xyz")
+        assertThat(encoded["presented_offering_context"]!!.jsonObject).doesNotContainKey("trace_id")
     }
 
-    @Test
-    fun `toBackendEvent omits trace_id when there is no workflow traversal`() {
-        val encoded = JsonProvider.defaultJson.encodeToString(
-            BackendEvent.serializer(),
-            exitOfferEvent.toBackendEvent(),
-        )
-        assertThat(encoded).doesNotContain("trace_id")
-    }
-
-    @Test
-    fun `presented_offering_context survives when traceId is the only attribution`() {
-        val context = BackendEvent.PresentedOfferingContextData.fromContext(
-            context = PresentedOfferingContext("offeringID"),
-            traceId = "trace-only",
-        )
-        assertThat(context).isEqualTo(BackendEvent.PresentedOfferingContextData(traceId = "trace-only"))
-    }
-
-    @Test
-    fun `presented_offering_context is still null when nothing is present`() {
-        val context = BackendEvent.PresentedOfferingContextData.fromContext(
-            context = PresentedOfferingContext("offeringID"),
-        )
-        assertThat(context).isNull()
-    }
 }

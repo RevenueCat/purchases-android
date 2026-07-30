@@ -118,7 +118,6 @@ internal fun PaywallEvent.toBackendStoredEvent(
                 context = data.presentedOfferingContext,
                 paywallId = data.paywallIdentifier,
                 workflowId = data.workflowId,
-                traceId = data.traceId,
             ),
             exitOfferType = data.exitOfferType?.value,
             exitOfferingID = data.exitOfferingIdentifier,
