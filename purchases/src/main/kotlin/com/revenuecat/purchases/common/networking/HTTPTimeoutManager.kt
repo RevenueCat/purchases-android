@@ -61,6 +61,12 @@ internal class HTTPTimeoutManager(
      * @param isFallback Whether this attempt targets a fallback host.
      * @param endpointSupportsFallbackURLs Whether the endpoint has fallback-URL support.
      * @param isProxied Whether a proxy URL is set.
+     * @param reTieredTimeoutsEnabled Whether this caller opts into the re-tiered no-fallback fail-fast
+     * timeouts. Main-API requests opt in only when remote-config API sources are enabled (so the default
+     * configuration keeps its legacy flat timeout), while blob-source downloads always opt in. It has no
+     * effect on the fallback-supported, fallback-host, or proxied tiers.
+     * This parameter should be removed once the `usesRemoteConfigAPISources` dangerous setting is removed
+     * and the re-tiered timeouts become the only behavior.
      * @return The timeout in milliseconds.
      */
     fun getTimeoutForRequest(
@@ -68,6 +74,7 @@ internal class HTTPTimeoutManager(
         isFallback: Boolean,
         endpointSupportsFallbackURLs: Boolean,
         isProxied: Boolean,
+        reTieredTimeoutsEnabled: Boolean,
     ): Long {
         val timeout = when {
             // Fallback-host and proxied requests use a flat timeout and never consult the per-host memory.
@@ -78,6 +85,9 @@ internal class HTTPTimeoutManager(
                 when {
                     endpointSupportsFallbackURLs && sourceRecentlyTimedOut -> REDUCED_TIMEOUT_MS
                     endpointSupportsFallbackURLs -> SUPPORTED_FALLBACK_TIMEOUT_MS
+                    // The re-tiered no-fallback fail-fast timeouts only apply to callers that opt in. Otherwise
+                    // keep the legacy flat timeout so the default configuration's behavior stays unchanged.
+                    !reTieredTimeoutsEnabled -> DEFAULT_TIMEOUT_MS
                     sourceRecentlyTimedOut -> MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS
                     else -> MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS
                 }

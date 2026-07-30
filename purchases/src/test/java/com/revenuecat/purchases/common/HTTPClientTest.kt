@@ -1809,6 +1809,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
@@ -1837,6 +1838,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         verify(exactly = 1) {
@@ -1860,6 +1862,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
@@ -1912,6 +1915,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             assertThat(
                 timeoutManager.getTimeoutForRequest(
                     host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+                    reTieredTimeoutsEnabled = true,
                 )
             ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
             verify(exactly = 1) {
@@ -1926,7 +1930,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     fun `HTTPClient records MAIN_SOURCE_TIMED_OUT when timeout occurs on main source with endpoint not supporting fallback`() {
         val endpoint = Endpoint.LogIn
 
-        val appConfig = createAppConfig()
+        val appConfig = createAppConfig(usesRemoteConfigAPISources = true)
         val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
         val host = "10.255.255.255"
 
@@ -1937,6 +1941,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, endpointSupportsFallbackURLs = false, isProxied = false,
+                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
@@ -1969,13 +1974,63 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, endpointSupportsFallbackURLs = false, isProxied = false,
+                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
+    }
+
+    @Test
+    fun `HTTPClient keeps legacy timeout behavior for no-fallback endpoint when API sources are disabled`() {
+        val endpoint = Endpoint.LogIn
+        assert(!endpoint.supportsFallbackBaseURLs)
+
+        val appConfig = createAppConfig(usesRemoteConfigAPISources = false)
+        val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
+        val host = "10.255.255.255"
+
+        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
+
+        // With API sources disabled, the no-fallback endpoint uses the legacy flat timeout.
+        assertThat(
+            timeoutManager.getTimeoutForRequest(
+                host = host, isFallback = false, endpointSupportsFallbackURLs = false, isProxied = false,
+                reTieredTimeoutsEnabled = false,
+            )
+        ).isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
+
+        enqueue(
+            endpoint.getPath(),
+            HTTPResult.createResult(),
+        )
+
+        assertThatThrownBy {
+            client.performRequest(
+                URL("http://$host/"), // Unroutable IP to force connection timeout
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+                fallbackBaseURLs = emptyList(),
+            )
+        }.isInstanceOf(SocketTimeoutException::class.java)
+
+        // The timeout is NOT recorded because the endpoint has no fallback support and API sources are
+        // disabled, so the host stays on the legacy flat timeout (unchanged default behavior).
+        verify(exactly = 0) {
+            timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
+        }
+        assertThat(
+            timeoutManager.getTimeoutForRequest(
+                host = host, isFallback = false, endpointSupportsFallbackURLs = false, isProxied = false,
+                reTieredTimeoutsEnabled = false,
+            )
+        ).isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
     }
 
     @Test
@@ -1994,6 +2049,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
 
@@ -2022,6 +2078,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(
             timeoutManager.getTimeoutForRequest(
                 host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+                reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         verify(exactly = 1) {

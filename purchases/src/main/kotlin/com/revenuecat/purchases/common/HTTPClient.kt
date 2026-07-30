@@ -323,8 +323,12 @@ internal class HTTPClient(
             }
         } catch (e: IOException) {
             exceptionHit = e
-            // Record a timeout for any main-source attempt that timed out, regardless of fallback-URL support.
-            if (e is SocketTimeoutException && isMainBackend) {
+            // With remote-config API sources enabled, record a timeout for any main-source attempt that timed
+            // out, regardless of fallback-URL support. When disabled, keep the legacy behavior of only arming
+            // the fail-fast memory for endpoints that support fallback URLs.
+            if (e is SocketTimeoutException && isMainBackend &&
+                (appConfig.usesRemoteConfigAPISources || fallbackAvailable)
+            ) {
                 requestResult = HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT
             }
         } finally {
@@ -425,6 +429,9 @@ internal class HTTPClient(
                 isFallback = isFallbackURL,
                 endpointSupportsFallbackURLs = endpoint.supportsFallbackBaseURLs,
                 isProxied = appConfig.hasProxyURL,
+                // The re-tiered fail-fast timeouts for main-API requests only apply when API sources are
+                // enabled. Blob-source downloads opt in independently of this setting.
+                reTieredTimeoutsEnabled = appConfig.usesRemoteConfigAPISources,
             )
 
             connection = getConnection(httpRequest, timeout)
