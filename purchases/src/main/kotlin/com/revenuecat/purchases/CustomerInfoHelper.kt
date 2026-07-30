@@ -165,11 +165,8 @@ internal class CustomerInfoHelper(
         allowSharingPlayStoreAccount: Boolean,
         callback: ((CustomerInfoDataResult) -> Unit)? = null,
     ) {
-        offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
+        offlineEntitlementsManager.computeOfflineCustomerInfo(
             appUserID,
-            // The app asked for device side computation, so it shouldn't show up as the SDK entering
-            // offline mode.
-            trackingOfflineEntitlementsMode = false,
             onSuccess = { customerInfo ->
                 debugLog { CustomerInfoStrings.NOT_WAITING_FOR_UNSYNCED_PURCHASES }
                 postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)

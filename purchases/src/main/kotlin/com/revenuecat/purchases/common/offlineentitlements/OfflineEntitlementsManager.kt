@@ -46,22 +46,16 @@ internal class OfflineEntitlementsManager(
 
     fun canCalculateOfflineCustomerInfo(appUserId: String) =
         isOfflineEntitlementsEnabled() &&
-            deviceCache.getCachedCustomerInfo(appUserId) == null
+            !deviceCache.hasCachedCustomerInfo(appUserId)
 
     fun shouldCalculateOfflineCustomerInfoInPostReceipt(
         isServerError: Boolean,
     ) = isServerError && isOfflineEntitlementsEnabled()
 
-    /**
-     * @param trackingOfflineEntitlementsMode whether to report entering offline entitlements mode through
-     * diagnostics. `false` when computing on device was a deliberate choice rather than a fallback for an
-     * unreachable backend.
-     */
     fun calculateAndCacheOfflineCustomerInfo(
         appUserId: String,
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit,
-        trackingOfflineEntitlementsMode: Boolean = true,
     ) {
         if (!appConfig.enableOfflineEntitlements) {
             onError(
@@ -86,9 +80,7 @@ internal class OfflineEntitlementsManager(
             onSuccess = { customerInfo ->
                 synchronized(this@OfflineEntitlementsManager) {
                     warnLog { OfflineEntitlementsStrings.USING_OFFLINE_ENTITLEMENTS_CUSTOMER_INFO }
-                    if (trackingOfflineEntitlementsMode) {
-                        diagnosticsTracker?.trackEnteredOfflineEntitlementsMode()
-                    }
+                    diagnosticsTracker?.trackEnteredOfflineEntitlementsMode()
                     _offlineCustomerInfo = customerInfo
                     deviceCache.getCachedAppUserID()?.let { deviceCache.clearCustomerInfoCache(it) }
                     val callbacks = offlineCustomerInfoCallbackCache.remove(appUserId)
@@ -106,6 +98,28 @@ internal class OfflineEntitlementsManager(
                 }
             },
         )
+    }
+
+    /**
+     * Computes [CustomerInfo] from the purchases on the device, without entering offline entitlements
+     * mode: nothing is cached and no diagnostics are reported, because the backend is reachable and this
+     * was the app's choice rather than a fallback.
+     */
+    fun computeOfflineCustomerInfo(
+        appUserId: String,
+        onSuccess: (CustomerInfo) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        if (!appConfig.enableOfflineEntitlements) {
+            onError(
+                PurchasesError(
+                    PurchasesErrorCode.UnsupportedError,
+                    OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_NOT_ENABLED,
+                ),
+            )
+            return
+        }
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(appUserId, onSuccess, onError)
     }
 
     fun updateProductEntitlementMappingCacheIfStale(completion: ((PurchasesError?) -> Unit)? = null) {
