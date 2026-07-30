@@ -201,6 +201,12 @@ public open class DeviceCache(
     internal fun customerInfoLastUpdatedCacheKey(appUserID: String) =
         "$customerInfoCachesLastUpdatedCacheBaseKey.$appUserID"
 
+    /**
+     * Whether a [CustomerInfo] is cached, without paying for decoding it.
+     */
+    internal fun hasCachedCustomerInfo(appUserID: String): Boolean =
+        preferences.contains(customerInfoCacheKey(appUserID))
+
     @Suppress
     internal fun getCachedCustomerInfo(appUserID: String): CustomerInfo? {
         return preferences.getString(customerInfoCacheKey(appUserID), null)

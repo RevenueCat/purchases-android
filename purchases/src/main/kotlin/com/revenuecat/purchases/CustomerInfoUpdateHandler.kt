@@ -12,6 +12,7 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.CustomerInfoStrings
+import java.util.Date
 
 /**
  * This class is responsible for updating the customer info cache and notifying the listeners.
@@ -25,6 +26,9 @@ internal class CustomerInfoUpdateHandler constructor(
     private val diagnosticsTracker: DiagnosticsTracker?,
     private val handler: Handler = Handler(Looper.getMainLooper()),
 ) {
+
+    /** `requestDate` of the last [CustomerInfo] written to the cache, by app user ID. */
+    private val lastCachedRequestDateByAppUserID = mutableMapOf<String, Date>()
 
     var updatedCustomerInfoListener: UpdatedCustomerInfoListener? = null
         @Synchronized get
@@ -44,20 +48,36 @@ internal class CustomerInfoUpdateHandler constructor(
             return
         }
         deviceCache.cacheCustomerInfo(appUserID, customerInfo)
+        recordCachedRequestDate(customerInfo, appUserID)
         notifyListeners(customerInfo)
+    }
+
+    private fun recordCachedRequestDate(customerInfo: CustomerInfo, appUserID: String) {
+        if (appConfig.unsyncedTransactionsWaitPolicy != UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT) {
+            return
+        }
+        synchronized(this@CustomerInfoUpdateHandler) {
+            lastCachedRequestDateByAppUserID[appUserID] = customerInfo.requestDate
+        }
     }
 
     /**
      * With [UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT], receipt posts run on their own thread, so a
      * `GET /subscribers` response can land after a fresher `POST /receipts` one. Dropping the staler of
      * the two keeps the cache from going back to a pre-purchase state.
+     *
+     * Gated on the policy so apps that didn't opt in keep their existing cache behavior. Compares
+     * against what this session wrote, which is all the race needs, and avoids decoding the cached
+     * [CustomerInfo] on every write.
      */
     private fun isStalerThanCache(customerInfo: CustomerInfo, appUserID: String): Boolean {
         if (appConfig.unsyncedTransactionsWaitPolicy != UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT) {
             return false
         }
-        val cachedRequestDate = deviceCache.getCachedCustomerInfo(appUserID)?.requestDate
-        return cachedRequestDate != null && customerInfo.requestDate.before(cachedRequestDate)
+        val lastCachedRequestDate = synchronized(this@CustomerInfoUpdateHandler) {
+            lastCachedRequestDateByAppUserID[appUserID]
+        }
+        return lastCachedRequestDate != null && customerInfo.requestDate.before(lastCachedRequestDate)
     }
 
     fun notifyListeners(customerInfo: CustomerInfo) {

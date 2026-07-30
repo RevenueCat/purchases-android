@@ -181,7 +181,7 @@ internal class PurchasesFactory(
             val receiptPostDispatcher = if (
                 unsyncedTransactionsWaitPolicy == UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT
             ) {
-                Dispatcher(createReceiptPostExecutor(), runningIntegrationTests = runningIntegrationTests)
+                Dispatcher(createDefaultExecutor(), runningIntegrationTests = runningIntegrationTests)
             } else {
                 backendDispatcher
             }
@@ -639,10 +639,6 @@ internal class PurchasesFactory(
 
     private fun createEventsExecutor(): ExecutorService {
         return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("revenuecat-events-thread"))
-    }
-
-    private fun createReceiptPostExecutor(): ExecutorService {
-        return Executors.newSingleThreadScheduledExecutor()
     }
 
     private fun createRemoteConfigExecutor(): ExecutorService {

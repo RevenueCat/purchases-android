@@ -230,8 +230,8 @@ internal class Backend(
         mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<RemoteConfigFallbackCallback>>()
 
     fun close() {
-        this.dispatcher.close()
-        this.remoteConfigDispatcher.close()
+        // A set, since the lane dispatchers default to the shared one.
+        setOf(this.dispatcher, this.remoteConfigDispatcher, this.receiptPostDispatcher).forEach { it.close() }
     }
 
     fun getCustomerInfo(
