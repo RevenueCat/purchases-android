@@ -2,6 +2,7 @@ package com.revenuecat.purchases
 
 import android.os.Handler
 import android.os.Looper
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
@@ -38,6 +39,7 @@ private data class CustomerInfoDataResult(
 internal class CustomerInfoHelper(
     private val deviceCache: DeviceCache,
     private val backend: Backend,
+    private val appConfig: AppConfig,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val customerInfoUpdateHandler: CustomerInfoUpdateHandler,
     private val postPendingTransactionsHelper: PostPendingTransactionsHelper,
@@ -128,6 +130,66 @@ internal class CustomerInfoHelper(
     }
 
     private fun postPendingPurchasesAndFetchCustomerInfo(
+        appUserID: String,
+        appInBackground: Boolean,
+        allowSharingPlayStoreAccount: Boolean,
+        callback: ((CustomerInfoDataResult) -> Unit)? = null,
+    ) {
+        if (appConfig.unsyncedTransactionsWaitPolicy == UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT &&
+            offlineEntitlementsManager.canCalculateOfflineCustomerInfo(appUserID)
+        ) {
+            computeCustomerInfoWithoutWaitingForPendingPurchases(
+                appUserID,
+                appInBackground,
+                allowSharingPlayStoreAccount,
+                callback,
+            )
+        } else {
+            syncPendingPurchasesAndFetchCustomerInfo(
+                appUserID,
+                appInBackground,
+                allowSharingPlayStoreAccount,
+                callback,
+            )
+        }
+    }
+
+    /**
+     * Reports [CustomerInfo] computed on the device and posts the pending purchases in the background,
+     * as configured by [UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT]. The up to date [CustomerInfo] is
+     * delivered to listeners once posting finishes.
+     */
+    private fun computeCustomerInfoWithoutWaitingForPendingPurchases(
+        appUserID: String,
+        appInBackground: Boolean,
+        allowSharingPlayStoreAccount: Boolean,
+        callback: ((CustomerInfoDataResult) -> Unit)? = null,
+    ) {
+        offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
+            appUserID,
+            onSuccess = { customerInfo ->
+                debugLog { CustomerInfoStrings.NOT_WAITING_FOR_UNSYNCED_PURCHASES }
+                postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+                customerInfoUpdateHandler.notifyListeners(customerInfo)
+                dispatch {
+                    callback?.invoke(
+                        CustomerInfoDataResult(Result.Success(customerInfo), hadUnsyncedPurchasesBefore = true),
+                    )
+                }
+            },
+            onError = { error ->
+                debugLog { CustomerInfoStrings.COMPUTING_CUSTOMERINFO_WITHOUT_WAITING_FAILED.format(error) }
+                syncPendingPurchasesAndFetchCustomerInfo(
+                    appUserID,
+                    appInBackground,
+                    allowSharingPlayStoreAccount,
+                    callback,
+                )
+            },
+        )
+    }
+
+    private fun syncPendingPurchasesAndFetchCustomerInfo(
         appUserID: String,
         appInBackground: Boolean,
         allowSharingPlayStoreAccount: Boolean,

@@ -40,6 +40,8 @@ public open class PurchasesConfiguration(builder: Builder) {
 
     public val galaxyBillingMode: GalaxyBillingMode
 
+    public val unsyncedTransactionsWaitPolicy: UnsyncedTransactionsWaitPolicy
+
     @get:JvmSynthetic
     internal val iamEnabled: Boolean
 
@@ -66,6 +68,7 @@ public open class PurchasesConfiguration(builder: Builder) {
 
         this.galaxyBillingMode = builder.galaxyBillingMode
         this.iamEnabled = builder.iamEnabled
+        this.unsyncedTransactionsWaitPolicy = builder.unsyncedTransactionsWaitPolicy
     }
 
     @OptIn(InternalRevenueCatAPI::class)
@@ -88,6 +91,7 @@ public open class PurchasesConfiguration(builder: Builder) {
             .preferredUILocaleOverride(preferredUILocaleOverride)
             .galaxyBillingMode(galaxyBillingMode)
             .iamEnabled(iamEnabled)
+            .unsyncedTransactionsWaitPolicy(unsyncedTransactionsWaitPolicy)
         if (service != null) {
             builder = builder.service(service)
         }
@@ -139,6 +143,10 @@ public open class PurchasesConfiguration(builder: Builder) {
 
         @set:JvmSynthetic @get:JvmSynthetic
         internal var iamEnabled: Boolean = false
+
+        @set:JvmSynthetic @get:JvmSynthetic
+        internal var unsyncedTransactionsWaitPolicy: UnsyncedTransactionsWaitPolicy =
+            UnsyncedTransactionsWaitPolicy.WAIT
 
         /**
          * A unique id for identifying the user
@@ -340,6 +348,17 @@ public open class PurchasesConfiguration(builder: Builder) {
         }
 
         /**
+         * Whether [Purchases.getCustomerInfo] waits for unsynced purchases to be posted before
+         * reporting [CustomerInfo]. Defaults to [UnsyncedTransactionsWaitPolicy.WAIT].
+         * @see UnsyncedTransactionsWaitPolicy
+         */
+        public fun unsyncedTransactionsWaitPolicy(
+            unsyncedTransactionsWaitPolicy: UnsyncedTransactionsWaitPolicy,
+        ): Builder = apply {
+            this.unsyncedTransactionsWaitPolicy = unsyncedTransactionsWaitPolicy
+        }
+
+        /**
          * Creates a [PurchasesConfiguration] instance with the specified properties.
          */
         public open fun build(): PurchasesConfiguration {
@@ -367,6 +386,7 @@ public open class PurchasesConfiguration(builder: Builder) {
         if (preferredUILocaleOverride != other.preferredUILocaleOverride) return false
         if (galaxyBillingMode != other.galaxyBillingMode) return false
         if (iamEnabled != other.iamEnabled) return false
+        if (unsyncedTransactionsWaitPolicy != other.unsyncedTransactionsWaitPolicy) return false
 
         return true
     }
@@ -385,6 +405,7 @@ public open class PurchasesConfiguration(builder: Builder) {
         result = 31 * result + (preferredUILocaleOverride?.hashCode() ?: 0)
         result = 31 * result + (galaxyBillingMode.hashCode())
         result = 31 * result + iamEnabled.hashCode()
+        result = 31 * result + unsyncedTransactionsWaitPolicy.hashCode()
         return result
     }
 }

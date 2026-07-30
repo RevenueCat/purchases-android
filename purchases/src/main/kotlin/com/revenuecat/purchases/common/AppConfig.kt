@@ -5,6 +5,7 @@ import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.Store
+import com.revenuecat.purchases.UnsyncedTransactionsWaitPolicy
 import com.revenuecat.purchases.finishTransactions
 import com.revenuecat.purchases.strings.ConfigureStrings
 import java.net.URL
@@ -25,6 +26,7 @@ internal class AppConfig(
     val runningTests: Boolean = false,
     forceSigningErrors: Boolean = false,
     baseUrlString: String = Companion.baseUrlString,
+    val unsyncedTransactionsWaitPolicy: UnsyncedTransactionsWaitPolicy = UnsyncedTransactionsWaitPolicy.WAIT,
 ) {
     companion object {
         val diagnosticsURL = URL("https://api-diagnostics.revenuecat.com/")
