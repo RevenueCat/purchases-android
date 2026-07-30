@@ -33,6 +33,7 @@ interface PaywallScreenViewModel : PaywallListener {
     fun refreshOffering()
 }
 
+@Suppress("TooManyFunctions")
 class PaywallScreenViewModelImpl(
     application: Application,
     savedStateHandle: SavedStateHandle,
@@ -97,6 +98,17 @@ class PaywallScreenViewModelImpl(
     }
 
     override fun onPurchaseError(error: PurchasesError) = Unit
+
+    override fun onUrlOpened(url: String) {
+        val value = _state.value
+        if (value is PaywallScreenState.Loaded) {
+            _state.update {
+                value.copy(
+                    dialogText = "Opened URL: $url",
+                )
+            }
+        }
+    }
 
     override fun onDialogDismissed() {
         val value = _state.value

@@ -108,6 +108,8 @@ public class PaywallView : CompatComposeView {
         override fun onRestoreStarted() { listener?.onRestoreStarted() }
         override fun onRestoreCompleted(customerInfo: CustomerInfo) { listener?.onRestoreCompleted(customerInfo) }
         override fun onRestoreError(error: PurchasesError) { listener?.onRestoreError(error) }
+        override fun onWebCheckoutOpened() { listener?.onWebCheckoutOpened() }
+        override fun onUrlOpened(url: String) { listener?.onUrlOpened(url) }
     }
 
     private var paywallOptions: PaywallOptions

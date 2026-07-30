@@ -190,6 +190,10 @@ internal class PaywallActivity : ComponentActivity() {
             override fun onWebCheckoutOpened() {
                 userListener?.onWebCheckoutOpened()
             }
+
+            override fun onUrlOpened(url: String) {
+                userListener?.onUrlOpened(url)
+            }
         }
 
         val edgeToEdge = args?.edgeToEdge == true
