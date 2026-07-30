@@ -217,7 +217,7 @@ internal class RemoteConfigBlobFetcher(
         val timeout = timeoutManager.getTimeoutForRequest(
             host = host,
             isFallback = false,
-            endpointSupportsFallbackURLs = false,
+            fallbackAvailable = false,
             isProxied = false,
             // Blob-source downloads always opt into the re-tiered fail-fast timeouts, independently of the
             // usesRemoteConfigAPISources setting (which only gates main-API requests).
@@ -254,8 +254,10 @@ internal class RemoteConfigBlobFetcher(
         }
     }
 
+    // `URL.getHost()` returns an empty string rather than null for host-less URLs, which would make every
+    // such URL share one entry in the per-host timeout memory.
     private fun hostOf(url: String): String? = try {
-        URL(url).host
+        URL(url).host?.takeIf { it.isNotBlank() }
     } catch (e: MalformedURLException) {
         verboseLog { "Could not resolve host for remote config blob URL $url: ${e.message}" }
         null

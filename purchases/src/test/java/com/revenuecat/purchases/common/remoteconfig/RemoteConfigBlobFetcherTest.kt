@@ -485,6 +485,28 @@ class RemoteConfigBlobFetcherTest {
     }
 
     @Test
+    fun `a blob source URL without a host is never remembered`() {
+        // `URL.getHost()` is empty rather than null for these, so without a guard every host-less URL would
+        // share a single entry in the per-host memory.
+        val template = "file:/tmp/blobs/$PLACEHOLDER"
+        val refA = refOf("a".toByteArray())
+        val bytesB = "b".toByteArray()
+        val refB = refOf(bytesB)
+        every {
+            urlConnectionFactory.createConnection(template.replace(PLACEHOLDER, refA), any(), any(), any())
+        } throws SocketTimeoutException("timed out")
+        val timeoutB = slot<Int>()
+        every {
+            urlConnectionFactory.createConnection(template.replace(PLACEHOLDER, refB), capture(timeoutB), any(), any())
+        } returns connection(code = 200, body = bytesB)
+
+        assertThat(download(realFetcher(provider(blobSource(template))), refA)).isFalse()
+        assertThat(download(realFetcher(provider(blobSource(template))), refB)).isTrue()
+
+        assertThat(timeoutB.captured).isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt())
+    }
+
+    @Test
     fun `a blob source's reduced timeout expires after the reset interval`() {
         val bytes = "body".toByteArray()
         val ref = refOf(bytes)
