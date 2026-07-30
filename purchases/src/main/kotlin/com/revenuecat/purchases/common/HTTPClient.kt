@@ -425,9 +425,10 @@ internal class HTTPClient(
             }
 
             val timeout = timeoutManager.getTimeoutForRequest(
-                host = fullURL.host,
+                // Keyed by the base URL's host, matching what `performAttempt` records the result under.
+                host = baseURL.host,
                 isFallback = isFallbackURL,
-                endpointSupportsFallbackURLs = endpoint.supportsFallbackBaseURLs,
+                fallbackAvailable = endpoint.supportsFallbackBaseURLs && appConfig.fallbackBaseURLs.isNotEmpty(),
                 isProxied = appConfig.hasProxyURL,
                 // The re-tiered fail-fast timeouts for main-API requests only apply when API sources are
                 // enabled. Blob-source downloads opt in independently of this setting.

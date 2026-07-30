@@ -52,13 +52,13 @@ internal class HTTPTimeoutManagerTest {
     private fun timeout(
         host: String?,
         isFallback: Boolean = false,
-        endpointSupportsFallbackURLs: Boolean = false,
+        fallbackAvailable: Boolean = false,
         isProxied: Boolean = false,
         reTieredTimeoutsEnabled: Boolean = true,
     ): Long = timeoutManager.getTimeoutForRequest(
         host = host,
         isFallback = isFallback,
-        endpointSupportsFallbackURLs = endpointSupportsFallbackURLs,
+        fallbackAvailable = fallbackAvailable,
         isProxied = isProxied,
         reTieredTimeoutsEnabled = reTieredTimeoutsEnabled,
     )
@@ -67,13 +67,13 @@ internal class HTTPTimeoutManagerTest {
 
     @Test
     fun `main-source no-fallback endpoint uses base timeout`() {
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = false))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = false))
             .isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS)
     }
 
     @Test
     fun `main-source fallback-supporting endpoint uses base timeout`() {
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS)
     }
 
@@ -85,7 +85,7 @@ internal class HTTPTimeoutManagerTest {
     fun `main-source no-fallback endpoint uses reduced timeout after a recent timeout`() {
         timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
 
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = false))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = false))
             .isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS)
     }
 
@@ -93,7 +93,7 @@ internal class HTTPTimeoutManagerTest {
     fun `main-source fallback-supporting endpoint uses reduced timeout after a recent timeout`() {
         timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
 
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
     }
 
@@ -103,7 +103,7 @@ internal class HTTPTimeoutManagerTest {
 
     @Test
     fun `fallback-host request uses flat timeout`() {
-        assertThat(timeout(host = HOST_A, isFallback = true, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_A, isFallback = true, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.FALLBACK_HOST_TIMEOUT_MS)
     }
 
@@ -111,13 +111,13 @@ internal class HTTPTimeoutManagerTest {
     fun `fallback-host request uses flat timeout even after a recent timeout`() {
         timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
 
-        assertThat(timeout(host = HOST_A, isFallback = true, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_A, isFallback = true, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.FALLBACK_HOST_TIMEOUT_MS)
     }
 
     @Test
     fun `proxied request uses flat timeout`() {
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true, isProxied = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true, isProxied = true))
             .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS)
     }
 
@@ -125,7 +125,7 @@ internal class HTTPTimeoutManagerTest {
     fun `proxied request never consults the per-host memory`() {
         timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
 
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true, isProxied = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true, isProxied = true))
             .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS)
     }
 
@@ -137,9 +137,9 @@ internal class HTTPTimeoutManagerTest {
     fun `timeout on one host does not affect another host`() {
         timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
 
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
-        assertThat(timeout(host = HOST_B, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_B, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS)
     }
 
@@ -148,7 +148,7 @@ internal class HTTPTimeoutManagerTest {
         timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
         timeoutManager.recordRequestResult(HOST_B, HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND)
 
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
     }
 
@@ -158,20 +158,20 @@ internal class HTTPTimeoutManagerTest {
         timeoutManager.recordRequestResult(HOST_B, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
 
         // Both hosts are reduced at the same time, each resolving to its own endpoint tier.
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = false))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = false))
             .isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS)
-        assertThat(timeout(host = HOST_B, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_B, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
     }
 
     @Test
     fun `success on main backend clears only that host entry`() {
         timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
 
         timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND)
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS)
     }
 
@@ -185,7 +185,7 @@ internal class HTTPTimeoutManagerTest {
 
         dateProvider.advanceTime(HTTPTimeoutManager.TIMEOUT_RESET_INTERVAL_MS - 60000)
 
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
     }
 
@@ -195,7 +195,7 @@ internal class HTTPTimeoutManagerTest {
 
         dateProvider.advanceTime(HTTPTimeoutManager.TIMEOUT_RESET_INTERVAL_MS + 1000)
 
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS)
     }
 
@@ -210,7 +210,7 @@ internal class HTTPTimeoutManagerTest {
         dateProvider.advanceTime(360000)
 
         // 11 minutes since the first timeout, but only 6 since the second: still reduced
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
     }
 
@@ -224,9 +224,9 @@ internal class HTTPTimeoutManagerTest {
         // 6 more minutes: host A is 11 minutes old (expired), host B is 6 minutes old (still valid).
         dateProvider.advanceTime(360000)
 
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS)
-        assertThat(timeout(host = HOST_B, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_B, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
     }
 
@@ -236,12 +236,12 @@ internal class HTTPTimeoutManagerTest {
 
         // Let the entry expire: back to base.
         dateProvider.advanceTime(HTTPTimeoutManager.TIMEOUT_RESET_INTERVAL_MS + 60000)
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS)
 
         // A fresh timeout re-arms the reduced tier.
         timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
     }
 
@@ -254,9 +254,9 @@ internal class HTTPTimeoutManagerTest {
         // Recording with a null host is a no-op
         timeoutManager.recordRequestResult(null, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
 
-        assertThat(timeout(host = null, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = null, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS)
-        assertThat(timeout(host = null, endpointSupportsFallbackURLs = false))
+        assertThat(timeout(host = null, fallbackAvailable = false))
             .isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS)
     }
 
@@ -267,11 +267,11 @@ internal class HTTPTimeoutManagerTest {
     @Test
     fun `OTHER_RESULT does not change state`() {
         timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
 
         timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.OTHER_RESULT)
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
     }
 
@@ -290,7 +290,7 @@ internal class HTTPTimeoutManagerTest {
             testManager.getTimeoutForRequest(
                 host = HOST_A,
                 isFallback = false,
-                endpointSupportsFallbackURLs = true,
+                fallbackAvailable = true,
                 isProxied = false,
                 reTieredTimeoutsEnabled = true,
             )
@@ -303,7 +303,7 @@ internal class HTTPTimeoutManagerTest {
 
     @Test
     fun `no-fallback endpoint uses the legacy flat timeout when re-tiered timeouts are disabled`() {
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = false, reTieredTimeoutsEnabled = false))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = false, reTieredTimeoutsEnabled = false))
             .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS)
     }
 
@@ -311,29 +311,29 @@ internal class HTTPTimeoutManagerTest {
     fun `no-fallback endpoint stays flat after a recent timeout when re-tiered timeouts are disabled`() {
         timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
 
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = false, reTieredTimeoutsEnabled = false))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = false, reTieredTimeoutsEnabled = false))
             .isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS)
     }
 
     @Test
     fun `fallback-supporting endpoint tiers are unaffected by the re-tiered flag`() {
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true, reTieredTimeoutsEnabled = false))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true, reTieredTimeoutsEnabled = false))
             .isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS)
 
         timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
 
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = true, reTieredTimeoutsEnabled = false))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = true, reTieredTimeoutsEnabled = false))
             .isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS)
     }
 
     @Test
     fun `no-fallback endpoint uses the re-tiered timeout when enabled (e_g_ blob-source downloads)`() {
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = false, reTieredTimeoutsEnabled = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = false, reTieredTimeoutsEnabled = true))
             .isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS)
 
         timeoutManager.recordRequestResult(HOST_A, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
 
-        assertThat(timeout(host = HOST_A, endpointSupportsFallbackURLs = false, reTieredTimeoutsEnabled = true))
+        assertThat(timeout(host = HOST_A, fallbackAvailable = false, reTieredTimeoutsEnabled = true))
             .isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS)
     }
 
