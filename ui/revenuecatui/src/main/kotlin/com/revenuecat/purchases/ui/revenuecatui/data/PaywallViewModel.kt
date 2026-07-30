@@ -140,6 +140,7 @@ internal interface PaywallViewModel {
 
     fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String?
     fun notifyWebCheckoutOpened()
+    fun notifyUrlOpened(url: String)
     fun invalidateCustomerInfoCache()
 
     /**
@@ -426,6 +427,10 @@ internal class PaywallViewModelImpl(
 
     override fun notifyWebCheckoutOpened() {
         listener?.onWebCheckoutOpened()
+    }
+
+    override fun notifyUrlOpened(url: String) {
+        listener?.onUrlOpened(url)
     }
 
     override fun invalidateCustomerInfoCache() {

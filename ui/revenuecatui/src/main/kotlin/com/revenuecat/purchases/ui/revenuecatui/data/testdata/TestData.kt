@@ -642,6 +642,12 @@ internal class MockViewModel(
         notifyWebCheckoutOpenedCallCount++
     }
 
+    var notifyUrlOpenedParams = mutableListOf<String>()
+        private set
+    override fun notifyUrlOpened(url: String) {
+        notifyUrlOpenedParams.add(url)
+    }
+
     var invalidateCustomerInfoCacheCallCount = 0
         private set
     override fun invalidateCustomerInfoCache() {

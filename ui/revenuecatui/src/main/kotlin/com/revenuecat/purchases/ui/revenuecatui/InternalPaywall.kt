@@ -30,6 +30,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.unit.Density
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -87,6 +89,29 @@ private fun PaywallFontScaling(
             content()
         }
     }
+}
+
+/**
+ * Provides a [UriHandler] that notifies the listener about URLs opened from within the paywall content, such as
+ * links in text components. URLs opened through [PaywallAction] are notified separately.
+ */
+@Composable
+private fun NotifyingUriHandler(
+    viewModel: PaywallViewModel,
+    content: @Composable () -> Unit,
+) {
+    val platformUriHandler = LocalUriHandler.current
+    val notifyingUriHandler = remember(platformUriHandler, viewModel) {
+        object : UriHandler {
+            override fun openUri(uri: String) {
+                // Throws if the URI cannot be opened, which skips the notification.
+                platformUriHandler.openUri(uri)
+                viewModel.notifyUrlOpened(uri)
+            }
+        }
+    }
+
+    CompositionLocalProvider(LocalUriHandler provides notifyingUriHandler, content = content)
 }
 
 @Suppress("LongMethod", "ViewModelForwarding")
@@ -170,20 +195,22 @@ internal fun InternalPaywall(
             PaywallFontScaling(
                 automaticallyScaleFontSize = paywallComponents?.dataOrNull?.automaticallyScaleFontSize ?: true,
             ) {
-                val workflowState = viewModel.workflowState.value
-                if (workflowState != null) {
-                    LoadedWorkflowPaywall(
-                        workflowState = workflowState,
-                        onTransitionComplete = viewModel::onTransitionComplete,
-                        clickHandler = rememberPaywallActionHandler(viewModel),
-                        componentInteractionTracker = componentInteractionTracker,
-                    )
-                } else {
-                    LoadedPaywallComponents(
-                        state = state,
-                        clickHandler = rememberPaywallActionHandler(viewModel),
-                        componentInteractionTracker = componentInteractionTracker,
-                    )
+                NotifyingUriHandler(viewModel) {
+                    val workflowState = viewModel.workflowState.value
+                    if (workflowState != null) {
+                        LoadedWorkflowPaywall(
+                            workflowState = workflowState,
+                            onTransitionComplete = viewModel::onTransitionComplete,
+                            clickHandler = rememberPaywallActionHandler(viewModel),
+                            componentInteractionTracker = componentInteractionTracker,
+                        )
+                    } else {
+                        LoadedPaywallComponents(
+                            state = state,
+                            clickHandler = rememberPaywallActionHandler(viewModel),
+                            componentInteractionTracker = componentInteractionTracker,
+                        )
+                    }
                 }
             }
         } else {
@@ -406,10 +433,10 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                     is PaywallAction.External.NavigateTo.Destination.CustomerCenter ->
                         Logger.w("Customer Center is not yet implemented on Android.")
 
-                    is PaywallAction.External.NavigateTo.Destination.Url -> context.handleUrlDestination(
-                        url = destination.url,
-                        method = destination.method,
-                    )
+                    is PaywallAction.External.NavigateTo.Destination.Url ->
+                        if (context.handleUrlDestination(url = destination.url, method = destination.method)) {
+                            viewModel.notifyUrlOpened(destination.url)
+                        }
                 }
             }
         }

@@ -218,6 +218,10 @@ private class LoadingViewModel(
         // no-op
     }
 
+    override fun notifyUrlOpened(url: String) {
+        // no-op
+    }
+
     override fun invalidateCustomerInfoCache() {
         // no-op
     }

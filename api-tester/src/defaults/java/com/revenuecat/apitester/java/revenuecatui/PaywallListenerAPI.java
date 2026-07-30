@@ -42,6 +42,9 @@ final class PaywallListenerAPI {
 
             @Override
             public void onWebCheckoutOpened() {}
+
+            @Override
+            public void onUrlOpened(@NonNull String url) {}
         };
     }
 }
