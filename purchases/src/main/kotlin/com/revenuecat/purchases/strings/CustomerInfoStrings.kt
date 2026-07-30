@@ -3,6 +3,8 @@ package com.revenuecat.purchases.strings
 internal object CustomerInfoStrings {
     const val INVALIDATING_CUSTOMERINFO_CACHE = "Invalidating CustomerInfo cache."
     const val NO_CACHED_CUSTOMERINFO = "No cached CustomerInfo, fetching from network."
+    const val NOT_CACHING_STALER_CUSTOMERINFO = "Received CustomerInfo is older than the cached one. " +
+        "Won't be stored in cache."
     const val NOT_WAITING_FOR_UNSYNCED_PURCHASES = "Found unsynced purchases. Computing CustomerInfo on " +
         "device and posting them in the background, as configured by " +
         "UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT."
