@@ -45,9 +45,11 @@ dokka {
 }
 
 // Shared by detektAll and detektAllBaseline: both analyze the whole rootDir, so they must skip the same paths.
-// `.claude` and `.conductor` hold nested checkouts of this repo created by agent tooling (git worktrees, so they
-// contain full copies of every source file). Without these excludes, detekt reports issues from other branches that
-// aren't in the developer's working tree at all, failing detektAll and the detekt pre-commit hook for clean changes.
+// `.claude`, `.conductor` and `.codex` hold nested checkouts of this repo created by agent tooling (git worktrees, so
+// they contain full copies of every source file). Without these excludes, detekt reports issues from other branches
+// that aren't in the developer's working tree at all, failing detektAll and the detekt pre-commit hook for clean
+// changes. These only match nested copies: a worktree analyzes its own sources normally, because the patterns are
+// relative to the rootDir you run Gradle from.
 val detektExcludes = listOf(
     "**/build/**",
     "**/test/**/*.kt",
@@ -55,6 +57,7 @@ val detektExcludes = listOf(
     "**/testCustomEntitlementComputation/**/*.kt",
     "**/.claude/**",
     "**/.conductor/**",
+    "**/.codex/**",
 )
 
 tasks.register<io.gitlab.arturbosch.detekt.Detekt>("detektAll") {
