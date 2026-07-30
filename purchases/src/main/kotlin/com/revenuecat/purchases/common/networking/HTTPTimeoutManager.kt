@@ -59,7 +59,8 @@ internal class HTTPTimeoutManager(
      * Calculates the timeout for a request attempt.
      * @param host The resolved host string of the attempt, used to look up the per-host fail-fast memory.
      * @param isFallback Whether this attempt targets a fallback host.
-     * @param endpointSupportsFallbackURLs Whether the endpoint has fallback-URL support.
+     * @param fallbackAvailable Whether the endpoint has fallback-URL support and at least one fallback URL
+     * is configured, i.e. whether this attempt actually has somewhere to fail over to.
      * @param isProxied Whether a proxy URL is set.
      * @param reTieredTimeoutsEnabled Whether this caller opts into the re-tiered no-fallback fail-fast
      * timeouts. Main-API requests opt in only when remote-config API sources are enabled (so the default
@@ -72,7 +73,7 @@ internal class HTTPTimeoutManager(
     fun getTimeoutForRequest(
         host: String?,
         isFallback: Boolean,
-        endpointSupportsFallbackURLs: Boolean,
+        fallbackAvailable: Boolean,
         isProxied: Boolean,
         reTieredTimeoutsEnabled: Boolean,
     ): Long {
@@ -83,8 +84,8 @@ internal class HTTPTimeoutManager(
             else -> {
                 val sourceRecentlyTimedOut = host?.let { hasRecentTimeout(it) } ?: false
                 when {
-                    endpointSupportsFallbackURLs && sourceRecentlyTimedOut -> REDUCED_TIMEOUT_MS
-                    endpointSupportsFallbackURLs -> SUPPORTED_FALLBACK_TIMEOUT_MS
+                    fallbackAvailable && sourceRecentlyTimedOut -> REDUCED_TIMEOUT_MS
+                    fallbackAvailable -> SUPPORTED_FALLBACK_TIMEOUT_MS
                     // The re-tiered no-fallback fail-fast timeouts only apply to callers that opt in. Otherwise
                     // keep the legacy flat timeout so the default configuration's behavior stays unchanged.
                     !reTieredTimeoutsEnabled -> DEFAULT_TIMEOUT_MS

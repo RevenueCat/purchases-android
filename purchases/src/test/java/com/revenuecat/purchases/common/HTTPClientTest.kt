@@ -1808,7 +1808,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
         assertThat(
             timeoutManager.getTimeoutForRequest(
-                host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+                host = host, isFallback = false, fallbackAvailable = true, isProxied = false,
                 reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
@@ -1837,7 +1837,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
         assertThat(
             timeoutManager.getTimeoutForRequest(
-                host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+                host = host, isFallback = false, fallbackAvailable = true, isProxied = false,
                 reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
@@ -1861,7 +1861,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         // Initially timeout should be the base tier
         assertThat(
             timeoutManager.getTimeoutForRequest(
-                host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+                host = host, isFallback = false, fallbackAvailable = true, isProxied = false,
                 reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.SUPPORTED_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
@@ -1914,7 +1914,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
             assertThat(
                 timeoutManager.getTimeoutForRequest(
-                    host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+                    host = host, isFallback = false, fallbackAvailable = true, isProxied = false,
                     reTieredTimeoutsEnabled = true,
                 )
             ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
@@ -1940,7 +1940,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         // Initially timeout should be the no-fallback base tier
         assertThat(
             timeoutManager.getTimeoutForRequest(
-                host = host, isFallback = false, endpointSupportsFallbackURLs = false, isProxied = false,
+                host = host, isFallback = false, fallbackAvailable = false, isProxied = false,
                 reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
@@ -1973,13 +1973,13 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         }
         assertThat(
             timeoutManager.getTimeoutForRequest(
-                host = host, isFallback = false, endpointSupportsFallbackURLs = false, isProxied = false,
+                host = host, isFallback = false, fallbackAvailable = false, isProxied = false,
                 reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         assertThat(
             timeoutManager.getTimeoutForRequest(
-                host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+                host = host, isFallback = false, fallbackAvailable = true, isProxied = false,
                 reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
@@ -1999,7 +1999,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         // With API sources disabled, the no-fallback endpoint uses the legacy flat timeout.
         assertThat(
             timeoutManager.getTimeoutForRequest(
-                host = host, isFallback = false, endpointSupportsFallbackURLs = false, isProxied = false,
+                host = host, isFallback = false, fallbackAvailable = false, isProxied = false,
                 reTieredTimeoutsEnabled = false,
             )
         ).isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
@@ -2027,7 +2027,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         }
         assertThat(
             timeoutManager.getTimeoutForRequest(
-                host = host, isFallback = false, endpointSupportsFallbackURLs = false, isProxied = false,
+                host = host, isFallback = false, fallbackAvailable = false, isProxied = false,
                 reTieredTimeoutsEnabled = false,
             )
         ).isEqualTo(HTTPTimeoutManager.DEFAULT_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
@@ -2048,7 +2048,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
         assertThat(
             timeoutManager.getTimeoutForRequest(
-                host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+                host = host, isFallback = false, fallbackAvailable = true, isProxied = false,
                 reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
@@ -2077,7 +2077,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.NOT_FOUND)
         assertThat(
             timeoutManager.getTimeoutForRequest(
-                host = host, isFallback = false, endpointSupportsFallbackURLs = true, isProxied = false,
+                host = host, isFallback = false, fallbackAvailable = true, isProxied = false,
                 reTieredTimeoutsEnabled = true,
             )
         ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
