@@ -1,4 +1,5 @@
 @file:OptIn(InternalRevenueCatAPI::class)
+@file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui
 
@@ -388,19 +389,7 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                         )
                     }
 
-                is PaywallAction.External.LaunchWebCheckout -> {
-                    val url = viewModel.getWebCheckoutUrl(action)
-                    if (url == null) {
-                        Logger.e("Web checkout URL cannot be found, not launching web checkout.")
-                    } else {
-                        viewModel.invalidateCustomerInfoCache()
-                        context.handleUrlDestination(url, action.openMethod)
-                        if (action.autoDismiss) {
-                            Logger.d("Auto-dismissing paywall after launching web checkout.")
-                            viewModel.closePaywall()
-                        }
-                    }
-                }
+                is PaywallAction.External.LaunchWebCheckout -> handleLaunchWebCheckout(context, viewModel, action)
 
                 is PaywallAction.External.NavigateBack -> {
                     if (!viewModel.handleBackNavigation()) {
@@ -427,7 +416,31 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
     }
 }
 
-private fun Context.handleUrlDestination(url: String, method: ButtonComponent.UrlMethod) {
+private fun handleLaunchWebCheckout(
+    context: Context,
+    viewModel: PaywallViewModel,
+    action: PaywallAction.External.LaunchWebCheckout,
+) {
+    val url = viewModel.getWebCheckoutUrl(action)
+    if (url == null) {
+        Logger.e("Web checkout URL cannot be found, not launching web checkout.")
+        return
+    }
+    viewModel.invalidateCustomerInfoCache()
+    val opened = context.handleUrlDestination(url, action.openMethod)
+    if (opened) {
+        viewModel.notifyWebCheckoutOpened()
+    }
+    if (action.autoDismiss) {
+        Logger.d("Auto-dismissing paywall after launching web checkout.")
+        viewModel.closePaywall()
+    }
+}
+
+/**
+ * @return whether the URL was actually opened.
+ */
+private fun Context.handleUrlDestination(url: String, method: ButtonComponent.UrlMethod): Boolean {
     val openingMethod = when (method) {
         ButtonComponent.UrlMethod.IN_APP_BROWSER -> URLOpeningMethod.IN_APP_BROWSER
         ButtonComponent.UrlMethod.EXTERNAL_BROWSER -> URLOpeningMethod.EXTERNAL_BROWSER
@@ -435,11 +448,11 @@ private fun Context.handleUrlDestination(url: String, method: ButtonComponent.Ur
         ButtonComponent.UrlMethod.UNKNOWN -> {
             // Buttons like this should be hidden, so this log should never be shown.
             Logger.e("Ignoring button click with unknown open method for URL: '$url'. This is a bug in the SDK.")
-            return
+            return false
         }
     }
 
-    URLOpener.openURL(this, url, openingMethod)
+    return URLOpener.openURL(this, url, openingMethod)
 }
 
 private fun Modifier.screenModeBackground(isInFullScreenMode: Boolean, backgroundColor: Color): Modifier = this

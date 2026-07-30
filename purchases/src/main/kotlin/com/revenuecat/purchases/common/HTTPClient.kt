@@ -214,7 +214,7 @@ internal class HTTPClient(
                 refreshETag = refreshETag,
             )
             if (outcome.canFailOverToNextSource) {
-                val nextSource = sourceToRetryOn(source, sourceAttempts, endpoint)
+                val nextSource = sourceToRetryOn(source, sourceAttempts, endpoint, outcome.connectionException)
                 if (nextSource != null) {
                     source = nextSource
                     continue
@@ -226,11 +226,10 @@ internal class HTTPClient(
                         throw outcome.exception
                     }
                     // Unlike iOS, we keep failing over on every connection-level IOException here, including
-                    // ones that may be caused by the device being offline. iOS suppresses the host switch on
-                    // device connectivity errors, but Android has no equivalent signal at this layer: a device
-                    // with no connectivity and a host whose DNS fails both surface as UnknownHostException, and
-                    // telling them apart requires a ConnectivityManager check (ACCESS_NETWORK_STATE), which the
-                    // SDK does not currently have.
+                    // ones that may be caused by the device being offline. A DeviceConnectivityChecker exists
+                    // (API source failover uses it to skip health checks while offline), but this long-standing
+                    // fallback-host path intentionally doesn't consult it yet to avoid changing default-on
+                    // behavior.
                     var fallbackResult = performRequestToFallbackURL()
                     if (RCHTTPStatusCodes.isServerError(fallbackResult.responseCode) && canUseFallback()) {
                         fallbackResult = performRequestToFallbackURL()
@@ -279,6 +278,10 @@ internal class HTTPClient(
                 is Failed -> true
                 is Completed -> result?.let { RCHTTPStatusCodes.isServerError(it.responseCode) } == true
             }
+
+        /** The connection-level failure this attempt hit, or null when the host actually responded. */
+        val connectionException: IOException?
+            get() = (this as? Failed)?.exception
     }
 
     /**
@@ -349,10 +352,11 @@ internal class HTTPClient(
         source: APISourceFailover.ResolvedSource?,
         sourceAttempts: Int,
         endpoint: Endpoint,
+        connectionException: IOException?,
     ): APISourceFailover.ResolvedSource? {
         val decision = source
             ?.takeIf { sourceAttempts < MAX_API_SOURCE_ATTEMPTS }
-            ?.let { apiSourceFailover?.onRequestFailure(it) }
+            ?.let { apiSourceFailover?.onRequestFailure(it, connectionException) }
         return (decision as? APISourceFailover.FailureDecision.RetryNextSource)?.next?.also {
             log(LogIntent.DEBUG) {
                 NetworkStrings.RETRYING_CALL_WITH_NEXT_API_SOURCE.format(endpoint.name, it.url)

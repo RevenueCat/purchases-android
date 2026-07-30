@@ -6,6 +6,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
 import com.revenuecat.purchases.common.warnLog
+import java.io.IOException
 import java.net.MalformedURLException
 import java.net.URL
 
@@ -16,12 +17,14 @@ import java.net.URL
  * healthy (the request failure was something else, e.g. endpoint-specific), so the original error
  * surfaces without switching hosts. A source whose health check returns non-2xx or cannot complete
  * is reported unhealthy and the next one takes over. 4xx responses never fail over: they are request
- * errors, not source problems.
+ * errors, not source problems. When a request never reached the source and the device itself has no
+ * network, no source can be reached anyway, so the health check is skipped and no failover happens.
  */
 internal class APISourceFailover(
     private val appConfig: AppConfig,
     private val sourceProvider: RemoteConfigSourceProvider,
     private val healthChecker: SourceHealthChecker,
+    private val connectivityChecker: DeviceConnectivityChecker,
 ) {
 
     /** A source handle plus its parsed base URL; only parseable sources are ever handed out. */
@@ -36,6 +39,12 @@ internal class APISourceFailover(
 
         /** Every source has been reported unhealthy; surface the original error. */
         object SourcesExhausted : FailureDecision
+
+        /**
+         * The request never reached the source and the device has no network, so the failure is
+         * client-side; surface the original error without consuming a source.
+         */
+        object DeviceOffline : FailureDecision
     }
 
     /**
@@ -57,17 +66,29 @@ internal class APISourceFailover(
      * 5xx, health-checking the source to tell a source outage apart from anything else. The health
      * check performs blocking network I/O on the calling thread, so this must always be called from
      * a background thread (as [com.revenuecat.purchases.common.HTTPClient] requests already are).
+     *
+     * [connectionException] is the failure the request hit, or null when the source responded (a 5xx).
+     * A response proves the device is online, so device connectivity is only worth consulting when no
+     * response arrived at all.
      */
-    fun onRequestFailure(source: ResolvedSource): FailureDecision {
-        if (healthChecker.isHealthy(source.handle.url)) {
+    fun onRequestFailure(source: ResolvedSource, connectionException: IOException?): FailureDecision = when {
+        connectionException != null && connectivityChecker.isDeviceOffline() -> {
+            log(LogIntent.DEBUG) {
+                "Device appears to be offline; not failing over from ${source.handle.url}."
+            }
+            FailureDecision.DeviceOffline
+        }
+        healthChecker.isHealthy(source.handle.url) -> {
             log(LogIntent.DEBUG) {
                 "API source ${source.handle.url} is healthy despite the request failing; not failing over."
             }
-            return FailureDecision.SourceHealthy
+            FailureDecision.SourceHealthy
         }
-        sourceProvider.reportUnhealthy(source.handle)
-        return currentResolvedSource()?.let { FailureDecision.RetryNextSource(it) }
-            ?: FailureDecision.SourcesExhausted
+        else -> {
+            sourceProvider.reportUnhealthy(source.handle)
+            currentResolvedSource()?.let { FailureDecision.RetryNextSource(it) }
+                ?: FailureDecision.SourcesExhausted
+        }
     }
 
     /**

@@ -197,6 +197,57 @@ internal class BackendAPISourceFailoverIntegrationTest {
         assertThat(sourceBServer.requestCount).isEqualTo(0)
     }
 
+    @Test
+    fun `getCustomerInfo does not fail over nor health check on a connection error while offline`() {
+        // The request never gets a response and source A's health check would report it unhealthy, so
+        // failover WOULD happen if the offline gate didn't short-circuit it.
+        sourceAServer.routeResponses(
+            endpoint = response(200).apply { socketPolicy = SocketPolicy.DISCONNECT_AFTER_REQUEST },
+            health = response(503),
+        )
+        sourceBServer.routeResponses(endpoint = customerInfoResponse(), health = response(200))
+        var deviceOffline = true
+        val backend = createBackend(
+            sourceAServer.url("/").toString(),
+            sourceBServer.url("/").toString(),
+            deviceOffline = { deviceOffline },
+        )
+
+        val result = fetchCustomerInfo(backend)
+
+        assertThat(result).isInstanceOf(FetchResult.Error::class.java)
+        assertThat((result as FetchResult.Error).error.code).isEqualTo(PurchasesErrorCode.NetworkError)
+        // containsOnly, not containsExactly: HttpURLConnection retries the dropped GET itself.
+        assertThat(sourceAServer.recordedPaths()).containsOnly(customerInfoPath)
+        assertThat(sourceBServer.requestCount).isEqualTo(0)
+
+        // Back online, the same failure health-checks and fails over from the same, unconsumed source.
+        deviceOffline = false
+        val secondResult = fetchCustomerInfo(backend)
+
+        assertThat(secondResult).isInstanceOf(FetchResult.Success::class.java)
+        assertThat(sourceAServer.recordedPaths()).contains(healthPath)
+        assertThat(sourceBServer.recordedPaths()).containsExactly(customerInfoPath)
+    }
+
+    @Test
+    fun `getCustomerInfo still fails over on a 5xx while the device is offline`() {
+        sourceAServer.routeResponses(endpoint = response(500), health = response(503))
+        sourceBServer.routeResponses(endpoint = customerInfoResponse(), health = response(200))
+        val backend = createBackend(
+            sourceAServer.url("/").toString(),
+            sourceBServer.url("/").toString(),
+            deviceOffline = { true },
+        )
+
+        // A 5xx proves the source responded, so the offline signal is irrelevant here.
+        val result = fetchCustomerInfo(backend)
+
+        assertThat(result).isInstanceOf(FetchResult.Success::class.java)
+        assertThat(sourceAServer.recordedPaths()).containsExactly(customerInfoPath, healthPath)
+        assertThat(sourceBServer.recordedPaths()).containsExactly(customerInfoPath)
+    }
+
     // region Helpers
 
     private fun fetchCustomerInfo(backend: Backend): FetchResult {
@@ -211,13 +262,18 @@ internal class BackendAPISourceFailoverIntegrationTest {
     }
 
     /** Wires the full real stack: sources come from a `sources` topic pointing at [sourceUrls] in order. */
-    private fun createBackend(vararg sourceUrls: String): Backend {
+    private fun createBackend(vararg sourceUrls: String, deviceOffline: () -> Boolean = { false }): Backend {
         val appConfig = createAppConfig()
         val topic = sourcesTopic(sourceUrls.toList())
         val sourceProvider = DefaultRemoteConfigSourceProvider(
             { requestedTopic -> topic.takeIf { requestedTopic == RemoteConfigTopic.Sources } },
         )
-        val apiSourceFailover = APISourceFailover(appConfig, sourceProvider, SourceHealthChecker())
+        val apiSourceFailover = APISourceFailover(
+            appConfig,
+            sourceProvider,
+            SourceHealthChecker(),
+            mockk { every { isDeviceOffline() } answers { deviceOffline() } },
+        )
         val sharedPreferencesEditor = mockk<SharedPreferences.Editor>().apply {
             every { putString(any(), any()) } returns this
             every { remove(any()) } returns this
