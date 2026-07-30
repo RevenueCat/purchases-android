@@ -99,9 +99,6 @@ internal class SourceHealthChecker(
     private companion object {
         const val HEALTH_PATH = "v1/health/connectivity"
         const val RESULT_VALIDITY_MS = 10_000L
-
-        // A health probe is a quick liveness check, not a data request, so it keeps a fixed short timeout
-        // rather than consulting the per-host timeout memory used by real requests.
         const val HEALTH_CHECK_TIMEOUT_MS = 5000
         val HEALTHY_RESPONSE_CODES = 200..299
     }
