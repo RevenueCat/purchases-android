@@ -326,9 +326,9 @@ internal class HTTPClient(
             // With remote-config API sources enabled, record a timeout for any main-source attempt that timed
             // out, regardless of fallback-URL support. When disabled, keep the legacy behavior of only arming
             // the fail-fast memory for endpoints that support fallback URLs.
-            if (e is SocketTimeoutException && isMainBackend &&
-                (appConfig.usesRemoteConfigAPISources || fallbackAvailable)
-            ) {
+            val timedOutOnMainSource = e is SocketTimeoutException && isMainBackend
+            val shouldArmFailFastMemory = appConfig.usesRemoteConfigAPISources || fallbackAvailable
+            if (timedOutOnMainSource && shouldArmFailFastMemory) {
                 requestResult = HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT
             }
         } finally {
