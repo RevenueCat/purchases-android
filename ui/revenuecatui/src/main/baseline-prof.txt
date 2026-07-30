@@ -469,6 +469,10 @@ Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallStateKt;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallStateKt;->getCurrentColors(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallState$Loaded$Legacy;Landroidx/compose/runtime/Composer;I)Lcom/revenuecat/purchases/ui/revenuecatui/data/processed/TemplateConfiguration$Colors;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallStateKt;->getSelectedLocalization(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallState$Loaded$Legacy;)Lcom/revenuecat/purchases/ui/revenuecatui/data/processed/ProcessedLocalizedConfiguration;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallStateKt;->isInFullScreenMode(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallState$Loaded$Legacy;)Z
+Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallStateStore;
+HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallStateStore;-><clinit>()V
+HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallStateStore;-><init>(Ljava/util/Map;)V
+HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallStateStore;->registerDeclarations(Ljava/util/Map;)V
 Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModel;
 Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModel$DefaultImpls;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModel$DefaultImpls;->closePaywall$default(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModel;Lcom/revenuecat/purchases/ui/revenuecatui/activity/PaywallResult;ILjava/lang/Object;)V
@@ -482,7 +486,7 @@ HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;-><init>(
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;-><init>(Lcom/revenuecat/purchases/ui/revenuecatui/helpers/ResourceProvider;Lcom/revenuecat/purchases/ui/revenuecatui/data/PurchasesType;Lcom/revenuecat/purchases/ui/revenuecatui/PaywallOptions;Landroidx/compose/material3/ColorScheme;ZLkotlin/jvm/functions/Function1;ZLcom/revenuecat/purchases/ui/revenuecatui/data/ProductChangeCalculator;ZLkotlinx/coroutines/CoroutineDispatcher;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->access$getOptions$p(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;)Lcom/revenuecat/purchases/ui/revenuecatui/PaywallOptions;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->access$updateStateFromOffering(Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;Lcom/revenuecat/purchases/ui/revenuecatui/OfferingSelection;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
-HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->calculateState(Lcom/revenuecat/purchases/Offering;Landroidx/compose/material3/ColorScheme;Ljava/lang/String;Lcom/revenuecat/purchases/ui/revenuecatui/PaywallMode;)Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallState;
+HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->calculateState(Lcom/revenuecat/purchases/Offering;Landroidx/compose/material3/ColorScheme;Ljava/lang/String;Lcom/revenuecat/purchases/ui/revenuecatui/PaywallMode;Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallStateStore;)Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallState;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->cancelStateUpdate()V
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->clearWorkflowState()V
 HSPLcom/revenuecat/purchases/ui/revenuecatui/data/PaywallViewModelImpl;->closePaywall(Lcom/revenuecat/purchases/ui/revenuecatui/activity/PaywallResult;)V

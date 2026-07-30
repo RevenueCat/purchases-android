@@ -37,7 +37,7 @@ public class CarouselComponent(
     @SerialName("page_alignment")
     public val pageAlignment: VerticalAlignment,
     @get:JvmSynthetic
-    public val size: Size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fit),
+    public val size: Size = Size(width = SizeConstraint.Fit(), height = SizeConstraint.Fit()),
     @get:JvmSynthetic
     @SerialName("page_peek")
     public val pagePeek: Int? = null,

@@ -40,8 +40,8 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.ByteArrayInputStream
 import java.net.HttpURLConnection
-import java.nio.ByteBuffer
 import java.security.MessageDigest
+import java.util.Date
 
 /**
  * End-to-end: drives a fake `/v1/config` sync through the **real** [RemoteConfigManager] (the single read
@@ -60,7 +60,7 @@ class WorkflowsConfigIntegrationTest {
     private lateinit var provider: WorkflowsConfigProvider
     private lateinit var manager: RemoteConfigManager
 
-    private lateinit var onSuccess: (RCContainer?, VerificationResult) -> Unit
+    private lateinit var onSuccess: (RCContainer?, Date?, VerificationResult) -> Unit
 
     /** Stateful stand-in for the persisted config file: write stashes, read returns the latest. */
     private var persistedState: PersistedRemoteConfigurationState? = null
@@ -103,9 +103,9 @@ class WorkflowsConfigIntegrationTest {
         provider = WorkflowsConfigProvider(manager)
 
         every {
-            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any())
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any())
         } answers {
-            onSuccess = arg(6)
+            onSuccess = arg(7)
         }
     }
 
@@ -359,24 +359,24 @@ class WorkflowsConfigIntegrationTest {
             assertThat(completed).isTrue()
             // The topic was already committed by the sync() above — onPaywallConfigReady must not trigger
             // another one; this is what keeps OfferingsManager's gate cheap on a warm cache.
-            verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+            verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
         }
 
     // Asset prewarming is out of scope here (covered by WorkflowManagerTest), so the manager gets a stubbed
-    // ui-config provider and a no-op pre-downloader.
+    // ui-config provider and a no-op prewarmer.
     private fun workflowManagerWith(provider: WorkflowsConfigProvider) = WorkflowManager(
         workflowsConfigProvider = provider,
         uiConfigProvider = mockk {
             every { isWarm() } returns false
             coEvery { getUiConfig() } returns emptyUiConfig()
         },
-        workflowAssetPreDownloader = mockk(relaxed = true),
+        workflowAssetPrewarmer = mockk(relaxed = true),
         scope = testScope,
     )
 
     private fun sync(configJson: String, vararg blobs: Pair<String, String>) {
         manager.refreshRemoteConfig(appInBackground = false, appUserID = "user-1", fetchContext = RemoteConfigFetchContext.AppStart)
-        onSuccess.invoke(containerWith(configJson, *blobs), VerificationResult.VERIFIED)
+        onSuccess.invoke(containerWith(configJson, *blobs), Date(), VerificationResult.VERIFIED)
     }
 
     private fun minimalWorkflow(id: String) = PublishedWorkflow(
@@ -388,18 +388,15 @@ class WorkflowsConfigIntegrationTest {
     )
 
     private fun containerWith(configJson: String, vararg blobs: Pair<String, String>): RCContainer {
-        val configElement = mockk<RCElement>()
-        every { configElement.decode() } returns ByteBuffer.wrap(configJson.toByteArray())
-        val elements = blobs.associate { (ref, json) ->
+        val blobElements = blobs.map { (ref, json) ->
             val element = mockk<RCElement>()
-            val bytes = ByteBuffer.wrap(json.toByteArray())
-            every { element.decode() } returns bytes
-            every { element.matchesChecksum(any()) } returns true
-            ref to element
+            every { element.checksumBase64() } returns ref
+            every { element.decode() } returns json.toByteArray()
+            element
         }
         val container = mockk<RCContainer>()
-        every { container.config } returns configElement
-        every { container.elements } returns elements
+        every { container.config } returns configJson.toByteArray()
+        every { container.contentElements } returns blobElements
         return container
     }
 

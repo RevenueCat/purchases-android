@@ -9,10 +9,12 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.networking.APISourceFailover
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
+import com.revenuecat.purchases.common.networking.SourceHealthChecker
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.interfaces.StorefrontProvider
@@ -72,6 +74,8 @@ internal abstract class BaseHTTPClientTest {
         signingManager: SigningManager? = null,
         storefrontProvider: StorefrontProvider = mockStorefrontProvider,
         apiSourceProvider: RemoteConfigSourceProvider? = null,
+        sourceHealthChecker: SourceHealthChecker = SourceHealthChecker(),
+        deviceOffline: Boolean = false,
         localeProvider: LocaleProvider = DefaultLocaleProvider(),
         forceServerErrorStrategy: ForceServerErrorStrategy? = null,
         timeoutManager: HTTPTimeoutManager? = null,
@@ -81,7 +85,14 @@ internal abstract class BaseHTTPClientTest {
         diagnosticsTracker,
         signingManager ?: mockSigningManager,
         storefrontProvider,
-        apiSourceProvider,
+        apiSourceProvider?.let {
+            APISourceFailover(
+                appConfig,
+                it,
+                sourceHealthChecker,
+                mockk { every { isDeviceOffline() } returns deviceOffline },
+            )
+        },
         dateProvider,
         localeProvider = localeProvider,
         forceServerErrorStrategy = forceServerErrorStrategy,

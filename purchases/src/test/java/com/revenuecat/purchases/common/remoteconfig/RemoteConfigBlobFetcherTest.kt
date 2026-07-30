@@ -38,7 +38,6 @@ import org.robolectric.annotation.Config
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.net.SocketTimeoutException
-import java.nio.ByteBuffer
 import java.security.MessageDigest
 import java.util.Date
 import java.util.concurrent.CopyOnWriteArrayList
@@ -100,9 +99,9 @@ class RemoteConfigBlobFetcherTest {
 
         // The placeholder is substituted with the ref before the request is made.
         verify { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) }
-        val written = slot<ByteBuffer>()
+        val written = slot<ByteArray>()
         verify { blobStore.write(ref, capture(written)) }
-        assertThat(written.captured.toBytes()).isEqualTo(bytes)
+        assertThat(written.captured).isEqualTo(bytes)
     }
 
     @Test
@@ -301,7 +300,7 @@ class RemoteConfigBlobFetcherTest {
         val started = CopyOnWriteArrayList<String>()
         recordStartedConnections(started)
         val fetcherScope = CoroutineScope(StandardTestDispatcher(testScheduler))
-        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), urlConnectionFactory, fetcherScope)
+        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), timeoutManager, urlConnectionFactory, fetcherScope)
 
         // Deliberately unsorted: the LOW queue must attempt the refs in exactly the order they were handed over.
         val refs = listOf("e", "a", "d", "b", "c").map { refOf("blob-$it".toByteArray()) }
@@ -678,11 +677,6 @@ class RemoteConfigBlobFetcherTest {
     private fun refOf(bytes: ByteArray): String {
         val digest = MessageDigest.getInstance("SHA-256").digest(bytes)
         return Base64.encodeToString(digest.copyOf(REF_HASH_BYTES), Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
-    }
-
-    private fun ByteBuffer.toBytes(): ByteArray {
-        val view = duplicate().apply { rewind() }
-        return ByteArray(view.remaining()).also { view.get(it) }
     }
 
     private class FakeTopicStore(private val sources: ConfigTopic?) : RemoteConfigTopicStore {

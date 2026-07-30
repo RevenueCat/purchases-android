@@ -8,7 +8,6 @@ import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.emptyUiConfig
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
-import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -38,7 +37,7 @@ class WorkflowManagerTest {
 
     private val mockProvider: WorkflowsConfigProvider = mockk()
     private val mockUiConfigProvider: UiConfigProvider = mockk()
-    private val mockAssetPreDownloader: WorkflowAssetPreDownloader = mockk()
+    private val mockAssetPreDownloader: WorkflowAssetPrewarmer = mockk()
     private val uiConfig = emptyUiConfig()
     private val testScope = TestScope(UnconfinedTestDispatcher())
     private lateinit var workflowManager: WorkflowManager
@@ -190,12 +189,12 @@ class WorkflowManagerTest {
     }
 
     @Test
-    fun `workflowIdForOfferingId delegates to the provider`() = runTest {
-        coEvery { mockProvider.workflowIdForOfferingId("off_1") } returns "wf_1"
+    fun `resolveWorkflow delegates to the provider`() = runTest {
+        coEvery { mockProvider.resolveWorkflow("off_1") } returns WorkflowResolution.Found("wf_1")
 
-        val result = workflowManager.workflowIdForOfferingId("off_1")
+        val result = workflowManager.resolveWorkflow("off_1")
 
-        assertThat(result).isEqualTo("wf_1")
+        assertThat(result).isEqualTo(WorkflowResolution.Found("wf_1"))
     }
 
     @Test

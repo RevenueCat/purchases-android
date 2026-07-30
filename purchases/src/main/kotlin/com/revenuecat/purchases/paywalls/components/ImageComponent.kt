@@ -32,7 +32,7 @@ public class ImageComponent(
     @get:JvmSynthetic
     public val visible: Boolean? = null,
     @get:JvmSynthetic
-    public val size: Size = Size(width = Fill, height = Fit),
+    public val size: Size = Size(width = Fill, height = Fit()),
     @get:JvmSynthetic
     @SerialName("override_source_lid")
     public val overrideSourceLid: LocalizationKey? = null,

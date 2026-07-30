@@ -445,11 +445,11 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     }
 
     @Test
-    fun `performRequest verifies the config part bytes regardless of the element checksum`() {
+    fun `performRequest fails RC Format verification when the config element checksum does not match`() {
         val endpoint = Endpoint.GetRemoteConfig("app")
         val configBytes = "{\"config\":true}".toByteArray()
-        // The element checksum is an untrusted lookup hint: a mismatch must not affect verification, which is
-        // anchored on the signature over the config part bytes.
+        // The config element's checksum guards against accidental corruption and is verified when the
+        // container decodes element 0 during parse; a mismatch fails the parse before signing.
         val container = buildContainer(configBytes, configChecksum = ByteArray(24) { 0x7F })
 
         mockSigningResult(VerificationResult.VERIFIED)
@@ -465,18 +465,8 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
         server.takeRequest()
 
-        assertThat(result.verificationResult).isEqualTo(VerificationResult.VERIFIED)
-        verify(exactly = 1) {
-            mockSigningManager.verifyResponse(
-                urlPath = endpoint.getPath(),
-                "test-signature",
-                "test-nonce",
-                match<ByteArray> { it.contentEquals(configBytes) },
-                "1234567890",
-                "test-etag",
-                postFieldsToSignHeader = null
-            )
-        }
+        assertThat(result.verificationResult).isEqualTo(VerificationResult.FAILED)
+        assertSigningNotPerformed()
     }
 
     @Test

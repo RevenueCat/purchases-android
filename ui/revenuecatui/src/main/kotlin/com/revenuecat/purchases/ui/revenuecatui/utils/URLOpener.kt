@@ -20,8 +20,14 @@ internal enum class URLOpeningMethod {
 }
 
 internal object URLOpener {
-    @JvmSynthetic internal fun openURL(context: Context, url: String, method: URLOpeningMethod) {
+    /**
+     * @return whether the URL was actually opened.
+     */
+    @JvmSynthetic internal fun openURL(context: Context, url: String, method: URLOpeningMethod): Boolean {
+        var opened = true
+
         fun handleException(exception: Exception) {
+            opened = false
             val message = if (exception is ActivityNotFoundException) {
                 context.getString(R.string.no_browser_cannot_open_link)
             } else {
@@ -49,5 +55,7 @@ internal object URLOpener {
             URLOpeningMethod.DEEP_LINK,
             -> context.openUriOrElse(url, ::handleException)
         }
+
+        return opened
     }
 }

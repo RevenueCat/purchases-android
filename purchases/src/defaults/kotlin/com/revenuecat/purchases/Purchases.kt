@@ -23,6 +23,7 @@ import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
@@ -423,8 +424,8 @@ public class Purchases internal constructor(
 
     @InternalRevenueCatAPI
     @JvmSynthetic
-    public suspend fun workflowIdForOfferingId(offeringId: String): String? =
-        purchasesOrchestrator.workflowIdForOfferingId(offeringId)
+    public suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
+        purchasesOrchestrator.resolveWorkflow(offeringId)
 
     /**
      * Gets the StoreProduct(s) for the given list of product ids for all product types.

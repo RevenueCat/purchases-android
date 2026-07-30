@@ -19,6 +19,14 @@
 #PURCHASE_TESTER_API_KEY=your_key
 
 ## ──────────────────────────────────────────────
+## E2E Tester — workflow Maestro flows (maestro/workflows/)
+## Test-store key for the dedicated E2E project that hosts the `default_workflows`
+## offering. When set, the e2etests app configures against it with workflows enabled.
+## Only needed to run the local-only workflow flows.
+## ──────────────────────────────────────────────
+#E2E_WORKFLOWS_API_KEY=your_test_store_key
+
+## ──────────────────────────────────────────────
 ## AdMob Sample (examples/admob-sample)
 ## Uses REVENUECAT_API_KEY (above). Ad unit IDs and the app ID default
 ## to Google's test IDs; override to use your own (e.g. for SSV reward

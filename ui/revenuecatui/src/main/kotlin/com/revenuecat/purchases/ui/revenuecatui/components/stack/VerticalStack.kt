@@ -85,7 +85,7 @@ private class VerticalStackScopeImpl(
 ) : VerticalStackScope {
     private var hasAnyItemsWithFillHeight = false
     val shouldApplyFillSpacers: Boolean
-        get() = height != Fit && !hasAnyItemsWithFillHeight
+        get() = height !is Fit && !hasAnyItemsWithFillHeight
     var columnContent: @Composable ColumnScope.() -> Unit = {}
 
     override fun items(

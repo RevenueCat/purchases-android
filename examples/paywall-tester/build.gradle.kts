@@ -138,6 +138,7 @@ dependencies {
     implementation(project(":feature:amazon"))
     implementation(project(":ui:debugview"))
     implementation(project(":ui:revenuecatui"))
+    implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.androidx.core)
     implementation(libs.androidx.lifecycle.runtime.ktx)

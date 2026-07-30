@@ -29,7 +29,7 @@ complexity:
 libraries:
   active: true
   ForbiddenPublicDataClass:
-    excludes: [ '**/examples/**', '**/rules-engine-internal/**' ]
+    excludes: [ '**/examples/**' ]
     ignoreAnnotated: [ 'InternalRevenueCatAPI' ]
   LibraryEntitiesShouldNotBePublic:
     active: false
@@ -43,9 +43,9 @@ revenuecat:
   active: true
   ForbiddenPublicSealedClass:
     active: true
-    excludes: [ '**/examples/**', '**/rules-engine-internal/**' ]
+    excludes: [ '**/examples/**' ]
     ignoreAnnotated: [ 'InternalRevenueCatAPI' ]
   ForbiddenPublicEnum:
     active: true
-    excludes: [ '**/examples/**', '**/rules-engine-internal/**' ]
+    excludes: [ '**/examples/**' ]
     ignoreAnnotated: [ 'InternalRevenueCatAPI' ]

@@ -250,7 +250,7 @@ class OfferingImagePreDownloaderTest {
                             autoplay = true,
                             loop = true,
                             muteAudio = true,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                             fitMode = FitMode.FILL,
                             maskShape = null,
                             colorOverlay = null,

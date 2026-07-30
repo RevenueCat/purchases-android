@@ -253,7 +253,7 @@ private fun TimelineComponentView_Connector_Margin_Preview() {
 
 private class SizeParameterProvider : PreviewParameterProvider<Size> {
     private val allSizeConstraints = listOf(
-        SizeConstraint.Fit,
+        SizeConstraint.Fit(),
         SizeConstraint.Fill,
         SizeConstraint.Fixed(200u),
     )
@@ -292,7 +292,7 @@ private fun TimelineComponentView_Size_Preview(
 
 private class SizeConstraintParameterProvider : PreviewParameterProvider<SizeConstraint> {
     override val values: Sequence<SizeConstraint> = sequenceOf(
-        SizeConstraint.Fit,
+        SizeConstraint.Fit(),
         SizeConstraint.Fill,
         SizeConstraint.Fixed(100u),
     )
@@ -307,7 +307,7 @@ private fun TimelineComponentView_TextSize_Preview(
         Box(modifier = Modifier.background(Color.White)) {
             TimelineComponentView(
                 style = previewStyle(
-                    size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fit),
+                    size = Size(width = SizeConstraint.Fit(), height = SizeConstraint.Fit()),
                     items = listOf(
                         previewItem(
                             icon = previewIcon(
@@ -319,14 +319,14 @@ private fun TimelineComponentView_TextSize_Preview(
                                 fontWeight = FontWeight.MEDIUM,
                                 horizontalAlignment = HorizontalAlignment.LEADING,
                                 textAlign = HorizontalAlignment.LEADING,
-                                size = Size(width = textWidth, height = SizeConstraint.Fit),
+                                size = Size(width = textWidth, height = SizeConstraint.Fit()),
                             ),
                             description = previewTextComponentStyle(
                                 text = "Description of what you get today if you subscribe with multiple lines " +
                                     "to check wrapping",
                                 horizontalAlignment = HorizontalAlignment.LEADING,
                                 textAlign = HorizontalAlignment.LEADING,
-                                size = Size(width = textWidth, height = SizeConstraint.Fit),
+                                size = Size(width = textWidth, height = SizeConstraint.Fit()),
                             ),
                         ),
                         previewItem(
@@ -339,13 +339,13 @@ private fun TimelineComponentView_TextSize_Preview(
                                 fontWeight = FontWeight.MEDIUM,
                                 horizontalAlignment = HorizontalAlignment.LEADING,
                                 textAlign = HorizontalAlignment.LEADING,
-                                size = Size(width = textWidth, height = SizeConstraint.Fit),
+                                size = Size(width = textWidth, height = SizeConstraint.Fit()),
                             ),
                             description = previewTextComponentStyle(
                                 text = "We'll remind you that your trial is ending soon",
                                 horizontalAlignment = HorizontalAlignment.LEADING,
                                 textAlign = HorizontalAlignment.LEADING,
-                                size = Size(width = textWidth, height = SizeConstraint.Fit),
+                                size = Size(width = textWidth, height = SizeConstraint.Fit()),
                             ),
                         ),
                         previewItem(
@@ -358,13 +358,13 @@ private fun TimelineComponentView_TextSize_Preview(
                                 fontWeight = FontWeight.MEDIUM,
                                 horizontalAlignment = HorizontalAlignment.LEADING,
                                 textAlign = HorizontalAlignment.LEADING,
-                                size = Size(width = textWidth, height = SizeConstraint.Fit),
+                                size = Size(width = textWidth, height = SizeConstraint.Fit()),
                             ),
                             description = previewTextComponentStyle(
                                 text = "You'll be charged. You can cancel anytime before.",
                                 horizontalAlignment = HorizontalAlignment.LEADING,
                                 textAlign = HorizontalAlignment.LEADING,
-                                size = Size(width = textWidth, height = SizeConstraint.Fit),
+                                size = Size(width = textWidth, height = SizeConstraint.Fit()),
                             ),
                             connector = null,
                         ),
@@ -394,7 +394,7 @@ private fun previewStyle(
     columnGutter: Int = 8,
     iconAlignment: TimelineComponent.IconAlignment = TimelineComponent.IconAlignment.TitleAndDescription,
     visible: Boolean = true,
-    size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+    size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
     padding: PaddingValues = PaddingValues(all = 5.dp),
     margin: PaddingValues = PaddingValues(all = 5.dp),
     items: List<TimelineComponentStyle.ItemStyle> = previewItems(),

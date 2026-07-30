@@ -423,7 +423,7 @@ internal class ButtonComponentTests {
                                     backgroundBlur = true,
                                     size = Size(
                                         width = SizeConstraint.Fill,
-                                        height = SizeConstraint.Fit,
+                                        height = SizeConstraint.Fit(),
                                     )
                                 )
                             ),
@@ -894,7 +894,7 @@ internal class ButtonComponentTests {
                                 backgroundBlur = true,
                                 size = Size(
                                     width = SizeConstraint.Fill,
-                                    height = SizeConstraint.Fit,
+                                    height = SizeConstraint.Fit(),
                                 )
                             )
                         )

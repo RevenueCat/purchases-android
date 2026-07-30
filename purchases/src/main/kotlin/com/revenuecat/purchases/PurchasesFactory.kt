@@ -29,8 +29,11 @@ import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.networking.APISourceFailover
+import com.revenuecat.purchases.common.networking.DeviceConnectivityChecker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
+import com.revenuecat.purchases.common.networking.SourceHealthChecker
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offerings.OfferingsFactory
 import com.revenuecat.purchases.common.offerings.OfferingsManager
@@ -47,6 +50,7 @@ import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.workflows.WorkflowAssetPrewarmer
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.identity.IdentityManager
@@ -66,7 +70,6 @@ import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.PaywallComponentsImagePreDownloader
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
-import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
@@ -213,6 +216,12 @@ internal class PurchasesFactory(
                 remoteConfigDiskCache?.read()?.topics?.get(it.wireName)
             }
             val apiSourceProvider = DefaultRemoteConfigSourceProvider(remoteConfigTopicStore)
+            val apiSourceFailover = APISourceFailover(
+                appConfig,
+                apiSourceProvider,
+                SourceHealthChecker(),
+                DeviceConnectivityChecker(application),
+            )
 
             val timeoutManager = HTTPTimeoutManager(appConfig)
             val httpClient = HTTPClient(
@@ -221,7 +230,7 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 signingManager,
                 cache,
-                apiSourceProvider,
+                apiSourceFailover,
                 localeProvider = localeProvider,
                 forceServerErrorStrategy = forceServerErrorStrategy,
                 timeoutManager = timeoutManager,
@@ -307,14 +316,30 @@ internal class PurchasesFactory(
                 null
             }
 
+            val fontLoader = FontLoader(
+                context = contextForStorage,
+            )
+            val offeringFontPreDownloader = OfferingFontPreDownloader(
+                context = contextForStorage,
+                fontLoader = fontLoader,
+            )
+
             // Single shared instances so the in-memory caches the render path reads synchronously are the same
             // ones the manager warms on commit. Registered as commit listeners; a null manager means workflows
             // are off, so neither exists.
             val uiConfigProvider = remoteConfigManager?.let { UiConfigProvider(it) }
+            // Warms a workflow's assets (images + ui_config fonts) once — eagerly at load time for the current
+            // offering's workflow (transiently so the cache stays byte-only, mirroring how offerings pre-download
+            // only the current offering's assets) and on the render path. Shared with WorkflowManager so both
+            // dedup against one set of warmed workflow ids.
+            val workflowAssetPrewarmer = uiConfigProvider?.let {
+                WorkflowAssetPrewarmer(it, paywallComponentsImagePreDownloader, offeringFontPreDownloader)
+            }
             val workflowsConfigProvider = remoteConfigManager?.let {
                 WorkflowsConfigProvider(
                     it,
                     currentOfferingIdProvider = { offeringsCache.cachedOfferings?.current?.identifier },
+                    onCurrentWorkflowLoaded = workflowAssetPrewarmer?.let { it::onCurrentWorkflowLoaded },
                 )
             }
             if (remoteConfigManager != null && uiConfigProvider != null && workflowsConfigProvider != null) {
@@ -421,28 +446,18 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
             )
 
-            val fontLoader = FontLoader(
-                context = contextForStorage,
-            )
-
-            val offeringFontPreDownloader = OfferingFontPreDownloader(
-                context = contextForStorage,
-                fontLoader = fontLoader,
-            )
-
             // Workflows are served from the `/v1/config` layer: WorkflowManager stays the consumer-facing seam,
             // but behind it sit the RemoteConfig stack (sync + blob store + on-demand fetch) and the
             // WorkflowsConfigProvider. Lifecycle (foreground refresh, identity clearCache, teardown) is driven
             // through remoteConfigManager, which the orchestrator and IdentityManager already own.
             // Both providers are non-null exactly when remoteConfigManager is (i.e. workflows are enabled).
-            val workflowManager = if (workflowsConfigProvider != null && uiConfigProvider != null) {
+            val workflowManager = if (workflowsConfigProvider != null && uiConfigProvider != null &&
+                workflowAssetPrewarmer != null
+            ) {
                 WorkflowManager(
                     workflowsConfigProvider,
                     uiConfigProvider,
-                    WorkflowAssetPreDownloader(
-                        paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
-                        offeringFontPreDownloader = offeringFontPreDownloader,
-                    ),
+                    workflowAssetPrewarmer,
                 )
             } else {
                 null

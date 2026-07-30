@@ -307,7 +307,7 @@ internal class TabsComponentTests {
                                 ),
                             ),
                             defaultTabId = "one",
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                             backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("secondary"))),
                             background = Background.Color(
                                 ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
@@ -532,7 +532,7 @@ internal class TabsComponentTests {
                         """.trimIndent(),
                         expected = PartialTabsComponent(
                             visible = false,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                             padding = Padding(top = 1.0, bottom = 2.0, leading = 3.0, trailing = 4.0),
                             margin = Padding(top = 4.0, bottom = 3.0, leading = 2.0, trailing = 1.0),
                             backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),

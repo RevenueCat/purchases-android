@@ -120,6 +120,10 @@ internal sealed interface PaywallState {
             initialSelectedTabIndex: Int? = null,
             initialSheetState: SimpleSheetState = SimpleSheetState(),
             private val purchases: PurchasesType,
+            /**
+             * Presentation-session store for state-driven paywalls, seeded from the paywall's declared state defaults.
+             */
+            val stateStore: PaywallStateStore = PaywallStateStore(emptyMap()),
         ) : Loaded {
 
             /**

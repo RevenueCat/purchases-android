@@ -21,7 +21,6 @@ import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.SocketTimeoutException
 import java.net.URL
-import java.nio.ByteBuffer
 import java.util.PriorityQueue
 
 /** The placeholder a blob source URL template carries; substituted with the blob ref before download. */
@@ -219,6 +218,9 @@ internal class RemoteConfigBlobFetcher(
             isFallback = false,
             endpointSupportsFallbackURLs = false,
             isProxied = false,
+            // Blob-source downloads always opt into the re-tiered fail-fast timeouts, independently of the
+            // usesRemoteConfigAPISources setting (which only gates main-API requests).
+            reTieredTimeoutsEnabled = true,
         ).toInt()
 
         var connection: UrlConnection? = null
@@ -265,7 +267,7 @@ internal class RemoteConfigBlobFetcher(
         }
         // A failed disk write isn't a source problem, so don't condemn the source: report the blob as unavailable
         // (yields false, stops) and let a later sync/on-demand read re-fetch it.
-        return if (blobStore.write(ref, ByteBuffer.wrap(bytes))) {
+        return if (blobStore.write(ref, bytes)) {
             verboseLog { "Downloaded and stored remote config blob '$ref' (${bytes.size} bytes) from $url." }
             DownloadOutcome.SUCCESS
         } else {

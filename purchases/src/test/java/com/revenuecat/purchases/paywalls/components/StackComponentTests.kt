@@ -151,7 +151,7 @@ internal class StackComponentTests {
                                 alignment = HorizontalAlignment.LEADING,
                                 distribution = FlexDistribution.SPACE_BETWEEN
                             ),
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                             spacing = 8f,
                             backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("secondary"))),
                             background = Background.Color(ColorScheme(
@@ -370,7 +370,7 @@ internal class StackComponentTests {
                                 alignment = HorizontalAlignment.LEADING,
                                 distribution = FlexDistribution.SPACE_BETWEEN
                             ),
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                             spacing = 8f,
                             backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
                             background = Background.Color(ColorScheme(

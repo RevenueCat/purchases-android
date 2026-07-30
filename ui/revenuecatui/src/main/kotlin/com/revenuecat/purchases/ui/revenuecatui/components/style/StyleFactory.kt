@@ -27,6 +27,7 @@ import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -47,6 +48,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTabsPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelineItemPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelinePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedVideoPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedWebViewPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.imageForAllLocales
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.stringForAllLocales
@@ -187,7 +189,8 @@ internal class StyleFactory(
             var topWindowInsetsApplied = false
 
             /**
-             * Whether the first visual component in the tree is a full-width image or video (a "hero image").
+             * Whether the first visual component in the tree is a full-width image, video or web_view (a
+             * "hero image").
              * This is tracked separately from [topWindowInsetsApplied] because a hero image can appear
              * outside a ZLayer (e.g. directly in a Vertical stack), in which case it doesn't affect
              * top window insets application but still needs to be detected for header padding logic.
@@ -200,9 +203,9 @@ internal class StyleFactory(
             private var stillLookingForHeaderMedia = true
 
             /**
-             * This will be called for every component in the tree, and will determine whether we have a header image
-             * or video that needs special top-window-insets treatment. A header image is found if the first
-             * non-container component is an image component with a Fill width and a ZLayer parent stack.
+             * This will be called for every component in the tree, and will determine whether we have header media
+             * that needs special top-window-insets treatment. Header media is found if the first non-container
+             * component is an image, video or web_view component with a Fill width and a ZLayer parent stack.
              */
             fun handleHeaderMediaViewWindowInsets(component: PaywallComponent) {
                 when (component) {
@@ -221,18 +224,14 @@ internal class StyleFactory(
                         }
                     }
 
-                    is ImageComponent -> {
+                    is ImageComponent,
+                    is VideoComponent,
+                    is WebViewComponent,
+                    -> {
                         if (stillLookingForHeaderMedia) {
-                            ignoreTopWindowInsets = component.isHeaderImage
-                            heroImageDetected = component.isHeaderImage
-                        }
-                        stillLookingForHeaderMedia = false
-                    }
-
-                    is VideoComponent -> {
-                        if (stillLookingForHeaderMedia) {
-                            ignoreTopWindowInsets = component.isHeaderVideo
-                            heroImageDetected = component.isHeaderVideo
+                            val isHero = component.isHeaderMedia
+                            ignoreTopWindowInsets = isHero
+                            heroImageDetected = isHero
                         }
                         stillLookingForHeaderMedia = false
                     }
@@ -243,25 +242,20 @@ internal class StyleFactory(
             }
 
             private val PaywallComponent.isHeaderMedia: Boolean
-                get() = isHeaderImage || isHeaderVideo
+                get() = when (this) {
+                    is ImageComponent -> size.width.isFill
+                    is VideoComponent -> size.width.isFill
+                    is WebViewComponent -> size.width.isFill
+                    else -> false
+                }
 
-            private val PaywallComponent.isHeaderImage: Boolean
-                get() = this is ImageComponent &&
-                    when (size.width) {
-                        is SizeConstraint.Fill -> true
-                        is SizeConstraint.Fit,
-                        is SizeConstraint.Fixed,
-                        -> false
-                    }
-
-            private val PaywallComponent.isHeaderVideo: Boolean
-                get() = this is VideoComponent &&
-                    when (size.width) {
-                        is SizeConstraint.Fill -> true
-                        is SizeConstraint.Fit,
-                        is SizeConstraint.Fixed,
-                        -> false
-                    }
+            private val SizeConstraint.isFill: Boolean
+                get() = when (this) {
+                    is SizeConstraint.Fill -> true
+                    is SizeConstraint.Fit,
+                    is SizeConstraint.Fixed,
+                    -> false
+                }
         }
 
         val windowInsetsState = WindowInsetsState()
@@ -573,11 +567,33 @@ internal class StyleFactory(
             is TabsComponent -> createTabsComponentStyle(component)
             is VideoComponent -> createVideoComponentStyle(component)
             is FallbackHeaderComponent -> Result.Success(null)
+            is WebViewComponent -> createWebViewComponentStyle(component)
             is CountdownComponent -> createCountdownComponentStyle(
                 component,
             )
         }
     }
+
+    private fun StyleFactoryScope.createWebViewComponentStyle(
+        component: WebViewComponent,
+    ): Result<WebViewComponentStyle, NonEmptyList<PaywallValidationError>> =
+        component.overrides
+            .toPresentedOverrides(stripRules) { partial -> Result.Success(PresentedWebViewPartial(partial)) }
+            .mapError { nonEmptyListOf(it) }
+            .map { presentedOverrides ->
+                WebViewComponentStyle(
+                    url = component.url,
+                    visible = component.visible ?: DEFAULT_VISIBILITY,
+                    size = component.size,
+                    componentId = component.id,
+                    overrides = presentedOverrides,
+                    rcPackage = rcPackage,
+                    resolvedOffer = resolvedOffer,
+                    tabIndex = tabControlIndex,
+                    offerEligibility = offerEligibility,
+                    ignoreTopWindowInsets = ignoreTopWindowInsets,
+                )
+            }
 
     private fun StyleFactoryScope.createCountdownComponentStyle(
         component: CountdownComponent,
@@ -1304,6 +1320,7 @@ internal class StyleFactory(
                         control = control,
                         tabs = tabs,
                         overrides = overrides,
+                        stateUpdates = component.stateUpdates,
                     )
                 }
             }
@@ -1347,7 +1364,7 @@ internal class StyleFactory(
             withTabIndex(tabIndex) {
                 withTabControl(control) {
                     createStackComponentStyle(componentTab.stack)
-                        .map { stack -> TabsComponentStyle.Tab(stack) }
+                        .map { stack -> TabsComponentStyle.Tab(id = componentTab.id, stack = stack) }
                 }
             }
         }

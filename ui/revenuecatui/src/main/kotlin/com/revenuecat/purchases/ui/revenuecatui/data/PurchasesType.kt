@@ -22,6 +22,7 @@ import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
@@ -73,7 +74,7 @@ internal interface PurchasesType {
     @Throws(PurchasesException::class)
     suspend fun awaitGetUiConfig(): UiConfig
 
-    suspend fun workflowIdForOfferingId(offeringId: String): String?
+    suspend fun resolveWorkflow(offeringId: String): WorkflowResolution
 
     val useWorkflows: Boolean
 }
@@ -154,8 +155,8 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     override suspend fun awaitGetUiConfig(): UiConfig = purchases.awaitGetUiConfig()
 
     @OptIn(InternalRevenueCatAPI::class)
-    override suspend fun workflowIdForOfferingId(offeringId: String): String? =
-        purchases.workflowIdForOfferingId(offeringId)
+    override suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
+        purchases.resolveWorkflow(offeringId)
 
     @OptIn(InternalRevenueCatAPI::class)
     override val useWorkflows: Boolean

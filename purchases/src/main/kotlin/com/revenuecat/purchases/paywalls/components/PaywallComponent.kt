@@ -11,7 +11,9 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
@@ -57,11 +59,41 @@ internal class PaywallComponentSerializer : KSerializer<PaywallComponent> {
             "tabs" -> jsonDecoder.json.decodeFromJsonElement<TabsComponent>(json)
             "video" -> jsonDecoder.json.decodeFromJsonElement<VideoComponent>(json)
             "countdown" -> jsonDecoder.json.decodeFromJsonElement<CountdownComponent>(json)
+            "web_view" -> decodeWebViewOrFallback(jsonDecoder, json)
             "fallback_header" -> FallbackHeaderComponent
-            else -> json["fallback"]
-                ?.let { it as? JsonObject }
-                ?.let { jsonDecoder.json.decodeFromJsonElement<PaywallComponent>(it) }
-                ?: throw SerializationException("No fallback provided for unknown type: $type")
+            else -> decodeFallback(jsonDecoder, json, "No fallback provided for unknown type: $type")
         }
     }
+
+    // Gate on the raw protocol_version before decoding, so an unsupported (forward-incompatible) version falls
+    // back without this SDK understanding that protocol's other fields. A missing or malformed version is a bad
+    // response rather than a newer protocol, so it fails the decode like an invalid v1 body would.
+    private fun decodeWebViewOrFallback(
+        jsonDecoder: JsonDecoder,
+        json: JsonObject,
+    ): PaywallComponent {
+        val rawVersion = json["protocol_version"]
+        // intOrNull parses digits regardless of quoting, so exclude string primitives first.
+        val declaredVersion = (rawVersion as? JsonPrimitive)?.takeUnless { it.isString }?.intOrNull
+            ?: throw SerializationException("web_view protocol_version is missing or malformed: $rawVersion")
+        return if (declaredVersion == WebViewComponent.SUPPORTED_PROTOCOL_VERSION) {
+            jsonDecoder.json.decodeFromJsonElement<WebViewComponent>(json)
+        } else {
+            decodeFallback(
+                jsonDecoder,
+                json,
+                "No fallback provided for web_view with unsupported protocol_version: $declaredVersion",
+            )
+        }
+    }
+
+    private fun decodeFallback(
+        jsonDecoder: JsonDecoder,
+        json: JsonObject,
+        missingFallbackMessage: String,
+    ): PaywallComponent =
+        json["fallback"]
+            ?.let { it as? JsonObject }
+            ?.let { jsonDecoder.json.decodeFromJsonElement<PaywallComponent>(it) }
+            ?: throw SerializationException(missingFallbackMessage)
 }

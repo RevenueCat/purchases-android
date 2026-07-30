@@ -34,6 +34,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDel
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateStore
 
 @Stable
 @JvmSynthetic
@@ -48,6 +49,7 @@ internal fun rememberUpdatedTextComponentState(
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
     customVariablesProvider = { paywallState.mergedCustomVariables },
+    stateStoreProvider = { paywallState.stateStore },
 )
 
 @Suppress("LongParameterList")
@@ -61,6 +63,7 @@ private fun rememberUpdatedTextComponentState(
     selectedTabIndexProvider: () -> Int,
     selectedOfferEligibilityProvider: () -> OfferEligibility,
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
+    stateStoreProvider: () -> PaywallStateStore,
 ): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
 
@@ -77,6 +80,7 @@ private fun rememberUpdatedTextComponentState(
             selectedTabIndexProvider = selectedTabIndexProvider,
             selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
             customVariablesProvider = customVariablesProvider,
+            stateStoreProvider = stateStoreProvider,
         )
     }.apply {
         update(
@@ -96,6 +100,7 @@ internal class TextComponentState(
     private val selectedTabIndexProvider: () -> Int,
     private val selectedOfferEligibilityProvider: () -> OfferEligibility,
     private val customVariablesProvider: () -> Map<String, CustomVariableValue> = { emptyMap() },
+    private val stateStoreProvider: () -> PaywallStateStore = { PaywallStateStore(emptyMap()) },
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
 
@@ -148,6 +153,7 @@ internal class TextComponentState(
             conditionContext = ConditionContext(
                 selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
                 customVariables = customVariablesProvider(),
+                stateReader = stateStoreProvider()::currentValueOrDefault,
             ),
         )
     }

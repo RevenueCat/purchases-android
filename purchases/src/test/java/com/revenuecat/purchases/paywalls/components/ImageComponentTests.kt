@@ -104,7 +104,7 @@ internal class ImageComponentTests {
                                 )
                             ),
                             visible = false,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                             overrideSourceLid = LocalizationKey("abc123"),
                             maskShape = MaskShape.Rectangle(
                                 corners = CornerRadiuses.Dp(
@@ -341,7 +341,7 @@ internal class ImageComponentTests {
                                     width = 400.toUInt(),
                                 )
                             ),
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                             overrideSourceLid = LocalizationKey("abc123"),
                             fitMode = FitMode.FILL,
                             maskShape = MaskShape.Rectangle(

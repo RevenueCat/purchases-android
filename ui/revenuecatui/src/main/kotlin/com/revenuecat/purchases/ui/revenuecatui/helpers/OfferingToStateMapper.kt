@@ -25,6 +25,7 @@ import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -43,6 +44,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentS
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateStore
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PackageConfigurationType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
@@ -127,11 +129,8 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
     // Force the (lazily-decoded) component tree up front. If decoding fails — e.g. a tree that passed the cheap
     // shape check at parse time but is structurally invalid — treat it as "no components paywall" so the caller
     // falls back, mirroring the previous eager-parse behavior where a decode failure yielded null paywallComponents.
-    @Suppress("TooGenericExceptionCaught")
-    val componentsData: PaywallComponentsData = try {
-        paywallComponents.data
-    } catch (e: Throwable) {
-        Logger.e("Error deserializing paywall components data. Falling back to default paywall.", e)
+    val componentsData: PaywallComponentsData = paywallComponents.data.getOrElse { error ->
+        Logger.e("Error deserializing paywall components data. Falling back to default paywall.", error)
         return null
     }
 
@@ -224,7 +223,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         // This is a temporary hack to make the root component fill the screen. This will be removed once we have a
         // definite solution for positioning the root component.
         val rootComponent = (backendRootComponent as? StackComponentStyle)
-            ?.takeIf { it.size.height == SizeConstraint.Fit }
+            ?.takeIf { it.size.height is SizeConstraint.Fit }
             ?.copy(size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill))
             ?: backendRootComponent
 
@@ -244,6 +243,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
                 ?: headerResult?.defaultTabIndex
                 ?: stickyFooterResult?.defaultTabIndex,
             mainStackHasHeroImage = backendRootComponentResult.heroImageDetected,
+            stateDeclarations = componentsData.stateDeclarations.orEmpty(),
         )
     }
 }
@@ -366,10 +366,17 @@ internal fun Offering.toComponentsPaywallState(
     purchases: PurchasesType,
     customVariables: Map<String, CustomVariableValue> = emptyMap(),
     defaultCustomVariables: Map<String, CustomVariableValue> = emptyMap(),
+    stateStore: PaywallStateStore? = null,
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
         !validationResult.zeroDecimalPlaceCountries.contains(it)
     } ?: true
+
+    // A workflow shares one store across its screens, accumulating each screen's declarations; a standalone paywall
+    // gets its own store seeded from its declarations.
+    val resolvedStateStore = stateStore
+        ?.also { it.registerDeclarations(validationResult.stateDeclarations) }
+        ?: PaywallStateStore(validationResult.stateDeclarations)
 
     return PaywallState.Loaded.Components(
         stack = validationResult.stack,
@@ -389,6 +396,7 @@ internal fun Offering.toComponentsPaywallState(
         initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
         mainStackHasHeroImage = validationResult.mainStackHasHeroImage,
         purchases = purchases,
+        stateStore = resolvedStateStore,
     )
 }
 
@@ -451,7 +459,7 @@ private val PaywallComponentsData.defaultLocalization: Map<LocalizationKey, Loca
     get() = componentsLocalizations.getBestMatch(defaultLocaleIdentifier)
 
 private val Offering.PaywallComponents.defaultVariableLocalization: Map<VariableLocalizationKey, String>?
-    get() = uiConfig.localizations.getBestMatch(data.defaultLocaleIdentifier)
+    get() = dataOrNull?.defaultLocaleIdentifier?.let { uiConfig.localizations.getBestMatch(it) }
 
 /**
  * Recursively checks whether any component override in the paywall config contains an
@@ -516,6 +524,7 @@ internal fun PaywallComponent.containsUnsupportedCondition(): Boolean = when (th
     is TabControlToggleComponent -> false
     is TabControlComponent -> false
     is FallbackHeaderComponent -> false
+    is WebViewComponent -> overrides.hasUnsupportedCondition()
 }
 
 @JvmSynthetic

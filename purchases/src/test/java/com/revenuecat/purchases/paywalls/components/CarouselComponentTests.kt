@@ -212,7 +212,7 @@ internal class CarouselComponentTests {
                             visible = false,
                             initialPageIndex = 2,
                             pageAlignment = VerticalAlignment.CENTER,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                             pagePeek = 10,
                             padding = Padding(
                                 top = 1.0,
@@ -602,7 +602,7 @@ internal class CarouselComponentTests {
                             visible = true,
                             initialPageIndex = 2,
                             pageAlignment = VerticalAlignment.CENTER,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                             pageSpacing = 8f,
                             backgroundColor = ColorScheme(
                                 light = ColorInfo.Alias(ColorAlias("tertiary")),

@@ -898,7 +898,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED.identifier} }}",
                 Args(
@@ -907,7 +907,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_DAY.identifier} }}",
                 Args(
@@ -916,7 +916,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_WEEK.identifier} }}",
                 Args(
@@ -925,7 +925,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_MONTH.identifier} }}",
                 Args(
@@ -934,7 +934,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_YEAR.identifier} }}",
                 Args(
@@ -943,7 +943,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PERIOD.identifier} }}",
                 Args(

@@ -18,8 +18,10 @@ import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonPrimitive
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -55,6 +57,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
+import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -87,7 +90,7 @@ class PaywallComponentDataValidationTests {
                             ),
                             TestData.Components.monthlyPackageComponent,
                         ),
-                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                     ),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                 ),
@@ -184,6 +187,25 @@ class PaywallComponentDataValidationTests {
         assertNotNull(validated.errors)
         assertEquals(validated.errors?.size, 1)
         assertEquals(validated.errors?.first(), AllLocalizationsMissing(defaultLocale))
+    }
+
+    @Test
+    fun `Should fall back to the default paywall when the component tree fails to decode`() {
+        val failingComponents = mockk<Offering.PaywallComponents>(relaxed = true) {
+            every { data } returns Result.failure(SerializationException("decode failed"))
+        }
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = failingComponents,
+        )
+
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+        // A tree that can't decode must degrade to the default paywall, not surface as a Components result.
+        check(validated is PaywallValidationResult.Legacy)
     }
 
     @Test
@@ -959,6 +981,59 @@ class PaywallComponentDataValidationTests {
     }
 
     @Test
+    fun `Should set mainStackHasHeroImage when header and full-width web_view coexist`() {
+        // Arrange - web_view directly in the root Vertical stack, not wrapped in a ZLayer
+        val defaultLocale = LocaleId("en_US")
+        val data = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        dimension = Dimension.Vertical(HorizontalAlignment.CENTER, START),
+                        components = listOf(
+                            WebViewComponent(
+                                url = "https://bundle-hash.components.revenuecat-static.com/index.html",
+                                id = "hero_web_view",
+                                protocolVersion = 1,
+                                size = Size(
+                                    width = SizeConstraint.Fill,
+                                    height = SizeConstraint.Fit(default = 400u),
+                                ),
+                            ),
+                            TestData.Components.monthlyPackageComponent,
+                        )
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    header = HeaderComponent(stack = StackComponent(components = emptyList())),
+                ),
+            ),
+            componentsLocalizations = mapOf(
+                defaultLocale to mapOf(LocalizationKey("key1") to LocalizationData.Text("value1")),
+            ),
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+
+        // Act
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+        // Assert
+        assertTrue(validated is PaywallValidationResult.Components)
+        assertNull(validated.errors)
+        val result = validated as PaywallValidationResult.Components
+        assertTrue(result.mainStackHasHeroImage)
+        assertNotNull(result.header)
+    }
+
+    @Test
     fun `Should apply top window insets to the root if there is no hero image`() {
         // Arrange
         val defaultLocale = LocaleId("en_US")
@@ -1259,7 +1334,7 @@ class PaywallComponentDataValidationTests {
                             ),
                             TestData.Components.monthlyPackageComponent,
                         ),
-                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                     ),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                 ),
@@ -1334,7 +1409,7 @@ class PaywallComponentDataValidationTests {
                             ),
                             TestData.Components.monthlyPackageComponent,
                         ),
-                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                     ),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                 ),

@@ -60,12 +60,26 @@ class RemoteConfigDiskCacheTest {
                     mapOf("pem" to RemoteConfiguration.ConfigItem(blobRef = "pemBlob")),
                 ),
             ),
+            lastRefreshTime = 1785161502351L,
         )
 
         diskCache.write(config)
         val read = diskCache.read()
 
         assertThat(read).isEqualTo(config)
+    }
+
+    @Test
+    fun `a file written before the last refresh time existed reads it back as null`() {
+        val parent = File(File(testFolder, "RevenueCat"), "remote_config").apply { mkdirs() }
+        File(parent, "remote_config.json").writeText(
+            """{"domain":"app","manifest":"v1.1.sources:etag1"}""",
+        )
+
+        val read = RemoteConfigDiskCache(applicationContext).read()!!
+
+        assertThat(read.lastRefreshTime).isNull()
+        assertThat(read.manifest).isEqualTo("v1.1.sources:etag1")
     }
 
     @Test

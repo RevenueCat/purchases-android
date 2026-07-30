@@ -11,6 +11,10 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.verify
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -31,6 +35,8 @@ internal class WorkflowsConfigProviderTest {
 
     @Before
     fun setUp() {
+        // Default: endpoint live. Tests exercising the 4xx kill switch override this to true.
+        every { manager.isDisabled } returns false
         currentLogHandler = object : LogHandler {
             override fun v(tag: String, msg: String) {}
             override fun d(tag: String, msg: String) {}
@@ -72,6 +78,44 @@ internal class WorkflowsConfigProviderTest {
         assertThat(workflow).isNotNull
         // Only the one read during warm; the memory-first getWorkflow did not touch the config layer again.
         coVerify(exactly = 1) { manager.blobData(RemoteConfigTopic.Workflows, WF_CURRENT, any<(ByteArray) -> ByteArray?>()) }
+    }
+
+    @Test
+    fun `warm pre-loads bytes but defers the decode until the first getWorkflow, then retains it`() = runTest {
+        mockkObject(WorkflowJsonParser) {
+            stubTopic()
+            stubWorkflowBody(WF_PREFETCH)
+            stubWorkflowBody(WF_CURRENT)
+
+            provider.warm(generation = 0)
+            // Bytes are in memory (the offering is warm), but nothing has been decoded yet.
+            assertThat(provider.isWarmForCurrentOffering()).isTrue
+            verify(exactly = 0) { WorkflowJsonParser.parsePublishedWorkflow(any()) }
+
+            assertThat(provider.getWorkflow(WF_CURRENT)).isNotNull
+            verify(exactly = 1) { WorkflowJsonParser.parsePublishedWorkflow(any()) }
+
+            // A second read is served from the retained decode, not re-parsed.
+            assertThat(provider.getWorkflow(WF_CURRENT)).isNotNull
+            verify(exactly = 1) { WorkflowJsonParser.parsePublishedWorkflow(any()) }
+        }
+    }
+
+    @Test
+    fun `a malformed workflow body warms as bytes but reads back null`() = runTest {
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        // WF_CURRENT's body resolves but is not valid PublishedWorkflow JSON.
+        coEvery {
+            manager.blobData(RemoteConfigTopic.Workflows, WF_CURRENT, any<(ByteArray) -> ByteArray?>())
+        } answers { thirdArg<(ByteArray) -> ByteArray?>().invoke("not a workflow".toByteArray()) }
+
+        provider.warm(generation = 0)
+
+        // The body was cached (bytes resolved), so the gate treats the current offering as warm...
+        assertThat(provider.isWarmForCurrentOffering()).isTrue
+        // ...but the deferred decode fails synchronously on read, surfacing as null (no warm-time exclusion).
+        assertThat(provider.getWorkflow(WF_CURRENT)).isNull()
     }
 
     @Test
@@ -170,7 +214,7 @@ internal class WorkflowsConfigProviderTest {
         provider.warm(generation = 0)
         assertThat(provider.isWarmForCurrentOffering()).isTrue
 
-        // The current offering switches to one whose workflow was not eligible (so not parsed).
+        // The current offering switches to one whose workflow was not eligible (so its body was not cached).
         currentOfferingId = OTHER_OFFERING
 
         assertThat(provider.isWarmForCurrentOffering()).isFalse
@@ -246,6 +290,132 @@ internal class WorkflowsConfigProviderTest {
         }
 
         assertThat(provider.workflowIdForOfferingId(CURRENT_OFFERING)).isNull()
+    }
+
+    @Test
+    fun `resolveWorkflow returns Found when the topic maps the offering to a workflow`() = runTest {
+        every { manager.configGeneration } returns 0
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns topicWith(
+            WF_CURRENT to configItem(prefetch = false, offeringId = CURRENT_OFFERING),
+        )
+
+        assertThat(provider.resolveWorkflow(CURRENT_OFFERING))
+            .isEqualTo(WorkflowResolution.Found(WF_CURRENT))
+    }
+
+    @Test
+    fun `resolveWorkflow returns NoWorkflow when the topic is readable but has no mapping`() = runTest {
+        every { manager.configGeneration } returns 0
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns topicWith(
+            WF_CURRENT to configItem(prefetch = false, offeringId = CURRENT_OFFERING),
+        )
+
+        // The topic committed fine; this offering simply has no workflow, so it is workflowless (not unknown).
+        assertThat(provider.resolveWorkflow(OTHER_OFFERING)).isEqualTo(WorkflowResolution.NoWorkflow)
+    }
+
+    @Test
+    fun `resolveWorkflow returns Disabled when the topic cannot be read and remote config is disabled`() = runTest {
+        every { manager.configGeneration } returns 0
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns null
+        // A 4xx kill switch: the offering's components were skipped, so the caller can reload to recover them.
+        every { manager.isDisabled } returns true
+
+        assertThat(provider.resolveWorkflow(CURRENT_OFFERING)).isEqualTo(WorkflowResolution.Disabled)
+    }
+
+    @Test
+    fun `resolveWorkflow returns Disabled from a warm cache when remote config is disabled`() = runTest {
+        // Race: on a 4xx kill switch the disabled flag is set before the workflow cache is invalidated, so a
+        // concurrent resolution can still see a warm cache. The warm-cache fast path must honor isDisabled and
+        // yield Disabled (→ offerings reload) instead of the stale Found/NoWorkflow, or the components skipped
+        // while workflows were enabled are never recovered.
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        stubWorkflowBody(WF_CURRENT)
+        provider.warm(generation = 0)
+        assertThat(provider.isWarmForCurrentOffering()).isTrue
+
+        every { manager.isDisabled } returns true
+
+        // CURRENT_OFFERING maps to WF_CURRENT in the warm cache, so the fast path would return Found without the
+        // isDisabled guard; OTHER_OFFERING is unmapped and would return NoWorkflow. Both must yield Disabled.
+        assertThat(provider.resolveWorkflow(CURRENT_OFFERING)).isEqualTo(WorkflowResolution.Disabled)
+        assertThat(provider.resolveWorkflow("unmapped_off")).isEqualTo(WorkflowResolution.Disabled)
+    }
+
+    @Test
+    fun `resolveWorkflow returns Unavailable when the topic cannot be read and remote config is not disabled`() =
+        runTest {
+            every { manager.configGeneration } returns 0
+            coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns null
+            // A transient failure: reloading would recover nothing, so the caller surfaces an error.
+            every { manager.isDisabled } returns false
+
+            assertThat(provider.resolveWorkflow(CURRENT_OFFERING)).isEqualTo(WorkflowResolution.Unavailable)
+        }
+
+    @Test
+    fun `warm notifies onCurrentWorkflowLoaded with only the current offering's workflow`() = runTest {
+        var announcedId: String? = null
+        val providerWithListener = WorkflowsConfigProvider(
+            manager,
+            currentOfferingIdProvider = { currentOfferingId },
+            onCurrentWorkflowLoaded = { workflowId, _ -> announcedId = workflowId },
+            scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+        )
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        stubWorkflowBody(WF_CURRENT)
+
+        providerWithListener.warm(generation = 0)
+
+        // Mirrors the offerings path: only the current offering's workflow is announced for asset prewarming.
+        // WF_PREFETCH's bytes are cached too, but a prefetch-only workflow (not the current offering's) is not
+        // the paywall about to be shown, so its assets are not warmed.
+        assertThat(announcedId).isEqualTo(WF_CURRENT)
+    }
+
+    @Test
+    fun `warm notifies onCurrentWorkflowLoaded even when the workflow body was not byte-warmed`() = runTest {
+        var announcedId: String? = null
+        val providerWithListener = WorkflowsConfigProvider(
+            manager,
+            currentOfferingIdProvider = { currentOfferingId },
+            onCurrentWorkflowLoaded = { workflowId, _ -> announcedId = workflowId },
+            scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+        )
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        // The current offering's workflow body isn't ready during the parallel preload (e.g. its prefetch blob
+        // hasn't landed), so it is dropped from the byte-warm cache...
+        coEvery {
+            manager.blobData(RemoteConfigTopic.Workflows, WF_CURRENT, any<(ByteArray) -> ByteArray?>())
+        } returns null
+
+        providerWithListener.warm(generation = 0)
+
+        // ...but it must still be announced for asset prewarming — resolveWorkflowBody fetches the body on demand,
+        // so gating on the byte-warm cache would drop it purely on preload timing.
+        assertThat(announcedId).isEqualTo(WF_CURRENT)
+    }
+
+    @Test
+    fun `warm does not notify onCurrentWorkflowLoaded when the current offering has no workflow`() = runTest {
+        var announced = false
+        currentOfferingId = "offering_without_workflow"
+        val providerWithListener = WorkflowsConfigProvider(
+            manager,
+            currentOfferingIdProvider = { currentOfferingId },
+            onCurrentWorkflowLoaded = { _, _ -> announced = true },
+            scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+        )
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+
+        providerWithListener.warm(generation = 0)
+
+        assertThat(announced).isFalse
     }
 
     private fun stubTopic() {
