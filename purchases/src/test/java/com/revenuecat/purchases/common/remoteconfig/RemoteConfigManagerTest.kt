@@ -9,6 +9,8 @@ import com.revenuecat.purchases.assertWarnLog
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.GetRemoteConfigErrorHandlingBehavior
+import com.revenuecat.purchases.common.caching.cacheDuration
+import com.revenuecat.purchases.common.caching.isCacheStale
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCElement
@@ -43,6 +45,8 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(InternalRevenueCatAPI::class, ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
@@ -65,6 +69,7 @@ class RemoteConfigManagerTest {
     private val dateProvider = object : DateProvider {
         override val now: Date get() = Date(currentTimeMillis)
     }
+    private var cacheDurationProvider: (Boolean) -> Duration = ::cacheDuration
 
     private var capturedAppUserID: String? = null
     private var capturedDomain: String? = null
@@ -95,6 +100,7 @@ class RemoteConfigManagerTest {
             topicStore = topicStore,
             sourceProvider = sourceProvider,
             blobFetcher = blobFetcher,
+            cacheDurationProvider = { appInBackground -> cacheDurationProvider(appInBackground) },
         )
 
         // Persist succeeds by default; the blob store is only touched once the configuration is persisted.
@@ -344,6 +350,54 @@ class RemoteConfigManagerTest {
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
 
         verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `successful 200 does not apply the failed refresh cooldown`() {
+        every { diskCache.read() } returns null
+        cacheDurationProvider = { 5.seconds }
+
+        manager.refreshRemoteConfigIfStale(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = DEFAULT_FETCH_CONTEXT,
+        )
+        deliverSuccess(containerWithConfig("""{"domain":"app","manifest":"v1.2."}"""))
+
+        currentTimeMillis += 5.seconds.inWholeMilliseconds
+        manager.refreshRemoteConfigIfStale(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = DEFAULT_FETCH_CONTEXT,
+        )
+
+        verify(exactly = 2) {
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `successful 204 does not apply the failed refresh cooldown`() {
+        every { diskCache.read() } returns null
+        cacheDurationProvider = { 5.seconds }
+
+        manager.refreshRemoteConfigIfStale(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = DEFAULT_FETCH_CONTEXT,
+        )
+        deliverSuccess(null)
+
+        currentTimeMillis += 5.seconds.inWholeMilliseconds
+        manager.refreshRemoteConfigIfStale(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = DEFAULT_FETCH_CONTEXT,
+        )
+
+        verify(exactly = 2) {
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any())
+        }
     }
 
     @Test
