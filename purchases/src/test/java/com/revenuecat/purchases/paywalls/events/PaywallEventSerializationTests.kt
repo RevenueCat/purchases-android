@@ -2,10 +2,12 @@ package com.revenuecat.purchases.paywalls.events
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.common.JsonProvider
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.toBackendStoredEvent
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.jsonObject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -58,6 +60,7 @@ class PaywallEventSerializationTests {
                 darkMode = false,
                 workflowId = "workflow-xyz",
                 stepId = "step-xyz",
+                traceId = "trace-xyz",
             ),
             type = PaywallEventType.IMPRESSION,
         ),
@@ -591,6 +594,35 @@ class PaywallEventSerializationTests {
     }
 
     @Test
+    fun `toPaywallPostReceiptData sends trace_id nested in the paywall object`() {
+        val paywallPostReceiptData = workflowImpressionEvent.event.toPaywallPostReceiptData()
+
+        // The post-receipt body rejects unknown top-level keys, so trace_id rides inside `paywall`
+        // alongside session_id and revision rather than next to presented_workflow_id.
+        assertThat(paywallPostReceiptData.traceId).isEqualTo("trace-xyz")
+        assertThat(paywallPostReceiptData.toMap()).containsEntry("trace_id", "trace-xyz")
+    }
+
+    @Test
+    fun `toPaywallPostReceiptData omits trace_id for a standalone paywall`() {
+        val paywallPostReceiptData = impressionEvent.event.toPaywallPostReceiptData()
+
+        assertThat(paywallPostReceiptData.traceId).isNull()
+        assertThat(paywallPostReceiptData.toMap()).doesNotContainKey("trace_id")
+    }
+
+    @Test
+    fun `PaywallPostReceiptData cached before this change still decodes`() {
+        // This type is persisted by LocalTransactionMetadata, so entries written by an older SDK
+        // version have no trace_id and must not fail to deserialize on upgrade.
+        val legacyJson = """{"paywall_id":"paywallID","session_id":"222107f4-98bf-4b68-a582-eb27bcb6e002","revision":5,"display_mode":"footer","dark_mode":false,"locale":"en_US","offering_id":"offeringID"}"""
+        val decoded = PaywallPostReceiptData.json.decodeFromString<PaywallPostReceiptData>(legacyJson)
+
+        assertThat(decoded.traceId).isNull()
+        assertThat(decoded.paywallID).isEqualTo("paywallID")
+    }
+
+    @Test
     fun `workflowId and stepId on PaywallEvent Data are available for WorkflowMetadata construction`() {
         val data = workflowImpressionEvent.event.data
         assertThat(data.workflowId).isEqualTo("workflow-xyz")
@@ -628,4 +660,34 @@ class PaywallEventSerializationTests {
             )
         )
     }
+
+    @Test
+    fun `can round-trip encode and decode event with traceId`() {
+        val eventString = PaywallStoredEvent.json.encodeToString(workflowImpressionEvent)
+        assertThat(eventString).contains("\"traceId\":\"trace-xyz\"")
+
+        val decoded = PaywallStoredEvent.json.decodeFromString<PaywallStoredEvent>(eventString)
+        assertThat(decoded.event.data.traceId).isEqualTo("trace-xyz")
+    }
+
+    @Test
+    fun `can decode legacy event without traceId field`() {
+        val legacyJson = """{"event":{"creationData":{"id":"111207f4-87af-4b57-a581-eb27bcc6e001","date":1699270688884},"data":{"paywallIdentifier":"paywallID","presentedOfferingContext":{"offeringIdentifier":"offeringID","placementIdentifier":null,"targetingContext":null},"paywallRevision":5,"sessionIdentifier":"222107f4-98bf-4b68-a582-eb27bcb6e002","displayMode":"footer","localeIdentifier":"en_US","darkMode":false,"workflowId":"workflow-xyz","stepId":"step-xyz"},"type":"IMPRESSION"},"userID":"testAppUserId"}"""
+        val decoded = PaywallStoredEvent.fromString(legacyJson)
+        assertThat(decoded.event.data.workflowId).isEqualTo("workflow-xyz")
+        assertThat(decoded.event.data.traceId).isNull()
+    }
+
+    @Test
+    fun `toBackendEvent does not send trace_id`() {
+        val backendEvent = workflowImpressionEvent.toBackendEvent()
+
+        val encoded = JsonProvider.defaultJson.encodeToJsonElement(
+            BackendEvent.serializer(),
+            backendEvent,
+        ).jsonObject
+        assertThat(encoded).doesNotContainKey("trace_id")
+        assertThat(encoded["presented_offering_context"]!!.jsonObject).doesNotContainKey("trace_id")
+    }
+
 }
