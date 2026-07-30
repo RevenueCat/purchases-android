@@ -20,9 +20,14 @@ public abstract class UnsyncedTransactionsWaitPolicy private constructor(private
         public val WAIT: UnsyncedTransactionsWaitPolicy = Policy("WAIT")
 
         /**
-         * [CustomerInfo] is never held back by unsynced purchases: it is computed on the device while
-         * the purchases are posted in the background, and the up to date [CustomerInfo] is delivered
-         * through [UpdatedCustomerInfoListener] once posting finishes.
+         * When there's no cached [CustomerInfo] to report, it is computed on the device while unsynced
+         * purchases are posted in the background, instead of waiting for those posts. The up to date
+         * [CustomerInfo] is delivered through [UpdatedCustomerInfoListener] once posting finishes.
+         *
+         * This covers app launch, where an empty cache is what makes [Purchases.getCustomerInfo] wait
+         * for the posts. Once a [CustomerInfo] is cached, [CacheFetchPolicy.CACHED_OR_FETCHED] and
+         * [CacheFetchPolicy.NOT_STALE_CACHED_OR_CURRENT] report it right away, while a fetch that
+         * insists on current data still waits for pending posts.
          *
          * Note that the [CustomerInfo] reported while posting is in flight is computed from the
          * device's purchases, so it is not verified by RevenueCat's servers, and purchases made
