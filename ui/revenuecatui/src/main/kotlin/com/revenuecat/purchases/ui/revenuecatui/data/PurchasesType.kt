@@ -75,8 +75,6 @@ internal interface PurchasesType {
     suspend fun awaitGetUiConfig(): UiConfig
 
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution
-
-    val useWorkflows: Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -157,8 +155,4 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     @OptIn(InternalRevenueCatAPI::class)
     override suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         purchases.resolveWorkflow(offeringId)
-
-    @OptIn(InternalRevenueCatAPI::class)
-    override val useWorkflows: Boolean
-        get() = purchases.currentConfiguration.dangerousSettings.useWorkflows
 }

@@ -508,8 +508,7 @@ class AppConfigTest {
                 "customEntitlementComputation=false, " +
                 "uiPreviewMode=false, " +
                 "applyObfuscatedAccountIdToSubscriptionChanges=false, " +
-                "usesRemoteConfigAPISources=false, " +
-                "useWorkflows=false), " +
+                "usesRemoteConfigAPISources=false), " +
                 "languageTag='', " +
                 "versionName='', " +
                 "packageName='', " +
@@ -552,33 +551,4 @@ class AppConfigTest {
     }
 
     // endregion Fallback API host
-
-    @OptIn(InternalRevenueCatAPI::class)
-    @Test
-    fun `useWorkflows reflects dangerousSettings`() {
-        val enabled = AppConfig(
-            context = mockk(relaxed = true),
-            purchasesAreCompletedBy = REVENUECAT,
-            showInAppMessagesAutomatically = false,
-            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null,
-            store = Store.PLAY_STORE,
-            isDebugBuild = false,
-            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
-            dangerousSettings = DangerousSettings.forWorkflows(),
-        )
-        assertThat(enabled.useWorkflows).isTrue
-
-        val disabled = AppConfig(
-            context = mockk(relaxed = true),
-            purchasesAreCompletedBy = REVENUECAT,
-            showInAppMessagesAutomatically = false,
-            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
-            proxyURL = null,
-            store = Store.PLAY_STORE,
-            isDebugBuild = false,
-            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
-        )
-        assertThat(disabled.useWorkflows).isFalse
-    }
 }

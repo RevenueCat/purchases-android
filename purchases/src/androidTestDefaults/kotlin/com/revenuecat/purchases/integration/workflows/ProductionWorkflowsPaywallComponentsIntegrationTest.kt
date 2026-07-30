@@ -3,9 +3,7 @@ package com.revenuecat.purchases.integration.workflows
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.BasePurchasesIntegrationTest
 import com.revenuecat.purchases.Constants
-import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.ForceServerErrorStrategy
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.VerificationResult
@@ -38,12 +36,9 @@ import kotlin.time.Duration.Companion.milliseconds
  * with mocked billing; only `/v1/config` is faked, via [ForceServerErrorStrategy.fakeResponseWithoutPerformingRequest].
  */
 @RunWith(AndroidJUnit4::class)
-@OptIn(InternalRevenueCatAPI::class)
 class ProductionWorkflowsPaywallComponentsIntegrationTest : BasePurchasesIntegrationTest() {
 
     override val environmentConfig get() = Constants.production
-
-    override val dangerousSettings: DangerousSettings get() = DangerousSettings.forWorkflows()
 
     override var forceServerErrorsStrategy: ForceServerErrorStrategy? = RemoteConfigKillSwitchFake()
 
