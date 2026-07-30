@@ -52,10 +52,16 @@ internal class OfflineEntitlementsManager(
         isServerError: Boolean,
     ) = isServerError && isOfflineEntitlementsEnabled()
 
+    /**
+     * @param trackingOfflineEntitlementsMode whether to report entering offline entitlements mode through
+     * diagnostics. `false` when computing on device was a deliberate choice rather than a fallback for an
+     * unreachable backend.
+     */
     fun calculateAndCacheOfflineCustomerInfo(
         appUserId: String,
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit,
+        trackingOfflineEntitlementsMode: Boolean = true,
     ) {
         if (!appConfig.enableOfflineEntitlements) {
             onError(
@@ -80,7 +86,9 @@ internal class OfflineEntitlementsManager(
             onSuccess = { customerInfo ->
                 synchronized(this@OfflineEntitlementsManager) {
                     warnLog { OfflineEntitlementsStrings.USING_OFFLINE_ENTITLEMENTS_CUSTOMER_INFO }
-                    diagnosticsTracker?.trackEnteredOfflineEntitlementsMode()
+                    if (trackingOfflineEntitlementsMode) {
+                        diagnosticsTracker?.trackEnteredOfflineEntitlementsMode()
+                    }
                     _offlineCustomerInfo = customerInfo
                     deviceCache.getCachedAppUserID()?.let { deviceCache.clearCustomerInfoCache(it) }
                     val callbacks = offlineCustomerInfoCallbackCache.remove(appUserId)

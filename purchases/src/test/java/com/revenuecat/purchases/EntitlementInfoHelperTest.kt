@@ -1056,7 +1056,7 @@ class EntitlementInfoHelperTest {
         )
 
         verify(exactly = 0) {
-            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(any(), any(), any())
+            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(any(), any(), any(), any())
         }
         verify(exactly = 1) { callbackMock.onReceived(mockInfo) }
     }
@@ -1104,7 +1104,12 @@ class EntitlementInfoHelperTest {
         every { mockCache.getCachedCustomerInfo(appUserId) } returns null
         every { mockOfflineEntitlementsManager.canCalculateOfflineCustomerInfo(appUserId) } returns true
         every {
-            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserId, any(), captureLambda())
+            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
+                appUserId,
+                any(),
+                captureLambda(),
+                any(),
+            )
         } answers {
             lambda<(PurchasesError) -> Unit>().captured.invoke(
                 PurchasesError(PurchasesErrorCode.UnsupportedError, "no entitlement mapping"),
@@ -1143,7 +1148,7 @@ class EntitlementInfoHelperTest {
         )
 
         verify(exactly = 0) {
-            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(any(), any(), any())
+            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(any(), any(), any(), any())
         }
         verify(exactly = 1) { callbackMock.onReceived(mockInfo) }
     }
@@ -1163,7 +1168,12 @@ class EntitlementInfoHelperTest {
         every { mockOfflineEntitlementsManager.canCalculateOfflineCustomerInfo(appUserId) } returns true
         every { mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount) } just Runs
         every {
-            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(appUserId, captureLambda(), any())
+            mockOfflineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
+                appUserId,
+                captureLambda(),
+                any(),
+                any(),
+            )
         } answers {
             lambda<(CustomerInfo) -> Unit>().captured.invoke(computedInfo)
         }
