@@ -43,6 +43,7 @@ class CustomerInfoUpdateHandlerTest {
         every { deviceCache.cacheCustomerInfo(appUserId, mockInfo) } just Runs
         every { offlineEntitlementsManager.offlineCustomerInfo } returns null
         every { appConfig.customEntitlementComputation } returns false
+        every { appConfig.unsyncedTransactionsWaitPolicy } returns UnsyncedTransactionsWaitPolicy.WAIT
         every { diagnosticsTracker.trackCustomerInfoVerificationResultIfNeeded(any()) } just Runs
 
         customerInfoUpdateHandler = CustomerInfoUpdateHandler(

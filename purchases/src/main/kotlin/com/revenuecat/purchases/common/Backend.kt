@@ -146,7 +146,7 @@ internal enum class GetRemoteConfigErrorHandlingBehavior {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class Backend(
     private val appConfig: AppConfig,
     private val dispatcher: Dispatcher,
@@ -154,6 +154,7 @@ internal class Backend(
     private val httpClient: HTTPClient,
     private val backendHelper: BackendHelper,
     private val remoteConfigDispatcher: Dispatcher = dispatcher,
+    private val receiptPostDispatcher: Dispatcher = dispatcher,
 ) {
     companion object {
         private const val APP_USER_ID = "app_user_id"
@@ -419,7 +420,7 @@ internal class Backend(
             }
         }
         synchronized(this@Backend) {
-            postReceiptCallbacks.addCallback(call, dispatcher, cacheKey, onSuccess to onError)
+            postReceiptCallbacks.addCallback(call, receiptPostDispatcher, cacheKey, onSuccess to onError)
         }
     }
 

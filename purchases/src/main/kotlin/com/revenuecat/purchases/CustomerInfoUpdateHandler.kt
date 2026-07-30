@@ -38,8 +38,26 @@ internal class CustomerInfoUpdateHandler constructor(
     private var lastSentCustomerInfo: CustomerInfo? = null
 
     fun cacheAndNotifyListeners(customerInfo: CustomerInfo) {
-        deviceCache.cacheCustomerInfo(identityManager.currentAppUserID, customerInfo)
+        val appUserID = identityManager.currentAppUserID
+        if (isStalerThanCache(customerInfo, appUserID)) {
+            log(LogIntent.DEBUG) { CustomerInfoStrings.NOT_CACHING_STALER_CUSTOMERINFO }
+            return
+        }
+        deviceCache.cacheCustomerInfo(appUserID, customerInfo)
         notifyListeners(customerInfo)
+    }
+
+    /**
+     * With [UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT], receipt posts run on their own thread, so a
+     * `GET /subscribers` response can land after a fresher `POST /receipts` one. Dropping the staler of
+     * the two keeps the cache from going back to a pre-purchase state.
+     */
+    private fun isStalerThanCache(customerInfo: CustomerInfo, appUserID: String): Boolean {
+        if (appConfig.unsyncedTransactionsWaitPolicy != UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT) {
+            return false
+        }
+        val cachedRequestDate = deviceCache.getCachedCustomerInfo(appUserID)?.requestDate
+        return cachedRequestDate != null && customerInfo.requestDate.before(cachedRequestDate)
     }
 
     fun notifyListeners(customerInfo: CustomerInfo) {
