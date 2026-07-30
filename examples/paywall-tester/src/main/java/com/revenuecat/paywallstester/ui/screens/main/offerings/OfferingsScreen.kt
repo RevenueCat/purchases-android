@@ -335,6 +335,10 @@ private fun OfferingsListScreen(
                     override fun onRestoreError(error: PurchasesError) {
                         Log.e("PaywallDialog", "onRestoreError: ${error.message}")
                     }
+
+                    override fun onUrlOpened(url: String) {
+                        Log.d("PaywallDialog", "onUrlOpened: $url")
+                    }
                 })
                 .build(),
         )

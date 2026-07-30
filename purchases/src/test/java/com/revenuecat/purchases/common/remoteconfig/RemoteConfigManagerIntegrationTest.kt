@@ -51,8 +51,9 @@ class RemoteConfigManagerIntegrationTest {
     private val testScope = CoroutineScope(UnconfinedTestDispatcher())
 
     private var capturedManifest: String? = null
+    private var capturedLastRefreshTime: Date? = null
     private var capturedPrefetchedBlobs: List<String>? = null
-    private lateinit var onSuccess: (RCContainer?, VerificationResult) -> Unit
+    private lateinit var onSuccess: (RCContainer?, Date?, VerificationResult) -> Unit
 
     @Before
     fun setup() {
@@ -83,11 +84,12 @@ class RemoteConfigManagerIntegrationTest {
         )
 
         every {
-            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any())
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any())
         } answers {
             capturedManifest = arg(4)
-            capturedPrefetchedBlobs = arg(5)
-            onSuccess = arg(6)
+            capturedLastRefreshTime = arg(5)
+            capturedPrefetchedBlobs = arg(6)
+            onSuccess = arg(7)
         }
     }
 
@@ -349,7 +351,7 @@ class RemoteConfigManagerIntegrationTest {
     }
 
     private fun settle(container: RCContainer?) {
-        onSuccess.invoke(container, VerificationResult.VERIFIED)
+        onSuccess.invoke(container, Date(), VerificationResult.VERIFIED)
     }
 
     private companion object {

@@ -3351,31 +3351,6 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `when useWorkflows is true and the workflows topic is unavailable, surfaces the error`() {
-        // The workflows topic could not be read and remote config is not disabled (a transient failure), so
-        // reloading offerings would recover nothing — surface the error instead of degrading to the default.
-        val offeringWithoutComponents = offeringWithWPL.copy(paywallComponents = null)
-        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Unavailable
-
-        val model = PaywallViewModelImpl(
-            MockResourceProvider(),
-            purchases,
-            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
-                .setListener(listener)
-                .setOffering(offeringWithoutComponents)
-                .build(),
-            TestData.Constants.currentColorScheme,
-            isDarkMode = false,
-            shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
-        )
-
-        assertThat(model.state.value).isInstanceOf(PaywallState.Error::class.java)
-        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
-        coVerify(exactly = 0) { purchases.awaitOfferings() }
-    }
-
-    @Test
     fun `when useWorkflows is true and no workflow is mapped with no paywall data, renders the default paywall`() {
         val offeringWithoutPaywallData = Offering(
             identifier = "offering-no-paywall-data",

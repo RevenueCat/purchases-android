@@ -19,6 +19,7 @@ import com.revenuecat.purchases.backendName
 import com.revenuecat.purchases.common.caching.WorkflowMetadata
 import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.networking.RCContainer
@@ -48,6 +49,7 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.net.URL
+import java.util.Date
 
 internal const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
 internal const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
@@ -110,7 +112,7 @@ internal typealias RewardVerificationResultCallback =
     Pair<(RewardVerificationPollStatus) -> Unit, (RewardVerificationError) -> Unit>
 
 internal typealias RemoteConfigCallback = Pair<
-    (RCContainer?, VerificationResult) -> Unit,
+    (RCContainer?, requestDate: Date?, VerificationResult) -> Unit,
     (PurchasesError, errorHandlingBehavior: GetRemoteConfigErrorHandlingBehavior) -> Unit,
     >
 
@@ -1165,8 +1167,10 @@ internal class Backend(
         fetchContext: RemoteConfigFetchContext,
         domain: String,
         manifest: String?,
+        lastRefreshTime: Date?,
         prefetchedBlobs: List<String>,
-        onSuccess: (RCContainer?, VerificationResult) -> Unit,
+        // The server's own request time, so the caller can replay it rather than a device-clock value.
+        onSuccess: (RCContainer?, Date?, VerificationResult) -> Unit,
         onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit,
     ) {
         val endpoint = Endpoint.GetRemoteConfig(domain)
@@ -1183,6 +1187,12 @@ internal class Backend(
             manifest?.let { put("manifest", it) }
             put("prefetched_blobs", prefetchedBlobs)
         }
+        // This endpoint is not ETag-cached, but the header the ETag path uses carries exactly what the server needs
+        // here, so it is reused verbatim: epoch millis, omitted entirely when there has been no successful refresh.
+        val requestHeaders = lastRefreshTime?.let {
+            backendHelper.authenticationHeaders +
+                (HTTPRequest.LAST_REFRESH_TIME_HEADER_NAME to it.time.toString())
+        } ?: backendHelper.authenticationHeaders
 
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
@@ -1191,7 +1201,7 @@ internal class Backend(
                     endpoint,
                     body = body,
                     postFieldsToSign = null,
-                    backendHelper.authenticationHeaders,
+                    requestHeaders,
                 )
             }
 
@@ -1211,7 +1221,7 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         if (result.responseCode == RCHTTPStatusCodes.NO_CONTENT) {
                             // 204: nothing changed, no container to parse.
-                            onSuccessHandler(null, result.verificationResult)
+                            onSuccessHandler(null, result.requestDate, result.verificationResult)
                             return@forEach
                         }
                         val payload = result.payload
@@ -1227,7 +1237,11 @@ internal class Backend(
                             return@forEach
                         }
                         try {
-                            onSuccessHandler(RCContainer.parse(payload.bytes), result.verificationResult)
+                            onSuccessHandler(
+                                RCContainer.parse(payload.bytes),
+                                result.requestDate,
+                                result.verificationResult,
+                            )
                         } catch (e: RCContainerFormatException) {
                             // Parse failure of an otherwise-successful response; keep retrying.
                             onErrorHandler(

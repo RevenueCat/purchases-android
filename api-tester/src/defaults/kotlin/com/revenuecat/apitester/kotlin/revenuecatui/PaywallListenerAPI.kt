@@ -19,6 +19,8 @@ private class PaywallListenerAPI {
 
             override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {}
 
+            override fun onPurchaseCancelled() {}
+
             override fun onRestoreInitiated(resume: Resumable) {}
 
             override fun onRestoreStarted() {}
@@ -26,6 +28,10 @@ private class PaywallListenerAPI {
             override fun onRestoreError(error: PurchasesError) {}
 
             override fun onRestoreCompleted(customerInfo: CustomerInfo) {}
+
+            override fun onWebCheckoutOpened() {}
+
+            override fun onUrlOpened(url: String) {}
         }
     }
 }

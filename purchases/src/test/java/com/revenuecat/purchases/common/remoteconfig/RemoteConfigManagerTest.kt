@@ -69,9 +69,10 @@ class RemoteConfigManagerTest {
     private var capturedAppUserID: String? = null
     private var capturedDomain: String? = null
     private var capturedManifest: String? = null
+    private var capturedLastRefreshTime: Date? = null
     private var capturedFetchContext: RemoteConfigFetchContext? = null
     private var capturedPrefetchedBlobs: List<String>? = null
-    private lateinit var onSuccess: (RCContainer?, VerificationResult) -> Unit
+    private lateinit var onSuccess: (RCContainer?, Date?, VerificationResult) -> Unit
     private lateinit var onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit
 
     private lateinit var onFallbackSuccess: (RemoteConfiguration, VerificationResult) -> Unit
@@ -100,15 +101,16 @@ class RemoteConfigManagerTest {
         every { diskCache.write(any()) } returns true
 
         every {
-            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any())
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any())
         } answers {
             capturedAppUserID = arg(1)
             capturedFetchContext = arg(2)
             capturedDomain = arg(3)
             capturedManifest = arg(4)
-            capturedPrefetchedBlobs = arg(5)
-            onSuccess = arg(6)
-            onError = arg(7)
+            capturedLastRefreshTime = arg(5)
+            capturedPrefetchedBlobs = arg(6)
+            onSuccess = arg(7)
+            onError = arg(8)
         }
 
         every {
@@ -168,7 +170,7 @@ class RemoteConfigManagerTest {
             fetchContext = RemoteConfigFetchContext.IdentityChange,
         )
         assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
-        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        deliverSuccess(null)
 
         // The next committed request reports its own context.
         manager.refreshRemoteConfig(
@@ -177,7 +179,7 @@ class RemoteConfigManagerTest {
             fetchContext = RemoteConfigFetchContext.IdentityChange,
         )
 
-        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
         assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.IdentityChange)
     }
 
@@ -209,7 +211,7 @@ class RemoteConfigManagerTest {
         assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
 
         // Once a request succeeds, the forcing stops and later requests report their own context.
-        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        deliverSuccess(null)
         manager.refreshRemoteConfig(
             appInBackground = false,
             appUserID = TEST_APP_USER_ID,
@@ -236,7 +238,7 @@ class RemoteConfigManagerTest {
             fetchContext = RemoteConfigFetchContext.IdentityChange,
         )
         assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         manager.refreshRemoteConfig(
             appInBackground = false,
@@ -257,7 +259,7 @@ class RemoteConfigManagerTest {
         )
         assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
         // A 200 whose body fails to parse commits nothing, so the initial config is still not committed.
-        onSuccess.invoke(containerWithConfig("{ not valid json"), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig("{ not valid json"))
 
         // The next request must still be forced to AppStart, since no config landed yet.
         manager.refreshRemoteConfig(
@@ -313,7 +315,7 @@ class RemoteConfigManagerTest {
 
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
 
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -322,12 +324,12 @@ class RemoteConfigManagerTest {
 
         // First refresh completes (204), stamping the in-memory last-sync time.
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        deliverSuccess(null)
 
         // Same clock: still within the foreground window, so no new request.
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
 
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -335,13 +337,13 @@ class RemoteConfigManagerTest {
         every { diskCache.read() } returns null
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        deliverSuccess(null)
 
         currentTimeMillis = FIXED_MILLIS + STALE_FOREGROUND_AGE_MILLIS
 
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
 
-        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -349,13 +351,13 @@ class RemoteConfigManagerTest {
         every { diskCache.read() } returns null
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        deliverSuccess(null)
 
         // Identity change wipes the cache and the in-memory marker, so the next user refreshes immediately.
         manager.clearCache(TEST_APP_USER_ID)
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
 
-        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -371,7 +373,7 @@ class RemoteConfigManagerTest {
         manager.clearCache(TEST_APP_USER_ID)
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
 
-        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -389,12 +391,12 @@ class RemoteConfigManagerTest {
         // Same clock: the failure left lastRefreshedAt unset, but the recent attempt keeps stale-gated refreshes
         // from retrying on every caller.
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
 
         currentTimeMillis += REFRESH_ATTEMPT_COOLDOWN_MILLIS + 1
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
 
-        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -410,7 +412,7 @@ class RemoteConfigManagerTest {
         )
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
 
-        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -425,7 +427,7 @@ class RemoteConfigManagerTest {
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
 
-        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -465,7 +467,7 @@ class RemoteConfigManagerTest {
         """.trimIndent()
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         val written = slot<PersistedRemoteConfigurationState>()
         verify(exactly = 1) { diskCache.write(capture(written)) }
@@ -499,7 +501,7 @@ class RemoteConfigManagerTest {
         """.trimIndent()
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         val written = slot<PersistedRemoteConfigurationState>()
         verify(exactly = 1) { diskCache.write(capture(written)) }
@@ -525,7 +527,7 @@ class RemoteConfigManagerTest {
         val validData = byteArrayOf(1, 2, 3)
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(
+        deliverSuccess(
             containerWithConfig(
                 response,
                 blobs = listOf(
@@ -533,9 +535,7 @@ class RemoteConfigManagerTest {
                     // A tampered blob fails verification: its decode() throws, so it is skipped.
                     inlineElement(REF_TAMPERED, decoded = null),
                 ),
-            ),
-            VerificationResult.VERIFIED,
-        )
+            ))
 
         verify(exactly = 1) { blobStore.write(REF_VALID, validData) }
         verify(exactly = 0) { blobStore.write(REF_TAMPERED, any()) }
@@ -556,7 +556,7 @@ class RemoteConfigManagerTest {
         val wantedData = byteArrayOf(1, 2, 3)
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(
+        deliverSuccess(
             containerWithConfig(
                 response,
                 blobs = listOf(
@@ -564,9 +564,7 @@ class RemoteConfigManagerTest {
                     // Valid bytes, but not in prefetch_blobs nor referenced by any active topic (never decoded).
                     inlineElement(REF_UNWANTED, byteArrayOf(7)),
                 ),
-            ),
-            VerificationResult.VERIFIED,
-        )
+            ))
 
         verify(exactly = 1) { blobStore.write(REF_VALID, wantedData) }
         verify(exactly = 0) { blobStore.write(REF_UNWANTED, any()) }
@@ -587,13 +585,11 @@ class RemoteConfigManagerTest {
         """.trimIndent()
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(
+        deliverSuccess(
             containerWithConfig(
                 response,
                 blobs = listOf(inlineElement(REF_VALID, byteArrayOf(1, 2, 3))),
-            ),
-            VerificationResult.VERIFIED,
-        )
+            ))
 
         // Both blob-store mutations are gated on a successful persist.
         verify(exactly = 0) { blobStore.write(any(), any()) }
@@ -614,7 +610,7 @@ class RemoteConfigManagerTest {
         """.trimIndent()
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         val retained = slot<Set<String>>()
         verify(exactly = 1) { blobStore.retainOnly(capture(retained)) }
@@ -639,7 +635,7 @@ class RemoteConfigManagerTest {
         """.trimIndent()
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         val written = slot<PersistedRemoteConfigurationState>()
         verify(exactly = 1) { diskCache.write(capture(written)) }
@@ -668,7 +664,7 @@ class RemoteConfigManagerTest {
         """.trimIndent()
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         // Re-arm the blob sources before fetching, but only if a prior cycle exhausted them.
         verify(exactly = 1) { sourceProvider.restartIfExhausted(RemoteConfigSourceHandle.Purpose.BLOB) }
@@ -698,7 +694,7 @@ class RemoteConfigManagerTest {
         """.trimIndent()
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         val prefetched = slot<List<String>>()
         verify(exactly = 1) { blobFetcher.prefetch(capture(prefetched)) }
@@ -721,7 +717,7 @@ class RemoteConfigManagerTest {
         """.trimIndent()
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         val prefetched = slot<List<String>>()
         verify(exactly = 1) { blobFetcher.prefetch(capture(prefetched)) }
@@ -743,7 +739,7 @@ class RemoteConfigManagerTest {
         """.trimIndent()
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         verify(exactly = 0) { sourceProvider.restartIfExhausted(any()) }
         verify(exactly = 0) { blobFetcher.prefetch(any()) }
@@ -754,22 +750,152 @@ class RemoteConfigManagerTest {
         every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        deliverSuccess(null)
 
         verify(exactly = 0) { sourceProvider.restartIfExhausted(any()) }
         verify(exactly = 0) { blobFetcher.prefetch(any()) }
     }
 
     @Test
-    fun `a 204 response leaves the cache untouched and does no blob work`() {
-        every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
+    fun `a 204 response leaves the configuration untouched and does no blob work`() {
+        val cached = persisted(
+            manifest = "v1.1.sources:etag1",
+            activeTopics = listOf("sources"),
+            prefetchBlobs = listOf("blobRefA"),
+            topics = mapOf("sources" to ConfigTopic(mapOf("default" to RemoteConfiguration.ConfigItem(blobRef = "blobRefA")))),
+        )
+        every { diskCache.read() } returns cached
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        deliverSuccess(null)
 
-        verify(exactly = 0) { diskCache.write(any()) }
+        // The only thing a 204 rewrites is the refresh time; the configuration itself carries forward verbatim.
+        verify(exactly = 1) { diskCache.write(cached.copy(lastRefreshTime = SERVER_MILLIS)) }
         verify(exactly = 0) { blobStore.write(any(), any()) }
         verify(exactly = 0) { blobStore.retainOnly(any()) }
+    }
+
+    @Test
+    fun `a 204 response advances the persisted refresh time to the server time`() {
+        val cached = persisted(manifest = "v1.1.sources:etag1", lastRefreshTime = SERVER_MILLIS - 10_000L)
+        every { diskCache.read() } returns cached
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccess(null)
+
+        // SERVER_MILLIS, not the FIXED_MILLIS device clock: the server's own time is what gets replayed.
+        verify(exactly = 1) { diskCache.write(cached.copy(lastRefreshTime = SERVER_MILLIS)) }
+    }
+
+    @Test
+    fun `a 204 response with no server time leaves the persisted refresh time alone`() {
+        every { diskCache.read() } returns persisted(
+            manifest = "v1.1.sources:etag1",
+            lastRefreshTime = SERVER_MILLIS - 10_000L,
+        )
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccess(null, requestDate = null)
+
+        // No device-clock substitute, and no pointless rewrite of an unchanged value.
+        verify(exactly = 0) { diskCache.write(any()) }
+    }
+
+    @Test
+    fun `a response with no server time warns that the refresh time is frozen`() {
+        every { diskCache.read() } returns persisted(manifest = "v1.1.", lastRefreshTime = SERVER_MILLIS)
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+
+        assertWarnLog(
+            "Remote config response carried no X-RevenueCat-Request-Time header. Keeping the previous refresh " +
+                "time; the server cannot see how fresh this client's configuration is.",
+        ) {
+            deliverSuccess(null, requestDate = null)
+        }
+    }
+
+    @Test
+    fun `a 204 response with nothing persisted does not resurrect the cache`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccess(null)
+
+        verify(exactly = 0) { diskCache.write(any()) }
+    }
+
+    @Test
+    fun `a 200 response persists the server time as the refresh time`() {
+        every { diskCache.read() } returns null
+        val slot = slot<PersistedRemoteConfigurationState>()
+        every { diskCache.write(capture(slot)) } returns true
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccess(containerWithConfig("""{"domain":"app","manifest":"v1.2."}"""))
+
+        assertThat(slot.captured.lastRefreshTime).isEqualTo(SERVER_MILLIS)
+    }
+
+    @Test
+    fun `a 200 response with no server time carries the previous refresh time forward`() {
+        every { diskCache.read() } returns persisted(manifest = "v1.1.", lastRefreshTime = SERVER_MILLIS - 10_000L)
+        val slot = slot<PersistedRemoteConfigurationState>()
+        every { diskCache.write(capture(slot)) } returns true
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccess(containerWithConfig("""{"domain":"app","manifest":"v1.2."}"""), requestDate = null)
+
+        // The manifest advances, but the refresh time holds at the last value the server actually supplied.
+        assertThat(slot.captured.manifest).isEqualTo("v1.2.")
+        assertThat(slot.captured.lastRefreshTime).isEqualTo(SERVER_MILLIS - 10_000L)
+    }
+
+    @Test
+    fun `a first-ever 200 with no server time persists no refresh time`() {
+        every { diskCache.read() } returns null
+        val slot = slot<PersistedRemoteConfigurationState>()
+        every { diskCache.write(capture(slot)) } returns true
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccess(containerWithConfig("""{"domain":"app","manifest":"v1.2."}"""), requestDate = null)
+
+        assertThat(slot.captured.lastRefreshTime).isNull()
+    }
+
+    @Test
+    fun `the persisted refresh time is sent on the next request`() {
+        every { diskCache.read() } returns persisted(
+            manifest = "v1.1.sources:etag1",
+            lastRefreshTime = SERVER_MILLIS,
+        )
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+
+        assertThat(capturedLastRefreshTime).isEqualTo(Date(SERVER_MILLIS))
+    }
+
+    @Test
+    fun `no refresh time is sent when nothing has been persisted yet`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+
+        assertThat(capturedLastRefreshTime).isNull()
+    }
+
+    @Test
+    fun `an identity change drops the refresh time along with the cache`() {
+        every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1", lastRefreshTime = SERVER_MILLIS)
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        assertThat(capturedLastRefreshTime).isNotNull
+
+        // clearCache() deletes the file, so the wiped cache reads back as null and the header is dropped with it.
+        manager.clearCache("new-user")
+        every { diskCache.read() } returns null
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = "new-user", fetchContext = DEFAULT_FETCH_CONTEXT)
+
+        assertThat(capturedLastRefreshTime).isNull()
     }
 
     @Test
@@ -800,7 +926,7 @@ class RemoteConfigManagerTest {
         // No further config request and no blob fetch happen for the rest of the session.
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
         verify(exactly = 0) { blobFetcher.prefetch(any()) }
     }
 
@@ -823,7 +949,7 @@ class RemoteConfigManagerTest {
             appUserID = TEST_APP_USER_ID,
             fetchContext = DEFAULT_FETCH_CONTEXT,
         )
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         assertThat(manager.configGeneration).isEqualTo(1)
         assertThat(recorder.committed).containsExactly(1)
@@ -905,7 +1031,7 @@ class RemoteConfigManagerTest {
         """.trimIndent()
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         assertThat(recorder.disabled).isEmpty()
     }
@@ -925,7 +1051,7 @@ class RemoteConfigManagerTest {
 
         assertThat(topic).isNotNull
         assertThat(topic!!["wf1"]!!.blobRef).isEqualTo(REF_VALID)
-        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -936,7 +1062,7 @@ class RemoteConfigManagerTest {
         val topic = manager.committedTopicOrNull(RemoteConfigTopic.Workflows)
 
         assertThat(topic).isNull()
-        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1101,7 +1227,7 @@ class RemoteConfigManagerTest {
 
         // The endpoint is still usable, so a subsequent refresh fires.
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     // region Fallback endpoint
@@ -1140,6 +1266,32 @@ class RemoteConfigManagerTest {
         assertThat(written.captured.manifest).isEqualTo("v1.fallback.sources:etag")
         assertThat(written.captured.activeTopics).containsExactly("sources")
         assertThat(written.captured.topics["sources"]!!["default"]!!.blobRef).isEqualTo("newBlob")
+        // The fallback host is not the main API, so its clock is never borrowed as the refresh time.
+        assertThat(written.captured.lastRefreshTime).isNull()
+    }
+
+    @Test
+    fun `a fallback-only session sends no refresh time on its next request`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownBackendError, "server error"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        val committed = slot<PersistedRemoteConfigurationState>()
+        every { diskCache.write(capture(committed)) } returns true
+        onFallbackSuccess.invoke(
+            remoteConfiguration("""{"domain":"app","manifest":"v1.fallback."}"""),
+            VerificationResult.VERIFIED,
+        )
+
+        // The committed state has no refresh time, so the following request has nothing to replay.
+        every { diskCache.read() } returns committed.captured
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+
+        assertThat(capturedManifest).isEqualTo("v1.fallback.")
+        assertThat(capturedLastRefreshTime).isNull()
     }
 
     @Test
@@ -1218,7 +1370,7 @@ class RemoteConfigManagerTest {
 
         // The fallback settled the sync, so a later refresh is allowed to fire again.
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1236,11 +1388,11 @@ class RemoteConfigManagerTest {
         )
 
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
 
         currentTimeMillis += REFRESH_ATTEMPT_COOLDOWN_MILLIS + 1
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1277,7 +1429,7 @@ class RemoteConfigManagerTest {
 
         assertThat(manager.isDisabled).isTrue()
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1288,7 +1440,7 @@ class RemoteConfigManagerTest {
         // The first refresh has not settled yet (the stub captures callbacks without invoking them).
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
 
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1296,10 +1448,10 @@ class RemoteConfigManagerTest {
         every { diskCache.read() } returns null
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        deliverSuccess(null)
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
 
-        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1314,7 +1466,7 @@ class RemoteConfigManagerTest {
         )
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
 
-        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1322,7 +1474,7 @@ class RemoteConfigManagerTest {
         every { diskCache.read() } returns null
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(containerWithConfig("{ not valid json"), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig("{ not valid json"))
 
         verify(exactly = 0) { diskCache.write(any()) }
     }
@@ -1343,14 +1495,14 @@ class RemoteConfigManagerTest {
         """.trimIndent()
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(containerWithConfig(config), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(config))
 
         // The parse failure is caught: nothing is persisted and the cache is left intact.
         verify(exactly = 0) { diskCache.write(any()) }
 
         // The guard was released in the finally block, so a subsequent refresh is allowed to start.
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1358,14 +1510,14 @@ class RemoteConfigManagerTest {
         every { diskCache.read() } returns null
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(containerWithUndecodableConfig(), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithUndecodableConfig())
 
         // The decode failure is caught: nothing is persisted and the cache is left intact.
         verify(exactly = 0) { diskCache.write(any()) }
 
         // The guard was released in the finally block, so a subsequent refresh is allowed to start.
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1392,7 +1544,7 @@ class RemoteConfigManagerTest {
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
         // Identity change wipes the cache before the in-flight request settles.
         manager.clearCache(TEST_APP_USER_ID)
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         // The stale response is dropped (epoch guard): nothing is written over the wiped cache.
         verify(exactly = 0) { diskCache.write(any()) }
@@ -1423,7 +1575,7 @@ class RemoteConfigManagerTest {
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
         // Run the 200 path on its own thread: it enters the lock and parks inside diskCache.write.
-        val persistThread = thread { onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED) }
+        val persistThread = thread { deliverSuccess(containerWithConfig(response)) }
         check(writeEntered.await(WAIT_SECONDS, TimeUnit.SECONDS)) { "persist did not reach diskCache.write" }
 
         // Identity change mid-persist: clearCache must block on the lock persist is holding.
@@ -1457,7 +1609,7 @@ class RemoteConfigManagerTest {
         manager.clearCache(TEST_APP_USER_ID)
         // A brand-new sync (e.g. for the new user) proceeds normally: the guard was released by clearCache.
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         verify(exactly = 1) { diskCache.write(any()) }
     }
@@ -1484,7 +1636,7 @@ class RemoteConfigManagerTest {
         every { diskCache.read() } returns null
 
         assertThat(readManager(appUserIDProvider = { null }).topic(RemoteConfigTopic.Sources)).isNull()
-        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1500,14 +1652,14 @@ class RemoteConfigManagerTest {
             appUserID = TEST_APP_USER_ID,
             fetchContext = RemoteConfigFetchContext.AppStart,
         )
-        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        deliverSuccess(null)
 
         // Nothing is in flight and nothing is cached: the read triggers its own sync and waits for it.
         var result: ConfigTopic? = null
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
             result = manager.topic(RemoteConfigTopic.Workflows)
         }
-        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
         // The on-demand sync is issued as foreground for the current user with a read fetch context.
         assertThat(capturedAppUserID).isEqualTo(TEST_APP_USER_ID)
         assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.Read)
@@ -1521,7 +1673,7 @@ class RemoteConfigManagerTest {
               "topics": { "workflows": { "wf1": { "blob_ref": "$REF_VALID" } } }
             }
         """.trimIndent()
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         assertThat(read.isCompleted).isTrue()
         assertThat(result).containsKey("wf1")
@@ -1542,7 +1694,7 @@ class RemoteConfigManagerTest {
         val firstRead = launch(UnconfinedTestDispatcher(testScheduler)) {
             firstResult = manager.topic(RemoteConfigTopic.Workflows)
         }
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
         onError.invoke(
             PurchasesError(PurchasesErrorCode.NetworkError),
             GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
@@ -1551,13 +1703,13 @@ class RemoteConfigManagerTest {
         assertThat(firstResult).isNull()
 
         assertThat(manager.topic(RemoteConfigTopic.Workflows)).isNull()
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
 
         currentTimeMillis += REFRESH_ATTEMPT_COOLDOWN_MILLIS + 1
         val retryRead = launch(UnconfinedTestDispatcher(testScheduler)) {
             manager.topic(RemoteConfigTopic.Workflows)
         }
-        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
         onError.invoke(
             PurchasesError(PurchasesErrorCode.NetworkError),
             GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
@@ -1580,11 +1732,11 @@ class RemoteConfigManagerTest {
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
             manager.topic(RemoteConfigTopic.Workflows)
         }
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
         assertThat(capturedAppUserID).isEqualTo("new-user")
 
         // Settle the triggered sync so the parked read completes cleanly.
-        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        deliverSuccess(null)
         assertThat(read.isCompleted).isTrue()
     }
 
@@ -1609,10 +1761,10 @@ class RemoteConfigManagerTest {
             val read = launch(UnconfinedTestDispatcher(testScheduler)) {
                 manager.topic(RemoteConfigTopic.Workflows)
             }
-            verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+            verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
             assertThat(capturedAppUserID).isEqualTo("new-user")
 
-            onSuccess.invoke(null, VerificationResult.VERIFIED)
+            deliverSuccess(null)
             assertThat(read.isCompleted).isTrue()
         }
 
@@ -1626,10 +1778,10 @@ class RemoteConfigManagerTest {
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
             manager.topic(RemoteConfigTopic.Workflows)
         }
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
         assertThat(capturedAppUserID).isEqualTo("bootstrap-user")
 
-        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        deliverSuccess(null)
         assertThat(read.isCompleted).isTrue()
     }
 
@@ -1659,7 +1811,7 @@ class RemoteConfigManagerTest {
               "topics": { "workflows": { "wf1": { "blob_ref": "$REF_VALID" } } }
             }
         """.trimIndent()
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         assertThat(read.isCompleted).isTrue()
         assertThat(result).containsKey("wf1")
@@ -1808,7 +1960,7 @@ class RemoteConfigManagerTest {
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
             result = manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }
         }
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
         // The on-demand sync is issued as foreground for the current user.
         assertThat(capturedAppUserID).isEqualTo(TEST_APP_USER_ID)
         assertThat(read.isActive).isTrue()
@@ -1821,7 +1973,7 @@ class RemoteConfigManagerTest {
               "topics": { "workflows": { "wf1": { "blob_ref": "$REF_VALID" } } }
             }
         """.trimIndent()
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         assertThat(read.isCompleted).isTrue()
         assertThat(result).isEqualTo(byteArrayOf(4, 2))
@@ -1832,7 +1984,7 @@ class RemoteConfigManagerTest {
         every { diskCache.read() } returns null
 
         assertThat(readManager(appUserIDProvider = { null }).blobData(RemoteConfigTopic.Workflows, "wf1") { it }).isNull()
-        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1847,7 +1999,7 @@ class RemoteConfigManagerTest {
         )
 
         assertThat(manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }).isNull()
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1878,7 +2030,7 @@ class RemoteConfigManagerTest {
               "topics": { "workflows": { "wf1": { "blob_ref": "$REF_VALID" } } }
             }
         """.trimIndent()
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         assertThat(read.isCompleted).isTrue()
         assertThat(result).isEqualTo(byteArrayOf(4, 2))
@@ -2022,7 +2174,7 @@ class RemoteConfigManagerTest {
 
         assertThat(result).isNull()
         coVerify(exactly = 0) { blobFetcher.ensureDownloaded(any<String>()) }
-        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -2116,7 +2268,7 @@ class RemoteConfigManagerTest {
         val read = launch(UnconfinedTestDispatcher(testScheduler)) {
             result = manager.mergeItemsBlobData<MergedBlob>(RemoteConfigTopic.Workflows, listOf("wf1", "wf2"))
         }
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
         assertThat(read.isActive).isTrue()
 
         val response = """
@@ -2132,7 +2284,7 @@ class RemoteConfigManagerTest {
               }
             }
         """.trimIndent()
-        onSuccess.invoke(containerWithConfig(response), VerificationResult.VERIFIED)
+        deliverSuccess(containerWithConfig(response))
 
         assertThat(read.isCompleted).isTrue()
         assertThat(result).isEqualTo(MergedBlob(wf1 = Section("x"), wf2 = Section("y")))
@@ -2188,7 +2340,7 @@ class RemoteConfigManagerTest {
         }
         assertThat(read.isActive).isTrue()
 
-        onSuccess.invoke(null, VerificationResult.VERIFIED)
+        deliverSuccess(null)
 
         assertThat(read.isCompleted).isTrue()
         assertThat(result).isNull()
@@ -2240,10 +2392,10 @@ class RemoteConfigManagerTest {
         every { diskCache.clear() } answers { state.set(null) }
         every { blobStore.cachedRefs() } returns emptySet()
         every {
-            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any())
+            backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any())
         } answers {
-            arg<(RCContainer?, VerificationResult) -> Unit>(6)
-                .invoke(containerWithConfig(stressResponse), VerificationResult.VERIFIED)
+            arg<(RCContainer?, Date?, VerificationResult) -> Unit>(7)
+                .invoke(containerWithConfig(stressResponse), Date(SERVER_MILLIS), VerificationResult.VERIFIED)
         }
         val manager = RemoteConfigManager(
             backend,
@@ -2308,18 +2460,28 @@ class RemoteConfigManagerTest {
 
     // endregion
 
+    /**
+     * Delivers a successful config response. [requestDate] defaults to the server's request time, deliberately a
+     * different instant from the [dateProvider] clock so an assertion on the persisted value proves which one won.
+     */
+    private fun deliverSuccess(container: RCContainer?, requestDate: Date? = Date(SERVER_MILLIS)) {
+        onSuccess.invoke(container, requestDate, VerificationResult.VERIFIED)
+    }
+
     private fun persisted(
         manifest: String,
         domain: String = "app",
         activeTopics: List<String> = emptyList(),
         prefetchBlobs: List<String> = emptyList(),
         topics: Map<String, ConfigTopic> = emptyMap(),
+        lastRefreshTime: Long? = null,
     ) = PersistedRemoteConfigurationState(
         domain = domain,
         manifest = manifest,
         activeTopics = activeTopics,
         prefetchBlobs = prefetchBlobs,
         topics = topics,
+        lastRefreshTime = lastRefreshTime,
     )
 
     /**
@@ -2392,6 +2554,10 @@ class RemoteConfigManagerTest {
         private const val TEST_APP_USER_ID = "test-app-user-id"
         private val DEFAULT_FETCH_CONTEXT = RemoteConfigFetchContext.AppStart
         private const val FIXED_MILLIS = 1_710_000_000_000L
+
+        // The server's X-RevenueCat-Request-Time, offset from the device clock on purpose: the persisted refresh
+        // time must come from here, never from FIXED_MILLIS.
+        private const val SERVER_MILLIS = 1_720_000_000_000L
 
         // Older than the 5-minute foreground staleness window (see Date?.isCacheStale).
         private const val STALE_FOREGROUND_AGE_MILLIS = 6 * 60 * 1000L

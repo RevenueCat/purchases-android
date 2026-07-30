@@ -31,6 +31,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
+import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.paywalls.components.StackComponent
@@ -53,6 +54,7 @@ import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import io.mockk.Runs
@@ -932,6 +934,21 @@ class PaywallViewModelWorkflowTest {
     // region memory-first single-path (no Loading flash)
 
     @Test
+    fun `Unavailable workflow resolution falls back to the default paywall instead of erroring`() = runTest {
+        // This models a workflow offering whose paywall data was skipped during the workflows-enabled parse,
+        // with no cached workflows topic available.
+        coEvery { purchases.resolveWorkflow(offeringId) } returns WorkflowResolution.Unavailable
+
+        val vm = createVm()
+        advanceUntilIdle()
+
+        assertThat(vm.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
+        assertThat(vm.state.value).isNotInstanceOf(PaywallState.Error::class.java)
+        assertThat(vm.workflowState.value).isNull()
+        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
+    }
+
+    @Test
     fun `warm cache renders the workflow on the first composition with no Loading state`() {
         // Model Dispatchers.Main.immediate with an unconfined main dispatcher so viewModelScope.launch runs
         // eagerly, as in production. On a warm cache every suspend read resolves without suspending (mockk
@@ -1713,6 +1730,97 @@ class PaywallViewModelWorkflowTest {
         // And the whole impression (StepStarted, StepCompleted, Close) shares one trace ID.
         assertThat(captured.filterIsInstance<WorkflowEvent>().map { it.traceId }.distinct())
             .containsExactly(startedTraceId)
+    }
+
+    @Test
+    fun `paywall impression carries the same traceId as the StepStarted from the same impression`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        vm.trackPaywallImpressionIfNeeded()
+
+        // The equality is the load-bearing half: traceId defaults to null on PaywallEvent.Data, so
+        // dropping the wiring would compile clean and silently ship trace_id: null.
+        val startedTraceId = captured.filterIsInstance<WorkflowEvent.StepStarted>().single().traceId
+        val impression = captured.filterIsInstance<PaywallEvent>()
+            .single { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impression.data.traceId).isNotNull()
+        assertThat(impression.data.traceId).isEqualTo(startedTraceId)
+    }
+
+    @Test
+    fun `paywall impression traceId survives forward navigation within one presentation`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        vm.trackPaywallImpressionIfNeeded()
+        val firstTraceId = captured.filterIsInstance<PaywallEvent>()
+            .single { it.type == PaywallEventType.IMPRESSION }.data.traceId
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.trackPaywallImpressionIfNeeded()
+
+        // The trace id identifies the traversal, not the step, so every paywall event in the
+        // presentation reports the same one.
+        val traceIds = captured.filterIsInstance<PaywallEvent>().map { it.data.traceId }.distinct()
+        assertThat(firstTraceId).isNotNull()
+        assertThat(traceIds).containsExactly(firstTraceId)
+    }
+
+    @Test
+    fun `a new workflow presentation refreshes the traceId on retained paywall event data`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        vm.trackPaywallImpressionIfNeeded()
+        val firstTraceId = captured.filterIsInstance<PaywallEvent>()
+            .single { it.type == PaywallEventType.IMPRESSION }.data.traceId
+
+        // Re-presenting the same step keeps the same visual fingerprint, so no second impression fires
+        // and the event data is retained. It still has to pick up the new traversal's trace id, which
+        // withCurrentWorkflowMetadata is responsible for; later events read that retained data.
+        captured.clear()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        vm.trackPaywallImpressionIfNeeded()
+        val secondStartedTraceId = captured.filterIsInstance<WorkflowEvent.StepStarted>().single().traceId
+        assertThat(secondStartedTraceId).isNotEqualTo(firstTraceId)
+
+        vm.trackComponentInteraction(
+            componentType = PaywallComponentType.BUTTON,
+            componentName = PaywallLegacyComponentInteraction.RESTORE_BUTTON_NAME,
+            componentValue = PaywallLegacyComponentInteraction.Value.RESTORE_PURCHASES,
+        )
+
+        val interaction = captured.filterIsInstance<PaywallEvent>()
+            .single { it.type == PaywallEventType.COMPONENT_INTERACTION }
+        assertThat(interaction.data.traceId).isEqualTo(secondStartedTraceId)
+    }
+
+    @Test
+    fun `paywall impression outside a workflow presentation carries no traceId`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        vm.trackPaywallImpressionIfNeeded()
+        vm.closePaywall(result = null)
+        captured.clear()
+
+        vm.trackPaywallImpressionIfNeeded()
+
+        // The backing trace id field is always populated, so an ungated read would leak a meaningless
+        // one here and force presented_offering_context to serialize on standalone paywall traffic.
+        val impression = captured.filterIsInstance<PaywallEvent>()
+            .first { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impression.data.workflowId).isNull()
+        assertThat(impression.data.traceId).isNull()
     }
 
     @Test

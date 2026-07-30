@@ -54,6 +54,11 @@ class PaywallViewActivity : AppCompatActivity() {
                 super.onPurchaseCompleted(customerInfo, storeTransaction)
                 Log.d("PaywallsTester", "onPurchaseCompleted")
             }
+
+            override fun onUrlOpened(url: String) {
+                super.onUrlOpened(url)
+                Log.d("PaywallsTester", "onUrlOpened: $url")
+            }
         })
         binding.paywallView.setDismissHandler { finish() }
     }

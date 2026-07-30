@@ -59,4 +59,48 @@ internal class WebViewGestureOwnershipProbeTest {
 
         verify(exactly = 0) { WebViewCompat.addWebMessageListener(any(), any(), any(), any()) }
     }
+
+    @Test
+    fun `probe script only claims touch-action none, not pan-x or pan-y`() {
+        webView.installGestureOwnershipProbe("https://bundle.example.com") {}
+
+        verify {
+            WebViewCompat.addDocumentStartJavaScript(
+                webView,
+                match { it.contains("s.touchAction === 'none'") && !it.contains("!== 'auto'") },
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun `probe script skips the root scroller`() {
+        webView.installGestureOwnershipProbe("https://bundle.example.com") {}
+
+        verify {
+            WebViewCompat.addDocumentStartJavaScript(
+                webView,
+                match {
+                    it.contains("isRootScroller") &&
+                        it.contains("document.scrollingElement") &&
+                        it.contains("document.documentElement") &&
+                        it.contains("document.body")
+                },
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun `probe script bails on a second finger`() {
+        webView.installGestureOwnershipProbe("https://bundle.example.com") {}
+
+        verify {
+            WebViewCompat.addDocumentStartJavaScript(
+                webView,
+                match { it.contains("event.touches.length > 1") },
+                any(),
+            )
+        }
+    }
 }

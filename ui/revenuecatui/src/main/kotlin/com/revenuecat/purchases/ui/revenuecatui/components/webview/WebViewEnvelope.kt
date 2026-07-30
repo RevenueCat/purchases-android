@@ -1,7 +1,10 @@
 @file:JvmSynthetic
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import kotlinx.serialization.Required
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -63,7 +66,10 @@ internal data class WebViewEnvelope(
         const val CHANNEL: String = "rc-web-components"
         const val NATIVE_OBJECT_NAME: String = "rcWebComponents"
         const val RECEIVE_FUNCTION: String = "__rcWebComponentsReceive"
-        const val DEFAULT_PROTOCOL_VERSION: Int = 1
+
+        // Single source of truth lives in the schema module so the decode-time gate and this runtime
+        // handshake version can never disagree.
+        const val DEFAULT_PROTOCOL_VERSION: Int = WebViewComponent.SUPPORTED_PROTOCOL_VERSION
 
         private val json = Json {
             ignoreUnknownKeys = true
