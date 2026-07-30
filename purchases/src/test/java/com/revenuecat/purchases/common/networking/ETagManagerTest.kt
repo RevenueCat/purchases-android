@@ -29,7 +29,8 @@ import java.util.Date
 @Config(manifest = Config.NONE)
 class ETagManagerTest {
 
-    private val testDate = Date(1675954145L) // Thursday, February 9, 2023 2:49:05 PM GMT
+    // Epoch millis, matching the X-RC-Last-Refresh-Time wire format.
+    private val testDate = Date(1675954145000L) // Thursday, February 9, 2023 2:49:05 PM GMT
     private val testDateProvider = object : DateProvider {
         override val now: Date
             get() = testDate
@@ -121,7 +122,7 @@ class ETagManagerTest {
 
         val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
         val lastRefreshTimeHeader = eTagHeaders[HTTPRequest.LAST_REFRESH_TIME_HEADER_NAME]
-        assertThat(lastRefreshTimeHeader).isEqualTo("1675954145")
+        assertThat(lastRefreshTimeHeader).isEqualTo("1675954145000")
     }
 
     @Test
