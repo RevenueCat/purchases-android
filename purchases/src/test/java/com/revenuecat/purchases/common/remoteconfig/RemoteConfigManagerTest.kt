@@ -802,6 +802,20 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `a response with no server time warns that the refresh time is frozen`() {
+        every { diskCache.read() } returns persisted(manifest = "v1.1.", lastRefreshTime = SERVER_MILLIS)
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+
+        assertWarnLog(
+            "Remote config response carried no X-RevenueCat-Request-Time header. Keeping the previous refresh " +
+                "time; the server cannot see how fresh this client's configuration is.",
+        ) {
+            deliverSuccess(null, requestDate = null)
+        }
+    }
+
+    @Test
     fun `a 204 response with nothing persisted does not resurrect the cache`() {
         every { diskCache.read() } returns null
 
@@ -1252,6 +1266,32 @@ class RemoteConfigManagerTest {
         assertThat(written.captured.manifest).isEqualTo("v1.fallback.sources:etag")
         assertThat(written.captured.activeTopics).containsExactly("sources")
         assertThat(written.captured.topics["sources"]!!["default"]!!.blobRef).isEqualTo("newBlob")
+        // The fallback host is not the main API, so its clock is never borrowed as the refresh time.
+        assertThat(written.captured.lastRefreshTime).isNull()
+    }
+
+    @Test
+    fun `a fallback-only session sends no refresh time on its next request`() {
+        every { diskCache.read() } returns null
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.UnknownBackendError, "server error"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        val committed = slot<PersistedRemoteConfigurationState>()
+        every { diskCache.write(capture(committed)) } returns true
+        onFallbackSuccess.invoke(
+            remoteConfiguration("""{"domain":"app","manifest":"v1.fallback."}"""),
+            VerificationResult.VERIFIED,
+        )
+
+        // The committed state has no refresh time, so the following request has nothing to replay.
+        every { diskCache.read() } returns committed.captured
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+
+        assertThat(capturedManifest).isEqualTo("v1.fallback.")
+        assertThat(capturedLastRefreshTime).isNull()
     }
 
     @Test

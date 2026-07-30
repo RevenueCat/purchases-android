@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.isCacheStale
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.verboseLog
@@ -295,6 +296,15 @@ internal class RemoteConfigManager(
             // The cache was cleared (identity change) after this request started. Drop the stale
             // response and leave isRefreshing alone: clearCache() reset it, or a newer refresh owns it.
             return
+        }
+        if (requestDate == null) {
+            // Not fatal — the previous value carries forward — but it means the server stopped telling us its own
+            // time, so the refresh time replayed on later requests is frozen. Surfaced here rather than swallowed
+            // because nothing else makes this observable in the field.
+            warnLog {
+                "Remote config response carried no ${HTTPResult.REQUEST_TIME_HEADER_NAME} header. Keeping the " +
+                    "previous refresh time; the server cannot see how fresh this client's configuration is."
+            }
         }
         if (container == null) {
             handleNotModified(requestEpoch, requestDate)

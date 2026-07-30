@@ -212,6 +212,53 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         assertThat(secondVerification).isEqualTo(VerificationResult.VERIFIED)
     }
 
+    /**
+     * The refresh time replayed in `X-RC-Last-Refresh-Time` is the server's own `X-RevenueCat-Request-Time`, so the
+     * whole mechanism goes inert if the backend stops sending that header — and every unit test would still pass,
+     * since they all inject the date. This is the canary for that.
+     *
+     * Informational verification on purpose: [SigningManager] already fails a signed response whose request time is
+     * missing, so under enforcement a missing header would surface as a verification error and mask what is being
+     * checked here.
+     */
+    @Test
+    fun `the backend returns its request time on both a 200 and a 204`() {
+        setupTest(SignatureVerificationMode.Informational())
+
+        val first = fetchRemoteConfig(manifest = null)
+        assertThat(first.error).isNull()
+        val rcContainer = requireNotNull(first.container) { "Expected a 200 container on the first run." }
+        assertServerRequestTime(first.requestDate, "200")
+
+        // Replay the manifest for a 204, feeding back the first response's own time as the refresh time — the exact
+        // round trip production performs. A non-`app_start` context is required: an `app_start` request is always
+        // fully resolved, so it never answers 204.
+        val second = fetchRemoteConfig(
+            manifest = RemoteConfiguration.parse(rcContainer.config).manifest,
+            fetchContext = RemoteConfigFetchContext.Foreground,
+            lastRefreshTime = first.requestDate,
+        )
+        assertThat(second.error).isNull()
+        assertThat(second.container).isNull()
+        assertServerRequestTime(second.requestDate, "204")
+    }
+
+    /**
+     * A null check alone would not catch a format change: epoch *seconds* still parse as a `Long` and yield a 1970
+     * date, so the floor is what makes this meaningful. An ISO-8601 switch degrades to null via `toLongOrNull`.
+     * Deliberately not compared against device time — that would couple the assertion to CI clock accuracy.
+     */
+    private fun assertServerRequestTime(requestDate: Date?, responseKind: String) {
+        assertThat(requestDate)
+            .withFailMessage(
+                "Expected the $responseKind response to carry an X-RevenueCat-Request-Time header in epoch millis, " +
+                    "but got %s. X-RC-Last-Refresh-Time cannot be populated without it.",
+                requestDate,
+            )
+            .isNotNull
+            .isAfter(EPOCH_MILLIS_FLOOR)
+    }
+
     @Test
     fun `verifies the signed response when verification is enforced`() {
         setupTest(SignatureVerificationMode.Enforced())
@@ -247,20 +294,33 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
     }
 
     /**
+     * The outcome of one `/v1/config` request. [requestDate] is last so the existing three-component destructuring
+     * call sites keep working.
+     */
+    private data class RemoteConfigFetchResult(
+        val error: PurchasesError?,
+        val container: RCContainer?,
+        val verification: VerificationResult?,
+        val requestDate: Date?,
+    )
+
+    /**
      * Performs a single `/v1/config` request and blocks until it completes, returning the error (or `null`), the
-     * container (`null` on a `204`), and the verification result (`null` on error).
+     * container (`null` on a `204`), the verification result (`null` on error), and the server's own request time
+     * (`null` when the response carried no `X-RevenueCat-Request-Time` header).
      */
     private fun fetchRemoteConfig(
         manifest: String?,
         prefetchedBlobs: List<String> = emptyList(),
         fetchContext: RemoteConfigFetchContext = RemoteConfigFetchContext.AppStart,
         lastRefreshTime: Date? = null,
-    ): Triple<PurchasesError?, RCContainer?, VerificationResult?> {
+    ): RemoteConfigFetchResult {
         every { appConfig.isDebugBuild } returns false
 
         var error: PurchasesError? = null
         var container: RCContainer? = null
         var verification: VerificationResult? = null
+        var requestDate: Date? = null
         ensureBlockFinishes { latch ->
             backend.getRemoteConfig(
                 appInBackground = false,
@@ -270,9 +330,10 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
                 manifest = manifest,
                 lastRefreshTime = lastRefreshTime,
                 prefetchedBlobs = prefetchedBlobs,
-                onSuccess = { rcContainer, _, verificationResult ->
+                onSuccess = { rcContainer, serverRequestDate, verificationResult ->
                     container = rcContainer
                     verification = verificationResult
+                    requestDate = serverRequestDate
                     latch.countDown()
                 },
                 onError = { purchasesError, _ ->
@@ -281,7 +342,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
                 },
             )
         }
-        return Triple(error, container, verification)
+        return RemoteConfigFetchResult(error, container, verification, requestDate)
     }
 
     /**
@@ -314,5 +375,9 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
 
     private companion object {
         private const val REMOTE_CONFIG_USER = "integrationTestRemoteConfigUser"
+
+        // 2023-11-14. Any real epoch-millis instant is well past this, while a value sent in epoch *seconds* lands
+        // in 1970 and fails, which is the format regression a null check would miss.
+        private val EPOCH_MILLIS_FLOOR = Date(1_700_000_000_000L)
     }
 }
