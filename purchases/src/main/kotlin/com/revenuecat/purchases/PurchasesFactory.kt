@@ -122,6 +122,7 @@ internal class PurchasesFactory(
                 runningIntegrationTests,
                 forceSigningError,
                 baseUrlString = baseUrlString,
+                unsyncedTransactionsWaitPolicy = unsyncedTransactionsWaitPolicy,
             )
 
             val contextForStorage = if (context.isDeviceProtectedStorageCompat) {
@@ -407,6 +408,7 @@ internal class PurchasesFactory(
             val customerInfoHelper = CustomerInfoHelper(
                 cache,
                 backend,
+                appConfig,
                 offlineEntitlementsManager,
                 customerInfoUpdateHandler,
                 postPendingTransactionsHelper,

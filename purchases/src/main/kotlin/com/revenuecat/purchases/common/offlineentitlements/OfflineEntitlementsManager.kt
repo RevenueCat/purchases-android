@@ -42,9 +42,11 @@ internal class OfflineEntitlementsManager(
     fun shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
         isServerError: Boolean,
         appUserId: String,
-    ) = isServerError &&
+    ) = isServerError && canCalculateOfflineCustomerInfo(appUserId)
+
+    fun canCalculateOfflineCustomerInfo(appUserId: String) =
         isOfflineEntitlementsEnabled() &&
-        deviceCache.getCachedCustomerInfo(appUserId) == null
+            deviceCache.getCachedCustomerInfo(appUserId) == null
 
     fun shouldCalculateOfflineCustomerInfoInPostReceipt(
         isServerError: Boolean,
