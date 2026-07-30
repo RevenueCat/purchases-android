@@ -45,6 +45,7 @@ private const val BLOB_REF_PLACEHOLDER = "{blob_ref}"
  * [RemoteConfigUtils.contentAddressRef], matching `RCElement.checksumBase64`) before it is stored, so a tampered
  * or corrupt payload is never cached.
  */
+@Suppress("TooManyFunctions")
 internal class RemoteConfigBlobFetcher(
     private val blobStore: RemoteConfigBlobStore,
     private val sourceProvider: RemoteConfigSourceProvider,
