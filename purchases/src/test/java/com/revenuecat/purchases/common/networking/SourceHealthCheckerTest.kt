@@ -101,7 +101,12 @@ internal class SourceHealthCheckerTest {
             }
         }
         val factory = object : UrlConnectionFactory {
-            override fun createConnection(url: String, requestMethod: String): UrlConnection = connection
+            override fun createConnection(
+                url: String,
+                connectTimeoutMillis: Int,
+                readTimeoutMillis: Int,
+                requestMethod: String,
+            ): UrlConnection = connection
         }
         assertThat(SourceHealthChecker(factory, FakeDateProvider()).isHealthy(sourceBaseUrl)).isFalse()
         assertThat(connection.isDisconnected).isTrue()

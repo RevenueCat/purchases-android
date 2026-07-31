@@ -2,6 +2,9 @@ package com.revenuecat.purchases.common.remoteconfig
 
 import android.util.Base64
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.AppConfig
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle.Purpose
 import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
@@ -33,12 +36,16 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.ByteArrayInputStream
+import java.io.IOException
+import java.net.SocketTimeoutException
 import java.security.MessageDigest
+import java.util.Date
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 import kotlin.random.Random
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -48,6 +55,8 @@ class RemoteConfigBlobFetcherTest {
 
     private lateinit var blobStore: RemoteConfigBlobStore
     private lateinit var urlConnectionFactory: UrlConnectionFactory
+    private lateinit var dateProvider: FakeDateProvider
+    private lateinit var timeoutManager: HTTPTimeoutManager
 
     // Real multi-threaded scope for the behavioural / real-concurrency tests; cancelled in tearDown.
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -58,6 +67,9 @@ class RemoteConfigBlobFetcherTest {
         every { blobStore.contains(any()) } returns false
         every { blobStore.write(any(), any()) } returns true
         urlConnectionFactory = mockk()
+        val appConfig = mockk<AppConfig>().apply { every { runningTests } returns false }
+        dateProvider = FakeDateProvider()
+        timeoutManager = HTTPTimeoutManager(appConfig, dateProvider)
     }
 
     @After
@@ -72,7 +84,7 @@ class RemoteConfigBlobFetcherTest {
 
         assertThat(download(fetcher, REF_A)).isTrue()
 
-        verify(exactly = 0) { urlConnectionFactory.createConnection(any(), any()) }
+        verify(exactly = 0) { urlConnectionFactory.createConnection(any(), any(), any(), any()) }
         verify(exactly = 0) { blobStore.write(any(), any()) }
     }
 
@@ -86,7 +98,7 @@ class RemoteConfigBlobFetcherTest {
         assertThat(download(fetcher, ref)).isTrue()
 
         // The placeholder is substituted with the ref before the request is made.
-        verify { urlConnectionFactory.createConnection(urlFor(ref), any()) }
+        verify { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) }
         val written = slot<ByteArray>()
         verify { blobStore.write(ref, capture(written)) }
         assertThat(written.captured).isEqualTo(bytes)
@@ -127,7 +139,7 @@ class RemoteConfigBlobFetcherTest {
         val cachedConcurrently = AtomicBoolean(false)
         every { blobStore.contains(ref) } answers { cachedConcurrently.get() }
         // The download fails, but a concurrent writer (e.g. inline extraction) lands the blob mid-fetch.
-        every { urlConnectionFactory.createConnection(urlFor(ref), any()) } answers {
+        every { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) } answers {
             cachedConcurrently.set(true)
             connection(code = 404)
         }
@@ -201,7 +213,7 @@ class RemoteConfigBlobFetcherTest {
         verify(exactly = 0) { blobStore.write(any(), any()) }
         // The provider was re-armed once exhausted, so the second download reached the source again.
         verify { provider.restartIfExhausted(Purpose.BLOB) }
-        verify(exactly = 2) { urlConnectionFactory.createConnection(urlFor(ref), any()) }
+        verify(exactly = 2) { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) }
     }
 
     @Test
@@ -216,7 +228,7 @@ class RemoteConfigBlobFetcherTest {
 
         // The source was healthy, so restartIfExhausted was a no-op and never rewound the failover.
         verify(exactly = 0) { provider.restart(any()) }
-        verify(exactly = 1) { urlConnectionFactory.createConnection(urlFor(ref), any()) }
+        verify(exactly = 1) { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) }
     }
 
     @Test
@@ -226,7 +238,7 @@ class RemoteConfigBlobFetcherTest {
         val maxLive = AtomicInteger(0)
         val allBlocked = CountDownLatch(concurrency)
         val release = CountDownLatch(1)
-        every { urlConnectionFactory.createConnection(any(), any()) } answers {
+        every { urlConnectionFactory.createConnection(any(), any(), any(), any()) } answers {
             maxLive.accumulateAndGet(live.incrementAndGet()) { a, b -> maxOf(a, b) }
             allBlocked.countDown()
             release.await(WAIT_SECONDS, TimeUnit.SECONDS)
@@ -251,7 +263,7 @@ class RemoteConfigBlobFetcherTest {
         val ref = refOf(bytes)
         stubConnection(urlFor(ref), code = 200, body = bytes)
         val fetcherScope = CoroutineScope(StandardTestDispatcher(testScheduler))
-        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), urlConnectionFactory, fetcherScope)
+        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), timeoutManager, urlConnectionFactory, fetcherScope)
 
         // Both requests are enqueued before any worker runs (StandardTestDispatcher), so the second joins the first.
         val first = async { fetcher.ensureDownloaded(ref) }
@@ -260,7 +272,7 @@ class RemoteConfigBlobFetcherTest {
 
         assertThat(first.await()).isTrue()
         assertThat(second.await()).isTrue()
-        verify(exactly = 1) { urlConnectionFactory.createConnection(urlFor(ref), any()) }
+        verify(exactly = 1) { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) }
         fetcherScope.cancel()
     }
 
@@ -269,7 +281,7 @@ class RemoteConfigBlobFetcherTest {
         val started = CopyOnWriteArrayList<String>()
         recordStartedConnections(started)
         val fetcherScope = CoroutineScope(StandardTestDispatcher(testScheduler))
-        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), urlConnectionFactory, fetcherScope)
+        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), timeoutManager, urlConnectionFactory, fetcherScope)
 
         val backlog = (1..3).map { refOf("low-$it".toByteArray()) }
         val onDemand = refOf("on-demand".toByteArray())
@@ -288,7 +300,7 @@ class RemoteConfigBlobFetcherTest {
         val started = CopyOnWriteArrayList<String>()
         recordStartedConnections(started)
         val fetcherScope = CoroutineScope(StandardTestDispatcher(testScheduler))
-        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), urlConnectionFactory, fetcherScope)
+        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), timeoutManager, urlConnectionFactory, fetcherScope)
 
         // Deliberately unsorted: the LOW queue must attempt the refs in exactly the order they were handed over.
         val refs = listOf("e", "a", "d", "b", "c").map { refOf("blob-$it".toByteArray()) }
@@ -304,7 +316,7 @@ class RemoteConfigBlobFetcherTest {
         val started = CopyOnWriteArrayList<String>()
         recordStartedConnections(started)
         val fetcherScope = CoroutineScope(StandardTestDispatcher(testScheduler))
-        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), urlConnectionFactory, fetcherScope)
+        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), timeoutManager, urlConnectionFactory, fetcherScope)
 
         val others = (1..3).map { refOf("low-$it".toByteArray()) }
         val boosted = refOf("boosted".toByteArray())
@@ -326,7 +338,7 @@ class RemoteConfigBlobFetcherTest {
 
         assertThat(download(fetcher, "not-a-valid-ref")).isFalse()
 
-        verify(exactly = 0) { urlConnectionFactory.createConnection(any(), any()) }
+        verify(exactly = 0) { urlConnectionFactory.createConnection(any(), any(), any(), any()) }
         verify(exactly = 0) { blobStore.write(any(), any()) }
     }
 
@@ -335,7 +347,7 @@ class RemoteConfigBlobFetcherTest {
         val started = CopyOnWriteArrayList<String>()
         recordStartedConnections(started)
         val fetcherScope = CoroutineScope(StandardTestDispatcher(testScheduler))
-        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), urlConnectionFactory, fetcherScope)
+        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), timeoutManager, urlConnectionFactory, fetcherScope)
 
         val valid = refOf("valid".toByteArray())
         fetcher.prefetch(listOf("malformed", valid))
@@ -373,20 +385,338 @@ class RemoteConfigBlobFetcherTest {
         val ref = refOf(bytes)
         stubConnection(urlFor(ref), code = 200, body = bytes)
         val fetcherScope = CoroutineScope(StandardTestDispatcher(testScheduler))
-        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), urlConnectionFactory, fetcherScope)
+        val fetcher = RemoteConfigBlobFetcher(blobStore, provider(blobSource(TEMPLATE)), timeoutManager, urlConnectionFactory, fetcherScope)
 
         val result = async { fetcher.ensureDownloaded(listOf(ref, ref)) }
         advanceUntilIdle()
 
         assertThat(result.await()).isTrue()
-        verify(exactly = 1) { urlConnectionFactory.createConnection(urlFor(ref), any()) }
+        verify(exactly = 1) { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) }
         fetcherScope.cancel()
     }
+
+    // region per-source timeouts
+
+    @Test
+    fun `a fresh blob source uses the no-fallback base timeout`() {
+        val bytes = "body".toByteArray()
+        val ref = refOf(bytes)
+        val connectTimeout = slot<Int>()
+        val readTimeout = slot<Int>()
+        every {
+            urlConnectionFactory.createConnection(urlFor(ref), capture(connectTimeout), capture(readTimeout), any())
+        } returns connection(code = 200, body = bytes)
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        assertThat(download(fetcher, ref)).isTrue()
+
+        assertThat(connectTimeout.captured).isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt())
+        assertThat(readTimeout.captured).isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt())
+    }
+
+    @Test
+    fun `a blob source that just timed out uses the reduced timeout on the next attempt`() {
+        val bytes = "body".toByteArray()
+        val ref = refOf(bytes)
+        val timeouts = CopyOnWriteArrayList<Int>()
+        val calls = AtomicInteger(0)
+        every { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) } answers {
+            timeouts.add(secondArg<Int>())
+            if (calls.getAndIncrement() == 0) throw SocketTimeoutException("timed out")
+            connection(code = 200, body = bytes)
+        }
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        // The first attempt times out and exhausts the single source; the on-demand retry re-arms and hits it again.
+        assertThat(download(fetcher, ref)).isFalse()
+        assertThat(download(fetcher, ref)).isTrue()
+
+        assertThat(timeouts).containsExactly(
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS.toInt(),
+        )
+    }
+
+    @Test
+    fun `a successful blob download clears the source's fail-fast memory`() {
+        val bytes = "body".toByteArray()
+        val ref = refOf(bytes)
+        val timeouts = CopyOnWriteArrayList<Int>()
+        val calls = AtomicInteger(0)
+        every { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) } answers {
+            timeouts.add(secondArg<Int>())
+            if (calls.getAndIncrement() == 0) throw SocketTimeoutException("timed out")
+            connection(code = 200, body = bytes)
+        }
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        assertThat(download(fetcher, ref)).isFalse() // times out, arming the reduced timeout
+        assertThat(download(fetcher, ref)).isTrue() // succeeds at the reduced timeout, clearing the memory
+        assertThat(download(fetcher, ref)).isTrue() // back to the base timeout
+
+        assertThat(timeouts).containsExactly(
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+        )
+    }
+
+    @Test
+    fun `a fully received blob that fails verification clears the source's fail-fast memory`() {
+        val ref = refOf("expected".toByteArray())
+        val timeouts = CopyOnWriteArrayList<Int>()
+        val calls = AtomicInteger(0)
+        every { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) } answers {
+            timeouts.add(secondArg<Int>())
+            if (calls.getAndIncrement() == 0) throw SocketTimeoutException("timed out")
+            connection(code = 200, body = "tampered".toByteArray())
+        }
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        assertThat(download(fetcher, ref)).isFalse() // times out, arming the reduced timeout
+        assertThat(download(fetcher, ref)).isFalse() // the body arrives in full but fails the checksum
+        assertThat(download(fetcher, ref)).isFalse()
+
+        // The memory is about how quickly the host answers, so a response that arrives in full clears it
+        // even when its content turns out to be unusable.
+        assertThat(timeouts).containsExactly(
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+        )
+    }
+
+    @Test
+    fun `blob source timeout memory is isolated per host`() {
+        val primary = "https://primary.example/$PLACEHOLDER"
+        val secondary = "https://secondary.example/$PLACEHOLDER"
+        val refA = refOf("a".toByteArray())
+        val bytesB = "b".toByteArray()
+        val refB = refOf(bytesB)
+        every {
+            urlConnectionFactory.createConnection(primary.replace(PLACEHOLDER, refA), any(), any(), any())
+        } throws SocketTimeoutException("timed out")
+        val timeoutB = slot<Int>()
+        every {
+            urlConnectionFactory.createConnection(secondary.replace(PLACEHOLDER, refB), capture(timeoutB), any(), any())
+        } returns connection(code = 200, body = bytesB)
+
+        // Both fetchers share the same timeout manager (the field), so any cross-host leak would show up here.
+        assertThat(download(realFetcher(provider(blobSource(primary))), refA)).isFalse()
+        assertThat(download(realFetcher(provider(blobSource(secondary))), refB)).isTrue()
+
+        // The second host never timed out, so it still uses the base timeout.
+        assertThat(timeoutB.captured).isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt())
+    }
+
+    @Test
+    fun `a blob source URL without a host is never remembered`() {
+        // `URL.getHost()` is empty rather than null for these, so without a guard every host-less URL would
+        // share a single entry in the per-host memory.
+        val template = "file:/tmp/blobs/$PLACEHOLDER"
+        val refA = refOf("a".toByteArray())
+        val bytesB = "b".toByteArray()
+        val refB = refOf(bytesB)
+        every {
+            urlConnectionFactory.createConnection(template.replace(PLACEHOLDER, refA), any(), any(), any())
+        } throws SocketTimeoutException("timed out")
+        val timeoutB = slot<Int>()
+        every {
+            urlConnectionFactory.createConnection(template.replace(PLACEHOLDER, refB), capture(timeoutB), any(), any())
+        } returns connection(code = 200, body = bytesB)
+
+        assertThat(download(realFetcher(provider(blobSource(template))), refA)).isFalse()
+        assertThat(download(realFetcher(provider(blobSource(template))), refB)).isTrue()
+
+        assertThat(timeoutB.captured).isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt())
+    }
+
+    @Test
+    fun `a blob source's reduced timeout expires after the reset interval`() {
+        val bytes = "body".toByteArray()
+        val ref = refOf(bytes)
+        val timeouts = CopyOnWriteArrayList<Int>()
+        val calls = AtomicInteger(0)
+        every { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) } answers {
+            timeouts.add(secondArg<Int>())
+            if (calls.getAndIncrement() == 0) throw SocketTimeoutException("timed out")
+            connection(code = 200, body = bytes)
+        }
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        assertThat(download(fetcher, ref)).isFalse()
+        // Let the 10-minute per-host memory expire before the next attempt.
+        dateProvider.advanceTime(HTTPTimeoutManager.TIMEOUT_RESET_INTERVAL_MS + 1)
+        assertThat(download(fetcher, ref)).isTrue()
+
+        assertThat(timeouts).containsExactly(
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+        )
+    }
+
+    @Test
+    fun `a timed-out blob source is reported unhealthy and fails over to the next source`() {
+        val bytes = "body".toByteArray()
+        val ref = refOf(bytes)
+        val primary = "https://primary.example/$PLACEHOLDER"
+        val secondary = "https://secondary.example/$PLACEHOLDER"
+        val provider = provider(blobSource(primary, priority = 1), blobSource(secondary, priority = 2))
+        every {
+            urlConnectionFactory.createConnection(primary.replace(PLACEHOLDER, ref), any(), any(), any())
+        } throws SocketTimeoutException("timed out")
+        stubConnection(secondary.replace(PLACEHOLDER, ref), code = 200, body = bytes)
+        val fetcher = realFetcher(provider)
+
+        assertThat(download(fetcher, ref)).isTrue()
+
+        verify { provider.reportUnhealthy(match { it.url == primary }) }
+        verify { blobStore.write(ref, any()) }
+    }
+
+    @Test
+    fun `a non-timeout network failure does not arm the source's fail-fast memory`() {
+        val bytes = "body".toByteArray()
+        val ref = refOf(bytes)
+        val timeouts = CopyOnWriteArrayList<Int>()
+        val calls = AtomicInteger(0)
+        every { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) } answers {
+            timeouts.add(secondArg<Int>())
+            // A plain IOException (e.g. connection refused) is not a timeout: SocketTimeoutException is an
+            // IOException subclass, so this guards the catch order and that only timeouts arm the reduced tier.
+            if (calls.getAndIncrement() == 0) throw IOException("connection refused")
+            connection(code = 200, body = bytes)
+        }
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        assertThat(download(fetcher, ref)).isFalse()
+        assertThat(download(fetcher, ref)).isTrue()
+
+        // The failure never armed the source, so both attempts used the base timeout.
+        assertThat(timeouts).containsExactly(
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+        )
+    }
+
+    @Test
+    fun `a non-timeout failure does not clear an already-armed source`() {
+        val bytes = "body".toByteArray()
+        val ref = refOf(bytes)
+        val timeouts = CopyOnWriteArrayList<Int>()
+        val calls = AtomicInteger(0)
+        every { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) } answers {
+            timeouts.add(secondArg<Int>())
+            when (calls.getAndIncrement()) {
+                0 -> throw SocketTimeoutException("timed out") // arms the reduced tier
+                1 -> connection(code = 500) // a non-timeout failure must not clear the armed memory
+                else -> connection(code = 200, body = bytes)
+            }
+        }
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        assertThat(download(fetcher, ref)).isFalse()
+        assertThat(download(fetcher, ref)).isFalse()
+        assertThat(download(fetcher, ref)).isTrue()
+
+        // The 500 left the fail-fast memory intact, so the source stayed on the reduced timeout.
+        assertThat(timeouts).containsExactly(
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS.toInt(),
+        )
+    }
+
+    @Test
+    fun `a 200 with a checksum mismatch still clears the source's fail-fast memory`() {
+        val expected = "expected".toByteArray()
+        val ref = refOf(expected)
+        val timeouts = CopyOnWriteArrayList<Int>()
+        val calls = AtomicInteger(0)
+        every { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) } answers {
+            timeouts.add(secondArg<Int>())
+            when (calls.getAndIncrement()) {
+                0 -> throw SocketTimeoutException("timed out") // arms the reduced tier
+                1 -> connection(code = 200, body = "tampered".toByteArray()) // 200: source is network-healthy
+                else -> connection(code = 200, body = expected)
+            }
+        }
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        assertThat(download(fetcher, ref)).isFalse() // timeout arms the reduced tier
+        assertThat(download(fetcher, ref)).isFalse() // 200 answered but the payload fails verification
+        assertThat(download(fetcher, ref)).isTrue()
+
+        // The 200 (even with a bad payload) proved the source healthy and cleared its memory, so the last
+        // attempt reverted to the base timeout.
+        assertThat(timeouts).containsExactly(
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+        )
+    }
+
+    @Test
+    fun `a 200 whose body fails mid-read does not clear an already-armed source`() {
+        val bytes = "body".toByteArray()
+        val ref = refOf(bytes)
+        val timeouts = CopyOnWriteArrayList<Int>()
+        val calls = AtomicInteger(0)
+        every { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) } answers {
+            timeouts.add(secondArg<Int>())
+            when (calls.getAndIncrement()) {
+                0 -> throw SocketTimeoutException("timed out") // arms the reduced tier
+                1 -> connectionWithFailingBody(IOException("connection reset"))
+                else -> connection(code = 200, body = bytes)
+            }
+        }
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        assertThat(download(fetcher, ref)).isFalse()
+        assertThat(download(fetcher, ref)).isFalse()
+        assertThat(download(fetcher, ref)).isTrue()
+
+        // The status line said 200, but the download never completed, so it is no evidence that the
+        // source recovered and the armed memory must survive it.
+        assertThat(timeouts).containsExactly(
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS.toInt(),
+        )
+    }
+
+    @Test
+    fun `a 200 whose body times out arms the source without recording a success first`() {
+        val ref = refOf("body".toByteArray())
+        val spiedTimeoutManager = spyk(timeoutManager)
+        every { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) } returns
+            connectionWithFailingBody(SocketTimeoutException("timed out"))
+        val fetcher = RemoteConfigBlobFetcher(
+            blobStore,
+            provider(blobSource(TEMPLATE)),
+            spiedTimeoutManager,
+            urlConnectionFactory,
+            scope,
+        )
+
+        assertThat(download(fetcher, ref)).isFalse()
+
+        // The attempt is recorded once, when it is over. Recording the 200 up front would clear the
+        // memory for as long as the body takes to fail, and concurrent downloads would read it.
+        verify(exactly = 0) {
+            spiedTimeoutManager.recordRequestResult(any(), HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND)
+        }
+        verify(exactly = 1) {
+            spiedTimeoutManager.recordRequestResult(any(), HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
+        }
+    }
+
+    // endregion
 
     // region helpers
 
     private fun realFetcher(provider: RemoteConfigSourceProvider) =
-        RemoteConfigBlobFetcher(blobStore, provider, urlConnectionFactory, scope)
+        RemoteConfigBlobFetcher(blobStore, provider, timeoutManager, urlConnectionFactory, scope)
 
     /**
      * A spy over a real provider (fed a `sources` topic with only blob entries) so we get real failover
@@ -424,7 +754,7 @@ class RemoteConfigBlobFetcherTest {
         runBlocking { withTimeout(WAIT_MS) { fetcher.ensureDownloaded(refs) } }
 
     private fun stubConnection(url: String, code: Int, body: ByteArray = ByteArray(0)) {
-        every { urlConnectionFactory.createConnection(url, any()) } returns connection(code, body)
+        every { urlConnectionFactory.createConnection(url, any(), any(), any()) } returns connection(code, body)
     }
 
     private fun connection(code: Int, body: ByteArray = ByteArray(0)): UrlConnection {
@@ -434,9 +764,17 @@ class RemoteConfigBlobFetcherTest {
         return connection
     }
 
+    /** A connection whose status line says 200 but whose body never arrives. */
+    private fun connectionWithFailingBody(error: IOException): UrlConnection {
+        val connection = mockk<UrlConnection>(relaxed = true)
+        every { connection.responseCode } returns 200
+        every { connection.inputStream } throws error
+        return connection
+    }
+
     /** Records the requested ref of every connection (in start order) so tests can assert scheduling order. */
     private fun recordStartedConnections(started: MutableList<String>) {
-        every { urlConnectionFactory.createConnection(any(), any()) } answers {
+        every { urlConnectionFactory.createConnection(any(), any(), any(), any()) } answers {
             started.add(refFromUrl(firstArg<String>()))
             connection(code = 200)
         }
@@ -454,6 +792,17 @@ class RemoteConfigBlobFetcherTest {
     private class FakeTopicStore(private val sources: ConfigTopic?) : RemoteConfigTopicStore {
         override fun topic(topic: RemoteConfigTopic): ConfigTopic? =
             if (topic == RemoteConfigTopic.Sources) sources else null
+    }
+
+    private class FakeDateProvider(
+        private val currentTime: AtomicLong = AtomicLong(System.currentTimeMillis()),
+    ) : DateProvider {
+        override val now: Date
+            get() = Date(currentTime.get())
+
+        fun advanceTime(millis: Long) {
+            currentTime.addAndGet(millis)
+        }
     }
 
     /** Deterministic randomizer for weighted source selection: always returns the first candidate. */

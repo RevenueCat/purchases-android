@@ -77,7 +77,11 @@ internal class SourceHealthChecker(
     private fun performCheck(healthUrl: String): Boolean {
         var connection: UrlConnection? = null
         return try {
-            connection = urlConnectionFactory.createConnection(healthUrl)
+            connection = urlConnectionFactory.createConnection(
+                healthUrl,
+                connectTimeoutMillis = HEALTH_CHECK_TIMEOUT_MS,
+                readTimeoutMillis = HEALTH_CHECK_TIMEOUT_MS,
+            )
             val responseCode = connection.responseCode
             val isHealthy = responseCode in HEALTHY_RESPONSE_CODES
             verboseLog { "Health check for $healthUrl returned $responseCode (healthy=$isHealthy)" }
@@ -95,6 +99,7 @@ internal class SourceHealthChecker(
     private companion object {
         const val HEALTH_PATH = "v1/health/connectivity"
         const val RESULT_VALIDITY_MS = 10_000L
+        const val HEALTH_CHECK_TIMEOUT_MS = 5000
         val HEALTHY_RESPONSE_CODES = 200..299
     }
 }

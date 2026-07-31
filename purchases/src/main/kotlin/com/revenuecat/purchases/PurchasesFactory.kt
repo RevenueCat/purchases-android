@@ -32,6 +32,7 @@ import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.APISourceFailover
 import com.revenuecat.purchases.common.networking.DeviceConnectivityChecker
 import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.SourceHealthChecker
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offerings.OfferingsFactory
@@ -40,6 +41,7 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineCustomerInfoCa
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetcher
 import com.revenuecat.purchases.common.remoteconfig.DefaultRemoteConfigSourceProvider
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobFetcher
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDiskCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
@@ -221,6 +223,7 @@ internal class PurchasesFactory(
                 DeviceConnectivityChecker(application),
             )
 
+            val timeoutManager = HTTPTimeoutManager(appConfig)
             val httpClient = HTTPClient(
                 appConfig,
                 eTagManager,
@@ -230,6 +233,7 @@ internal class PurchasesFactory(
                 apiSourceFailover,
                 localeProvider = localeProvider,
                 forceServerErrorStrategy = forceServerErrorStrategy,
+                timeoutManager = timeoutManager,
             )
             val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(
@@ -296,12 +300,14 @@ internal class PurchasesFactory(
             )
 
             val remoteConfigManager = if (remoteConfigDiskCache != null) {
+                val remoteConfigBlobStore = RemoteConfigBlobStore(contextForStorage)
                 RemoteConfigManager(
                     backend = backend,
                     diskCache = remoteConfigDiskCache,
-                    blobStore = RemoteConfigBlobStore(contextForStorage),
+                    blobStore = remoteConfigBlobStore,
                     topicStore = remoteConfigTopicStore,
                     sourceProvider = apiSourceProvider,
+                    blobFetcher = RemoteConfigBlobFetcher(remoteConfigBlobStore, apiSourceProvider, timeoutManager),
                     // Bootstrap source for a cold on-demand read's self-triggered sync (see blobData()); after
                     // the first identity change the manager syncs for the user clearCache() binds instead.
                     appUserIDProvider = { cache.getCachedAppUserID() },

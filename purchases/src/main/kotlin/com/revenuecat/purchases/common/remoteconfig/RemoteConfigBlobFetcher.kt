@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.remoteconfig
 
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle.Purpose
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
@@ -17,6 +18,9 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.net.HttpURLConnection
+import java.net.MalformedURLException
+import java.net.SocketTimeoutException
+import java.net.URL
 import java.util.PriorityQueue
 
 /** The placeholder a blob source URL template carries; substituted with the blob ref before download. */
@@ -41,9 +45,11 @@ private const val BLOB_REF_PLACEHOLDER = "{blob_ref}"
  * [RemoteConfigUtils.contentAddressRef], matching `RCElement.checksumBase64`) before it is stored, so a tampered
  * or corrupt payload is never cached.
  */
+@Suppress("TooManyFunctions")
 internal class RemoteConfigBlobFetcher(
     private val blobStore: RemoteConfigBlobStore,
     private val sourceProvider: RemoteConfigSourceProvider,
+    private val timeoutManager: HTTPTimeoutManager,
     private val urlConnectionFactory: UrlConnectionFactory = DefaultUrlConnectionFactory(),
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
@@ -207,12 +213,24 @@ internal class RemoteConfigBlobFetcher(
     }
 
     private fun tryDownloadVerifyStore(url: String, ref: String): DownloadOutcome {
+        val host = hostOf(url)
+        val timeout = timeoutManager.getTimeoutForRequest(
+            host = host,
+            isFallback = false,
+            fallbackAvailable = false,
+            isProxied = false,
+            reTieredTimeoutsEnabled = true,
+        ).toInt()
+
         var connection: UrlConnection? = null
+        var requestResult = HTTPTimeoutManager.RequestResult.OTHER_RESULT
         return try {
-            connection = urlConnectionFactory.createConnection(url)
+            connection = urlConnectionFactory.createConnection(url, timeout, timeout)
             when (val code = connection.responseCode) {
                 HttpURLConnection.HTTP_OK -> {
                     val bytes = connection.inputStream.use { it.readBytes() }
+                    // The body arrived, so the host is healthy regardless of what the content turns out to be.
+                    requestResult = HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND
                     verifyAndStore(bytes, ref, url)
                 }
                 HttpURLConnection.HTTP_NOT_FOUND -> {
@@ -224,12 +242,26 @@ internal class RemoteConfigBlobFetcher(
                     DownloadOutcome.SOURCE_UNHEALTHY
                 }
             }
+        } catch (e: SocketTimeoutException) {
+            errorLog(e) { "Timed out downloading remote config blob '$ref' from $url." }
+            requestResult = HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT
+            DownloadOutcome.SOURCE_UNHEALTHY
         } catch (e: IOException) {
             errorLog(e) { "Failed to download remote config blob '$ref' from $url." }
             DownloadOutcome.SOURCE_UNHEALTHY
         } finally {
+            // Recorded once, after the attempt is over: a mid-body failure must not leave behind the
+            // clear that reading the headers would have suggested.
+            timeoutManager.recordRequestResult(host, requestResult)
             connection?.disconnect()
         }
+    }
+
+    private fun hostOf(url: String): String? = try {
+        URL(url).host?.takeIf { it.isNotBlank() }
+    } catch (e: MalformedURLException) {
+        verboseLog { "Could not resolve host for remote config blob URL $url: ${e.message}" }
+        null
     }
 
     private fun verifyAndStore(bytes: ByteArray, ref: String, url: String): DownloadOutcome {

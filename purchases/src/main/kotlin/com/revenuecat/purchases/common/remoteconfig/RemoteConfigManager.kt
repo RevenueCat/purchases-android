@@ -86,7 +86,7 @@ internal class RemoteConfigManager(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val topicStore: RemoteConfigTopicStore,
     private val sourceProvider: RemoteConfigSourceProvider,
-    private val blobFetcher: RemoteConfigBlobFetcher = RemoteConfigBlobFetcher(blobStore, sourceProvider),
+    private val blobFetcher: RemoteConfigBlobFetcher,
     private val appUserIDProvider: () -> String? = { null },
     private val cacheDurationProvider: (Boolean) -> Duration = ::cacheDuration,
 ) {
