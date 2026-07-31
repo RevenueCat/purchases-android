@@ -219,8 +219,6 @@ internal class RemoteConfigBlobFetcher(
             isFallback = false,
             fallbackAvailable = false,
             isProxied = false,
-            // Blob-source downloads always opt into the re-tiered fail-fast timeouts, independently of the
-            // usesRemoteConfigAPISources setting (which only gates main-API requests).
             reTieredTimeoutsEnabled = true,
         ).toInt()
 
@@ -254,8 +252,6 @@ internal class RemoteConfigBlobFetcher(
         }
     }
 
-    // `URL.getHost()` returns an empty string rather than null for host-less URLs, which would make every
-    // such URL share one entry in the per-host timeout memory.
     private fun hostOf(url: String): String? = try {
         URL(url).host?.takeIf { it.isNotBlank() }
     } catch (e: MalformedURLException) {
