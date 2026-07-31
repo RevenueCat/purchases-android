@@ -46,5 +46,9 @@ final class PaywallListenerAPI {
             @Override
             public void onUrlOpened(@NonNull String url) {}
         };
+
+        // Only compiles with -Xjvm-default=all-compatibility; guards against method additions
+        // becoming source-breaking for Java implementors.
+        PaywallListener listenerWithDefaults = new PaywallListener() {};
     }
 }
