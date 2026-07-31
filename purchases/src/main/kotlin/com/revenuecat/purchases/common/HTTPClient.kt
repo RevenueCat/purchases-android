@@ -305,6 +305,7 @@ internal class HTTPClient(
         var callResult: HTTPResult? = null
         var requestResult: HTTPTimeoutManager.RequestResult = HTTPTimeoutManager.RequestResult.OTHER_RESULT
         var exceptionHit: IOException? = null
+        var responseCode: Int? = null
 
         try {
             callResult = performCall(
@@ -315,12 +316,9 @@ internal class HTTPClient(
                 postFieldsToSign,
                 requestHeaders,
                 refreshETag,
+                onResponseReceived = { responseCode = it },
             )
             callSuccessful = true
-
-            if (isMainBackend && callResult?.let { RCHTTPStatusCodes.isSuccessful(it.responseCode) } == true) {
-                requestResult = HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND
-            }
         } catch (e: IOException) {
             exceptionHit = e
             // With remote-config API sources enabled, record a timeout for any main-source attempt that timed
@@ -332,6 +330,11 @@ internal class HTTPClient(
                 requestResult = HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT
             }
         } finally {
+            // The memory tracks how fast a host answers, so a non-error response clears the entry even
+            // when parsing or verifying that response fails afterwards.
+            if (isMainBackend && responseCode?.let { RCHTTPStatusCodes.isSuccessful(it) } == true) {
+                requestResult = HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND
+            }
             timeoutManager.recordRequestResult(requestBaseURL.host, requestResult)
 
             trackHttpRequestPerformedIfNeeded(
@@ -377,6 +380,7 @@ internal class HTTPClient(
         postFieldsToSign: List<Pair<String, String>>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean,
+        onResponseReceived: (responseCode: Int) -> Unit,
     ): HTTPResult? {
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
         val path = endpoint.getPath(useFallback = isFallbackURL)
@@ -467,6 +471,10 @@ internal class HTTPClient(
         }
 
         debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
+        // The response arrived in full. Everything below only inspects it, so failures from here on say
+        // nothing about how responsive the host is.
+        onResponseReceived(responseCode)
+
         if (payloadBytes == null &&
             (responseCode != RCHTTPStatusCodes.NO_CONTENT || !endpoint.expectsRCFormatResponse)
         ) {
