@@ -9,6 +9,8 @@ import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.verification.SignatureVerificationException
+import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -2101,6 +2103,52 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         verify(exactly = 0) {
             timeoutManager.recordRequestResult(any(), HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND)
         }
+    }
+
+    @Test
+    fun `HTTPClient clears the host's fail-fast memory when a response fails signature verification`() {
+        val endpoint = Endpoint.LogIn
+        val appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true)
+        val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
+        val host = baseURL.host
+
+        mockSigningManager = mockk()
+        every { mockSigningManager.shouldVerifyEndpoint(endpoint) } returns true
+        every { mockSigningManager.createRandomNonce() } returns "test-nonce"
+        every { mockSigningManager.getPostParamsForSigningHeaderIfNeeded(any(), any()) } returns null
+        every {
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+        } returns VerificationResult.FAILED
+        every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
+
+        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
+
+        // The host is on the reduced tier after an earlier timeout.
+        timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
+
+        enqueue(endpoint.getPath(), HTTPResult.createResult())
+
+        assertThatThrownBy {
+            client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+            )
+        }.isInstanceOf(SignatureVerificationException::class.java)
+
+        // The host answered in time and only its payload was untrustworthy, so its entry is cleared and
+        // the next request goes back to the base tier.
+        verify(exactly = 1) {
+            timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND)
+        }
+        assertThat(
+            timeoutManager.getTimeoutForRequest(
+                host = host, isFallback = false, fallbackAvailable = false, isProxied = false,
+                reTieredTimeoutsEnabled = true,
+            )
+        ).isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
     }
 
     @Test
