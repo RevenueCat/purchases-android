@@ -350,6 +350,8 @@ public open class PurchasesConfiguration(builder: Builder) {
         /**
          * Whether [Purchases.getCustomerInfo] waits for unsynced purchases to be posted before
          * reporting [CustomerInfo]. Defaults to [UnsyncedTransactionsWaitPolicy.WAIT].
+         *
+         * [UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT] requires reacting to [CustomerInfo] updates.
          * @see UnsyncedTransactionsWaitPolicy
          */
         public fun unsyncedTransactionsWaitPolicy(
