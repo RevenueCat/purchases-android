@@ -121,7 +121,7 @@ class OfferingsSourceTest {
 
         // Cache the offerings
         every { deviceCache.cacheOfferingsResponse(any(), any()) } returns Unit
-        offeringsCache.cacheOfferings(originalOfferings, offeringsJson)
+        offeringsCache.cacheOfferings(originalOfferings, ONE_OFFERINGS_RESPONSE)
 
         // Verify originalSource was stored separately from the response.
         io.mockk.verify(exactly = 1) {
@@ -156,7 +156,7 @@ class OfferingsSourceTest {
             put(OfferingsCache.ORIGINAL_SOURCE_KEY, HTTPResponseOriginalSource.FALLBACK.name)
         }
         every { deviceCache.getOfferingsResponseCache() } returns cachedJsonWithSource
-        offeringsCache.cacheOfferings(originalOfferings, offeringsJson)
+        offeringsCache.cacheOfferings(originalOfferings, ONE_OFFERINGS_RESPONSE)
 
         // Retrieve from cache - originalSource should be preserved
         val cachedOfferings = offeringsCache.cachedOfferings
@@ -195,7 +195,7 @@ class OfferingsSourceTest {
         every { deviceCache.cacheOfferingsResponse(any(), any()) } returns Unit
         // Mock cached response without originalSource field (old cache format)
         every { deviceCache.getOfferingsResponseCache() } returns JSONObject(ONE_OFFERINGS_RESPONSE)
-        offeringsCache.cacheOfferings(originalOfferings, offeringsJson)
+        offeringsCache.cacheOfferings(originalOfferings, ONE_OFFERINGS_RESPONSE)
 
         // Retrieve from cache - should use cached instance's originalSource
         val cachedOfferings = offeringsCache.cachedOfferings

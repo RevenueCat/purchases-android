@@ -48,12 +48,8 @@ class OfferingsCacheTest {
 
     @Test
     fun `clear cache clears offerings cache and offerings response cache`() {
-        val offeringsResponse = JSONObject()
         every { deviceCache.clearOfferingsResponseCache() } just Runs
-        every { deviceCache.cacheOfferingsResponse(any(), any()) } just Runs
-        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, offeringsResponse)
+        offeringsCache.cacheOfferingsInMemory(mockk())
         assertThat(offeringsCache.cachedOfferings).isNotNull
         offeringsCache.clearCache()
         assertThat(offeringsCache.cachedOfferings).isNull()
@@ -63,23 +59,15 @@ class OfferingsCacheTest {
     }
 
     @Test
-    fun `caching a JSON offerings response serializes it and stores its source`() {
-        val offerings = mockk<Offerings>().apply {
-            every { originalSource } returns HTTPResponseOriginalSource.LOAD_SHEDDER
-        }
-        val offeringsResponse = JSONObject("{\"test-key\" : \"test-value\"}")
-        every { deviceCache.cacheOfferingsResponse(any(), any()) } just Runs
+    fun `caching offerings in memory does not write response to disk`() {
+        val offerings = mockk<Offerings>()
 
         assertThat(offeringsCache.cachedOfferings).isNull()
-        offeringsCache.cacheOfferings(offerings, offeringsResponse)
+        offeringsCache.cacheOfferingsInMemory(offerings)
 
         assertThat(offeringsCache.cachedOfferings).isEqualTo(offerings)
-        verify(exactly = 1) {
-            deviceCache.cacheOfferingsResponse(
-                "{\"test-key\":\"test-value\"}",
-                HTTPResponseOriginalSource.LOAD_SHEDDER,
-            )
-        }
+        assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = false)).isFalse
+        verify(exactly = 0) { deviceCache.cacheOfferingsResponse(any(), any()) }
     }
 
     @Test
@@ -116,39 +104,27 @@ class OfferingsCacheTest {
 
     @Test
     fun `cache is not stale right after caching value`() {
-        mockDeviceCacheOfferingResponse()
-        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        offeringsCache.cacheOfferingsInMemory(mockk())
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isFalse
     }
 
     @Test
     fun `cache is stale if cached value is stale`() {
-        mockDeviceCacheOfferingResponse()
-        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        offeringsCache.cacheOfferingsInMemory(mockk())
         currentDate = currentDate.add(6.minutes)
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isTrue
     }
 
     @Test
     fun `cache is stale if forced to be stale`() {
-        mockDeviceCacheOfferingResponse()
-        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        offeringsCache.cacheOfferingsInMemory(mockk())
         offeringsCache.forceCacheStale()
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isTrue
     }
 
     @Test
     fun `clearInMemoryOfferingsCache clears cached offerings`() {
-        mockDeviceCacheOfferingResponse()
-        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        offeringsCache.cacheOfferingsInMemory(mockk())
         assertThat(offeringsCache.cachedOfferings).isNotNull
         offeringsCache.clearInMemoryOfferingsCache()
         assertThat(offeringsCache.cachedOfferings).isNull()
@@ -156,10 +132,7 @@ class OfferingsCacheTest {
 
     @Test
     fun `clearInMemoryOfferingsCache makes cache stale`() {
-        mockDeviceCacheOfferingResponse()
-        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        offeringsCache.cacheOfferingsInMemory(mockk())
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isFalse
         offeringsCache.clearInMemoryOfferingsCache()
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isTrue
@@ -168,10 +141,7 @@ class OfferingsCacheTest {
 
     @Test
     fun `clearInMemoryOfferingsCache does not clear disk cache`() {
-        mockDeviceCacheOfferingResponse()
-        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        offeringsCache.cacheOfferingsInMemory(mockk())
         offeringsCache.clearInMemoryOfferingsCache()
         verify(exactly = 0) { deviceCache.clearOfferingsResponseCache() }
     }
@@ -179,12 +149,9 @@ class OfferingsCacheTest {
     @Test
     fun `clearInMemoryOfferingsCache preserves disk cache for fallback`() {
         val offeringsResponse = JSONObject().apply { put("test", "value") }
-        mockDeviceCacheOfferingResponse()
         every { deviceCache.getOfferingsResponseCache() } returns offeringsResponse
         every { deviceCache.getOfferingsResponseSource() } returns HTTPResponseOriginalSource.MAIN.name
-        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, offeringsResponse)
+        offeringsCache.cacheOfferingsInMemory(mockk())
 
         offeringsCache.clearInMemoryOfferingsCache()
 
@@ -201,12 +168,9 @@ class OfferingsCacheTest {
         // Arrange
         val localeProvider = FakeLocaleProvider("en-US", "es-ES")
         val offeringsCache = OfferingsCache(deviceCache, dateProvider = dateProvider, localeProvider = localeProvider)
-        mockDeviceCacheOfferingResponse()
 
         // Act
-        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        offeringsCache.cacheOfferingsInMemory(mockk())
 
         // Assert
         assertThat(offeringsCache.isOfferingsCacheStale(false)).isFalse
@@ -217,12 +181,9 @@ class OfferingsCacheTest {
         // Arrange
         val localeProvider = FakeLocaleProvider("en-US", "es-ES")
         val offeringsCache = OfferingsCache(deviceCache, dateProvider = dateProvider, localeProvider = localeProvider)
-        mockDeviceCacheOfferingResponse()
 
         // Act
-        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        offeringsCache.cacheOfferingsInMemory(mockk())
         localeProvider.languageTags = listOf("fr-FR", "de-DE")
 
         // Assert
@@ -235,12 +196,9 @@ class OfferingsCacheTest {
         // Arrange
         val localeProvider = FakeLocaleProvider("en-US")
         val offeringsCache = OfferingsCache(deviceCache, dateProvider = dateProvider, localeProvider = localeProvider)
-        mockDeviceCacheOfferingResponse()
 
         // Act
-        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        offeringsCache.cacheOfferingsInMemory(mockk())
         localeProvider.languageTags = listOf("fr-FR")
 
         // Assert
@@ -253,12 +211,9 @@ class OfferingsCacheTest {
         // Arrange
         val localeProvider = FakeLocaleProvider("en-US", "es-ES")
         val offeringsCache = OfferingsCache(deviceCache, dateProvider = dateProvider, localeProvider = localeProvider)
-        mockDeviceCacheOfferingResponse()
 
         // Act
-        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        offeringsCache.cacheOfferingsInMemory(mockk())
         localeProvider.languageTags = listOf("es-ES", "en-US")
 
         // Assert
@@ -271,13 +226,10 @@ class OfferingsCacheTest {
         // Arrange
         val localeProvider = FakeLocaleProvider("en-US")
         val offeringsCache = OfferingsCache(deviceCache, dateProvider = dateProvider, localeProvider = localeProvider)
-        mockDeviceCacheOfferingResponse()
         every { deviceCache.clearOfferingsResponseCache() } just Runs
 
         // Act
-        offeringsCache.cacheOfferings(mockk<Offerings>().apply {
-            every { originalSource } returns HTTPResponseOriginalSource.MAIN
-        }, JSONObject())
+        offeringsCache.cacheOfferingsInMemory(mockk())
         assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = false)).isFalse
         assertThat(offeringsCache.isOfferingsCacheStale(appInBackground = true)).isFalse
         offeringsCache.clearCache()
@@ -353,11 +305,4 @@ class OfferingsCacheTest {
 
     // endregion offerings response cache
 
-    // region helpers
-
-    private fun mockDeviceCacheOfferingResponse() {
-        every { deviceCache.cacheOfferingsResponse(any(), any()) } just Runs
-    }
-
-    // endregion helpers
 }

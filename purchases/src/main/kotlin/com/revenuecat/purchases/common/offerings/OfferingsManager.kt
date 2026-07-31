@@ -286,7 +286,7 @@ internal class OfferingsManager(
                     }
                     offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                     if (offeringsResponseText == null) {
-                        offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
+                        offeringsCache.cacheOfferingsInMemory(offeringsResultData.offerings)
                     } else {
                         offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsResponseText)
                     }

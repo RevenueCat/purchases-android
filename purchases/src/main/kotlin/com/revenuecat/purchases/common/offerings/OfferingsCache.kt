@@ -42,10 +42,7 @@ internal class OfferingsCache(
     }
 
     @Synchronized
-    fun cacheOfferings(offerings: Offerings, offeringsResponse: JSONObject) {
-        updateInMemoryCache(offerings)
-        deviceCache.cacheOfferingsResponse(offeringsResponse.toString(), offerings.originalSource)
-    }
+    fun cacheOfferingsInMemory(offerings: Offerings) = updateInMemoryCache(offerings)
 
     @Synchronized
     fun cacheOfferings(offerings: Offerings, offeringsResponse: String) {

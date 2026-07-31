@@ -451,7 +451,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any<JSONObject>())
+            cache.cacheOfferingsInMemory(testOfferings)
         } just Runs
 
         mockBackendResponseError()
@@ -472,7 +472,8 @@ class OfferingsManagerTest {
 
         assertThat(receivedOfferings).isEqualTo(testOfferings)
 
-        verify(exactly = 1) { cache.cacheOfferings(testOfferings, backendResponse) }
+        verify(exactly = 1) { cache.cacheOfferingsInMemory(testOfferings) }
+        verify(exactly = 0) { cache.cacheOfferings(any(), any()) }
         verify(exactly = 1) {
             offeringsFactory.createOfferings(
                 offeringsJSON = backendResponse,
@@ -551,7 +552,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any<JSONObject>())
+            cache.cacheOfferingsInMemory(any())
         } just Runs
 
         mockBackendResponseError()
@@ -622,7 +623,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any<JSONObject>())
+            cache.cacheOfferingsInMemory(any())
         } just Runs
 
         mockBackendResponseError()
