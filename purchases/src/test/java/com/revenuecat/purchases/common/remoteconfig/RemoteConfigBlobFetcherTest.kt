@@ -462,6 +462,31 @@ class RemoteConfigBlobFetcherTest {
     }
 
     @Test
+    fun `a fully received blob that fails verification clears the source's fail-fast memory`() {
+        val ref = refOf("expected".toByteArray())
+        val timeouts = CopyOnWriteArrayList<Int>()
+        val calls = AtomicInteger(0)
+        every { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) } answers {
+            timeouts.add(secondArg<Int>())
+            if (calls.getAndIncrement() == 0) throw SocketTimeoutException("timed out")
+            connection(code = 200, body = "tampered".toByteArray())
+        }
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        assertThat(download(fetcher, ref)).isFalse() // times out, arming the reduced timeout
+        assertThat(download(fetcher, ref)).isFalse() // the body arrives in full but fails the checksum
+        assertThat(download(fetcher, ref)).isFalse()
+
+        // The memory is about how quickly the host answers, so a response that arrives in full clears it
+        // even when its content turns out to be unusable.
+        assertThat(timeouts).containsExactly(
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+        )
+    }
+
+    @Test
     fun `blob source timeout memory is isolated per host`() {
         val primary = "https://primary.example/$PLACEHOLDER"
         val secondary = "https://secondary.example/$PLACEHOLDER"
