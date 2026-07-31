@@ -4,6 +4,7 @@ package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -85,5 +86,29 @@ internal class WorkflowModelsDeserializationTest {
         """.trimIndent()
         val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
         assertThat(step.stepScreenType).isNull()
+    }
+
+    @Test
+    fun `WorkflowScreen reads state_declarations`() {
+        val json = """
+            {
+              "template_name": "components",
+              "asset_base_url": "https://assets.pawwalls.com",
+              "components_config": {
+                "base": {
+                  "stack": {"type": "stack", "components": []},
+                  "background": {"type": "color", "value": {"light": {"type": "hex", "value": "#ffffff"}}}
+                }
+              },
+              "components_localizations": {"en_US": {}},
+              "default_locale": "en_US",
+              "state_declarations": {"selected_tab": {"type": "string", "default": "monthly"}}
+            }
+        """.trimIndent()
+        val screen = JsonTools.json.decodeFromString(WorkflowScreen.serializer(), json)
+
+        val declaration = screen.stateDeclarations?.get("selected_tab")
+        assertThat(declaration?.type).isEqualTo(StateDeclaration.ValueType.STRING)
+        assertThat(declaration?.defaultValue?.content).isEqualTo("monthly")
     }
 }

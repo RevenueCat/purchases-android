@@ -13,9 +13,11 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
+import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import java.net.URL
@@ -38,6 +40,13 @@ class WorkflowScreenMapperTest {
         ),
     )
 
+    private val stateDeclarations = mapOf(
+        "selected_tab" to StateDeclaration(
+            type = StateDeclaration.ValueType.STRING,
+            defaultValue = JsonPrimitive("monthly"),
+        ),
+    )
+
     private val screen = WorkflowScreen(
         name = "Test Screen",
         templateName = "template_v2",
@@ -46,7 +55,8 @@ class WorkflowScreenMapperTest {
         componentsConfig = componentsConfig,
         componentsLocalizations = localizations,
         defaultLocaleIdentifier = defaultLocaleId,
-        offeringIdentifier = "offering_id"
+        offeringIdentifier = "offering_id",
+        stateDeclarations = stateDeclarations,
     )
 
     @Test
@@ -61,6 +71,8 @@ class WorkflowScreenMapperTest {
         assertThat(data.componentsLocalizations).isEqualTo(screen.componentsLocalizations)
         assertThat(data.defaultLocaleIdentifier).isEqualTo(screen.defaultLocaleIdentifier)
         assertThat(data.revision).isEqualTo(screen.revision)
+        // Without declarations, an undeclared key never matches: every state_condition override is inert.
+        assertThat(data.stateDeclarations).isEqualTo(stateDeclarations)
     }
 
     @Test

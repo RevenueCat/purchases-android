@@ -20,6 +20,7 @@ internal object WorkflowScreenMapper {
             defaultLocaleIdentifier = screen.defaultLocaleIdentifier,
             revision = screen.revision,
             exitOffers = screen.exitOffers,
+            stateDeclarations = screen.stateDeclarations,
         )
 
     fun toPaywallComponents(screen: WorkflowScreen, screenId: String, uiConfig: UiConfig): Offering.PaywallComponents =

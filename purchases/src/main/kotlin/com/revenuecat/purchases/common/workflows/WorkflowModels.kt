@@ -8,6 +8,8 @@ import com.revenuecat.purchases.paywalls.components.common.ExitOffers
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
+import com.revenuecat.purchases.paywalls.components.common.StateDeclarationMapSerializer
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import com.revenuecat.purchases.utils.serializers.JsonObjectToMapSerializer
 import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
@@ -127,6 +129,8 @@ public data class WorkflowScreen(
     @SerialName("config") val config: JsonObject = JsonObject(emptyMap()),
     @SerialName("offering_identifier") val offeringIdentifier: String? = null,
     @SerialName("exit_offers") val exitOffers: ExitOffers? = null,
+    @Serializable(with = StateDeclarationMapSerializer::class)
+    @SerialName("state_declarations") val stateDeclarations: Map<String, StateDeclaration>? = null,
 )
 
 /**
