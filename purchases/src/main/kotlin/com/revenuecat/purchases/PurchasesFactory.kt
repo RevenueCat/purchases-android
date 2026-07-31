@@ -207,10 +207,10 @@ internal class PurchasesFactory(
 
             val localeProvider = DefaultLocaleProvider()
 
-            // useWorkflows implies the config layer: workflows are served from `/v1/config`, so the manager
-            // must exist whenever workflows are on. Not applicable to the customEntitlementComputation flavor,
-            // which doesn't serve paywalls this way.
-            val remoteConfigEnabled = appConfig.useWorkflows && !appConfig.customEntitlementComputation
+            // The config layer is on everywhere except the customEntitlementComputation flavor, which doesn't
+            // serve paywalls this way. Workflows (multipage paywalls) are served from `/v1/config`, so the
+            // manager exists wherever the config layer does.
+            val remoteConfigEnabled = !appConfig.customEntitlementComputation
             val remoteConfigDiskCache = if (remoteConfigEnabled) RemoteConfigDiskCache(contextForStorage) else null
             val remoteConfigTopicStore = RemoteConfigTopicStore {
                 remoteConfigDiskCache?.read()?.topics?.get(it.wireName)

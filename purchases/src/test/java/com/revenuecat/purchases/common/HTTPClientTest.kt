@@ -2034,6 +2034,76 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     }
 
     @Test
+    fun `HTTPClient treats the remote config fallback endpoint as a fallback host request`() {
+        val endpoint = Endpoint.GetRemoteConfigFallback("test-domain")
+        assert(!endpoint.supportsFallbackBaseURLs)
+
+        val appConfig = createAppConfig(proxyURL = null, usesRemoteConfigAPISources = true)
+        val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
+        val host = "10.255.255.255"
+
+        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
+
+        assertThatThrownBy {
+            client.performRequest(
+                URL("http://$host/"), // Unroutable IP to force connection timeout
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+                fallbackBaseURLs = emptyList(),
+            )
+        }.isInstanceOf(SocketTimeoutException::class.java)
+
+        // The domain layer aims this endpoint at a fallback host, so it gets the flat fallback tier
+        // rather than the aggressive main-source tiers, even with API sources enabled.
+        verify(exactly = 1) {
+            timeoutManager.getTimeoutForRequest(
+                host = host, isFallback = true, fallbackAvailable = false, isProxied = false,
+                reTieredTimeoutsEnabled = true,
+            )
+        }
+        verify(exactly = 0) {
+            timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
+        }
+        // The host stays on the base tier because the timeout never armed the fail-fast memory.
+        assertThat(
+            timeoutManager.getTimeoutForRequest(
+                host = host, isFallback = false, fallbackAvailable = false, isProxied = false,
+                reTieredTimeoutsEnabled = true,
+            )
+        ).isEqualTo(HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
+    }
+
+    @Test
+    fun `HTTPClient does not record a main source success for the remote config fallback endpoint`() {
+        val endpoint = Endpoint.GetRemoteConfigFallback("test-domain")
+        val appConfig = createAppConfig(usesRemoteConfigAPISources = true)
+        val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
+
+        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
+
+        enqueue(
+            endpoint.getPath(),
+            HTTPResult.createResult(),
+        )
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+            fallbackBaseURLs = emptyList(),
+        )
+
+        // A fallback-host response says nothing about the main source, so it must not clear its memory.
+        verify(exactly = 0) {
+            timeoutManager.recordRequestResult(any(), HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND)
+        }
+    }
+
+    @Test
     fun `HTTPClient records OTHER_RESULT when request fails without timeout`() {
         val endpoint = Endpoint.GetProductEntitlementMapping
 
