@@ -8,8 +8,6 @@ import com.revenuecat.purchases.common.FakeLocaleProvider
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.utils.add
-import com.revenuecat.purchases.utils.copy
-import io.mockk.InternalPlatformDsl.toArray
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -52,7 +50,7 @@ class OfferingsCacheTest {
     fun `clear cache clears offerings cache and offerings response cache`() {
         val offeringsResponse = JSONObject()
         every { deviceCache.clearOfferingsResponseCache() } just Runs
-        every { deviceCache.cacheOfferingsResponse(any()) } just Runs
+        every { deviceCache.cacheOfferingsResponse(any(), any()) } just Runs
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
             every { originalSource } returns HTTPResponseOriginalSource.MAIN
         }, offeringsResponse)
@@ -65,20 +63,40 @@ class OfferingsCacheTest {
     }
 
     @Test
-    fun `caching offerings works`() {
+    fun `caching a JSON offerings response serializes it and stores its source`() {
         val offerings = mockk<Offerings>().apply {
-            every { originalSource } returns HTTPResponseOriginalSource.MAIN
+            every { originalSource } returns HTTPResponseOriginalSource.LOAD_SHEDDER
         }
-        val offeringsResponse = JSONObject()
-        every { deviceCache.cacheOfferingsResponse(any()) } just Runs
+        val offeringsResponse = JSONObject("{\"test-key\" : \"test-value\"}")
+        every { deviceCache.cacheOfferingsResponse(any(), any()) } just Runs
+
         assertThat(offeringsCache.cachedOfferings).isNull()
         offeringsCache.cacheOfferings(offerings, offeringsResponse)
+
         assertThat(offeringsCache.cachedOfferings).isEqualTo(offerings)
         verify(exactly = 1) {
             deviceCache.cacheOfferingsResponse(
-                match {
-                    it.getString(OfferingsCache.ORIGINAL_SOURCE_KEY) == HTTPResponseOriginalSource.MAIN.name
-                }
+                "{\"test-key\":\"test-value\"}",
+                HTTPResponseOriginalSource.LOAD_SHEDDER,
+            )
+        }
+    }
+
+    @Test
+    fun `caching a raw offerings response stores the exact string and source`() {
+        val offerings = mockk<Offerings>().apply {
+            every { originalSource } returns HTTPResponseOriginalSource.FALLBACK
+        }
+        val offeringsResponse = "{\"test-key\" : \"test-value\"}"
+        every { deviceCache.cacheOfferingsResponse(any(), any()) } just Runs
+
+        offeringsCache.cacheOfferings(offerings, offeringsResponse)
+
+        assertThat(offeringsCache.cachedOfferings).isEqualTo(offerings)
+        verify(exactly = 1) {
+            deviceCache.cacheOfferingsResponse(
+                refEq(offeringsResponse),
+                HTTPResponseOriginalSource.FALLBACK,
             )
         }
     }
@@ -163,6 +181,7 @@ class OfferingsCacheTest {
         val offeringsResponse = JSONObject().apply { put("test", "value") }
         mockDeviceCacheOfferingResponse()
         every { deviceCache.getOfferingsResponseCache() } returns offeringsResponse
+        every { deviceCache.getOfferingsResponseSource() } returns HTTPResponseOriginalSource.MAIN.name
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
             every { originalSource } returns HTTPResponseOriginalSource.MAIN
         }, offeringsResponse)
@@ -273,18 +292,71 @@ class OfferingsCacheTest {
     // region offerings response cache
 
     @Test
-    fun `offerings cache returns device cache offerings response`() {
-        val offeringsResponse = mockk<JSONObject>()
+    fun `offerings cache returns device cache response with separate source`() {
+        val offeringsResponse = JSONObject("{\"test\":\"value\"}")
         every { deviceCache.getOfferingsResponseCache() } returns offeringsResponse
-        assertThat(offeringsCache.cachedOfferingsResponse).isEqualTo(offeringsResponse)
+        every {
+            deviceCache.getOfferingsResponseSource()
+        } returns HTTPResponseOriginalSource.LOAD_SHEDDER.name
+
+        assertThat(offeringsCache.cachedOfferingsResponse).isEqualTo(
+            CachedOfferingsResponse(
+                offeringsResponse,
+                HTTPResponseOriginalSource.LOAD_SHEDDER,
+            ),
+        )
+    }
+
+    @Test
+    fun `separate offerings response source takes precedence over legacy source`() {
+        val offeringsResponse = JSONObject().apply {
+            put(OfferingsCache.ORIGINAL_SOURCE_KEY, HTTPResponseOriginalSource.FALLBACK.name)
+        }
+        every { deviceCache.getOfferingsResponseCache() } returns offeringsResponse
+        every {
+            deviceCache.getOfferingsResponseSource()
+        } returns HTTPResponseOriginalSource.LOAD_SHEDDER.name
+
+        assertThat(offeringsCache.cachedOfferingsResponse?.originalSource)
+            .isEqualTo(HTTPResponseOriginalSource.LOAD_SHEDDER)
+    }
+
+    @Test
+    fun `offerings cache uses legacy response source when separate source is missing`() {
+        val offeringsResponse = JSONObject().apply {
+            put(OfferingsCache.ORIGINAL_SOURCE_KEY, HTTPResponseOriginalSource.FALLBACK.name)
+        }
+        every { deviceCache.getOfferingsResponseCache() } returns offeringsResponse
+        every { deviceCache.getOfferingsResponseSource() } returns null
+
+        assertThat(offeringsCache.cachedOfferingsResponse?.originalSource)
+            .isEqualTo(HTTPResponseOriginalSource.FALLBACK)
+    }
+
+    @Test
+    fun `offerings cache defaults missing response source to main`() {
+        every { deviceCache.getOfferingsResponseCache() } returns JSONObject()
+        every { deviceCache.getOfferingsResponseSource() } returns null
+
+        assertThat(offeringsCache.cachedOfferingsResponse?.originalSource)
+            .isEqualTo(HTTPResponseOriginalSource.MAIN)
+    }
+
+    @Test
+    fun `offerings cache defaults invalid response source to main`() {
+        every { deviceCache.getOfferingsResponseCache() } returns JSONObject()
+        every { deviceCache.getOfferingsResponseSource() } returns "INVALID"
+
+        assertThat(offeringsCache.cachedOfferingsResponse?.originalSource)
+            .isEqualTo(HTTPResponseOriginalSource.MAIN)
     }
 
     // endregion offerings response cache
 
     // region helpers
 
-    fun mockDeviceCacheOfferingResponse() {
-        every { deviceCache.cacheOfferingsResponse(any()) } just Runs
+    private fun mockDeviceCacheOfferingResponse() {
+        every { deviceCache.cacheOfferingsResponse(any(), any()) } just Runs
     }
 
     // endregion helpers

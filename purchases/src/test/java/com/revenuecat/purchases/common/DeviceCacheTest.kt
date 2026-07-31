@@ -65,6 +65,7 @@ class DeviceCacheTest {
     private val productEntitlementMappingLastUpdatedCacheKey = "com.revenuecat.purchases.api_key.productEntitlementMappingLastUpdated"
     private val productEntitlementMappingCacheKey = "com.revenuecat.purchases.api_key.productEntitlementMapping"
     private val offeringsResponseCacheKey = "com.revenuecat.purchases.api_key.offeringsResponse"
+    private val offeringsResponseSourceCacheKey = "com.revenuecat.purchases.api_key.offeringsResponseSource"
 
     private val slotForPutLong = slot<Long>()
 
@@ -698,23 +699,40 @@ class DeviceCacheTest {
     }
 
     @Test
-    fun `cache offerings response works`() {
-        val jsonSample = "{\"test-key\":\"test-value\"}"
-        val offeringsResponse = JSONObject(jsonSample)
-        cache.cacheOfferingsResponse(offeringsResponse)
-        verifyAll {
-            mockEditor.putString(offeringsResponseCacheKey, jsonSample)
+    fun `cache offerings response stores the exact response and source`() {
+        val rawResponse = "{\"test-key\" : \"test-value\"}"
+
+        cache.cacheOfferingsResponse(rawResponse, HTTPResponseOriginalSource.FALLBACK)
+
+        verify {
+            mockEditor.putString(offeringsResponseCacheKey, refEq(rawResponse))
+            mockEditor.putString(
+                offeringsResponseSourceCacheKey,
+                HTTPResponseOriginalSource.FALLBACK.name,
+            )
             mockEditor.apply()
         }
+        verify(exactly = 1) { mockPrefs.edit() }
     }
 
     @Test
-    fun `clear offerings response cache works`() {
+    fun `gets offerings response source from shared preferences`() {
+        every {
+            mockPrefs.getString(offeringsResponseSourceCacheKey, null)
+        } returns HTTPResponseOriginalSource.LOAD_SHEDDER.name
+
+        assertThat(cache.getOfferingsResponseSource()).isEqualTo(HTTPResponseOriginalSource.LOAD_SHEDDER.name)
+    }
+
+    @Test
+    fun `clear offerings response cache removes response and source with one editor`() {
         cache.clearOfferingsResponseCache()
         verifyAll {
             mockEditor.remove(offeringsResponseCacheKey)
+            mockEditor.remove(offeringsResponseSourceCacheKey)
             mockEditor.apply()
         }
+        verify(exactly = 1) { mockPrefs.edit() }
     }
 
     // endregion offerings response

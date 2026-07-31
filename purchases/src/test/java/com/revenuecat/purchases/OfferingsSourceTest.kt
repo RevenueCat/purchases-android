@@ -33,7 +33,7 @@ class OfferingsSourceTest {
     fun setUp() {
         offeringParser = GoogleOfferingParser()
         deviceCache = mockk()
-        every { deviceCache.cacheOfferingsResponse(any()) } returns Unit
+        every { deviceCache.cacheOfferingsResponse(any(), any()) } returns Unit
         every { deviceCache.getOfferingsResponseCache() } returns null
         offeringsCache = OfferingsCache(deviceCache, localeProvider = com.revenuecat.purchases.common.DefaultLocaleProvider())
     }
@@ -120,12 +120,15 @@ class OfferingsSourceTest {
         )
 
         // Cache the offerings
-        every { deviceCache.cacheOfferingsResponse(any()) } returns Unit
+        every { deviceCache.cacheOfferingsResponse(any(), any()) } returns Unit
         offeringsCache.cacheOfferings(originalOfferings, offeringsJson)
 
-        // Verify originalSource was stored in JSON
+        // Verify originalSource was stored separately from the response.
         io.mockk.verify(exactly = 1) {
-            deviceCache.cacheOfferingsResponse(any())
+            deviceCache.cacheOfferingsResponse(
+                any(),
+                HTTPResponseOriginalSource.LOAD_SHEDDER,
+            )
         }
     }
 
@@ -147,7 +150,7 @@ class OfferingsSourceTest {
             loadedFromDiskCache = false,
         )
 
-        every { deviceCache.cacheOfferingsResponse(any()) } returns Unit
+        every { deviceCache.cacheOfferingsResponse(any(), any()) } returns Unit
         // Mock cached response with originalSource in JSON
         val cachedJsonWithSource = JSONObject(ONE_OFFERINGS_RESPONSE).apply {
             put(OfferingsCache.ORIGINAL_SOURCE_KEY, HTTPResponseOriginalSource.FALLBACK.name)
@@ -189,7 +192,7 @@ class OfferingsSourceTest {
         )
 
         // Cache without storing originalSource (simulating old cache)
-        every { deviceCache.cacheOfferingsResponse(any()) } returns Unit
+        every { deviceCache.cacheOfferingsResponse(any(), any()) } returns Unit
         // Mock cached response without originalSource field (old cache format)
         every { deviceCache.getOfferingsResponseCache() } returns JSONObject(ONE_OFFERINGS_RESPONSE)
         offeringsCache.cacheOfferings(originalOfferings, offeringsJson)

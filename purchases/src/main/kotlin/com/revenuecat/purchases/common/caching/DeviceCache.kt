@@ -14,6 +14,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
@@ -133,6 +134,9 @@ public open class DeviceCache(
     }
 
     private val offeringsResponseCacheKey: String by lazy { "$apiKeyPrefix.offeringsResponse" }
+    private val offeringsResponseSourceCacheKey: String by lazy {
+        "$apiKeyPrefix.offeringsResponseSource"
+    }
 
     internal fun startEditing(): SharedPreferences.Editor {
         return preferences.edit()
@@ -594,17 +598,26 @@ public open class DeviceCache(
     }
 
     @Synchronized
-    internal fun cacheOfferingsResponse(offeringsResponse: JSONObject) {
+    internal fun getOfferingsResponseSource(): String? =
+        preferences.getString(offeringsResponseSourceCacheKey, null)
+
+    @Synchronized
+    internal fun cacheOfferingsResponse(
+        response: String,
+        source: HTTPResponseOriginalSource,
+    ) {
         preferences.edit()
-            .putString(
-                offeringsResponseCacheKey,
-                offeringsResponse.toString(),
-            ).apply()
+            .putString(offeringsResponseCacheKey, response)
+            .putString(offeringsResponseSourceCacheKey, source.name)
+            .apply()
     }
 
     @Synchronized
     internal fun clearOfferingsResponseCache() {
-        preferences.edit().remove(offeringsResponseCacheKey).apply()
+        preferences.edit()
+            .remove(offeringsResponseCacheKey)
+            .remove(offeringsResponseSourceCacheKey)
+            .apply()
     }
 
     // endregion

@@ -111,7 +111,7 @@ class OfferingsManagerTest {
         onSuccessSlot.captured.invoke(OfferingsResultData(testOfferings, setOf(productId), emptySet()))
 
         // The stale parse is dropped (a re-parse is issued instead, but its onSuccess is never fired here).
-        verify(exactly = 0) { cache.cacheOfferings(any(), any()) }
+        verify(exactly = 0) { cache.cacheOfferings(any(), any<String>()) }
     }
 
     @Test
@@ -145,8 +145,8 @@ class OfferingsManagerTest {
         verify(exactly = 2) {
             offeringsFactory.createOfferings(any(), any(), any(), onError = any(), onSuccess = any())
         }
-        verify(exactly = 1) { cache.cacheOfferings(decodedOfferings, any()) }
-        verify(exactly = 0) { cache.cacheOfferings(staleOfferings, any()) }
+        verify(exactly = 1) { cache.cacheOfferings(decodedOfferings, any<String>()) }
+        verify(exactly = 0) { cache.cacheOfferings(staleOfferings, any<String>()) }
     }
 
     @Test
@@ -157,7 +157,7 @@ class OfferingsManagerTest {
         offeringsManager.fetchAndCacheOfferings(appUserId, appInBackground = false)
         onSuccessSlot.captured.invoke(OfferingsResultData(testOfferings, setOf(productId), emptySet()))
 
-        verify(exactly = 1) { cache.cacheOfferings(any(), any()) }
+        verify(exactly = 1) { cache.cacheOfferings(any(), any<String>()) }
     }
 
     @Test
@@ -171,7 +171,7 @@ class OfferingsManagerTest {
         offeringsManager.clearInMemoryOfferingsCache()
         onSuccessSlot.captured.invoke(OfferingsResultData(testOfferings, setOf(productId), emptySet()))
 
-        verify(exactly = 1) { cache.cacheOfferings(any(), any()) }
+        verify(exactly = 1) { cache.cacheOfferings(any(), any<String>()) }
     }
 
     // endregion cache write invalidation guard
@@ -260,7 +260,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any<String>())
         } just Runs
 
         mockDeviceCache()
@@ -279,7 +279,7 @@ class OfferingsManagerTest {
             backend.getOfferings(appUserId, appInBackground = false, onSuccess = any(), onError = any())
         }
         verify(exactly = 1) {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any<String>())
         }
     }
 
@@ -292,7 +292,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any<String>())
         } just Runs
 
         var receivedOfferings: Offerings? = null
@@ -309,7 +309,7 @@ class OfferingsManagerTest {
             backend.getOfferings(appUserId, appInBackground = true, onSuccess = any(), onError = any())
         }
         verify(exactly = 1) {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any<String>())
         }
     }
 
@@ -321,7 +321,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any<String>())
         } just Runs
 
         mockDeviceCache()
@@ -390,16 +390,18 @@ class OfferingsManagerTest {
     }
 
     @Test
-    fun getOfferingsIsCached() {
+    fun `network offerings cache preserves the raw response`() {
         every {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any<String>())
         } just Runs
         mockDeviceCache()
         val (_, offerings) = stubOfferings(productId)
         mockOfferingsFactory(offerings)
+        val rawResponse = " \n$ONE_OFFERINGS_RESPONSE"
+        mockBackendResponseSuccess(rawResponse)
 
         var receivedOfferings: Offerings? = null
         offeringsManager.getOfferings(
@@ -412,7 +414,7 @@ class OfferingsManagerTest {
         assertThat(receivedOfferings).isNotNull
         assertThat(receivedOfferings).isEqualTo(offerings)
         verify {
-            cache.cacheOfferings(offerings, any())
+            cache.cacheOfferings(offerings, refEq(rawResponse))
         }
     }
 
@@ -422,7 +424,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any<String>())
         } just Runs
 
         mockBackendResponseError()
@@ -449,12 +451,14 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any<JSONObject>())
         } just Runs
 
         mockBackendResponseError()
         val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
-        every { cache.cachedOfferingsResponse } returns backendResponse
+        every {
+            cache.cachedOfferingsResponse
+        } returns CachedOfferingsResponse(backendResponse, HTTPResponseOriginalSource.FALLBACK)
         mockDeviceCache(wasSuccessful = false)
         mockOfferingsFactory()
 
@@ -472,7 +476,7 @@ class OfferingsManagerTest {
         verify(exactly = 1) {
             offeringsFactory.createOfferings(
                 offeringsJSON = backendResponse,
-                originalDataSource = HTTPResponseOriginalSource.MAIN,
+                originalDataSource = HTTPResponseOriginalSource.FALLBACK,
                 loadedFromDiskCache = true,
                 onError = any(),
                 onSuccess = any(),
@@ -486,7 +490,7 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any<String>())
         } just Runs
 
         val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
@@ -495,7 +499,9 @@ class OfferingsManagerTest {
             errorBehavior = GetOfferingsErrorHandlingBehavior.SHOULD_NOT_FALLBACK,
         )
         val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
-        every { cache.cachedOfferingsResponse } returns backendResponse
+        every {
+            cache.cachedOfferingsResponse
+        } returns CachedOfferingsResponse(backendResponse, HTTPResponseOriginalSource.MAIN)
         mockDeviceCache(wasSuccessful = false)
         mockOfferingsFactory()
 
@@ -545,12 +551,14 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any<JSONObject>())
         } just Runs
 
         mockBackendResponseError()
         val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
-        every { cache.cachedOfferingsResponse } returns backendResponse
+        every {
+            cache.cachedOfferingsResponse
+        } returns CachedOfferingsResponse(backendResponse, HTTPResponseOriginalSource.MAIN)
         mockDeviceCache(wasSuccessful = false)
         val expectedError = PurchasesError(PurchasesErrorCode.StoreProblemError)
         mockOfferingsFactory(error = expectedError)
@@ -614,12 +622,14 @@ class OfferingsManagerTest {
             cache.cachedOfferings
         } returns null
         every {
-            cache.cacheOfferings(any(), any())
+            cache.cacheOfferings(any(), any<JSONObject>())
         } just Runs
 
         mockBackendResponseError()
         val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
-        every { cache.cachedOfferingsResponse } returns backendResponse
+        every {
+            cache.cachedOfferingsResponse
+        } returns CachedOfferingsResponse(backendResponse, HTTPResponseOriginalSource.MAIN)
         mockDeviceCache(wasSuccessful = false)
         mockOfferingsFactory()
 
@@ -1042,7 +1052,7 @@ class OfferingsManagerTest {
 
     private fun mockDeviceCache(wasSuccessful: Boolean = true) {
         if (wasSuccessful) {
-            every { cache.cacheOfferings(any(), any()) } just Runs
+            every { cache.cacheOfferings(any(), any<String>()) } just Runs
         } else {
             every { cache.forceCacheStale() } just Runs
         }
