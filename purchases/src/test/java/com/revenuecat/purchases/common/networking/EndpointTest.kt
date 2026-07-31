@@ -192,6 +192,14 @@ class EndpointTest {
     }
 
     @Test
+    fun `GetRemoteConfigFallback is the only endpoint targeting a fallback host`() {
+        assertThat(Endpoint.GetRemoteConfigFallback("app").targetsFallbackHost).isTrue
+        assertThat(Endpoint.GetRemoteConfig("app").targetsFallbackHost).isFalse
+        assertThat(Endpoint.GetOfferings("test-user-id").targetsFallbackHost).isFalse
+        assertThat(Endpoint.LogIn.targetsFallbackHost).isFalse
+    }
+
+    @Test
     fun `AliasUsers has correct name`() {
         val endpoint = Endpoint.AliasUsers(userId = "test user-id")
         assertThat(endpoint.name).isEqualTo("alias_users")

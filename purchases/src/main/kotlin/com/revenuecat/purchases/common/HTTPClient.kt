@@ -195,7 +195,7 @@ internal class HTTPClient(
             )
         }
 
-        val isMainBackend = fallbackURLIndex == 0
+        val isMainBackend = fallbackURLIndex == 0 && !endpoint.targetsFallbackHost
 
         var source = apiSourceFailover?.currentSource(endpoint, baseURL, isFallbackAttempt = !isMainBackend)
         var sourceAttempts = 0
@@ -427,7 +427,9 @@ internal class HTTPClient(
             val timeout = timeoutManager.getTimeoutForRequest(
                 // Keyed by the base URL's host, matching what `performAttempt` records the result under.
                 host = baseURL.host,
-                isFallback = isFallbackURL,
+                // Endpoints the domain layer aims at a fallback host are fallback attempts from the first
+                // try, even though the fallback walk hasn't advanced the index.
+                isFallback = isFallbackURL || endpoint.targetsFallbackHost,
                 fallbackAvailable = endpoint.supportsFallbackBaseURLs && appConfig.fallbackBaseURLs.isNotEmpty(),
                 isProxied = appConfig.hasProxyURL,
                 // The re-tiered fail-fast timeouts for main-API requests only apply when API sources are
