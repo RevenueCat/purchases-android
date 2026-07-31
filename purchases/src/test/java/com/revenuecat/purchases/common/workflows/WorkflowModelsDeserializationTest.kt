@@ -4,7 +4,9 @@ package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
+import kotlinx.serialization.descriptors.SerialDescriptor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -111,4 +113,35 @@ internal class WorkflowModelsDeserializationTest {
         assertThat(declaration?.type).isEqualTo(StateDeclaration.ValueType.STRING)
         assertThat(declaration?.defaultValue?.content).isEqualTo("monthly")
     }
+
+    /**
+     * A workflow screen and an offering's paywall are the same backend document, but they decode
+     * through two independent field lists, so a field added to [PaywallComponentsData] alone is
+     * silently dropped on the workflow path (this is how `state_declarations` went missing, which
+     * left every state_condition override inert on funnel paywalls).
+     *
+     * Adding a field to [PaywallComponentsData] fails this test until it is either decoded by
+     * [WorkflowScreen] (and passed through by `WorkflowScreenMapper`) or listed below with a reason.
+     */
+    @Test
+    fun `WorkflowScreen decodes every PaywallComponentsData field`() {
+        val notSentPerScreen = setOf(
+            // Supplied by WorkflowScreenMapper from the screens map key, not by the screen body.
+            "id",
+            // Absent from the backend's per-screen payload (serialize_paywalls_as_screens).
+            "zero_decimal_place_countries",
+            "play_store_product_change_mode",
+            // Sent per screen but not wired through yet: funnel paywalls always use the default.
+            "automatically_scale_font_size",
+        )
+
+        val missing = PaywallComponentsData.serializer().descriptor.serialNames() -
+            WorkflowScreen.serializer().descriptor.serialNames() -
+            notSentPerScreen
+
+        assertThat(missing).isEmpty()
+    }
+
+    private fun SerialDescriptor.serialNames(): Set<String> =
+        (0 until elementsCount).map { getElementName(it) }.toSet()
 }
