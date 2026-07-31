@@ -30,7 +30,7 @@ internal class OfferingsFactory(
     @SuppressWarnings("TooGenericExceptionCaught", "LongMethod")
     fun createOfferings(
         offeringsJSON: JSONObject,
-        originalDataSource: HTTPResponseOriginalSource,
+        originalDataSource: HTTPResponseOriginalSource?,
         loadedFromDiskCache: Boolean,
         onError: (PurchasesError) -> Unit,
         onSuccess: (OfferingsResultData) -> Unit,

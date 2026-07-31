@@ -160,6 +160,18 @@ class OfferingsManagerTest {
     }
 
     @Test
+    fun `a network fetch caches the response body as received`() {
+        mockDeviceCache()
+        mockOfferingsFactory()
+        mockBackendResponseSuccess()
+
+        offeringsManager.fetchAndCacheOfferings(appUserId, appInBackground = false)
+
+        // Verbatim, not a re-serialization of the parsed JSON: that allocation is what OOMed.
+        verify(exactly = 1) { cache.cacheOfferings(testOfferings, ONE_OFFERINGS_RESPONSE) }
+    }
+
+    @Test
     fun `in-flight fetch write lands after a non-invalidating clear (previous behavior preserved)`() {
         every { cache.clearInMemoryOfferingsCache() } just Runs
         mockDeviceCache()
@@ -467,11 +479,13 @@ class OfferingsManagerTest {
 
         assertThat(receivedOfferings).isEqualTo(testOfferings)
 
-        verify(exactly = 1) { cache.cacheOfferings(testOfferings, backendResponse) }
+        // Null payload: the response came from the disk cache, so it must not be re-serialized and
+        // written back on every failed fetch.
+        verify(exactly = 1) { cache.cacheOfferings(testOfferings, null) }
         verify(exactly = 1) {
             offeringsFactory.createOfferings(
                 offeringsJSON = backendResponse,
-                originalDataSource = HTTPResponseOriginalSource.MAIN,
+                originalDataSource = null,
                 loadedFromDiskCache = true,
                 onError = any(),
                 onSuccess = any(),
@@ -1009,7 +1023,11 @@ class OfferingsManagerTest {
         every {
             backend.getOfferings(any(), any(), captureLambda(), any())
         } answers {
-            lambda<(JSONObject, HTTPResponseOriginalSource) -> Unit>().captured.invoke(JSONObject(response), HTTPResponseOriginalSource.MAIN)
+            lambda<(JSONObject, HTTPResponseOriginalSource, String) -> Unit>().captured.invoke(
+                JSONObject(response),
+                HTTPResponseOriginalSource.MAIN,
+                response,
+            )
         }
     }
 

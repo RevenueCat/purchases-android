@@ -700,8 +700,7 @@ class DeviceCacheTest {
     @Test
     fun `cache offerings response works`() {
         val jsonSample = "{\"test-key\":\"test-value\"}"
-        val offeringsResponse = JSONObject(jsonSample)
-        cache.cacheOfferingsResponse(offeringsResponse)
+        cache.cacheOfferingsResponse(jsonSample)
         verifyAll {
             mockEditor.putString(offeringsResponseCacheKey, jsonSample)
             mockEditor.apply()

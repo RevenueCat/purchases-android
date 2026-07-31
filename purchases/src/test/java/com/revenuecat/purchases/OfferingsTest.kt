@@ -851,7 +851,7 @@ class OfferingsTest {
                 JSONObject("{'offerings': [], 'current_offering_id': 'offering_with_broken_product'}"),
                 emptyMap()
             )
-        assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+        assertThat(offerings.originalSource).isNull()
         assertThat(offerings.loadedFromDiskCache).isFalse
 
         val offeringsWithDifferentMetadata = offerings.copy(
@@ -888,7 +888,7 @@ class OfferingsTest {
             products
         )
 
-        assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+        assertThat(offerings.originalSource).isNull()
         assertThat(offerings.loadedFromDiskCache).isFalse
 
         val offeringsWithDifferentData = offerings.copy(

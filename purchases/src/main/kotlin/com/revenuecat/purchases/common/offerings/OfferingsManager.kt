@@ -14,14 +14,12 @@ import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
-import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
-import com.revenuecat.purchases.utils.optNullableString
 import org.json.JSONObject
 import java.util.Date
 import java.util.concurrent.atomic.AtomicInteger
@@ -219,11 +217,11 @@ internal class OfferingsManager(
         backend.getOfferings(
             appUserID,
             appInBackground,
-            { body, originalDataSource ->
+            { body, originalDataSource, responsePayload ->
                 createAndCacheOfferings(
                     offeringsJSON = body,
                     originalDataSource = originalDataSource,
-                    loadedFromDiskCache = false,
+                    responsePayloadToCache = responsePayload,
                     fetchGeneration = fetchGeneration,
                     onError,
                     onSuccess,
@@ -237,20 +235,13 @@ internal class OfferingsManager(
                             handleErrorFetchingOfferings(backendError, onError)
                         } else {
                             warnLog { OfferingStrings.ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE }
-                            val originalDataSource = cachedOfferingsResponse.optNullableString(
-                                OfferingsCache.ORIGINAL_SOURCE_KEY,
-                            )?.let {
-                                try {
-                                    HTTPResponseOriginalSource.valueOf(it)
-                                } catch (e: IllegalArgumentException) {
-                                    errorLog(e) { "Invalid original data source for cached offerings" }
-                                    null
-                                }
-                            } ?: HTTPResponseOriginalSource.MAIN
                             createAndCacheOfferings(
                                 offeringsJSON = cachedOfferingsResponse,
-                                originalDataSource = originalDataSource,
-                                loadedFromDiskCache = true,
+                                // Unknown: the source of the response that originally populated the
+                                // disk cache is not persisted, because persisting it is what forced the
+                                // response body to be re-serialized on every write.
+                                originalDataSource = null,
+                                responsePayloadToCache = null,
                                 fetchGeneration = fetchGeneration,
                                 onError,
                                 onSuccess,
@@ -267,12 +258,14 @@ internal class OfferingsManager(
 
     private fun createAndCacheOfferings(
         offeringsJSON: JSONObject,
-        originalDataSource: HTTPResponseOriginalSource,
-        loadedFromDiskCache: Boolean,
+        originalDataSource: HTTPResponseOriginalSource?,
+        /** Null when this parse came from the disk cache; see [OfferingsCache.cacheOfferings]. */
+        responsePayloadToCache: String?,
         fetchGeneration: Int,
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((OfferingsResultData) -> Unit)? = null,
     ) {
+        val loadedFromDiskCache = responsePayloadToCache == null
         offeringsFactory.createOfferings(
             offeringsJSON,
             originalDataSource,
@@ -294,7 +287,7 @@ internal class OfferingsManager(
                         offeringImagePreDownloader.preDownloadOfferingImages(it)
                     }
                     offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
-                    offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
+                    offeringsCache.cacheOfferings(offeringsResultData.offerings, responsePayloadToCache)
                     val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
                     workflowManager?.onPaywallConfigReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
                 } else {
@@ -302,7 +295,7 @@ internal class OfferingsManager(
                     createAndCacheOfferings(
                         offeringsJSON = offeringsJSON,
                         originalDataSource = originalDataSource,
-                        loadedFromDiskCache = loadedFromDiskCache,
+                        responsePayloadToCache = responsePayloadToCache,
                         fetchGeneration = cacheGeneration.get(),
                         onError = onError,
                         onSuccess = onSuccess,
