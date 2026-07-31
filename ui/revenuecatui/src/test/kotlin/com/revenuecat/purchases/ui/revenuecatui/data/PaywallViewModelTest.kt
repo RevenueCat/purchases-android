@@ -236,7 +236,6 @@ class PaywallViewModelTest {
         every { purchases.track(any()) } just Runs
         coEvery { purchases.awaitSyncPurchases() } returns customerInfo
         every { purchases.preferredUILocaleOverride } returns null
-        every { purchases.useWorkflows } returns false
         coEvery { purchases.resolveWorkflow(any()) } returns WorkflowResolution.NoWorkflow
         coEvery { purchases.awaitGetUiConfig() } returns UiConfig()
 
@@ -1443,7 +1442,6 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         assertThat(model.workflowState.value?.currentStepId).isEqualTo("step-1")
@@ -1501,7 +1499,6 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         coVerify(exactly = 1) { purchases.awaitGetWorkflow(any()) }
@@ -3105,7 +3102,6 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         assertThat(model.workflowState.value?.currentStepId).isEqualTo("step-1")
@@ -3114,7 +3110,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `when useWorkflows is true and offering has a legacy paywall, does not fetch workflow`() {
+    fun `when offering has a legacy paywall, does not fetch workflow`() {
         // defaultOffering has a legacy paywall (offering.paywall != null), so it renders through
         // the legacy path and never hits the workflows endpoint, even with workflows enabled.
         PaywallViewModelImpl(
@@ -3127,14 +3123,13 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
     }
 
     @Test
-    fun `when useWorkflows is true and offering has a legacy paywall, renders legacy paywall`() {
+    fun `when offering has a legacy paywall, renders legacy paywall`() {
         val model = PaywallViewModelImpl(
             MockResourceProvider(),
             purchases,
@@ -3145,14 +3140,13 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
     }
 
     @Test
-    fun `when useWorkflows is true and offering has no legacy paywall, fetches by workflow id from map`() {
+    fun `when offering has no legacy paywall, fetches by workflow id from map`() {
         // offeringWithWPL has no legacy paywall (offering.paywall == null), so it is served through
         // the workflows endpoint. With a mapped workflow id, that id (not the offering id) is used.
         val workflowId = "wfl-real-id"
@@ -3192,7 +3186,6 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
@@ -3201,7 +3194,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `when useWorkflows is true and offering has no mapped workflow, skips fetch and falls back`() {
+    fun `when offering has no mapped workflow, skips fetch and falls back`() {
         // The config endpoint cannot lazily convert an offering id into a workflow. A workflowless offering
         // should therefore fall back immediately to the components paywall already delivered by offerings.
         coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.NoWorkflow
@@ -3216,7 +3209,6 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
@@ -3224,7 +3216,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `when useWorkflows is true and the workflow fetch fails, surfaces the error`() {
+    fun `when the workflow fetch fails, surfaces the error`() {
         // The workflow id resolved but its body or ui config could not be served. Reloading offerings would only
         // yield the offering's skipped-away components, so the paywall surfaces the error instead of silently
         // degrading to a different paywall.
@@ -3245,7 +3237,6 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Error::class.java)
@@ -3253,7 +3244,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `when useWorkflows is true and the workflows topic is disabled by a 4xx, reloads its paywall from offerings`() {
+    fun `when the workflows topic is disabled by a 4xx, reloads its paywall from offerings`() {
         // A 4xx disabled the config endpoint for the session. The initial offering was parsed while workflows
         // were enabled, so it has no components. Reload it from /offerings after the disable to get its paywall.
         val offeringWithoutComponents = offeringWithWPL.copy(paywallComponents = null)
@@ -3274,7 +3265,6 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
@@ -3301,7 +3291,6 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
@@ -3339,7 +3328,6 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
@@ -3351,7 +3339,7 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `when useWorkflows is true and no workflow is mapped with no paywall data, renders the default paywall`() {
+    fun `when no workflow is mapped with no paywall data, renders the default paywall`() {
         val offeringWithoutPaywallData = Offering(
             identifier = "offering-no-paywall-data",
             serverDescription = "description",
@@ -3372,7 +3360,6 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
@@ -3420,7 +3407,6 @@ class PaywallViewModelTest {
             TestData.Constants.currentColorScheme,
             isDarkMode = false,
             shouldDisplayBlock = null,
-            useWorkflowsEndpoint = true,
         )
 
         // The workflow loaded — this is the state InternalPaywall would render.

@@ -167,7 +167,6 @@ internal class PaywallViewModelImpl(
     private val shouldDisplayBlock: ((CustomerInfo) -> Boolean)?,
     preview: Boolean = false,
     private val productChangeCalculator: ProductChangeCalculator = ProductChangeCalculator(purchases),
-    private val useWorkflowsEndpoint: Boolean = purchases.useWorkflows,
     private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel(), PaywallViewModel {
     private val variableDataProvider = VariableDataProvider(resourceProvider, preview)
@@ -828,13 +827,12 @@ internal class PaywallViewModelImpl(
         var selectedOffering = resolvedOfferingSelection.selectedOffering
         var offeringsForExitOfferLookup = resolvedOfferingSelection.offeringsForExitOfferLookup
 
-        // When workflows are enabled, every non-legacy paywall is served through the workflows
-        // path. `offering.paywall == null` is the durable marker of a non-legacy (workflow)
-        // paywall: a legacy v1 paywall always carries `offering.paywall`, and that field stays
-        // even after `paywallComponents` is removed and all V2 paywalls move to workflows. We
-        // deliberately do NOT gate on `paywallComponents`, which is going away.
+        // Every non-legacy paywall is served through the workflows path. `offering.paywall == null` is the
+        // durable marker of a non-legacy (workflow) paywall: a legacy v1 paywall always carries
+        // `offering.paywall`, and that field stays even after `paywallComponents` is removed and all V2
+        // paywalls move to workflows. We deliberately do NOT gate on `paywallComponents`, which is going away.
         val workflowOffering = selectedOffering
-        if (useWorkflowsEndpoint && workflowOffering != null && workflowOffering.paywall == null) {
+        if (workflowOffering != null && workflowOffering.paywall == null) {
             when (val outcome = presentWorkflowOrResolveFallback(workflowOffering, offeringsForExitOfferLookup)) {
                 WorkflowOutcome.Presented -> return
                 is WorkflowOutcome.Fallback -> {
