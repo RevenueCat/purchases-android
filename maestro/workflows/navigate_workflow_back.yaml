@@ -1,6 +1,6 @@
 # Opens a workflow paywall (offering `default_workflows`), advances to screen 2, taps the back
 # button, and asserts screen 1 is shown again.
-# Local-only (not under e2e_tests/, so the CI job does not run it).
+# Run on CI by the `run-maestro-workflow-tests` job.
 #
 # Run locally against the test store:
 #   maestro test -e MAESTRO_STORE=test_store maestro/workflows/navigate_workflow_back.yaml
@@ -26,7 +26,7 @@ env:
     visible: "Start Your Free Week And Reclaim 30+ Minutes Daily"
     timeout: 15000
 - tapOn:
-    text: "Continue"
+    text: "Continue 1/3"
 
 # Screen 2
 - extendedWaitUntil:

@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common
 import android.content.Context
 import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.DangerousSettings
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.finishTransactions
@@ -66,10 +65,6 @@ internal class AppConfig(
         get() = dangerousSettings.uiPreviewMode
     val applyObfuscatedAccountIdToSubscriptionChanges: Boolean
         get() = dangerousSettings.applyObfuscatedAccountIdToSubscriptionChanges
-
-    @OptIn(InternalRevenueCatAPI::class)
-    val useWorkflows: Boolean
-        get() = dangerousSettings.useWorkflows
 
     val usesRemoteConfigAPISources: Boolean
         get() = dangerousSettings.usesRemoteConfigAPISources
