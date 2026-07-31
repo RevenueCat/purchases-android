@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.GetRemoteConfigErrorHandlingBehavior
 import com.revenuecat.purchases.common.JsonProvider
 import com.revenuecat.purchases.common.between
+import com.revenuecat.purchases.common.caching.cacheDuration
 import com.revenuecat.purchases.common.caching.isCacheStale
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
@@ -85,6 +86,7 @@ internal class RemoteConfigManager(
     private val sourceProvider: RemoteConfigSourceProvider,
     private val blobFetcher: RemoteConfigBlobFetcher = RemoteConfigBlobFetcher(blobStore, sourceProvider),
     private val appUserIDProvider: () -> String? = { null },
+    private val cacheDurationProvider: (Boolean) -> Duration = ::cacheDuration,
 ) {
     private val isRefreshing = AtomicBoolean(false)
 
@@ -160,7 +162,7 @@ internal class RemoteConfigManager(
         appUserID: String,
         fetchContext: RemoteConfigFetchContext,
     ) {
-        if (lastRefreshedAt.isCacheStale(appInBackground, dateProvider)) {
+        if (lastRefreshedAt.isCacheStale(appInBackground, dateProvider, cacheDurationProvider)) {
             refreshRemoteConfig(appInBackground, appUserID, fetchContext, staleGated = true)
         }
     }
@@ -415,6 +417,7 @@ internal class RemoteConfigManager(
                 synchronized(cacheLock) {
                     if (epoch.get() != requestEpoch) return@launch
                     lastRefreshedAt = dateProvider.now
+                    lastRefreshAttemptAt = null
                     hasCommittedInitialConfig = true
                     // Only the server's own time is worth persisting, so a response without it writes nothing and
                     // the previous value carries forward. Re-read instead of reusing the request's snapshot, and
@@ -878,6 +881,7 @@ internal class RemoteConfigManager(
             // The staleness gate measures elapsed *local* time (isCacheStale subtracts from dateProvider.now), so
             // it stays on the device clock and is deliberately not the value persisted above.
             lastRefreshedAt = dateProvider.now
+            lastRefreshAttemptAt = null
             hasCommittedInitialConfig = true
             debugLog {
                 "Persisted remote config (domain=${response.domain}, ${response.activeTopics.size} active topics, " +
