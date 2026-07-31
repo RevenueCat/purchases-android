@@ -5,6 +5,9 @@ internal object CustomerInfoStrings {
     const val NO_CACHED_CUSTOMERINFO = "No cached CustomerInfo, fetching from network."
     const val NOT_CACHING_STALER_CUSTOMERINFO = "Received CustomerInfo is older than the cached one. " +
         "Won't be stored in cache."
+    const val FETCHING_WITHOUT_WAITING_FOR_UNSYNCED_PURCHASES = "Found unsynced purchases. Fetching " +
+        "CustomerInfo and posting them in the background, as configured by " +
+        "UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT."
     const val NOT_WAITING_FOR_UNSYNCED_PURCHASES = "Found unsynced purchases. Computing CustomerInfo on " +
         "device and posting them in the background, as configured by " +
         "UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT."

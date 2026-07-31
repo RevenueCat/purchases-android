@@ -1042,7 +1042,7 @@ class EntitlementInfoHelperTest {
     @Test
     fun `retrieveCustomerInfo does not compute customer info on device by default`() {
         every { mockCache.getCachedCustomerInfo(appUserId) } returns null
-        every { mockOfflineEntitlementsManager.canCalculateOfflineCustomerInfo(appUserId) } returns true
+        every { mockCache.hasCachedCustomerInfo(appUserId) } returns false
         setupPostPendingTransactionsHelperSuccess(mockInfo)
         val callbackMock = mockk<ReceiveCustomerInfoCallback>()
         every { callbackMock.onReceived(mockInfo) } just Runs
@@ -1102,7 +1102,7 @@ class EntitlementInfoHelperTest {
     fun `retrieveCustomerInfo with DO_NOT_WAIT waits for posts when computing on device fails`() {
         every { mockAppConfig.unsyncedTransactionsWaitPolicy } returns UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT
         every { mockCache.getCachedCustomerInfo(appUserId) } returns null
-        every { mockOfflineEntitlementsManager.canCalculateOfflineCustomerInfo(appUserId) } returns true
+        every { mockCache.hasCachedCustomerInfo(appUserId) } returns false
         every {
             mockOfflineEntitlementsManager.computeOfflineCustomerInfo(appUserId, any(), captureLambda())
         } answers {
@@ -1126,11 +1126,11 @@ class EntitlementInfoHelperTest {
     }
 
     @Test
-    fun `retrieveCustomerInfo with DO_NOT_WAIT waits for posts when computing on device is not possible`() {
+    fun `retrieveCustomerInfo with DO_NOT_WAIT fetches without waiting when there is a cached customer info`() {
         every { mockAppConfig.unsyncedTransactionsWaitPolicy } returns UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT
-        every { mockCache.getCachedCustomerInfo(appUserId) } returns null
-        every { mockOfflineEntitlementsManager.canCalculateOfflineCustomerInfo(appUserId) } returns false
-        setupPostPendingTransactionsHelperSuccess(mockInfo)
+        every { mockCache.hasCachedCustomerInfo(appUserId) } returns true
+        every { mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount) } just Runs
+        setupBackendMock()
         val callbackMock = mockk<ReceiveCustomerInfoCallback>()
         every { callbackMock.onReceived(mockInfo) } just Runs
 
@@ -1142,8 +1142,16 @@ class EntitlementInfoHelperTest {
             callback = callbackMock,
         )
 
+        // Fetched from the backend rather than computed on the device or awaited behind the posts.
+        verify(exactly = 1) { mockBackend.getCustomerInfo(appUserId, appInBackground, any(), any()) }
         verify(exactly = 0) {
             mockOfflineEntitlementsManager.computeOfflineCustomerInfo(any(), any(), any())
+        }
+        // Only the fire and forget overload is stubbed, so waiting for the sync would fail to answer.
+        verify(exactly = 1) {
+            mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(
+                allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
+            )
         }
         verify(exactly = 1) { callbackMock.onReceived(mockInfo) }
     }
@@ -1160,7 +1168,7 @@ class EntitlementInfoHelperTest {
         every { mockCustomerInfoUpdateHandler.notifyListeners(computedInfo) } just Runs
         every { mockAppConfig.unsyncedTransactionsWaitPolicy } returns UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT
         every { mockCache.getCachedCustomerInfo(appUserId) } returns null
-        every { mockOfflineEntitlementsManager.canCalculateOfflineCustomerInfo(appUserId) } returns true
+        every { mockCache.hasCachedCustomerInfo(appUserId) } returns false
         every { mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount) } just Runs
         every {
             mockOfflineEntitlementsManager.computeOfflineCustomerInfo(appUserId, captureLambda(), any())
