@@ -8,11 +8,13 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.GetRemoteConfigErrorHandlingBehavior
 import com.revenuecat.purchases.common.JsonProvider
+import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.cacheDuration
 import com.revenuecat.purchases.common.caching.isCacheStale
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerFormatException
@@ -457,7 +459,13 @@ internal class RemoteConfigManager(
             listeners.forEach { it.onRemoteConfigDisabled(invalidatedGeneration) }
         }
         if (releaseGuardIfOwned(requestEpoch)) {
-            errorLog(error)
+            if (behavior == GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE) {
+                log(LogIntent.RC_ERROR) {
+                    "Disabling remote config for this session after receiving a 4xx response. Error: $error"
+                }
+            } else {
+                errorLog(error)
+            }
         }
     }
 

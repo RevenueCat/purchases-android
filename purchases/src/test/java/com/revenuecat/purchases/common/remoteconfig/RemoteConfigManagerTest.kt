@@ -5,6 +5,8 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.assertDebugLog
+import com.revenuecat.purchases.assertErrorLog
 import com.revenuecat.purchases.assertWarnLog
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
@@ -963,6 +965,46 @@ class RemoteConfigManagerTest {
         )
 
         verify(exactly = 0) { diskCache.write(any()) }
+    }
+
+    @Test
+    fun `a 4xx logs when remote config is disabled and when a later refresh is skipped`() {
+        every { diskCache.read() } returns null
+        val error = PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request")
+
+        assertErrorLog(
+            "😿‼️ Disabling remote config for this session after receiving a 4xx response. Error: $error",
+        ) {
+            manager.refreshRemoteConfig(
+                appInBackground = false,
+                appUserID = TEST_APP_USER_ID,
+                fetchContext = DEFAULT_FETCH_CONTEXT,
+            )
+            onError.invoke(error, GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE)
+        }
+
+        assertDebugLog("Remote config is disabled for this session (4xx). Skipping refresh.") {
+            manager.refreshRemoteConfig(
+                appInBackground = false,
+                appUserID = TEST_APP_USER_ID,
+                fetchContext = DEFAULT_FETCH_CONTEXT,
+            )
+        }
+    }
+
+    @Test
+    fun `a non-4xx refresh error keeps the generic error log`() {
+        every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
+        val error = PurchasesError(PurchasesErrorCode.UnknownError, "boom")
+
+        assertErrorLog("😿‼️ $error") {
+            manager.refreshRemoteConfig(
+                appInBackground = false,
+                appUserID = TEST_APP_USER_ID,
+                fetchContext = DEFAULT_FETCH_CONTEXT,
+            )
+            onError.invoke(error, GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
+        }
     }
 
     @Test
