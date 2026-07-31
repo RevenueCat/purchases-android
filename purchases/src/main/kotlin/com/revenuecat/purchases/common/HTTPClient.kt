@@ -330,8 +330,8 @@ internal class HTTPClient(
                 requestResult = HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT
             }
         } finally {
-            // The memory tracks how fast a host answers, so a non-error response clears the entry even
-            // when parsing or verifying that response fails afterwards.
+            // The timeoutManager tracks how fast a host answers, so a non-error response clears the
+            // entry even when parsing or verifying that response fails afterwards.
             if (isMainBackend && responseCode?.let { RCHTTPStatusCodes.isSuccessful(it) } == true) {
                 requestResult = HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND
             }
