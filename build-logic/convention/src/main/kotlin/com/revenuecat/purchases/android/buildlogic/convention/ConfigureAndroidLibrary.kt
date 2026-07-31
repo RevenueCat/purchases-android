@@ -60,6 +60,9 @@ internal fun Project.configureAndroidLibrary() {
         }
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_1_8)
+            // Emits interface default bodies as real JVM default methods, so adding a method to a
+            // public interface is not source-breaking for Java implementors. Keeps DefaultImpls: ABI-safe.
+            freeCompilerArgs.add("-Xjvm-default=all-compatibility")
             val kotlinLanguageVersion = libs.getVersion("kotlinLanguage")
             languageVersion.set(
                 KotlinVersion.fromVersion(kotlinLanguageVersion),
