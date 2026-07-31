@@ -71,7 +71,6 @@ class WorkflowScreenMapperTest {
         assertThat(data.componentsLocalizations).isEqualTo(screen.componentsLocalizations)
         assertThat(data.defaultLocaleIdentifier).isEqualTo(screen.defaultLocaleIdentifier)
         assertThat(data.revision).isEqualTo(screen.revision)
-        // Without declarations, an undeclared key never matches: every state_condition override is inert.
         assertThat(data.stateDeclarations).isEqualTo(stateDeclarations)
     }
 

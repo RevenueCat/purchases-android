@@ -6,7 +6,8 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
-import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.descriptors.elementNames
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -115,15 +116,13 @@ internal class WorkflowModelsDeserializationTest {
     }
 
     /**
-     * A workflow screen and an offering's paywall are the same backend document, but they decode
-     * through two independent field lists, so a field added to [PaywallComponentsData] alone is
-     * silently dropped on the workflow path (this is how `state_declarations` went missing, which
-     * left every state_condition override inert on funnel paywalls).
+     * A workflow screen and an offering's paywall are the same backend document decoded through two
+     * independent field lists, which is how `state_declarations` went missing.
      *
-     * Adding a field to [PaywallComponentsData] fails this test until it is either decoded by
-     * [WorkflowScreen] (and passed through by `WorkflowScreenMapper`) or listed below with a reason.
+     * Add the field to [WorkflowScreen] or allow-list it below with a reason.
      */
     @Test
+    @OptIn(ExperimentalSerializationApi::class)
     fun `WorkflowScreen decodes every PaywallComponentsData field`() {
         val notSentPerScreen = setOf(
             // Supplied by WorkflowScreenMapper from the screens map key, not by the screen body.
@@ -135,13 +134,10 @@ internal class WorkflowModelsDeserializationTest {
             "automatically_scale_font_size",
         )
 
-        val missing = PaywallComponentsData.serializer().descriptor.serialNames() -
-            WorkflowScreen.serializer().descriptor.serialNames() -
+        val missing = PaywallComponentsData.serializer().descriptor.elementNames.toSet() -
+            WorkflowScreen.serializer().descriptor.elementNames.toSet() -
             notSentPerScreen
 
         assertThat(missing).isEmpty()
     }
-
-    private fun SerialDescriptor.serialNames(): Set<String> =
-        (0 until elementsCount).map { getElementName(it) }.toSet()
 }
