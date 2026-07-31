@@ -5,13 +5,13 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.ThreadAllocationMeter
 import com.revenuecat.purchases.common.createResult
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
-import java.lang.reflect.Method
 import java.util.Date
 
 /**
@@ -29,12 +29,6 @@ class ETagManagerMemoryTest {
     private companion object {
         const val PAYLOAD_TARGET_BYTES = 5 * 1024 * 1024
         const val URL = "https://api.revenuecat.com/v1/subscribers/appUserID/offerings"
-
-        val managementFactoryGetThreadMXBean: Method =
-            Class.forName("java.lang.management.ManagementFactory").getMethod("getThreadMXBean")
-        val getThreadAllocatedBytesMethod: Method =
-            Class.forName("com.sun.management.ThreadMXBean")
-                .getMethod("getThreadAllocatedBytes", Long::class.javaPrimitiveType)
     }
 
     private val testDate = Date(1675954145L)
@@ -68,17 +62,17 @@ class ETagManagerMemoryTest {
             requestDate = testDate,
         )
 
-        val storeBytes = measureAllocatedBytes {
+        val storeBytes = ThreadAllocationMeter.measure {
             underTest.storeBackendResultIfNoError(URL, result, eTagInResponse = "etag")
         }
 
-        val headerBytes = measureAllocatedBytes {
+        val headerBytes = ThreadAllocationMeter.measure {
             val headers = underTest.getETagHeaders(URL, verificationRequested = false)
             assertThat(headers[HTTPRequest.ETAG_HEADER_NAME]).isEqualTo("etag")
         }
 
         var cacheHit: HTTPResult? = null
-        val notModifiedBytes = measureAllocatedBytes {
+        val notModifiedBytes = ThreadAllocationMeter.measure {
             cacheHit = underTest.getHTTPResultFromCacheOrBackend(
                 responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
                 payload = "",
@@ -156,22 +150,6 @@ class ETagManagerMemoryTest {
         assertThat(warmUpCacheHit!!.payloadText).isEqualTo("{}")
         assertThat(warmUpCacheHit.origin).isEqualTo(HTTPResult.Origin.CACHE)
         warmUpPrefs.edit().clear().commit()
-    }
-
-    private fun measureAllocatedBytes(block: () -> Unit): Long {
-        val threadId = Thread.currentThread().id
-        val before = getThreadAllocatedBytes(threadId)
-        // -1 means allocation tracking is disabled/unsupported on this JVM, which would make every gate
-        // pass vacuously (0 bytes measured). Fail loudly instead.
-        check(before >= 0) { "ThreadMXBean allocation tracking is unavailable; the memory gates cannot run." }
-        block()
-        return getThreadAllocatedBytes(threadId) - before
-    }
-
-    // Reflection because jvmTarget 1.8 hides java.management at compile time; see the class KDoc.
-    private fun getThreadAllocatedBytes(threadId: Long): Long {
-        val threadMXBean = managementFactoryGetThreadMXBean.invoke(null)
-        return getThreadAllocatedBytesMethod.invoke(threadMXBean, threadId) as Long
     }
 
     private fun buildOfferingsLikePayload(): String {
