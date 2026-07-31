@@ -631,6 +631,61 @@ class RemoteConfigBlobFetcherTest {
         )
     }
 
+    @Test
+    fun `a 200 whose body fails mid-read does not clear an already-armed source`() {
+        val bytes = "body".toByteArray()
+        val ref = refOf(bytes)
+        val timeouts = CopyOnWriteArrayList<Int>()
+        val calls = AtomicInteger(0)
+        every { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) } answers {
+            timeouts.add(secondArg<Int>())
+            when (calls.getAndIncrement()) {
+                0 -> throw SocketTimeoutException("timed out") // arms the reduced tier
+                1 -> connectionWithFailingBody(IOException("connection reset"))
+                else -> connection(code = 200, body = bytes)
+            }
+        }
+        val fetcher = realFetcher(provider(blobSource(TEMPLATE)))
+
+        assertThat(download(fetcher, ref)).isFalse()
+        assertThat(download(fetcher, ref)).isFalse()
+        assertThat(download(fetcher, ref)).isTrue()
+
+        // The status line said 200, but the download never completed, so it is no evidence that the
+        // source recovered and the armed memory must survive it.
+        assertThat(timeouts).containsExactly(
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS.toInt(),
+            HTTPTimeoutManager.MAIN_SOURCE_NO_FALLBACK_REDUCED_TIMEOUT_MS.toInt(),
+        )
+    }
+
+    @Test
+    fun `a 200 whose body times out arms the source without recording a success first`() {
+        val ref = refOf("body".toByteArray())
+        val spiedTimeoutManager = spyk(timeoutManager)
+        every { urlConnectionFactory.createConnection(urlFor(ref), any(), any(), any()) } returns
+            connectionWithFailingBody(SocketTimeoutException("timed out"))
+        val fetcher = RemoteConfigBlobFetcher(
+            blobStore,
+            provider(blobSource(TEMPLATE)),
+            spiedTimeoutManager,
+            urlConnectionFactory,
+            scope,
+        )
+
+        assertThat(download(fetcher, ref)).isFalse()
+
+        // The attempt is recorded once, when it is over. Recording the 200 up front would clear the
+        // memory for as long as the body takes to fail, and concurrent downloads would read it.
+        verify(exactly = 0) {
+            spiedTimeoutManager.recordRequestResult(any(), HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND)
+        }
+        verify(exactly = 1) {
+            spiedTimeoutManager.recordRequestResult(any(), HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
+        }
+    }
+
     // endregion
 
     // region helpers
@@ -681,6 +736,14 @@ class RemoteConfigBlobFetcherTest {
         val connection = mockk<UrlConnection>(relaxed = true)
         every { connection.responseCode } returns code
         every { connection.inputStream } returns ByteArrayInputStream(body)
+        return connection
+    }
+
+    /** A connection whose status line says 200 but whose body never arrives. */
+    private fun connectionWithFailingBody(error: IOException): UrlConnection {
+        val connection = mockk<UrlConnection>(relaxed = true)
+        every { connection.responseCode } returns 200
+        every { connection.inputStream } throws error
         return connection
     }
 

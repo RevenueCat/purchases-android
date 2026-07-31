@@ -223,12 +223,14 @@ internal class RemoteConfigBlobFetcher(
         ).toInt()
 
         var connection: UrlConnection? = null
+        var requestResult = HTTPTimeoutManager.RequestResult.OTHER_RESULT
         return try {
             connection = urlConnectionFactory.createConnection(url, timeout, timeout)
             when (val code = connection.responseCode) {
                 HttpURLConnection.HTTP_OK -> {
-                    timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND)
                     val bytes = connection.inputStream.use { it.readBytes() }
+                    // The body arrived, so the host is healthy regardless of what the content turns out to be.
+                    requestResult = HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND
                     verifyAndStore(bytes, ref, url)
                 }
                 HttpURLConnection.HTTP_NOT_FOUND -> {
@@ -242,12 +244,15 @@ internal class RemoteConfigBlobFetcher(
             }
         } catch (e: SocketTimeoutException) {
             errorLog(e) { "Timed out downloading remote config blob '$ref' from $url." }
-            timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
+            requestResult = HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT
             DownloadOutcome.SOURCE_UNHEALTHY
         } catch (e: IOException) {
             errorLog(e) { "Failed to download remote config blob '$ref' from $url." }
             DownloadOutcome.SOURCE_UNHEALTHY
         } finally {
+            // Recorded once, after the attempt is over: a mid-body failure must not leave behind the
+            // clear that reading the headers would have suggested.
+            timeoutManager.recordRequestResult(host, requestResult)
             connection?.disconnect()
         }
     }
