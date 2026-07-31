@@ -110,7 +110,7 @@ internal class OfflineEntitlementsManager(
         onSuccess: (CustomerInfo) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
-        if (!appConfig.enableOfflineEntitlements) {
+        if (!isOfflineEntitlementsEnabled()) {
             onError(
                 PurchasesError(
                     PurchasesErrorCode.UnsupportedError,

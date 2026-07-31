@@ -20,21 +20,21 @@ public abstract class UnsyncedTransactionsWaitPolicy private constructor(private
         public val WAIT: UnsyncedTransactionsWaitPolicy = Policy("WAIT")
 
         /**
-         * When there's no cached [CustomerInfo] to report, it is computed on the device while unsynced
-         * purchases are posted in the background, instead of waiting for those posts. The up to date
-         * [CustomerInfo] is delivered through [UpdatedCustomerInfoListener] once posting finishes.
+         * [CustomerInfo] is never held back by unsynced purchases: those are posted in the background,
+         * and the up to date [CustomerInfo] is delivered through [UpdatedCustomerInfoListener] once
+         * posting finishes.
          *
-         * This covers app launch, where an empty cache is what makes [Purchases.getCustomerInfo] wait
-         * for the posts. Once a [CustomerInfo] is cached, [CacheFetchPolicy.CACHED_OR_FETCHED] and
-         * [CacheFetchPolicy.NOT_STALE_CACHED_OR_CURRENT] report it right away, while a fetch that
-         * insists on current data still waits for pending posts.
+         * While the posts are in flight, [CustomerInfo] is fetched from RevenueCat as usual. On a first
+         * launch, where there's nothing cached to fall back on, it is computed from the purchases on the
+         * device instead, so entitlements from those purchases are reported even though RevenueCat
+         * doesn't know about them yet.
          *
-         * Note that the [CustomerInfo] reported while posting is in flight is computed from the
-         * device's purchases, so it is not verified by RevenueCat's servers, and purchases made
-         * outside of the store (web purchases, for example) are not included in it.
+         * Note that a [CustomerInfo] fetched while a purchase is being posted can report the state
+         * before that purchase, and that one computed on the device is not verified by RevenueCat's
+         * servers and doesn't include purchases made outside of the store (web purchases, for example).
          *
-         * This is best effort: when device side computation isn't possible, [CustomerInfo] waits for
-         * the purchases to be posted, same as with [WAIT].
+         * This is best effort: with nothing cached and no way to compute on the device, [CustomerInfo]
+         * waits for the purchases to be posted, same as with [WAIT].
          */
         @JvmField
         public val DO_NOT_WAIT: UnsyncedTransactionsWaitPolicy = Policy("DO_NOT_WAIT")

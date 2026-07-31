@@ -135,22 +135,45 @@ internal class CustomerInfoHelper(
         allowSharingPlayStoreAccount: Boolean,
         callback: ((CustomerInfoDataResult) -> Unit)? = null,
     ) {
-        if (appConfig.unsyncedTransactionsWaitPolicy == UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT &&
-            offlineEntitlementsManager.canCalculateOfflineCustomerInfo(appUserID)
-        ) {
-            computeCustomerInfoWithoutWaitingForPendingPurchases(
-                appUserID,
-                appInBackground,
-                allowSharingPlayStoreAccount,
-                callback,
-            )
-        } else {
+        if (appConfig.unsyncedTransactionsWaitPolicy != UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT) {
             syncPendingPurchasesAndFetchCustomerInfo(
                 appUserID,
                 appInBackground,
                 allowSharingPlayStoreAccount,
                 callback,
             )
+        } else if (deviceCache.hasCachedCustomerInfo(appUserID)) {
+            fetchCustomerInfoWithoutWaitingForPendingPurchases(
+                appUserID,
+                appInBackground,
+                allowSharingPlayStoreAccount,
+                callback,
+            )
+        } else {
+            computeCustomerInfoWithoutWaitingForPendingPurchases(
+                appUserID,
+                appInBackground,
+                allowSharingPlayStoreAccount,
+                callback,
+            )
+        }
+    }
+
+    /**
+     * Fetches [CustomerInfo] and posts the pending purchases in the background, as configured by
+     * [UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT]. Preferred over computing on the device when there's
+     * a cached [CustomerInfo], since the backend knows about purchases the device can't see.
+     */
+    private fun fetchCustomerInfoWithoutWaitingForPendingPurchases(
+        appUserID: String,
+        appInBackground: Boolean,
+        allowSharingPlayStoreAccount: Boolean,
+        callback: ((CustomerInfoDataResult) -> Unit)? = null,
+    ) {
+        debugLog { CustomerInfoStrings.FETCHING_WITHOUT_WAITING_FOR_UNSYNCED_PURCHASES }
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+        getCustomerInfoFetchOnly(appUserID, appInBackground) { result ->
+            callback?.invoke(CustomerInfoDataResult(result, hadUnsyncedPurchasesBefore = true))
         }
     }
 
