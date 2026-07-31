@@ -12,7 +12,6 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
-import com.revenuecat.purchases.utils.optNullableLong
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
@@ -40,8 +39,13 @@ internal data class ETagCacheMetadata(
     val verificationResult: VerificationResult,
     val isLoadShedderResponse: Boolean,
     val isFallbackURL: Boolean,
-    /** Verified on read to detect truncated payload files; `null` skips the check. */
-    val payloadSizeBytes: Long? = null,
+    /**
+     * CRC32 of the stored payload, verified on read. Kept here rather than inside the payload file
+     * because [ETagManager.storeResult] writes the file before committing these prefs: a
+     * self-describing file would still validate after a crash between the two, serving fresh bytes
+     * under the previous entry's eTag.
+     */
+    val payloadChecksum: Long,
 ) {
     fun serialize(): String {
         return JSONObject().apply {
@@ -52,7 +56,7 @@ internal data class ETagCacheMetadata(
             put(SERIALIZATION_NAME_VERIFICATION_RESULT, verificationResult.name)
             put(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE, isLoadShedderResponse)
             put(SERIALIZATION_NAME_IS_FALLBACK_URL, isFallbackURL)
-            payloadSizeBytes?.let { put(SERIALIZATION_NAME_PAYLOAD_SIZE_BYTES, it) }
+            put(SERIALIZATION_NAME_PAYLOAD_CHECKSUM, payloadChecksum)
         }.toString()
     }
 
@@ -76,9 +80,9 @@ internal data class ETagCacheMetadata(
         private const val SERIALIZATION_NAME_VERIFICATION_RESULT = "verificationResult"
         private const val SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE = "isLoadShedderResponse"
         private const val SERIALIZATION_NAME_IS_FALLBACK_URL = "isFallbackURL"
-        private const val SERIALIZATION_NAME_PAYLOAD_SIZE_BYTES = "payloadSizeBytes"
+        private const val SERIALIZATION_NAME_PAYLOAD_CHECKSUM = "payloadChecksum"
 
-        fun fromResult(result: HTTPResult, eTagData: ETagData): ETagCacheMetadata {
+        fun fromResult(result: HTTPResult, eTagData: ETagData, payloadChecksum: Long): ETagCacheMetadata {
             return ETagCacheMetadata(
                 eTagData = eTagData,
                 responseCode = result.responseCode,
@@ -86,10 +90,14 @@ internal data class ETagCacheMetadata(
                 verificationResult = result.verificationResult,
                 isLoadShedderResponse = result.isLoadShedderResponse,
                 isFallbackURL = result.isFallbackURL,
+                payloadChecksum = payloadChecksum,
             )
         }
 
-        /** Null when [serialized] is unparseable, including entries from older SDK formats. */
+        /**
+         * Null when [serialized] is unparseable, including older formats that stored a payload size
+         * instead of a checksum, which therefore read as a miss rather than being served unverified.
+         */
         @Suppress("SwallowedException")
         fun deserialize(serialized: String): ETagCacheMetadata? {
             return try {
@@ -112,7 +120,7 @@ internal data class ETagCacheMetadata(
                     verificationResult = verificationResult,
                     isLoadShedderResponse = jsonObject.optBoolean(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE, false),
                     isFallbackURL = jsonObject.optBoolean(SERIALIZATION_NAME_IS_FALLBACK_URL, false),
-                    payloadSizeBytes = jsonObject.optNullableLong(SERIALIZATION_NAME_PAYLOAD_SIZE_BYTES),
+                    payloadChecksum = jsonObject.getLong(SERIALIZATION_NAME_PAYLOAD_CHECKSUM),
                 )
             } catch (e: JSONException) {
                 null
@@ -201,11 +209,10 @@ internal class ETagManager(
     internal fun getStoredResult(urlString: String): HTTPResult? {
         val serialized = prefs.value.getString(urlString, null) ?: return null
         val metadata = ETagCacheMetadata.deserialize(serialized) ?: return null
-        // Lock-free read: a store racing between the metadata and payload reads fails the size check,
-        // costing one spurious miss plus its refresh retry. The size check itself is what turns a
-        // truncated file into a miss here: downstream, HTTPResult.body swallows the parse failure and
-        // the server keeps answering 304 for its eTag, so a bad entry would never heal.
-        val payload = payloadStore.read(urlString, metadata.payloadSizeBytes) ?: return null
+        // Lock-free read: a store racing this fails the checksum, costing one spurious miss plus its
+        // refresh retry. Without that check a bad entry never heals, because HTTPResult.body swallows
+        // the parse failure and the server keeps answering 304 for its eTag.
+        val payload = payloadStore.read(urlString, metadata.payloadChecksum) ?: return null
         return metadata.toHTTPResult(payload)
     }
 
@@ -227,27 +234,20 @@ internal class ETagManager(
         payloadStore.clear()
     }
 
+    /**
+     * Payload file first, metadata only once that write succeeded: metadata present always implies its
+     * payload was written.
+     */
     @Synchronized
     private fun storeResult(
         urlString: String,
         result: HTTPResult,
         eTag: String,
     ) {
-        persistEntry(
-            urlString,
-            ETagCacheMetadata.fromResult(result, ETagData(eTag, dateProvider.now)),
-            result.payloadText,
-        )
-    }
-
-    /**
-     * Payload file first, metadata only once that write succeeded: metadata present always implies its
-     * payload was written.
-     */
-    private fun persistEntry(urlString: String, metadata: ETagCacheMetadata, payload: String) {
-        val payloadSizeBytes = payloadStore.write(urlString, payload) ?: return
+        val payloadChecksum = payloadStore.write(urlString, result.payloadText) ?: return
+        val metadata = ETagCacheMetadata.fromResult(result, ETagData(eTag, dateProvider.now), payloadChecksum)
         prefs.value.edit()
-            .putString(urlString, metadata.copy(payloadSizeBytes = payloadSizeBytes).serialize())
+            .putString(urlString, metadata.serialize())
             .apply()
     }
 
