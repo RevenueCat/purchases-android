@@ -195,7 +195,7 @@ internal class HTTPClient(
             )
         }
 
-        val isMainBackend = fallbackURLIndex == 0
+        val isMainBackend = fallbackURLIndex == 0 && !endpoint.targetsFallbackHost
 
         var source = apiSourceFailover?.currentSource(endpoint, baseURL, isFallbackAttempt = !isMainBackend)
         var sourceAttempts = 0
@@ -305,6 +305,7 @@ internal class HTTPClient(
         var callResult: HTTPResult? = null
         var requestResult: HTTPTimeoutManager.RequestResult = HTTPTimeoutManager.RequestResult.OTHER_RESULT
         var exceptionHit: IOException? = null
+        var responseCode: Int? = null
 
         try {
             callResult = performCall(
@@ -315,20 +316,26 @@ internal class HTTPClient(
                 postFieldsToSign,
                 requestHeaders,
                 refreshETag,
+                onResponseReceived = { responseCode = it },
             )
             callSuccessful = true
-
-            if (isMainBackend && callResult?.let { RCHTTPStatusCodes.isSuccessful(it.responseCode) } == true) {
-                requestResult = HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND
-            }
         } catch (e: IOException) {
             exceptionHit = e
-            if (e is SocketTimeoutException && isMainBackend && fallbackAvailable) {
-                requestResult =
-                    HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
+            // With remote-config API sources enabled, record a timeout for any main-source attempt that timed
+            // out, regardless of fallback-URL support. When disabled, keep the legacy behavior of only arming
+            // the fail-fast memory for endpoints that support fallback URLs.
+            val timedOutOnMainSource = e is SocketTimeoutException && isMainBackend
+            val shouldArmFailFastMemory = appConfig.usesRemoteConfigAPISources || fallbackAvailable
+            if (timedOutOnMainSource && shouldArmFailFastMemory) {
+                requestResult = HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT
             }
         } finally {
-            timeoutManager.recordRequestResult(requestResult)
+            // The timeoutManager tracks how fast a host answers, so a non-error response clears the
+            // entry even when parsing or verifying that response fails afterwards.
+            if (isMainBackend && responseCode?.let { RCHTTPStatusCodes.isSuccessful(it) } == true) {
+                requestResult = HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND
+            }
+            timeoutManager.recordRequestResult(requestBaseURL.host, requestResult)
 
             trackHttpRequestPerformedIfNeeded(
                 requestBaseURL,
@@ -373,6 +380,7 @@ internal class HTTPClient(
         postFieldsToSign: List<Pair<String, String>>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean,
+        onResponseReceived: (responseCode: Int) -> Unit,
     ): HTTPResult? {
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
         val path = endpoint.getPath(useFallback = isFallbackURL)
@@ -421,8 +429,16 @@ internal class HTTPClient(
             }
 
             val timeout = timeoutManager.getTimeoutForRequest(
-                isFallback = isFallbackURL,
+                // Keyed by the base URL's host, matching what `performAttempt` records the result under.
+                host = baseURL.host,
+                // Endpoints the domain layer aims at a fallback host are fallback attempts from the first
+                // try, even though the fallback walk hasn't advanced the index.
+                isFallback = isFallbackURL || endpoint.targetsFallbackHost,
                 fallbackAvailable = endpoint.supportsFallbackBaseURLs && appConfig.fallbackBaseURLs.isNotEmpty(),
+                isProxied = appConfig.hasProxyURL,
+                // The re-tiered fail-fast timeouts for main-API requests only apply when API sources are
+                // enabled. Blob-source downloads opt in independently of this setting.
+                reTieredTimeoutsEnabled = appConfig.usesRemoteConfigAPISources,
             )
 
             connection = getConnection(httpRequest, timeout)
@@ -455,6 +471,10 @@ internal class HTTPClient(
         }
 
         debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
+        // The response arrived in full. Everything below only inspects it, so failures from here on say
+        // nothing about how responsive the host is.
+        onResponseReceived(responseCode)
+
         if (payloadBytes == null &&
             (responseCode != RCHTTPStatusCodes.NO_CONTENT || !endpoint.expectsRCFormatResponse)
         ) {

@@ -191,6 +191,14 @@ internal sealed class Endpoint(
         get() = fallbackPath != null
 
     /**
+     * Whether the domain layer aims this endpoint at a fallback host instead of the main API host.
+     * Such attempts are fallback attempts from the very first try, even though [HTTPClient]'s own
+     * fallback walk never started, so they must not be treated as main-source requests.
+     */
+    val targetsFallbackHost: Boolean
+        get() = this is GetRemoteConfigFallback
+
+    /**
      * Whether this endpoint resolves its base host from the API source provider (the main-API host
      * list, with failover) rather than the app's static base URL. Endpoints hosted elsewhere
      * (diagnostics, events) opt out.
