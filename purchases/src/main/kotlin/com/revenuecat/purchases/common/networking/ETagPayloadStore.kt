@@ -4,6 +4,7 @@ import android.content.Context
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.models.Checksum
+import com.revenuecat.purchases.models.toHexString
 import java.io.DataInputStream
 import java.io.File
 import java.io.FileInputStream
@@ -15,6 +16,14 @@ import java.nio.ByteBuffer
 import java.nio.CharBuffer
 import java.nio.charset.CoderResult
 import java.nio.charset.CodingErrorAction
+import java.security.DigestOutputStream
+import java.security.MessageDigest
+
+@OptIn(InternalRevenueCatAPI::class)
+internal data class ETagPayloadInfo(
+    val sizeBytes: Long,
+    val checksum: Checksum,
+)
 
 /**
  * Stores ETag cache payloads as one file per URL, so multi-MB payloads are neither re-encoded nor
@@ -22,9 +31,8 @@ import java.nio.charset.CodingErrorAction
  *
  * Writes stream through fixed-size buffers into a temp file committed by atomic rename (androidx
  * AtomicFile is unsafe here: its openRead deletes a concurrent writer's in-flight file and its
- * finishWrite hides rename failures). Writes are not fsynced; callers verify the size [write] returns
- * on [read] instead, turning files truncated by power loss into misses. A stale same-length file is
- * accepted: it serves the previous complete payload.
+ * finishWrite hides rename failures). Writes are not fsynced; callers verify the size and SHA-256
+ * [write] returns on [read] instead, turning truncated, stale, or corrupt files into misses.
  *
  * `null` reads are cache misses that self-heal via [ETagManager]'s refresh retry; the OS may purge
  * [Context.getCacheDir]. No eviction beyond overwrite and [clear], at parity with the prefs store.
@@ -36,10 +44,10 @@ internal class ETagPayloadStore(
     constructor(context: Context) : this(File(File(context.cacheDir, VENDOR_DIRECTORY), DIRECTORY_NAME))
 
     /**
-     * Returns the payload's size in bytes once the file is in place, or `null` when the write failed;
-     * callers must not persist metadata for a failed write.
+     * Returns the payload's integrity metadata once the file is in place, or `null` when the write
+     * failed; callers must not persist metadata for a failed write.
      */
-    fun write(urlString: String, payload: String): Long? {
+    fun write(urlString: String, payload: String): ETagPayloadInfo? {
         if (!directory.exists()) {
             deleteTrash()
             if (!directory.mkdirs()) {
@@ -52,8 +60,20 @@ internal class ETagPayloadStore(
         // Same-URL writes are serialized by [ETagManager].
         val tempFile = File(directory, file.name + TEMP_SUFFIX)
         return try {
-            FileOutputStream(tempFile).use { out -> encodeTo(out, payload) }
-            if (tempFile.renameTo(file)) file.length() else null
+            val digest = MessageDigest.getInstance(Checksum.Algorithm.SHA256.algorithmName)
+            FileOutputStream(tempFile).use { fileOut ->
+                DigestOutputStream(fileOut, digest).use { digestOut ->
+                    encodeTo(digestOut, payload)
+                }
+            }
+            val info = ETagPayloadInfo(
+                sizeBytes = tempFile.length(),
+                checksum = Checksum(
+                    Checksum.Algorithm.SHA256,
+                    digest.digest().toHexString(),
+                ),
+            )
+            if (tempFile.renameTo(file)) info else null
         } catch (e: IOException) {
             errorLog(e) { "Failed to persist ETag payload to disk." }
             null
@@ -61,29 +81,27 @@ internal class ETagPayloadStore(
     }
 
     /**
-     * Returns the payload, or `null` for a miss: no file, undecodable bytes, or a size mismatch
-     * against [expectedSizeBytes] (the size [write] returned; `null` skips the check).
+     * Returns the payload, or `null` for a miss: no file or an integrity mismatch against
+     * [expectedInfo] (the metadata [write] returned).
      */
     @Suppress("SwallowedException", "ReturnCount")
-    fun read(urlString: String, expectedSizeBytes: Long? = null): String? {
+    fun read(urlString: String, expectedInfo: ETagPayloadInfo): String? {
         return try {
             FileInputStream(fileFor(urlString)).use { input ->
                 // The open descriptor pins one file identity, so a concurrent rename cannot swap the
                 // payload between the size check and the read.
                 val sizeBytes = input.channel.size()
                 val size = sizeBytes.toInt()
-                if ((expectedSizeBytes != null && sizeBytes != expectedSizeBytes) || size.toLong() != sizeBytes) {
+                if (sizeBytes != expectedInfo.sizeBytes || size.toLong() != sizeBytes) {
                     return null
                 }
                 val bytes = ByteArray(size)
                 DataInputStream(input).readFully(bytes)
-                // Strict decoding (unlike String(bytes), which silently substitutes U+FFFD) so a corrupt
-                // file reads back as a cache miss instead of serving garbage as a valid cached response.
-                Charsets.UTF_8.newDecoder()
-                    .onMalformedInput(CodingErrorAction.REPORT)
-                    .onUnmappableCharacter(CodingErrorAction.REPORT)
-                    .decode(ByteBuffer.wrap(bytes))
-                    .toString()
+                val actualChecksum = Checksum.generate(bytes, Checksum.Algorithm.SHA256)
+                if (actualChecksum != expectedInfo.checksum) return null
+                // The checksum proves these bytes are identical to the strictly encoded write, so direct
+                // construction is safe and avoids the decoder's full UTF-16 CharBuffer allocation.
+                String(bytes, Charsets.UTF_8)
             }
         } catch (e: FileNotFoundException) {
             // No payload for this URL: a plain cache miss, not an error.

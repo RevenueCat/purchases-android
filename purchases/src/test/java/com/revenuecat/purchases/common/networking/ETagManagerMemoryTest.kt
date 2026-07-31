@@ -15,7 +15,7 @@ import org.robolectric.annotation.Config
 import java.util.Date
 
 /**
- * Measures the allocation cost of the ETag cache hot paths with an offerings-sized payload.
+ * Measures the allocation cost of the ETag cache hot paths with large ASCII-heavy payloads.
  * Allocation is tracked per-thread through the JDK's `com.sun.management.ThreadMXBean#getThreadAllocatedBytes`,
  * which counts cumulative allocated bytes and is unaffected by GC timing. Accessed via reflection because this
  * module's Kotlin JVM target (1.8) restricts the compile-time JDK API surface to `java.base`, which doesn't
@@ -27,13 +27,14 @@ import java.util.Date
 class ETagManagerMemoryTest {
 
     private companion object {
-        const val PAYLOAD_TARGET_BYTES = 5 * 1024 * 1024
+        const val FIVE_MIB = 5 * 1024 * 1024
+        const val TEN_MIB = 10 * 1024 * 1024
+        const val TWENTY_MIB = 20 * 1024 * 1024
         const val URL = "https://api.revenuecat.com/v1/subscribers/appUserID/offerings"
     }
 
     private val testDate = Date(1675954145L)
     private lateinit var underTest: ETagManager
-    private lateinit var payload: String
 
     @Before
     fun setup() {
@@ -48,12 +49,27 @@ class ETagManagerMemoryTest {
                     get() = testDate
             },
         )
-        payload = buildOfferingsLikePayload()
     }
 
     @Test
-    fun `measure allocations of store and read paths with an offerings-sized payload`() {
-        warmUpMeasuredCodePaths()
+    fun `a 5 MiB 304 cache read allocates less than three times the payload bytes`() {
+        profileAllocations(FIVE_MIB)
+    }
+
+    @Test
+    fun `a 10 MiB 304 cache read allocates less than three times the payload bytes`() {
+        profileAllocations(TEN_MIB)
+    }
+
+    @Test
+    fun `a 20 MiB 304 cache read allocates less than three times the payload bytes`() {
+        profileAllocations(TWENTY_MIB)
+    }
+
+    private fun profileAllocations(payloadTargetBytes: Int) {
+        warmUpMeasuredCodePaths(payloadTargetBytes)
+        val payload = buildAsciiPayload(payloadTargetBytes)
+        val payloadSizeBytes = payload.toByteArray().size
 
         val result = HTTPResult.createResult(
             responseCode = RCHTTPStatusCodes.SUCCESS,
@@ -90,22 +106,21 @@ class ETagManagerMemoryTest {
         assertThat(cacheHit!!.origin).isEqualTo(HTTPResult.Origin.CACHE)
 
         // Regression gates for #3628. Store and header reads must not allocate anywhere near payload size
-        // (the legacy combined format allocated tens of MB per operation on this 5MB payload; the store's
+        // (the legacy combined format allocated tens of MB per operation on a 5 MiB payload; the store's
         // encoder writes through a fixed buffer). The 304 read rebuilds the payload string from its file, so
         // its cost is payload-proportional by design (the deliberate tradeoff for not retaining the payload
         // in the SharedPreferences in-memory map for the process lifetime) but bounded to a small multiple.
         val maxAllowedBytes = 1024L * 1024L
         assertThat(storeBytes).isLessThan(maxAllowedBytes)
         assertThat(headerBytes).isLessThan(maxAllowedBytes)
-        // Deterministic (exact allocation counting, no timing): file byte[] (~1x payload.length for
-        // ASCII) + decoder char[] (2x) + String copy (up to 2x) = ~5x length, ~3.9x measured; 6x allows
-        // for JDKs without compact strings.
-        assertThat(notModifiedBytes).isLessThan(3L * payload.length * Char.SIZE_BYTES)
+        // Deterministic exact allocation counting, with no timing or GC dependency. The read holds the
+        // file byte[] and constructs the String directly, so it stays below three payload-sized arrays.
+        assertThat(notModifiedBytes).isLessThan(3L * payloadSizeBytes)
 
-        println("ETagManager memory profile (payload ${payload.length} chars, ~${payload.length / (1024 * 1024)}MB)")
-        println("  storeBackendResultIfNoError: ${storeBytes / 1024} KB allocated")
-        println("  getETagHeaders (warm cache): ${headerBytes / 1024} KB allocated")
-        println("  304 cache-hit read:          ${notModifiedBytes / 1024} KB allocated")
+        println("ETagManager memory profile (payload $payloadSizeBytes bytes, ~${payloadSizeBytes / (1024 * 1024)} MiB)")
+        println("  storeBackendResultIfNoError: $storeBytes bytes (${storeBytes / 1024} KiB) allocated")
+        println("  getETagHeaders (warm cache): $headerBytes bytes (${headerBytes / 1024} KiB) allocated")
+        println("  304 cache-hit read:          $notModifiedBytes bytes (${notModifiedBytes / 1024} KiB) allocated")
     }
 
     /**
@@ -113,9 +128,12 @@ class ETagManagerMemoryTest {
      * against a separate prefs file and URL, so first-use classloading/static-init allocations
      * (multi-MB) are not misattributed to whichever measured operation runs first.
      */
-    private fun warmUpMeasuredCodePaths() {
+    private fun warmUpMeasuredCodePaths(payloadTargetBytes: Int) {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val warmUpPrefs = context.getSharedPreferences("etag_memory_test_warmup", Context.MODE_PRIVATE)
+        val warmUpPrefs = context.getSharedPreferences(
+            "etag_memory_test_warmup_$payloadTargetBytes",
+            Context.MODE_PRIVATE,
+        )
         warmUpPrefs.edit().clear().commit()
         val warmUpManager = ETagManager(
             context,
@@ -125,7 +143,7 @@ class ETagManagerMemoryTest {
                     get() = testDate
             },
         )
-        val warmUpUrl = "https://api.revenuecat.com/v1/warmup"
+        val warmUpUrl = "https://api.revenuecat.com/v1/warmup/$payloadTargetBytes"
         val warmUpResult = HTTPResult.createResult(
             responseCode = RCHTTPStatusCodes.SUCCESS,
             payload = "{}",
@@ -152,22 +170,13 @@ class ETagManagerMemoryTest {
         warmUpPrefs.edit().clear().commit()
     }
 
-    private fun buildOfferingsLikePayload(): String {
-        val builder = StringBuilder(PAYLOAD_TARGET_BYTES + 1024)
-        builder.append("{\"offerings\":[")
-        var index = 0
-        while (builder.length < PAYLOAD_TARGET_BYTES) {
-            if (index > 0) builder.append(',')
-            builder.append(
-                "{\"identifier\":\"offering_$index\"," +
-                    "\"description\":\"paywall \\\"v2\\\" config\"," +
-                    "\"metadata\":{\"title\":\"Premium\",\"cta\":\"Subscribe now\"}," +
-                    "\"packages\":[{\"identifier\":\"monthly\"," +
-                    "\"platform_product_identifier\":\"prod_$index\"}]}",
-            )
-            index++
+    private fun buildAsciiPayload(targetBytes: Int): String {
+        return buildString(targetBytes) {
+            append("{\"data\":\"")
+            while (length < targetBytes - 2) {
+                append('a')
+            }
+            append("\"}")
         }
-        builder.append("]}")
-        return builder.toString()
     }
 }

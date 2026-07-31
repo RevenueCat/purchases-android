@@ -9,6 +9,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.VerificationResult.*
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.createResult
+import com.revenuecat.purchases.models.Checksum
 import com.revenuecat.purchases.utils.Responses
 import io.mockk.Runs
 import io.mockk.every
@@ -218,7 +219,7 @@ class ETagManagerTest {
         val eTagHeaders = underTest.getETagHeaders(urlString, verificationRequested = false)
 
         assertThat(eTagHeaders[HTTPRequest.ETAG_HEADER_NAME]).isEqualTo("etag")
-        verify(exactly = 0) { payloadStore.read(any()) }
+        verify(exactly = 0) { payloadStore.read(any(), any()) }
     }
 
     @Test
@@ -351,7 +352,8 @@ class ETagManagerTest {
 
         // Byte-for-byte what we received: never escaped, and never written into the prefs JSON.
         // (ETagManagerMemoryTest gates the allocation cost of this path.)
-        assertThat(payloadStore.read(urlString)).isEqualTo(payload)
+        val metadata = storedMetadata(urlString)
+        assertThat(payloadStore.read(urlString, metadata.payloadInfo())).isEqualTo(payload)
         assertThat(putStringKeys).containsExactly(urlString)
     }
 
@@ -367,11 +369,12 @@ class ETagManagerTest {
 
     @Test
     fun `Clearing caches removes all shared preferences and stored payloads`() {
-        payloadStore.write("http://localhost:100/v1/subscribers/appUserID", "payload")
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        val info = payloadStore.write(urlString, "payload")!!
 
         underTest.clearCaches()
 
-        assertThat(payloadStore.read("http://localhost:100/v1/subscribers/appUserID")).isNull()
+        assertThat(payloadStore.read(urlString, info)).isNull()
         verify {
             mockEditor.clear()
         }
@@ -668,6 +671,7 @@ class ETagManagerTest {
             isLoadShedderResponse = true,
             isFallbackURL = true,
             payloadSizeBytes = 12345L,
+            payloadChecksum = Checksum(Checksum.Algorithm.SHA256, "abc123"),
         )
 
         val deserialized = ETagCacheMetadata.deserialize(metadata.serialize())
@@ -697,6 +701,47 @@ class ETagManagerTest {
     }
 
     @Test
+    fun `metadata without a payload checksum produces empty ETag headers without reading the payload`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        val legacyMetadata = ETagCacheMetadata.fromResult(
+            HTTPResult.createResult(origin = HTTPResult.Origin.CACHE),
+            ETagData("legacy-etag", testDate),
+        ).copy(payloadSizeBytes = 123L)
+        every { mockedPrefs.getString(urlString, null) } returns legacyMetadata.serialize()
+
+        val headers = underTest.getETagHeaders(urlString, verificationRequested = false)
+
+        assertThat(headers[HTTPRequest.ETAG_HEADER_NAME]).isEmpty()
+        assertThat(headers[HTTPRequest.LAST_REFRESH_TIME_HEADER_NAME]).isNull()
+        verify(exactly = 0) { payloadStore.read(any(), any()) }
+    }
+
+    @Test
+    fun `a 304 with metadata lacking a payload checksum returns null without reading the payload`() {
+        val urlString = "http://localhost:100/v1/subscribers/appUserID"
+        val legacyMetadata = ETagCacheMetadata.fromResult(
+            HTTPResult.createResult(origin = HTTPResult.Origin.CACHE),
+            ETagData("legacy-etag", testDate),
+        ).copy(payloadSizeBytes = 123L)
+        every { mockedPrefs.getString(urlString, null) } returns legacyMetadata.serialize()
+
+        val result = underTest.getHTTPResultFromCacheOrBackend(
+            responseCode = RCHTTPStatusCodes.NOT_MODIFIED,
+            payload = "",
+            eTagHeader = "legacy-etag",
+            urlString = urlString,
+            refreshETag = false,
+            requestDate = testDate,
+            verificationResult = NOT_REQUESTED,
+            isLoadShedderResponse = false,
+            isFallbackURL = false,
+        )
+
+        assertThat(result).isNull()
+        verify(exactly = 0) { payloadStore.read(any(), any()) }
+    }
+
+    @Test
     fun `a v2 entry with an unknown verification result reads as a miss`() {
         val urlString = "http://localhost:100/v1/subscribers/appUserID"
         val metadata = ETagCacheMetadata.fromResult(
@@ -715,12 +760,15 @@ class ETagManagerTest {
     fun `a payload file whose size does not match the metadata is treated as a miss`() {
         val urlString = "http://localhost:100/v1/subscribers/appUserID"
         val payload = "{\"key\":\"value\"}"
+        val info = payloadStore.write(urlString, payload)!!
         val metadata = ETagCacheMetadata.fromResult(
             HTTPResult.createResult(payload = payload, origin = HTTPResult.Origin.CACHE),
             ETagData("etag", testDate),
-        ).copy(payloadSizeBytes = payload.length + 100L)
+        ).copy(
+            payloadSizeBytes = info.sizeBytes + 100L,
+            payloadChecksum = info.checksum,
+        )
         every { mockedPrefs.getString(urlString, null) } returns metadata.serialize()
-        payloadStore.write(urlString, payload)
 
         assertThat(underTest.getStoredResult(urlString)).isNull()
     }
@@ -859,14 +907,15 @@ class ETagManagerTest {
         httpResult: HTTPResult = HTTPResult.createResult(origin = HTTPResult.Origin.CACHE)
     ) {
         val metadata = expectedETag?.let {
-            ETagCacheMetadata.fromResult(httpResult, ETagData(expectedETag, expectedLastRefreshTime))
+            val info = payloadStore.write(urlString, httpResult.payloadText)!!
+            ETagCacheMetadata.fromResult(httpResult, ETagData(expectedETag, expectedLastRefreshTime)).copy(
+                payloadSizeBytes = info.sizeBytes,
+                payloadChecksum = info.checksum,
+            )
         }
         every {
             mockedPrefs.getString(urlString, null)
         } returns metadata?.serialize()
-        if (metadata != null) {
-            payloadStore.write(urlString, httpResult.payloadText)
-        }
     }
 
     private fun assertStoredResponse(
@@ -883,7 +932,22 @@ class ETagManagerTest {
         assertThat(metadata.eTagData.lastRefreshTime?.time).isEqualTo(lastRefreshTime?.time)
         assertThat(metadata.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
         assertThat(metadata.payloadSizeBytes).isEqualTo(responsePayload.toByteArray().size.toLong())
+        assertThat(metadata.payloadChecksum).isEqualTo(
+            Checksum.generate(responsePayload.toByteArray(), Checksum.Algorithm.SHA256),
+        )
 
-        assertThat(payloadStore.read(urlString)).isEqualTo(responsePayload)
+        assertThat(payloadStore.read(urlString, metadata.payloadInfo())).isEqualTo(responsePayload)
+    }
+
+    private fun storedMetadata(urlString: String): ETagCacheMetadata {
+        val storedByKey = putStringKeys.zip(putStringValues).toMap()
+        return ETagCacheMetadata.deserialize(storedByKey.getValue(urlString))!!
+    }
+
+    private fun ETagCacheMetadata.payloadInfo(): ETagPayloadInfo {
+        return ETagPayloadInfo(
+            sizeBytes = payloadSizeBytes!!,
+            checksum = payloadChecksum!!,
+        )
     }
 }
