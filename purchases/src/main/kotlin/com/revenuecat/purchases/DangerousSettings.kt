@@ -29,21 +29,13 @@ public class DangerousSettings internal constructor(
      * remote-config-driven host resolution is being validated.
      */
     internal val usesRemoteConfigAPISources: Boolean = false,
-
-    /**
-     * Enables RevenueCat Workflows (multipage paywalls). Internal RevenueCat use only.
-     */
-    @InternalRevenueCatAPI
-    public val useWorkflows: Boolean = false,
 ) : Parcelable {
-    @OptIn(InternalRevenueCatAPI::class)
     public constructor(autoSyncPurchases: Boolean = true) : this(
         autoSyncPurchases = autoSyncPurchases,
         customEntitlementComputation = false,
         uiPreviewMode = false,
         applyObfuscatedAccountIdToSubscriptionChanges = false,
         usesRemoteConfigAPISources = false,
-        useWorkflows = false,
     )
 
     public companion object {
@@ -59,20 +51,6 @@ public class DangerousSettings internal constructor(
             customEntitlementComputation = false,
             uiPreviewMode = true,
             applyObfuscatedAccountIdToSubscriptionChanges = false,
-        )
-
-        /**
-         * Creates a [DangerousSettings] with RevenueCat Workflows (multipage paywalls) enabled.
-         * Internal RevenueCat use only; behavior may change without warning.
-         */
-        @InternalRevenueCatAPI
-        @JvmStatic
-        public fun forWorkflows(autoSyncPurchases: Boolean = true): DangerousSettings = DangerousSettings(
-            autoSyncPurchases = autoSyncPurchases,
-            customEntitlementComputation = false,
-            uiPreviewMode = false,
-            applyObfuscatedAccountIdToSubscriptionChanges = false,
-            useWorkflows = true,
         )
     }
 }

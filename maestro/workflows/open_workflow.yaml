@@ -1,6 +1,6 @@
 # Opens a workflow paywall (offering `default_workflows`), navigates all three screens via the
 # "Continue" button, purchases on the last one, then asserts the entitlement unlocks.
-# Local-only (not under e2e_tests/, so the CI job does not run it).
+# Run on CI by the `run-maestro-workflow-tests` job.
 #
 # Run locally against the test store:
 #   maestro test -e MAESTRO_STORE=test_store maestro/workflows/open_workflow.yaml
@@ -27,7 +27,7 @@ env:
     timeout: 15000
 - takeScreenshot: "open_workflow - screen 1"
 - tapOn:
-    text: "Continue"
+    text: "Continue 1/3"
 
 # Screen 2
 - extendedWaitUntil:
@@ -35,7 +35,7 @@ env:
     timeout: 15000
 - takeScreenshot: "open_workflow - screen 2"
 - tapOn:
-    text: "Continue"
+    text: "Continue 2/3"
 
 # Paywall screen; the last Continue starts the purchase.
 - extendedWaitUntil:
@@ -43,7 +43,7 @@ env:
     timeout: 15000
 - takeScreenshot: "open_workflow - paywall screen"
 - tapOn:
-    text: "Continue"
+    text: "Continue 3/3"
 
 # Test store purchase confirmation.
 - extendedWaitUntil:
