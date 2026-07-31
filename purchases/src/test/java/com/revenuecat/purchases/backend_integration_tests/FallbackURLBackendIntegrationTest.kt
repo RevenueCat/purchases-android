@@ -82,9 +82,9 @@ internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse, originalDataSource ->
-                    assertThat(offeringsResponse.getJSONArray("offerings").length()).isGreaterThan(0)
-                    assertThat(originalDataSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
+                onSuccess = { offeringsResponse ->
+                    assertThat(offeringsResponse.body.getJSONArray("offerings").length()).isGreaterThan(0)
+                    assertThat(offeringsResponse.originalDataSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
                     latch.countDown()
                 },
                 onError = { purchasesError, _ ->
@@ -110,9 +110,9 @@ internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse, originalDataSource ->
-                    assertThat(offeringsResponse.getJSONArray("offerings").length()).isGreaterThan(0)
-                    assertThat(originalDataSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
+                onSuccess = { offeringsResponse ->
+                    assertThat(offeringsResponse.body.getJSONArray("offerings").length()).isGreaterThan(0)
+                    assertThat(offeringsResponse.originalDataSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
                     latch.countDown()
                 },
                 onError = { error, _ ->

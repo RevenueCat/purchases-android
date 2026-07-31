@@ -219,10 +219,11 @@ internal class OfferingsManager(
         backend.getOfferings(
             appUserID,
             appInBackground,
-            { body, originalDataSource ->
+            { response ->
                 createAndCacheOfferings(
-                    offeringsJSON = body,
-                    originalDataSource = originalDataSource,
+                    offeringsJSON = response.body,
+                    offeringsResponseText = response.bodyString,
+                    originalDataSource = response.originalDataSource,
                     loadedFromDiskCache = false,
                     fetchGeneration = fetchGeneration,
                     onError,
@@ -249,6 +250,7 @@ internal class OfferingsManager(
                             } ?: HTTPResponseOriginalSource.MAIN
                             createAndCacheOfferings(
                                 offeringsJSON = cachedOfferingsResponse,
+                                offeringsResponseText = null,
                                 originalDataSource = originalDataSource,
                                 loadedFromDiskCache = true,
                                 fetchGeneration = fetchGeneration,
@@ -267,6 +269,7 @@ internal class OfferingsManager(
 
     private fun createAndCacheOfferings(
         offeringsJSON: JSONObject,
+        offeringsResponseText: String?,
         originalDataSource: HTTPResponseOriginalSource,
         loadedFromDiskCache: Boolean,
         fetchGeneration: Int,
@@ -301,6 +304,7 @@ internal class OfferingsManager(
                     log(LogIntent.DEBUG) { OfferingStrings.OFFERINGS_CACHE_INVALIDATED_SKIPPING_STALE_WRITE }
                     createAndCacheOfferings(
                         offeringsJSON = offeringsJSON,
+                        offeringsResponseText = offeringsResponseText,
                         originalDataSource = originalDataSource,
                         loadedFromDiskCache = loadedFromDiskCache,
                         fetchGeneration = cacheGeneration.get(),

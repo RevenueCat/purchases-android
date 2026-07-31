@@ -66,7 +66,7 @@ internal typealias CallbackCacheKey = List<String>
 /** @suppress */
 @OptIn(InternalRevenueCatAPI::class)
 internal typealias OfferingsCallback = Pair<
-    (JSONObject, HTTPResponseOriginalSource) -> Unit,
+    (OfferingsResponse) -> Unit,
     (PurchasesError, errorHandlingBehavior: GetOfferingsErrorHandlingBehavior) -> Unit,
     >
 
@@ -422,7 +422,7 @@ internal class Backend(
     fun getOfferings(
         appUserID: String,
         appInBackground: Boolean,
-        onSuccess: (JSONObject, HTTPResponseOriginalSource) -> Unit,
+        onSuccess: (OfferingsResponse) -> Unit,
         onError: (PurchasesError, GetOfferingsErrorHandlingBehavior) -> Unit,
     ) {
         val endpoint = Endpoint.GetOfferings(appUserID)
@@ -454,7 +454,13 @@ internal class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     if (result.isSuccessful()) {
                         try {
-                            onSuccess(result.body, result.originalDataSource)
+                            onSuccess(
+                                OfferingsResponse(
+                                    body = result.body,
+                                    bodyString = result.payloadText,
+                                    originalDataSource = result.originalDataSource,
+                                ),
+                            )
                         } catch (e: JSONException) {
                             val errorBehavior = GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS
                             onError(e.toPurchasesError().also { errorLog(it) }, errorBehavior)

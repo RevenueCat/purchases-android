@@ -94,9 +94,9 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse, originalDataSource ->
-                    assertThat(offeringsResponse.length()).isPositive
-                    assertThat(originalDataSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+                onSuccess = { offeringsResponse ->
+                    assertThat(offeringsResponse.body.length()).isPositive
+                    assertThat(offeringsResponse.originalDataSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
                     latch.countDown()
                 },
                 onError = { _, _ ->
@@ -120,9 +120,9 @@ internal class ProductionBackendIntegrationTest: BaseBackendIntegrationTest() {
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse, originalDataSource ->
-                    assertThat(offeringsResponse.length()).isPositive
-                    assertThat(originalDataSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+                onSuccess = { offeringsResponse ->
+                    assertThat(offeringsResponse.body.length()).isPositive
+                    assertThat(offeringsResponse.originalDataSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
                     latch.countDown()
                 },
                 onError = { error, _ ->

@@ -8,6 +8,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
+import com.revenuecat.purchases.common.OfferingsResponse
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
@@ -1009,7 +1010,13 @@ class OfferingsManagerTest {
         every {
             backend.getOfferings(any(), any(), captureLambda(), any())
         } answers {
-            lambda<(JSONObject, HTTPResponseOriginalSource) -> Unit>().captured.invoke(JSONObject(response), HTTPResponseOriginalSource.MAIN)
+            lambda<(OfferingsResponse) -> Unit>().captured.invoke(
+                OfferingsResponse(
+                    body = JSONObject(response),
+                    bodyString = response,
+                    originalDataSource = HTTPResponseOriginalSource.MAIN,
+                ),
+            )
         }
     }
 
