@@ -12,6 +12,7 @@ class RevenueCatRuleSetProvider : RuleSetProvider {
         listOf(
             ForbiddenPublicSealedClass(config),
             ForbiddenPublicEnum(config),
+            SuspendFunSwallowsCancellation(config),
         ),
     )
 }
