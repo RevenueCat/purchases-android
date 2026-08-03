@@ -57,6 +57,7 @@ import io.mockk.verify
 import io.mockk.verifyAll
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import com.revenuecat.purchases.ads.rewardverification.Outcome
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult as PollResult
 import com.revenuecat.purchases.ads.rewardverification.VerifiedReward as PollReward
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationPollLauncher
@@ -1989,7 +1990,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         val result = runBlocking {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
-                poll = { PollResult.verified(PollReward.VirtualCurrency(code = "gems", amount = 5)) },
+                poll = { Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList()) },
             )
         }
 
@@ -2003,11 +2004,11 @@ internal class PurchasesTest : BasePurchasesTest() {
         runBlocking {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
-                poll = { PollResult.verified(PollReward.NoReward) },
+                poll = { Outcome.Verified(PollReward.NoReward, moreRewards = emptyList()) },
             )
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_2",
-                poll = { PollResult.failed },
+                poll = { Outcome.Failed.ExhaustedWhilePending },
             )
         }
 
@@ -2068,7 +2069,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
                 poll = {
-                    PollResult.verified(
+                    Outcome.Verified(
                         reward = PollReward.NoReward,
                         moreRewards = listOf(PollReward.VirtualCurrency(code = "gems", amount = 5)),
                     )
@@ -2088,8 +2089,9 @@ internal class PurchasesTest : BasePurchasesTest() {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
                 poll = {
-                    PollResult.verified(
-                        PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
+                    Outcome.Verified(
+                        reward = PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
+                        moreRewards = emptyList(),
                     )
                 },
             )
@@ -2119,8 +2121,9 @@ internal class PurchasesTest : BasePurchasesTest() {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
                 poll = {
-                    PollResult.verified(
-                        PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
+                    Outcome.Verified(
+                        reward = PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
+                        moreRewards = emptyList(),
                     )
                 },
             )

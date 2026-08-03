@@ -9,11 +9,13 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Purchases.Companion.configure
 import com.revenuecat.purchases.Purchases.Companion.debugLogsEnabled
 import com.revenuecat.purchases.ads.events.AdTracker
+import com.revenuecat.purchases.ads.rewardverification.Outcome
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationPollLauncher
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken
 import com.revenuecat.purchases.ads.rewardverification.VerifiedReward
 import com.revenuecat.purchases.ads.rewardverification.rewardVerificationRetryDelay
+import com.revenuecat.purchases.ads.rewardverification.toResult
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
@@ -845,12 +847,12 @@ public class Purchases internal constructor(
         )
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
     internal suspend fun pollRewardVerification(
         clientTransactionId: String,
-        poll: suspend (String) -> RewardVerificationResult,
+        poll: suspend (String) -> Outcome,
     ): RewardVerificationResult {
-        val result = poll(clientTransactionId)
+        val result = poll(clientTransactionId).toResult()
         val rewards = result.verifiedReward?.let { listOf(it) + result.moreRewards } ?: return result
 
         if (rewards.any { it is VerifiedReward.VirtualCurrency }) {
