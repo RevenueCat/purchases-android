@@ -51,6 +51,12 @@ private sealed interface OfferingState {
     data class Failed(val message: String) : OfferingState
 }
 
+private enum class ConfigKillSwitchState {
+    Off,
+    Armed,
+    On,
+}
+
 @Composable
 fun WorkflowScreen(modifier: Modifier = Modifier) {
     var offeringState by remember { mutableStateOf<OfferingState>(OfferingState.Loading) }
@@ -133,8 +139,7 @@ private fun WorkflowLauncher(
 
 @Composable
 private fun ConfigKillSwitchControls() {
-    var configEndpointKillSwitchArmed by remember { mutableStateOf(false) }
-    var configEndpointKillSwitchOn by remember { mutableStateOf(false) }
+    var configKillSwitchState by remember { mutableStateOf(ConfigKillSwitchState.Off) }
     val coroutineScope = rememberCoroutineScope()
 
     Column(
@@ -144,22 +149,17 @@ private fun ConfigKillSwitchControls() {
         Button(
             onClick = {
                 E2ETestsApplication.forceConfigKillSwitch()
-                configEndpointKillSwitchArmed = true
-                configEndpointKillSwitchOn = false
+                configKillSwitchState = ConfigKillSwitchState.Armed
             },
         ) {
             Text("Force Config Killswitch")
-        }
-
-        if (configEndpointKillSwitchArmed && !configEndpointKillSwitchOn) {
-            Text("config killswitch: armed")
         }
 
         Button(
             onClick = {
                 coroutineScope.launch {
                     if (syncAndWaitForConfigKillSwitch()) {
-                        configEndpointKillSwitchOn = true
+                        configKillSwitchState = ConfigKillSwitchState.On
                     }
                 }
             },
@@ -167,8 +167,10 @@ private fun ConfigKillSwitchControls() {
             Text("Sync Attributes And Offerings")
         }
 
-        if (configEndpointKillSwitchOn) {
-            Text("config killswitch: on")
+        when (configKillSwitchState) {
+            ConfigKillSwitchState.Off -> Unit
+            ConfigKillSwitchState.Armed -> Text("config killswitch: armed")
+            ConfigKillSwitchState.On -> Text("config killswitch: on")
         }
     }
 }

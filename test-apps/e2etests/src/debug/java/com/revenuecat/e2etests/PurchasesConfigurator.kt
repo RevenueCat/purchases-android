@@ -14,7 +14,6 @@ private val forceServerErrorStrategy = AtomicReference(E2EForceServerErrorStrate
 internal fun configurePurchases(
     configuration: PurchasesConfiguration,
 ) {
-    forceServerErrorStrategy.set(E2EForceServerErrorStrategy.Never)
     Purchases.configureForE2ETests(configuration, forceServerErrorStrategy::get)
 }
 
