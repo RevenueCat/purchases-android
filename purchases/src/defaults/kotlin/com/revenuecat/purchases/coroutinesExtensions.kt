@@ -1,8 +1,10 @@
 package com.revenuecat.purchases
 
 import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
+import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.rewardverification.Poller
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
+import com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -42,14 +44,33 @@ public suspend fun Purchases.awaitCustomerInfo(
  *
  * Coroutine friendly version of [Purchases.pollRewardVerification].
  *
+ * Pass [trackingMetadata] to track reward-verification events for the ad it belongs to; omit it to
+ * poll without tracking.
+ *
  * @return The [RewardVerificationResult] (verified reward or a failed result).
  */
 @JvmSynthetic
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@OptIn(InternalRevenueCatAPI::class)
 public suspend fun Purchases.awaitPollRewardVerification(
     clientTransactionId: String,
+    trackingMetadata: RewardedAdTrackingMetadata? = null,
 ): RewardVerificationResult {
-    return pollRewardVerification(clientTransactionId) { Poller.poll(it) }
+    return awaitPollRewardVerification(clientTransactionId, trackingMetadata, AdCaptureMethod.MANUAL)
+}
+
+/**
+ * [awaitPollRewardVerification] overload that stamps the capture method that initiated the poll.
+ */
+@JvmSynthetic
+@InternalRevenueCatAPI
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+public suspend fun Purchases.awaitPollRewardVerification(
+    clientTransactionId: String,
+    trackingMetadata: RewardedAdTrackingMetadata?,
+    captureMethod: AdCaptureMethod,
+): RewardVerificationResult {
+    return pollRewardVerification(clientTransactionId, trackingMetadata, captureMethod) { Poller.poll(it) }
 }
 
 /**
