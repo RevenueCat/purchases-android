@@ -752,6 +752,10 @@ package com.revenuecat.purchases.ads.events {
     method public void trackAdLoaded(com.revenuecat.purchases.ads.events.types.AdLoadedData data);
     method public void trackAdOpened(com.revenuecat.purchases.ads.events.types.AdOpenedData data);
     method public void trackAdRevenue(com.revenuecat.purchases.ads.events.types.AdRevenueData data);
+    method public void trackAdRewardEarnedUnverified(com.revenuecat.purchases.ads.events.types.AdRewardEarnedUnverifiedData data);
+    method public void trackAdRewardFailedToVerify(com.revenuecat.purchases.ads.events.types.AdRewardFailedToVerifyData data);
+    method public void trackAdRewardGranted(com.revenuecat.purchases.ads.events.types.AdRewardGrantedData data);
+    method public void trackAdRewardVerified(com.revenuecat.purchases.ads.events.types.AdRewardVerifiedData data);
   }
 
 }
@@ -890,6 +894,90 @@ package com.revenuecat.purchases.ads.events.types {
     property public final String EXACT;
     property public final String PUBLISHER_DEFINED;
     property public final String UNKNOWN;
+  }
+
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdRewardEarnedUnverifiedData {
+    ctor public AdRewardEarnedUnverifiedData(String? networkName, String mediatorName, String adFormat, String? placement, String adUnitId, String impressionId, boolean rewardVerificationEnabled);
+    method public String getAdFormat();
+    method public String getAdUnitId();
+    method public String getImpressionId();
+    method public String getMediatorName();
+    method public String? getNetworkName();
+    method public String? getPlacement();
+    method public boolean getRewardVerificationEnabled();
+    property public final String adFormat;
+    property public final String adUnitId;
+    property public final String impressionId;
+    property public final String mediatorName;
+    property public final String? networkName;
+    property public final String? placement;
+    property public final boolean rewardVerificationEnabled;
+  }
+
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdRewardFailedToVerifyData {
+    ctor public AdRewardFailedToVerifyData(String? networkName, String mediatorName, String adFormat, String? placement, String adUnitId, String impressionId, String failureReason);
+    method public String getAdFormat();
+    method public String getAdUnitId();
+    method public String getFailureReason();
+    method public String getImpressionId();
+    method public String getMediatorName();
+    method public String? getNetworkName();
+    method public String? getPlacement();
+    property public final String adFormat;
+    property public final String adUnitId;
+    property public final String failureReason;
+    property public final String impressionId;
+    property public final String mediatorName;
+    property public final String? networkName;
+    property public final String? placement;
+  }
+
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmInline public final value class AdRewardFailureReason {
+    field public static final com.revenuecat.purchases.ads.events.types.AdRewardFailureReason.Companion Companion;
+  }
+
+  public static final class AdRewardFailureReason.Companion {
+    method public String backendError(String? reason);
+    method public String getNETWORK_ERROR();
+    method public String getTIMEOUT();
+    method public String getUNKNOWN();
+    property public final String NETWORK_ERROR;
+    property public final String TIMEOUT;
+    property public final String UNKNOWN;
+  }
+
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdRewardGrantedData {
+    ctor public AdRewardGrantedData(String? networkName, String mediatorName, String adFormat, String? placement, String adUnitId, String impressionId, com.revenuecat.purchases.VerifiedReward reward);
+    method public String getAdFormat();
+    method public String getAdUnitId();
+    method public String getImpressionId();
+    method public String getMediatorName();
+    method public String? getNetworkName();
+    method public String? getPlacement();
+    method public com.revenuecat.purchases.VerifiedReward getReward();
+    property public final String adFormat;
+    property public final String adUnitId;
+    property public final String impressionId;
+    property public final String mediatorName;
+    property public final String? networkName;
+    property public final String? placement;
+    property public final com.revenuecat.purchases.VerifiedReward reward;
+  }
+
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdRewardVerifiedData {
+    ctor public AdRewardVerifiedData(String? networkName, String mediatorName, String adFormat, String? placement, String adUnitId, String impressionId);
+    method public String getAdFormat();
+    method public String getAdUnitId();
+    method public String getImpressionId();
+    method public String getMediatorName();
+    method public String? getNetworkName();
+    method public String? getPlacement();
+    property public final String adFormat;
+    property public final String adUnitId;
+    property public final String impressionId;
+    property public final String mediatorName;
+    property public final String? networkName;
+    property public final String? placement;
   }
 
 }

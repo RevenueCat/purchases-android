@@ -4,6 +4,7 @@ package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.VerifiedReward
 import com.revenuecat.purchases.ads.events.AdEvent
 import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
@@ -335,6 +336,133 @@ internal fun AdEvent.FailedToLoad.toBackendStoredEvent(
             appSessionID = appSessionID,
             captureMethod = captureMethod.value,
             mediatorErrorCode = mediatorErrorCode,
+        ),
+    )
+}
+
+@OptIn(InternalRevenueCatAPI::class)
+private val VerifiedReward.wireType: String
+    get() = when (this) {
+        is VerifiedReward.VirtualCurrency -> "virtual_currency"
+        is VerifiedReward.Entitlement -> "entitlement"
+        VerifiedReward.NoReward -> "no_reward"
+        VerifiedReward.UnsupportedReward -> "unsupported_reward"
+    }
+
+@OptIn(InternalRevenueCatAPI::class)
+private val VerifiedReward.wireVirtualCurrencyCode: String?
+    get() = (this as? VerifiedReward.VirtualCurrency)?.code
+
+@OptIn(InternalRevenueCatAPI::class)
+private val VerifiedReward.wireVirtualCurrencyAmount: Int?
+    get() = (this as? VerifiedReward.VirtualCurrency)?.amount
+
+@OptIn(InternalRevenueCatAPI::class)
+private val VerifiedReward.wireEntitlementId: String?
+    get() = (this as? VerifiedReward.Entitlement)?.identifier
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@JvmSynthetic
+internal fun AdEvent.RewardEarnedUnverified.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.Ad(
+        BackendEvent.Ad(
+            id = id,
+            version = eventVersion,
+            type = type.value,
+            timestamp = timestamp,
+            networkName = networkName,
+            mediatorName = mediatorName.value,
+            adFormat = adFormat.value,
+            placement = placement,
+            adUnitId = adUnitId,
+            impressionId = impressionId,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+            captureMethod = captureMethod.value,
+            rewardVerificationEnabled = rewardVerificationEnabled,
+        ),
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@JvmSynthetic
+internal fun AdEvent.RewardVerified.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.Ad(
+        BackendEvent.Ad(
+            id = id,
+            version = eventVersion,
+            type = type.value,
+            timestamp = timestamp,
+            networkName = networkName,
+            mediatorName = mediatorName.value,
+            adFormat = adFormat.value,
+            placement = placement,
+            adUnitId = adUnitId,
+            impressionId = impressionId,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+            captureMethod = captureMethod.value,
+        ),
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@JvmSynthetic
+internal fun AdEvent.RewardGranted.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.Ad(
+        BackendEvent.Ad(
+            id = id,
+            version = eventVersion,
+            type = type.value,
+            timestamp = timestamp,
+            networkName = networkName,
+            mediatorName = mediatorName.value,
+            adFormat = adFormat.value,
+            placement = placement,
+            adUnitId = adUnitId,
+            impressionId = impressionId,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+            captureMethod = captureMethod.value,
+            rewardType = reward.wireType,
+            rewardVirtualCurrencyCode = reward.wireVirtualCurrencyCode,
+            rewardVirtualCurrencyAmount = reward.wireVirtualCurrencyAmount,
+            rewardEntitlementId = reward.wireEntitlementId,
+        ),
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@JvmSynthetic
+internal fun AdEvent.RewardFailedToVerify.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent {
+    return BackendStoredEvent.Ad(
+        BackendEvent.Ad(
+            id = id,
+            version = eventVersion,
+            type = type.value,
+            timestamp = timestamp,
+            networkName = networkName,
+            mediatorName = mediatorName.value,
+            adFormat = adFormat.value,
+            placement = placement,
+            adUnitId = adUnitId,
+            impressionId = impressionId,
+            appUserID = appUserID,
+            appSessionID = appSessionID,
+            captureMethod = captureMethod.value,
+            rewardFailureReason = failureReason.value,
         ),
     )
 }

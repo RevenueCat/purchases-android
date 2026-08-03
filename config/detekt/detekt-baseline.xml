@@ -15,6 +15,7 @@
     <ID>ComposableParamOrder:Template7.kt$AnimatedPackages</ID>
     <ID>CompositionLocalAllowlist:HelperFunctions.kt$LocalActivity</ID>
     <ID>CyclomaticComplexMethod:EntitlementInfo.kt$EntitlementInfo$override fun equals(other: Any?): Boolean</ID>
+    <ID>CyclomaticComplexMethod:EventsManager.kt$EventsManager$@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class) @Synchronized fun track(event: FeatureEvent)</ID>
     <ID>DestructuringDeclarationWithTooManyEntries:Period.kt$val (year, month, week, day) = periodResult.destructured</ID>
     <ID>Filename:backendHelpers.kt$com.revenuecat.purchases.subscriberattributes.backendHelpers.kt</ID>
     <ID>Filename:billingClientParamBuilders.kt$com.revenuecat.purchases.google.billingClientParamBuilders.kt</ID>
@@ -74,6 +75,7 @@
     <ID>ForbiddenPublicSealedClass:PurchaseLogic.kt$PurchaseLogicResult</ID>
     <ID>ForbiddenPublicSealedClass:Purchases.kt$Purchases$DeepLink</ID>
     <ID>ForbiddenPublicSealedClass:RedeemWebPurchaseListener.kt$RedeemWebPurchaseListener$Result</ID>
+    <ID>LongMethod:EventsManager.kt$EventsManager$@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class) @Synchronized fun track(event: FeatureEvent)</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$120</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$20</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$32</ID>
@@ -185,6 +187,7 @@
     <ID>ThrowingExceptionsWithoutMessageOrCause:BillingWrapper.kt$BillingWrapper$Throwable()</ID>
     <ID>TooGenericExceptionCaught:DeviceCache.kt$DeviceCache$e: NullPointerException</ID>
     <ID>TooGenericExceptionThrown:HTTPClient.kt$HTTPClient$throw RuntimeException(e)</ID>
+    <ID>TooManyFunctions:AdTracker.kt$AdTracker</ID>
     <ID>TooManyFunctions:HTTPClient.kt$HTTPClient</ID>
     <ID>TooManyFunctions:Purchases.kt$Purchases : LifecycleDelegate</ID>
     <ID>TooManyFunctions:SubscriberAttributesCache.kt$SubscriberAttributesCache</ID>
