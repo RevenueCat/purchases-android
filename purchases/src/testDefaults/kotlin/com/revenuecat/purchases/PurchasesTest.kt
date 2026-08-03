@@ -57,10 +57,15 @@ import io.mockk.verify
 import io.mockk.verifyAll
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import com.revenuecat.purchases.ads.events.AdCaptureMethod
+import com.revenuecat.purchases.ads.events.AdEvent
+import com.revenuecat.purchases.ads.events.types.AdFormat
+import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.rewardverification.Outcome
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult as PollResult
 import com.revenuecat.purchases.ads.rewardverification.VerifiedReward as PollReward
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationPollLauncher
+import com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -1990,6 +1995,8 @@ internal class PurchasesTest : BasePurchasesTest() {
         val result = runBlocking {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
+                trackingMetadata = null,
+                captureMethod = AdCaptureMethod.MANUAL,
                 poll = { Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList()) },
             )
         }
@@ -2004,10 +2011,14 @@ internal class PurchasesTest : BasePurchasesTest() {
         runBlocking {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
+                trackingMetadata = null,
+                captureMethod = AdCaptureMethod.MANUAL,
                 poll = { Outcome.Verified(PollReward.NoReward, moreRewards = emptyList()) },
             )
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_2",
+                trackingMetadata = null,
+                captureMethod = AdCaptureMethod.MANUAL,
                 poll = { Outcome.Failed.ExhaustedWhilePending },
             )
         }
@@ -2068,6 +2079,8 @@ internal class PurchasesTest : BasePurchasesTest() {
         runBlocking {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
+                trackingMetadata = null,
+                captureMethod = AdCaptureMethod.MANUAL,
                 poll = {
                     Outcome.Verified(
                         reward = PollReward.NoReward,
@@ -2088,6 +2101,8 @@ internal class PurchasesTest : BasePurchasesTest() {
         val result = runBlocking {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
+                trackingMetadata = null,
+                captureMethod = AdCaptureMethod.MANUAL,
                 poll = {
                     Outcome.Verified(
                         reward = PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
@@ -2120,6 +2135,8 @@ internal class PurchasesTest : BasePurchasesTest() {
         val result = runBlocking {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
+                trackingMetadata = null,
+                captureMethod = AdCaptureMethod.MANUAL,
                 poll = {
                     Outcome.Verified(
                         reward = PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
@@ -2130,6 +2147,102 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
 
         assertThat(result.failed).isTrue
+    }
+
+    private val testTrackingMetadata = RewardedAdTrackingMetadata(
+        networkName = "Google AdMob",
+        mediatorName = AdMediatorName.AD_MOB,
+        adFormat = AdFormat.REWARDED,
+        placement = "rewarded_video",
+        adUnitId = "ad-unit-999",
+        impressionId = "impression-789",
+    )
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    private fun pollWithTracking(poll: suspend (String) -> Outcome): List<AdEvent> {
+        val trackedEvents = mutableListOf<AdEvent>()
+        every { mockAdEventsManager.track(any()) } answers { trackedEvents.add(firstArg<AdEvent>()) }
+        runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                trackingMetadata = testTrackingMetadata,
+                captureMethod = AdCaptureMethod.MANUAL,
+                poll = poll,
+            )
+        }
+        return trackedEvents
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `pollRewardVerification with tracking metadata fires earned then verified when nothing is granted`() {
+        val tracked = pollWithTracking { Outcome.Verified(PollReward.NoReward, moreRewards = emptyList()) }
+
+        assertThat(tracked).hasSize(2)
+        assertThat(tracked[0]).isInstanceOf(AdEvent.RewardEarnedUnverified::class.java)
+        assertThat(tracked[1]).isInstanceOf(AdEvent.RewardVerified::class.java)
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `pollRewardVerification with tracking metadata fires one granted event for a single reward`() {
+        val tracked = pollWithTracking {
+            Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList())
+        }
+
+        assertThat(tracked).hasSize(3)
+        assertThat(tracked[0]).isInstanceOf(AdEvent.RewardEarnedUnverified::class.java)
+        assertThat(tracked[1]).isInstanceOf(AdEvent.RewardVerified::class.java)
+        val granted = tracked[2] as AdEvent.RewardGranted
+        assertThat(granted.reward).isEqualTo(VerifiedReward.VirtualCurrency(code = "gems", amount = 5))
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `pollRewardVerification with tracking metadata fires one granted event per reward on multi-grant`() {
+        val tracked = pollWithTracking {
+            Outcome.Verified(
+                reward = PollReward.VirtualCurrency(code = "gems", amount = 5),
+                moreRewards = listOf(PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L))),
+            )
+        }
+
+        assertThat(tracked).hasSize(4)
+        val grantedRewards = tracked.filterIsInstance<AdEvent.RewardGranted>().map { it.reward }
+        assertThat(grantedRewards).containsExactly(
+            VerifiedReward.VirtualCurrency(code = "gems", amount = 5),
+            VerifiedReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
+        )
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `pollRewardVerification with tracking metadata fires failed to verify with the mapped reason`() {
+        val tracked = pollWithTracking { Outcome.Failed.BackendRejected("rejected", "no_reward_rule") }
+
+        assertThat(tracked).hasSize(2)
+        assertThat(tracked[0]).isInstanceOf(AdEvent.RewardEarnedUnverified::class.java)
+        val failed = tracked[1] as AdEvent.RewardFailedToVerify
+        assertThat(failed.failureReason.value).isEqualTo("no_reward_rule")
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @Test
+    fun `pollRewardVerification tracks nothing when trackingMetadata is absent`() {
+        every { mockAdEventsManager.track(any()) } just Runs
+
+        runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                trackingMetadata = null,
+                captureMethod = AdCaptureMethod.MANUAL,
+                poll = { Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList()) },
+            )
+        }
+
+        verify(exactly = 0) { mockAdEventsManager.track(any<AdEvent.RewardEarnedUnverified>()) }
+        verify(exactly = 0) { mockAdEventsManager.track(any<AdEvent.RewardVerified>()) }
+        verify(exactly = 0) { mockAdEventsManager.track(any<AdEvent.RewardGranted>()) }
     }
 
     @OptIn(InternalRevenueCatAPI::class)
