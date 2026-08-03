@@ -49,6 +49,7 @@ env:
 # Arm the config-only failure and drive an unconditional config refresh.
 - tapOn:
     text: "Force Config Killswitch"
+- assertVisible: "config killswitch: armed"
 - tapOn:
     text: "Sync Attributes And Offerings"
 - extendedWaitUntil:

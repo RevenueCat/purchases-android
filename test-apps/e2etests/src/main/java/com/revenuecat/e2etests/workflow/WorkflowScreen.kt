@@ -133,6 +133,7 @@ private fun WorkflowLauncher(
 
 @Composable
 private fun ConfigKillSwitchControls() {
+    var configEndpointKillSwitchArmed by remember { mutableStateOf(false) }
     var configEndpointKillSwitchOn by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
 
@@ -140,8 +141,18 @@ private fun ConfigKillSwitchControls() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Button(onClick = E2ETestsApplication::forceConfigKillSwitch) {
+        Button(
+            onClick = {
+                E2ETestsApplication.forceConfigKillSwitch()
+                configEndpointKillSwitchArmed = true
+                configEndpointKillSwitchOn = false
+            },
+        ) {
             Text("Force Config Killswitch")
+        }
+
+        if (configEndpointKillSwitchArmed && !configEndpointKillSwitchOn) {
+            Text("config killswitch: armed")
         }
 
         Button(
