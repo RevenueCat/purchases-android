@@ -102,6 +102,7 @@ class BackendTest {
         receivedWebBillingProductsResponse = null
         receivedAliasUsersCallCount = 0
         receivedOriginalDataSource = null
+        receivedOfferingsPayload = null
     }
 
     @After
@@ -175,6 +176,7 @@ class BackendTest {
     private var receivedAliasUsersCallCount: Int = 0
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedOriginalDataSource: HTTPResponseOriginalSource? = null
+    private var receivedOfferingsPayload: String? = null
     private var receivedError: PurchasesError? = null
     private var receivedPostReceiptErrorHandlingBehavior: PostReceiptErrorHandlingBehavior? = null
     private var receivedGetOfferingsErrorHandlingBehavior: GetOfferingsErrorHandlingBehavior? = null
@@ -204,10 +206,12 @@ class BackendTest {
         this@BackendTest.receivedIsServerError = isServerError
     }
 
-    private val onReceiveOfferingsResponseSuccessHandler: (JSONObject, HTTPResponseOriginalSource) -> Unit = { offeringsJSON, originalDataSource ->
-        this@BackendTest.receivedOfferingsJSON = offeringsJSON
-        this@BackendTest.receivedOriginalDataSource = originalDataSource
-    }
+    private val onReceiveOfferingsResponseSuccessHandler: (JSONObject, HTTPResponseOriginalSource, String) -> Unit =
+        { offeringsJSON, originalDataSource, responsePayload ->
+            this@BackendTest.receivedOfferingsJSON = offeringsJSON
+            this@BackendTest.receivedOriginalDataSource = originalDataSource
+            this@BackendTest.receivedOfferingsPayload = responsePayload
+        }
 
     private val onReceiveOfferingsErrorHandler: (PurchasesError, GetOfferingsErrorHandlingBehavior) -> Unit =
         { error, errorBehavior ->
@@ -327,7 +331,7 @@ class BackendTest {
         backend.getOfferings(
             appUserID = "id",
             appInBackground = false,
-            onSuccess = { _, _ -> },
+            onSuccess = { _, _, _ -> },
             onError = { _, _ -> }
         )
 
@@ -336,7 +340,7 @@ class BackendTest {
         backend.getOfferings(
             appUserID = "id",
             appInBackground = false,
-            onSuccess = { _, _ -> },
+            onSuccess = { _, _, _ -> },
             onError = { _, _ -> }
         )
     }
@@ -1621,13 +1625,29 @@ class BackendTest {
     }
 
     @Test
+    fun `getOfferings passes the raw response body to the success callback`() {
+        mockResponse(Endpoint.GetOfferings(appUserID), null, 200, null, noOfferingsResponse)
+
+        backend.getOfferings(
+            appUserID,
+            appInBackground = false,
+            onSuccess = onReceiveOfferingsResponseSuccessHandler,
+            onError = { _, _ -> fail("Should be success") }
+        )
+
+        // Callers cache this verbatim, so it must be the body as received rather than a
+        // re-serialization of the parsed JSON.
+        assertThat(receivedOfferingsPayload).isEqualTo(noOfferingsResponse)
+    }
+
+    @Test
     fun `given a 5xx error, correct callback values are given`() {
         mockResponse(Endpoint.GetOfferings(appUserID), null, RCHTTPStatusCodes.ERROR, null, null)
 
         backend.getOfferings(
             appUserID,
             appInBackground = false,
-            onSuccess = { _, _ -> fail("Should be error") },
+            onSuccess = { _, _, _ -> fail("Should be error") },
             onError = onReceiveOfferingsErrorHandler
         )
 
@@ -1642,7 +1662,7 @@ class BackendTest {
         backend.getOfferings(
             appUserID,
             appInBackground = false,
-            onSuccess = { _, _ -> fail("Should be error") },
+            onSuccess = { _, _, _ -> fail("Should be error") },
             onError = onReceiveOfferingsErrorHandler
         )
 
@@ -1661,10 +1681,10 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _ ->
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _ ->
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
@@ -1691,10 +1711,10 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _ ->
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings("anotherUser", appInBackground = false, onSuccess = { _, _ ->
+        asyncBackend.getOfferings("anotherUser", appInBackground = false, onSuccess = { _, _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
@@ -1730,10 +1750,10 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _ ->
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings(appUserID, appInBackground = true, onSuccess = { _, _ ->
+        asyncBackend.getOfferings(appUserID, appInBackground = true, onSuccess = { _, _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
@@ -1754,10 +1774,10 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, appInBackground = true, onSuccess = { _, _ ->
+        asyncBackend.getOfferings(appUserID, appInBackground = true, onSuccess = { _, _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _ ->
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)

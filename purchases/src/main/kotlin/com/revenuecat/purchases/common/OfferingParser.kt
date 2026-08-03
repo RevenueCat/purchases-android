@@ -45,7 +45,7 @@ internal abstract class OfferingParser(
     fun createOfferings(
         offeringsJson: JSONObject,
         productsById: Map<String, List<StoreProduct>>,
-        originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
+        originalSource: HTTPResponseOriginalSource? = null,
         loadedFromDiskCache: Boolean = false,
         configuredStore: Store = Store.PLAY_STORE,
     ): Offerings {

@@ -17,7 +17,7 @@ internal constructor(
     public val all: Map<String, Offering>,
     internal val placements: Placements? = null,
     internal val targeting: Targeting? = null,
-    internal val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
+    internal val originalSource: HTTPResponseOriginalSource? = null,
     internal val loadedFromDiskCache: Boolean = false,
 ) {
     public constructor(current: Offering?, all: Map<String, Offering>) : this(current, all, null, null)
@@ -82,7 +82,7 @@ internal constructor(
         all: Map<String, Offering> = this.all,
         placements: Placements? = this.placements,
         targeting: Targeting? = this.targeting,
-        originalSource: HTTPResponseOriginalSource = this.originalSource,
+        originalSource: HTTPResponseOriginalSource? = this.originalSource,
         loadedFromDiskCache: Boolean = this.loadedFromDiskCache,
     ): Offerings {
         return Offerings(

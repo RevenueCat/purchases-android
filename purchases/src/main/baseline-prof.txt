@@ -637,7 +637,7 @@ HSPLcom/revenuecat/purchases/common/Backend;->addCallback(Ljava/util/Map;Lcom/re
 HSPLcom/revenuecat/purchases/common/Backend;->getCallbacks()Ljava/util/Map;
 HSPLcom/revenuecat/purchases/common/Backend;->getCustomerInfo(Ljava/lang/String;ZLkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;)V
 PLcom/revenuecat/purchases/common/Backend;->getDiagnosticsCallbacks()Ljava/util/Map;
-HSPLcom/revenuecat/purchases/common/Backend;->getOfferings(Ljava/lang/String;ZLkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function2;)V
+HSPLcom/revenuecat/purchases/common/Backend;->getOfferings(Ljava/lang/String;ZLkotlin/jvm/functions/Function3;Lkotlin/jvm/functions/Function2;)V
 HSPLcom/revenuecat/purchases/common/Backend;->getOfferingsCallbacks()Ljava/util/Map;
 HSPLcom/revenuecat/purchases/common/Backend;->getPaywallEventsCallbacks()Ljava/util/Map;
 PLcom/revenuecat/purchases/common/Backend;->getProductEntitlementCallbacks()Ljava/util/Map;

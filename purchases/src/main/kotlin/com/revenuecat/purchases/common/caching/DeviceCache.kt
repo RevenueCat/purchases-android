@@ -593,13 +593,15 @@ public open class DeviceCache(
         return getJSONObjectOrNull(offeringsResponseCacheKey)
     }
 
+    /**
+     * Serializing a [JSONObject] here instead of storing [offeringsResponse] as received would cost a
+     * contiguous allocation of several times the response size, which OOMs on low-heap devices.
+     */
     @Synchronized
-    internal fun cacheOfferingsResponse(offeringsResponse: JSONObject) {
+    internal fun cacheOfferingsResponse(offeringsResponse: String) {
         preferences.edit()
-            .putString(
-                offeringsResponseCacheKey,
-                offeringsResponse.toString(),
-            ).apply()
+            .putString(offeringsResponseCacheKey, offeringsResponse)
+            .apply()
     }
 
     @Synchronized
