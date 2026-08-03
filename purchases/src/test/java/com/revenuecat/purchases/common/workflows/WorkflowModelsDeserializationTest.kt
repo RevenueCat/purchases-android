@@ -130,7 +130,7 @@ internal class WorkflowModelsDeserializationTest {
             // Absent from the backend's per-screen payload (serialize_paywalls_as_screens).
             "zero_decimal_place_countries",
             "play_store_product_change_mode",
-            // Sent per screen but not wired through yet: funnel paywalls always use the default.
+            // Sent per screen but not wired through yet: workflow-backed paywalls use the default.
             "automatically_scale_font_size",
         )
 
