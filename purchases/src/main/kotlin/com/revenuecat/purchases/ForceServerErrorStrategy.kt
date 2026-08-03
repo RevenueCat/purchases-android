@@ -18,6 +18,8 @@ internal fun interface ForceServerErrorStrategy {
 
     fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean
 
+    fun modifyRequestURL(url: URL, endpoint: Endpoint): URL = url
+
     @OptIn(InternalRevenueCatAPI::class)
     fun fakeResponseWithoutPerformingRequest(baseURL: URL, endpoint: Endpoint): HTTPResult? {
         return null

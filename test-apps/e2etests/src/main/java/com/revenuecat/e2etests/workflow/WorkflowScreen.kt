@@ -1,3 +1,5 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.e2etests.workflow
 
 import androidx.compose.foundation.layout.Arrangement
@@ -14,24 +16,34 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.revenuecat.e2etests.E2ETestsApplication
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitOfferings
+import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
+import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 private const val WORKFLOW_OFFERING_ID = "default_workflows"
 private const val ENTITLEMENT_ID = "pro"
+private const val KILL_SWITCH_TIMEOUT_MILLIS = 10_000L
+private const val KILL_SWITCH_POLL_INTERVAL_MILLIS = 100L
 
 private sealed interface OfferingState {
     data object Loading : OfferingState
@@ -46,21 +58,8 @@ fun WorkflowScreen(modifier: Modifier = Modifier) {
     var customerInfo by remember { mutableStateOf<CustomerInfo?>(null) }
 
     LaunchedEffect(Unit) {
-        try {
-            customerInfo = Purchases.sharedInstance.awaitCustomerInfo()
-        } catch (@Suppress("SwallowedException") e: PurchasesException) {
-            // Ignore; the entitlement surface shows "nil" until info arrives.
-        }
-        offeringState = try {
-            val offering = Purchases.sharedInstance.awaitOfferings().getOffering(WORKFLOW_OFFERING_ID)
-            if (offering != null) {
-                OfferingState.Loaded(offering)
-            } else {
-                OfferingState.Failed("Offering '$WORKFLOW_OFFERING_ID' not found")
-            }
-        } catch (e: PurchasesException) {
-            OfferingState.Failed(e.message ?: "Failed to load offerings")
-        }
+        customerInfo = loadCustomerInfo()
+        offeringState = loadWorkflowOffering()
     }
 
     // Keep the entitlement surface live so it flips to "active" after a purchase.
@@ -73,22 +72,40 @@ fun WorkflowScreen(modifier: Modifier = Modifier) {
 
     val loaded = offeringState
     if (showPaywall && loaded is OfferingState.Loaded) {
-        Paywall(
-            options = PaywallOptions.Builder(dismissRequest = { showPaywall = false })
-                .setOffering(loaded.offering)
-                .setListener(object : PaywallListener {
-                    override fun onPurchaseCompleted(
-                        customerInfo: CustomerInfo,
-                        storeTransaction: StoreTransaction,
-                    ) {
-                        showPaywall = false
-                    }
-                })
-                .build(),
-        )
+        WorkflowPaywall(offering = loaded.offering, onDismiss = { showPaywall = false })
         return
     }
 
+    WorkflowLauncher(
+        offeringState = loaded,
+        customerInfo = customerInfo,
+        onPresentPaywall = { showPaywall = true },
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun WorkflowPaywall(offering: Offering, onDismiss: () -> Unit) {
+    Paywall(
+        options = PaywallOptions.Builder(dismissRequest = onDismiss)
+            .setOffering(offering)
+            .setListener(object : PaywallListener {
+                override fun onPurchaseCompleted(
+                    customerInfo: CustomerInfo,
+                    storeTransaction: StoreTransaction,
+                ) = onDismiss()
+            })
+            .build(),
+    )
+}
+
+@Composable
+private fun WorkflowLauncher(
+    offeringState: OfferingState,
+    customerInfo: CustomerInfo?,
+    onPresentPaywall: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -98,19 +115,80 @@ fun WorkflowScreen(modifier: Modifier = Modifier) {
     ) {
         Text(text = "Workflow paywall", style = MaterialTheme.typography.headlineMedium)
 
-        when (loaded) {
+        when (offeringState) {
             is OfferingState.Loading -> CircularProgressIndicator()
-            is OfferingState.Loaded -> Button(onClick = { showPaywall = true }) {
+            is OfferingState.Loaded -> Button(onClick = onPresentPaywall) {
                 Text("Present Paywall")
             }
             is OfferingState.Failed -> Text(
-                text = "Error: ${loaded.message}",
+                text = "Error: ${offeringState.message}",
                 color = MaterialTheme.colorScheme.error,
             )
         }
 
         Text(text = "entitlement ($ENTITLEMENT_ID): ${entitlementStatus(customerInfo)}")
+        ConfigKillSwitchControls()
     }
+}
+
+@Composable
+private fun ConfigKillSwitchControls() {
+    var configEndpointKillSwitchOn by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+        Button(onClick = E2ETestsApplication::forceConfigKillSwitch) {
+            Text("Force Config Killswitch")
+        }
+
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    if (syncAndWaitForConfigKillSwitch()) {
+                        configEndpointKillSwitchOn = true
+                    }
+                }
+            },
+        ) {
+            Text("Sync Attributes And Offerings")
+        }
+
+        if (configEndpointKillSwitchOn) {
+            Text("config killswitch: on")
+        }
+    }
+}
+
+private suspend fun loadCustomerInfo(): CustomerInfo? = try {
+    Purchases.sharedInstance.awaitCustomerInfo()
+} catch (@Suppress("SwallowedException") e: PurchasesException) {
+    null
+}
+
+private suspend fun loadWorkflowOffering(): OfferingState = try {
+    Purchases.sharedInstance.awaitOfferings().getOffering(WORKFLOW_OFFERING_ID)?.let(OfferingState::Loaded)
+        ?: OfferingState.Failed("Offering '$WORKFLOW_OFFERING_ID' not found")
+} catch (e: PurchasesException) {
+    OfferingState.Failed(e.message ?: "Failed to load offerings")
+}
+
+private suspend fun syncAndWaitForConfigKillSwitch(): Boolean {
+    try {
+        // Intentionally discard these offerings so the screen retains its pre-switch Offering instance.
+        Purchases.sharedInstance.awaitSyncAttributesAndOfferingsIfNeeded()
+    } catch (@Suppress("SwallowedException") e: PurchasesException) {
+        // The config request intentionally fails; readiness is checked below.
+    }
+
+    return withTimeoutOrNull(KILL_SWITCH_TIMEOUT_MILLIS) {
+        while (Purchases.sharedInstance.resolveWorkflow(WORKFLOW_OFFERING_ID) !is WorkflowResolution.Disabled) {
+            delay(KILL_SWITCH_POLL_INTERVAL_MILLIS)
+        }
+        true
+    } ?: false
 }
 
 private fun entitlementStatus(customerInfo: CustomerInfo?): String {
