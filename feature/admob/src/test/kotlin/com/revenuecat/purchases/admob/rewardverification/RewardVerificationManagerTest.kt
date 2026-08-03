@@ -16,7 +16,10 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesServiceDispatcher
 import com.revenuecat.purchases.admob.enableRewardVerification
 import com.revenuecat.purchases.admob.show as showWithRewardVerification
+import com.revenuecat.purchases.admob.tracking.TrackingFullScreenContentCallback
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
+import com.revenuecat.purchases.ads.events.types.AdFormat
+import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.rewardverification.Outcome
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken
@@ -32,6 +35,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -71,11 +75,13 @@ internal class RewardVerificationManagerTest {
         val mockPurchases = mockk<Purchases>(relaxed = true)
         every { mockPurchases.generateRewardVerificationToken("ad-response-id") } returns token
         val polledClientTransactionId = slot<String>()
+        val polledTrackingMetadata = slot<RewardedAdTrackingMetadata?>()
+        val polledCaptureMethod = slot<AdCaptureMethod>()
         coEvery {
             mockPurchases.pollRewardVerification(
                 capture(polledClientTransactionId),
-                isNull<RewardedAdTrackingMetadata>(),
-                eq(AdCaptureMethod.MANUAL),
+                captureNullable(polledTrackingMetadata),
+                capture(polledCaptureMethod),
                 any<suspend (String) -> Outcome>(),
             )
         } returns RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "gems", amount = 7))
@@ -121,6 +127,10 @@ internal class RewardVerificationManagerTest {
         )
         // The id polled from the backend must match the token's client transaction id so correlation round-trips.
         assertEquals("client-transaction-id", polledClientTransactionId.captured)
+        // The ad was never loaded via loadAndTrackRewardedAd, so it has no TrackingFullScreenContentCallback
+        // to read metadata from.
+        assertNull(polledTrackingMetadata.captured)
+        assertEquals(AdCaptureMethod.ADAPTER, polledCaptureMethod.captured)
     }
 
     @Test
@@ -133,11 +143,13 @@ internal class RewardVerificationManagerTest {
         val mockPurchases = mockk<Purchases>(relaxed = true)
         every { mockPurchases.generateRewardVerificationToken("interstitial-response-id") } returns token
         val polledClientTransactionId = slot<String>()
+        val polledTrackingMetadata = slot<RewardedAdTrackingMetadata?>()
+        val polledCaptureMethod = slot<AdCaptureMethod>()
         coEvery {
             mockPurchases.pollRewardVerification(
                 capture(polledClientTransactionId),
-                isNull<RewardedAdTrackingMetadata>(),
-                eq(AdCaptureMethod.MANUAL),
+                captureNullable(polledTrackingMetadata),
+                capture(polledCaptureMethod),
                 any<suspend (String) -> Outcome>(),
             )
         } returns RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 3))
@@ -176,6 +188,63 @@ internal class RewardVerificationManagerTest {
         assertNotNull(completedResult)
         assertFalse(completedResult!!.failed)
         assertEquals("client-transaction-id", polledClientTransactionId.captured)
+        assertNull(polledTrackingMetadata.captured)
+        assertEquals(AdCaptureMethod.ADAPTER, polledCaptureMethod.captured)
+    }
+
+    @Test
+    fun `tracked ad forwards its reward tracking metadata to the poll, reflecting a show-time placement override`() {
+        val token = RewardVerificationToken(
+            customData = "custom-data",
+            clientTransactionId = "client-transaction-id",
+            appUserID = "app-user-id",
+        )
+        val mockPurchases = mockk<Purchases>(relaxed = true)
+        every { mockPurchases.generateRewardVerificationToken("ad-response-id") } returns token
+        val polledTrackingMetadata = slot<RewardedAdTrackingMetadata?>()
+        coEvery {
+            mockPurchases.pollRewardVerification(
+                any(),
+                captureNullable(polledTrackingMetadata),
+                any(),
+                any<suspend (String) -> Outcome>(),
+            )
+        } returns RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "gems", amount = 7))
+
+        Purchases.backingFieldSharedInstance = mockPurchases
+        originalServiceDispatcher.initialize(mockPurchases)
+
+        val ad = mockk<RewardedAd>(relaxed = true)
+        every { ad.responseInfo.responseId } returns "ad-response-id"
+        every { ad.responseInfo.mediationAdapterClassName } returns "com.example.SomeAdapter"
+        val trackingCallback = TrackingFullScreenContentCallback(
+            delegate = null,
+            adFormat = AdFormat.REWARDED,
+            placement = "load-time-placement",
+            adUnitId = "ad-unit-id",
+            responseInfoProvider = { ad.responseInfo },
+        )
+        every { ad.fullScreenContentCallback } returns trackingCallback
+        val activity = mockk<Activity>(relaxed = true)
+        val rewardListenerSlot = slot<OnUserEarnedRewardListener>()
+        every { ad.show(activity, capture(rewardListenerSlot)) } answers {}
+
+        ad.enableRewardVerification()
+        trackingCallback.placement = "show-time-placement"
+
+        ad.showWithRewardVerification(activity = activity) { }
+        rewardListenerSlot.captured.onUserEarnedReward(mockk<RewardItem>(relaxed = true))
+        shadowOf(Looper.getMainLooper()).idle()
+
+        val metadata = polledTrackingMetadata.captured
+        assertNotNull(metadata)
+        assertEquals("com.example.SomeAdapter", metadata!!.networkName)
+        assertEquals(AdMediatorName.AD_MOB, metadata.mediatorName)
+        assertEquals(AdFormat.REWARDED, metadata.adFormat)
+        assertEquals("ad-unit-id", metadata.adUnitId)
+        assertEquals("ad-response-id", metadata.impressionId)
+        // The override applied after enableRewardVerification() (but before show) must win.
+        assertEquals("show-time-placement", metadata.placement)
     }
 
     @Test
