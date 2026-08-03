@@ -1042,7 +1042,6 @@ class EntitlementInfoHelperTest {
     @Test
     fun `retrieveCustomerInfo does not compute customer info on device by default`() {
         every { mockCache.getCachedCustomerInfo(appUserId) } returns null
-        every { mockCache.hasCachedCustomerInfo(appUserId) } returns false
         setupPostPendingTransactionsHelperSuccess(mockInfo)
         val callbackMock = mockk<ReceiveCustomerInfoCallback>()
         every { callbackMock.onReceived(mockInfo) } just Runs
@@ -1077,7 +1076,8 @@ class EntitlementInfoHelperTest {
 
         verify(exactly = 1) { callbackMock.onReceived(computedInfo) }
         verify(exactly = 1) { mockCustomerInfoUpdateHandler.notifyListeners(computedInfo) }
-        verify(exactly = 0) { mockBackend.getCustomerInfo(any(), any(), any(), any()) }
+        // The device can't see purchases made outside of the store, so the backend is still consulted.
+        verify(exactly = 1) { mockBackend.getCustomerInfo(appUserId, appInBackground, any(), any()) }
     }
 
     @Test
@@ -1102,7 +1102,6 @@ class EntitlementInfoHelperTest {
     fun `retrieveCustomerInfo with DO_NOT_WAIT waits for posts when computing on device fails`() {
         every { mockAppConfig.unsyncedTransactionsWaitPolicy } returns UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT
         every { mockCache.getCachedCustomerInfo(appUserId) } returns null
-        every { mockCache.hasCachedCustomerInfo(appUserId) } returns false
         every {
             mockOfflineEntitlementsManager.computeOfflineCustomerInfo(appUserId, any(), captureLambda())
         } answers {
@@ -1128,7 +1127,7 @@ class EntitlementInfoHelperTest {
     @Test
     fun `retrieveCustomerInfo with DO_NOT_WAIT fetches without waiting when there is a cached customer info`() {
         every { mockAppConfig.unsyncedTransactionsWaitPolicy } returns UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT
-        every { mockCache.hasCachedCustomerInfo(appUserId) } returns true
+        every { mockCache.getCachedCustomerInfo(appUserId) } returns mockInfo
         every { mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount) } just Runs
         setupBackendMock()
         val callbackMock = mockk<ReceiveCustomerInfoCallback>()
@@ -1163,12 +1162,13 @@ class EntitlementInfoHelperTest {
      * @return the `CustomerInfo` that computing on the device reports.
      */
     private fun setupDoNotWaitPolicy(): CustomerInfo {
+        // The device compute path also reconciles with the backend.
+        setupBackendMock()
         val computedInfo = mockk<CustomerInfo>()
         every { computedInfo.entitlements } returns EntitlementInfos(emptyMap(), VerificationResult.VERIFIED_ON_DEVICE)
         every { mockCustomerInfoUpdateHandler.notifyListeners(computedInfo) } just Runs
         every { mockAppConfig.unsyncedTransactionsWaitPolicy } returns UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT
         every { mockCache.getCachedCustomerInfo(appUserId) } returns null
-        every { mockCache.hasCachedCustomerInfo(appUserId) } returns false
         every { mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount) } just Runs
         every {
             mockOfflineEntitlementsManager.computeOfflineCustomerInfo(appUserId, captureLambda(), any())

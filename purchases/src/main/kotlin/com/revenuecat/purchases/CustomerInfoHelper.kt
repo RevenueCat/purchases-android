@@ -142,7 +142,7 @@ internal class CustomerInfoHelper(
                 allowSharingPlayStoreAccount,
                 callback,
             )
-        } else if (deviceCache.hasCachedCustomerInfo(appUserID)) {
+        } else if (getCachedCustomerInfo(appUserID) != null) {
             fetchCustomerInfoWithoutWaitingForPendingPurchases(
                 appUserID,
                 appInBackground,
@@ -199,6 +199,10 @@ internal class CustomerInfoHelper(
                         CustomerInfoDataResult(Result.Success(customerInfo), hadUnsyncedPurchasesBefore = true),
                     )
                 }
+                // The device can't see purchases made outside of the store, and there may be nothing
+                // pending to post, so the backend still has to be consulted. Its result reaches the app
+                // through the listener.
+                getCustomerInfoFetchOnly(appUserID, appInBackground)
             },
             onError = { error ->
                 debugLog { CustomerInfoStrings.COMPUTING_CUSTOMERINFO_WITHOUT_WAITING_FAILED.format(error) }
