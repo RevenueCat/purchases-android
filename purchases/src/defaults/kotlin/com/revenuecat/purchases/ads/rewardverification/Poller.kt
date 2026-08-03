@@ -51,7 +51,7 @@ internal object Poller {
         jitterSeconds: () -> Double = defaultJitterSeconds,
         maxAttempts: Int = DEFAULT_MAX_ATTEMPTS,
         logFailure: (message: String, isError: Boolean) -> Unit = ::logFailureToLogcat,
-    ): RewardVerificationResult {
+    ): Outcome {
         val outcome = pollOutcome(
             clientTransactionId = clientTransactionId,
             fetcher = fetcher,
@@ -62,7 +62,7 @@ internal object Poller {
         if (outcome is Outcome.Failed) {
             logFailure(outcome.logMessage, outcome.isUnexpected)
         }
-        return outcome.toResult()
+        return outcome
     }
 
     private suspend fun pollOutcome(
