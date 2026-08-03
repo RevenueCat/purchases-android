@@ -8,6 +8,7 @@ import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.File
+import java.util.zip.CRC32
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -23,35 +24,41 @@ class ETagPayloadStoreTest {
 
     @Test
     fun `read returns null when nothing was written`() {
-        assertThat(underTest.read(url)).isNull()
+        assertThat(underTest.read(url, expectedChecksum = 0L)).isNull()
     }
 
     @Test
     fun `write and read round-trip a payload`() {
         val payload = "{\"offerings\":[{\"id\":\"premium\",\"desc\":\"a \\\"quoted\\\" name\"}]}\nwith\nnewlines"
 
-        assertThat(underTest.write(url, payload)).isNotNull
-        assertThat(underTest.read(url)).isEqualTo(payload)
+        assertThat(writeAndReadBack(payload)).isEqualTo(payload)
     }
 
     @Test
-    fun `write returns the encoded size which read verifies`() {
+    fun `write returns the payload checksum which read verifies`() {
         val payload = "ascii payload"
 
-        val sizeBytes = underTest.write(url, payload)
+        val checksum = underTest.write(url, payload)
 
-        assertThat(sizeBytes).isEqualTo(payload.length.toLong())
-        assertThat(underTest.read(url, expectedSizeBytes = sizeBytes)).isEqualTo(payload)
+        assertThat(checksum).isEqualTo(crc32Of(payload))
+        assertThat(underTest.read(url, expectedChecksum = checksum!!)).isEqualTo(payload)
     }
 
     @Test
-    fun `a payload file with an unexpected size reads back as a miss`() {
-        val sizeBytes = underTest.write(url, "the full payload")!!
-        val payloadFile = File(directory, directory.list()!!.single())
-        payloadFile.writeText("the full pay")
+    fun `a truncated payload file reads back as a miss`() {
+        val checksum = underTest.write(url, "the full payload")!!
+        overwritePayloadFile("the full pay")
 
-        assertThat(underTest.read(url, expectedSizeBytes = sizeBytes)).isNull()
-        assertThat(underTest.read(url)).isEqualTo("the full pay")
+        assertThat(underTest.read(url, expectedChecksum = checksum)).isNull()
+    }
+
+    @Test
+    fun `a payload file of the same length but different content reads back as a miss`() {
+        // Invisible to a size check, which is why the payload is checksummed instead.
+        val checksum = underTest.write(url, "the full payload")!!
+        overwritePayloadFile("the FULL payload")
+
+        assertThat(underTest.read(url, expectedChecksum = checksum)).isNull()
     }
 
     @Test
@@ -67,46 +74,45 @@ class ETagPayloadStoreTest {
             append("\"}")
         }
 
-        assertThat(underTest.write(url, payload)).isNotNull
-        assertThat(underTest.read(url)).isEqualTo(payload)
+        assertThat(writeAndReadBack(payload)).isEqualTo(payload)
     }
 
     @Test
     fun `write overwrites the previous payload for the same url`() {
         underTest.write(url, "first")
-        underTest.write(url, "second")
 
-        assertThat(underTest.read(url)).isEqualTo("second")
+        assertThat(writeAndReadBack("second")).isEqualTo("second")
     }
 
     @Test
     fun `payloads for different urls do not collide`() {
         val otherUrl = "$url#rc_payload"
-        underTest.write(url, "one")
-        underTest.write(otherUrl, "two")
 
-        assertThat(underTest.read(url)).isEqualTo("one")
-        assertThat(underTest.read(otherUrl)).isEqualTo("two")
+        // Both written before either is read, or a store mapping every url to one file would pass.
+        val checksum = underTest.write(url, "one")!!
+        val otherChecksum = underTest.write(otherUrl, "two")!!
+
+        assertThat(underTest.read(url, checksum)).isEqualTo("one")
+        assertThat(underTest.read(otherUrl, otherChecksum)).isEqualTo("two")
     }
 
     @Test
     fun `clear removes all payloads`() {
-        underTest.write(url, "payload")
+        val checksum = underTest.write(url, "payload")!!
         underTest.clear()
 
-        assertThat(underTest.read(url)).isNull()
+        assertThat(underTest.read(url, expectedChecksum = checksum)).isNull()
         assertThat(directory.exists()).isFalse
     }
 
     @Test
     fun `a leftover temp file from a crashed write does not affect reads or later writes`() {
-        underTest.write(url, "good")
+        val checksum = underTest.write(url, "good")!!
         val payloadFileName = directory.list()!!.single()
         File(directory, "$payloadFileName.tmp").writeText("partial write from a crashed process")
 
-        assertThat(underTest.read(url)).isEqualTo("good")
-        assertThat(underTest.write(url, "newer")).isNotNull
-        assertThat(underTest.read(url)).isEqualTo("newer")
+        assertThat(underTest.read(url, expectedChecksum = checksum)).isEqualTo("good")
+        assertThat(writeAndReadBack("newer")).isEqualTo("newer")
     }
 
     @Test
@@ -114,8 +120,7 @@ class ETagPayloadStoreTest {
         underTest.write(url, "payload")
         underTest.clear()
 
-        assertThat(underTest.write(url, "again")).isNotNull
-        assertThat(underTest.read(url)).isEqualTo("again")
+        assertThat(writeAndReadBack("again")).isEqualTo("again")
     }
 
     @Test
@@ -153,7 +158,7 @@ class ETagPayloadStoreTest {
     fun `clear on a store that never wrote is a no-op`() {
         underTest.clear()
 
-        assertThat(underTest.read(url)).isNull()
+        assertThat(underTest.read(url, expectedChecksum = 0L)).isNull()
     }
 
     @Test
@@ -161,19 +166,19 @@ class ETagPayloadStoreTest {
         val blockedByFile = ETagPayloadStore(temporaryFolder.newFile())
 
         assertThat(blockedByFile.write(url, "payload")).isNull()
-        assertThat(blockedByFile.read(url)).isNull()
+        assertThat(blockedByFile.read(url, expectedChecksum = 0L)).isNull()
     }
 
     @Test
-    fun `an empty payload round-trips with a zero size`() {
-        val sizeBytes = underTest.write(url, "")
+    fun `an empty payload round-trips with a zero checksum`() {
+        val checksum = underTest.write(url, "")
 
-        assertThat(sizeBytes).isEqualTo(0L)
-        assertThat(underTest.read(url, expectedSizeBytes = 0L)).isEqualTo("")
+        assertThat(checksum).isEqualTo(0L)
+        assertThat(underTest.read(url, expectedChecksum = 0L)).isEqualTo("")
 
         underTest.clear()
-        // A missing file also has length 0: the size check alone must not turn it into a hit.
-        assertThat(underTest.read(url, expectedSizeBytes = 0L)).isNull()
+        // An empty payload checksums to 0, same as no bytes at all: the missing file must still miss.
+        assertThat(underTest.read(url, expectedChecksum = 0L)).isNull()
     }
 
     @Test
@@ -181,15 +186,27 @@ class ETagPayloadStoreTest {
         val payloadWithUnpairedSurrogate = "{\"key\":\"\uD83C\"}"
 
         assertThat(underTest.write(url, payloadWithUnpairedSurrogate)).isNull()
-        assertThat(underTest.read(url)).isNull()
+        assertThat(underTest.read(url, expectedChecksum = 0L)).isNull()
     }
 
     @Test
-    fun `a corrupt payload file reads back as a miss instead of garbage`() {
-        underTest.write(url, "valid")
-        val payloadFile = File(directory, directory.list()!!.single())
-        payloadFile.writeBytes(byteArrayOf(0x7B, -1, -2, 0x22))
+    fun `a payload file corrupted into invalid UTF-8 reads back as a miss instead of garbage`() {
+        // Same length as the payload, so only the checksum catches it; lenient decoding would
+        // otherwise hand back U+FFFD substitutions as a valid response.
+        val checksum = underTest.write(url, "valid")!!
+        File(directory, directory.list()!!.single()).writeBytes(byteArrayOf(0x7B, -1, -2, 0x22, 0x7D))
 
-        assertThat(underTest.read(url)).isNull()
+        assertThat(underTest.read(url, expectedChecksum = checksum)).isNull()
     }
+
+    /** Reads back the way [ETagManager] does, with the checksum [ETagPayloadStore.write] returned. */
+    private fun writeAndReadBack(payload: String, storeUrl: String = url): String? =
+        underTest.write(storeUrl, payload)?.let { underTest.read(storeUrl, it) }
+
+    private fun overwritePayloadFile(contents: String) {
+        File(directory, directory.list()!!.single()).writeText(contents)
+    }
+
+    private fun crc32Of(payload: String): Long =
+        CRC32().apply { update(payload.toByteArray(Charsets.UTF_8)) }.value
 }

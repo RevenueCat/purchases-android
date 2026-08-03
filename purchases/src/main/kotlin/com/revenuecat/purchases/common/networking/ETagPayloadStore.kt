@@ -15,6 +15,8 @@ import java.nio.ByteBuffer
 import java.nio.CharBuffer
 import java.nio.charset.CoderResult
 import java.nio.charset.CodingErrorAction
+import java.util.zip.CRC32
+import java.util.zip.CheckedOutputStream
 
 /**
  * Stores ETag cache payloads as one file per URL, so multi-MB payloads are neither re-encoded nor
@@ -22,9 +24,12 @@ import java.nio.charset.CodingErrorAction
  *
  * Writes stream through fixed-size buffers into a temp file committed by atomic rename (androidx
  * AtomicFile is unsafe here: its openRead deletes a concurrent writer's in-flight file and its
- * finishWrite hides rename failures). Writes are not fsynced; callers verify the size [write] returns
- * on [read] instead, turning files truncated by power loss into misses. A stale same-length file is
- * accepted: it serves the previous complete payload.
+ * finishWrite hides rename failures). Writes are not fsynced; callers verify the checksum [write]
+ * returns on [read] instead, so a file truncated by power loss, left stale by an interrupted rename,
+ * or corrupted in place all read back as misses.
+ *
+ * A [read] costs ~2x the payload size in heap (`ByteArray` plus `String`), which is structural rather
+ * than a tuning choice: [HTTPResult.Payload.Text] holds a `String`, so one has to exist.
  *
  * `null` reads are cache misses that self-heal via [ETagManager]'s refresh retry; the OS may purge
  * [Context.getCacheDir]. No eviction beyond overwrite and [clear], at parity with the prefs store.
@@ -36,8 +41,8 @@ internal class ETagPayloadStore(
     constructor(context: Context) : this(File(File(context.cacheDir, VENDOR_DIRECTORY), DIRECTORY_NAME))
 
     /**
-     * Returns the payload's size in bytes once the file is in place, or `null` when the write failed;
-     * callers must not persist metadata for a failed write.
+     * Returns the payload's CRC32 once the file is in place, or `null` when the write failed; callers
+     * must not persist metadata for a failed write.
      */
     fun write(urlString: String, payload: String): Long? {
         if (!directory.exists()) {
@@ -52,8 +57,8 @@ internal class ETagPayloadStore(
         // Same-URL writes are serialized by [ETagManager].
         val tempFile = File(directory, file.name + TEMP_SUFFIX)
         return try {
-            FileOutputStream(tempFile).use { out -> encodeTo(out, payload) }
-            if (tempFile.renameTo(file)) file.length() else null
+            val checksum = FileOutputStream(tempFile).use { out -> encodeTo(out, payload) }
+            if (tempFile.renameTo(file)) checksum else null
         } catch (e: IOException) {
             errorLog(e) { "Failed to persist ETag payload to disk." }
             null
@@ -61,29 +66,22 @@ internal class ETagPayloadStore(
     }
 
     /**
-     * Returns the payload, or `null` for a miss: no file, undecodable bytes, or a size mismatch
-     * against [expectedSizeBytes] (the size [write] returned; `null` skips the check).
+     * Returns the payload, or `null` for a miss: no file, or bytes not matching [expectedChecksum],
+     * the value [write] returned. Required, not optional: a failing payload decodes to U+FFFD garbage.
      */
     @Suppress("SwallowedException", "ReturnCount")
-    fun read(urlString: String, expectedSizeBytes: Long? = null): String? {
+    fun read(urlString: String, expectedChecksum: Long): String? {
         return try {
             FileInputStream(fileFor(urlString)).use { input ->
-                // The open descriptor pins one file identity, so a concurrent rename cannot swap the
-                // payload between the size check and the read.
                 val sizeBytes = input.channel.size()
-                val size = sizeBytes.toInt()
-                if ((expectedSizeBytes != null && sizeBytes != expectedSizeBytes) || size.toLong() != sizeBytes) {
-                    return null
-                }
-                val bytes = ByteArray(size)
+                // Not an integrity check: ByteArray would throw past the IOException catch below.
+                if (sizeBytes > Int.MAX_VALUE) return null
+                val bytes = ByteArray(sizeBytes.toInt())
                 DataInputStream(input).readFully(bytes)
-                // Strict decoding (unlike String(bytes), which silently substitutes U+FFFD) so a corrupt
-                // file reads back as a cache miss instead of serving garbage as a valid cached response.
-                Charsets.UTF_8.newDecoder()
-                    .onMalformedInput(CodingErrorAction.REPORT)
-                    .onUnmappableCharacter(CodingErrorAction.REPORT)
-                    .decode(ByteBuffer.wrap(bytes))
-                    .toString()
+                if (crc32Of(bytes) != expectedChecksum) return null
+                // Lenient decoding, which the checksum above makes safe. CharsetDecoder.decode would
+                // allocate a payload-sized char[] on top of `bytes`, OOMing on multi-MB responses.
+                String(bytes, Charsets.UTF_8)
             }
         } catch (e: FileNotFoundException) {
             // No payload for this URL: a plain cache miss, not an error.
@@ -114,15 +112,20 @@ internal class ETagPayloadStore(
         return File(directory, Checksum.generate(urlString.toByteArray(), Checksum.Algorithm.SHA256).value)
     }
 
+    private fun crc32Of(bytes: ByteArray): Long = CRC32().apply { update(bytes) }.value
+
     /**
-     * Streams [payload] to [out] via a `char[]` chunk: `CharBuffer.wrap(payload)` has no backing array,
-     * which forces the encoder off its fast path and measured a >60x slower store on ART. REPORT so an
-     * unencodable payload fails the write instead of being silently altered.
+     * Streams [payload] to [rawOut] via a `char[]` chunk, returning the CRC32 of the bytes written:
+     * `CharBuffer.wrap(payload)` has no backing array, which forces the encoder off its fast path and
+     * measured a >60x slower store on ART. REPORT so an unencodable payload fails the write instead of
+     * being silently altered.
      */
-    private fun encodeTo(out: OutputStream, payload: String) {
+    private fun encodeTo(rawOut: OutputStream, payload: String): Long {
         val encoder = Charsets.UTF_8.newEncoder()
             .onMalformedInput(CodingErrorAction.REPORT)
             .onUnmappableCharacter(CodingErrorAction.REPORT)
+        val checksum = CRC32()
+        val out = CheckedOutputStream(rawOut, checksum)
         val chunk = CharArray(CHUNK_CHARS)
         val charBuffer = CharBuffer.wrap(chunk)
         // Sized so a full chunk always encodes in one pass (UTF-8 is at most 3 bytes per UTF-16 char).
@@ -145,6 +148,7 @@ internal class ETagPayloadStore(
             }
         } while (payloadPosition < payload.length)
         drainInto(out, byteBuffer) { encoder.flush(byteBuffer) }
+        return checksum.value
     }
 
     /** Runs [step] until it reports underflow, writing whatever it put in [byteBuffer] after each round. */

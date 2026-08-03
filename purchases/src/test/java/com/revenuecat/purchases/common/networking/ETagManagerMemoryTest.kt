@@ -103,10 +103,10 @@ class ETagManagerMemoryTest {
         val maxAllowedBytes = 1024L * 1024L
         assertThat(storeBytes).isLessThan(maxAllowedBytes)
         assertThat(headerBytes).isLessThan(maxAllowedBytes)
-        // Deterministic (exact allocation counting, no timing): file byte[] (~1x payload.length for
-        // ASCII) + decoder char[] (2x) + String copy (up to 2x) = ~5x length, ~3.9x measured; 6x allows
-        // for JDKs without compact strings.
-        assertThat(notModifiedBytes).isLessThan(3L * payload.length * Char.SIZE_BYTES)
+        // Deterministic (exact counting, no timing): file byte[] (~1x payload.length for ASCII) + the
+        // String, stored compressed for ASCII (~1x) = ~2x, 2.0x measured. The ceiling stays below the
+        // 4x a payload-sized decoder char[] costs, so re-introducing CharsetDecoder.decode fails here.
+        assertThat(notModifiedBytes).isLessThan(5L * payload.length / 2)
 
         println("ETagManager memory profile (payload ${payload.length} chars, ~${payload.length / (1024 * 1024)}MB)")
         println("  storeBackendResultIfNoError: ${storeBytes / 1024} KB allocated")
