@@ -90,7 +90,6 @@ class OfflineEntitlementsManagerTest {
     @Test
     fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns true if server error and cached customer info is null`() {
         every { deviceCache.getCachedCustomerInfo(appUserID) } returns null
-        every { deviceCache.hasCachedCustomerInfo(appUserID) } returns false
         val isServerError = true
         val result = offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
             isServerError,
@@ -103,7 +102,6 @@ class OfflineEntitlementsManagerTest {
     fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns false if not finishing transactions`() {
         every { appConfig.finishTransactions } returns false
         every { deviceCache.getCachedCustomerInfo(appUserID) } returns null
-        every { deviceCache.hasCachedCustomerInfo(appUserID) } returns false
         val isServerError = true
         val result = offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
             isServerError,
@@ -116,7 +114,6 @@ class OfflineEntitlementsManagerTest {
     fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns false if offline entitlements disabled`() {
         every { appConfig.enableOfflineEntitlements } returns false
         every { deviceCache.getCachedCustomerInfo(appUserID) } returns null
-        every { deviceCache.hasCachedCustomerInfo(appUserID) } returns false
         val isServerError = true
         val result = offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
             isServerError,
@@ -128,7 +125,6 @@ class OfflineEntitlementsManagerTest {
     @Test
     fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns false if server error and cached customer info is not null`() {
         every { deviceCache.getCachedCustomerInfo(appUserID) } returns mockk()
-        every { deviceCache.hasCachedCustomerInfo(appUserID) } returns true
         val isServerError = true
         val result = offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
             isServerError,
@@ -140,7 +136,6 @@ class OfflineEntitlementsManagerTest {
     @Test
     fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns false if not server error and cached customer info is null`() {
         every { deviceCache.getCachedCustomerInfo(appUserID) } returns null
-        every { deviceCache.hasCachedCustomerInfo(appUserID) } returns false
         val isServerError = false
         val result = offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
             isServerError,
@@ -152,7 +147,6 @@ class OfflineEntitlementsManagerTest {
     @Test
     fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns false if not server error and cached customer info is not null`() {
         every { deviceCache.getCachedCustomerInfo(appUserID) } returns mockk()
-        every { deviceCache.hasCachedCustomerInfo(appUserID) } returns true
         val isServerError = false
         val result = offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
             isServerError,
@@ -164,7 +158,6 @@ class OfflineEntitlementsManagerTest {
     @Test
     fun `shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest returns false if custom entitlement computation`() {
         every { deviceCache.getCachedCustomerInfo(appUserID) } returns null
-        every { deviceCache.hasCachedCustomerInfo(appUserID) } returns false
         every { appConfig.customEntitlementComputation } returns true
         val isServerError = true
         val result = offlineEntitlementsManager.shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
