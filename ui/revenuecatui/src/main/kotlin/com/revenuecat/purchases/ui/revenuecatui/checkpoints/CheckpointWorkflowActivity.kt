@@ -27,7 +27,7 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
     private var callId: String? = null
     private var entry: CheckpointCallStore.Entry? = null
     private var reported = false
-    private var stagedResult: CheckpointPaywallResult = CheckpointPaywallResult.Dismissed()
+    private var stagedResult: CheckpointPaywallResult = CheckpointPaywallResult.Dismissed
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
