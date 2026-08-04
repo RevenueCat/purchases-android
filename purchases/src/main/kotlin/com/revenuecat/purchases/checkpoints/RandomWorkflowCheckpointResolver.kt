@@ -59,6 +59,9 @@ internal class RandomWorkflowCheckpointResolver(
                 return configurationUnavailable("Offerings could not be fetched for workflow '$workflowId': ${e.error}")
             }
             offerings.all[id]
+                ?: return configurationUnavailable(
+                    "Offering '$id' referenced by workflow '$workflowId' was not found in offerings.",
+                )
         }
         debugLog {
             "Checkpoint '${checkpoint.identifier}' resolved to random workflow '$workflowId' " +

@@ -154,14 +154,13 @@ class RandomWorkflowCheckpointResolverTest {
     }
 
     @Test
-    fun `checkpoint resolves Matched with null offering when the fetched offerings lack the identifier`() = runTest {
-        every { mockOfferings.all } returns emptyMap()
+    fun `checkpoint resolves NoMatch with CONFIGURATION_UNAVAILABLE when the fetched offerings lack the identifier`() =
+        runTest {
+            every { mockOfferings.all } returns emptyMap()
 
-        val resolution = resolver.resolve(checkpoint)
-
-        val presentation = (resolution as CheckpointWorkflowResolution.Matched).presentation
-        assertThat(presentation.offering).isNull()
-    }
+            assertThat(noMatchReason(resolver.resolve(checkpoint)))
+                .isEqualTo(CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        }
 
     private fun noMatchReason(resolution: CheckpointWorkflowResolution): CheckpointResult.NoAction.Reason =
         (resolution as CheckpointWorkflowResolution.NoMatch).reason
