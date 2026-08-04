@@ -13,8 +13,9 @@ import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 
 /**
- * PoC [CheckpointWorkflowResolver]: a hardcoded allowlist stands in for the future checkpoints config topic, and
- * a matched checkpoint resolves to a workflow picked at random from the workflows topic.
+ * PoC [CheckpointWorkflowResolver]: every checkpoint matches and resolves to a workflow picked at random from
+ * the workflows topic, except two hardcoded identifiers that simulate the no-match and error outcomes the
+ * future checkpoints config topic will produce.
  */
 internal class RandomWorkflowCheckpointResolver(
     private val workflowManager: WorkflowManager?,
@@ -30,8 +31,9 @@ internal class RandomWorkflowCheckpointResolver(
                     "Simulated error: checkpoint workflow not presentable.",
                 ),
             )
-            in WORKFLOW_CHECKPOINT_ALLOWLIST -> resolveRandomWorkflow(checkpoint)
-            else -> CheckpointWorkflowResolution.NoMatch(CheckpointResult.NoAction.Reason.NO_MATCH)
+            SIMULATED_NO_MATCH_CHECKPOINT_ID ->
+                CheckpointWorkflowResolution.NoMatch(CheckpointResult.NoAction.Reason.NO_MATCH)
+            else -> resolveRandomWorkflow(checkpoint)
         }
 
     @Suppress("ReturnCount")
@@ -66,7 +68,7 @@ internal class RandomWorkflowCheckpointResolver(
     }
 
     private companion object {
-        val WORKFLOW_CHECKPOINT_ALLOWLIST = setOf("test_checkpoint", "finished_onboarding")
+        const val SIMULATED_NO_MATCH_CHECKPOINT_ID = "unknown_checkpoint"
         const val SIMULATED_ERROR_CHECKPOINT_ID = "error_checkpoint"
     }
 }

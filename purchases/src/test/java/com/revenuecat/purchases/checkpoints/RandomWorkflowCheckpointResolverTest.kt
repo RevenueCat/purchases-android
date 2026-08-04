@@ -69,14 +69,14 @@ class RandomWorkflowCheckpointResolverTest {
     }
 
     @Test
-    fun `checkpoint outside the allowlist resolves NoMatch with NO_MATCH`() = runTest {
-        val resolution = resolver.resolve(CheckpointInfo("some_unknown_checkpoint", CheckpointParams()))
+    fun `simulated unknown checkpoint resolves NoMatch with NO_MATCH`() = runTest {
+        val resolution = resolver.resolve(CheckpointInfo("unknown_checkpoint", CheckpointParams()))
 
         assertThat(noMatchReason(resolution)).isEqualTo(CheckpointResult.NoAction.Reason.NO_MATCH)
     }
 
     @Test
-    fun `allowlisted checkpoint resolves NoMatch with DISABLED when workflows are disabled`() = runTest {
+    fun `checkpoint resolves NoMatch with DISABLED when workflows are disabled`() = runTest {
         resolver = RandomWorkflowCheckpointResolver(
             workflowManager = null,
             uiConfigProvider = null,
@@ -88,7 +88,7 @@ class RandomWorkflowCheckpointResolverTest {
     }
 
     @Test
-    fun `allowlisted checkpoint resolves NoMatch with CONFIGURATION_UNAVAILABLE when no workflows exist`() =
+    fun `checkpoint resolves NoMatch with CONFIGURATION_UNAVAILABLE when no workflows exist`() =
         runTest {
             coEvery { mockWorkflowManager.availableWorkflows() } returns emptyMap()
 
@@ -97,7 +97,7 @@ class RandomWorkflowCheckpointResolverTest {
         }
 
     @Test
-    fun `allowlisted checkpoint resolves NoMatch with CONFIGURATION_UNAVAILABLE when the workflow fails to load`() =
+    fun `checkpoint resolves NoMatch with CONFIGURATION_UNAVAILABLE when the workflow fails to load`() =
         runTest {
             coEvery { mockWorkflowManager.getWorkflow("wf1234") } throws PurchasesException(
                 PurchasesError(PurchasesErrorCode.UnknownError, "Workflow unavailable."),
@@ -108,7 +108,7 @@ class RandomWorkflowCheckpointResolverTest {
         }
 
     @Test
-    fun `allowlisted checkpoint resolves NoMatch with CONFIGURATION_UNAVAILABLE when ui config is unavailable`() =
+    fun `checkpoint resolves NoMatch with CONFIGURATION_UNAVAILABLE when ui config is unavailable`() =
         runTest {
             coEvery { mockUiConfigProvider.getUiConfig() } returns null
 
@@ -117,7 +117,7 @@ class RandomWorkflowCheckpointResolverTest {
         }
 
     @Test
-    fun `allowlisted checkpoint resolves Matched with the workflow and its offering`() = runTest {
+    fun `checkpoint resolves Matched with the workflow and its offering`() = runTest {
         val resolution = resolver.resolve(checkpoint)
 
         val presentation = (resolution as CheckpointWorkflowResolution.Matched).presentation
@@ -128,7 +128,7 @@ class RandomWorkflowCheckpointResolverTest {
     }
 
     @Test
-    fun `allowlisted checkpoint resolves Matched with null offering when the workflow has none`() = runTest {
+    fun `checkpoint resolves Matched with null offering when the workflow has none`() = runTest {
         coEvery { mockWorkflowManager.availableWorkflows() } returns mapOf("wf1234" to null)
 
         val resolution = resolver.resolve(checkpoint)
