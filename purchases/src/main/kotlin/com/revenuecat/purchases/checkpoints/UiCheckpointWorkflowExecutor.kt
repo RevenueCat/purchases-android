@@ -8,6 +8,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.errorLog
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import java.util.ServiceConfigurationError
 import java.util.ServiceLoader
@@ -46,14 +47,32 @@ internal class UiCheckpointWorkflowExecutor(
         val paywallFinished = CompletableDeferred<CheckpointPaywallOutcome>()
         val callId = UUID.randomUUID().toString()
         synchronized(this) { pendingCalls[callId] = paywallFinished }
-        presenter.present(activity, callId, presentation, this)
-        return CheckpointWorkflowOutcome.PaywallFinished(paywallFinished.await())
+        try {
+            presenter.present(activity, callId, presentation, this)
+            return CheckpointWorkflowOutcome.PaywallFinished(paywallFinished.await())
+        } catch (e: CancellationException) {
+            abandonPendingCall(callId)
+            throw e
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            abandonPendingCall(callId)
+            executionError(
+                PurchasesErrorCode.ConfigurationError,
+                "Failed to present checkpoint workflow: $e",
+            )
+        }
     }
 
     override fun onCheckpointPaywallFinished(callId: String, paywallOutcome: CheckpointPaywallOutcome) {
         val pendingCall = synchronized(this) { pendingCalls.remove(callId) } ?: return
         presenting.set(false)
         pendingCall.complete(paywallOutcome)
+    }
+
+    // Idempotent counterpart of onCheckpointPaywallFinished for calls that fail or get cancelled before the
+    // presenter reports: only the side that actually removes the pending call releases the presenting gate.
+    private fun abandonPendingCall(callId: String) {
+        synchronized(this) { pendingCalls.remove(callId) } ?: return
+        presenting.set(false)
     }
 
     private fun executionError(code: PurchasesErrorCode, message: String): Nothing {

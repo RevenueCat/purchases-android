@@ -101,6 +101,29 @@ class UiCheckpointWorkflowExecutorTest {
     }
 
     @Test
+    fun `execute can present again after the presenter throws`() = runTest(dispatcher) {
+        every { mockPresenter.present(any(), any(), any(), any()) } throws RuntimeException("startActivity failed")
+
+        assertThat(executionErrorCode()).isEqualTo(PurchasesErrorCode.ConfigurationError)
+
+        presenterReportsImmediately(CheckpointPaywallOutcome.Dismissed)
+        assertThat(executor.execute(presentation))
+            .isInstanceOf(CheckpointWorkflowOutcome.PaywallFinished::class.java)
+    }
+
+    @Test
+    fun `execute can present again after being cancelled`() = runTest(dispatcher) {
+        every { mockPresenter.present(any(), any(), any(), any()) } just runs
+        val firstCall = launch { executor.execute(presentation) }
+
+        firstCall.cancel()
+
+        presenterReportsImmediately(CheckpointPaywallOutcome.Dismissed)
+        assertThat(executor.execute(presentation))
+            .isInstanceOf(CheckpointWorkflowOutcome.PaywallFinished::class.java)
+    }
+
+    @Test
     fun `report for unknown callId is a no-op`() = runTest(dispatcher) {
         executor.onCheckpointPaywallFinished("unknown-call-id", CheckpointPaywallOutcome.Dismissed)
 
