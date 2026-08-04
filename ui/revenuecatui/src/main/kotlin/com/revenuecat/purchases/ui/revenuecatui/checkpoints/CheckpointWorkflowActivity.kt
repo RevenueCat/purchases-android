@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import android.os.Bundle
+import android.view.Window
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.revenuecat.purchases.CustomerInfo
@@ -30,6 +31,7 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
     private var reported = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        requestWindowFeature(Window.FEATURE_NO_TITLE)
         super.onCreate(savedInstanceState)
         callId = intent.getStringExtra(EXTRA_CALL_ID)
         entry = callId?.let { CheckpointCallStore.get(it) }
