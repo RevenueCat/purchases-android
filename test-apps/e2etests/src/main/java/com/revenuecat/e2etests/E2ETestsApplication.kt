@@ -22,10 +22,14 @@ class E2ETestsApplication : Application() {
             PurchasesConfiguration.Builder(context = this, apiKey = Constants.API_KEY)
         }
 
-        Purchases.configure(builder.build())
+        configurePurchases(builder.build())
     }
 
-    private companion object {
-        const val WORKFLOWS_API_KEY_PLACEHOLDER = "workflows_api_key_to_replace"
+    internal companion object {
+        private const val WORKFLOWS_API_KEY_PLACEHOLDER = "workflows_api_key_to_replace"
+
+        fun forceConfigKillSwitch() {
+            armRemoteConfigKillSwitchForE2ETests()
+        }
     }
 }

@@ -399,13 +399,14 @@ internal class HTTPClient(
         }
 
         try {
+            val requestURL = URL(baseURL, path)
             fullURL = if (appConfig.runningTests &&
                 forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true
             ) {
                 warnLog { "Forcing server error for request to ${URL(baseURL, path)}" }
                 URL(forceServerErrorStrategy.serverErrorURL)
             } else {
-                URL(baseURL, path)
+                forceServerErrorStrategy?.modifyRequestURL(requestURL, endpoint) ?: requestURL
             }
 
             nonce = if (shouldAddNonce) signingManager.createRandomNonce() else null

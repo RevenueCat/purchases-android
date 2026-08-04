@@ -111,7 +111,8 @@ internal abstract class BaseHTTPClientTest {
         uiPreviewMode: Boolean = false,
         usesRemoteConfigAPISources: Boolean = false,
         forceSigningErrors: Boolean = false,
-        baseUrlString: String = AppConfig.baseUrlString
+        baseUrlString: String = AppConfig.baseUrlString,
+        runningTests: Boolean = true,
     ): AppConfig {
         return AppConfig(
             context = context,
@@ -127,7 +128,7 @@ internal abstract class BaseHTTPClientTest {
                 uiPreviewMode = uiPreviewMode,
                 usesRemoteConfigAPISources = usesRemoteConfigAPISources,
             ),
-            runningTests = true,
+            runningTests = runningTests,
             forceSigningErrors = forceSigningErrors,
             baseUrlString = baseUrlString,
         )

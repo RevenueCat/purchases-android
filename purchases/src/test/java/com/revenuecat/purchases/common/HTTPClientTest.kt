@@ -814,6 +814,35 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
     // region forceServerErrors
 
     @Test
+    fun `request URL strategy is honored outside integration test mode`() {
+        val endpoint = Endpoint.GetRemoteConfig("app")
+        val client = createClient(
+            appConfig = createAppConfig(runningTests = false),
+            forceServerErrorStrategy = object : ForceServerErrorStrategy {
+                override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean = false
+
+                override fun modifyRequestURL(url: URL, endpoint: Endpoint): URL {
+                    return URL("$url?force_killswitch=true")
+                }
+            },
+        )
+        enqueue(
+            "${endpoint.getPath()}?force_killswitch=true",
+            expectedResult = HTTPResult.createResult(),
+        )
+
+        client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            mapOf("" to ""),
+        )
+
+        assertThat(server.takeRequest().requestUrl?.queryParameter("force_killswitch")).isEqualTo("true")
+    }
+
+    @Test
     fun `when forceServerErrorsStrategy returns true, error url is used`() {
         val client = createClient(
             forceServerErrorStrategy = object : ForceServerErrorStrategy {
