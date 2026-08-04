@@ -44,4 +44,16 @@ class CurrentActivityTrackerTest {
 
         assertThat(tracker.currentActivity).isEqualTo(activity)
     }
+
+    @Test
+    fun `stopping an overlay activity restores the previously started one`() {
+        val activity = mockk<Activity>()
+        val overlayActivity = mockk<Activity>()
+        tracker.onActivityStarted(activity)
+        tracker.onActivityStarted(overlayActivity)
+
+        tracker.onActivityStopped(overlayActivity)
+
+        assertThat(tracker.currentActivity).isEqualTo(activity)
+    }
 }

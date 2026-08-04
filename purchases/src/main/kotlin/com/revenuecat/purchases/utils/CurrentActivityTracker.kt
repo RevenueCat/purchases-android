@@ -4,25 +4,26 @@ import android.app.Activity
 import java.lang.ref.WeakReference
 
 /**
- * Tracks the currently started [Activity], fed from the SDK's activity lifecycle callbacks, so components
- * that need to present UI (e.g. checkpoints) can obtain it without tracking lifecycle themselves.
+ * Tracks the started [Activity]s, fed from the SDK's activity lifecycle callbacks, so components that need to
+ * present UI (e.g. checkpoints) can obtain the most recently started one without tracking lifecycle themselves.
+ * Keeping every started activity (not just the last) preserves the current activity when a dialog-themed or
+ * translucent activity on top of it stops: the one below never restarted, but it is still started and visible.
  */
 internal class CurrentActivityTracker {
 
-    private var currentActivityRef: WeakReference<Activity>? = null
+    private val startedActivities = mutableListOf<WeakReference<Activity>>()
 
     val currentActivity: Activity?
-        @Synchronized get() = currentActivityRef?.get()
+        @Synchronized get() = startedActivities.lastOrNull { it.get() != null }?.get()
 
     @Synchronized
     fun onActivityStarted(activity: Activity) {
-        currentActivityRef = WeakReference(activity)
+        startedActivities.removeAll { it.get() == null || it.get() == activity }
+        startedActivities.add(WeakReference(activity))
     }
 
     @Synchronized
     fun onActivityStopped(activity: Activity) {
-        if (currentActivityRef?.get() == activity) {
-            currentActivityRef = null
-        }
+        startedActivities.removeAll { it.get() == null || it.get() == activity }
     }
 }
