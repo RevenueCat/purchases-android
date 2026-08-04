@@ -335,7 +335,7 @@ public suspend fun Purchases.awaitCreateSupportTicket(email: String, description
 }
 
 /**
- * Registers that [checkpointIdentifier] was reached. Depending on the configured targeting rules, this may
+ * Registers that [checkpointIdentifier] was hit. Depending on the configured targeting rules, this may
  * auto-present an experience (the call resolves when it finishes) or do nothing.
  * Coroutine friendly version of [Purchases.checkpoint].
  *

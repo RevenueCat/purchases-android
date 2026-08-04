@@ -14,7 +14,7 @@ public interface CheckpointListener {
         // Default empty implementation
     }
 
-    /** The outcome was decided. Same result the call site receives. */
+    /** The checkpoint was resolved and the outcome was returned. */
     public fun onCheckpointResolved(checkpoint: CheckpointInfo, result: CheckpointResult) {
         // Default empty implementation
     }
