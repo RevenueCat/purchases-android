@@ -29,6 +29,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.revenuecat.paywallstester.ui.screens.AppScreen
+import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsScreen
 import com.revenuecat.paywallstester.ui.screens.main.CustomerCenterScreen
 import com.revenuecat.paywallstester.ui.screens.main.MainScreen
 import com.revenuecat.paywallstester.ui.screens.paywall.PaywallScreen
@@ -89,6 +90,9 @@ private fun AppNavHost(
                     navigateToCustomerCenterScreen = {
                         navController.navigate(AppScreen.CustomerCenter.route)
                     },
+                    navigateToCheckpointsScreen = {
+                        navController.navigate(AppScreen.Checkpoints.route)
+                    },
                 )
             }
             composable(
@@ -124,6 +128,9 @@ private fun AppNavHost(
             }
             composable(route = AppScreen.CustomerCenter.route) {
                 CustomerCenterScreen(dismissRequest = navController::popBackStack)
+            }
+            composable(route = AppScreen.Checkpoints.route) {
+                CheckpointsScreen(dismissRequest = navController::popBackStack)
             }
         }
 

@@ -50,11 +50,12 @@ import java.io.File
 @SuppressWarnings("LongMethod")
 @Composable
 fun AppInfoScreen(
+    tappedOnCustomerCenter: () -> Unit,
+    tappedOnCheckpoints: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenViewModelImpl>(
         factory = AppInfoScreenViewModelImpl.Factory,
     ),
-    tappedOnCustomerCenter: () -> Unit,
 ) {
     var isDebugBottomSheetVisible by remember { mutableStateOf(false) }
     var showLogInDialog by remember { mutableStateOf(false) }
@@ -144,20 +145,10 @@ fun AppInfoScreen(
         }) {
             Text(text = "Customer Center (Activity)")
         }
-        if (state.lastCheckpointResult.isNotEmpty()) {
-            Text(text = "Last checkpoint result: ${state.lastCheckpointResult}")
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(text = "Checkpoint:", modifier = Modifier.align(Alignment.CenterVertically))
-            Button(onClick = { viewModel.checkpoint("test_checkpoint") }) {
-                Text(text = "UI")
-            }
-            Button(onClick = { viewModel.checkpoint("unknown_checkpoint") }) {
-                Text(text = "No match")
-            }
-            Button(onClick = { viewModel.checkpoint("error_checkpoint") }) {
-                Text(text = "Error")
-            }
+        Button(onClick = {
+            tappedOnCheckpoints()
+        }) {
+            Text(text = "Checkpoints")
         }
         Spacer(modifier = Modifier.weight(1f))
         Button(onClick = { viewModel.refresh() }) {
@@ -341,17 +332,16 @@ fun AppInfoScreenPreview() {
                         appUserID = "test-user-id",
                         apiKeyDescription = "test-api-key",
                         activeEntitlements = listOf("pro", "premium"),
-                        lastCheckpointResult = "",
                     ),
                 )
 
             override fun logIn(newAppUserId: String) {}
             override fun logOut() {}
             override fun switchApiKey(newApiKey: String) {}
-            override fun checkpoint(checkpointIdentifier: String) {}
             override fun refresh() {}
         },
         tappedOnCustomerCenter = {},
+        tappedOnCheckpoints = {},
     )
 }
 
