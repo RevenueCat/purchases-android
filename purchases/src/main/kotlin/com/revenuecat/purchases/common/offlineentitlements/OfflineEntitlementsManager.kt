@@ -13,14 +13,24 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 @OptIn(InternalRevenueCatAPI::class)
+@Suppress("LongParameterList")
 internal class OfflineEntitlementsManager(
     private val backend: Backend,
     private val offlineCustomerInfoCalculator: OfflineCustomerInfoCalculator,
     private val deviceCache: DeviceCache,
     private val appConfig: AppConfig,
     private val diagnosticsTracker: DiagnosticsTracker?,
+    private val productEntitlementMappingTopicProvider: ProductEntitlementMappingTopicProvider? = null,
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
     // We cache the offline customer info in memory, so it's not persisted.
     val offlineCustomerInfo: CustomerInfo?
@@ -30,6 +40,9 @@ internal class OfflineEntitlementsManager(
     private var _offlineCustomerInfo: CustomerInfo? = null
 
     private val offlineCustomerInfoCallbackCache = mutableMapOf<String, List<OfflineCustomerInfoCallback>>()
+
+    private val productEntitlementMappingUpdateLock = Any()
+    private var productEntitlementMappingUpdateJob: Job? = null
 
     @Synchronized
     fun resetOfflineCustomerInfoCache() {
@@ -99,25 +112,96 @@ internal class OfflineEntitlementsManager(
     }
 
     fun updateProductEntitlementMappingCacheIfStale(completion: ((PurchasesError?) -> Unit)? = null) {
-        if (isOfflineEntitlementsEnabled() && deviceCache.isProductEntitlementMappingCacheStale()) {
-            debugLog { OfflineEntitlementsStrings.UPDATING_PRODUCT_ENTITLEMENT_MAPPING }
-            backend.getProductEntitlementMapping(
-                onSuccessHandler = { productEntitlementMapping ->
-                    deviceCache.cacheProductEntitlementMapping(productEntitlementMapping)
-                    debugLog { OfflineEntitlementsStrings.SUCCESSFULLY_UPDATED_PRODUCT_ENTITLEMENTS }
-                    completion?.invoke(null)
-                },
-                onErrorHandler = { e ->
-                    errorLog { OfflineEntitlementsStrings.ERROR_UPDATING_PRODUCT_ENTITLEMENTS.format(e) }
-                    completion?.invoke(e)
-                },
-            )
-        } else {
+        if (!isOfflineEntitlementsEnabled() || !deviceCache.isProductEntitlementMappingCacheStale()) {
             completion?.invoke(null)
+            return
         }
+
+        debugLog { OfflineEntitlementsStrings.UPDATING_PRODUCT_ENTITLEMENT_MAPPING }
+        val topicProvider = productEntitlementMappingTopicProvider
+            ?: return fetchLegacyProductEntitlementMapping(completion)
+
+        startProductEntitlementMappingUpdate(topicProvider, completion)
     }
 
-    // We disable offline entitlements in observer mode (finishTransactions = true) since it doesn't
+    fun close() {
+        synchronized(productEntitlementMappingUpdateLock) {
+            productEntitlementMappingUpdateJob = null
+        }
+        scope.cancel()
+    }
+
+    private fun startProductEntitlementMappingUpdate(
+        topicProvider: ProductEntitlementMappingTopicProvider,
+        completion: ((PurchasesError?) -> Unit)?,
+    ) {
+        fun finishUpdate(updateJob: Job): Boolean =
+            synchronized(productEntitlementMappingUpdateLock) {
+                if (productEntitlementMappingUpdateJob !== updateJob) {
+                    false
+                } else {
+                    productEntitlementMappingUpdateJob = null
+                    true
+                }
+            }
+
+        val completeUpdate: (Job, PurchasesError?) -> Unit = { updateJob, error ->
+            if (finishUpdate(updateJob)) {
+                completion?.invoke(error)
+            }
+        }
+        val updateJob = synchronized(productEntitlementMappingUpdateLock) {
+            if (productEntitlementMappingUpdateJob != null) {
+                return
+            }
+
+            scope.launch(start = CoroutineStart.LAZY) {
+                val currentJob = coroutineContext[Job] ?: return@launch
+                var waitingForLegacyResult = false
+                try {
+                    val mapping = topicProvider.getProductEntitlementMapping()
+                    if (mapping != null) {
+                        deviceCache.cacheProductEntitlementMapping(mapping)
+                        debugLog { OfflineEntitlementsStrings.SUCCESSFULLY_UPDATED_PRODUCT_ENTITLEMENTS }
+                        completeUpdate(currentJob, null)
+                    } else {
+                        waitingForLegacyResult = true
+                        fetchLegacyProductEntitlementMapping { completeUpdate(currentJob, it) }
+                    }
+                } finally {
+                    if (!waitingForLegacyResult) {
+                        finishUpdate(currentJob)
+                    }
+                }
+            }.also {
+                productEntitlementMappingUpdateJob = it
+            }
+        }
+        updateJob.start()
+    }
+
+    private fun fetchLegacyProductEntitlementMapping(completion: ((PurchasesError?) -> Unit)?) {
+        backend.getProductEntitlementMapping(
+            onSuccessHandler = { productEntitlementMapping ->
+                cacheProductEntitlementMapping(productEntitlementMapping, completion)
+            },
+            onErrorHandler = { e ->
+                errorLog { OfflineEntitlementsStrings.ERROR_UPDATING_PRODUCT_ENTITLEMENTS.format(e) }
+                completion?.invoke(e)
+            },
+        )
+    }
+
+    private fun cacheProductEntitlementMapping(
+        productEntitlementMapping: ProductEntitlementMapping,
+        completion: ((PurchasesError?) -> Unit)?,
+    ) {
+        deviceCache.cacheProductEntitlementMapping(productEntitlementMapping)
+        debugLog { OfflineEntitlementsStrings.SUCCESSFULLY_UPDATED_PRODUCT_ENTITLEMENTS }
+        completion?.invoke(null)
+    }
+
+    // We disable offline entitlements in observer mode (finishTransactions = false) since it doesn't
     // provide any value and simplifies operations in that mode. Also on test store, since we don't have a store
     // to store purchases in the client.
     private fun isOfflineEntitlementsEnabled() = appConfig.finishTransactions &&

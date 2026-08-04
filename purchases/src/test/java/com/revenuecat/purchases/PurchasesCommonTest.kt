@@ -3046,6 +3046,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
     private fun verifyClose() {
         verify {
+            mockOfflineEntitlementsManager.close()
             mockBackend.close()
             mockRemoteConfigManager.close()
             mockBillingAbstract.close()

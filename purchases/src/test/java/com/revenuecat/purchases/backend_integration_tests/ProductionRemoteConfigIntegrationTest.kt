@@ -5,6 +5,8 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.JsonProvider
 import com.revenuecat.purchases.common.networking.RCContainer
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
+import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMappingTopicProvider
 import com.revenuecat.purchases.common.remoteconfig.DefaultRemoteConfigSourceProvider
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobFetcher
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
@@ -182,6 +184,27 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         assertThat(workflow.initialStepId).isNotEmpty()
     }
 
+    @Test
+    fun `fetches product entitlement mapping through remote config`() {
+        setupTest(SignatureVerificationMode.Informational())
+        every { appConfig.isDebugBuild } returns false
+        val manager = buildRemoteConfigManager(useRealBlobFetcher = true)
+
+        val mapping = runBlocking {
+            ProductEntitlementMappingTopicProvider(manager).getProductEntitlementMapping()
+        }
+
+        assertThat(mapping).isNotNull
+        assertThat(mapping!!.mappings.size).isEqualTo(2)
+        assertThat(mapping.mappings["cheapest_subs"]).isEqualTo(
+            ProductEntitlementMapping.Mapping(
+                productIdentifier = "cheapest_subs",
+                basePlanId = "annual",
+                entitlements = listOf("pro_cat"),
+            ),
+        )
+    }
+
     // A minimal projection of a workflows blob's stable top-level fields, used only to exercise the reified
     // blobData<T> deserialization path. Extra keys (screens, steps, metadata, ...) are ignored by defaultJson.
     @Serializable
@@ -349,25 +372,32 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
      * Builds a [RemoteConfigManager] wired to the real [backend] and backed by the real [RemoteConfigDiskCache] +
      * [RemoteConfigBlobStore] on a temp folder, so a read exercises the full fetch -> persist -> disk -> read path.
      *
-     * Only the blob fetcher's network layer is kept out: it is unit-tested elsewhere, and these reads only touch a
-     * blob the real backend inlined and the manager extracted to disk, so [RemoteConfigBlobFetcher.ensureDownloaded]
-     * resolves from the store (its real short-circuit for an already-cached ref) with no CDN call, and prefetch is
-     * a no-op.
+     * When [useRealBlobFetcher] is true, an external blob also exercises the CDN download and checksum path. The
+     * existing inline-workflow tests keep their isolated downloader so they continue specifically testing inline
+     * persistence rather than succeeding after an asynchronous external download.
      */
-    private fun buildRemoteConfigManager(): RemoteConfigManager {
+    private fun buildRemoteConfigManager(useRealBlobFetcher: Boolean = false): RemoteConfigManager {
         val context = mockk<Context>()
         every { context.noBackupFilesDir } returns File(testFolder).apply { mkdirs() }
         remoteConfigBlobStore = RemoteConfigBlobStore(context)
-        val blobFetcher = mockk<RemoteConfigBlobFetcher>(relaxed = true)
-        coEvery { blobFetcher.ensureDownloaded(any<String>()) } answers { remoteConfigBlobStore.contains(firstArg()) }
         val diskCache = RemoteConfigDiskCache(context)
         val topicStore = RemoteConfigTopicStore { diskCache.read()?.topics?.get(it.wireName) }
+        val sourceProvider = DefaultRemoteConfigSourceProvider(topicStore)
+        val blobFetcher = if (useRealBlobFetcher) {
+            RemoteConfigBlobFetcher(remoteConfigBlobStore, sourceProvider)
+        } else {
+            mockk<RemoteConfigBlobFetcher>(relaxed = true).also { fetcher ->
+                coEvery { fetcher.ensureDownloaded(any<String>()) } answers {
+                    remoteConfigBlobStore.contains(firstArg())
+                }
+            }
+        }
         return RemoteConfigManager(
             backend = backend,
             diskCache = diskCache,
             blobStore = remoteConfigBlobStore,
             topicStore = topicStore,
-            sourceProvider = DefaultRemoteConfigSourceProvider(topicStore),
+            sourceProvider = sourceProvider,
             blobFetcher = blobFetcher,
             appUserIDProvider = { REMOTE_CONFIG_USER },
         )
