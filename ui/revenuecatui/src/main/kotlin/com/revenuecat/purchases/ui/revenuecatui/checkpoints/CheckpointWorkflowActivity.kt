@@ -11,6 +11,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 /**
  * Presents the workflow resolved for a checkpoint and reports the terminal [CheckpointPaywallOutcome] back to
@@ -27,7 +28,6 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
     private var callId: String? = null
     private var entry: CheckpointCallStore.Entry? = null
     private var reported = false
-    private var stagedResult: CheckpointPaywallOutcome = CheckpointPaywallOutcome.Dismissed
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +36,7 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
         val presentation = entry?.presentation ?: run {
             // Process death or stray relaunch: the core-side pending call died with the process, so there is
             // nothing to report to.
+            Logger.w("Checkpoint call '$callId' no longer exists. Closing the checkpoint workflow.")
             finish()
             return
         }
@@ -55,32 +56,33 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
         super.onDestroy()
     }
 
+    // Outcomes are staged on the store entry (not this instance) so a configuration change doesn't reset them.
     private val resultStagingListener = object : PaywallListener {
         override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
-            stagedResult = CheckpointPaywallOutcome.Purchased(customerInfo)
+            entry?.stagedOutcome = CheckpointPaywallOutcome.Purchased(customerInfo)
         }
 
         override fun onRestoreCompleted(customerInfo: CustomerInfo) {
-            stagedResult = CheckpointPaywallOutcome.Restored(customerInfo)
+            entry?.stagedOutcome = CheckpointPaywallOutcome.Restored(customerInfo)
         }
 
         override fun onPurchaseError(error: PurchasesError) {
             if (error.code != PurchasesErrorCode.PurchaseCancelledError) {
-                stagedResult = CheckpointPaywallOutcome.Error(error)
+                entry?.stagedOutcome = CheckpointPaywallOutcome.Error(error)
             }
         }
 
         override fun onRestoreError(error: PurchasesError) {
-            stagedResult = CheckpointPaywallOutcome.Error(error)
+            entry?.stagedOutcome = CheckpointPaywallOutcome.Error(error)
         }
     }
 
     private fun report() {
         val callId = callId
-        val delegate = entry?.delegate
-        if (reported || callId == null || delegate == null) return
+        val entry = entry
+        if (reported || callId == null || entry == null) return
         reported = true
         CheckpointCallStore.remove(callId)
-        delegate.onCheckpointPaywallFinished(callId, stagedResult)
+        entry.delegate.onCheckpointPaywallFinished(callId, entry.stagedOutcome)
     }
 }

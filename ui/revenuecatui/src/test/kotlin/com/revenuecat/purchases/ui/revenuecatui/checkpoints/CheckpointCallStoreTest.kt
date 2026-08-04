@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.checkpoints.CheckpointPaywallOutcome
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -38,6 +40,26 @@ class CheckpointCallStoreTest {
     @Test
     fun `remove returns null for an unknown callId`() {
         assertThat(CheckpointCallStore.remove("unknown-call-id")).isNull()
+    }
+
+    @Test
+    fun `a stored entry's staged outcome defaults to Dismissed`() {
+        CheckpointCallStore.store("call-id", CheckpointCallStore.Entry(delegate = mockk(), presentation = mockk()))
+
+        assertThat(CheckpointCallStore.get("call-id")?.stagedOutcome)
+            .isEqualTo(CheckpointPaywallOutcome.Dismissed)
+    }
+
+    @Test
+    fun `a staged outcome survives re-reading the entry`() {
+        val entry = CheckpointCallStore.Entry(delegate = mockk(), presentation = mockk())
+        CheckpointCallStore.store("call-id", entry)
+        val customerInfo = mockk<CustomerInfo>()
+
+        entry.stagedOutcome = CheckpointPaywallOutcome.Restored(customerInfo)
+
+        assertThat(CheckpointCallStore.get("call-id")?.stagedOutcome)
+            .isEqualTo(CheckpointPaywallOutcome.Restored(customerInfo))
     }
 
     @Test
