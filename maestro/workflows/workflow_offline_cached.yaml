@@ -23,7 +23,7 @@ env:
 - tapOn:
     text: "Present Paywall"
 - extendedWaitUntil:
-    visible: "Start Your Free Week And Reclaim 30+ Minutes Daily"
+    visible: "Continue 1/3"
     timeout: 15000
 # Give the config/blob persist a moment to finish before killing the app.
 - waitForAnimationToEnd:
@@ -43,7 +43,7 @@ env:
 
 # The cached multipage workflow renders from disk even though config is offline.
 - extendedWaitUntil:
-    visible: "Start Your Free Week And Reclaim 30+ Minutes Daily"
+    visible: "Continue 1/3"
     timeout: 15000
 # The default paywall (cold-cache fallback) must NOT appear here.
 - assertNotVisible: "No Paywall configured"

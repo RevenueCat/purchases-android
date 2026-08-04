@@ -22,6 +22,9 @@ public fun Purchases.Companion.configureForE2ETests(
                 E2EForceServerErrorStrategy.RemoteConfigKillSwitch -> {
                     if (endpoint is Endpoint.GetRemoteConfig) url.appendingRemoteConfigKillSwitch() else url
                 }
+                E2EForceServerErrorStrategy.RemoteConfigNetworkError -> {
+                    if (endpoint.isRemoteConfig()) remoteConfigOfflineURL else url
+                }
             }
         }
     }
@@ -47,3 +50,8 @@ private fun URL.appendingRemoteConfigKillSwitch(): URL = URL(
         .build()
         .toString(),
 )
+
+private fun Endpoint.isRemoteConfig(): Boolean =
+    this is Endpoint.GetRemoteConfig || this is Endpoint.GetRemoteConfigFallback
+
+private val remoteConfigOfflineURL = URL("https://config-offline.invalid/")

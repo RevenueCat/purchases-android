@@ -13,11 +13,20 @@ private val forceServerErrorStrategy = AtomicReference(E2EForceServerErrorStrate
 @OptIn(InternalRevenueCatAPI::class)
 internal fun configurePurchases(
     configuration: PurchasesConfiguration,
+    initialForceServerErrorStrategy: String? = null,
 ) {
+    forceServerErrorStrategy.set(initialForceServerErrorStrategy.toForceServerErrorStrategy())
     Purchases.configureForE2ETests(configuration, forceServerErrorStrategy::get)
 }
 
 @OptIn(InternalRevenueCatAPI::class)
 internal fun armRemoteConfigKillSwitchForE2ETests() {
     forceServerErrorStrategy.set(E2EForceServerErrorStrategy.RemoteConfigKillSwitch)
+}
+
+@OptIn(InternalRevenueCatAPI::class)
+private fun String?.toForceServerErrorStrategy(): E2EForceServerErrorStrategy = when (this) {
+    "remote_config_kill_switch" -> E2EForceServerErrorStrategy.RemoteConfigKillSwitch
+    "remote_config_network_error" -> E2EForceServerErrorStrategy.RemoteConfigNetworkError
+    else -> E2EForceServerErrorStrategy.Never
 }
