@@ -7,6 +7,10 @@ import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdOpenedData
 import com.revenuecat.purchases.ads.events.types.AdRevenueData
+import com.revenuecat.purchases.ads.events.types.AdRewardEarnedUnverifiedData
+import com.revenuecat.purchases.ads.events.types.AdRewardFailedToVerifyData
+import com.revenuecat.purchases.ads.events.types.AdRewardGrantedData
+import com.revenuecat.purchases.ads.events.types.AdRewardVerifiedData
 import com.revenuecat.purchases.common.events.EventsManager
 
 /**
@@ -151,6 +155,113 @@ public class AdTracker internal constructor(
                 impressionId = null,
                 captureMethod = captureMethod,
                 mediatorErrorCode = data.mediatorErrorCode,
+            ),
+        )
+    }
+
+    /**
+     * Tracks the start of a reward-verification poll.
+     *
+     * @param data The reward-earned event data.
+     */
+    public fun trackAdRewardEarnedUnverified(data: AdRewardEarnedUnverifiedData): Unit =
+        trackAdRewardEarnedUnverified(data, AdCaptureMethod.MANUAL)
+
+    /**
+     * Tracks the start of a reward-verification poll, stamping the capture method that emitted it.
+     */
+    @InternalRevenueCatAPI
+    public fun trackAdRewardEarnedUnverified(data: AdRewardEarnedUnverifiedData, captureMethod: AdCaptureMethod) {
+        eventsManager.track(
+            event = AdEvent.RewardEarnedUnverified(
+                networkName = data.networkName,
+                mediatorName = data.mediatorName,
+                adFormat = data.adFormat,
+                placement = data.placement,
+                adUnitId = data.adUnitId,
+                impressionId = data.impressionId,
+                captureMethod = captureMethod,
+                rewardVerificationEnabled = data.rewardVerificationEnabled,
+            ),
+        )
+    }
+
+    /**
+     * Tracks a reward-verification poll completing successfully.
+     *
+     * @param data The reward-verified event data.
+     */
+    public fun trackAdRewardVerified(data: AdRewardVerifiedData): Unit =
+        trackAdRewardVerified(data, AdCaptureMethod.MANUAL)
+
+    /**
+     * Tracks a reward-verification poll completing successfully, stamping the capture method that emitted it.
+     */
+    @InternalRevenueCatAPI
+    public fun trackAdRewardVerified(data: AdRewardVerifiedData, captureMethod: AdCaptureMethod) {
+        eventsManager.track(
+            event = AdEvent.RewardVerified(
+                networkName = data.networkName,
+                mediatorName = data.mediatorName,
+                adFormat = data.adFormat,
+                placement = data.placement,
+                adUnitId = data.adUnitId,
+                impressionId = data.impressionId,
+                captureMethod = captureMethod,
+            ),
+        )
+    }
+
+    /**
+     * Tracks a single reward grant.
+     *
+     * @param data The reward-granted event data.
+     */
+    public fun trackAdRewardGranted(data: AdRewardGrantedData): Unit =
+        trackAdRewardGranted(data, AdCaptureMethod.MANUAL)
+
+    /**
+     * Tracks a single reward grant, stamping the capture method that emitted it.
+     */
+    @InternalRevenueCatAPI
+    public fun trackAdRewardGranted(data: AdRewardGrantedData, captureMethod: AdCaptureMethod) {
+        eventsManager.track(
+            event = AdEvent.RewardGranted(
+                networkName = data.networkName,
+                mediatorName = data.mediatorName,
+                adFormat = data.adFormat,
+                placement = data.placement,
+                adUnitId = data.adUnitId,
+                impressionId = data.impressionId,
+                captureMethod = captureMethod,
+                reward = data.reward,
+            ),
+        )
+    }
+
+    /**
+     * Tracks a reward-verification poll failing.
+     *
+     * @param data The reward-failed-to-verify event data.
+     */
+    public fun trackAdRewardFailedToVerify(data: AdRewardFailedToVerifyData): Unit =
+        trackAdRewardFailedToVerify(data, AdCaptureMethod.MANUAL)
+
+    /**
+     * Tracks a reward-verification poll failing, stamping the capture method that emitted it.
+     */
+    @InternalRevenueCatAPI
+    public fun trackAdRewardFailedToVerify(data: AdRewardFailedToVerifyData, captureMethod: AdCaptureMethod) {
+        eventsManager.track(
+            event = AdEvent.RewardFailedToVerify(
+                networkName = data.networkName,
+                mediatorName = data.mediatorName,
+                adFormat = data.adFormat,
+                placement = data.placement,
+                adUnitId = data.adUnitId,
+                impressionId = data.impressionId,
+                captureMethod = captureMethod,
+                failureReason = data.failureReason,
             ),
         )
     }
