@@ -385,6 +385,7 @@ package com.revenuecat.purchases {
     method public void getAmazonLWAConsentStatus(com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback callback);
     method @kotlin.jvm.Synchronized public String getAppUserID();
     method public com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies? getCachedVirtualCurrencies();
+    method @kotlin.jvm.JvmSynthetic public com.revenuecat.purchases.checkpoints.CheckpointListener? getCheckpointListener();
     method public com.revenuecat.purchases.PurchasesConfiguration getCurrentConfiguration();
     method public com.revenuecat.purchases.customercenter.CustomerCenterListener? getCustomerCenterListener();
     method public void getCustomerInfo(com.revenuecat.purchases.CacheFetchPolicy fetchPolicy, com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback callback);
@@ -444,6 +445,7 @@ package com.revenuecat.purchases {
     method public void setAppstackAttributionParams(java.util.Map<java.lang.String,java.lang.String> data, com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback callback);
     method public void setAttributes(java.util.Map<java.lang.String,java.lang.String?> attributes);
     method public void setCampaign(String? campaign);
+    method @kotlin.jvm.JvmSynthetic public void setCheckpointListener(com.revenuecat.purchases.checkpoints.CheckpointListener?);
     method public void setCleverTapID(String? cleverTapID);
     method public void setCreative(String? creative);
     method public void setCustomerCenterListener(com.revenuecat.purchases.customercenter.CustomerCenterListener?);
@@ -488,6 +490,7 @@ package com.revenuecat.purchases {
     property @Deprecated @kotlin.jvm.Synchronized public final boolean allowSharingPlayStoreAccount;
     property @kotlin.jvm.Synchronized public final String appUserID;
     property public final com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies? cachedVirtualCurrencies;
+    property @kotlin.jvm.JvmSynthetic public final com.revenuecat.purchases.checkpoints.CheckpointListener? checkpointListener;
     property public final com.revenuecat.purchases.PurchasesConfiguration currentConfiguration;
     property public final com.revenuecat.purchases.customercenter.CustomerCenterListener? customerCenterListener;
     property @kotlin.jvm.JvmSynthetic public final com.revenuecat.purchases.DebugEventListener? debugEventListener;

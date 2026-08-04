@@ -9,11 +9,14 @@ import com.revenuecat.paywallstester.ConfigurePurchasesUseCase
 import com.revenuecat.paywallstester.Constants
 import com.revenuecat.paywallstester.data.ApiKeyStore
 import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewModel.UiState
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.awaitCheckpoint
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitLogIn
 import com.revenuecat.purchases.awaitLogOut
+import com.revenuecat.purchases.checkpoints.CheckpointParams
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,12 +28,14 @@ interface AppInfoScreenViewModel {
         val appUserID: String,
         val apiKeyDescription: String,
         val activeEntitlements: List<String>,
+        val lastCheckpointResult: String,
     ) {
         companion object {
             val Empty = UiState(
                 appUserID = "",
                 apiKeyDescription = "",
                 activeEntitlements = emptyList(),
+                lastCheckpointResult = "",
             )
         }
     }
@@ -40,6 +45,7 @@ interface AppInfoScreenViewModel {
     fun logIn(newAppUserId: String)
     fun logOut()
     fun switchApiKey(newApiKey: String)
+    fun checkpoint(checkpointIdentifier: String)
     fun refresh()
 }
 
@@ -99,6 +105,23 @@ internal class AppInfoScreenViewModelImpl(
         apiKeyStore.setLastUsedApiKey(newApiKey)
         configurePurchases(newApiKey)
         updateApiKeyDescription()
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    override fun checkpoint(checkpointIdentifier: String) {
+        viewModelScope.launch {
+            _state.update { it.copy(lastCheckpointResult = "Waiting for '$checkpointIdentifier'...") }
+            val resultText = try {
+                val result = Purchases.sharedInstance.awaitCheckpoint(
+                    checkpointIdentifier,
+                    CheckpointParams("source" to "paywall-tester"),
+                )
+                result.toString()
+            } catch (e: PurchasesException) {
+                "Error: ${e.message}"
+            }
+            _state.update { it.copy(lastCheckpointResult = resultText) }
+        }
     }
 
     override fun refresh() {
