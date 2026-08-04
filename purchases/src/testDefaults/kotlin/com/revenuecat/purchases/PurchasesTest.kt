@@ -2162,6 +2162,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     private fun pollWithTracking(poll: suspend (String) -> Outcome): List<AdEvent> {
         val trackedEvents = mutableListOf<AdEvent>()
         every { mockAdEventsManager.track(any()) } answers { trackedEvents.add(firstArg<AdEvent>()) }
+        every { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() } returns Unit
         runBlocking {
             purchases.pollRewardVerification(
                 clientTransactionId = "ct_1",
@@ -2230,6 +2231,7 @@ internal class PurchasesTest : BasePurchasesTest() {
     @Test
     fun `pollRewardVerification tracks nothing when trackingMetadata is absent`() {
         every { mockAdEventsManager.track(any()) } just Runs
+        every { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() } returns Unit
 
         runBlocking {
             purchases.pollRewardVerification(
