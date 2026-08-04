@@ -11,7 +11,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.checkpoints.CheckpointInfo
 import com.revenuecat.purchases.checkpoints.CheckpointListener
-import com.revenuecat.purchases.checkpoints.CheckpointPaywallResult
+import com.revenuecat.purchases.checkpoints.CheckpointPaywallOutcome
 import com.revenuecat.purchases.checkpoints.CheckpointResult
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreTransaction
@@ -43,11 +43,11 @@ class MainApplication : Application() {
 
             override fun onCheckpointPaywallFinished(
                 checkpoint: CheckpointInfo,
-                paywallResult: CheckpointPaywallResult,
+                paywallOutcome: CheckpointPaywallOutcome,
             ) {
                 Log.d(
                     TAG,
-                    "CheckpointListener: onCheckpointPaywallFinished: ${checkpoint.identifier} -> $paywallResult",
+                    "CheckpointListener: onCheckpointPaywallFinished: ${checkpoint.identifier} -> $paywallOutcome",
                 )
             }
         }
