@@ -20,7 +20,7 @@ import com.revenuecat.purchases.common.workflows.WorkflowManager
 internal class RandomWorkflowCheckpointResolver(
     private val workflowManager: WorkflowManager?,
     private val uiConfigProvider: UiConfigProvider?,
-    private val cachedOfferingsProvider: () -> Offerings?,
+    private val getOfferings: suspend () -> Offerings,
 ) : CheckpointWorkflowResolver {
 
     override suspend fun resolve(checkpoint: CheckpointInfo): CheckpointWorkflowResolution =
@@ -52,7 +52,14 @@ internal class RandomWorkflowCheckpointResolver(
         }
         val uiConfig = uiConfigProvider.getUiConfig()
             ?: return configurationUnavailable("UI config is unavailable for workflow '$workflowId'.")
-        val offering = offeringId?.let { cachedOfferingsProvider()?.all?.get(it) }
+        val offering = offeringId?.let { id ->
+            val offerings = try {
+                getOfferings()
+            } catch (e: PurchasesException) {
+                return configurationUnavailable("Offerings could not be fetched for workflow '$workflowId': ${e.error}")
+            }
+            offerings.all[id]
+        }
         debugLog {
             "Checkpoint '${checkpoint.identifier}' resolved to random workflow '$workflowId' " +
                 "(offering: ${offering?.identifier})"

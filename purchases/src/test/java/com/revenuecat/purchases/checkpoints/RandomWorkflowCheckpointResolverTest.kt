@@ -36,6 +36,8 @@ class RandomWorkflowCheckpointResolverTest {
     private lateinit var mockUiConfig: UiConfig
     private lateinit var mockOffering: Offering
     private lateinit var mockOfferings: Offerings
+    private var offeringsFetchError: PurchasesError? = null
+    private var offeringsFetched = false
 
     private lateinit var resolver: RandomWorkflowCheckpointResolver
 
@@ -56,7 +58,11 @@ class RandomWorkflowCheckpointResolverTest {
         resolver = RandomWorkflowCheckpointResolver(
             workflowManager = mockWorkflowManager,
             uiConfigProvider = mockUiConfigProvider,
-            cachedOfferingsProvider = { mockOfferings },
+            getOfferings = {
+                offeringsFetched = true
+                offeringsFetchError?.let { throw PurchasesException(it) }
+                mockOfferings
+            },
         )
     }
 
@@ -80,7 +86,7 @@ class RandomWorkflowCheckpointResolverTest {
         resolver = RandomWorkflowCheckpointResolver(
             workflowManager = null,
             uiConfigProvider = null,
-            cachedOfferingsProvider = { null },
+            getOfferings = { mockOfferings },
         )
 
         assertThat(noMatchReason(resolver.resolve(checkpoint)))
@@ -128,8 +134,28 @@ class RandomWorkflowCheckpointResolverTest {
     }
 
     @Test
-    fun `checkpoint resolves Matched with null offering when the workflow has none`() = runTest {
-        coEvery { mockWorkflowManager.availableWorkflows() } returns mapOf("wf1234" to null)
+    fun `checkpoint resolves Matched with null offering when the workflow has none, without fetching offerings`() =
+        runTest {
+            coEvery { mockWorkflowManager.availableWorkflows() } returns mapOf("wf1234" to null)
+
+            val resolution = resolver.resolve(checkpoint)
+
+            val presentation = (resolution as CheckpointWorkflowResolution.Matched).presentation
+            assertThat(presentation.offering).isNull()
+            assertThat(offeringsFetched).isFalse()
+        }
+
+    @Test
+    fun `checkpoint resolves NoMatch with CONFIGURATION_UNAVAILABLE when the offerings fetch fails`() = runTest {
+        offeringsFetchError = PurchasesError(PurchasesErrorCode.NetworkError, "Offline.")
+
+        assertThat(noMatchReason(resolver.resolve(checkpoint)))
+            .isEqualTo(CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+    }
+
+    @Test
+    fun `checkpoint resolves Matched with null offering when the fetched offerings lack the identifier`() = runTest {
+        every { mockOfferings.all } returns emptyMap()
 
         val resolution = resolver.resolve(checkpoint)
 
