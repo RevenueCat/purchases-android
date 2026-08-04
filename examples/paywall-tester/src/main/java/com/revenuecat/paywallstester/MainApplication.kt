@@ -2,6 +2,7 @@ package com.revenuecat.paywallstester
 
 import android.app.Application
 import android.util.Log
+import android.widget.Toast
 import com.revenuecat.paywallstester.data.ApiKeyStore
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.DebugEventListener
@@ -35,6 +36,11 @@ class MainApplication : Application() {
         Purchases.sharedInstance.checkpointListener = object : CheckpointListener {
             override fun onCheckpointHit(checkpoint: CheckpointInfo) {
                 Log.d(TAG, "CheckpointListener: onCheckpointHit: $checkpoint")
+                Toast.makeText(
+                    this@MainApplication,
+                    "Checkpoint hit: ${checkpoint.identifier}",
+                    Toast.LENGTH_SHORT,
+                ).show()
             }
 
             override fun onCheckpointResolved(checkpoint: CheckpointInfo, result: CheckpointResult) {
