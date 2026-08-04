@@ -5,12 +5,8 @@ package com.revenuecat.purchases.checkpoints
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.interfaces.CheckpointCallback
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
@@ -26,8 +22,6 @@ internal class CheckpointsManager(
     @get:Synchronized
     @set:Synchronized
     var checkpointListener: CheckpointListener? = null
-
-    private val scope = CoroutineScope(SupervisorJob() + mainDispatcher)
 
     /**
      * Runs on the main dispatcher; listener callbacks fire on the main thread. For UI outcomes,
@@ -51,16 +45,6 @@ internal class CheckpointsManager(
             checkpointListener?.onCheckpointResolved(checkpoint, result)
             result
         }
-
-    fun checkpoint(identifier: String, params: CheckpointParams?, callback: CheckpointCallback) {
-        scope.launch {
-            try {
-                callback.onResult(checkpoint(identifier, params))
-            } catch (e: PurchasesException) {
-                callback.onError(e.error)
-            }
-        }
-    }
 
     private suspend fun execute(presentation: CheckpointWorkflowPresentation): CheckpointResult =
         when (val outcome = executor.execute(presentation)) {
