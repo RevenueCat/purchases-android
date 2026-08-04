@@ -27,4 +27,9 @@ internal object CheckpointCallStore {
 
     @Synchronized
     fun remove(callId: String): Entry? = entriesByCallId.remove(callId)
+
+    @Synchronized
+    fun clear() {
+        entriesByCallId.clear()
+    }
 }
