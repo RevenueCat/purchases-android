@@ -223,6 +223,22 @@ internal class EventsManager(
                     identityManager.currentAppUserID,
                     appSessionID.toString(),
                 )
+                is AdEvent.RewardEarnedUnverified -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
+                is AdEvent.RewardVerified -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
+                is AdEvent.RewardGranted -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
+                is AdEvent.RewardFailedToVerify -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
+                    appSessionID.toString(),
+                )
                 is CustomPaywallEvent.Impression -> event.toBackendStoredEvent(
                     identityManager.currentAppUserID,
                     appSessionID.toString(),
