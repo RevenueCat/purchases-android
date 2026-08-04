@@ -12,7 +12,7 @@ import dev.drewhamilton.poko.Poko
 @InternalRevenueCatAPI
 public abstract class CheckpointPaywallResult internal constructor() {
 
-    public class Dismissed : CheckpointPaywallResult() {
+    public object Dismissed : CheckpointPaywallResult() {
         override fun toString(): String = "Dismissed"
     }
 
