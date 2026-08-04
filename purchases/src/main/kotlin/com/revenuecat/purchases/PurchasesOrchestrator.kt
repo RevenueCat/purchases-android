@@ -183,7 +183,7 @@ internal class PurchasesOrchestrator(
         resolver = RandomWorkflowCheckpointResolver(
             workflowManager = workflowManager,
             uiConfigProvider = uiConfigProvider,
-            cachedOfferingsProvider = { offeringsManager.cachedOfferings },
+            getOfferings = { Purchases.sharedInstance.awaitOfferings() },
         ),
         executor = UiCheckpointWorkflowExecutor(
             currentActivityProvider = currentActivityTracker::currentActivity,
