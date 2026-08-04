@@ -15,7 +15,6 @@ import com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken
 import com.revenuecat.purchases.ads.rewardverification.VerifiedReward
 import com.revenuecat.purchases.ads.rewardverification.rewardVerificationRetryDelay
 import com.revenuecat.purchases.checkpoints.CheckpointListener
-import com.revenuecat.purchases.checkpoints.CheckpointParams
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.debugLog
@@ -29,7 +28,6 @@ import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
-import com.revenuecat.purchases.interfaces.CheckpointCallback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
@@ -437,39 +435,6 @@ public class Purchases internal constructor(
     @JvmSynthetic
     public suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         purchasesOrchestrator.resolveWorkflow(offeringId)
-
-    /**
-     * Registers that [checkpointIdentifier] was reached. Depending on the configured targeting rules, this may
-     * auto-present an experience (the call resolves when it finishes) or do nothing.
-     * @param [checkpointIdentifier] The checkpoint identifier, as configured in the RevenueCat dashboard.
-     * @param [callback] Response callback
-     */
-    @InternalRevenueCatAPI
-    public fun checkpoint(
-        checkpointIdentifier: String,
-        callback: CheckpointCallback,
-    ) {
-        checkpoint(checkpointIdentifier, null, callback)
-    }
-
-    /**
-     * Registers that [checkpointIdentifier] was reached. Depending on the configured targeting rules, this may
-     * auto-present an experience (the call resolves when it finishes) or do nothing.
-     * @param [checkpointIdentifier] The checkpoint identifier, as configured in the RevenueCat dashboard.
-     * @param [params] Optional per-call parameters, like custom properties usable in targeting rules.
-     * @param [callback] Response callback
-     */
-    @Suppress("UnusedParameter")
-    @InternalRevenueCatAPI
-    public fun checkpoint(
-        checkpointIdentifier: String,
-        params: CheckpointParams?,
-        callback: CheckpointCallback,
-    ) {
-        callback.onError(
-            PurchasesError(PurchasesErrorCode.UnsupportedError, "Checkpoints are not implemented yet."),
-        )
-    }
 
     /**
      * Gets the StoreProduct(s) for the given list of product ids for all product types.
