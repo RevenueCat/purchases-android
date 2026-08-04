@@ -127,7 +127,7 @@ class CheckpointsManagerTest {
 
         verify(exactly = 0) { mockCallback.onResult(any()) }
 
-        val paywallResult = CheckpointPaywallResult.Dismissed()
+        val paywallResult = CheckpointPaywallResult.Dismissed
         paywallFinished.complete(paywallResult)
 
         val resultSlot = slot<CheckpointResult>()
@@ -148,7 +148,7 @@ class CheckpointsManagerTest {
     fun `awaiting matched checkpoint resolves PaywallPresented when the workflow finishes`() = runTest(dispatcher) {
         matchCheckpointToWorkflow()
         coEvery { mockExecutor.execute(any()) } returns
-            CheckpointWorkflowOutcome.PaywallFinished(CheckpointPaywallResult.Dismissed())
+            CheckpointWorkflowOutcome.PaywallFinished(CheckpointPaywallResult.Dismissed)
 
         val result = manager.checkpoint(checkpointId, null)
 

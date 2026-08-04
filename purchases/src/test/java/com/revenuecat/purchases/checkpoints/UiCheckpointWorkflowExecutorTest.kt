@@ -71,7 +71,7 @@ class UiCheckpointWorkflowExecutorTest {
 
     @Test
     fun `execute returns PaywallFinished with the delegate-reported result`() = runTest(dispatcher) {
-        val paywallResult = CheckpointPaywallResult.Dismissed()
+        val paywallResult = CheckpointPaywallResult.Dismissed
         presenterReportsImmediately(paywallResult)
 
         val outcome = executor.execute(presentation) as CheckpointWorkflowOutcome.PaywallFinished
@@ -92,7 +92,7 @@ class UiCheckpointWorkflowExecutorTest {
 
     @Test
     fun `execute can present again after the previous workflow finishes`() = runTest(dispatcher) {
-        presenterReportsImmediately(CheckpointPaywallResult.Dismissed())
+        presenterReportsImmediately(CheckpointPaywallResult.Dismissed)
 
         executor.execute(presentation)
         executor.execute(presentation)
@@ -102,9 +102,9 @@ class UiCheckpointWorkflowExecutorTest {
 
     @Test
     fun `report for unknown callId is a no-op`() = runTest(dispatcher) {
-        executor.onCheckpointPaywallFinished("unknown-call-id", CheckpointPaywallResult.Dismissed())
+        executor.onCheckpointPaywallFinished("unknown-call-id", CheckpointPaywallResult.Dismissed)
 
-        presenterReportsImmediately(CheckpointPaywallResult.Dismissed())
+        presenterReportsImmediately(CheckpointPaywallResult.Dismissed)
         assertThat(executor.execute(presentation))
             .isInstanceOf(CheckpointWorkflowOutcome.PaywallFinished::class.java)
     }
