@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import dev.drewhamilton.poko.Poko
 
 @InternalRevenueCatAPI
 public abstract class CheckpointResult internal constructor() {
@@ -11,27 +12,22 @@ public abstract class CheckpointResult internal constructor() {
      * A checkpoint experience was presented and finished. The disposition of the experience is delivered
      * through [CheckpointListener.onCheckpointUIFinished].
      */
+    @Poko
     public class UIPresented internal constructor(
         override val checkpoint: CheckpointInfo,
-    ) : CheckpointResult() {
-        override fun toString(): String = "UIPresented(checkpoint=$checkpoint)"
-    }
+    ) : CheckpointResult()
 
     /**
      * Nothing is served for this checkpoint; the user continues uninterrupted.
      */
+    @Poko
     public class NoAction internal constructor(
         override val checkpoint: CheckpointInfo,
         public val reason: Reason,
     ) : CheckpointResult() {
 
-        override fun toString(): String = "NoAction(checkpoint=$checkpoint, reason=$reason)"
-
+        @Poko
         public class Reason internal constructor(public val value: String) {
-
-            override fun equals(other: Any?): Boolean = other is Reason && other.value == value
-            override fun hashCode(): Int = value.hashCode()
-            override fun toString(): String = value
 
             public companion object {
                 @JvmField

@@ -25,5 +25,10 @@ public class CheckpointParams(
         }
     }.toMap()
 
+    override fun equals(other: Any?): Boolean =
+        other is CheckpointParams && other.customProperties == customProperties
+
+    override fun hashCode(): Int = customProperties.hashCode()
+
     override fun toString(): String = "CheckpointParams(customProperties=$customProperties)"
 }
