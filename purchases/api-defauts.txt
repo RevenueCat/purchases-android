@@ -755,10 +755,6 @@ package com.revenuecat.purchases.ads.events {
     method public void trackAdLoaded(com.revenuecat.purchases.ads.events.types.AdLoadedData data);
     method public void trackAdOpened(com.revenuecat.purchases.ads.events.types.AdOpenedData data);
     method public void trackAdRevenue(com.revenuecat.purchases.ads.events.types.AdRevenueData data);
-    method public void trackAdRewardEarnedUnverified(com.revenuecat.purchases.ads.events.types.AdRewardEarnedUnverifiedData data);
-    method public void trackAdRewardFailedToVerify(com.revenuecat.purchases.ads.events.types.AdRewardFailedToVerifyData data);
-    method public void trackAdRewardGranted(com.revenuecat.purchases.ads.events.types.AdRewardGrantedData data);
-    method public void trackAdRewardVerified(com.revenuecat.purchases.ads.events.types.AdRewardVerifiedData data);
   }
 
 }

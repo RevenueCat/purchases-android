@@ -160,15 +160,10 @@ public class AdTracker internal constructor(
     }
 
     /**
-     * Tracks the start of a reward-verification poll.
-     *
-     * @param data The reward-earned event data.
-     */
-    public fun trackAdRewardEarnedUnverified(data: AdRewardEarnedUnverifiedData): Unit =
-        trackAdRewardEarnedUnverified(data, AdCaptureMethod.MANUAL)
-
-    /**
      * Tracks the start of a reward-verification poll, stamping the capture method that emitted it.
+     *
+     * Unlike this class's other tracking methods, reward events have no manual-integration entry point:
+     * they're only ever emitted by the SDK's own reward-verification poll.
      */
     @InternalRevenueCatAPI
     public fun trackAdRewardEarnedUnverified(data: AdRewardEarnedUnverifiedData, captureMethod: AdCaptureMethod) {
@@ -187,15 +182,10 @@ public class AdTracker internal constructor(
     }
 
     /**
-     * Tracks a reward-verification poll completing successfully.
-     *
-     * @param data The reward-verified event data.
-     */
-    public fun trackAdRewardVerified(data: AdRewardVerifiedData): Unit =
-        trackAdRewardVerified(data, AdCaptureMethod.MANUAL)
-
-    /**
      * Tracks a reward-verification poll completing successfully, stamping the capture method that emitted it.
+     *
+     * Unlike this class's other tracking methods, reward events have no manual-integration entry point:
+     * they're only ever emitted by the SDK's own reward-verification poll.
      */
     @InternalRevenueCatAPI
     public fun trackAdRewardVerified(data: AdRewardVerifiedData, captureMethod: AdCaptureMethod) {
@@ -213,15 +203,10 @@ public class AdTracker internal constructor(
     }
 
     /**
-     * Tracks a single reward grant.
-     *
-     * @param data The reward-granted event data.
-     */
-    public fun trackAdRewardGranted(data: AdRewardGrantedData): Unit =
-        trackAdRewardGranted(data, AdCaptureMethod.MANUAL)
-
-    /**
      * Tracks a single reward grant, stamping the capture method that emitted it.
+     *
+     * Unlike this class's other tracking methods, reward events have no manual-integration entry point:
+     * they're only ever emitted by the SDK's own reward-verification poll.
      */
     @InternalRevenueCatAPI
     public fun trackAdRewardGranted(data: AdRewardGrantedData, captureMethod: AdCaptureMethod) {
@@ -240,15 +225,10 @@ public class AdTracker internal constructor(
     }
 
     /**
-     * Tracks a reward-verification poll failing.
-     *
-     * @param data The reward-failed-to-verify event data.
-     */
-    public fun trackAdRewardFailedToVerify(data: AdRewardFailedToVerifyData): Unit =
-        trackAdRewardFailedToVerify(data, AdCaptureMethod.MANUAL)
-
-    /**
      * Tracks a reward-verification poll failing, stamping the capture method that emitted it.
+     *
+     * Unlike this class's other tracking methods, reward events have no manual-integration entry point:
+     * they're only ever emitted by the SDK's own reward-verification poll.
      */
     @InternalRevenueCatAPI
     public fun trackAdRewardFailedToVerify(data: AdRewardFailedToVerifyData, captureMethod: AdCaptureMethod) {

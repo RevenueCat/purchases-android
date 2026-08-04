@@ -262,6 +262,7 @@ class AdTrackerTest {
                 impressionId = "impression-123",
                 rewardVerificationEnabled = true,
             ),
+            captureMethod = AdCaptureMethod.MANUAL,
         )
 
         verify(exactly = 1) { eventsManager.track(any<AdEvent.RewardEarnedUnverified>()) }
@@ -278,7 +279,7 @@ class AdTrackerTest {
     }
 
     @Test
-    fun `internal trackAdRewardEarnedUnverified overload stamps the given capture method`() {
+    fun `trackAdRewardEarnedUnverified stamps the given capture method`() {
         val eventSlot = slot<AdEvent.RewardEarnedUnverified>()
         every { eventsManager.track(capture(eventSlot)) } just Runs
 
@@ -312,6 +313,7 @@ class AdTrackerTest {
                 adUnitId = "ca-app-pub-123456",
                 impressionId = "impression-123",
             ),
+            captureMethod = AdCaptureMethod.MANUAL,
         )
 
         verify(exactly = 1) { eventsManager.track(any<AdEvent.RewardVerified>()) }
@@ -327,7 +329,7 @@ class AdTrackerTest {
     }
 
     @Test
-    fun `internal trackAdRewardVerified overload stamps the given capture method`() {
+    fun `trackAdRewardVerified stamps the given capture method`() {
         val eventSlot = slot<AdEvent.RewardVerified>()
         every { eventsManager.track(capture(eventSlot)) } just Runs
 
@@ -361,6 +363,7 @@ class AdTrackerTest {
                 impressionId = "impression-123",
                 reward = VerifiedReward.VirtualCurrency(code = "GLD", amount = 100),
             ),
+            captureMethod = AdCaptureMethod.MANUAL,
         )
 
         verify(exactly = 1) { eventsManager.track(any<AdEvent.RewardGranted>()) }
@@ -377,7 +380,7 @@ class AdTrackerTest {
     }
 
     @Test
-    fun `internal trackAdRewardGranted overload stamps the given capture method`() {
+    fun `trackAdRewardGranted stamps the given capture method`() {
         val eventSlot = slot<AdEvent.RewardGranted>()
         every { eventsManager.track(capture(eventSlot)) } just Runs
 
@@ -412,6 +415,7 @@ class AdTrackerTest {
                 impressionId = "impression-123",
                 failureReason = AdRewardFailureReason.TIMEOUT,
             ),
+            captureMethod = AdCaptureMethod.MANUAL,
         )
 
         verify(exactly = 1) { eventsManager.track(any<AdEvent.RewardFailedToVerify>()) }
@@ -428,7 +432,7 @@ class AdTrackerTest {
     }
 
     @Test
-    fun `internal trackAdRewardFailedToVerify overload stamps the given capture method`() {
+    fun `trackAdRewardFailedToVerify stamps the given capture method`() {
         val eventSlot = slot<AdEvent.RewardFailedToVerify>()
         every { eventsManager.track(capture(eventSlot)) } just Runs
 
