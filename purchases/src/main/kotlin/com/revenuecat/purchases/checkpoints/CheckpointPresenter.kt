@@ -4,21 +4,21 @@ import android.app.Activity
 import com.revenuecat.purchases.InternalRevenueCatAPI
 
 /**
- * Presents checkpoint experiences. Implemented by the RevenueCat UI module and discovered through
+ * Presents checkpoint workflows. Implemented by the RevenueCat UI module and discovered through
  * [java.util.ServiceLoader], so the core module can auto-present UI without a compile-time dependency.
  */
 @InternalRevenueCatAPI
 public interface CheckpointPresenter {
 
     /**
-     * Presents the experience for [checkpoint]. Implementations must call
+     * Presents the workflow in [presentation]. Implementations must call
      * [CheckpointPresenterDelegate.onCheckpointPaywallFinished] with [callId] exactly once, when the
-     * experience reaches its terminal state.
+     * presented workflow reaches its terminal state.
      */
     public fun present(
         activity: Activity,
         callId: String,
-        checkpoint: CheckpointInfo,
+        presentation: CheckpointWorkflowPresentation,
         delegate: CheckpointPresenterDelegate,
     )
 }
