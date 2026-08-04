@@ -9,6 +9,10 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.checkpoints.CheckpointInfo
+import com.revenuecat.purchases.checkpoints.CheckpointListener
+import com.revenuecat.purchases.checkpoints.CheckpointPaywallResult
+import com.revenuecat.purchases.checkpoints.CheckpointResult
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreTransaction
 
@@ -27,6 +31,25 @@ class MainApplication : Application() {
         configurePurchases(apiKey)
         Purchases.sharedInstance.debugEventListener = DebugEventListener { event ->
             Log.d(TAG, "DebugEvent: ${event.name} ${event.properties}")
+        }
+        Purchases.sharedInstance.checkpointListener = object : CheckpointListener {
+            override fun onCheckpointHit(checkpoint: CheckpointInfo) {
+                Log.d(TAG, "CheckpointListener: onCheckpointHit: $checkpoint")
+            }
+
+            override fun onCheckpointResolved(checkpoint: CheckpointInfo, result: CheckpointResult) {
+                Log.d(TAG, "CheckpointListener: onCheckpointResolved: $result")
+            }
+
+            override fun onCheckpointPaywallFinished(
+                checkpoint: CheckpointInfo,
+                paywallResult: CheckpointPaywallResult,
+            ) {
+                Log.d(
+                    TAG,
+                    "CheckpointListener: onCheckpointPaywallFinished: ${checkpoint.identifier} -> $paywallResult",
+                )
+            }
         }
         Purchases.sharedInstance.customerCenterListener =
             object : CustomerCenterListener {
