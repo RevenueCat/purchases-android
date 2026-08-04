@@ -232,10 +232,16 @@ internal class RewardVerificationManagerTest {
         ad.enableRewardVerification()
         trackingCallback.placement = "show-time-placement"
 
-        ad.showWithRewardVerification(activity = activity) { }
+        val completed = CountDownLatch(1)
+        ad.showWithRewardVerification(activity = activity) { completed.countDown() }
         rewardListenerSlot.captured.onUserEarnedReward(mockk<RewardItem>(relaxed = true))
-        shadowOf(Looper.getMainLooper()).idle()
 
+        val delivered = (1..10).any {
+            shadowOf(Looper.getMainLooper()).idle()
+            completed.await(100, TimeUnit.MILLISECONDS)
+        }
+
+        assertTrue(delivered)
         val metadata = polledTrackingMetadata.captured
         assertNotNull(metadata)
         assertEquals("com.example.SomeAdapter", metadata!!.networkName)
