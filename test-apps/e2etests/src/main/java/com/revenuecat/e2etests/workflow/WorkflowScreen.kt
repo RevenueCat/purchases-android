@@ -42,7 +42,10 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 private const val WORKFLOW_OFFERING_ID = "default_workflows"
 private const val ENTITLEMENT_ID = "pro"
-private const val KILL_SWITCH_TIMEOUT_MILLIS = 10_000L
+
+// Keep this longer than Maestro's 30-second wait so app-side polling cannot preempt the test timeout.
+private const val KILL_SWITCH_TIMEOUT_MILLIS = 35_000L
+
 private const val KILL_SWITCH_POLL_INTERVAL_MILLIS = 100L
 
 private sealed interface OfferingState {
