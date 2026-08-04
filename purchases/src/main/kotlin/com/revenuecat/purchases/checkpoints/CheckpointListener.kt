@@ -9,8 +9,8 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 @InternalRevenueCatAPI
 public interface CheckpointListener {
 
-    /** A checkpoint was reached, before evaluation. */
-    public fun onCheckpointRegistered(checkpoint: CheckpointInfo) {
+    /** A checkpoint was hit, before evaluation. */
+    public fun onCheckpointHit(checkpoint: CheckpointInfo) {
         // Default empty implementation
     }
 
@@ -19,8 +19,8 @@ public interface CheckpointListener {
         // Default empty implementation
     }
 
-    /** A checkpoint-presented experience finished, with its disposition. */
-    public fun onCheckpointUIFinished(checkpoint: CheckpointInfo, uiResult: CheckpointUIResult) {
+    /** A checkpoint-presented paywall finished, with its result. */
+    public fun onCheckpointPaywallFinished(checkpoint: CheckpointInfo, paywallResult: CheckpointPaywallResult) {
         // Default empty implementation
     }
 }

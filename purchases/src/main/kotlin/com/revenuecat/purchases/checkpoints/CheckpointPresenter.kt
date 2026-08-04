@@ -12,7 +12,7 @@ public interface CheckpointPresenter {
 
     /**
      * Presents the experience for [checkpoint]. Implementations must call
-     * [CheckpointPresenterDelegate.onCheckpointUIFinished] with [callId] exactly once, when the
+     * [CheckpointPresenterDelegate.onCheckpointPaywallFinished] with [callId] exactly once, when the
      * experience reaches its terminal state.
      */
     public fun present(
@@ -25,5 +25,5 @@ public interface CheckpointPresenter {
 
 @InternalRevenueCatAPI
 public interface CheckpointPresenterDelegate {
-    public fun onCheckpointUIFinished(callId: String, uiResult: CheckpointUIResult)
+    public fun onCheckpointPaywallFinished(callId: String, paywallResult: CheckpointPaywallResult)
 }

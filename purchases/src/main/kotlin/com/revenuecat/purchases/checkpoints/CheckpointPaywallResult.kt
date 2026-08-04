@@ -6,28 +6,28 @@ import com.revenuecat.purchases.PurchasesError
 import dev.drewhamilton.poko.Poko
 
 /**
- * Terminal disposition of a presented checkpoint experience. Delivered through
- * [CheckpointListener.onCheckpointUIFinished].
+ * Terminal result of a checkpoint-presented paywall. Delivered in [CheckpointResult.PaywallPresented] and
+ * through [CheckpointListener.onCheckpointPaywallFinished].
  */
 @InternalRevenueCatAPI
-public abstract class CheckpointUIResult internal constructor() {
+public abstract class CheckpointPaywallResult internal constructor() {
 
-    public class Dismissed : CheckpointUIResult() {
+    public class Dismissed : CheckpointPaywallResult() {
         override fun toString(): String = "Dismissed"
     }
 
     @Poko
     public class Purchased(
         public val customerInfo: CustomerInfo,
-    ) : CheckpointUIResult()
+    ) : CheckpointPaywallResult()
 
     @Poko
     public class Restored(
         public val customerInfo: CustomerInfo,
-    ) : CheckpointUIResult()
+    ) : CheckpointPaywallResult()
 
     @Poko
     public class Error(
         public val error: PurchasesError,
-    ) : CheckpointUIResult()
+    ) : CheckpointPaywallResult()
 }

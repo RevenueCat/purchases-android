@@ -9,12 +9,12 @@ public abstract class CheckpointResult internal constructor() {
     public abstract val checkpoint: CheckpointInfo
 
     /**
-     * A checkpoint experience was presented and finished. The disposition of the experience is delivered
-     * through [CheckpointListener.onCheckpointUIFinished].
+     * A checkpoint-triggered paywall was presented and finished with [paywallResult].
      */
     @Poko
-    public class UIPresented internal constructor(
+    public class PaywallPresented internal constructor(
         override val checkpoint: CheckpointInfo,
+        public val paywallResult: CheckpointPaywallResult,
     ) : CheckpointResult()
 
     /**
