@@ -6,14 +6,14 @@ import androidx.activity.compose.setContent
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.checkpoints.CheckpointPaywallResult
+import com.revenuecat.purchases.checkpoints.CheckpointPaywallOutcome
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 
 /**
- * Presents the workflow resolved for a checkpoint and reports the terminal [CheckpointPaywallResult] back to
+ * Presents the workflow resolved for a checkpoint and reports the terminal [CheckpointPaywallOutcome] back to
  * the core module exactly once. Terminal purchase/restore events are staged as they happen and delivered when
  * the paywall dismisses (or the activity is otherwise finished), mirroring
  * [com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivity]'s result handling.
@@ -27,7 +27,7 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
     private var callId: String? = null
     private var entry: CheckpointCallStore.Entry? = null
     private var reported = false
-    private var stagedResult: CheckpointPaywallResult = CheckpointPaywallResult.Dismissed
+    private var stagedResult: CheckpointPaywallOutcome = CheckpointPaywallOutcome.Dismissed
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,21 +57,21 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
 
     private val resultStagingListener = object : PaywallListener {
         override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
-            stagedResult = CheckpointPaywallResult.Purchased(customerInfo)
+            stagedResult = CheckpointPaywallOutcome.Purchased(customerInfo)
         }
 
         override fun onRestoreCompleted(customerInfo: CustomerInfo) {
-            stagedResult = CheckpointPaywallResult.Restored(customerInfo)
+            stagedResult = CheckpointPaywallOutcome.Restored(customerInfo)
         }
 
         override fun onPurchaseError(error: PurchasesError) {
             if (error.code != PurchasesErrorCode.PurchaseCancelledError) {
-                stagedResult = CheckpointPaywallResult.Error(error)
+                stagedResult = CheckpointPaywallOutcome.Error(error)
             }
         }
 
         override fun onRestoreError(error: PurchasesError) {
-            stagedResult = CheckpointPaywallResult.Error(error)
+            stagedResult = CheckpointPaywallOutcome.Error(error)
         }
     }
 
