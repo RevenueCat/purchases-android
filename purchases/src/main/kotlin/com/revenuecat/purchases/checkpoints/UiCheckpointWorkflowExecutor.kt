@@ -25,7 +25,7 @@ internal class UiCheckpointWorkflowExecutor(
 ) : CheckpointWorkflowExecutor, CheckpointPresenterDelegate {
 
     private val presenter: CheckpointPresenter? by lazy { presenterProvider() }
-    private val pendingCalls = mutableMapOf<String, CompletableDeferred<CheckpointPaywallResult>>()
+    private val pendingCalls = mutableMapOf<String, CompletableDeferred<CheckpointPaywallOutcome>>()
     private val presenting = AtomicBoolean(false)
 
     override suspend fun execute(presentation: CheckpointWorkflowPresentation): CheckpointWorkflowOutcome {
@@ -43,17 +43,17 @@ internal class UiCheckpointWorkflowExecutor(
                 "Another checkpoint workflow is already being presented.",
             )
         }
-        val paywallFinished = CompletableDeferred<CheckpointPaywallResult>()
+        val paywallFinished = CompletableDeferred<CheckpointPaywallOutcome>()
         val callId = UUID.randomUUID().toString()
         synchronized(this) { pendingCalls[callId] = paywallFinished }
         presenter.present(activity, callId, presentation, this)
         return CheckpointWorkflowOutcome.PaywallFinished(paywallFinished.await())
     }
 
-    override fun onCheckpointPaywallFinished(callId: String, paywallResult: CheckpointPaywallResult) {
+    override fun onCheckpointPaywallFinished(callId: String, paywallOutcome: CheckpointPaywallOutcome) {
         val pendingCall = synchronized(this) { pendingCalls.remove(callId) } ?: return
         presenting.set(false)
-        pendingCall.complete(paywallResult)
+        pendingCall.complete(paywallOutcome)
     }
 
     private fun executionError(code: PurchasesErrorCode, message: String): Nothing {

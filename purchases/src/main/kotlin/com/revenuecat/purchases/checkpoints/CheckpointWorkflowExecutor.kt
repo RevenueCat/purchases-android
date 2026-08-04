@@ -21,5 +21,5 @@ internal interface CheckpointWorkflowExecutor {
 
 /** Single case while workflows are always UI; non-UI executions will add cases (e.g. returning an offering). */
 internal sealed class CheckpointWorkflowOutcome {
-    data class PaywallFinished(val paywallResult: CheckpointPaywallResult) : CheckpointWorkflowOutcome()
+    data class PaywallFinished(val paywallOutcome: CheckpointPaywallOutcome) : CheckpointWorkflowOutcome()
 }

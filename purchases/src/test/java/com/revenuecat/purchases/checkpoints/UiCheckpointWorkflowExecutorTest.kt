@@ -71,12 +71,12 @@ class UiCheckpointWorkflowExecutorTest {
 
     @Test
     fun `execute returns PaywallFinished with the delegate-reported result`() = runTest(dispatcher) {
-        val paywallResult = CheckpointPaywallResult.Dismissed
-        presenterReportsImmediately(paywallResult)
+        val paywallOutcome = CheckpointPaywallOutcome.Dismissed
+        presenterReportsImmediately(paywallOutcome)
 
         val outcome = executor.execute(presentation) as CheckpointWorkflowOutcome.PaywallFinished
 
-        assertThat(outcome.paywallResult).isEqualTo(paywallResult)
+        assertThat(outcome.paywallOutcome).isEqualTo(paywallOutcome)
         verify { mockPresenter.present(mockActivity, any(), presentation, executor) }
     }
 
@@ -92,7 +92,7 @@ class UiCheckpointWorkflowExecutorTest {
 
     @Test
     fun `execute can present again after the previous workflow finishes`() = runTest(dispatcher) {
-        presenterReportsImmediately(CheckpointPaywallResult.Dismissed)
+        presenterReportsImmediately(CheckpointPaywallOutcome.Dismissed)
 
         executor.execute(presentation)
         executor.execute(presentation)
@@ -102,16 +102,16 @@ class UiCheckpointWorkflowExecutorTest {
 
     @Test
     fun `report for unknown callId is a no-op`() = runTest(dispatcher) {
-        executor.onCheckpointPaywallFinished("unknown-call-id", CheckpointPaywallResult.Dismissed)
+        executor.onCheckpointPaywallFinished("unknown-call-id", CheckpointPaywallOutcome.Dismissed)
 
-        presenterReportsImmediately(CheckpointPaywallResult.Dismissed)
+        presenterReportsImmediately(CheckpointPaywallOutcome.Dismissed)
         assertThat(executor.execute(presentation))
             .isInstanceOf(CheckpointWorkflowOutcome.PaywallFinished::class.java)
     }
 
-    private fun presenterReportsImmediately(paywallResult: CheckpointPaywallResult) {
+    private fun presenterReportsImmediately(paywallOutcome: CheckpointPaywallOutcome) {
         every { mockPresenter.present(mockActivity, any(), any(), any()) } answers {
-            lastArg<CheckpointPresenterDelegate>().onCheckpointPaywallFinished(secondArg(), paywallResult)
+            lastArg<CheckpointPresenterDelegate>().onCheckpointPaywallFinished(secondArg(), paywallOutcome)
         }
     }
 

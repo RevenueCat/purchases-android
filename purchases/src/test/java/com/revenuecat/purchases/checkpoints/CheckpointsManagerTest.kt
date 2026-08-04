@@ -82,7 +82,7 @@ class CheckpointsManagerTest {
     @Test
     fun `matched checkpoint resolves PaywallPresented when the workflow finishes`() = runTest(dispatcher) {
         matchCheckpointToWorkflow()
-        val paywallFinished = CompletableDeferred<CheckpointPaywallResult>()
+        val paywallFinished = CompletableDeferred<CheckpointPaywallOutcome>()
         coEvery { mockExecutor.execute(any()) } coAnswers {
             CheckpointWorkflowOutcome.PaywallFinished(paywallFinished.await())
         }
@@ -92,17 +92,17 @@ class CheckpointsManagerTest {
 
         assertThat(result).isNull()
 
-        val paywallResult = CheckpointPaywallResult.Dismissed
-        paywallFinished.complete(paywallResult)
+        val paywallOutcome = CheckpointPaywallOutcome.Dismissed
+        paywallFinished.complete(paywallOutcome)
         call.join()
 
         val presented = result as CheckpointResult.PaywallPresented
-        assertThat(presented.paywallResult).isEqualTo(paywallResult)
+        assertThat(presented.paywallOutcome).isEqualTo(paywallOutcome)
         assertThat(presented.checkpoint.identifier).isEqualTo(checkpointId)
         assertThat(presented.checkpoint.params.customProperties).isEqualTo(mapOf("goal" to "test"))
         verifyOrder {
             mockListener.onCheckpointHit(any())
-            mockListener.onCheckpointPaywallFinished(presented.checkpoint, paywallResult)
+            mockListener.onCheckpointPaywallFinished(presented.checkpoint, paywallOutcome)
             mockListener.onCheckpointResolved(presented.checkpoint, presented)
         }
     }
