@@ -25,5 +25,5 @@ public interface CheckpointPresenter {
 
 @InternalRevenueCatAPI
 public interface CheckpointPresenterDelegate {
-    public fun onCheckpointPaywallFinished(callId: String, paywallResult: CheckpointPaywallResult)
+    public fun onCheckpointPaywallFinished(callId: String, paywallOutcome: CheckpointPaywallOutcome)
 }

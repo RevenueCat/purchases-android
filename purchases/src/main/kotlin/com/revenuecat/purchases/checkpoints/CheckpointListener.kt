@@ -20,7 +20,7 @@ public interface CheckpointListener {
     }
 
     /** A checkpoint-presented paywall finished, with its result. */
-    public fun onCheckpointPaywallFinished(checkpoint: CheckpointInfo, paywallResult: CheckpointPaywallResult) {
+    public fun onCheckpointPaywallFinished(checkpoint: CheckpointInfo, paywallOutcome: CheckpointPaywallOutcome) {
         // Default empty implementation
     }
 }

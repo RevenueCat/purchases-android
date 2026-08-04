@@ -9,12 +9,12 @@ public abstract class CheckpointResult internal constructor() {
     public abstract val checkpoint: CheckpointInfo
 
     /**
-     * A checkpoint-triggered paywall was presented and finished with [paywallResult].
+     * A checkpoint-triggered paywall was presented and finished with [paywallOutcome].
      */
     @Poko
     public class PaywallPresented internal constructor(
         override val checkpoint: CheckpointInfo,
-        public val paywallResult: CheckpointPaywallResult,
+        public val paywallOutcome: CheckpointPaywallOutcome,
     ) : CheckpointResult()
 
     /**

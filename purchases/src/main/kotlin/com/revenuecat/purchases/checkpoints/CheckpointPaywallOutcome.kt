@@ -10,24 +10,24 @@ import dev.drewhamilton.poko.Poko
  * through [CheckpointListener.onCheckpointPaywallFinished].
  */
 @InternalRevenueCatAPI
-public abstract class CheckpointPaywallResult internal constructor() {
+public abstract class CheckpointPaywallOutcome internal constructor() {
 
-    public object Dismissed : CheckpointPaywallResult() {
+    public object Dismissed : CheckpointPaywallOutcome() {
         override fun toString(): String = "Dismissed"
     }
 
     @Poko
     public class Purchased(
         public val customerInfo: CustomerInfo,
-    ) : CheckpointPaywallResult()
+    ) : CheckpointPaywallOutcome()
 
     @Poko
     public class Restored(
         public val customerInfo: CustomerInfo,
-    ) : CheckpointPaywallResult()
+    ) : CheckpointPaywallOutcome()
 
     @Poko
     public class Error(
         public val error: PurchasesError,
-    ) : CheckpointPaywallResult()
+    ) : CheckpointPaywallOutcome()
 }
