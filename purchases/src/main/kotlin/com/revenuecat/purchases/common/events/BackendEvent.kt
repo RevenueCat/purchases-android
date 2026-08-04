@@ -355,6 +355,20 @@ internal sealed class BackendEvent : Event {
         // Failed to load event only fields
         @SerialName("mediator_error_code")
         val mediatorErrorCode: Int? = null,
+
+        // Reward event only fields
+        @SerialName("reward_verification_enabled")
+        val rewardVerificationEnabled: Boolean? = null,
+        @SerialName("reward_type")
+        val rewardType: String? = null,
+        @SerialName("reward_virtual_currency_code")
+        val rewardVirtualCurrencyCode: String? = null,
+        @SerialName("reward_virtual_currency_amount")
+        val rewardVirtualCurrencyAmount: Int? = null,
+        @SerialName("reward_entitlement_id")
+        val rewardEntitlementId: String? = null,
+        @SerialName("reward_failure_reason")
+        val rewardFailureReason: String? = null,
     ) : BackendEvent()
 
     /**
