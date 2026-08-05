@@ -7,6 +7,9 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -28,15 +31,15 @@ internal class CheckpointsConfigProviderTest {
     }
 
     @Test
-    fun `getCheckpoint decodes an empty checkpoint object`() = runTest {
+    fun `getCheckpoint decodes an empty checkpoint item`() = runTest {
         coEvery {
-            manager.blobData(
+            manager.itemData(
                 RemoteConfigTopic.Checkpoints,
                 "onboarding",
-                any<(ByteArray) -> CheckpointResponse?>(),
+                any<(JsonElement) -> CheckpointResponse?>(),
             )
         } answers {
-            thirdArg<(ByteArray) -> CheckpointResponse?>().invoke("{}".toByteArray())
+            thirdArg<(JsonElement) -> CheckpointResponse?>().invoke(buildJsonObject { })
         }
 
         assertThat(provider.getCheckpoint("onboarding")).isNotNull
@@ -45,10 +48,10 @@ internal class CheckpointsConfigProviderTest {
     @Test
     fun `getCheckpoint returns null when the checkpoint is unavailable`() = runTest {
         coEvery {
-            manager.blobData(
+            manager.itemData(
                 RemoteConfigTopic.Checkpoints,
                 "missing",
-                any<(ByteArray) -> CheckpointResponse?>(),
+                any<(JsonElement) -> CheckpointResponse?>(),
             )
         } returns null
 
@@ -58,13 +61,13 @@ internal class CheckpointsConfigProviderTest {
     @Test
     fun `getCheckpoint returns null for a malformed checkpoint`() = runTest {
         coEvery {
-            manager.blobData(
+            manager.itemData(
                 RemoteConfigTopic.Checkpoints,
                 "malformed",
-                any<(ByteArray) -> CheckpointResponse?>(),
+                any<(JsonElement) -> CheckpointResponse?>(),
             )
         } answers {
-            thirdArg<(ByteArray) -> CheckpointResponse?>().invoke("not-json".toByteArray())
+            thirdArg<(JsonElement) -> CheckpointResponse?>().invoke(JsonPrimitive("not-an-object"))
         }
 
         assertThat(provider.getCheckpoint("malformed")).isNull()
