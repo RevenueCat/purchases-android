@@ -33,10 +33,10 @@ internal class CheckpointsConfigProviderTest {
             manager.blobData(
                 RemoteConfigTopic.Checkpoints,
                 "onboarding",
-                any<(ByteArray) -> Checkpoint?>(),
+                any<(ByteArray) -> CheckpointResponse?>(),
             )
         } answers {
-            thirdArg<(ByteArray) -> Checkpoint?>().invoke("{}".toByteArray())
+            thirdArg<(ByteArray) -> CheckpointResponse?>().invoke("{}".toByteArray())
         }
 
         assertThat(provider.getCheckpoint("onboarding")).isNotNull
@@ -48,7 +48,7 @@ internal class CheckpointsConfigProviderTest {
             manager.blobData(
                 RemoteConfigTopic.Checkpoints,
                 "missing",
-                any<(ByteArray) -> Checkpoint?>(),
+                any<(ByteArray) -> CheckpointResponse?>(),
             )
         } returns null
 
@@ -61,10 +61,10 @@ internal class CheckpointsConfigProviderTest {
             manager.blobData(
                 RemoteConfigTopic.Checkpoints,
                 "malformed",
-                any<(ByteArray) -> Checkpoint?>(),
+                any<(ByteArray) -> CheckpointResponse?>(),
             )
         } answers {
-            thirdArg<(ByteArray) -> Checkpoint?>().invoke("not-json".toByteArray())
+            thirdArg<(ByteArray) -> CheckpointResponse?>().invoke("not-json".toByteArray())
         }
 
         assertThat(provider.getCheckpoint("malformed")).isNull()

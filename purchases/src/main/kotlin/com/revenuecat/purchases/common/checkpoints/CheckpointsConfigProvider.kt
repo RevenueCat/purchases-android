@@ -6,6 +6,6 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 internal class CheckpointsConfigProvider(
     private val manager: RemoteConfigManager,
 ) {
-    suspend fun getCheckpoint(identifier: String): Checkpoint? =
+    suspend fun getCheckpoint(identifier: String): CheckpointResponse? =
         manager.blobData(RemoteConfigTopic.Checkpoints, identifier)
 }
