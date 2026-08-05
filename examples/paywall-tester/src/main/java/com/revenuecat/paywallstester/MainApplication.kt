@@ -12,7 +12,6 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.checkpoints.CheckpointInfo
 import com.revenuecat.purchases.checkpoints.CheckpointListener
-import com.revenuecat.purchases.checkpoints.CheckpointPaywallOutcome
 import com.revenuecat.purchases.checkpoints.CheckpointResult
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreTransaction
@@ -43,18 +42,8 @@ class MainApplication : Application() {
                 ).show()
             }
 
-            override fun onCheckpointResolved(checkpoint: CheckpointInfo, result: CheckpointResult) {
-                Log.d(TAG, "CheckpointListener: onCheckpointResolved: $result")
-            }
-
-            override fun onCheckpointPaywallFinished(
-                checkpoint: CheckpointInfo,
-                paywallOutcome: CheckpointPaywallOutcome,
-            ) {
-                Log.d(
-                    TAG,
-                    "CheckpointListener: onCheckpointPaywallFinished: ${checkpoint.identifier} -> $paywallOutcome",
-                )
+            override fun onCheckpointCompleted(checkpoint: CheckpointInfo, result: CheckpointResult) {
+                Log.d(TAG, "CheckpointListener: onCheckpointCompleted: $result")
             }
         }
         Purchases.sharedInstance.customerCenterListener =
