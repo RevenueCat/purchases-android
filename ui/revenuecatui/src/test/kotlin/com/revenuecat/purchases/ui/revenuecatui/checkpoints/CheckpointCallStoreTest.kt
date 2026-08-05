@@ -43,22 +43,22 @@ class CheckpointCallStoreTest {
     }
 
     @Test
-    fun `a stored entry's staged outcome defaults to Dismissed`() {
+    fun `a stored entry's cached outcome defaults to Dismissed`() {
         CheckpointCallStore.store("call-id", CheckpointCallStore.Entry(delegate = mockk(), presentation = mockk()))
 
-        assertThat(CheckpointCallStore.get("call-id")?.stagedOutcome)
+        assertThat(CheckpointCallStore.get("call-id")?.outcome)
             .isEqualTo(CheckpointPaywallOutcome.Dismissed)
     }
 
     @Test
-    fun `a staged outcome survives re-reading the entry`() {
+    fun `a cached outcome survives re-reading the entry`() {
         val entry = CheckpointCallStore.Entry(delegate = mockk(), presentation = mockk())
         CheckpointCallStore.store("call-id", entry)
         val customerInfo = mockk<CustomerInfo>()
 
-        entry.stagedOutcome = CheckpointPaywallOutcome.Restored(customerInfo)
+        entry.outcome = CheckpointPaywallOutcome.Restored(customerInfo)
 
-        assertThat(CheckpointCallStore.get("call-id")?.stagedOutcome)
+        assertThat(CheckpointCallStore.get("call-id")?.outcome)
             .isEqualTo(CheckpointPaywallOutcome.Restored(customerInfo))
     }
 

@@ -16,7 +16,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 /**
  * Presents the workflow resolved for a checkpoint and reports the terminal [CheckpointPaywallOutcome] back to
- * the core module exactly once. Terminal purchase/restore events are staged as they happen and delivered when
+ * the core module exactly once. Terminal purchase/restore events are cached as they happen and delivered when
  * the paywall dismisses (or the activity is otherwise finished), mirroring
  * [com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivity]'s result handling.
  */
@@ -44,7 +44,7 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
         }
         val options = PaywallOptions.Builder(dismissRequest = ::finish)
             .injectedWorkflow(presentation.workflow, presentation.offering, presentation.uiConfig)
-            .setListener(resultStagingListener)
+            .setListener(outcomeListener)
             .build()
         setContent {
             Paywall(options)
@@ -58,24 +58,24 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    // Outcomes are staged on the store entry (not this instance) so a configuration change doesn't reset them.
-    private val resultStagingListener = object : PaywallListener {
+    // Outcomes are cached on the store entry (not this instance) so a configuration change doesn't reset them.
+    private val outcomeListener = object : PaywallListener {
         override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
-            entry?.stagedOutcome = CheckpointPaywallOutcome.Purchased(customerInfo)
+            entry?.outcome = CheckpointPaywallOutcome.Purchased(customerInfo)
         }
 
         override fun onRestoreCompleted(customerInfo: CustomerInfo) {
-            entry?.stagedOutcome = CheckpointPaywallOutcome.Restored(customerInfo)
+            entry?.outcome = CheckpointPaywallOutcome.Restored(customerInfo)
         }
 
         override fun onPurchaseError(error: PurchasesError) {
             if (error.code != PurchasesErrorCode.PurchaseCancelledError) {
-                entry?.stagedOutcome = CheckpointPaywallOutcome.Error(error)
+                entry?.outcome = CheckpointPaywallOutcome.Error(error)
             }
         }
 
         override fun onRestoreError(error: PurchasesError) {
-            entry?.stagedOutcome = CheckpointPaywallOutcome.Error(error)
+            entry?.outcome = CheckpointPaywallOutcome.Error(error)
         }
     }
 
@@ -85,6 +85,6 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
         if (reported || callId == null || entry == null) return
         reported = true
         CheckpointCallStore.remove(callId)
-        entry.delegate.onCheckpointPaywallFinished(callId, entry.stagedOutcome)
+        entry.delegate.onCheckpointPaywallFinished(callId, entry.outcome)
     }
 }
