@@ -1,0 +1,16 @@
+{
+  "offerings": [
+    {
+      "identifier": "offering_a",
+      "description": "This is the base offering",
+      "packages": [
+        {
+          "identifier": "$rc_monthly",
+          "platform_product_identifier": "monthly_freetrial",
+          "platform_product_plan_identifier": "p1m"
+        }
+      ]
+    }
+  ],
+  "current_offering_id": "offering_a"
+}
