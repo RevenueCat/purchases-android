@@ -134,16 +134,13 @@ class RandomWorkflowCheckpointResolverTest {
     }
 
     @Test
-    fun `checkpoint resolves Matched with null offering when the workflow has none, without fetching offerings`() =
-        runTest {
-            coEvery { mockWorkflowManager.availableWorkflows() } returns mapOf("wf1234" to null)
+    fun `workflows without an offering identifier are not picked`() = runTest {
+        coEvery { mockWorkflowManager.availableWorkflows() } returns mapOf("wf1234" to null)
 
-            val resolution = resolver.resolve(checkpoint)
-
-            val presentation = (resolution as CheckpointWorkflowResolution.Matched).presentation
-            assertThat(presentation.offering).isNull()
-            assertThat(offeringsFetched).isFalse()
-        }
+        assertThat(noMatchReason(resolver.resolve(checkpoint)))
+            .isEqualTo(CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        assertThat(offeringsFetched).isFalse()
+    }
 
     @Test
     fun `checkpoint resolves NoMatch with CONFIGURATION_UNAVAILABLE when the offerings fetch fails`() = runTest {

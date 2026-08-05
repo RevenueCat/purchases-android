@@ -43,8 +43,13 @@ internal class RandomWorkflowCheckpointResolver(
         if (workflowManager == null || uiConfigProvider == null) {
             return CheckpointWorkflowResolution.NoMatch(CheckpointResult.NoAction.Reason.DISABLED)
         }
-        val (workflowId, offeringId) = workflowManager.availableWorkflows().entries.randomOrNull()
-            ?: return configurationUnavailable("No workflows available for checkpoint '${checkpoint.identifier}'.")
+        // Only workflows tied to an offering are presentable for now: the presentation requires one.
+        val (workflowId, offeringId) = workflowManager.availableWorkflows().entries
+            .filter { it.value != null }
+            .randomOrNull()
+            ?: return configurationUnavailable(
+                "No presentable workflows available for checkpoint '${checkpoint.identifier}'.",
+            )
         val workflow = try {
             workflowManager.getWorkflow(workflowId)
         } catch (e: PurchasesException) {
@@ -52,20 +57,18 @@ internal class RandomWorkflowCheckpointResolver(
         }
         val uiConfig = uiConfigProvider.getUiConfig()
             ?: return configurationUnavailable("UI config is unavailable for workflow '$workflowId'.")
-        val offering = offeringId?.let { id ->
-            val offerings = try {
-                getOfferings()
-            } catch (e: PurchasesException) {
-                return configurationUnavailable("Offerings could not be fetched for workflow '$workflowId': ${e.error}")
-            }
-            offerings.all[id]
-                ?: return configurationUnavailable(
-                    "Offering '$id' referenced by workflow '$workflowId' was not found in offerings.",
-                )
+        val offerings = try {
+            getOfferings()
+        } catch (e: PurchasesException) {
+            return configurationUnavailable("Offerings could not be fetched for workflow '$workflowId': ${e.error}")
         }
+        val offering = offerings.all[offeringId]
+            ?: return configurationUnavailable(
+                "Offering '$offeringId' referenced by workflow '$workflowId' was not found in offerings.",
+            )
         debugLog {
             "Checkpoint '${checkpoint.identifier}' resolved to random workflow '$workflowId' " +
-                "(offering: ${offering?.identifier})"
+                "(offering: ${offering.identifier})"
         }
         return CheckpointWorkflowResolution.Matched(
             CheckpointWorkflowPresentation(checkpoint, workflow, uiConfig, offering),

@@ -42,15 +42,13 @@ internal class CheckpointsManager(
                     throw PurchasesException(resolution.error)
                 }
             }
-            checkpointListener?.onCheckpointResolved(checkpoint, result)
+            checkpointListener?.onCheckpointCompleted(checkpoint, result)
             result
         }
 
     private suspend fun execute(presentation: CheckpointWorkflowPresentation): CheckpointResult =
         when (val outcome = executor.execute(presentation)) {
-            is CheckpointWorkflowOutcome.PaywallFinished -> {
-                checkpointListener?.onCheckpointPaywallFinished(presentation.checkpoint, outcome.paywallOutcome)
+            is CheckpointWorkflowOutcome.PaywallFinished ->
                 CheckpointResult.PaywallPresented(presentation.checkpoint, outcome.paywallOutcome)
-            }
         }
 }

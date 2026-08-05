@@ -56,7 +56,7 @@ class CheckpointsManagerTest {
         assertThat(result.checkpoint.identifier).isEqualTo(checkpointId)
         verifyOrder {
             mockListener.onCheckpointHit(result.checkpoint)
-            mockListener.onCheckpointResolved(result.checkpoint, result)
+            mockListener.onCheckpointCompleted(result.checkpoint, result)
         }
     }
 
@@ -102,8 +102,7 @@ class CheckpointsManagerTest {
         assertThat(presented.checkpoint.params.customProperties).isEqualTo(mapOf("goal" to "test"))
         verifyOrder {
             mockListener.onCheckpointHit(any())
-            mockListener.onCheckpointPaywallFinished(presented.checkpoint, paywallOutcome)
-            mockListener.onCheckpointResolved(presented.checkpoint, presented)
+            mockListener.onCheckpointCompleted(presented.checkpoint, presented)
         }
     }
 
@@ -114,7 +113,7 @@ class CheckpointsManagerTest {
                     checkpoint = firstArg(),
                     workflow = mockk(),
                     uiConfig = mockk(),
-                    offering = null,
+                    offering = mockk(),
                 ),
             )
         }

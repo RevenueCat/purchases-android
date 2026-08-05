@@ -44,7 +44,7 @@ class UiCheckpointWorkflowExecutorTest {
             checkpoint = CheckpointInfo("test_checkpoint", CheckpointParams()),
             workflow = mockk(),
             uiConfig = mockk(),
-            offering = null,
+            offering = mockk(),
         )
         executor = UiCheckpointWorkflowExecutor(
             currentActivityProvider = { currentActivity },
