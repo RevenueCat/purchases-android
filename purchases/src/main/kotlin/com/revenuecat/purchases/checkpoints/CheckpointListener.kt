@@ -14,13 +14,8 @@ public interface CheckpointListener {
         // Default empty implementation
     }
 
-    /** The checkpoint was resolved and the outcome was returned. */
-    public fun onCheckpointResolved(checkpoint: CheckpointInfo, result: CheckpointResult) {
-        // Default empty implementation
-    }
-
-    /** A checkpoint-presented paywall finished, with its result. */
-    public fun onCheckpointPaywallFinished(checkpoint: CheckpointInfo, paywallOutcome: CheckpointPaywallOutcome) {
+    /** The checkpoint completed and the result was returned. */
+    public fun onCheckpointCompleted(checkpoint: CheckpointInfo, result: CheckpointResult) {
         // Default empty implementation
     }
 }

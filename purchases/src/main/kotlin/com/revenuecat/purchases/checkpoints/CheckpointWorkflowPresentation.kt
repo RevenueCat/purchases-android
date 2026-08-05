@@ -15,5 +15,5 @@ public class CheckpointWorkflowPresentation internal constructor(
     public val checkpoint: CheckpointInfo,
     public val workflow: PublishedWorkflow,
     public val uiConfig: UiConfig,
-    public val offering: Offering?,
+    public val offering: Offering,
 )
