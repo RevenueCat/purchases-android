@@ -1,0 +1,31 @@
+# Config endpoint unreachable (remote_config_network_error) on a cold cache. With nothing cached and
+# workflows enabled, the SDK falls back to the offering's default paywall instead of surfacing an error.
+#
+# Run locally against the test store:
+#   maestro test -e MAESTRO_STORE=test_store maestro/workflows/workflow_offline_fallback.yaml
+
+appId: com.revenuecat.e2etests
+name: Workflow offering renders the default paywall when config is offline with nothing cached
+env:
+  MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
+
+---
+- launchApp:
+    clearState: true
+    arguments:
+      e2e_test_flow: open_workflow
+      force_server_error_strategy: remote_config_network_error
+- extendedWaitUntil:
+    visible: "Present Paywall"
+    timeout: 20000
+- tapOn:
+    text: "Present Paywall"
+
+# Config unreachable + nothing cached -> the SDK default paywall (has a Restore purchases control).
+- extendedWaitUntil:
+    visible: "Restore purchases"
+    timeout: 15000
+# The multipage workflow entry screen is never rendered, and no error dialog appears.
+- assertNotVisible: "Continue 1/3"
+- assertNotVisible: "OK"
+- takeScreenshot: "workflow_offline_fallback - default paywall"
