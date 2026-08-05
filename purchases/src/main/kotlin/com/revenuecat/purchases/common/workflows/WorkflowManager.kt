@@ -7,8 +7,11 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
+import com.revenuecat.purchases.common.uiconfig.UiConfigResolution
+import com.revenuecat.purchases.common.verboseLog
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -116,7 +119,8 @@ internal class WorkflowManager(
      * - the workflows topic is synced, so [workflowIdForOfferingId] resolves; and
      * - the `ui_config` body is resolved, so a workflow render — and, once `ui_config`/paywall components stop
      *   shipping inline in `/offerings` and move to the config endpoint, the offering itself — has its styling
-     *   in hand without a further round-trip.
+     *   in hand without a further round-trip. A project with no paywalls configured publishes no `ui_config` at
+     *   all, which is a valid ready outcome rather than a failure (see [UiConfigResolution]).
      *
      * Both steps are best-effort: a failure to ready either one is swallowed (logged) and never propagates,
      * so [onComplete] always runs and `getOfferings` can never be stranded waiting on it — if config data
@@ -140,7 +144,7 @@ internal class WorkflowManager(
         }
         val readiness: Deferred<Unit> = synchronized(readinessLock) {
             inFlightReadiness ?: scope.async {
-                awaitBestEffort("ui_config") { checkNotNull(uiConfigProvider.getUiConfig()) }
+                awaitBestEffort("ui_config") { readyUiConfig() }
                 awaitBestEffort("workflows") { workflowsConfigProvider.warm() }
             }.also { deferred ->
                 inFlightReadiness = deferred
@@ -160,6 +164,27 @@ internal class WorkflowManager(
     }
 
     /**
+     * Resolves `ui_config` for the gate and reports the outcome at the level it deserves. Only a topic that
+     * actually publishes ui_config parts and still can't be resolved is a failure: a project with no paywalls
+     * configured has no `ui_config` at all, and error-logging that was pure noise.
+     */
+    private suspend fun readyUiConfig() {
+        when (uiConfigProvider.resolveUiConfig()) {
+            is UiConfigResolution.Found -> Unit
+            UiConfigResolution.NotConfigured -> verboseLog {
+                "No ui_config in remote config before getOfferings; nothing to ready."
+            }
+            UiConfigResolution.Disabled -> debugLog {
+                "Remote config is disabled for this session; skipping ui_config readiness before getOfferings."
+            }
+            UiConfigResolution.Superseded -> verboseLog {
+                "ui_config was superseded by a newer config commit before getOfferings; the next read re-resolves it."
+            }
+            UiConfigResolution.Unavailable -> errorLog { readinessFailureMessage("ui_config") }
+        }
+    }
+
+    /**
      * Runs a best-effort readiness step: swallows and logs any failure so it can't strand the gate, but lets
      * [kotlinx.coroutines.CancellationException] propagate so real cancellation still tears the gate down
      * instead of being reported as a completed step. (Plain `runCatching` would swallow cancellation too.)
@@ -170,7 +195,10 @@ internal class WorkflowManager(
         } catch (e: CancellationException) {
             throw e
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            errorLog(e) { "Failed to ready $what before getOfferings; proceeding without it." }
+            errorLog(e) { readinessFailureMessage(what) }
         }
     }
+
+    private fun readinessFailureMessage(what: String) =
+        "Failed to ready $what before getOfferings; proceeding without it."
 }

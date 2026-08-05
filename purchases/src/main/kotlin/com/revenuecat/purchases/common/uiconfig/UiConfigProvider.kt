@@ -6,6 +6,7 @@ import com.revenuecat.purchases.common.remoteconfig.GenerationGuardedCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
+import com.revenuecat.purchases.common.verboseLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,7 +24,9 @@ import kotlinx.coroutines.launch
  *
  * The merge is all-or-nothing: if any part is missing, unresolvable, or the merged object doesn't decode, no
  * [UiConfig] is returned. Callers that need UI config to render should fail instead of using a partial/default
- * configuration.
+ * configuration. [resolveUiConfig] classifies *why* nothing was returned — an absent/empty topic (a project
+ * with no paywalls) is a valid outcome, not a failure — while [getUiConfig] is the plain
+ * [UiConfigResolution.Found]-only view of it.
  *
  * `ui_config` is always kept in memory once resolved, so [getUiConfig] is memory-first: a warm read returns
  * synchronously (the suspend fn never suspends, so it resumes on the caller's thread with no dispatch) and only
@@ -32,6 +35,7 @@ import kotlinx.coroutines.launch
  * makes sure a slower disk warm never clobbers a fresher network commit (store-if-newer).
  */
 @OptIn(InternalRevenueCatAPI::class)
+@Suppress("TooManyFunctions")
 internal class UiConfigProvider(
     private val manager: RemoteConfigManager,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
@@ -44,17 +48,34 @@ internal class UiConfigProvider(
 
     /**
      * Returns the in-memory [UiConfig] if present, else resolves it from the config layer (which may wait for or
-     * trigger a `/v1/config` sync on a cold cache), caches it, and returns it. `null` when it can't be resolved.
-     *
-     * On a miss the resolved value is only returned via the cache (store-if-newer): if an identity-change
-     * invalidation advanced the generation while [resolve] was in flight, [GenerationGuardedCache.store] drops
-     * it and [GenerationGuardedCache.cached] is `null`, so the previous user's config is never served.
+     * trigger a `/v1/config` sync on a cold cache), caches it, and returns it. `null` when it can't be resolved —
+     * use [resolveUiConfig] when the reason matters.
      */
-    suspend fun getUiConfig(): UiConfig? {
-        cache.cached?.let { return it }
+    suspend fun getUiConfig(): UiConfig? = (resolveUiConfig() as? UiConfigResolution.Found)?.uiConfig
+
+    /**
+     * Like [getUiConfig], but reports *why* no [UiConfig] came back, so a caller can tell a project that simply
+     * has no `ui_config` (no paywalls configured) from one whose published `ui_config` couldn't be resolved. See
+     * [UiConfigResolution] for what each outcome means.
+     *
+     * A resolved value is only returned via the cache (store-if-newer): if an identity-change invalidation
+     * advanced the generation while [resolve] was in flight, [GenerationGuardedCache.store] drops it and
+     * [GenerationGuardedCache.cached] is `null`, so the previous user's config is never served.
+     */
+    @Suppress("ReturnCount")
+    suspend fun resolveUiConfig(): UiConfigResolution {
+        cache.cached?.let { return UiConfigResolution.Found(it) }
         val generation = manager.configGeneration
-        resolve()?.let { cache.store(generation, it) }
-        return cache.cached
+        val resolved = resolve()
+        if (resolved != null) cache.store(generation, resolved)
+        // Read back through the cache, never `resolved` itself: store-if-newer drops a value whose generation was
+        // overtaken mid-resolve, and that value may belong to the previous user.
+        cache.cached?.let { return UiConfigResolution.Found(it) }
+        // Still nothing in memory. A value that resolved but lost the store-if-newer race is not a failure, and
+        // must not reach [classifyUnresolved]: an identity change wipes the disk cache (which would read back as
+        // NotConfigured), while a newer commit's own failed warm leaves the topic intact (Unavailable) — both
+        // misreporting a resolve that actually worked.
+        return if (resolved != null) UiConfigResolution.Superseded else classifyUnresolved()
     }
 
     /**
@@ -99,6 +120,36 @@ internal class UiConfigProvider(
 
     private suspend fun resolve(): UiConfig? =
         manager.mergeItemsBlobData<UiConfig>(RemoteConfigTopic.UiConfig, ITEM_KEYS)
+
+    /**
+     * Tells "there is nothing to resolve" apart from "resolving what is published failed". Only ever called
+     * **after** a [resolve] attempt: a resolve on a cold cache waits for (or triggers) a `/v1/config` sync, so
+     * the committed state read here is post-sync. Checking before resolving would see the cold cache and report
+     * [UiConfigResolution.NotConfigured] for a project that does have a `ui_config`.
+     */
+    private suspend fun classifyUnresolved(): UiConfigResolution {
+        // First: committedTopicOrNull also returns null when the endpoint is disabled, which would otherwise be
+        // indistinguishable from an absent topic.
+        if (manager.isDisabled) {
+            verboseLog { "Remote config is disabled (4xx); there is no ui_config to resolve." }
+            return UiConfigResolution.Disabled
+        }
+        val topic = manager.committedTopicOrNull(RemoteConfigTopic.UiConfig)
+        val presentKeys = ITEM_KEYS.filter { topic?.containsKey(it) == true }
+        return if (presentKeys.isEmpty()) {
+            verboseLog {
+                val state = if (topic == null) "is absent" else "carries no ui_config part"
+                "The ui_config topic $state; nothing to resolve."
+            }
+            UiConfigResolution.NotConfigured
+        } else {
+            verboseLog {
+                "The ui_config topic carries ${presentKeys.size} of ${ITEM_KEYS.size} part(s) $presentKeys, " +
+                    "but they could not be resolved into a UiConfig."
+            }
+            UiConfigResolution.Unavailable
+        }
+    }
 
     private companion object {
         private val ITEM_KEYS = listOf("app", "localizations", "variable_config", "custom_variables")
