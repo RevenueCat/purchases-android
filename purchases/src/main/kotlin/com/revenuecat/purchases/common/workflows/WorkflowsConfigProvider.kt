@@ -145,7 +145,7 @@ internal class WorkflowsConfigProvider(
      * Every workflow id in the `workflows` topic, mapped to its `offering_identifier` (or `null` when the item
      * has none). Empty when the topic is unavailable. May trigger a `/v1/config` sync on a cold cache.
      */
-    suspend fun availableWorkflows(): Map<String, String?> =
+    suspend fun offeringIdByWorkflowId(): Map<String, String?> =
         manager.topic(RemoteConfigTopic.Workflows)
             ?.mapValues { (_, item) -> item.metadata.stringOrNull(KEY_OFFERING_IDENTIFIER) }
             .orEmpty()

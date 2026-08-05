@@ -51,7 +51,7 @@ class RandomWorkflowCheckpointResolverTest {
             every { identifier } returns "default"
         }
         mockOfferings = mockk()
-        coEvery { mockWorkflowManager.availableWorkflows() } returns mapOf("wf1234" to "default")
+        coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns mapOf("wf1234" to "default")
         coEvery { mockWorkflowManager.getWorkflow("wf1234") } returns mockWorkflow
         coEvery { mockUiConfigProvider.getUiConfig() } returns mockUiConfig
         every { mockOfferings.all } returns mapOf("default" to mockOffering)
@@ -96,7 +96,7 @@ class RandomWorkflowCheckpointResolverTest {
     @Test
     fun `checkpoint resolves NoMatch with CONFIGURATION_UNAVAILABLE when no workflows exist`() =
         runTest {
-            coEvery { mockWorkflowManager.availableWorkflows() } returns emptyMap()
+            coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns emptyMap()
 
             assertThat(noMatchReason(resolver.resolve(checkpoint)))
                 .isEqualTo(CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
@@ -135,7 +135,7 @@ class RandomWorkflowCheckpointResolverTest {
 
     @Test
     fun `workflows without an offering identifier are not picked`() = runTest {
-        coEvery { mockWorkflowManager.availableWorkflows() } returns mapOf("wf1234" to null)
+        coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns mapOf("wf1234" to null)
 
         assertThat(noMatchReason(resolver.resolve(checkpoint)))
             .isEqualTo(CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE)

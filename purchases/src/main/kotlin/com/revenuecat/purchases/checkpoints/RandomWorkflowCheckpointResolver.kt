@@ -44,7 +44,7 @@ internal class RandomWorkflowCheckpointResolver(
             return CheckpointWorkflowResolution.NoMatch(CheckpointResult.NoAction.Reason.DISABLED)
         }
         // Only workflows tied to an offering are presentable for now: the presentation requires one.
-        val (workflowId, offeringId) = workflowManager.availableWorkflows().entries
+        val (workflowId, offeringId) = workflowManager.offeringIdByWorkflowId().entries
             .filter { it.value != null }
             .randomOrNull()
             ?: return configurationUnavailable(
