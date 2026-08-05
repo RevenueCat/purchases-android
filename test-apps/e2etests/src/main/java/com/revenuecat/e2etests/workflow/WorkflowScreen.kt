@@ -33,6 +33,7 @@ import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -61,7 +62,10 @@ private enum class ConfigKillSwitchState {
 }
 
 @Composable
-fun WorkflowScreen(modifier: Modifier = Modifier) {
+fun WorkflowScreen(
+    modifier: Modifier = Modifier,
+    usersCountOverride: Int? = null,
+) {
     var offeringState by remember { mutableStateOf<OfferingState>(OfferingState.Loading) }
     var showPaywall by remember { mutableStateOf(false) }
     var customerInfo by remember { mutableStateOf<CustomerInfo?>(null) }
@@ -81,7 +85,11 @@ fun WorkflowScreen(modifier: Modifier = Modifier) {
 
     val loaded = offeringState
     if (showPaywall && loaded is OfferingState.Loaded) {
-        WorkflowPaywall(offering = loaded.offering, onDismiss = { showPaywall = false })
+        WorkflowPaywall(
+            offering = loaded.offering,
+            usersCountOverride = usersCountOverride,
+            onDismiss = { showPaywall = false },
+        )
         return
     }
 
@@ -94,10 +102,21 @@ fun WorkflowScreen(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun WorkflowPaywall(offering: Offering, onDismiss: () -> Unit) {
+private fun WorkflowPaywall(
+    offering: Offering,
+    usersCountOverride: Int?,
+    onDismiss: () -> Unit,
+) {
     Paywall(
         options = PaywallOptions.Builder(dismissRequest = onDismiss)
             .setOffering(offering)
+            .apply {
+                if (usersCountOverride != null) {
+                    setCustomVariables(
+                        mapOf("users_count" to CustomVariableValue.Number(usersCountOverride.toDouble())),
+                    )
+                }
+            }
             .setListener(object : PaywallListener {
                 override fun onPurchaseCompleted(
                     customerInfo: CustomerInfo,
