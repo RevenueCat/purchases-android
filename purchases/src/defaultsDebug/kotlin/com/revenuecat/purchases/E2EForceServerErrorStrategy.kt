@@ -4,4 +4,5 @@ package com.revenuecat.purchases
 public enum class E2EForceServerErrorStrategy {
     Never,
     RemoteConfigKillSwitch,
+    RemoteConfigNetworkError,
 }
