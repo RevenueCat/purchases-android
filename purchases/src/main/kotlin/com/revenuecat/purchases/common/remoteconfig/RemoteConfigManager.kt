@@ -69,12 +69,11 @@ import kotlin.time.Duration.Companion.minutes
  * already in flight is skipped (the backend collapses concurrent requests but still fires every callback, which
  * would otherwise parse and persist the same response more than once).
  *
- * Consumers read through the facade: [topic] for a topic's committed item index (metadata only), [itemData] for
- * a JSON item payload that may be inline or blob-backed, and [blobData] when a consumer specifically requires a
- * referenced blob. These reads run on [ioDispatcher] so callers never touch disk on their own thread. When a
- * read finds no committed data it calls [awaitConfigForRead] rather than failing — waiting for a refresh in
- * progress, or triggering one on demand when none is (a cold read fetches its own data) — unless the endpoint is
- * [isDisabled] or no app user is known yet.
+ * Consumers read through the facade: [topic] for a topic's committed item index (metadata only) and [blobData]
+ * for a resolved item's blob payload (fetched on demand). Both run on [ioDispatcher] so callers never touch disk
+ * on their own thread. When either read finds no committed data it calls [awaitConfigForRead] rather than
+ * failing — waiting for a refresh in progress, or triggering one on demand when none is (a cold read fetches its
+ * own data) — unless the endpoint is [isDisabled] or no app user is known yet.
  */
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -587,9 +586,8 @@ internal class RemoteConfigManager(
      * When the topic isn't committed yet, [awaitConfigForRead] first waits for a refresh in progress — or
      * triggers one on demand — and then re-reads before giving up, so a read during the initial sync (or before
      * any sync) returns fresh data instead of `null`, mirroring [blobData]. A committed topic returns
-     * immediately, never delayed by an unrelated in-flight refresh. Use [itemData] for a JSON item payload that
-     * may be inline or blob-backed, or [blobData] when a referenced blob is required. Reads disk on
-     * [ioDispatcher].
+     * immediately, never delayed by an unrelated in-flight refresh. Use [blobData] for a resolved item payload
+     * that also resolves the referenced blob. Reads disk on [ioDispatcher].
      */
     suspend fun topic(topic: RemoteConfigTopic): ConfigTopic? = withContext(ioDispatcher) {
         committedTopic(topic)
@@ -669,47 +667,6 @@ internal class RemoteConfigManager(
                 val state = it?.let { committed -> "${committed.size} items" } ?: "not cached"
                 "Reading remote config topic '${topic.wireName}': $state."
             }
-        }
-    }
-
-    /**
-     * The item's JSON payload parsed into [T], or `null` when the item or its selected payload cannot be resolved
-     * or decoded. When the item has a `blob_ref`, the referenced blob is the payload; otherwise its inline
-     * metadata is the payload. Blob content and inline metadata are never merged. Reads on [ioDispatcher] and
-     * follows the same cold-read synchronization and disabled-endpoint rules as [topic] and [blobData].
-     */
-    suspend inline fun <reified T> itemData(topic: RemoteConfigTopic, itemKey: String): T? =
-        itemData(topic, itemKey) { element ->
-            try {
-                JsonTools.json.decodeFromJsonElement<T>(element)
-            } catch (e: SerializationException) {
-                errorLog(e) { "Failed to parse remote config item '$itemKey' as JSON." }
-                null
-            }
-        }
-
-    suspend fun <T> itemData(
-        topic: RemoteConfigTopic,
-        itemKey: String,
-        transform: (JsonElement) -> T?,
-    ): T? = withContext(ioDispatcher) {
-        resolveItemJsonElement(topic, itemKey)?.let(transform)
-    }
-
-    @Suppress("ReturnCount")
-    private suspend fun resolveItemJsonElement(topic: RemoteConfigTopic, itemKey: String): JsonElement? {
-        if (disabled) {
-            verboseLog { "Remote config disabled (4xx); skipping read of item '$itemKey'." }
-            return null
-        }
-        val item = committedItem(topic, itemKey) ?: return null
-        val ref = item.blobRef ?: return item.metadata
-        val bytes = resolveBlobBytes(topic, itemKey, ref) ?: return null
-        return try {
-            JsonTools.json.parseToJsonElement(bytes.decodeToString())
-        } catch (e: SerializationException) {
-            errorLog(e) { "Failed to parse remote config item '$itemKey' blob as JSON." }
-            null
         }
     }
 
@@ -853,12 +810,8 @@ internal class RemoteConfigManager(
             verboseLog { "Remote config disabled (4xx); skipping read of item '$itemKey'." }
             return null
         }
-        val ref = committedItem(topic, itemKey)?.blobRef
-        return resolveBlobBytes(topic, itemKey, ref)
-    }
-
-    private suspend fun resolveBlobBytes(topic: RemoteConfigTopic, itemKey: String, ref: String?): ByteArray? {
         verboseLog { "Reading remote config blob (topic='${topic.wireName}', item='$itemKey')." }
+        val ref = committedItem(topic, itemKey)?.blobRef
         return when {
             ref == null -> {
                 verboseLog { "Remote config item '$itemKey' is missing or has no blob ref; returning null." }

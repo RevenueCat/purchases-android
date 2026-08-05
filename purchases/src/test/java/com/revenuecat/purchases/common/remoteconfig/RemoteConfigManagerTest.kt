@@ -1969,52 +1969,6 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `itemData deserializes inline metadata when the item has no blob ref`() = runTest {
-        val metadata = buildJsonObject { put("id", "checkpoint-1") }
-        every { diskCache.read() } returns persisted(
-            manifest = "m",
-            activeTopics = listOf("checkpoints"),
-            topics = mapOf(
-                "checkpoints" to ConfigTopic(
-                    mapOf("onboarding" to RemoteConfiguration.ConfigItem(metadata = metadata)),
-                ),
-            ),
-        )
-
-        val result = readManager().itemData<TestBlob>(RemoteConfigTopic.Checkpoints, "onboarding")
-
-        assertThat(result).isEqualTo(TestBlob(id = "checkpoint-1"))
-        coVerify(exactly = 0) { blobFetcher.ensureDownloaded(any<String>()) }
-        verify(exactly = 0) { blobStore.read(any()) }
-    }
-
-    @Test
-    fun `itemData deserializes the blob instead of inline metadata when the item has a blob ref`() = runTest {
-        val metadata = buildJsonObject { put("id", "inline-checkpoint") }
-        every { diskCache.read() } returns persisted(
-            manifest = "m",
-            activeTopics = listOf("checkpoints"),
-            topics = mapOf(
-                "checkpoints" to ConfigTopic(
-                    mapOf(
-                        "onboarding" to RemoteConfiguration.ConfigItem(
-                            blobRef = REF_VALID,
-                            metadata = metadata,
-                        ),
-                    ),
-                ),
-            ),
-        )
-        coEvery { blobFetcher.ensureDownloaded(REF_VALID) } returns true
-        every { blobStore.read(REF_VALID) } returns """{"id":"blob-checkpoint"}""".toByteArray()
-
-        val result = readManager().itemData<TestBlob>(RemoteConfigTopic.Checkpoints, "onboarding")
-
-        assertThat(result).isEqualTo(TestBlob(id = "blob-checkpoint"))
-        coVerify(exactly = 1) { blobFetcher.ensureDownloaded(REF_VALID) }
-    }
-
-    @Test
     fun `blobData resolves a blob-backed item by fetching on demand then reading the blob`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",
