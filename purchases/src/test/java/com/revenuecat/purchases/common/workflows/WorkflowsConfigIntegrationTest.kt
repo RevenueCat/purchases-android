@@ -10,6 +10,7 @@ import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.emptyUiConfig
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCElement
 import com.revenuecat.purchases.common.remoteconfig.PersistedRemoteConfigurationState
@@ -23,6 +24,7 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopicStore
+import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.uiconfig.UiConfigResolution
 import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
@@ -75,6 +77,15 @@ class WorkflowsConfigIntegrationTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private val testScope = CoroutineScope(testDispatcher)
 
+    // A known app user, so cold reads can self-prime a sync the way they do in production.
+    private var appUserID: String? = "user-1"
+
+    // Mutable clock, so a test can age the committed config past the staleness window that gates read priming.
+    private var currentTimeMillis = FIXED_MILLIS
+    private val dateProvider = object : DateProvider {
+        override val now: Date get() = Date(currentTimeMillis)
+    }
+
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
@@ -95,13 +106,16 @@ class WorkflowsConfigIntegrationTest {
             backend,
             diskCache,
             blobStore,
+            dateProvider = dateProvider,
             blobFetcher = fetcher,
             scope = testScope,
             ioDispatcher = testDispatcher,
             topicStore = RemoteConfigTopicStore { diskCache.read()?.topics?.get(it.wireName) },
             sourceProvider = FakeBlobSourceProvider,
+            appUserIDProvider = { appUserID },
         )
-        provider = WorkflowsConfigProvider(manager)
+        // Same scheduler as the manager, so a commit-driven re-warm also runs inline under runTest.
+        provider = WorkflowsConfigProvider(manager, scope = testScope)
 
         every {
             backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any())
@@ -363,6 +377,57 @@ class WorkflowsConfigIntegrationTest {
             verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
         }
 
+    @Test
+    fun `repeated onPaywallConfigReady for a project with no paywalls issues a single config request`() =
+        runTest(testDispatcher) {
+            // A project with no paywalls configured still gets both paywall topics, committed with no items, so
+            // every ui_config part misses. Each of those misses used to self-prime its own sync, since a
+            // successful sync clears the attempt cooldown — one (or more) config request per getOfferings.
+            sync(NO_PAYWALLS_CONFIG)
+
+            val workflowManager = workflowManagerWithRealUiConfig()
+            repeat(3) {
+                var completed = false
+                workflowManager.onPaywallConfigReady { completed = true }
+                assertThat(completed).isTrue()
+            }
+
+            verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+            assertThat(downloadCount).isZero()
+        }
+
+    @Test
+    fun `a paywall published later is picked up on the next commit`() = runTest(testDispatcher) {
+        // The flip side of gating read priming: a project that had no paywalls must still converge on one
+        // published later. That happens on the next ordinary (stale-driven) sync, not on every getOfferings.
+        val uiConfigProvider = UiConfigProvider(manager, scope = testScope)
+        manager.registerListener(provider)
+        manager.registerListener(uiConfigProvider)
+        val workflowManager = WorkflowManager(provider, uiConfigProvider, mockk(relaxed = true), scope = testScope)
+
+        sync(NO_PAYWALLS_CONFIG)
+        workflowManager.onPaywallConfigReady { }
+        assertThat(provider.resolveWorkflow("premium_annual")).isEqualTo(WorkflowResolution.NoWorkflow)
+
+        // The developer configures a paywall; the config goes stale and the next sync commits it.
+        currentTimeMillis += STALE_FOREGROUND_AGE_MILLIS
+        val workflowJson = JsonTools.json.encodeToString(PublishedWorkflow.serializer(), minimalWorkflow("wf-1"))
+        val config = """
+            {
+              "domain": "app",
+              "manifest": "v1.workflows:etag2",
+              "active_topics": ["workflows", "ui_config"],
+              "topics": {
+                "workflows": { "wf-1": { "blob_ref": "$INLINE_REF", "offering_identifier": "premium_annual" } },
+                "ui_config": {}
+              }
+            }
+        """.trimIndent()
+        sync(config, INLINE_REF to workflowJson)
+
+        assertThat(provider.resolveWorkflow("premium_annual")).isEqualTo(WorkflowResolution.Found("wf-1"))
+    }
+
     // Asset prewarming is out of scope here (covered by WorkflowManagerTest), so the manager gets a stubbed
     // ui-config provider and a no-op prewarmer.
     private fun workflowManagerWith(provider: WorkflowsConfigProvider) = WorkflowManager(
@@ -372,6 +437,15 @@ class WorkflowsConfigIntegrationTest {
             coEvery { getUiConfig() } returns emptyUiConfig()
             coEvery { resolveUiConfig() } returns UiConfigResolution.Found(emptyUiConfig())
         },
+        workflowAssetPrewarmer = mockk(relaxed = true),
+        scope = testScope,
+    )
+
+    // Unlike [workflowManagerWith], this drives the REAL ui_config read path through the manager, which is where
+    // the readiness gate's cold reads (and their config-request priming) actually live.
+    private fun workflowManagerWithRealUiConfig() = WorkflowManager(
+        workflowsConfigProvider = provider,
+        uiConfigProvider = UiConfigProvider(manager, scope = testScope),
         workflowAssetPrewarmer = mockk(relaxed = true),
         scope = testScope,
     )
@@ -444,6 +518,21 @@ class WorkflowsConfigIntegrationTest {
 
         // A valid content-address ref for the inline path (the store checks shape, not hash, on write).
         private const val INLINE_REF = "abcdefghijklmnopqrstuvwxyz012345"
+
+        private const val FIXED_MILLIS = 1_710_000_000_000L
+
+        // Older than the 5-minute foreground staleness window that gates read priming (see Date?.isCacheStale).
+        private const val STALE_FOREGROUND_AGE_MILLIS = 6 * 60 * 1000L
+
+        // What a project with no paywalls configured gets: both paywall topics active and committed, but empty.
+        private val NO_PAYWALLS_CONFIG = """
+            {
+              "domain": "app",
+              "manifest": "v1.workflows:etag1",
+              "active_topics": ["workflows", "ui_config"],
+              "topics": { "workflows": {}, "ui_config": {} }
+            }
+        """.trimIndent()
 
         /** `base64url-nopad(sha256(bytes)[0 until 24])` — the ref the workflow body hashes to. */
         private fun refOf(bytes: ByteArray): String {

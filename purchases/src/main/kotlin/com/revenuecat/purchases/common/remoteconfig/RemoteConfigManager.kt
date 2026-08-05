@@ -72,8 +72,10 @@ import kotlin.time.Duration.Companion.minutes
  * Consumers read through the facade: [topic] for a topic's committed item index (metadata only) and [blobData]
  * for a resolved item's blob payload (fetched on demand). Both run on [ioDispatcher] so callers never touch disk
  * on their own thread. When either read finds no committed data it calls [awaitConfigForRead] rather than
- * failing — waiting for a refresh in progress, or triggering one on demand when none is (a cold read fetches its
- * own data) — unless the endpoint is [isDisabled] or no app user is known yet.
+ * failing — waiting for a refresh in progress, or triggering one on demand when none is and the committed
+ * configuration has aged past the refresh cadence (a cold read fetches its own data; a read against freshly
+ * committed configuration treats absence as the server's answer) — unless the endpoint is [isDisabled] or no app
+ * user is known yet.
  */
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -159,6 +161,13 @@ internal class RemoteConfigManager(
         listeners.add(listener)
     }
 
+    /**
+     * Refreshes only when the committed configuration has aged past the normal refresh cadence
+     * ([cacheDurationProvider]). A `null` [lastRefreshedAt] — nothing committed this session, or an identity
+     * change wiped it — counts as stale. This is the single definition of that cadence: both the periodic
+     * foreground refresh and [awaitConfigForRead]'s on-demand read priming go through it, so a read can never
+     * fetch more often than an ordinary refresh would.
+     */
     fun refreshRemoteConfigIfStale(
         appInBackground: Boolean,
         appUserID: String,
@@ -166,6 +175,10 @@ internal class RemoteConfigManager(
     ) {
         if (lastRefreshedAt.isCacheStale(appInBackground, dateProvider, cacheDurationProvider)) {
             refreshRemoteConfig(appInBackground, appUserID, fetchContext, staleGated = true)
+        } else {
+            verboseLog {
+                "Committed remote configuration is still fresh; skipping the ${fetchContext.wireName} refresh."
+            }
         }
     }
 
@@ -531,8 +544,23 @@ internal class RemoteConfigManager(
      * Makes a best effort to have the configuration loaded before a read that found no cached data gives up:
      * - a refresh already in progress → wait for it (a read during the initial sync sees its result);
      * - otherwise trigger a sync on demand and wait for it, so a cold read fetches its own data instead of
-     *   returning `null` — **unless** the endpoint is [isDisabled] (the 4xx session kill-switch) or no app
-     *   user is known yet, in which case it gives up without a network call.
+     *   returning `null` — **unless** the committed configuration is still fresh, the endpoint is [isDisabled]
+     *   (the 4xx session kill-switch), or no app user is known yet, in which case it gives up without a network
+     *   call.
+     *
+     * Priming goes through [refreshRemoteConfigIfStale], so it follows the same cadence as the ordinary refresh:
+     * once we hold committed configuration that is fresh, "this topic/item is not committed" is the server's
+     * authoritative answer rather than a cache miss, and a read must never fetch more often than a refresh would.
+     * Otherwise every read for something the server never sends issues its own request, since a successful sync
+     * clears the [REFRESH_ATTEMPT_COOLDOWN] attempt stamp. What still primes: nothing committed this session
+     * ([lastRefreshedAt] is memory-only, so a warm disk cache in a fresh process still primes once), an identity
+     * change ([clearCache] clears it), and a 200 that could not be parsed or persisted (only a commit stamps it).
+     * A failed sync leaves [lastRefreshedAt] untouched and is throttled by [REFRESH_ATTEMPT_COOLDOWN] as before.
+     *
+     * Staleness is measured against the foreground window on purpose: it is the shorter one, so a read is the
+     * *more* willing of the two to fetch, and it matches the foreground request the read itself issues. The
+     * background window must not apply here — [lastRefreshedAt] is process-scoped, so a long-lived process that
+     * synced while backgrounded would otherwise treat absence as authoritative for its whole lifetime.
      *
      * The on-demand sync is issued as foreground (`appInBackground = false`): a read is blocking on the result,
      * so it wants the un-jittered, prompt request. The user it syncs for is snapshotted atomically with the
@@ -550,12 +578,11 @@ internal class RemoteConfigManager(
         // effective user under the lock (preferring the clearCache-bound [currentAppUserID]) when it runs.
         val appUserID = (currentAppUserID ?: appUserIDProvider())?.takeIf { it.isNotBlank() }
         if (!disabled && appUserID != null) {
-            verboseLog { "Cold remote config read triggering an on-demand sync." }
-            refreshRemoteConfig(
+            verboseLog { "Cold remote config read requesting an on-demand sync." }
+            refreshRemoteConfigIfStale(
                 appInBackground = false,
                 appUserID = appUserID,
                 fetchContext = RemoteConfigFetchContext.Read,
-                staleGated = true,
             )
             // Join whatever is now in flight — the sync we just triggered, or one a concurrent caller started.
             awaitInFlightRefresh()
@@ -584,10 +611,10 @@ internal class RemoteConfigManager(
      * session kill-switch).
      *
      * When the topic isn't committed yet, [awaitConfigForRead] first waits for a refresh in progress — or
-     * triggers one on demand — and then re-reads before giving up, so a read during the initial sync (or before
-     * any sync) returns fresh data instead of `null`, mirroring [blobData]. A committed topic returns
-     * immediately, never delayed by an unrelated in-flight refresh. Use [blobData] for a resolved item payload
-     * that also resolves the referenced blob. Reads disk on [ioDispatcher].
+     * triggers one on demand, subject to its freshness gate — and then re-reads before giving up, so a read
+     * during the initial sync (or before any sync) returns fresh data instead of `null`, mirroring [blobData]. A
+     * committed topic returns immediately, never delayed by an unrelated in-flight refresh. Use [blobData] for a
+     * resolved item payload that also resolves the referenced blob. Reads disk on [ioDispatcher].
      */
     suspend fun topic(topic: RemoteConfigTopic): ConfigTopic? = withContext(ioDispatcher) {
         committedTopic(topic)
@@ -698,9 +725,9 @@ internal class RemoteConfigManager(
      * (HIGH priority, joining any in-flight prefetch of the same ref) and read back.
      *
      * When the item isn't committed yet, [awaitConfigForRead] first waits for a refresh in progress — or
-     * triggers one on demand — and then re-reads before giving up, so a read during the initial sync (or
-     * before any sync) returns fresh data instead of `null`. A committed item returns immediately, never
-     * delayed by an unrelated in-flight refresh.
+     * triggers one on demand, subject to its freshness gate — and then re-reads before giving up, so a read
+     * during the initial sync (or before any sync) returns fresh data instead of `null`. A committed item returns
+     * immediately, never delayed by an unrelated in-flight refresh.
      *
      * Returns `null` without any read when the endpoint is [isDisabled] (the 4xx session kill-switch). Runs on
      * [ioDispatcher].
