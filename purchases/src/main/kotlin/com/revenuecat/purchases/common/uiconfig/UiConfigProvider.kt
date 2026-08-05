@@ -57,25 +57,24 @@ internal class UiConfigProvider(
      * Like [getUiConfig], but reports *why* no [UiConfig] came back, so a caller can tell a project that simply
      * has no `ui_config` (no paywalls configured) from one whose published `ui_config` couldn't be resolved. See
      * [UiConfigResolution] for what each outcome means.
-     *
-     * A resolved value is only returned via the cache (store-if-newer): if an identity-change invalidation
-     * advanced the generation while [resolve] was in flight, [GenerationGuardedCache.store] drops it and
-     * [GenerationGuardedCache.cached] is `null`, so the previous user's config is never served.
      */
-    @Suppress("ReturnCount")
     suspend fun resolveUiConfig(): UiConfigResolution {
         cache.cached?.let { return UiConfigResolution.Found(it) }
+
         val generation = manager.configGeneration
         val resolved = resolve()
         if (resolved != null) cache.store(generation, resolved)
-        // Read back through the cache, never `resolved` itself: store-if-newer drops a value whose generation was
-        // overtaken mid-resolve, and that value may belong to the previous user.
-        cache.cached?.let { return UiConfigResolution.Found(it) }
-        // Still nothing in memory. A value that resolved but lost the store-if-newer race is not a failure, and
-        // must not reach [classifyUnresolved]: an identity change wipes the disk cache (which would read back as
-        // NotConfigured), while a newer commit's own failed warm leaves the topic intact (Unavailable) — both
-        // misreporting a resolve that actually worked.
-        return if (resolved != null) UiConfigResolution.Superseded else classifyUnresolved()
+
+        // What the cache accepted is what can be served, never `resolved` itself: store-if-newer drops a value
+        // whose generation was overtaken mid-resolve, and that value may belong to the previous user.
+        val served = cache.cached
+        return when {
+            served != null -> UiConfigResolution.Found(served)
+            // Resolved fine, but the generation guard dropped it — not a failure, and it must not be classified
+            // from the committed state (an identity change has already wiped it). The next read re-resolves.
+            resolved != null -> UiConfigResolution.Superseded
+            else -> classifyUnresolved()
+        }
     }
 
     /**

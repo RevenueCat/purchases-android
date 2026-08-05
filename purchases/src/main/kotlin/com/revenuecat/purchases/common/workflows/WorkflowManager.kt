@@ -172,7 +172,7 @@ internal class WorkflowManager(
         when (uiConfigProvider.resolveUiConfig()) {
             is UiConfigResolution.Found -> Unit
             UiConfigResolution.NotConfigured -> verboseLog {
-                "No ui_config in remote config before getOfferings; nothing to ready."
+                "Remote config has no ui_config to resolve before getOfferings."
             }
             UiConfigResolution.Disabled -> debugLog {
                 "Remote config is disabled for this session; skipping ui_config readiness before getOfferings."
