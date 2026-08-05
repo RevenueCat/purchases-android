@@ -104,4 +104,63 @@ class PublishedWorkflowTest {
         offeringIdentifier = "offering",
         exitOffers = exitOfferingId?.let { ExitOffers(dismiss = ExitOffer(offeringId = it)) },
     )
+
+    // region workflowType JSON deserialization
+
+    @Test
+    fun `workflowType decodes feedback-survey to FEEDBACK_SURVEY`() {
+        val workflow = parseWorkflowWithType("feedback-survey")
+        assertThat(workflow.workflowType).isEqualTo(WorkflowType.FEEDBACK_SURVEY)
+    }
+
+    @Test
+    fun `workflowType decodes paywall to PAYWALL`() {
+        val workflow = parseWorkflowWithType("paywall")
+        assertThat(workflow.workflowType).isEqualTo(WorkflowType.PAYWALL)
+    }
+
+    @Test
+    fun `workflowType decodes web-funnel to WEB_FUNNEL`() {
+        val workflow = parseWorkflowWithType("web-funnel")
+        assertThat(workflow.workflowType).isEqualTo(WorkflowType.WEB_FUNNEL)
+    }
+
+    @Test
+    fun `workflowType decodes unknown string to UNKNOWN`() {
+        val workflow = parseWorkflowWithType("some-future-type")
+        assertThat(workflow.workflowType).isEqualTo(WorkflowType.UNKNOWN)
+    }
+
+    @Test
+    fun `workflowType is null when field is absent`() {
+        val json = minimalWorkflowJson()
+        val workflow = WorkflowJsonParser.parsePublishedWorkflow(json)
+        assertThat(workflow.workflowType).isNull()
+    }
+
+    private fun parseWorkflowWithType(type: String): PublishedWorkflow {
+        val json = minimalWorkflowJson(workflowType = type)
+        return WorkflowJsonParser.parsePublishedWorkflow(json)
+    }
+
+    private fun minimalWorkflowJson(workflowType: String? = null): String {
+        val typeField = workflowType?.let { """"workflow_type": "$it",""" } ?: ""
+        return """
+            {
+              "id": "wf_1",
+              "display_name": "Test",
+              "initial_step_id": "step_1",
+              $typeField
+              "steps": {},
+              "screens": {},
+              "ui_config": {
+                "app": { "colors": {}, "fonts": {} },
+                "localizations": {},
+                "variable_config": {}
+              }
+            }
+        """.trimIndent()
+    }
+
+    // endregion
 }

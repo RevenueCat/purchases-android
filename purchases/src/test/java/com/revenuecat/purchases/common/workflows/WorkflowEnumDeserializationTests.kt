@@ -10,6 +10,31 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
+internal class WorkflowTypeDeserializationTests(
+    private val serialized: String,
+    private val expected: WorkflowType,
+) {
+
+    companion object {
+        @JvmStatic
+        @Parameterized.Parameters(name = "{0}")
+        fun parameters(): Collection<*> = listOf(
+            arrayOf("\"paywall\"", WorkflowType.PAYWALL),
+            arrayOf("\"web-funnel\"", WorkflowType.WEB_FUNNEL),
+            arrayOf("\"feedback-survey\"", WorkflowType.FEEDBACK_SURVEY),
+            arrayOf("\"unknown\"", WorkflowType.UNKNOWN),
+            arrayOf("\"some-future-type\"", WorkflowType.UNKNOWN),
+        )
+    }
+
+    @Test
+    fun `Should properly deserialize WorkflowType`() {
+        val actual = JsonTools.json.decodeFromString<WorkflowType>(serialized)
+        assertThat(actual).isEqualTo(expected)
+    }
+}
+
+@RunWith(Parameterized::class)
 internal class WorkflowTriggerTypeDeserializationTests(
     private val serialized: String,
     private val expected: WorkflowTriggerType,
