@@ -8,6 +8,7 @@ import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.emptyUiConfig
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
+import com.revenuecat.purchases.common.uiconfig.UiConfigResolution
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -43,19 +44,25 @@ class WorkflowManagerTest {
     private lateinit var workflowManager: WorkflowManager
 
     // This is a plain JUnit test (no Robolectric), so the default log handler's android.util.Log calls aren't
-    // mocked. Swap in a no-op handler so the prewarm-failure path can log without blowing up.
+    // mocked. Swap in a recording handler so the prewarm-failure path can log without blowing up, and so the
+    // readiness gate's error logging can be asserted — including its absence, which assertLogs can't express.
     private val originalLogHandler = currentLogHandler
+    private val errorLogs = mutableListOf<String>()
 
     @Before
     fun setUp() {
+        errorLogs.clear()
         currentLogHandler = object : LogHandler {
             override fun v(tag: String, msg: String) {}
             override fun d(tag: String, msg: String) {}
             override fun i(tag: String, msg: String) {}
             override fun w(tag: String, msg: String) {}
-            override fun e(tag: String, msg: String, throwable: Throwable?) {}
+            override fun e(tag: String, msg: String, throwable: Throwable?) {
+                errorLogs += msg
+            }
         }
         coEvery { mockUiConfigProvider.getUiConfig() } returns uiConfig
+        coEvery { mockUiConfigProvider.resolveUiConfig() } returns UiConfigResolution.Found(uiConfig)
         every { mockUiConfigProvider.isWarm() } returns false
         every { mockAssetPreDownloader.preDownloadWorkflowAssets(any(), any()) } just Runs
         workflowManager = WorkflowManager(
@@ -210,7 +217,7 @@ class WorkflowManagerTest {
 
         assertThat(completed).isTrue()
         coVerify(exactly = 0) { mockProvider.warm() }
-        coVerify(exactly = 0) { mockUiConfigProvider.getUiConfig() }
+        coVerify(exactly = 0) { mockUiConfigProvider.resolveUiConfig() }
     }
 
     @Test
@@ -226,15 +233,15 @@ class WorkflowManagerTest {
 
         assertThat(completed).isTrue()
         coVerify(exactly = 1) { mockProvider.warm() }
-        coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
+        coVerify(exactly = 1) { mockUiConfigProvider.resolveUiConfig() }
     }
 
     @Test
-    fun `onPaywallConfigReady still completes when ui_config resolution fails`() {
+    fun `onPaywallConfigReady still completes and error-logs when ui_config resolution throws`() {
         val mockProvider = mockk<WorkflowsConfigProvider>()
         every { mockProvider.isWarmForCurrentOffering() } returns false
         coEvery { mockProvider.warm() } just Runs
-        coEvery { mockUiConfigProvider.getUiConfig() } throws RuntimeException("boom")
+        coEvery { mockUiConfigProvider.resolveUiConfig() } throws RuntimeException("boom")
         val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = testScope)
 
         var completed = false
@@ -242,14 +249,15 @@ class WorkflowManagerTest {
         testScope.testScheduler.advanceUntilIdle()
 
         assertThat(completed).isTrue()
+        assertThat(errorLogs).anyMatch { it.contains("Failed to ready ui_config before getOfferings") }
     }
 
     @Test
-    fun `onPaywallConfigReady still completes when ui_config is unavailable`() {
+    fun `onPaywallConfigReady still completes and error-logs when a published ui_config is unavailable`() {
         val mockProvider = mockk<WorkflowsConfigProvider>()
         every { mockProvider.isWarmForCurrentOffering() } returns false
         coEvery { mockProvider.warm() } just Runs
-        coEvery { mockUiConfigProvider.getUiConfig() } returns null
+        coEvery { mockUiConfigProvider.resolveUiConfig() } returns UiConfigResolution.Unavailable
         val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = testScope)
 
         var completed = false
@@ -257,6 +265,34 @@ class WorkflowManagerTest {
         testScope.testScheduler.advanceUntilIdle()
 
         assertThat(completed).isTrue()
+        assertThat(errorLogs).anyMatch { it.contains("Failed to ready ui_config before getOfferings") }
+    }
+
+    @Test
+    fun `onPaywallConfigReady completes without error-logging when there is no ui_config to ready`() {
+        // A project with no paywalls configured has no ui_config at all, and neither does a session whose
+        // /v1/config endpoint was killed, or one whose resolve was superseded by a newer commit. None of those
+        // is a failure, so none may reach the developer's log as an error.
+        val validOutcomes = listOf(
+            UiConfigResolution.NotConfigured,
+            UiConfigResolution.Disabled,
+            UiConfigResolution.Superseded,
+        )
+
+        validOutcomes.forEach { outcome ->
+            val mockProvider = mockk<WorkflowsConfigProvider>()
+            every { mockProvider.isWarmForCurrentOffering() } returns false
+            coEvery { mockProvider.warm() } just Runs
+            coEvery { mockUiConfigProvider.resolveUiConfig() } returns outcome
+            val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = testScope)
+
+            var completed = false
+            manager.onPaywallConfigReady { completed = true }
+            testScope.testScheduler.advanceUntilIdle()
+
+            assertThat(completed).describedAs("completed for $outcome").isTrue()
+            assertThat(errorLogs).describedAs("error logs for $outcome").isEmpty()
+        }
     }
 
     @Test
@@ -272,7 +308,7 @@ class WorkflowManagerTest {
 
         assertThat(completed).isTrue()
         // A failure to ready one step must not cancel the other.
-        coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
+        coVerify(exactly = 1) { mockUiConfigProvider.resolveUiConfig() }
     }
 
     @Test
@@ -299,7 +335,7 @@ class WorkflowManagerTest {
         assertThat(completed2).isTrue()
         // The underlying work must have run exactly once despite two concurrent callers.
         coVerify(exactly = 1) { mockProvider.warm() }
-        coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
+        coVerify(exactly = 1) { mockUiConfigProvider.resolveUiConfig() }
     }
 
     @Test

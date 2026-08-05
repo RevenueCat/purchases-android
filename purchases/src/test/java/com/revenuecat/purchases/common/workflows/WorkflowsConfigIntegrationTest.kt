@@ -23,6 +23,7 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopicStore
+import com.revenuecat.purchases.common.uiconfig.UiConfigResolution
 import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
 import io.mockk.coEvery
@@ -369,6 +370,7 @@ class WorkflowsConfigIntegrationTest {
         uiConfigProvider = mockk {
             every { isWarm() } returns false
             coEvery { getUiConfig() } returns emptyUiConfig()
+            coEvery { resolveUiConfig() } returns UiConfigResolution.Found(emptyUiConfig())
         },
         workflowAssetPrewarmer = mockk(relaxed = true),
         scope = testScope,
