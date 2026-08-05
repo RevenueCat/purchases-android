@@ -161,13 +161,6 @@ internal class RemoteConfigManager(
         listeners.add(listener)
     }
 
-    /**
-     * Refreshes only when the committed configuration has aged past the normal refresh cadence
-     * ([cacheDurationProvider]). A `null` [lastRefreshedAt] — nothing committed this session, or an identity
-     * change wiped it — counts as stale. This is the single definition of that cadence: both the periodic
-     * foreground refresh and [awaitConfigForRead]'s on-demand read priming go through it, so a read can never
-     * fetch more often than an ordinary refresh would.
-     */
     fun refreshRemoteConfigIfStale(
         appInBackground: Boolean,
         appUserID: String,
@@ -547,20 +540,6 @@ internal class RemoteConfigManager(
      *   returning `null` — **unless** the committed configuration is still fresh, the endpoint is [isDisabled]
      *   (the 4xx session kill-switch), or no app user is known yet, in which case it gives up without a network
      *   call.
-     *
-     * Priming goes through [refreshRemoteConfigIfStale], so it follows the same cadence as the ordinary refresh:
-     * once we hold committed configuration that is fresh, "this topic/item is not committed" is the server's
-     * authoritative answer rather than a cache miss, and a read must never fetch more often than a refresh would.
-     * Otherwise every read for something the server never sends issues its own request, since a successful sync
-     * clears the [REFRESH_ATTEMPT_COOLDOWN] attempt stamp. What still primes: nothing committed this session
-     * ([lastRefreshedAt] is memory-only, so a warm disk cache in a fresh process still primes once), an identity
-     * change ([clearCache] clears it), and a 200 that could not be parsed or persisted (only a commit stamps it).
-     * A failed sync leaves [lastRefreshedAt] untouched and is throttled by [REFRESH_ATTEMPT_COOLDOWN] as before.
-     *
-     * Staleness is measured against the foreground window on purpose: it is the shorter one, so a read is the
-     * *more* willing of the two to fetch, and it matches the foreground request the read itself issues. The
-     * background window must not apply here — [lastRefreshedAt] is process-scoped, so a long-lived process that
-     * synced while backgrounded would otherwise treat absence as authoritative for its whole lifetime.
      *
      * The on-demand sync is issued as foreground (`appInBackground = false`): a read is blocking on the result,
      * so it wants the un-jittered, prompt request. The user it syncs for is snapshotted atomically with the
