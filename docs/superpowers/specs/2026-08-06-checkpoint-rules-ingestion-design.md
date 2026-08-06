@@ -57,4 +57,3 @@ Focused unit tests will cover:
 - valid open-ended schedules;
 - empty rule sets;
 - unavailable blobs and malformed top-level payloads.
-
