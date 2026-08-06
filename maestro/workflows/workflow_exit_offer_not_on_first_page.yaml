@@ -30,5 +30,5 @@ env:
 - waitForAnimationToEnd: { timeout: 8000 }
 # Dismissed back to the launcher; the exit offer is NOT presented.
 - assertVisible: "Present Paywall"
-- assertNotVisible: "Paywall V2"
+- assertNotVisible: "Unlock full access"
 - takeScreenshot: "workflow_exit_offer_not_on_first_page"
