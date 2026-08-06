@@ -18,6 +18,15 @@ public abstract class CheckpointResult internal constructor() {
     ) : CheckpointResult()
 
     /**
+     * A checkpoint-triggered ad was presented and finished with [adOutcome]. POC.
+     */
+    @Poko
+    public class AdPresented internal constructor(
+        override val checkpoint: CheckpointInfo,
+        public val adOutcome: CheckpointAdOutcome,
+    ) : CheckpointResult()
+
+    /**
      * Nothing is served for this checkpoint; the user continues uninterrupted.
      */
     @Poko

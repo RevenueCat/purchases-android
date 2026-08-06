@@ -10,12 +10,15 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
+import com.revenuecat.purchases.common.workflows.WorkflowStep
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * PoC [CheckpointWorkflowResolver]: every checkpoint matches and resolves to a workflow picked at random from
- * the workflows topic, except two hardcoded identifiers that simulate the no-match and error outcomes the
- * future checkpoints config topic will produce.
+ * the workflows topic, except three hardcoded identifiers that simulate the no-match, error, and ad outcomes
+ * the future checkpoints config topic will produce.
  */
 internal class RandomWorkflowCheckpointResolver(
     private val workflowManager: WorkflowManager?,
@@ -33,8 +36,31 @@ internal class RandomWorkflowCheckpointResolver(
             )
             SIMULATED_NO_MATCH_CHECKPOINT_ID ->
                 CheckpointWorkflowResolution.NoMatch(CheckpointResult.NoAction.Reason.NO_MATCH)
+            SIMULATED_AD_CHECKPOINT_ID -> resolveMockAdWorkflow(checkpoint)
             else -> resolveRandomWorkflow(checkpoint)
         }
+
+    // POC: pretends the backend already returned an ad-typed workflow/step for this checkpoint. Real
+    // implementation would come from the checkpoints config topic, same as the paywall path eventually will.
+    private fun resolveMockAdWorkflow(checkpoint: CheckpointInfo): CheckpointWorkflowResolution {
+        val stepId = "ad_step"
+        val mockWorkflow = PublishedWorkflow(
+            id = "mock_ad_workflow",
+            displayName = "Mock ad workflow (POC)",
+            initialStepId = stepId,
+            steps = mapOf(
+                stepId to WorkflowStep(
+                    id = stepId,
+                    type = "ad",
+                    paramValues = mapOf("ad_unit_id" to JsonPrimitive(SIMULATED_AD_UNIT_ID)),
+                ),
+            ),
+            screens = emptyMap(),
+        )
+        return CheckpointWorkflowResolution.Matched(
+            CheckpointWorkflowPresentation(checkpoint, mockWorkflow, adUnitId = SIMULATED_AD_UNIT_ID),
+        )
+    }
 
     @Suppress("ReturnCount")
     private suspend fun resolveRandomWorkflow(checkpoint: CheckpointInfo): CheckpointWorkflowResolution {
@@ -83,5 +109,9 @@ internal class RandomWorkflowCheckpointResolver(
     private companion object {
         const val SIMULATED_NO_MATCH_CHECKPOINT_ID = "unknown_checkpoint"
         const val SIMULATED_ERROR_CHECKPOINT_ID = "error_checkpoint"
+        const val SIMULATED_AD_CHECKPOINT_ID = "ad_checkpoint"
+
+        // Google's public test interstitial ad unit ID.
+        const val SIMULATED_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
     }
 }

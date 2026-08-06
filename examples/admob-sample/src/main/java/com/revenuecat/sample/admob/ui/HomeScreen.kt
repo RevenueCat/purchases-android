@@ -16,6 +16,7 @@ enum class AdFormat(val title: String, val subtitle: String) {
     NATIVE("Native Ad", "Text + images integrated into UI"),
     NATIVE_VIDEO("Native Video Ad", "Video content integrated into UI"),
     ERROR_TESTING("Error Testing", "Triggers ad load failure"),
+    CHECKPOINT("Ad Checkpoint (POC)", "Hits a checkpoint that resolves to an ad"),
 }
 
 internal sealed class Screen {

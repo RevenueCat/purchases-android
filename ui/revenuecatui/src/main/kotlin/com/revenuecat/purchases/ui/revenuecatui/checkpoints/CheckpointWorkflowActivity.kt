@@ -42,8 +42,15 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
             finish()
             return
         }
+        // POC: offering/uiConfig are nullable on CheckpointWorkflowPresentation to allow non-paywall
+        // (e.g. ad) presentations, but CheckpointPresenterImpl is only ever routed paywall presentations
+        // by CompositeCheckpointWorkflowExecutor.
         val options = PaywallOptions.Builder(dismissRequest = ::finish)
-            .injectedWorkflow(presentation.workflow, presentation.offering, presentation.uiConfig)
+            .injectedWorkflow(
+                presentation.workflow,
+                requireNotNull(presentation.offering) { "Paywall presentation missing offering" },
+                requireNotNull(presentation.uiConfig) { "Paywall presentation missing uiConfig" },
+            )
             .setListener(outcomeListener)
             .build()
         setContent {

@@ -19,7 +19,17 @@ internal interface CheckpointWorkflowExecutor {
     suspend fun execute(presentation: CheckpointWorkflowPresentation): CheckpointWorkflowOutcome
 }
 
-/** Single case while workflows are always UI; non-UI executions will add cases (e.g. returning an offering). */
 internal sealed class CheckpointWorkflowOutcome {
     data class PaywallFinished(val paywallOutcome: CheckpointPaywallOutcome) : CheckpointWorkflowOutcome()
+    data class AdFinished(val adOutcome: CheckpointAdOutcome) : CheckpointWorkflowOutcome()
+}
+
+/** POC outcome for an ad checkpoint. */
+@InternalRevenueCatAPI
+public sealed class CheckpointAdOutcome {
+    @InternalRevenueCatAPI
+    public object Shown : CheckpointAdOutcome()
+
+    @InternalRevenueCatAPI
+    public data class Failed(val reason: String) : CheckpointAdOutcome()
 }

@@ -21,9 +21,11 @@ import com.android.billingclient.api.PendingPurchasesParams
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
 import com.revenuecat.purchases.checkpoints.CheckpointListener
+import com.revenuecat.purchases.checkpoints.AdCheckpointWorkflowExecutor
 import com.revenuecat.purchases.checkpoints.CheckpointParams
 import com.revenuecat.purchases.checkpoints.CheckpointResult
 import com.revenuecat.purchases.checkpoints.CheckpointsManager
+import com.revenuecat.purchases.checkpoints.CompositeCheckpointWorkflowExecutor
 import com.revenuecat.purchases.checkpoints.RandomWorkflowCheckpointResolver
 import com.revenuecat.purchases.checkpoints.UiCheckpointWorkflowExecutor
 import com.revenuecat.purchases.common.AppConfig
@@ -185,8 +187,13 @@ internal class PurchasesOrchestrator(
             uiConfigProvider = uiConfigProvider,
             getOfferings = { Purchases.sharedInstance.awaitOfferings() },
         ),
-        executor = UiCheckpointWorkflowExecutor(
-            currentActivityProvider = currentActivityTracker::currentActivity,
+        executor = CompositeCheckpointWorkflowExecutor(
+            uiExecutor = UiCheckpointWorkflowExecutor(
+                currentActivityProvider = currentActivityTracker::currentActivity,
+            ),
+            adExecutor = AdCheckpointWorkflowExecutor(
+                currentActivityProvider = currentActivityTracker::currentActivity,
+            ),
         ),
     ),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {

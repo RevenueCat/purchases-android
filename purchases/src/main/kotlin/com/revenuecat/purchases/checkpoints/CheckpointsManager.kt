@@ -50,5 +50,7 @@ internal class CheckpointsManager(
         when (val outcome = executor.execute(presentation)) {
             is CheckpointWorkflowOutcome.PaywallFinished ->
                 CheckpointResult.PaywallPresented(presentation.checkpoint, outcome.paywallOutcome)
+            is CheckpointWorkflowOutcome.AdFinished ->
+                CheckpointResult.AdPresented(presentation.checkpoint, outcome.adOutcome)
         }
 }
