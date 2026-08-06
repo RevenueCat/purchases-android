@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.checkpoints
+package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import dev.drewhamilton.poko.Poko

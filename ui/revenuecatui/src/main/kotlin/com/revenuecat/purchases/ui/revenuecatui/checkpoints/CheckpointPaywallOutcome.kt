@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.checkpoints
+package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -6,8 +6,7 @@ import com.revenuecat.purchases.PurchasesError
 import dev.drewhamilton.poko.Poko
 
 /**
- * Terminal result of a checkpoint-presented paywall. Delivered in [CheckpointResult.PaywallPresented] and
- * through [CheckpointListener.onCheckpointPaywallFinished].
+ * Terminal result of a checkpoint-presented paywall. Delivered in [CheckpointResult.PaywallPresented].
  */
 @InternalRevenueCatAPI
 public abstract class CheckpointPaywallOutcome internal constructor() {

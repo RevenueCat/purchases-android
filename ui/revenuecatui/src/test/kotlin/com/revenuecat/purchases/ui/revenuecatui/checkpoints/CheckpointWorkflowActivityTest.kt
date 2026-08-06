@@ -16,7 +16,7 @@ class CheckpointWorkflowActivityTest {
     @Test
     fun `activity finishes gracefully when the checkpoint call is unknown`() {
         // Simulates process death: the task is restored with the original callId extra, but the in-process
-        // call store (delegate, pending call) died with the process.
+        // pending call died with the process.
         val intent = Intent(
             ApplicationProvider.getApplicationContext<Context>(),
             CheckpointWorkflowActivity::class.java,

@@ -1,9 +1,10 @@
-package com.revenuecat.purchases.checkpoints
+package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 
 /**
- * Global listener for checkpoint activity, set through [com.revenuecat.purchases.Purchases.checkpointListener].
+ * Global listener for checkpoint activity, set through
+ * [com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpointListener].
  * All methods are called on the main thread.
  */
 @InternalRevenueCatAPI
