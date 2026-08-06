@@ -72,17 +72,15 @@ internal class CheckpointsManager {
         result
     }
 
-    // Every accessor matches on callId, so a late report from an abandoned presentation can never disturb
-    // the call that replaced it.
     fun resolution(callId: String): CheckpointResolution.Workflow? =
-        synchronized(this) { pendingCall?.takeIf { it.callId == callId }?.resolution }
+        withPendingCall(callId) { it.resolution }
 
     fun onPresentationStarted(callId: String, activity: Activity) {
-        synchronized(this) { pendingCall?.takeIf { it.callId == callId }?.activity = WeakReference(activity) }
+        withPendingCall(callId) { it.activity = WeakReference(activity) }
     }
 
     fun recordOutcome(callId: String, outcome: CheckpointPaywallOutcome) {
-        synchronized(this) { pendingCall?.takeIf { it.callId == callId }?.outcome = outcome }
+        withPendingCall(callId) { it.outcome = outcome }
     }
 
     /**
@@ -137,8 +135,18 @@ internal class CheckpointsManager {
         take(callId)?.activity?.get()?.finish()
     }
 
-    private fun take(callId: String): PendingCall? =
-        synchronized(this) { pendingCall?.takeIf { it.callId == callId }?.also { pendingCall = null } }
+    private fun take(callId: String): PendingCall? = withPendingCall(callId) {
+        pendingCall = null
+        it
+    }
+
+    /**
+     * Runs [block] under the lock on the pending call, but only if [callId] still identifies it. Matching on
+     * the id is what makes a late report from an abandoned or process-restored activity a no-op instead of
+     * something that disturbs the call that replaced it, so every accessor goes through here.
+     */
+    private fun <T> withPendingCall(callId: String, block: (PendingCall) -> T): T? =
+        synchronized(this) { pendingCall?.takeIf { it.callId == callId }?.let(block) }
 
     private fun presentationError(code: PurchasesErrorCode, message: String): Nothing {
         val error = PurchasesError(code, message)
