@@ -4,10 +4,12 @@ package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.common.canUsePaywallUI
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.utils.PaywallComponentsImagePreDownloader
+import com.revenuecat.purchases.utils.collectAssets
 import kotlinx.coroutines.CancellationException
 
 /**
@@ -27,6 +29,8 @@ internal class WorkflowAssetPrewarmer(
     private val uiConfigProvider: UiConfigProvider,
     private val paywallComponentsImagePreDownloader: PaywallComponentsImagePreDownloader,
     private val offeringFontPreDownloader: OfferingFontPreDownloader,
+    /** The only consumer of the walk is a no-op without the paywalls SDK, so the walk itself is skipped. */
+    private val shouldCollectAssets: Boolean = canUsePaywallUI,
 ) {
 
     // Ids whose assets have been enqueued, so neither path warms the same workflow twice. Never reset for the
@@ -41,8 +45,10 @@ internal class WorkflowAssetPrewarmer(
         synchronized(warmedWorkflowIds) {
             if (!warmedWorkflowIds.add(workflow.id)) return
         }
-        workflow.screens.values.forEach { screen ->
-            paywallComponentsImagePreDownloader.preDownloadImages(screen.componentsConfig.base)
+        if (shouldCollectAssets) {
+            workflow.screens.values.forEach { screen ->
+                paywallComponentsImagePreDownloader.preDownloadImages(screen.componentsConfig.base.collectAssets())
+            }
         }
         offeringFontPreDownloader.preDownloadFontsIfNeeded(uiConfig.app.fonts.values)
     }
