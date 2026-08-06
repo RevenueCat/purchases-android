@@ -50,11 +50,12 @@ import java.io.File
 @SuppressWarnings("LongMethod")
 @Composable
 fun AppInfoScreen(
+    tappedOnCustomerCenter: () -> Unit,
+    tappedOnCheckpoints: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenViewModelImpl>(
         factory = AppInfoScreenViewModelImpl.Factory,
     ),
-    tappedOnCustomerCenter: () -> Unit,
 ) {
     var isDebugBottomSheetVisible by remember { mutableStateOf(false) }
     var showLogInDialog by remember { mutableStateOf(false) }
@@ -143,6 +144,11 @@ fun AppInfoScreen(
             activity.launchCustomerCenter()
         }) {
             Text(text = "Customer Center (Activity)")
+        }
+        Button(onClick = {
+            tappedOnCheckpoints()
+        }) {
+            Text(text = "Checkpoints")
         }
         Spacer(modifier = Modifier.weight(1f))
         Button(onClick = { viewModel.refresh() }) {
@@ -335,6 +341,7 @@ fun AppInfoScreenPreview() {
             override fun refresh() {}
         },
         tappedOnCustomerCenter = {},
+        tappedOnCheckpoints = {},
     )
 }
 

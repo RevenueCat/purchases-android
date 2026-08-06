@@ -2,6 +2,7 @@ package com.revenuecat.paywallstester
 
 import android.app.Application
 import android.util.Log
+import android.widget.Toast
 import com.revenuecat.paywallstester.data.ApiKeyStore
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.DebugEventListener
@@ -9,6 +10,9 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.checkpoints.CheckpointInfo
+import com.revenuecat.purchases.checkpoints.CheckpointListener
+import com.revenuecat.purchases.checkpoints.CheckpointResult
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreTransaction
 
@@ -27,6 +31,20 @@ class MainApplication : Application() {
         configurePurchases(apiKey)
         Purchases.sharedInstance.debugEventListener = DebugEventListener { event ->
             Log.d(TAG, "DebugEvent: ${event.name} ${event.properties}")
+        }
+        Purchases.sharedInstance.checkpointListener = object : CheckpointListener {
+            override fun onCheckpointHit(checkpoint: CheckpointInfo) {
+                Log.d(TAG, "CheckpointListener: onCheckpointHit: $checkpoint")
+                Toast.makeText(
+                    this@MainApplication,
+                    "Checkpoint hit: ${checkpoint.identifier}",
+                    Toast.LENGTH_SHORT,
+                ).show()
+            }
+
+            override fun onCheckpointCompleted(checkpoint: CheckpointInfo, result: CheckpointResult) {
+                Log.d(TAG, "CheckpointListener: onCheckpointCompleted: $result")
+            }
         }
         Purchases.sharedInstance.customerCenterListener =
             object : CustomerCenterListener {

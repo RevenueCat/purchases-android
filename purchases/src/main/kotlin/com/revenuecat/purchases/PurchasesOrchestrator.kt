@@ -20,6 +20,12 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
+import com.revenuecat.purchases.checkpoints.CheckpointListener
+import com.revenuecat.purchases.checkpoints.CheckpointParams
+import com.revenuecat.purchases.checkpoints.CheckpointResult
+import com.revenuecat.purchases.checkpoints.CheckpointsManager
+import com.revenuecat.purchases.checkpoints.RandomWorkflowCheckpointResolver
+import com.revenuecat.purchases.checkpoints.UiCheckpointWorkflowExecutor
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -104,6 +110,7 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.strings.SyncAttributesAndOfferingsStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.utils.CurrentActivityTracker
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.RateLimiter
@@ -171,6 +178,17 @@ internal class PurchasesOrchestrator(
     private val workflowsConfigProvider: WorkflowsConfigProvider? = null,
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
+    private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
+    private val checkpointsManager: CheckpointsManager = CheckpointsManager(
+        resolver = RandomWorkflowCheckpointResolver(
+            workflowManager = workflowManager,
+            uiConfigProvider = uiConfigProvider,
+            getOfferings = { Purchases.sharedInstance.awaitOfferings() },
+        ),
+        executor = UiCheckpointWorkflowExecutor(
+            currentActivityProvider = currentActivityTracker::currentActivity,
+        ),
+    ),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -220,6 +238,9 @@ internal class PurchasesOrchestrator(
     @get:Synchronized
     @set:Synchronized
     var debugEventListener: DebugEventListener? by eventsManager::debugEventListener
+
+    @OptIn(InternalRevenueCatAPI::class)
+    var checkpointListener: CheckpointListener? by checkpointsManager::checkpointListener
 
     val isAnonymous: Boolean
         get() = identityManager.currentUserIsAnonymous()
@@ -380,9 +401,14 @@ internal class PurchasesOrchestrator(
     }
 
     override fun onActivityStarted(activity: Activity) {
+        currentActivityTracker.onActivityStarted(activity)
         if (appConfig.showInAppMessagesAutomatically) {
             showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList())
         }
+    }
+
+    override fun onActivityStopped(activity: Activity) {
+        currentActivityTracker.onActivityStopped(activity)
     }
 
     override fun onActivityPaused(activity: Activity) {
@@ -397,6 +423,12 @@ internal class PurchasesOrchestrator(
     }
 
     // region Public Methods
+
+    @OptIn(InternalRevenueCatAPI::class)
+    suspend fun checkpoint(
+        checkpointIdentifier: String,
+        params: CheckpointParams?,
+    ): CheckpointResult = checkpointsManager.checkpoint(checkpointIdentifier, params)
 
     fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
         storefrontCountryCode?.let {
