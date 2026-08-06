@@ -28,6 +28,11 @@ internal class CheckpointsConfigProviderTest {
     }
 
     @Test
+    fun `checkpoints use the backend checkpoint_rules topic`() {
+        assertThat(RemoteConfigTopic.Checkpoints.wireName).isEqualTo("checkpoint_rules")
+    }
+
+    @Test
     fun `getCheckpoint decodes an empty checkpoint object`() = runTest {
         coEvery {
             manager.blobData(
