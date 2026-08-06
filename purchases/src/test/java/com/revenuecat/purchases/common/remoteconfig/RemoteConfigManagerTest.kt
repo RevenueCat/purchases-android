@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(InternalRevenueCatAPI::class, ExperimentalCoroutinesApi::class)
@@ -1749,6 +1750,9 @@ class RemoteConfigManagerTest {
             fetchContext = RemoteConfigFetchContext.AppStart,
         )
         deliverSuccess(null)
+        // Read priming follows the normal refresh cadence, so age the committed config past the staleness window
+        // before the cold read: against freshly committed config, an absent topic is the server's answer.
+        currentTimeMillis += STALE_FOREGROUND_AGE_MILLIS
 
         // Nothing is in flight and nothing is cached: the read triggers its own sync and waits for it.
         var result: ConfigTopic? = null
@@ -1776,7 +1780,159 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `repeated cold reads of a missing item do not re-sync while the committed config is fresh`() = runTest {
+        // A project with no paywalls configured still gets the ui_config topic, committed with no items in it, so
+        // every part of a ui_config read misses. Re-asking the server can't change that, so it must not.
+        var state: PersistedRemoteConfigurationState? = null
+        every { diskCache.read() } answers { state }
+        every { diskCache.write(any()) } answers { state = firstArg(); true }
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
+        )
+        deliverSuccess(containerWithConfig(NO_PAYWALLS_RESPONSE))
+        assertThat(manager.topic(RemoteConfigTopic.UiConfig)).isEmpty()
+
+        repeat(3) {
+            assertThat(manager.mergeItemsBlobData<MergedBlob>(RemoteConfigTopic.UiConfig, listOf("wf1", "wf2")))
+                .isNull()
+            assertThat(manager.blobData(RemoteConfigTopic.UiConfig, "app") { it }).isNull()
+        }
+
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `repeated cold reads of an inactive topic do not re-sync while the committed config is fresh`() = runTest {
+        var state: PersistedRemoteConfigurationState? = null
+        every { diskCache.read() } answers { state }
+        every { diskCache.write(any()) } answers { state = firstArg(); true }
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
+        )
+        // This response doesn't activate the workflows topic at all.
+        deliverSuccess(containerWithConfig(SOURCES_ONLY_RESPONSE))
+        assertThat(manager.topic(RemoteConfigTopic.Sources)).isNotNull
+
+        repeat(3) { assertThat(manager.topic(RemoteConfigTopic.Workflows)).isNull() }
+
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `a cold read syncs again once the staleness window elapses`() = runTest {
+        var state: PersistedRemoteConfigurationState? = null
+        every { diskCache.read() } answers { state }
+        every { diskCache.write(any()) } answers { state = firstArg(); true }
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
+        )
+        deliverSuccess(containerWithConfig(NO_PAYWALLS_RESPONSE))
+        assertThat(manager.blobData(RemoteConfigTopic.UiConfig, "app") { it }).isNull()
+        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+
+        currentTimeMillis += STALE_FOREGROUND_AGE_MILLIS
+
+        val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+            manager.blobData(RemoteConfigTopic.UiConfig, "app") { it }
+        }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.Read)
+        assertThat(read.isActive).isTrue()
+        deliverSuccess(null)
+        assertThat(read.isCompleted).isTrue()
+    }
+
+    @Test
+    fun `read priming measures staleness against the foreground window`() = runTest {
+        // A read is always issued as foreground, so it must be gated by the foreground window too: the
+        // (process-scoped) background window would otherwise pin absence as authoritative for a whole session.
+        cacheDurationProvider = { appInBackground -> if (appInBackground) 25.hours else 5.seconds }
+        var state: PersistedRemoteConfigurationState? = null
+        every { diskCache.read() } answers { state }
+        every { diskCache.write(any()) } answers { state = firstArg(); true }
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
+        )
+        deliverSuccess(containerWithConfig(NO_PAYWALLS_RESPONSE))
+        currentTimeMillis += 5.seconds.inWholeMilliseconds + REFRESH_ATTEMPT_COOLDOWN_MILLIS
+
+        val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+            manager.blobData(RemoteConfigTopic.UiConfig, "app") { it }
+        }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        deliverSuccess(null)
+        assertThat(read.isCompleted).isTrue()
+    }
+
+    @Test
+    fun `clearCache lets a cold read prime again within the staleness window`() = runTest {
+        var state: PersistedRemoteConfigurationState? = null
+        every { diskCache.read() } answers { state }
+        every { diskCache.write(any()) } answers { state = firstArg(); true }
+        every { diskCache.clear() } answers { state = null }
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
+        )
+        deliverSuccess(containerWithConfig(NO_PAYWALLS_RESPONSE))
+
+        // An identity change wipes the committed config, so nothing is authoritative for the new user.
+        manager.clearCache("new-user")
+
+        val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+            manager.topic(RemoteConfigTopic.UiConfig)
+        }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        assertThat(capturedAppUserID).isEqualTo("new-user")
+        deliverSuccess(null)
+        assertThat(read.isCompleted).isTrue()
+    }
+
+    @Test
+    fun `a 200 that could not be persisted leaves a cold read free to prime`() = runTest {
+        // Only a commit stamps the refresh time, so an unpersistable response must not count as fresh config.
+        every { diskCache.read() } returns null
+        every { diskCache.write(any()) } returns false
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.AppStart,
+        )
+        deliverSuccess(containerWithConfig(NO_PAYWALLS_RESPONSE))
+
+        val read = launch(UnconfinedTestDispatcher(testScheduler)) {
+            manager.topic(RemoteConfigTopic.UiConfig)
+        }
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        deliverSuccess(null)
+        assertThat(read.isCompleted).isTrue()
+    }
+
+    @Test
     fun `topic-triggered syncs are throttled after a retryable failure`() = runTest {
+        // No sync ever succeeds here, so the committed config never becomes fresh: this is the guard for the
+        // failed-attempt cooldown, the throttle that still applies when the freshness gate lets a read through.
         every { diskCache.read() } returns persisted(
             manifest = "m",
             activeTopics = listOf("sources"),
@@ -2551,6 +2707,7 @@ class RemoteConfigManagerTest {
             sourceProvider = sourceProvider,
             blobFetcher = blobFetcher,
             appUserIDProvider = appUserIDProvider,
+            cacheDurationProvider = { appInBackground -> cacheDurationProvider(appInBackground) },
         )
     }
 
@@ -2667,5 +2824,30 @@ class RemoteConfigManagerTest {
         private const val REF_TAMPERED = "IIIIJJJJKKKKLLLLMMMMNNNNOOOOPPPP"
         private const val REF_UNWANTED = "QQQQRRRRSSSSTTTTUUUUVVVVWWWWXXXX"
         private const val REF_EXTRA = "11112222333344445555666677778888"
+
+        // What a project with no paywalls configured looks like: the paywall topics are active and committed, just
+        // with no items in them, so every ui_config/workflows item read misses.
+        private val NO_PAYWALLS_RESPONSE = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag",
+              "active_topics": ["sources", "ui_config", "workflows"],
+              "topics": {
+                "sources": { "default": { "blob_ref": "$REF_VALID" } },
+                "ui_config": {},
+                "workflows": {}
+              }
+            }
+        """.trimIndent()
+
+        // A response that doesn't activate the workflows topic at all.
+        private val SOURCES_ONLY_RESPONSE = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag",
+              "active_topics": ["sources"],
+              "topics": { "sources": { "default": { "blob_ref": "$REF_VALID" } } }
+            }
+        """.trimIndent()
     }
 }
