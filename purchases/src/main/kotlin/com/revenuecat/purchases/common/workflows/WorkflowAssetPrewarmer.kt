@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.utils.PaywallComponentsImagePreDownloader
+import com.revenuecat.purchases.utils.collectAssets
 import kotlinx.coroutines.CancellationException
 
 /**
@@ -42,7 +43,7 @@ internal class WorkflowAssetPrewarmer(
             if (!warmedWorkflowIds.add(workflow.id)) return
         }
         workflow.screens.values.forEach { screen ->
-            paywallComponentsImagePreDownloader.preDownloadImages(screen.componentsConfig.base)
+            paywallComponentsImagePreDownloader.preDownloadImages(screen.componentsConfig.base.collectAssets())
         }
         offeringFontPreDownloader.preDownloadFontsIfNeeded(uiConfig.app.fonts.values)
     }
