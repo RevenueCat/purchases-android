@@ -10,9 +10,11 @@ import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.MissingImageLocalization
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.MissingStringLocalization
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.MissingVideoLocalization
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
+import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrElse
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapValuesOrAccumulate
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
@@ -48,6 +50,17 @@ internal fun NonEmptyMap<LocaleId, LocalizationDictionary>.stringForAllLocales(
             .string(key)
             .mapError { nonEmptyListOf(MissingStringLocalization(key, locale)) }
     }.mapValuesOrAccumulate { it }
+
+@JvmSynthetic
+internal fun NonEmptyMap<LocaleId, LocalizationDictionary>.stringForAllLocalesOrEmpty(
+    key: LocalizationKey,
+): NonEmptyMap<LocaleId, String> =
+    mapValues { (locale, localizationDictionary) ->
+        localizationDictionary.string(key).getOrElse {
+            Logger.w(MissingStringLocalization(key, locale).message)
+            ""
+        }
+    }
 
 /**
  * Retrieves an Image for all locales in this map, associated with the provided [key].

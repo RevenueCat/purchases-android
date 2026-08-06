@@ -51,7 +51,6 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvid
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.AllLocalizationsMissing
-import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.MissingStringLocalization
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
@@ -284,7 +283,7 @@ class PaywallComponentDataValidationTests {
     }
 
     @Test
-    fun `Should accumulate errors with Legacy fallback if some localizations are missing`() {
+    fun `Should use empty strings if some base text localizations are missing`() {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
@@ -336,15 +335,14 @@ class PaywallComponentDataValidationTests {
         val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
 
         // Assert
-        assertTrue(validated is PaywallValidationResult.Legacy)
-        assertNotNull(validated.errors)
-        assertEquals(validated.errors!!.size, 2)
-        assertTrue(
-            validated.errors!!.contains(MissingStringLocalization(LocalizationKey("key2"), LocaleId("nl_NL")))
-        )
-        assertTrue(
-            validated.errors!!.contains(MissingStringLocalization(LocalizationKey("key1"), LocaleId("es_ES")))
-        )
+        check(validated is PaywallValidationResult.Components)
+        val stack = validated.stack as StackComponentStyle
+        val firstText = stack.children[0] as TextComponentStyle
+        val secondText = stack.children[1] as TextComponentStyle
+        assertEquals("", firstText.texts.getValue(LocaleId("es_ES")))
+        assertEquals("", secondText.texts.getValue(LocaleId("nl_NL")))
+        assertEquals("value1", firstText.texts.getValue(defaultLocale))
+        assertEquals("value2", secondText.texts.getValue(defaultLocale))
     }
 
     @Test
