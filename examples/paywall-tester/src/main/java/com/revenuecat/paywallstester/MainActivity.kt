@@ -4,6 +4,8 @@ package com.revenuecat.paywallstester
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -11,6 +13,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
@@ -19,28 +24,39 @@ import com.revenuecat.paywallstester.ui.theme.PaywallTesterAndroidTheme
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
+import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLauncher
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler
+import com.revenuecat.purchases.ui.revenuecatui.components.webview.PaywallWebViewPrewarming
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.ShowCustomerCenter
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 
 class MainActivity : ComponentActivity(), PaywallResultHandler {
     companion object {
         private const val TAG = "PaywallsTester"
+        private const val DEFAULT_PREWARM_LEAD_MS = 3_000
     }
 
     private lateinit var paywallActivityLauncher: PaywallActivityLauncher
     private val customerCenter = registerForActivityResult(ShowCustomerCenter()) {}
 
+    // Set by the web_view prewarming harness only; PaywallActivityLauncher refetches by offering id,
+    // so the measured paywall is rendered in-process instead.
+    private var prewarmOffering by mutableStateOf<Offering?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         paywallActivityLauncher = PaywallActivityLauncher(this, this)
+        handleWebViewPrewarmExtras()
         setContent {
             PaywallTesterAndroidTheme(dynamicColor = false) {
                 Box(
@@ -50,8 +66,62 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
                         .background(MaterialTheme.colorScheme.background),
                 ) {
                     PaywallTesterApp()
+                    prewarmOffering?.let { offering ->
+                        Paywall(
+                            PaywallOptions.Builder(dismissRequest = { prewarmOffering = null })
+                                .setOffering(offering)
+                                .build(),
+                        )
+                    }
                 }
             }
+        }
+    }
+
+    /**
+     * Dev-only: prewarms a `web_view` bundle, waits, then shows the paywall containing it, so the
+     * prerender path can be timed end to end on a device.
+     *
+     * [prewarm_fit_width]/[prewarm_fit_height] must match the target component's Fit axes: a
+     * prewarmed view is only adopted by a component with the identical configuration.
+     *
+     * adb shell am start -n <pkg>/.MainActivity \
+     *   --es prewarm_url <https url> --es prewarm_component_id <id> \
+     *   --es prewarm_offering <offering id> [--ei prewarm_lead_ms 3000] [--ez prewarm_startup true] \
+     *   [--ez prewarm_fit_width true] [--ez prewarm_fit_height true]
+     */
+    @OptIn(InternalRevenueCatAPI::class)
+    @Suppress("ReturnCount")
+    private fun handleWebViewPrewarmExtras() {
+        val url = intent.getStringExtra("prewarm_url") ?: return
+        val componentId = intent.getStringExtra("prewarm_component_id") ?: return
+        val offeringId = intent.getStringExtra("prewarm_offering") ?: return
+        val leadMs = intent.getIntExtra("prewarm_lead_ms", DEFAULT_PREWARM_LEAD_MS).toLong()
+        val sizeToContentWidth = intent.getBooleanExtra("prewarm_fit_width", false)
+        val sizeToContentHeight = intent.getBooleanExtra("prewarm_fit_height", false)
+        if (intent.getBooleanExtra("prewarm_startup", false)) {
+            ServiceLoader.load(PaywallAssetWarmer::class.java, PaywallAssetWarmer::class.java.classLoader)
+                .firstOrNull()?.prebootWebView(this)
+        }
+        // Started before the offerings fetch, which prewarm needs none of, so leadMs measures actual
+        // prewarm lead time instead of being inflated by an unrelated network round trip.
+        val prewarmStartedAtMs = System.currentTimeMillis()
+        PaywallWebViewPrewarming.prewarm(this, url, componentId, sizeToContentWidth, sizeToContentHeight)
+        Purchases.sharedInstance.getOfferingsWith(
+            onError = { error -> Log.e(TAG, "prewarm harness could not fetch offerings: $error") },
+        ) { offerings ->
+            val offering = offerings.all[offeringId] ?: run {
+                Log.e(TAG, "prewarm harness could not find offering '$offeringId'")
+                return@getOfferingsWith
+            }
+            if (isFinishing || isDestroyed) return@getOfferingsWith
+            val remainingDelayMs = (leadMs - (System.currentTimeMillis() - prewarmStartedAtMs)).coerceAtLeast(0)
+            Handler(Looper.getMainLooper()).postDelayed(
+                {
+                    if (!isFinishing && !isDestroyed) prewarmOffering = offering
+                },
+                remainingDelayMs,
+            )
         }
     }
 
