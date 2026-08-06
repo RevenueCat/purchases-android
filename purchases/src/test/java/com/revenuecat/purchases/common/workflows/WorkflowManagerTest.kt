@@ -207,6 +207,7 @@ class WorkflowManagerTest {
     @Test
     fun `onPaywallConfigReady fires onComplete synchronously when both caches are already warm`() {
         val mockProvider = mockk<WorkflowsConfigProvider>()
+        every { mockProvider.prewarmCurrentOfferingAssets() } just Runs
         every { mockProvider.isWarmForCurrentOffering() } returns true
         every { mockUiConfigProvider.isWarm() } returns true
         val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = testScope)
@@ -220,9 +221,24 @@ class WorkflowManagerTest {
         coVerify(exactly = 0) { mockUiConfigProvider.resolveUiConfig() }
     }
 
+    // The fast path returns before warm(), so the prewarm must not sit behind it.
+    @Test
+    fun `onPaywallConfigReady prewarms the current offering's assets even on the warm fast path`() {
+        val mockProvider = mockk<WorkflowsConfigProvider>()
+        every { mockProvider.prewarmCurrentOfferingAssets() } just Runs
+        every { mockProvider.isWarmForCurrentOffering() } returns true
+        every { mockUiConfigProvider.isWarm() } returns true
+        val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = testScope)
+
+        manager.onPaywallConfigReady { }
+
+        verify(exactly = 1) { mockProvider.prewarmCurrentOfferingAssets() }
+    }
+
     @Test
     fun `onPaywallConfigReady warms both providers and invokes onComplete when cold`() {
         val mockProvider = mockk<WorkflowsConfigProvider>()
+        every { mockProvider.prewarmCurrentOfferingAssets() } just Runs
         every { mockProvider.isWarmForCurrentOffering() } returns false
         coEvery { mockProvider.warm() } just Runs
         val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = testScope)
@@ -239,6 +255,7 @@ class WorkflowManagerTest {
     @Test
     fun `onPaywallConfigReady still completes and error-logs when ui_config resolution throws`() {
         val mockProvider = mockk<WorkflowsConfigProvider>()
+        every { mockProvider.prewarmCurrentOfferingAssets() } just Runs
         every { mockProvider.isWarmForCurrentOffering() } returns false
         coEvery { mockProvider.warm() } just Runs
         coEvery { mockUiConfigProvider.resolveUiConfig() } throws RuntimeException("boom")
@@ -255,6 +272,7 @@ class WorkflowManagerTest {
     @Test
     fun `onPaywallConfigReady still completes and error-logs when a published ui_config is unavailable`() {
         val mockProvider = mockk<WorkflowsConfigProvider>()
+        every { mockProvider.prewarmCurrentOfferingAssets() } just Runs
         every { mockProvider.isWarmForCurrentOffering() } returns false
         coEvery { mockProvider.warm() } just Runs
         coEvery { mockUiConfigProvider.resolveUiConfig() } returns UiConfigResolution.Unavailable
@@ -281,6 +299,7 @@ class WorkflowManagerTest {
 
         validOutcomes.forEach { outcome ->
             val mockProvider = mockk<WorkflowsConfigProvider>()
+        every { mockProvider.prewarmCurrentOfferingAssets() } just Runs
             every { mockProvider.isWarmForCurrentOffering() } returns false
             coEvery { mockProvider.warm() } just Runs
             coEvery { mockUiConfigProvider.resolveUiConfig() } returns outcome
@@ -298,6 +317,7 @@ class WorkflowManagerTest {
     @Test
     fun `onPaywallConfigReady still completes when warming the workflows cache fails`() {
         val mockProvider = mockk<WorkflowsConfigProvider>()
+        every { mockProvider.prewarmCurrentOfferingAssets() } just Runs
         every { mockProvider.isWarmForCurrentOffering() } returns false
         coEvery { mockProvider.warm() } throws RuntimeException("boom")
         val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = testScope)
@@ -315,6 +335,7 @@ class WorkflowManagerTest {
     fun `onPaywallConfigReady coalesces overlapping calls so readiness work runs only once and both callbacks fire`() {
         val gate = CompletableDeferred<Unit>()
         val mockProvider = mockk<WorkflowsConfigProvider>()
+        every { mockProvider.prewarmCurrentOfferingAssets() } just Runs
         every { mockProvider.isWarmForCurrentOffering() } returns false
         coEvery { mockProvider.warm() } coAnswers { gate.await() }
         val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = testScope)
@@ -344,6 +365,7 @@ class WorkflowManagerTest {
         // Use a dedicated scope so closing the manager doesn't cancel the shared testScope.
         val managerScope = CoroutineScope(SupervisorJob() + UnconfinedTestDispatcher())
         val mockProvider = mockk<WorkflowsConfigProvider>()
+        every { mockProvider.prewarmCurrentOfferingAssets() } just Runs
         every { mockProvider.isWarmForCurrentOffering() } returns false
         coEvery { mockProvider.warm() } coAnswers { gate.await() }
         val manager = WorkflowManager(mockProvider, mockUiConfigProvider, mockAssetPreDownloader, scope = managerScope)

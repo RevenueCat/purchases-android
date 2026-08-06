@@ -250,21 +250,30 @@ internal class WorkflowsConfigProvider(
         }
         cache.store(generation, Cached(workflows, offeringToWorkflowId))
 
-        // Warm the current offering's workflow assets (images + ui_config fonts) at load time — mirrors the
-        // offerings path, which pre-downloads only the current offering's assets, never other offerings'. So a
-        // prefetch-flagged workflow that isn't the current offering's has its bytes cached (above) but not its
-        // assets: it isn't the paywall about to be shown. Fire-and-forget so it never blocks warm() or the
-        // getOfferings readiness gate. resolveWorkflowBody decodes transiently: it reads bytes + parses without
-        // touching the retained Lazy above, so prewarming keeps the cache raw-bytes-only.
-        onCurrentWorkflowLoaded?.let { notify ->
-            // Notify whenever the current offering maps to a workflow — do NOT gate on `workflows` (the byte-warm
-            // map), whose parallel preload can miss a body that hasn't finished its LOW-priority prefetch yet.
-            // resolveWorkflowBody fetches the body on demand, so gating here would drop the current offering's
-            // asset prewarm purely on preload timing.
-            currentOfferingId?.let { offeringToWorkflowId[it] }?.let { currentWorkflowId ->
-                scope.launch { notify(currentWorkflowId, ::resolveWorkflowBody) }
-            }
-        }
+        announceCurrentWorkflow(offeringToWorkflowId)
+    }
+
+    /** Announces against the already-warmed cache, for callers that learn the current offering after [warm]. */
+    fun prewarmCurrentOfferingAssets() {
+        announceCurrentWorkflow(cache.cached?.offeringToWorkflowId)
+    }
+
+    // Warm the current offering's workflow assets (images + ui_config fonts) at load time — mirrors the
+    // offerings path, which pre-downloads only the current offering's assets, never other offerings'. So a
+    // prefetch-flagged workflow that isn't the current offering's has its bytes cached but not its assets: it
+    // isn't the paywall about to be shown. Fire-and-forget so it never blocks warm() or the getOfferings
+    // readiness gate. resolveWorkflowBody decodes transiently: it reads bytes + parses without touching the
+    // retained Lazy, so prewarming keeps the cache raw-bytes-only.
+    private fun announceCurrentWorkflow(offeringToWorkflowId: Map<String, String>?) {
+        val notify = onCurrentWorkflowLoaded ?: return
+        // Notify whenever the current offering maps to a workflow — do NOT gate on `workflows` (the byte-warm
+        // map), whose parallel preload can miss a body that hasn't finished its LOW-priority prefetch yet.
+        // resolveWorkflowBody fetches the body on demand, so gating here would drop the current offering's
+        // asset prewarm purely on preload timing.
+        val currentWorkflowId = currentOfferingIdProvider()
+            ?.let { offeringToWorkflowId?.get(it) }
+            ?: return
+        scope.launch { notify(currentWorkflowId, ::resolveWorkflowBody) }
     }
 
     /** Warms at the current config generation; used by the offerings readiness gate. */
