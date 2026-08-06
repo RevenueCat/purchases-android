@@ -20,18 +20,31 @@ import com.revenuecat.purchases.PurchasesException
 public suspend fun Purchases.awaitCheckpoint(
     checkpointIdentifier: String,
     params: CheckpointParams? = null,
-): CheckpointResult = CheckpointsCoordinator.checkpoint(this, checkpointIdentifier, params)
+): CheckpointResult = checkpointsManager.checkpoint(this, checkpointIdentifier, params)
 
 /**
  * Global listener for checkpoint activity, including the disposition of checkpoint-presented experiences.
- * Stored on the [Purchases] instance, so it is cleared when the SDK is reconfigured.
+ * Held by this [Purchases] instance, so it is cleared when the SDK is reconfigured.
  */
 @get:JvmSynthetic
 @set:JvmSynthetic
 @InternalRevenueCatAPI
 public var Purchases.checkpointListener: CheckpointListener?
-    // Only this file ever writes the slot, so a type mismatch is unreachable.
-    get() = checkpointListenerSlot as? CheckpointListener
+    get() = checkpointsManager.checkpointListener
     set(value) {
-        checkpointListenerSlot = value
+        checkpointsManager.checkpointListener = value
+    }
+
+/**
+ * The [CheckpointsManager] owned by this [Purchases] instance, created on first use and kept in the
+ * instance's opaque `checkpointManagerSlot`. Storing it there rather than in a singleton ties the listener
+ * and any in-flight presentation to the lifetime of the SDK instance, so reconfiguring the SDK cannot
+ * inherit a stale listener or a presentation that will never complete.
+ *
+ * Synchronized on the receiver because reading and creating are two separate calls into the slot.
+ */
+internal val Purchases.checkpointsManager: CheckpointsManager
+    get() = synchronized(this) {
+        checkpointManagerSlot as? CheckpointsManager
+            ?: CheckpointsManager().also { checkpointManagerSlot = it }
     }

@@ -188,14 +188,15 @@ public class Purchases internal constructor(
     public var debugEventListener: DebugEventListener? by purchasesOrchestrator::debugEventListener
 
     /**
-     * Storage for the RevenueCat UI module's `CheckpointListener`, which owns the checkpoints API. Untyped
-     * because that type lives in the UI module, which this module must not depend on. Read and written only
-     * through `Purchases.checkpointListener` in the UI module.
+     * Storage for the RevenueCat UI module's checkpoints manager, which owns the checkpoints API: its
+     * listener and any in-flight checkpoint presentation. Untyped because that type lives in the UI module,
+     * which this module must not depend on. Read and written only through the UI module's
+     * `Purchases.checkpointsManager`. Living here means that state dies with this instance.
      */
     @get:JvmSynthetic
     @set:JvmSynthetic
     @InternalRevenueCatAPI
-    public var checkpointListenerSlot: Any? by purchasesOrchestrator::checkpointListenerSlot
+    public var checkpointManagerSlot: Any? by purchasesOrchestrator::checkpointManagerSlot
 
     /**
      * The most recently started [Activity] that is still usable, tracked from the SDK's activity lifecycle

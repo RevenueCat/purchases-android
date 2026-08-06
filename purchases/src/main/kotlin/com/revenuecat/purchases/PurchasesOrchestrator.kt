@@ -233,12 +233,14 @@ internal class PurchasesOrchestrator(
     var debugEventListener: DebugEventListener? by eventsManager::debugEventListener
 
     /**
-     * Storage for the RevenueCat UI module's `CheckpointListener`. Untyped because that type lives in the UI
-     * module, which this module must not depend on; only the UI module reads and writes it.
+     * Storage for the RevenueCat UI module's checkpoints manager, which owns the checkpoint listener and any
+     * in-flight checkpoint presentation. Untyped because that type lives in the UI module, which this module
+     * must not depend on; only the UI module reads and writes it. Living here rather than in a UI-module
+     * singleton ties that state to the lifetime of this instance.
      */
     @get:Synchronized
     @set:Synchronized
-    var checkpointListenerSlot: Any? = null
+    var checkpointManagerSlot: Any? = null
 
     val currentActivity: Activity?
         get() = currentActivityTracker.currentActivity

@@ -5,6 +5,7 @@ import android.view.Window
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.models.StoreTransaction
@@ -15,8 +16,8 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 /**
  * Presents the workflow resolved for a checkpoint and reports the terminal [CheckpointPaywallOutcome] back to
- * [CheckpointsCoordinator] exactly once. Terminal purchase/restore events are recorded as they happen and
- * delivered when the paywall dismisses (or the activity is otherwise finished), mirroring
+ * the [CheckpointsManager] that asked for it, exactly once. Terminal purchase/restore events are recorded as
+ * they happen and delivered when the paywall dismisses (or the activity is otherwise finished), mirroring
  * [com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivity]'s result handling.
  */
 internal class CheckpointWorkflowActivity : ComponentActivity() {
@@ -27,17 +28,26 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
 
     private var callId: String? = null
 
+    // Resolved once, so this activity keeps reporting to the manager that presented it even if the SDK is
+    // reconfigured underneath it.
+    private var manager: CheckpointsManager? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         super.onCreate(savedInstanceState)
-        callId = intent.getStringExtra(EXTRA_CALL_ID)
-        val resolution = callId?.let { CheckpointsCoordinator.resolution(it) } ?: run {
-            // Process death or stray relaunch: the pending call died with the process, so there is nothing
-            // to report to.
-            Logger.w("Checkpoint call '$callId' no longer exists. Closing the checkpoint workflow.")
+        val id = intent.getStringExtra(EXTRA_CALL_ID)
+        callId = id
+        // Purchases is unconfigured when the task is restored after process death, which is also exactly
+        // when the pending call no longer exists.
+        val manager = if (Purchases.isConfigured) Purchases.sharedInstance.checkpointsManager else null
+        this.manager = manager
+        val resolution = id?.let { manager?.resolution(it) }
+        if (id == null || manager == null || resolution == null) {
+            Logger.w("Checkpoint call '$id' no longer exists. Closing the checkpoint workflow.")
             finish()
             return
         }
+        manager.onPresentationStarted(id, this)
         val options = PaywallOptions.Builder(dismissRequest = ::finish)
             .injectedWorkflow(resolution.workflow, resolution.offering, resolution.uiConfig)
             .setListener(outcomeListener)
@@ -48,9 +58,7 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        if (isFinishing) {
-            callId?.let { CheckpointsCoordinator.onPaywallFinished(it) }
-        }
+        callId?.let { manager?.onActivityDestroyed(it, isChangingConfigurations) }
         super.onDestroy()
     }
 
@@ -77,6 +85,6 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
     }
 
     private fun recordOutcome(outcome: CheckpointPaywallOutcome) {
-        callId?.let { CheckpointsCoordinator.recordOutcome(it, outcome) }
+        callId?.let { manager?.recordOutcome(it, outcome) }
     }
 }
