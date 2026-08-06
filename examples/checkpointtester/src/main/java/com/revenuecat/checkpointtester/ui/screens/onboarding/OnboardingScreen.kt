@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.revenuecat.checkpointtester.ui.components.CheckpointResultCard
 import com.revenuecat.checkpointtester.ui.screens.onboarding.OnboardingViewModel.Step
 import com.revenuecat.checkpointtester.ui.theme.CheckpointTesterTheme
 
@@ -44,17 +43,18 @@ fun OnboardingScreen(
 
         StepControls(
             step = state.step,
-            enabled = state.waitingFor == null,
+            enabled = !state.running,
             onPrevious = viewModel::previous,
             onNext = viewModel::next,
             onRestart = viewModel::restart,
         )
 
-        if (state.step == Step.Done || state.waitingFor != null) {
-            CheckpointResultCard(
-                result = state.result,
-                waitingFor = state.waitingFor,
-                emptyText = "The checkpoint result will appear here.",
+        val status = if (state.running) "Running the checkpoint…" else state.message
+        status?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

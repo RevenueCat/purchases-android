@@ -18,8 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.revenuecat.checkpointtester.checkpoints.CheckpointResultUi
-import com.revenuecat.checkpointtester.ui.components.CheckpointResultCard
 import com.revenuecat.checkpointtester.ui.theme.CheckpointTesterTheme
 
 @Composable
@@ -44,24 +42,20 @@ fun SoftPaywallScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        OutcomeBanner(result = state.result)
+        OutcomeBanner(
+            upgraded = state.upgraded,
+            message = if (state.running) "Presenting the paywall…" else state.message,
+        )
         AlwaysAvailableContent()
 
-        OutlinedButton(onClick = viewModel::hit, enabled = state.waitingFor == null) {
+        OutlinedButton(onClick = viewModel::hit, enabled = !state.running) {
             Text(text = "Hit the checkpoint again")
         }
-
-        CheckpointResultCard(
-            result = state.result,
-            waitingFor = state.waitingFor,
-            emptyText = "Presenting the soft paywall…",
-        )
     }
 }
 
 @Composable
-private fun OutcomeBanner(result: CheckpointResultUi?) {
-    val upgraded = result?.grantedAccess == true
+private fun OutcomeBanner(upgraded: Boolean, message: String?) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -72,11 +66,18 @@ private fun OutcomeBanner(result: CheckpointResultUi?) {
             },
         ),
     ) {
-        Text(
-            text = if (upgraded) "Upgraded. Thanks for subscribing." else "Continuing on the free tier.",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(16.dp),
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = if (upgraded) "Upgraded. Thanks for subscribing." else "Continuing on the free tier.",
+                style = MaterialTheme.typography.titleMedium,
+            )
+            message?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium) }
+        }
     }
 }
 

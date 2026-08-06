@@ -17,7 +17,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.checkpointtester.ui.Screen
-import com.revenuecat.checkpointtester.ui.components.CheckpointResultCard
 import com.revenuecat.checkpointtester.ui.theme.CheckpointTesterTheme
 
 private data class NavigatedUseCase(
@@ -90,18 +89,21 @@ fun UseCasesScreen(
             ListItem(
                 headlineContent = { Text(text = useCase.title) },
                 supportingContent = { Text(text = useCase.description) },
-                modifier = Modifier.clickable(enabled = state.waitingFor == null) {
+                modifier = Modifier.clickable(enabled = !state.running) {
                     viewModel.hit(useCase.identifier)
                 },
             )
             HorizontalDivider()
         }
         item {
-            CheckpointResultCard(
-                result = state.lastResult,
-                waitingFor = state.waitingFor,
+            Text(
+                text = when {
+                    state.running -> "Running the checkpoint…"
+                    else -> state.message ?: "Tap one of the outcomes above to run it here."
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp),
-                emptyText = "Tap one of the outcomes above to run it here.",
             )
         }
     }

@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.revenuecat.checkpointtester.ui.components.CheckpointResultCard
 import com.revenuecat.checkpointtester.ui.theme.CheckpointTesterTheme
 
 @Composable
@@ -43,25 +42,20 @@ fun HardPaywallScreen(
         )
 
         if (state.unlocked) {
-            PremiumContent()
+            PremiumContent(message = state.message)
         } else {
             LockedContent(
                 attempts = state.attempts,
-                canRetry = state.waitingFor == null && state.result != null,
+                message = if (state.running) "Presenting the paywall…" else state.message,
+                canRetry = !state.running,
                 onRetry = viewModel::hit,
             )
         }
-
-        CheckpointResultCard(
-            result = state.result,
-            waitingFor = state.waitingFor,
-            emptyText = "Presenting the hard paywall…",
-        )
     }
 }
 
 @Composable
-private fun PremiumContent() {
+private fun PremiumContent(message: String?) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -69,17 +63,22 @@ private fun PremiumContent() {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(text = "Unlocked", style = MaterialTheme.typography.titleLarge)
+            Text(
+                text = "Unlocked",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
             Text(
                 text = "The checkpoint granted access, so the gated content renders.",
                 style = MaterialTheme.typography.bodyMedium,
             )
+            message?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium) }
         }
     }
 }
 
 @Composable
-private fun LockedContent(attempts: Int, canRetry: Boolean, onRetry: () -> Unit) {
+private fun LockedContent(attempts: Int, message: String?, canRetry: Boolean, onRetry: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -96,6 +95,7 @@ private fun LockedContent(attempts: Int, canRetry: Boolean, onRetry: () -> Unit)
                 text = "This content needs an active subscription. Attempts so far: $attempts.",
                 style = MaterialTheme.typography.bodyMedium,
             )
+            message?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium) }
             Button(onClick = onRetry, enabled = canRetry) {
                 Text(text = "Try again")
             }

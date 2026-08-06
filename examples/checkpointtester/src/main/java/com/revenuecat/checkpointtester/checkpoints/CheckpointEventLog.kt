@@ -4,6 +4,7 @@ import android.util.Log
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.checkpoints.CheckpointInfo
 import com.revenuecat.purchases.checkpoints.CheckpointListener
+import com.revenuecat.purchases.checkpoints.CheckpointPaywallOutcome
 import com.revenuecat.purchases.checkpoints.CheckpointResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -33,11 +34,23 @@ object CheckpointEventLog : CheckpointListener {
     }
 
     override fun onCheckpointCompleted(checkpoint: CheckpointInfo, result: CheckpointResult) {
-        track("Completed · ${checkpoint.identifier} · ${result.toUi().summary}")
+        track("Completed · ${checkpoint.identifier} · ${describe(result)}")
     }
 
     fun clear() {
         _events.update { emptyList() }
+    }
+
+    private fun describe(result: CheckpointResult): String = when (result) {
+        is CheckpointResult.PaywallPresented -> when (val outcome = result.paywallOutcome) {
+            is CheckpointPaywallOutcome.Purchased -> "Purchased"
+            is CheckpointPaywallOutcome.Restored -> "Restored"
+            CheckpointPaywallOutcome.Dismissed -> "Dismissed"
+            is CheckpointPaywallOutcome.Error -> "Paywall error: ${outcome.error.message}"
+            else -> "Unknown outcome"
+        }
+        is CheckpointResult.NoAction -> "No action (${result.reason.value})"
+        else -> "Unknown result"
     }
 
     private fun track(event: String) {

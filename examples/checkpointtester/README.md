@@ -65,9 +65,12 @@ tag.
 ## Structure
 
 - `MainApplication` — configures the SDK and registers the global `CheckpointListener`.
-- `checkpoints/CheckpointRunner` — the only place `awaitCheckpoint` is called.
-- `checkpoints/CheckpointResultUi` — maps `CheckpointResult` / `PurchasesException` to display state, including
-  the `grantedAccess` flag the gating screens branch on.
 - `checkpoints/CheckpointEventLog` — the `CheckpointListener` implementation backing the listener log.
 - `ui/screens/…` — one package per use case, each a screen plus a `ViewModel` holding its state across
   configuration changes.
+
+There is deliberately **no shared helper** wrapping the checkpoints API. Every `ViewModel` calls
+`Purchases.sharedInstance.awaitCheckpoint(...)` itself and does its own `when` over `CheckpointResult` and
+`CheckpointPaywallOutcome`, so each file shows the whole call in one place — including the `CheckpointParams`
+construction and the `PurchasesException` handling. The `when` blocks look similar across screens on purpose:
+the branches resolve to different behavior in each use case, and that difference is the thing worth reading.

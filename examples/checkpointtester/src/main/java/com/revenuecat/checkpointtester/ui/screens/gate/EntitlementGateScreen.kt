@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.revenuecat.checkpointtester.ui.components.CheckpointResultCard
 import com.revenuecat.checkpointtester.ui.theme.CheckpointTesterTheme
 
 @Composable
@@ -51,16 +50,19 @@ fun EntitlementGateScreen(
 
         Button(
             onClick = viewModel::refresh,
-            enabled = !state.loading && state.waitingFor == null,
+            enabled = !state.loading && !state.running,
         ) {
             Text(text = "Refresh")
         }
 
-        CheckpointResultCard(
-            result = state.result,
-            waitingFor = state.waitingFor,
-            emptyText = "No checkpoint has run yet on this screen.",
-        )
+        val status = if (state.running) "Running the checkpoint…" else state.message
+        status?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
