@@ -950,6 +950,7 @@ internal class StyleFactory(
         component: TextComponent,
     ): Result<TextComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Get our texts from the localization dictionary.
+        // Match iOS behavior by rendering missing base localizations as empty text instead of invalidating the paywall.
         first = Result.Success(localizations.stringForAllLocalesOrEmpty(component.text)),
         second = component.overrides
             // Map all overrides to PresentedOverrides.
