@@ -39,9 +39,8 @@ internal data class CheckpointResponse(
             return when (element) {
                 null, JsonNull -> emptyList()
                 is JsonArray -> {
-                    // Checkpoint config is forward-evolving: decode rules independently so one malformed rule
-                    // does not discard valid siblings. Each accepted rule still fails closed on targeting and
-                    // safety constraints.
+                    // Decode each rule independently so malformed entries do not prevent valid sibling rules
+                    // from being parsed.
                     element.mapNotNull { parseRule(identifier, it) }
                 }
                 else -> {
