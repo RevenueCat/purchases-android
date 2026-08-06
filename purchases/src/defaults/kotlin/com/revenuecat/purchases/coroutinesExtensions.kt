@@ -344,13 +344,10 @@ public suspend fun Purchases.awaitCreateSupportTicket(email: String, description
  * @throws [PurchasesException] with a [PurchasesError] if the checkpoint could not be handled.
  * @return The [CheckpointResult] for this checkpoint.
  */
-@Suppress("UnusedParameter")
 @JvmSynthetic
 @Throws(PurchasesException::class)
 @InternalRevenueCatAPI
 public suspend fun Purchases.awaitCheckpoint(
     checkpointIdentifier: String,
     params: CheckpointParams? = null,
-): CheckpointResult = throw PurchasesException(
-    PurchasesError(PurchasesErrorCode.UnsupportedError, "Checkpoints are not implemented yet."),
-)
+): CheckpointResult = purchasesOrchestrator.checkpoint(checkpointIdentifier, params)
