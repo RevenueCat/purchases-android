@@ -45,7 +45,7 @@ internal class PrewarmedWebViewTest {
             webView = webView,
             bridge = bridge,
             callbacks = callbacks,
-            identity = WebViewIdentity(URL, COMPONENT_ID, false, false),
+            resolvedUrl = URL,
             cancellationSignal = CancellationSignal(),
         )
     }
@@ -56,9 +56,17 @@ internal class PrewarmedWebViewTest {
     }
 
     private fun activate(
+        componentId: String = COMPONENT_ID,
+        sizeToContentWidth: Boolean = false,
+        sizeToContentHeight: Boolean = false,
         onContentResize: (Int?, Int?) -> Unit = { _, _ -> },
         onLoadFailed: () -> Unit = {},
-    ) = prewarmed.activateIn(onContentResize, onDocumentReset = {}, onLoadFailed = onLoadFailed)
+    ) = prewarmed.activateIn(
+        identity = WebViewIdentity(URL, componentId, sizeToContentWidth, sizeToContentHeight),
+        onContentResize = onContentResize,
+        onDocumentReset = {},
+        onLoadFailed = onLoadFailed,
+    )
 
     @Test
     fun `activation navigates the prewarmed view to the prerendered url`() {

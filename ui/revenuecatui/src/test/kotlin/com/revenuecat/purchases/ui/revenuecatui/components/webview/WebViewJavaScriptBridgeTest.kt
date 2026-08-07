@@ -143,6 +143,27 @@ internal class WebViewJavaScriptBridgeTest {
         assertThat(script).contains("\"component_id\":\"promo_web_view\"")
     }
 
+    // A prewarmed view is keyed on URL alone, so it can be adopted by a component declaring a different
+    // id or different Fit axes. Both are only ever sent during the handshake, so rebinding before the
+    // activation navigation is what makes the URL key safe.
+    @Test
+    fun `handshake after rebind carries the adopting component's id and fit axes`() {
+        val bridge = bridge(sizeToContentWidth = false, sizeToContentHeight = false)
+        bridge.connect()
+        assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"component_id\":\"promo_web_view\"")
+
+        bridge.rebindComponent("adopting_component", sizeToContentWidth = true, sizeToContentHeight = true)
+        // Activation reloads the prerendered URL, which resets the handshake; the content reconnects.
+        bridge.onMainFrameNavigationStarted()
+        bridge.connect()
+
+        val script = shadowWebView.lastEvaluatedJavascript
+        assertThat(script).contains("\"component_id\":\"adopting_component\"")
+        assertThat(script).contains("\"type\":\"fit\"")
+        assertThat(script).contains("\"width\":true")
+        assertThat(script).contains("\"height\":true")
+    }
+
     @Test
     fun `completes connect handshake before the web view URL is available`() {
         val bridge = bridge(navigateTo = null)

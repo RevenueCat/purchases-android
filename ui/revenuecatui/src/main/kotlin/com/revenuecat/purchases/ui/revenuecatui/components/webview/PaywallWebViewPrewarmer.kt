@@ -39,22 +39,21 @@ internal class PaywallWebViewPrewarmer {
 
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    private var slot: PrewarmedWebView? = null
+    // Insertion-ordered so the eldest entry is the one evicted when the pool is full. A paywall can
+    // contain 0..N web_view components, so one slot could only ever serve the first of them.
+    private val pool = LinkedHashMap<String, PrewarmedWebView>()
 
     // A prerender that is never displayed holds a renderer process at foreground priority, which
-    // Android will not reclaim on its own. Bound it.
-    private val releaseOnTimeout = Runnable {
-        Logger.d("Paywalls V2 web_view prewarm expired before display; releasing.")
-        releaseAll()
-    }
+    // Android will not reclaim on its own. Each entry expires on its own schedule.
+    private val expiries = mutableMapOf<String, Runnable>()
 
     /**
      * Prerenders [url] for the component that will render it. [url] is resolved through
      * [WebViewUrlResolver] so the resulting identity matches the display path's byte for byte;
      * an unresolvable URL is a no-op.
      *
-     * A single slot is held: a request arriving while another component is already prewarmed is
-     * dropped rather than evicting it.
+     * Entries are pooled by resolved URL up to [MAX_PREWARMED]; a repeat request for a URL already
+     * held is a no-op, and a request arriving at capacity evicts the eldest entry.
      */
     @MainThread
     @Suppress("ReturnCount")
@@ -65,10 +64,6 @@ internal class PaywallWebViewPrewarmer {
         sizeToContentWidth: Boolean = false,
         sizeToContentHeight: Boolean = false,
     ) {
-        if (slot != null) {
-            Logger.d("Paywalls V2 web_view not prewarmed: a slot is already held (componentId='$componentId').")
-            return
-        }
         if (componentId.isBlank()) {
             Logger.d("Paywalls V2 web_view not prewarmed: componentId is blank.")
             return
@@ -83,15 +78,45 @@ internal class PaywallWebViewPrewarmer {
             return
         }
 
+        if (pool.containsKey(resolvedUrl)) {
+            Logger.d("Paywalls V2 web_view already prewarmed for this URL; keeping the existing one.")
+            return
+        }
+
         val identity = WebViewIdentity(
             resolvedUrl = resolvedUrl,
             componentId = componentId,
             sizeToContentWidth = sizeToContentWidth,
             sizeToContentHeight = sizeToContentHeight,
         )
-        slot = createPrerendered(context, identity) ?: return
-        mainHandler.removeCallbacks(releaseOnTimeout)
-        mainHandler.postDelayed(releaseOnTimeout, HOLD_TIMEOUT_MS)
+        val prewarmed = createPrerendered(context, identity) ?: return
+
+        // Evict before inserting, so the pool never briefly exceeds its bound. The eldest entry is the
+        // one most likely to belong to a superseded offering.
+        if (pool.size >= MAX_PREWARMED) {
+            pool.keys.firstOrNull()?.let { eldest ->
+                Logger.d("Paywalls V2 web_view prewarm pool is full; evicting the oldest entry.")
+                discard(eldest)
+            }
+        }
+        pool[resolvedUrl] = prewarmed
+        scheduleExpiry(resolvedUrl)
+    }
+
+    private fun scheduleExpiry(resolvedUrl: String) {
+        val expiry = Runnable {
+            Logger.d("Paywalls V2 web_view prewarm expired before display; releasing it.")
+            discard(resolvedUrl)
+        }
+        expiries[resolvedUrl] = expiry
+        mainHandler.postDelayed(expiry, HOLD_TIMEOUT_MS)
+    }
+
+    /** Destroys one entry and cancels its expiry. Siblings are untouched. */
+    @MainThread
+    private fun discard(resolvedUrl: String) {
+        expiries.remove(resolvedUrl)?.let(mainHandler::removeCallbacks)
+        pool.remove(resolvedUrl)?.destroy()
     }
 
     @Suppress("TooGenericExceptionCaught")
@@ -111,7 +136,7 @@ internal class PaywallWebViewPrewarmer {
             webView = configured.webView,
             bridge = configured.bridge,
             callbacks = callbacks,
-            identity = identity,
+            resolvedUrl = identity.resolvedUrl,
             cancellationSignal = CancellationSignal(),
         )
         return try {
@@ -120,7 +145,7 @@ internal class PaywallWebViewPrewarmer {
                 identity.resolvedUrl,
                 prewarmed.cancellationSignal,
                 ContextCompat.getMainExecutor(context),
-                PrerenderLogger(identity),
+                PrerenderLogger(identity.resolvedUrl),
             )
             prewarmed
         } catch (error: RuntimeException) {
@@ -131,43 +156,45 @@ internal class PaywallWebViewPrewarmer {
     }
 
     /**
-     * Hands the prewarmed WebView to the display factory, clearing the slot either way. A prewarmed
-     * view for a different component is destroyed rather than kept: the paywall being shown is not
-     * the one it was warmed for.
+     * Hands the prewarmed WebView for [resolvedUrl] to the display factory, removing it from the pool.
+     * Matching is on resolved URL alone, matching iOS: the component id and `Fit` axes are rebound at
+     * activation, so a view warmed for one component serves any component pointing at the same bundle.
+     *
+     * A miss leaves the pool untouched. Sibling entries belong to other components on the same paywall
+     * and are very likely about to be taken themselves.
      */
     @MainThread
-    fun take(identity: WebViewIdentity): PrewarmedWebView? {
-        val current = slot ?: return null
-        slot = null
-        mainHandler.removeCallbacks(releaseOnTimeout)
-        return if (current.identity == identity) {
-            current
-        } else {
-            Logger.d("Paywalls V2 web_view prewarm discarded: held for a different component than requested.")
-            current.destroy()
-            null
+    fun take(resolvedUrl: String): PrewarmedWebView? {
+        val taken = pool.remove(resolvedUrl)
+        if (taken == null) {
+            Logger.d("Paywalls V2 web_view not prewarmed for this URL; loading it cold.")
+            return null
         }
+        expiries.remove(resolvedUrl)?.let(mainHandler::removeCallbacks)
+        return taken
     }
 
     @MainThread
     fun releaseAll() {
-        mainHandler.removeCallbacks(releaseOnTimeout)
-        slot?.destroy()
-        slot = null
+        expiries.values.forEach(mainHandler::removeCallbacks)
+        expiries.clear()
+        pool.values.forEach { it.destroy() }
+        pool.clear()
     }
 
-    // Inner, not nested: an async failure must release the slot it prerendered into, if that slot is
-    // still the one this callback was created for (take() may have already cleared or replaced it).
-    private inner class PrerenderLogger(private val identity: WebViewIdentity) : PrerenderOperationCallback {
+    @VisibleForTesting
+    internal fun heldCount(): Int = pool.size
+
+    // Inner, not nested: an async failure must discard the entry it prerendered into, and only that
+    // entry (take() may have already removed it, and siblings are unrelated).
+    private inner class PrerenderLogger(private val resolvedUrl: String) : PrerenderOperationCallback {
         override fun onPrerenderActivated() {
-            Logger.d("Paywalls V2 web_view prerender activated for component '${identity.componentId}'.")
+            Logger.d("Paywalls V2 web_view prerender activated for '$resolvedUrl'.")
         }
 
         override fun onError(exception: PrerenderException) {
-            Logger.d("Paywalls V2 web_view prerender failed for component '${identity.componentId}': $exception")
-            if (slot?.identity == identity) {
-                releaseAll()
-            }
+            Logger.d("Paywalls V2 web_view prerender failed for '$resolvedUrl': $exception")
+            discard(resolvedUrl)
         }
     }
 
@@ -179,6 +206,16 @@ internal class PaywallWebViewPrewarmer {
          */
         @VisibleForTesting
         internal const val HOLD_TIMEOUT_MS: Long = 30_000L
+
+        /**
+         * Pool bound. Measured on device, the cost of holding prerenders is dominated by the renderer
+         * processes WebView spawns, which it caps low on its own (2 on a 5.6 GB device, 1 on 4 GB):
+         * the first held view cost ~104 MB there, the second ~104 MB, and the third through fifth
+         * ~1-6 MB each. So a small pool is nearly free once the first entry is paid for, while still
+         * covering paywalls that carry several web_view components.
+         */
+        @VisibleForTesting
+        internal const val MAX_PREWARMED: Int = 3
 
         val shared = PaywallWebViewPrewarmer()
     }
