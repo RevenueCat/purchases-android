@@ -21,6 +21,25 @@ import java.net.URL
 
 abstract class BaseCachedOfferingsUsageIntegrationTest : BasePurchasesIntegrationTest() {
 
+    private companion object {
+        const val UNREACHABLE_URL = "http://localhost:100/unreachable-address"
+
+        /**
+         * These tests restart the SDK twice against the real backend, and `getOfferings` only returns once the
+         * `/v1/config` paywall data is ready, which can include downloading config blobs from the config CDN.
+         * `runTest`'s 10s default is a deadlock guard, not a latency budget, and it is too tight for that.
+         */
+        const val BACKEND_TEST_TIMEOUT_MS = 60_000L
+    }
+
+    /** The RevenueCat API is unreachable. The config CDN, a different host, still is. */
+    private val apiUnreachable = object : ForceServerErrorStrategy {
+        override val serverErrorURL: String
+            get() = UNREACHABLE_URL
+
+        override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean = true
+    }
+
     @get:Rule
     var instantExecutorRule = InstantTaskExecutorRule()
 
@@ -36,7 +55,9 @@ abstract class BaseCachedOfferingsUsageIntegrationTest : BasePurchasesIntegratio
     }
 
     @Test
-    fun cachedOfferingsAreUsedWhenCachedOfferingsAndServerErrorWith5xx() = runTest {
+    fun cachedOfferingsAreUsedWhenCachedOfferingsAndServerErrorWith5xx() = runTest(
+        dispatchTimeoutMs = BACKEND_TEST_TIMEOUT_MS,
+    ) {
         val networkOfferings = Purchases.sharedInstance.awaitOfferings()
 
         simulateSdkRestart(activity, forceServerErrorsStrategy = ForceServerErrorStrategy.failAll)
@@ -47,20 +68,12 @@ abstract class BaseCachedOfferingsUsageIntegrationTest : BasePurchasesIntegratio
     }
 
     @Test
-    fun cachedOfferingsAreUsedWhenCachedOfferingsAndServerCannotBeReached() = runTest {
+    fun cachedOfferingsAreUsedWhenCachedOfferingsAndServerCannotBeReached() = runTest(
+        dispatchTimeoutMs = BACKEND_TEST_TIMEOUT_MS,
+    ) {
         val networkOfferings = Purchases.sharedInstance.awaitOfferings()
 
-        simulateSdkRestart(
-            activity,
-            forceServerErrorsStrategy = object : ForceServerErrorStrategy {
-                override val serverErrorURL: String
-                    get() = "http://localhost:100/unreachable-address"
-
-                override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
-                    return true
-                }
-            },
-        )
+        simulateSdkRestart(activity, forceServerErrorsStrategy = apiUnreachable)
 
         val cachedOfferings = Purchases.sharedInstance.awaitOfferings()
 
@@ -68,7 +81,9 @@ abstract class BaseCachedOfferingsUsageIntegrationTest : BasePurchasesIntegratio
     }
 
     @Test
-    fun cachedOfferingsAreNotUsedWhenCachedOfferingsAndErrorWith4xx() = runTest {
+    fun cachedOfferingsAreNotUsedWhenCachedOfferingsAndErrorWith4xx() = runTest(
+        dispatchTimeoutMs = BACKEND_TEST_TIMEOUT_MS,
+    ) {
         Purchases.sharedInstance.awaitOfferings()
 
         simulateSdkRestart(
