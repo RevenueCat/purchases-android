@@ -1375,7 +1375,29 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `impression after closePaywall reuse does not carry stale workflowId`() {
+    fun `reopening retained ViewModel after closing from second step starts at initial step`() = runTest {
+        coEvery { purchases.resolveWorkflow(offeringId) } returns WorkflowResolution.Found(workflow.id)
+        coEvery { purchases.awaitGetWorkflow(workflow.id) } returns workflow
+        coEvery { purchases.awaitGetUiConfig() } returns uiConfig
+
+        val vm = createVm()
+        advanceUntilIdle()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+
+        vm.closePaywall(result = null)
+        assertThat(vm.state.value).isEqualTo(PaywallState.Loading)
+
+        vm.onPaywallPresented()
+        advanceUntilIdle()
+
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `impression is not tracked from stale state after closePaywall`() {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
 
@@ -1389,8 +1411,7 @@ class PaywallViewModelWorkflowTest {
 
         val impressions = captured.filterIsInstance<PaywallEvent>()
             .filter { it.type == PaywallEventType.IMPRESSION }
-        assertThat(impressions).isNotEmpty()
-        assertThat(impressions.first().data.workflowId).isNull()
+        assertThat(impressions).isEmpty()
     }
 
     @Test
@@ -1802,16 +1823,34 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `paywall impression outside a workflow presentation carries no traceId`() {
+    fun `paywall impression outside a workflow presentation carries no traceId`() = runTest {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
 
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
         vm.trackPaywallImpressionIfNeeded()
+        val renderedWorkflowOffering = (vm.state.value as PaywallState.Loaded.Components).offering
         vm.closePaywall(result = null)
         captured.clear()
 
+        val standaloneOffering = Offering(
+            identifier = "standalone-offering",
+            serverDescription = "",
+            metadata = emptyMap(),
+            availablePackages = renderedWorkflowOffering.availablePackages,
+            paywallComponents = renderedWorkflowOffering.paywallComponents,
+            webCheckoutURL = null,
+        )
+        coEvery {
+            purchases.resolveWorkflow(standaloneOffering.identifier)
+        } returns WorkflowResolution.NoWorkflow
+        vm.updateOptions(
+            PaywallOptions.Builder(dismissRequest = {})
+                .setOffering(standaloneOffering)
+                .build(),
+        )
+        advanceUntilIdle()
         vm.trackPaywallImpressionIfNeeded()
 
         // The backing trace id field is always populated, so an ungated read would leak a meaningless

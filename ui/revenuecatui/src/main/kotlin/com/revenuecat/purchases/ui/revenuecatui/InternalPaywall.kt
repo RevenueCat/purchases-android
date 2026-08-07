@@ -120,6 +120,10 @@ internal fun InternalPaywall(
     options: PaywallOptions,
     viewModel: PaywallViewModel = getPaywallViewModel(options),
 ) {
+    LaunchedEffect(viewModel) {
+        viewModel.onPaywallPresented()
+    }
+
     BackHandler {
         if (!viewModel.handleBackNavigation()) {
             viewModel.closePaywall()
