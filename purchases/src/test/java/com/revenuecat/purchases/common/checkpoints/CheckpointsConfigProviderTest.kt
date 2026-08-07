@@ -7,7 +7,10 @@ import com.revenuecat.purchases.common.remoteconfig.ConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
+import io.mockk.MockKAnswerScope
+import io.mockk.MockKMatcherScope
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -26,6 +29,7 @@ internal class CheckpointsConfigProviderTest {
     fun setup() {
         currentLogHandler = NoOpLogHandler
         every { manager.isDisabled } returns false
+        every { manager.configGeneration } returns 0
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.CheckpointRules) } returns null
     }
 
@@ -155,10 +159,10 @@ internal class CheckpointsConfigProviderTest {
     }
 
     @Test
-    fun `resolveCheckpoint reports NotConfigured when the topic is absent`() = runTest {
+    fun `resolveCheckpoint reports Unavailable when the topic is not committed`() = runTest {
         returnNoBlob("missing")
 
-        assertThat(provider.resolveCheckpoint("missing")).isEqualTo(CheckpointRulesResolution.NotConfigured)
+        assertThat(provider.resolveCheckpoint("missing")).isEqualTo(CheckpointRulesResolution.Unavailable)
     }
 
     @Test
@@ -201,6 +205,35 @@ internal class CheckpointsConfigProviderTest {
         assertThat(provider.resolveCheckpoint("malformed")).isEqualTo(CheckpointRulesResolution.Unavailable)
     }
 
+    @Test
+    fun `resolveCheckpoint reads once when the config generation is stable`() = runTest {
+        returnBlob("app_open", """{ "rules": [] }""")
+
+        provider.resolveCheckpoint("app_open")
+
+        coVerify(exactly = 1) { blobRead("app_open") }
+    }
+
+    @Test
+    fun `resolveCheckpoint reads again when the config generation changes during the read`() = runTest {
+        every { manager.configGeneration } returnsMany listOf(0, 1)
+        returnNoBlobThenBlob(
+            "app_open",
+            """{ "rules": [{ "id": "rule", "audience_id": "aud-1", "workflow_id": "wf-1" }] }""",
+        )
+
+        assertThat(checkpoint("app_open").rules.single().workflowId).isEqualTo("wf-1")
+    }
+
+    @Test
+    fun `resolveCheckpoint reads at most twice when the config generation changes`() = runTest {
+        every { manager.configGeneration } returnsMany listOf(0, 1)
+        returnNoBlob("missing")
+
+        assertThat(provider.resolveCheckpoint("missing")).isEqualTo(CheckpointRulesResolution.Unavailable)
+        coVerify(exactly = 2) { blobRead("missing") }
+    }
+
     private suspend fun checkpoint(identifier: String): CheckpointResponse =
         (provider.resolveCheckpoint(identifier) as CheckpointRulesResolution.Found).checkpoint
 
@@ -210,25 +243,26 @@ internal class CheckpointsConfigProviderTest {
         )
     }
 
+    private suspend fun MockKMatcherScope.blobRead(identifier: String): CheckpointResponse? =
+        manager.blobData(
+            RemoteConfigTopic.CheckpointRules,
+            identifier,
+            any<(ByteArray) -> CheckpointResponse?>(),
+        )
+
     private fun returnNoBlob(identifier: String) {
-        coEvery {
-            manager.blobData(
-                RemoteConfigTopic.CheckpointRules,
-                identifier,
-                any<(ByteArray) -> CheckpointResponse?>(),
-            )
-        } returns null
+        coEvery { blobRead(identifier) } returns null
     }
 
     private fun returnBlob(identifier: String, json: String) {
-        coEvery {
-            manager.blobData(
-                RemoteConfigTopic.CheckpointRules,
-                identifier,
-                any<(ByteArray) -> CheckpointResponse?>(),
-            )
-        } answers {
-            thirdArg<(ByteArray) -> CheckpointResponse?>().invoke(json.toByteArray())
-        }
+        coEvery { blobRead(identifier) } answers { parseBlob(json) }
     }
+
+    private fun returnNoBlobThenBlob(identifier: String, json: String) {
+        var reads = 0
+        coEvery { blobRead(identifier) } answers { if (reads++ == 0) null else parseBlob(json) }
+    }
+
+    private fun MockKAnswerScope<CheckpointResponse?, CheckpointResponse?>.parseBlob(json: String) =
+        thirdArg<(ByteArray) -> CheckpointResponse?>().invoke(json.toByteArray())
 }
