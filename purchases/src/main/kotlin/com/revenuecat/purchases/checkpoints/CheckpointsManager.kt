@@ -35,6 +35,8 @@ internal class CheckpointsManager(
             checkpointListener?.onCheckpointHit(checkpoint)
             val result = when (val resolution = resolver.resolve(checkpoint)) {
                 is CheckpointWorkflowResolution.Matched -> execute(resolution.presentation)
+                is CheckpointWorkflowResolution.BannerMatched ->
+                    CheckpointResult.BannerAd(checkpoint, resolution.adUnitId, resolution.placement)
                 is CheckpointWorkflowResolution.NoMatch ->
                     CheckpointResult.NoAction(checkpoint, resolution.reason)
                 is CheckpointWorkflowResolution.Failed -> {

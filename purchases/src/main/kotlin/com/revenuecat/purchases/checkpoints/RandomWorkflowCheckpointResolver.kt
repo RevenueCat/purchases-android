@@ -17,8 +17,8 @@ import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * PoC [CheckpointWorkflowResolver]: every checkpoint matches and resolves to a workflow picked at random from
- * the workflows topic, except three hardcoded identifiers that simulate the no-match, error, and ad outcomes
- * the future checkpoints config topic will produce.
+ * the workflows topic, except four hardcoded identifiers that simulate the no-match, error, ad, and banner
+ * outcomes the future checkpoints config topic will produce.
  */
 internal class RandomWorkflowCheckpointResolver(
     private val workflowManager: WorkflowManager?,
@@ -37,6 +37,8 @@ internal class RandomWorkflowCheckpointResolver(
             SIMULATED_NO_MATCH_CHECKPOINT_ID ->
                 CheckpointWorkflowResolution.NoMatch(CheckpointResult.NoAction.Reason.NO_MATCH)
             SIMULATED_AD_CHECKPOINT_ID -> resolveMockAdWorkflow(checkpoint)
+            SIMULATED_BANNER_CHECKPOINT_ID ->
+                CheckpointWorkflowResolution.BannerMatched(adUnitId = SIMULATED_BANNER_AD_UNIT_ID, placement = null)
             else -> resolveRandomWorkflow(checkpoint)
         }
 
@@ -110,8 +112,12 @@ internal class RandomWorkflowCheckpointResolver(
         const val SIMULATED_NO_MATCH_CHECKPOINT_ID = "unknown_checkpoint"
         const val SIMULATED_ERROR_CHECKPOINT_ID = "error_checkpoint"
         const val SIMULATED_AD_CHECKPOINT_ID = "ad_checkpoint"
+        const val SIMULATED_BANNER_CHECKPOINT_ID = "banner_checkpoint"
 
         // Google's public test interstitial ad unit ID.
         const val SIMULATED_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
+
+        // Google's public test banner ad unit ID.
+        const val SIMULATED_BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/9214589741"
     }
 }

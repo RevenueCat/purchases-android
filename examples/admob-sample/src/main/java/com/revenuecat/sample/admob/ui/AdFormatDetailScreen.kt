@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.revenuecat.sample.admob.ui.ads.AppOpenAdContent
 import com.revenuecat.sample.admob.ui.ads.BannerAdContent
 import com.revenuecat.sample.admob.ui.ads.CheckpointAdContent
+import com.revenuecat.sample.admob.ui.ads.CheckpointBannerAdContent
 import com.revenuecat.sample.admob.ui.ads.ErrorTestingContent
 import com.revenuecat.sample.admob.ui.ads.InterstitialAdContent
 import com.revenuecat.sample.admob.ui.ads.NativeAdContent
@@ -71,6 +72,7 @@ internal fun AdFormatDetailScreen(
                 AdFormat.NATIVE_VIDEO -> NativeVideoAdContent()
                 AdFormat.ERROR_TESTING -> ErrorTestingContent()
                 AdFormat.CHECKPOINT -> CheckpointAdContent(activity)
+                AdFormat.BANNER_CHECKPOINT -> CheckpointBannerAdContent()
             }
         }
     }

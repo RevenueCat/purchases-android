@@ -27,6 +27,17 @@ public abstract class CheckpointResult internal constructor() {
     ) : CheckpointResult()
 
     /**
+     * The checkpoint resolved to a banner ad config. POC: no presentation was run — the caller renders its
+     * own persistent banner view using [adUnitId]/[placement].
+     */
+    @Poko
+    public class BannerAd internal constructor(
+        override val checkpoint: CheckpointInfo,
+        public val adUnitId: String,
+        public val placement: String?,
+    ) : CheckpointResult()
+
+    /**
      * Nothing is served for this checkpoint; the user continues uninterrupted.
      */
     @Poko
