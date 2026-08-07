@@ -37,6 +37,14 @@ internal class PaywallAssetWarming(
         }
     }
 
+    fun prebootWebView() {
+        val warmer = warmer ?: return
+        debugLog { "Prebooting the WebView engine for a paywall web_view component." }
+        runCatching { warmer.prebootWebView(context) }.onFailure { error ->
+            errorLog(error) { "Paywalls V2 WebView preboot failed." }
+        }
+    }
+
     private companion object {
         fun loadWarmer(): PaywallAssetWarmer? = runCatching {
             ServiceLoader.load(

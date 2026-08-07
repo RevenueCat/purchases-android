@@ -17,10 +17,12 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import com.revenuecat.paywallstester.ui.theme.PaywallTesterAndroidTheme
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.paywalls.PaywallAssetWarmer
 import com.revenuecat.purchases.ui.revenuecatui.ExperimentalPreviewRevenueCatUIPurchasesAPI
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallActivityLaunchOptions
@@ -29,6 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResultHandler
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.ShowCustomerCenter
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
+import java.util.ServiceLoader
 
 class MainActivity : ComponentActivity(), PaywallResultHandler {
     companion object {
@@ -41,6 +44,7 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         paywallActivityLauncher = PaywallActivityLauncher(this, this)
+        handleWebViewPrebootExtra()
         setContent {
             PaywallTesterAndroidTheme(dynamicColor = false) {
                 Box(
@@ -52,6 +56,20 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
                     PaywallTesterApp()
                 }
             }
+        }
+    }
+
+    /**
+     * Dev-only: triggers WebView preboot on demand, so its main-thread cost can be timed on a device.
+     *
+     * adb shell am start -n <pkg>/.MainActivity --ez prewarm_startup true
+     */
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun handleWebViewPrebootExtra() {
+        if (intent.getBooleanExtra("prewarm_startup", false)) {
+            // Through ServiceLoader, the same way core reaches it, rather than the internal impl.
+            ServiceLoader.load(PaywallAssetWarmer::class.java, PaywallAssetWarmer::class.java.classLoader)
+                .firstOrNull()?.prebootWebView(this)
         }
     }
 

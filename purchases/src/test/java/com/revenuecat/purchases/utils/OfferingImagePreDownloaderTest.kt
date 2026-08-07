@@ -21,6 +21,7 @@ import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -67,8 +68,13 @@ class OfferingImagePreDownloaderTest {
 
     private class RecordingWarmer : PaywallAssetWarmer {
         val warmed = mutableListOf<Uri>()
+        var prebootCount = 0
         override fun warmImages(context: Context, imageUris: List<Uri>) {
             warmed.addAll(imageUris)
+        }
+
+        override fun prebootWebView(context: Context) {
+            prebootCount++
         }
     }
 
@@ -119,6 +125,37 @@ class OfferingImagePreDownloaderTest {
     // endregion Paywalls V1
 
     // region Paywalls V2
+
+    // WebView startup is not free, so it is triggered only for paywalls that actually carry a web_view.
+    @Test
+    fun `paywalls V2 - preboots the web view when the tree has one`() {
+        preDownloader.preDownloadOfferingImages(offeringWithWebView())
+
+        assertThat(warmer.prebootCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `paywalls V2 - does not preboot the web view when the tree has none`() {
+        preDownloader.preDownloadOfferingImages(createOfferingWithV2Paywall())
+
+        assertThat(warmer.prebootCount).isEqualTo(0)
+    }
+
+    private fun offeringWithWebView(): Offering = createOfferingWithV2Paywall(
+        paywallComponentsConfig = PaywallComponentsConfig(
+            stack = StackComponent(
+                components = listOf(
+                    WebViewComponent(
+                        url = "https://example.com/index.html",
+                        id = "component-1",
+                        protocolVersion = WebViewComponent.SUPPORTED_PROTOCOL_VERSION,
+                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill),
+                    ),
+                ),
+            ),
+            background = Background.Color(ColorScheme(light = ColorInfo.Alias(ColorAlias("")))),
+        ),
+    )
 
     @Test
     fun `paywalls V2 - if no images, it does not download anything`() {
