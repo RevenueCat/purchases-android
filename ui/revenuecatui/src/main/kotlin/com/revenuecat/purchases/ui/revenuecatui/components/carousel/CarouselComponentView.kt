@@ -106,8 +106,8 @@ internal fun CarouselComponentView(
 
     val pageCount = style.pages.size
 
-    // The ring must stay finite: every pager index is a distinct LazyLayout key, so an unbounded
-    // index space rebuilds a page from scratch on every advance.
+    // Every pager index is a distinct LazyLayout key, so an unbounded index space would rebuild a
+    // page from scratch on every advance. Keep the ring finite.
     val clonePad = loopClonePad(carouselState.loop, pageCount)
     val ringCount = pageCount + 2 * clonePad
     val initialPage = clonePad + carouselState.initialPageIndex.coerceIn(0, maxOf(pageCount - 1, 0))
@@ -210,8 +210,7 @@ internal fun CarouselComponentView(
         HorizontalPager(
             state = pagerState,
             contentPadding = PaddingValues(horizontal = carouselState.pagePeek + carouselState.pageSpacing),
-            // Compose the whole ring: keeps the pager correctly sized and stops pages being torn
-            // down. Ceiling: a looping carousel holds pageCount + 4 live pages, WebViews included.
+            // Whole ring stays composed, so nothing is torn down. Ceiling: pageCount + 4 live pages.
             beyondViewportPageCount = ringCount,
             pageSpacing = carouselState.pageSpacing,
             verticalAlignment = carouselState.pageAlignment,
@@ -297,9 +296,7 @@ private fun Indicator(
         }
     }
 
-    // Plain vals, not remembered: the body already reads `progress` on every recomposition for
-    // `color`, and a keyless remember here would pin the `progress` state object from the first
-    // composition, freezing the dot sizes on the page the carousel happened to start on.
+    // Not remembered: a keyless remember would pin the first `progress` state and freeze the sizes.
     val targetWidth = lerpUnit(pageControl.default.width, pageControl.active.width, progress)
     val targetHeight = lerpUnit(pageControl.default.height, pageControl.active.height, progress)
     val targetStrokeWidth = lerpUnit(
@@ -346,10 +343,7 @@ private fun Indicator(
     )
 }
 
-/**
- * Snaps back into the real zone when the pager settles on a clone. The clone holds identical
- * content, so the jump is invisible.
- */
+/** Snaps back into the real zone on settling on a clone. The clone is identical, so it is invisible. */
 @Composable
 private fun RecenterLoopClones(pagerState: PagerState, clonePad: Int, pageCount: Int) {
     if (clonePad == 0) return
@@ -359,9 +353,8 @@ private fun RecenterLoopClones(pagerState: PagerState, clonePad: Int, pageCount:
             try {
                 pagerState.scrollToPage(target)
             } catch (_: CancellationException) {
-                // A competing scroll (a swipe, or auto-advance) won the pager's mutex. Swallow it
-                // so the collector survives: letting it out would kill this effect for good, and
-                // its keys never change, so the carousel would never re-centre again.
+                // A competing scroll won the pager's mutex. Letting this out would kill the effect
+                // for good, and its keys never change, so re-centring would stop for the session.
             }
         }
     }
@@ -425,21 +418,14 @@ private class ProgrammaticPageTrackingFlag {
 internal fun loopClonePad(loop: Boolean, pageCount: Int): Int =
     if (loop && pageCount > 1) LOOP_CLONE_PAD else 0
 
-/** Next pager index for auto-advance, or `null` at the end of the index space. */
 internal fun nextAutoAdvanceTargetPage(ringCount: Int, currentPage: Int): Int? =
     (currentPage + 1).takeIf { it < ringCount }
 
-/**
- * Logical page shown at [pagerIndex], mapping the clone-padded ring back onto `0..pageCount-1`.
- * A server-sent carousel can have no pages at all, and `mod(0)` throws.
- */
+/** Maps the clone-padded ring back onto `0..pageCount-1`. Guards `mod(0)`: `pages` can be empty. */
 internal fun carouselLogicalPage(pagerIndex: Int, clonePad: Int, pageCount: Int): Int =
     if (pageCount <= 0) 0 else (pagerIndex - clonePad).mod(pageCount)
 
-/**
- * Pager index holding the same content as [settledPage] but inside the ring's real zone, or `null`
- * when it already is.
- */
+/** Index holding the same content as [settledPage] but in the real zone, or `null` if already there. */
 internal fun carouselRecenterTarget(settledPage: Int, clonePad: Int, pageCount: Int): Int? = when {
     settledPage < clonePad -> settledPage + pageCount
     settledPage >= clonePad + pageCount -> settledPage - pageCount

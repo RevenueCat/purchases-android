@@ -17,20 +17,18 @@ internal class CarouselLoopIndexTest {
 
     @Test
     fun `the clone-padded ring maps onto the logical pages`() {
-        // Ring 0..6, real zone 2..4. Leading clones mirror the web SDK's prevPages = [last - 1,
-        // last] and trailing clones its nextPages = [0, 1]. Indices below the pad must wrap rather
-        // than go negative, so this fails if `%` replaces `mod`.
+        // Ring 0..6, real zone 2..4. Clones mirror the web SDK: prevPages [last - 1, last],
+        // nextPages [0, 1]. Indices below the pad must wrap, so this fails if `%` replaces `mod`.
         assertThat((0..6).map { carouselLogicalPage(it, clonePad = 2, pageCount = 3) })
             .containsExactly(1, 2, 0, 1, 2, 0, 1)
-        // Two pages is the reported repro, and the pad then exceeds the page count.
+        // Two pages is the reported repro, where the pad exceeds the page count.
         assertThat((0..5).map { carouselLogicalPage(it, clonePad = 2, pageCount = 2) })
             .containsExactly(0, 1, 0, 1, 0, 1)
     }
 
     @Test
     fun `an empty carousel has no page to map to`() {
-        // A page control reads the logical page before anything guards on pages being non-empty,
-        // and `mod(0)` would throw.
+        // A page control reads this before anything guards on `pages`, and `mod(0)` would throw.
         assertThat(carouselLogicalPage(pagerIndex = 0, clonePad = 0, pageCount = 0)).isZero()
     }
 
