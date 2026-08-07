@@ -202,16 +202,16 @@ dependencies {
 
     compileOnly(libs.compose.annotations)
     compileOnly(libs.amazon.appstore.sdk)
-    compileOnly(libs.coil.base)
 
     debugImplementation(libs.androidx.annotation.experimental)
 
     dokkaPlugin(project(":dokka-hide-internal"))
 
-    testImplementation(libs.coil.base)
     testImplementation(libs.bundles.test)
     testImplementation(libs.billing)
     testImplementation(libs.coroutines.test)
+    // Dispatchers.Main on the test JVM. Previously arrived transitively through coil-base.
+    testImplementation(libs.coroutines.android)
     testImplementation(libs.amazon.appstore.sdk)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.playServices.ads.identifier)
