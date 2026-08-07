@@ -28,6 +28,7 @@ internal class PaywallWebViewPrewarmerTest {
 
     private companion object {
         const val URL = "https://example.com/index.html"
+        const val OTHER_URL = "https://example.com/other.html"
         const val COMPONENT_ID = "component-1"
     }
 
@@ -179,7 +180,7 @@ internal class PaywallWebViewPrewarmerTest {
         val prewarmer = prewarmer()
         prewarmer.prewarm(context, URL, COMPONENT_ID)
 
-        assertThat(prewarmer.take("https://example.com/other.html")).isNull()
+        assertThat(prewarmer.take(OTHER_URL)).isNull()
     }
 
     @Test
@@ -191,14 +192,66 @@ internal class PaywallWebViewPrewarmerTest {
         assertThat(prewarmer.take(URL)).isNull()
     }
 
+    // A paywall can carry several web_view components, so each distinct url gets its own entry.
     @Test
-    fun `keeps the first prewarm when a second component is requested`() {
+    fun `holds one entry per distinct url`() {
+        val prewarmer = prewarmer()
+
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
+        prewarmer.prewarm(context, OTHER_URL, "component-2")
+
+        assertThat(prewarmer.take(URL)).isNotNull()
+        assertThat(prewarmer.take(OTHER_URL)).isNotNull()
+    }
+
+    @Test
+    fun `does not prerender a url that is already held`() {
         val prewarmer = prewarmer()
         prewarmer.prewarm(context, URL, COMPONENT_ID)
 
-        prewarmer.prewarm(context, "https://example.com/other.html", "component-2")
+        prewarmer.prewarm(context, URL, "component-2")
 
         verify(exactly = 1) { WebViewCompat.prerenderUrlAsync(any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `evicts the oldest entry once the pool is full`() {
+        val prewarmer = prewarmer()
+        repeat(PaywallWebViewPrewarmer.MAX_PREWARMED) { index ->
+            prewarmer.prewarm(context, "https://example.com/$index.html", "component-$index")
+        }
+
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
+
+        assertThat(prewarmer.heldCount()).isEqualTo(PaywallWebViewPrewarmer.MAX_PREWARMED)
+        assertThat(prewarmer.take("https://example.com/0.html")).isNull()
+        assertThat(prewarmer.take(URL)).isNotNull()
+    }
+
+    @Test
+    fun `an async error only drops the entry it belongs to`() {
+        val callbacks = mutableListOf<PrerenderOperationCallback>()
+        every {
+            WebViewCompat.prerenderUrlAsync(any(), any(), any(), any(), capture(callbacks))
+        } returns Unit
+        val prewarmer = prewarmer()
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
+        prewarmer.prewarm(context, OTHER_URL, "component-2")
+
+        callbacks.first().onError(mockk<PrerenderException>(relaxed = true))
+
+        assertThat(prewarmer.take(URL)).isNull()
+        assertThat(prewarmer.take(OTHER_URL)).isNotNull()
+    }
+
+    // Siblings belong to other components on the same paywall and are very likely about to be taken.
+    @Test
+    fun `a miss leaves the other entries held`() {
+        val prewarmer = prewarmer()
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
+
+        assertThat(prewarmer.take(OTHER_URL)).isNull()
+
         assertThat(prewarmer.take(URL)).isNotNull()
     }
 
@@ -223,12 +276,27 @@ internal class PaywallWebViewPrewarmerTest {
     }
 
     @Test
-    fun `releaseAll drops the prewarmed view`() {
+    fun `each entry expires on its own schedule`() {
         val prewarmer = prewarmer()
         prewarmer.prewarm(context, URL, COMPONENT_ID)
+        val half = PaywallWebViewPrewarmer.HOLD_TIMEOUT_MS / 2
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(half))
+        prewarmer.prewarm(context, OTHER_URL, "component-2")
+
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(PaywallWebViewPrewarmer.HOLD_TIMEOUT_MS - half))
+
+        assertThat(prewarmer.take(URL)).isNull()
+        assertThat(prewarmer.take(OTHER_URL)).isNotNull()
+    }
+
+    @Test
+    fun `releaseAll drops every prewarmed view`() {
+        val prewarmer = prewarmer()
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
+        prewarmer.prewarm(context, OTHER_URL, "component-2")
 
         prewarmer.releaseAll()
 
-        assertThat(prewarmer.take(URL)).isNull()
+        assertThat(prewarmer.heldCount()).isZero()
     }
 }
