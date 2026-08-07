@@ -1,2 +1,9 @@
 -dontwarn com.emergetools.snapshots.annotations.IgnoreEmergeSnapshot
 -dontwarn com.emergetools.snapshots.annotations.EmergeSnapshotConfig
+
+# PaywallAssetWarmerImpl is instantiated reflectively by java.util.ServiceLoader through the
+# META-INF/services/com.revenuecat.purchases.paywalls.PaywallAssetWarmer descriptor, so keep the class and
+# its no-argument constructor even though there are no direct references to it.
+-keep class com.revenuecat.purchases.ui.revenuecatui.paywalls.PaywallAssetWarmerImpl {
+    <init>();
+}
