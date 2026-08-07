@@ -2,10 +2,8 @@ package com.revenuecat.purchases.common.offlineentitlements
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
-import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.originalDataSource
-import com.revenuecat.purchases.utils.copy
 import com.revenuecat.purchases.utils.optNullableString
 import org.json.JSONArray
 import org.json.JSONObject
@@ -14,7 +12,7 @@ import org.json.JSONObject
 @InternalRevenueCatAPI
 public data class ProductEntitlementMapping(
     val mappings: Map<String, Mapping>,
-    val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
+    val originalSource: HTTPResponseOriginalSource? = null,
     val loadedFromCache: Boolean = false,
 ) {
     public companion object {
@@ -22,7 +20,6 @@ public data class ProductEntitlementMapping(
         private const val PRODUCT_ID_KEY = "product_identifier"
         private const val BASE_PLAN_ID_KEY = "base_plan_id"
         private const val ENTITLEMENTS_KEY = "entitlements"
-        private const val ORIGINAL_SOURCE_KEY = "rc_original_source"
 
         internal fun fromJson(
             json: JSONObject,
@@ -41,21 +38,11 @@ public data class ProductEntitlementMapping(
                 }
                 mappings[mappingIdentifier] = Mapping(productIdentifier, basePlanId, entitlements)
             }
-            val originalSource = json.optNullableString(ORIGINAL_SOURCE_KEY)?.let {
-                try {
-                    HTTPResponseOriginalSource.valueOf(it)
-                } catch (e: IllegalArgumentException) {
-                    errorLog(e) { "Invalid original source when reading it from JSON: $it. Defaulting to MAIN." }
-                    null
-                }
-            } ?: HTTPResponseOriginalSource.MAIN
-            return ProductEntitlementMapping(mappings, originalSource, loadedFromCache)
+            return ProductEntitlementMapping(mappings, loadedFromCache = loadedFromCache)
         }
 
         internal fun fromNetwork(json: JSONObject, httpResult: HTTPResult): ProductEntitlementMapping {
-            val jsonCopy = json.copy(deep = false)
-            val jsonWithSource = jsonCopy.put(ORIGINAL_SOURCE_KEY, httpResult.originalDataSource.name)
-            return fromJson(jsonWithSource, loadedFromCache = false)
+            return fromJson(json, loadedFromCache = false).copy(originalSource = httpResult.originalDataSource)
         }
     }
 
@@ -76,6 +63,5 @@ public data class ProductEntitlementMapping(
             }
         }
         put(PRODUCT_ENTITLEMENT_MAPPING_KEY, JSONObject(mappingsObjects))
-        put(ORIGINAL_SOURCE_KEY, originalSource.name)
     }
 }
