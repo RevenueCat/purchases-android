@@ -4,7 +4,6 @@ import com.revenuecat.purchases.common.warnLog
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -18,8 +17,6 @@ import kotlinx.serialization.SerializationException as JsonSerializationExceptio
 
 @Serializable
 internal data class CheckpointResponse(
-    @Transient
-    val identifier: String = "",
     @Serializable(with = CheckpointRulesSerializer::class)
     val rules: List<CheckpointRule> = emptyList(),
 )

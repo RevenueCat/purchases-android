@@ -35,7 +35,7 @@ internal class CheckpointsConfigProviderTest {
     }
 
     @Test
-    fun `getCheckpoint parses the backend payload in evaluation order`() = runTest {
+    fun `getCheckpoint returns the parsed backend payload unchanged`() = runTest {
         returnBlob(
             "app_open",
             """
@@ -58,11 +58,22 @@ internal class CheckpointsConfigProviderTest {
 
         val checkpoint = requireNotNull(provider.getCheckpoint("app_open"))
 
-        assertThat(checkpoint.identifier).isEqualTo("app_open")
-        assertThat(checkpoint.rules.map { it.workflowId })
-            .containsExactly("wf_public_1", "wf_public_2")
-        assertThat(checkpoint.rules.first().id).isEqualTo("chkptrule_first")
-        assertThat(checkpoint.rules.first().audienceId).isEqualTo("aud_public_1")
+        assertThat(checkpoint).isEqualTo(
+            CheckpointResponse(
+                rules = listOf(
+                    CheckpointRule(
+                        id = "chkptrule_first",
+                        audienceId = "aud_public_1",
+                        workflowId = "wf_public_1",
+                    ),
+                    CheckpointRule(
+                        id = "chkptrule_second",
+                        audienceId = "aud_public_2",
+                        workflowId = "wf_public_2",
+                    ),
+                ),
+            ),
+        )
     }
 
     @Test
@@ -113,11 +124,7 @@ internal class CheckpointsConfigProviderTest {
             """.trimIndent(),
         )
 
-        val checkpoint = decodedCheckpoint.copy(identifier = "onboarding")
-
-        assertThat(decodedCheckpoint.identifier).isEmpty()
-        assertThat(checkpoint.identifier).isEqualTo("onboarding")
-        assertThat(checkpoint.rules.map { it.id }).containsExactly("first", "last")
+        assertThat(decodedCheckpoint.rules.map { it.id }).containsExactly("first", "last")
     }
 
     @Test
@@ -145,7 +152,6 @@ internal class CheckpointsConfigProviderTest {
 
         val checkpoint = requireNotNull(provider.getCheckpoint("onboarding"))
 
-        assertThat(checkpoint.identifier).isEqualTo("onboarding")
         assertThat(checkpoint.rules).isEmpty()
     }
 

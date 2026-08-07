@@ -8,5 +8,4 @@ internal class CheckpointsConfigProvider(
 ) {
     suspend fun getCheckpoint(identifier: String): CheckpointResponse? =
         manager.blobData<CheckpointResponse>(RemoteConfigTopic.CheckpointRules, identifier)
-            ?.copy(identifier = identifier)
 }
