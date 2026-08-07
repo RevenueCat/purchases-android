@@ -26,6 +26,7 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
+import java.util.Date
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 class AdTrackerTest {
@@ -392,7 +393,7 @@ class AdTrackerTest {
                 placement = "rewarded_video",
                 adUnitId = "ca-app-pub-123456",
                 impressionId = "impression-123",
-                reward = VerifiedReward.Entitlement(identifier = "premium", expiresAt = java.util.Date(0)),
+                reward = VerifiedReward.Entitlement(identifier = "premium", expiresAt = Date(0)),
             ),
             captureMethod = AdCaptureMethod.ADAPTER,
         )
