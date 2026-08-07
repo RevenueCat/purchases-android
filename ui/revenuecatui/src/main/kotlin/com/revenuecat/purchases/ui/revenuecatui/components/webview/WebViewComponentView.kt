@@ -127,10 +127,10 @@ internal fun WebViewComponentView(
                         contentHeightCssPx = 0
                     }
                     val onLoadFailed: () -> Unit = { loadFailed = true }
-                    val prewarmed = PaywallWebViewPrewarmer.shared.take(identity)
+                    val prewarmed = PaywallWebViewPrewarmer.shared.take(identity.resolvedUrl)
                     if (prewarmed != null) {
                         bridgeHolder.bridge = prewarmed.bridge
-                        prewarmed.activateIn(onContentResize, onDocumentReset, onLoadFailed)
+                        prewarmed.activateIn(identity, onContentResize, onDocumentReset, onLoadFailed)
                     } else {
                         val configured = createPaywallWebView(
                             context = context,

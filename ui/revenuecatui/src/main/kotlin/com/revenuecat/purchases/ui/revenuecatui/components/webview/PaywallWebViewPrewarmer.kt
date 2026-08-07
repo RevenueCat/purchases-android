@@ -145,8 +145,8 @@ internal class PaywallWebViewPrewarmer {
     /** Every url this instance is already holding, loading, or about to load. */
     private val warmingUrls: Set<String>
         get() = buildSet {
-            slot?.identity?.resolvedUrl?.let(::add)
-            cacheWarmInFlight?.identity?.resolvedUrl?.let(::add)
+            slot?.resolvedUrl?.let(::add)
+            cacheWarmInFlight?.resolvedUrl?.let(::add)
             cacheWarmQueue.forEach { add(it.resolvedUrl) }
         }
 
@@ -206,6 +206,8 @@ internal class PaywallWebViewPrewarmer {
         onDocumentFinished: () -> Unit = {},
     ): PrewarmedWebView? {
         val callbacks = PrewarmBridgeCallbacks()
+        // Assigned below, before any load can start: the failure callback needs the entry it belongs to.
+        var entry: PrewarmedWebView? = null
         // Application context: prewarm has no Activity to borrow, and this view must not outlive the one
         // that happens to be showing. The cost is that it cannot host JS dialogs, <select> popups, file
         // choosers or fullscreen video, unlike a view the display path builds from an Activity.
@@ -217,7 +219,7 @@ internal class PaywallWebViewPrewarmer {
             onLoadFailed = {
                 callbacks.dispatchLoadFailed()
                 // Posted: this arrives inside a WebViewClient callback, and destroy() must not run there.
-                mainHandler.post { releaseIfHeld(identity) }
+                entry?.let { failed -> mainHandler.post { releaseIfHeld(failed) } }
             },
             onLoadFinished = onDocumentFinished,
         ) ?: return null
@@ -226,16 +228,17 @@ internal class PaywallWebViewPrewarmer {
             webView = configured.webView,
             bridge = configured.bridge,
             callbacks = callbacks,
-            identity = identity,
+            resolvedUrl = identity.resolvedUrl,
             cancellationSignal = CancellationSignal(),
         )
+        entry = prewarmed
         return try {
             WebViewCompat.prerenderUrlAsync(
                 configured.webView,
                 identity.resolvedUrl,
                 prewarmed.cancellationSignal,
                 ContextCompat.getMainExecutor(context),
-                PrerenderLogger(identity),
+                PrerenderLogger(prewarmed),
             )
             prewarmed
         } catch (error: RuntimeException) {
@@ -246,20 +249,22 @@ internal class PaywallWebViewPrewarmer {
     }
 
     /**
-     * Hands the prewarmed WebView to the display factory, clearing the slot either way. A view warmed for
-     * a different component, or one whose document failed to load, is destroyed instead of handed over so
-     * the caller loads cold.
+     * Hands the prewarmed WebView to the display factory, clearing the slot either way. Matching is
+     * on resolved URL alone, matching iOS: the component id and `Fit` axes are rebound at activation,
+     * so a view warmed for one component can serve any component pointing at the same bundle. A view
+     * held for a different URL, or one whose document failed to load, is destroyed instead of handed
+     * over so the caller loads cold.
      */
     @MainThread
-    fun take(identity: WebViewIdentity): PrewarmedWebView? {
+    fun take(resolvedUrl: String): PrewarmedWebView? {
         // Whatever the outcome, this url is being displayed now, and that load fills the http cache by
         // itself. A queued warm for it would be pure waste.
-        cacheWarmQueue.removeAll { it.resolvedUrl == identity.resolvedUrl }
+        cacheWarmQueue.removeAll { it.resolvedUrl == resolvedUrl }
         val current = slot ?: return null
         slot = null
         mainHandler.removeCallbacks(releaseOnTimeout)
         val rejection = when {
-            current.identity != identity -> "it was held for a different component"
+            current.resolvedUrl != resolvedUrl -> "it was held for a different URL"
             current.loadFailed -> "its document failed to load while prewarming"
             else -> null
         }
@@ -273,14 +278,15 @@ internal class PaywallWebViewPrewarmer {
     }
 
     /**
-     * Drops whichever view [identity] was warmed for. A hold-tier failure leaves the cache-warm queue
-     * alone: those are other urls, and they are still worth warming.
+     * Drops [entry], whichever tier it belongs to. Compared by instance, not by URL: a later prewarm of
+     * the same URL is a different view, and an async failure from this one must not take it down. A
+     * hold-tier failure leaves the cache-warm queue alone, since those are other urls still worth warming.
      */
     @MainThread
-    private fun releaseIfHeld(identity: WebViewIdentity) {
+    private fun releaseIfHeld(entry: PrewarmedWebView) {
         when {
-            slot?.identity == identity -> releaseSlot()
-            cacheWarmInFlight?.identity == identity -> finishCacheWarm()
+            slot === entry -> releaseSlot()
+            cacheWarmInFlight === entry -> finishCacheWarm()
         }
     }
 
@@ -301,14 +307,14 @@ internal class PaywallWebViewPrewarmer {
         releaseSlot()
     }
 
-    private inner class PrerenderLogger(private val identity: WebViewIdentity) : PrerenderOperationCallback {
+    private inner class PrerenderLogger(private val entry: PrewarmedWebView) : PrerenderOperationCallback {
         override fun onPrerenderActivated() {
-            Logger.d("Paywalls V2 web_view prerender activated for component '${identity.componentId}'.")
+            Logger.d("Paywalls V2 web_view prerender activated for '${entry.resolvedUrl}'.")
         }
 
         override fun onError(exception: PrerenderException) {
-            Logger.d("Paywalls V2 web_view prerender failed for component '${identity.componentId}': $exception")
-            releaseIfHeld(identity)
+            Logger.d("Paywalls V2 web_view prerender failed for '${entry.resolvedUrl}': $exception")
+            releaseIfHeld(entry)
         }
     }
 

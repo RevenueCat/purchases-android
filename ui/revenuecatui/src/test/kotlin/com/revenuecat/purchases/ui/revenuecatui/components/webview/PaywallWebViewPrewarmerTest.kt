@@ -80,7 +80,7 @@ internal class PaywallWebViewPrewarmerTest {
         val prewarmer = prewarmer()
         prewarmer.prewarm(context, URL, COMPONENT_ID)
 
-        assertThat(prewarmer.take(identity())).isNotNull()
+        assertThat(prewarmer.take(URL)).isNotNull()
     }
 
     @Test
@@ -91,7 +91,7 @@ internal class PaywallWebViewPrewarmerTest {
         prewarmer.prewarm(context, URL, COMPONENT_ID)
 
         assertNotPrerendered()
-        assertThat(prewarmer.take(identity())).isNull()
+        assertThat(prewarmer.take(URL)).isNull()
     }
 
     @Test
@@ -133,7 +133,7 @@ internal class PaywallWebViewPrewarmerTest {
         prewarmer.prewarm(context, URL, COMPONENT_ID)
 
         assertNotPrerendered()
-        assertThat(prewarmer.take(identity())).isNull()
+        assertThat(prewarmer.take(URL)).isNull()
     }
 
     @Test
@@ -145,7 +145,7 @@ internal class PaywallWebViewPrewarmerTest {
 
         prewarmer.prewarm(context, URL, COMPONENT_ID)
 
-        assertThat(prewarmer.take(identity())).isNull()
+        assertThat(prewarmer.take(URL)).isNull()
     }
 
     @Test
@@ -159,7 +159,7 @@ internal class PaywallWebViewPrewarmerTest {
 
         callback.captured.onError(mockk<PrerenderException>(relaxed = true))
 
-        assertThat(prewarmer.take(identity())).isNull()
+        assertThat(prewarmer.take(URL)).isNull()
     }
 
     // Replaying a prewarm-time load failure onto the adopting component would make prewarming worse than
@@ -171,7 +171,7 @@ internal class PaywallWebViewPrewarmerTest {
 
         failMainFrameLoad(webView)
 
-        assertThat(prewarmer.take(identity())).isNull()
+        assertThat(prewarmer.take(URL)).isNull()
     }
 
     @Test
@@ -206,20 +206,30 @@ internal class PaywallWebViewPrewarmerTest {
         shadowOf(webView).webViewClient.onReceivedError(webView, request, mockk(relaxed = true))
     }
 
+    // Keyed on URL alone, matching iOS. The component id and Fit axes are rebound at activation, so a
+    // view warmed for one component serves any component pointing at the same bundle.
     @Test
-    fun `does not hand the view to a different component`() {
+    fun `hands the view to a different component with the same url`() {
         val prewarmer = prewarmer()
         prewarmer.prewarm(context, URL, COMPONENT_ID)
 
-        assertThat(prewarmer.take(identity(componentId = "other"))).isNull()
+        assertThat(prewarmer.take(URL)).isNotNull()
     }
 
     @Test
-    fun `does not hand the view to a component with different fit axes`() {
+    fun `hands the view to a component with different fit axes`() {
         val prewarmer = prewarmer()
         prewarmer.prewarm(context, URL, COMPONENT_ID, sizeToContentHeight = true)
 
-        assertThat(prewarmer.take(identity(sizeToContentHeight = false))).isNull()
+        assertThat(prewarmer.take(URL)).isNotNull()
+    }
+
+    @Test
+    fun `does not hand the view to a different url`() {
+        val prewarmer = prewarmer()
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
+
+        assertThat(prewarmer.take("https://example.com/other.html")).isNull()
     }
 
     @Test
@@ -227,8 +237,8 @@ internal class PaywallWebViewPrewarmerTest {
         val prewarmer = prewarmer()
         prewarmer.prewarm(context, URL, COMPONENT_ID)
 
-        assertThat(prewarmer.take(identity())).isNotNull()
-        assertThat(prewarmer.take(identity())).isNull()
+        assertThat(prewarmer.take(URL)).isNotNull()
+        assertThat(prewarmer.take(URL)).isNull()
     }
 
     // The slot can only serve one url, but the others are still worth loading: running a document fills
@@ -242,7 +252,7 @@ internal class PaywallWebViewPrewarmerTest {
 
         verify(exactly = 2) { WebViewCompat.prerenderUrlAsync(any(), any(), any(), any(), any()) }
         assertThat(prewarmer.isWarmingCache).isTrue()
-        assertThat(prewarmer.take(identity())).isNotNull()
+        assertThat(prewarmer.take(URL)).isNotNull()
     }
 
     @Test
@@ -296,6 +306,7 @@ internal class PaywallWebViewPrewarmerTest {
 
         verify(exactly = 1) { WebViewCompat.prerenderUrlAsync(any(), any(), any(), any(), any()) }
         assertThat(prewarmer.isWarmingCache).isFalse()
+        assertThat(prewarmer.take(URL)).isNotNull()
     }
 
     // The display path's own load fills the http cache, so a queued warm for that url is pure waste.
@@ -306,7 +317,7 @@ internal class PaywallWebViewPrewarmerTest {
         prewarmer.prewarm(context, OTHER_URL, "component-2")
         prewarmer.prewarm(context, THIRD_URL, "component-3")
 
-        prewarmer.take(identity(url = THIRD_URL, componentId = "component-3"))
+        prewarmer.take(THIRD_URL)
 
         assertThat(prewarmer.queuedCacheWarmCount).isZero()
     }
@@ -318,7 +329,7 @@ internal class PaywallWebViewPrewarmerTest {
 
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(PaywallWebViewPrewarmer.HOLD_TIMEOUT_MS))
 
-        assertThat(prewarmer.take(identity())).isNull()
+        assertThat(prewarmer.take(URL)).isNull()
     }
 
     @Test
@@ -328,7 +339,7 @@ internal class PaywallWebViewPrewarmerTest {
 
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(PaywallWebViewPrewarmer.HOLD_TIMEOUT_MS - 1))
 
-        assertThat(prewarmer.take(identity())).isNotNull()
+        assertThat(prewarmer.take(URL)).isNotNull()
     }
 
     @Test
@@ -340,7 +351,7 @@ internal class PaywallWebViewPrewarmerTest {
 
         (context as Application).onTrimMemory(ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN)
 
-        assertThat(prewarmer.take(identity())).isNull()
+        assertThat(prewarmer.take(URL)).isNull()
         assertThat(prewarmer.isWarmingCache).isFalse()
         assertThat(prewarmer.queuedCacheWarmCount).isZero()
     }
@@ -352,6 +363,6 @@ internal class PaywallWebViewPrewarmerTest {
 
         prewarmer.releaseAll()
 
-        assertThat(prewarmer.take(identity())).isNull()
+        assertThat(prewarmer.take(URL)).isNull()
     }
 }

@@ -36,10 +36,10 @@ import kotlin.math.abs
 @Suppress("LongParameterList", "TooManyFunctions")
 internal class WebViewJavaScriptBridge(
     webView: WebView,
-    private val componentId: String,
+    private var componentId: String,
     expectedUrl: String,
-    private val sizeToContentWidth: Boolean = false,
-    private val sizeToContentHeight: Boolean = false,
+    private var sizeToContentWidth: Boolean = false,
+    private var sizeToContentHeight: Boolean = false,
     private val onContentResize: (widthCssPx: Int?, heightCssPx: Int?) -> Unit = { _, _ -> },
     private val onDocumentReset: () -> Unit = {},
     private val onSecureMessagingUnsupported: () -> Unit = {},
@@ -127,10 +127,23 @@ internal class WebViewJavaScriptBridge(
     }
 
     /**
+     * Repoints this bridge at the component adopting it, before the navigation that re-handshakes.
+     * A prewarmed view is keyed on URL alone, so the component it ends up serving may declare a
+     * different id or different `Fit` axes than the one it was warmed for. Both are only ever sent
+     * during the handshake, which [onMainFrameNavigationStarted] resets, so updating them here is
+     * enough for the next `init` and `fit` to carry the adopting component's values.
+     */
+    fun rebindComponent(componentId: String, sizeToContentWidth: Boolean, sizeToContentHeight: Boolean) {
+        this.componentId = componentId
+        this.sizeToContentWidth = sizeToContentWidth
+        this.sizeToContentHeight = sizeToContentHeight
+    }
+
+    /**
      * Starts a new main-frame document (load, same-origin nav, or reload): resets handshake and
      * resize state so it can `connect` again.
      */
-    @MainThread
+
     fun onMainFrameNavigationStarted() {
         if (released) return
         documentScope.cancel()
