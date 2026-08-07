@@ -20,7 +20,6 @@ import kotlinx.serialization.SerializationException as JsonSerializationExceptio
 internal data class CheckpointResponse(
     @Transient
     val identifier: String = "",
-    val id: String? = null,
     @Serializable(with = CheckpointRulesSerializer::class)
     val rules: List<CheckpointRule> = emptyList(),
 )
@@ -28,7 +27,7 @@ internal data class CheckpointResponse(
 @Serializable
 internal data class CheckpointRule(
     val id: String? = null,
-    @SerialName("audience")
+    @SerialName("audience_id")
     val audienceId: String,
     @SerialName("workflow_id")
     val workflowId: String,
@@ -69,7 +68,7 @@ internal object CheckpointRulesSerializer : KSerializer<List<CheckpointRule>> {
 
     private fun validateRule(rule: CheckpointRule): CheckpointRule? {
         val reason = when {
-            rule.audienceId.isEmpty() -> "missing 'audience'"
+            rule.audienceId.isEmpty() -> "missing 'audience_id'"
             rule.workflowId.isEmpty() -> "missing 'workflow_id'"
             else -> null
         }

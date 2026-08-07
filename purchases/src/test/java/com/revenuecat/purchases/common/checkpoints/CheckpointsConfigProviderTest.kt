@@ -40,16 +40,15 @@ internal class CheckpointsConfigProviderTest {
             "app_open",
             """
             {
-              "id": "chkpt_a1b2c3d4e5f6a7b8",
               "rules": [
                 {
                   "id": "chkptrule_first",
-                  "audience": "aud_public_1",
+                  "audience_id": "aud_public_1",
                   "workflow_id": "wf_public_1"
                 },
                 {
                   "id": "chkptrule_second",
-                  "audience": "aud_public_2",
+                  "audience_id": "aud_public_2",
                   "workflow_id": "wf_public_2"
                 }
               ]
@@ -60,7 +59,6 @@ internal class CheckpointsConfigProviderTest {
         val checkpoint = requireNotNull(provider.getCheckpoint("app_open"))
 
         assertThat(checkpoint.identifier).isEqualTo("app_open")
-        assertThat(checkpoint.id).isEqualTo("chkpt_a1b2c3d4e5f6a7b8")
         assertThat(checkpoint.rules.map { it.workflowId })
             .containsExactly("wf_public_1", "wf_public_2")
         assertThat(checkpoint.rules.first().id).isEqualTo("chkptrule_first")
@@ -77,18 +75,18 @@ internal class CheckpointsConfigProviderTest {
               "rules": [
                 {
                   "id": "first",
-                  "audience": "aud-first",
+                  "audience_id": "aud-first",
                   "workflow_id": "wf-first",
                   "unknown_rule_field": "ignored"
                 },
                 "not-an-object",
                 { "id": "missing-audience", "workflow_id": "wf-missing-audience" },
-                { "id": "empty-audience", "audience": "", "workflow_id": "wf-empty-audience" },
-                { "id": "wrong-audience", "audience": 123, "workflow_id": "wf-wrong-audience" },
-                { "id": "missing-workflow", "audience": "aud-missing-workflow" },
-                { "id": "empty-workflow", "audience": "aud-empty-workflow", "workflow_id": "" },
-                { "id": "wrong-workflow", "audience": "aud-wrong-workflow", "workflow_id": 456 },
-                { "id": "last", "audience": "aud-last", "workflow_id": "wf-last" }
+                { "id": "empty-audience", "audience_id": "", "workflow_id": "wf-empty-audience" },
+                { "id": "wrong-audience", "audience_id": 123, "workflow_id": "wf-wrong-audience" },
+                { "id": "missing-workflow", "audience_id": "aud-missing-workflow" },
+                { "id": "empty-workflow", "audience_id": "aud-empty-workflow", "workflow_id": "" },
+                { "id": "wrong-workflow", "audience_id": "aud-wrong-workflow", "workflow_id": 456 },
+                { "id": "last", "audience_id": "aud-last", "workflow_id": "wf-last" }
               ]
             }
             """.trimIndent(),
@@ -105,12 +103,11 @@ internal class CheckpointsConfigProviderTest {
         val decodedCheckpoint = JsonTools.json.decodeFromString<CheckpointResponse>(
             """
             {
-              "id": "chkpt_1",
               "rules": [
-                { "id": "first", "audience": "aud-first", "workflow_id": "wf-first" },
+                { "id": "first", "audience_id": "aud-first", "workflow_id": "wf-first" },
                 "not-an-object",
                 { "id": "missing-audience", "workflow_id": "wf-missing-audience" },
-                { "id": "last", "audience": "aud-last", "workflow_id": "wf-last" }
+                { "id": "last", "audience_id": "aud-last", "workflow_id": "wf-last" }
               ]
             }
             """.trimIndent(),
@@ -120,18 +117,35 @@ internal class CheckpointsConfigProviderTest {
 
         assertThat(decodedCheckpoint.identifier).isEmpty()
         assertThat(checkpoint.identifier).isEqualTo("onboarding")
-        assertThat(checkpoint.id).isEqualTo("chkpt_1")
         assertThat(checkpoint.rules.map { it.id }).containsExactly("first", "last")
     }
 
     @Test
+    fun `getCheckpoint ignores the unused checkpoint id`() = runTest {
+        returnBlob(
+            "onboarding",
+            """
+            {
+              "id": { "unexpected": "shape" },
+              "rules": [
+                { "id": "rule", "audience_id": "aud-1", "workflow_id": "wf-1" }
+              ]
+            }
+            """.trimIndent(),
+        )
+
+        val checkpoint = requireNotNull(provider.getCheckpoint("onboarding"))
+
+        assertThat(checkpoint.rules.single().id).isEqualTo("rule")
+    }
+
+    @Test
     fun `getCheckpoint keeps a checkpoint with no rules`() = runTest {
-        returnBlob("onboarding", """{ "id": "chkpt_1" }""")
+        returnBlob("onboarding", "{}")
 
         val checkpoint = requireNotNull(provider.getCheckpoint("onboarding"))
 
         assertThat(checkpoint.identifier).isEqualTo("onboarding")
-        assertThat(checkpoint.id).isEqualTo("chkpt_1")
         assertThat(checkpoint.rules).isEmpty()
     }
 
