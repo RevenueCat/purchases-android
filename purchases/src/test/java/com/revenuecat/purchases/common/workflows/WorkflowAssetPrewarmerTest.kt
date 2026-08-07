@@ -22,7 +22,7 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.uiConfigWithFonts
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.utils.PaywallComponentsImagePreDownloader
+import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.utils.collectAssets
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -40,7 +40,7 @@ import java.net.URL
 class WorkflowAssetPrewarmerTest {
 
     private val mockUiConfigProvider: UiConfigProvider = mockk()
-    private val imagePreDownloader: PaywallComponentsImagePreDownloader = mockk(relaxed = true)
+    private val assetWarming: PaywallAssetWarming = mockk(relaxed = true)
     private val fontPreDownloader: OfferingFontPreDownloader = mockk(relaxed = true)
     private val uiConfig = emptyUiConfig()
     private lateinit var prewarmer: WorkflowAssetPrewarmer
@@ -52,17 +52,9 @@ class WorkflowAssetPrewarmerTest {
     fun setUp() {
         currentLogHandler = NoOpLogHandler
         coEvery { mockUiConfigProvider.getUiConfig() } returns uiConfig
-        // canUsePaywallUI is false in this module's tests (RevenueCatUI is not on the classpath), so the
-        // walk has to be enabled explicitly.
-        prewarmer = prewarmer(shouldCollectAssets = true)
+        every { assetWarming.isAvailable } returns true
+        prewarmer = WorkflowAssetPrewarmer(mockUiConfigProvider, assetWarming, fontPreDownloader)
     }
-
-    private fun prewarmer(shouldCollectAssets: Boolean) = WorkflowAssetPrewarmer(
-        uiConfigProvider = mockUiConfigProvider,
-        paywallComponentsImagePreDownloader = imagePreDownloader,
-        offeringFontPreDownloader = fontPreDownloader,
-        shouldCollectAssets = shouldCollectAssets,
-    )
 
     @After
     fun tearDown() {
@@ -71,16 +63,16 @@ class WorkflowAssetPrewarmerTest {
 
     // region render path (preDownloadWorkflowAssets)
 
-    // The walk decodes every screen's component tree. Without the paywalls SDK there is nothing to warm
-    // into, so doing it anyway is pure cost on the workflow load path.
+    // The walk decodes every screen's component tree. Without a warmer there is nothing to warm into, so
+    // doing it anyway is pure cost on the workflow load path.
     @Test
     fun `preDownloadWorkflowAssets skips the component walk but still downloads fonts when disabled`() {
-        val screenConfig = emptyComponentsConfig()
-        val workflow = createWorkflow("wf_1", screens = mapOf("screen_1" to createScreen(screenConfig)))
+        every { assetWarming.isAvailable } returns false
+        val workflow = createWorkflow("wf_1", screens = mapOf("screen_1" to createScreen(emptyComponentsConfig())))
 
-        prewarmer(shouldCollectAssets = false).preDownloadWorkflowAssets(workflow, uiConfig)
+        prewarmer.preDownloadWorkflowAssets(workflow, uiConfig)
 
-        verify(exactly = 0) { imagePreDownloader.preDownloadImages(any()) }
+        verify(exactly = 0) { assetWarming.warmImages(any()) }
         verify(exactly = 1) { fontPreDownloader.preDownloadFontsIfNeeded(uiConfig.app.fonts.values) }
     }
 
@@ -97,7 +89,7 @@ class WorkflowAssetPrewarmerTest {
 
         val fontsSlot = slot<Collection<UiConfig.AppConfig.FontsConfig>>()
         verify(exactly = 1) {
-            imagePreDownloader.preDownloadImages(screenConfig.collectAssets())
+            assetWarming.warmImages(screenConfig.collectAssets().imageUris)
             fontPreDownloader.preDownloadFontsIfNeeded(capture(fontsSlot))
         }
         assertThat(fontsSlot.captured).containsExactly(font)
@@ -111,7 +103,7 @@ class WorkflowAssetPrewarmerTest {
         prewarmer.preDownloadWorkflowAssets(workflow, uiConfig)
         prewarmer.preDownloadWorkflowAssets(workflow, uiConfig)
 
-        verify(exactly = 1) { imagePreDownloader.preDownloadImages(screenConfig.collectAssets()) }
+        verify(exactly = 1) { assetWarming.warmImages(screenConfig.collectAssets().imageUris) }
     }
 
     // endregion render path
@@ -125,7 +117,7 @@ class WorkflowAssetPrewarmerTest {
 
         prewarmer.onCurrentWorkflowLoaded("wf_1") { workflow }
 
-        verify(exactly = 1) { imagePreDownloader.preDownloadImages(screenConfig.collectAssets()) }
+        verify(exactly = 1) { assetWarming.warmImages(screenConfig.collectAssets().imageUris) }
         verify(exactly = 1) { fontPreDownloader.preDownloadFontsIfNeeded(any()) }
         coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
     }
