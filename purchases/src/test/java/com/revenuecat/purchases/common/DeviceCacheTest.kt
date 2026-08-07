@@ -682,7 +682,8 @@ class DeviceCacheTest {
         every {
             mockPrefs.getString(productEntitlementMappingCacheKey, null)
         } returns expectedMappings.toJson().toString()
-        assertThat(cache.getProductEntitlementMapping()).isEqualTo(expectedMappings.copy(loadedFromCache = true))
+        assertThat(cache.getProductEntitlementMapping())
+            .isEqualTo(expectedMappings.copy(originalSource = null, loadedFromCache = true))
     }
 
     @Test
@@ -696,7 +697,7 @@ class DeviceCacheTest {
         assertThat(JSONObject(cachedJsonSlot.captured).has("rc_original_source")).isFalse
 
         every { mockPrefs.getString(productEntitlementMappingCacheKey, null) } returns cachedJsonSlot.captured
-        assertThat(cache.getProductEntitlementMapping()?.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+        assertThat(cache.getProductEntitlementMapping()?.originalSource).isNull()
     }
 
     // endregion

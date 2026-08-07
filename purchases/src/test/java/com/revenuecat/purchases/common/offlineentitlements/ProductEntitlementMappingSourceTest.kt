@@ -119,21 +119,20 @@ class ProductEntitlementMappingSourceTest {
     }
 
     @Test
-    fun `productEntitlementMapping ignores originalSource in JSON, always defaults to MAIN`() {
+    fun `productEntitlementMapping ignores originalSource in JSON, always returns null`() {
         // originalSource is intentionally not persisted, so fromJson doesn't read it back even if
         // present, e.g. from a cache file written by an older SDK version.
         val mapping = ProductEntitlementMapping.fromJson(sampleResponseJsonWithSource, loadedFromCache = true)
 
-        assertThat(mapping.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+        assertThat(mapping.originalSource).isNull()
         assertThat(mapping.loadedFromCache).isTrue
     }
 
     @Test
-    fun `productEntitlementMapping defaults to MAIN when no source information provided`() {
-        // Create mapping without specifying source (should default to MAIN)
+    fun `productEntitlementMapping originalSource is null when no source information provided`() {
         val mapping = ProductEntitlementMapping.fromJson(sampleResponseJson)
 
-        assertThat(mapping.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+        assertThat(mapping.originalSource).isNull()
         assertThat(mapping.loadedFromCache).isFalse
     }
 

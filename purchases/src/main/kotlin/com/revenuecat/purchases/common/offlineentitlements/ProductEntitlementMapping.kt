@@ -12,7 +12,7 @@ import org.json.JSONObject
 @InternalRevenueCatAPI
 public data class ProductEntitlementMapping(
     val mappings: Map<String, Mapping>,
-    val originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
+    val originalSource: HTTPResponseOriginalSource? = null,
     val loadedFromCache: Boolean = false,
 ) {
     public companion object {
