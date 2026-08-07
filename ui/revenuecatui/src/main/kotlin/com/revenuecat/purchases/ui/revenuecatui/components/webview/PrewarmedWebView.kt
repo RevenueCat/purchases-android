@@ -14,23 +14,32 @@ internal class PrewarmedWebView(
     private val webView: PaywallWebView,
     val bridge: WebViewJavaScriptBridge,
     private val callbacks: PrewarmBridgeCallbacks,
-    val identity: WebViewIdentity,
+    val resolvedUrl: String,
     val cancellationSignal: CancellationSignal,
 ) {
 
     /**
      * Hands this view to the composition adopting it. It is already configured down to its
-     * document-start scripts, so only the callbacks need repointing; loading the prerendered URL
-     * activates the prerender rather than starting a fresh load.
+     * document-start scripts, so only the callbacks and the component config need repointing;
+     * loading the prerendered URL activates the prerender rather than starting a fresh load.
+     *
+     * The component config is applied *before* the load, because that load resets the handshake and
+     * the following `init`/`fit` must carry the adopting component's values, not the warmed one's.
      */
     @MainThread
     fun activateIn(
+        identity: WebViewIdentity,
         onContentResize: (widthCssPx: Int?, heightCssPx: Int?) -> Unit,
         onDocumentReset: () -> Unit,
         onLoadFailed: () -> Unit,
     ): FrameLayout {
         callbacks.rebind(onContentResize, onDocumentReset, onLoadFailed)
-        webView.loadUrl(identity.resolvedUrl)
+        bridge.rebindComponent(
+            componentId = identity.componentId,
+            sizeToContentWidth = identity.sizeToContentWidth,
+            sizeToContentHeight = identity.sizeToContentHeight,
+        )
+        webView.loadUrl(resolvedUrl)
         return webView.hostedInFrameLayout()
     }
 

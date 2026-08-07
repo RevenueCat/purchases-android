@@ -111,7 +111,7 @@ internal class PaywallWebViewPrewarmer {
             webView = configured.webView,
             bridge = configured.bridge,
             callbacks = callbacks,
-            identity = identity,
+            resolvedUrl = identity.resolvedUrl,
             cancellationSignal = CancellationSignal(),
         )
         return try {
@@ -120,7 +120,7 @@ internal class PaywallWebViewPrewarmer {
                 identity.resolvedUrl,
                 prewarmed.cancellationSignal,
                 ContextCompat.getMainExecutor(context),
-                PrerenderLogger(identity),
+                PrerenderLogger(identity.resolvedUrl),
             )
             prewarmed
         } catch (error: RuntimeException) {
@@ -131,19 +131,21 @@ internal class PaywallWebViewPrewarmer {
     }
 
     /**
-     * Hands the prewarmed WebView to the display factory, clearing the slot either way. A prewarmed
-     * view for a different component is destroyed rather than kept: the paywall being shown is not
+     * Hands the prewarmed WebView to the display factory, clearing the slot either way. Matching is
+     * on resolved URL alone, matching iOS: the component id and `Fit` axes are rebound at activation,
+     * so a view warmed for one component can serve any component pointing at the same bundle. A
+     * prewarmed view for a different URL is destroyed rather than kept: the paywall being shown is not
      * the one it was warmed for.
      */
     @MainThread
-    fun take(identity: WebViewIdentity): PrewarmedWebView? {
+    fun take(resolvedUrl: String): PrewarmedWebView? {
         val current = slot ?: return null
         slot = null
         mainHandler.removeCallbacks(releaseOnTimeout)
-        return if (current.identity == identity) {
+        return if (current.resolvedUrl == resolvedUrl) {
             current
         } else {
-            Logger.d("Paywalls V2 web_view prewarm discarded: held for a different component than requested.")
+            Logger.d("Paywalls V2 web_view prewarm discarded: held for a different URL than requested.")
             current.destroy()
             null
         }
@@ -158,14 +160,14 @@ internal class PaywallWebViewPrewarmer {
 
     // Inner, not nested: an async failure must release the slot it prerendered into, if that slot is
     // still the one this callback was created for (take() may have already cleared or replaced it).
-    private inner class PrerenderLogger(private val identity: WebViewIdentity) : PrerenderOperationCallback {
+    private inner class PrerenderLogger(private val resolvedUrl: String) : PrerenderOperationCallback {
         override fun onPrerenderActivated() {
-            Logger.d("Paywalls V2 web_view prerender activated for component '${identity.componentId}'.")
+            Logger.d("Paywalls V2 web_view prerender activated for '$resolvedUrl'.")
         }
 
         override fun onError(exception: PrerenderException) {
-            Logger.d("Paywalls V2 web_view prerender failed for component '${identity.componentId}': $exception")
-            if (slot?.identity == identity) {
+            Logger.d("Paywalls V2 web_view prerender failed for '$resolvedUrl': $exception")
+            if (slot?.resolvedUrl == resolvedUrl) {
                 releaseAll()
             }
         }

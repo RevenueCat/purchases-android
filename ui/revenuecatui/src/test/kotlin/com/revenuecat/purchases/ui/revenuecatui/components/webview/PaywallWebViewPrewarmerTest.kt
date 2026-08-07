@@ -74,7 +74,7 @@ internal class PaywallWebViewPrewarmerTest {
         val prewarmer = prewarmer()
         prewarmer.prewarm(context, URL, COMPONENT_ID)
 
-        assertThat(prewarmer.take(identity())).isNotNull()
+        assertThat(prewarmer.take(URL)).isNotNull()
     }
 
     @Test
@@ -85,7 +85,7 @@ internal class PaywallWebViewPrewarmerTest {
         prewarmer.prewarm(context, URL, COMPONENT_ID)
 
         assertNotPrerendered()
-        assertThat(prewarmer.take(identity())).isNull()
+        assertThat(prewarmer.take(URL)).isNull()
     }
 
     @Test
@@ -127,7 +127,7 @@ internal class PaywallWebViewPrewarmerTest {
         prewarmer.prewarm(context, URL, COMPONENT_ID)
 
         assertNotPrerendered()
-        assertThat(prewarmer.take(identity())).isNull()
+        assertThat(prewarmer.take(URL)).isNull()
     }
 
     @Test
@@ -139,7 +139,7 @@ internal class PaywallWebViewPrewarmerTest {
 
         prewarmer.prewarm(context, URL, COMPONENT_ID)
 
-        assertThat(prewarmer.take(identity())).isNull()
+        assertThat(prewarmer.take(URL)).isNull()
     }
 
     @Test
@@ -153,23 +153,33 @@ internal class PaywallWebViewPrewarmerTest {
 
         callback.captured.onError(mockk<PrerenderException>(relaxed = true))
 
-        assertThat(prewarmer.take(identity())).isNull()
+        assertThat(prewarmer.take(URL)).isNull()
     }
 
+    // Keyed on URL alone, matching iOS. The component id and Fit axes are rebound at activation, so a
+    // view warmed for one component serves any component pointing at the same bundle.
     @Test
-    fun `does not hand the view to a different component`() {
+    fun `hands the view to a different component with the same url`() {
         val prewarmer = prewarmer()
         prewarmer.prewarm(context, URL, COMPONENT_ID)
 
-        assertThat(prewarmer.take(identity(componentId = "other"))).isNull()
+        assertThat(prewarmer.take(URL)).isNotNull()
     }
 
     @Test
-    fun `does not hand the view to a component with different fit axes`() {
+    fun `hands the view to a component with different fit axes`() {
         val prewarmer = prewarmer()
         prewarmer.prewarm(context, URL, COMPONENT_ID, sizeToContentHeight = true)
 
-        assertThat(prewarmer.take(identity(sizeToContentHeight = false))).isNull()
+        assertThat(prewarmer.take(URL)).isNotNull()
+    }
+
+    @Test
+    fun `does not hand the view to a different url`() {
+        val prewarmer = prewarmer()
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
+
+        assertThat(prewarmer.take("https://example.com/other.html")).isNull()
     }
 
     @Test
@@ -177,8 +187,8 @@ internal class PaywallWebViewPrewarmerTest {
         val prewarmer = prewarmer()
         prewarmer.prewarm(context, URL, COMPONENT_ID)
 
-        assertThat(prewarmer.take(identity())).isNotNull()
-        assertThat(prewarmer.take(identity())).isNull()
+        assertThat(prewarmer.take(URL)).isNotNull()
+        assertThat(prewarmer.take(URL)).isNull()
     }
 
     @Test
@@ -189,7 +199,7 @@ internal class PaywallWebViewPrewarmerTest {
         prewarmer.prewarm(context, "https://example.com/other.html", "component-2")
 
         verify(exactly = 1) { WebViewCompat.prerenderUrlAsync(any(), any(), any(), any(), any()) }
-        assertThat(prewarmer.take(identity())).isNotNull()
+        assertThat(prewarmer.take(URL)).isNotNull()
     }
 
     @Test
@@ -199,7 +209,7 @@ internal class PaywallWebViewPrewarmerTest {
 
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(PaywallWebViewPrewarmer.HOLD_TIMEOUT_MS))
 
-        assertThat(prewarmer.take(identity())).isNull()
+        assertThat(prewarmer.take(URL)).isNull()
     }
 
     @Test
@@ -209,7 +219,7 @@ internal class PaywallWebViewPrewarmerTest {
 
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(PaywallWebViewPrewarmer.HOLD_TIMEOUT_MS - 1))
 
-        assertThat(prewarmer.take(identity())).isNotNull()
+        assertThat(prewarmer.take(URL)).isNotNull()
     }
 
     @Test
@@ -219,6 +229,6 @@ internal class PaywallWebViewPrewarmerTest {
 
         prewarmer.releaseAll()
 
-        assertThat(prewarmer.take(identity())).isNull()
+        assertThat(prewarmer.take(URL)).isNull()
     }
 }
