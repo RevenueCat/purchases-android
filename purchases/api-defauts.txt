@@ -906,24 +906,6 @@ package com.revenuecat.purchases.ads.events.types {
     property public final String UNKNOWN;
   }
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdRewardGrantedData {
-    ctor public AdRewardGrantedData(String? networkName, String mediatorName, String adFormat, String? placement, String adUnitId, String impressionId, com.revenuecat.purchases.VerifiedReward reward);
-    method public String getAdFormat();
-    method public String getAdUnitId();
-    method public String getImpressionId();
-    method public String getMediatorName();
-    method public String? getNetworkName();
-    method public String? getPlacement();
-    method public com.revenuecat.purchases.VerifiedReward getReward();
-    property public final String adFormat;
-    property public final String adUnitId;
-    property public final String impressionId;
-    property public final String mediatorName;
-    property public final String? networkName;
-    property public final String? placement;
-    property public final com.revenuecat.purchases.VerifiedReward reward;
-  }
-
   @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdRewardVerifiedData {
     ctor public AdRewardVerifiedData(String? networkName, String mediatorName, String adFormat, String? placement, String adUnitId, String impressionId);
     method public String getAdFormat();
