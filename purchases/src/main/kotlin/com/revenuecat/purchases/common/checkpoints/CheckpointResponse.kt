@@ -55,7 +55,6 @@ internal data class CheckpointResponse(
             val reason = when {
                 rule.audienceId.isEmpty() -> "missing 'audience'"
                 rule.workflowId.isEmpty() -> "missing 'workflow_id'"
-                rule.frequencyCap?.type?.isEmpty() == true -> "malformed 'frequency_cap'"
                 rule.schedule?.let { it.start == null && it.end == null } == true -> "malformed 'schedule'"
                 else -> null
             }
@@ -91,16 +90,7 @@ internal data class CheckpointRule(
     val audienceId: String,
     @SerialName("workflow_id")
     val workflowId: String,
-    @SerialName("frequency_cap")
-    val frequencyCap: CheckpointFrequencyCap? = null,
     val schedule: CheckpointRuleSchedule? = null,
-)
-
-@Serializable
-internal data class CheckpointFrequencyCap(
-    val type: String,
-    val count: Int? = null,
-    val window: String? = null,
 )
 
 @Serializable

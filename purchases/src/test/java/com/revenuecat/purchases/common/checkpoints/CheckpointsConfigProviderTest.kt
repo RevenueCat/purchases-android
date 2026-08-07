@@ -45,7 +45,6 @@ internal class CheckpointsConfigProviderTest {
                   "id": "chkptrule_first",
                   "audience": "aud_public_1",
                   "workflow_id": "wf_public_1",
-                  "frequency_cap": { "type": "once" },
                   "schedule": {
                     "start": "2026-11-25T00:00:00Z",
                     "end": "2026-11-30T00:00:00Z"
@@ -54,8 +53,7 @@ internal class CheckpointsConfigProviderTest {
                 {
                   "id": "chkptrule_second",
                   "audience": "aud_public_2",
-                  "workflow_id": "wf_public_2",
-                  "frequency_cap": { "type": "custom", "count": 3, "window": "P7D" }
+                  "workflow_id": "wf_public_2"
                 }
               ]
             }
@@ -70,14 +68,10 @@ internal class CheckpointsConfigProviderTest {
             .containsExactly("wf_public_1", "wf_public_2")
         assertThat(checkpoint.rules.first().id).isEqualTo("chkptrule_first")
         assertThat(checkpoint.rules.first().audienceId).isEqualTo("aud_public_1")
-        assertThat(checkpoint.rules.first().frequencyCap)
-            .isEqualTo(CheckpointFrequencyCap(type = "once"))
         assertThat(checkpoint.rules.first().schedule?.start)
             .isEqualTo(Iso8601Utils.parse("2026-11-25T00:00:00Z"))
         assertThat(checkpoint.rules.first().schedule?.end)
             .isEqualTo(Iso8601Utils.parse("2026-11-30T00:00:00Z"))
-        assertThat(checkpoint.rules.last().frequencyCap)
-            .isEqualTo(CheckpointFrequencyCap(type = "custom", count = 3, window = "P7D"))
         assertThat(checkpoint.rules.last().schedule).isNull()
     }
 
@@ -115,29 +109,17 @@ internal class CheckpointsConfigProviderTest {
     }
 
     @Test
-    fun `getCheckpoint skips rules with malformed frequency caps`() = runTest {
+    fun `getCheckpoint ignores unsupported frequency cap fields`() = runTest {
         returnBlob(
             "onboarding",
             """
             {
               "rules": [
                 {
-                  "id": "missing-type",
+                  "id": "rule",
                   "audience": "aud-1",
                   "workflow_id": "wf-1",
-                  "frequency_cap": { "count": 3 }
-                },
-                {
-                  "id": "wrong-count",
-                  "audience": "aud-2",
-                  "workflow_id": "wf-2",
-                  "frequency_cap": { "type": "custom", "count": "three" }
-                },
-                {
-                  "id": "valid",
-                  "audience": "aud-3",
-                  "workflow_id": "wf-3",
-                  "frequency_cap": null
+                  "frequency_cap": { "unsupported": true }
                 }
               ]
             }
@@ -146,8 +128,7 @@ internal class CheckpointsConfigProviderTest {
 
         val checkpoint = requireNotNull(provider.getCheckpoint("onboarding"))
 
-        assertThat(checkpoint.rules.map { it.id }).containsExactly("valid")
-        assertThat(checkpoint.rules.single().frequencyCap).isNull()
+        assertThat(checkpoint.rules.single().id).isEqualTo("rule")
     }
 
     @Test
