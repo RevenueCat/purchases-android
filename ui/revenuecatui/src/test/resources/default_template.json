@@ -22,7 +22,7 @@
     },
     "display_restore_purchases" : true,
     "images_webp" : {
-      "background" : "revenuecatui_default_paywall_background",
+      "background" : null,
       "header" : null,
       "icon" : "revenuecatui_default_paywall_app_icon"
     },

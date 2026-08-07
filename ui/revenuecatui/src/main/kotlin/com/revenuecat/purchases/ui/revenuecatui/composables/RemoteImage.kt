@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.composables
 
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
@@ -30,29 +29,6 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPreviewImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getPreviewPlaceholderBlocking
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
-
-@SuppressWarnings("LongParameterList")
-@Composable
-internal fun LocalImage(
-    @DrawableRes resource: Int,
-    modifier: Modifier = Modifier,
-    contentScale: ContentScale = ContentScale.Fit,
-    contentDescription: String? = null,
-    transformation: Transformation? = null,
-    alpha: Float = 1f,
-    colorFilter: ColorFilter? = null,
-) {
-    Image(
-        source = ImageSource.Local(resource),
-        placeholderSource = null,
-        modifier = modifier,
-        contentScale = contentScale,
-        contentDescription = contentDescription,
-        transformation = transformation,
-        alpha = alpha,
-        colorFilter = colorFilter,
-    )
-}
 
 /**
  * @param supportImagePreview: set to false to not show any image in previews and just a colored box. This is to avoid
@@ -86,15 +62,11 @@ internal fun RemoteImage(
 private sealed class ImageSource {
 
     @Immutable
-    data class Local(@DrawableRes val resource: Int) : ImageSource() {
-        override val data: Any = resource
-    }
-
-    @Immutable
-    data class Remote(val urlString: String) : ImageSource() {
+    data class Remote(override val urlString: String) : ImageSource() {
         override val data: Any = urlString
     }
 
+    abstract val urlString: String
     abstract val data: Any
 }
 
@@ -197,12 +169,7 @@ private fun AsyncImage(
         alpha = alpha,
         colorFilter = colorFilter,
         onError = {
-            val error = when (source) {
-                is ImageSource.Local -> "Error loading local image: '${source.resource}'"
-                is ImageSource.Remote -> "Error loading image from '${source.urlString}'"
-            }
-
-            Logger.e(error, it.result.throwable)
+            Logger.e("Error loading image from '${source.urlString}'", it.result.throwable)
             onError?.invoke(it)
         },
     )
