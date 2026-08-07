@@ -111,8 +111,8 @@ internal class CheckpointsConfigProviderTest {
     }
 
     @Test
-    fun `checkpoint payload deserialization isolates malformed rules`() {
-        val payload = JsonTools.json.decodeFromString<CheckpointPayload>(
+    fun `checkpoint response deserialization isolates malformed rules`() {
+        val decodedCheckpoint = JsonTools.json.decodeFromString<CheckpointResponse>(
             """
             {
               "id": "chkpt_1",
@@ -126,8 +126,9 @@ internal class CheckpointsConfigProviderTest {
             """.trimIndent(),
         )
 
-        val checkpoint = payload.toCheckpointResponse("onboarding")
+        val checkpoint = decodedCheckpoint.copy(identifier = "onboarding")
 
+        assertThat(decodedCheckpoint.identifier).isEmpty()
         assertThat(checkpoint.identifier).isEqualTo("onboarding")
         assertThat(checkpoint.id).isEqualTo("chkpt_1")
         assertThat(checkpoint.rules.map { it.id }).containsExactly("first", "last")
@@ -229,7 +230,7 @@ internal class CheckpointsConfigProviderTest {
             manager.blobData(
                 RemoteConfigTopic.Checkpoints,
                 "missing",
-                any<(ByteArray) -> CheckpointPayload?>(),
+                any<(ByteArray) -> CheckpointResponse?>(),
             )
         } returns null
 
@@ -255,10 +256,10 @@ internal class CheckpointsConfigProviderTest {
             manager.blobData(
                 RemoteConfigTopic.Checkpoints,
                 identifier,
-                any<(ByteArray) -> CheckpointPayload?>(),
+                any<(ByteArray) -> CheckpointResponse?>(),
             )
         } answers {
-            thirdArg<(ByteArray) -> CheckpointPayload?>().invoke(json.toByteArray())
+            thirdArg<(ByteArray) -> CheckpointResponse?>().invoke(json.toByteArray())
         }
     }
 }

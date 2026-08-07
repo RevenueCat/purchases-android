@@ -6,6 +6,7 @@ import com.revenuecat.purchases.utils.serializers.ISO8601DateSerializer
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
@@ -18,21 +19,14 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import java.util.Date
 import kotlinx.serialization.SerializationException as JsonSerializationException
 
-internal data class CheckpointResponse(
-    val identifier: String,
-    val id: String?,
-    val rules: List<CheckpointRule>,
-)
-
 @Serializable
-internal data class CheckpointPayload(
+internal data class CheckpointResponse(
+    @Transient
+    val identifier: String = "",
     val id: String? = null,
     @Serializable(with = CheckpointRulesSerializer::class)
     val rules: List<CheckpointRule> = emptyList(),
-) {
-    internal fun toCheckpointResponse(identifier: String): CheckpointResponse =
-        CheckpointResponse(identifier = identifier, id = id, rules = rules)
-}
+)
 
 @Serializable
 internal data class CheckpointRule(
