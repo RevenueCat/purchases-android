@@ -937,6 +937,18 @@ jobs:
           name: Verify purchases-ui target SDK (34)
           command: ./gradlew :test-apps:testpurchasesuiandroidcompatibility:assembleDebug --no-daemon --parallel
 
+  assemble-checkpoint-tester:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - attach_workspace:
+          at: .
+      - install-mise-tools
+      - android/restore_gradle_cache
+      - run:
+          name: Assemble checkpoint tester
+          command: ./gradlew :examples:checkpointtester:assembleDebug --no-daemon --parallel
+
 workflows:
   version: 2
   danger:
@@ -1027,6 +1039,9 @@ workflows:
           requires:
             - prepare-tests
       - assemble-admob-integration-sample-app:
+          requires:
+            - prepare-tests
+      - assemble-checkpoint-tester:
           requires:
             - prepare-tests
       - test_dokka_hide_internal:
