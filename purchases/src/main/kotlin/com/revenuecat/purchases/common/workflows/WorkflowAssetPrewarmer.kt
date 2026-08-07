@@ -43,9 +43,9 @@ internal class WorkflowAssetPrewarmer(
             if (!warmedWorkflowIds.add(workflow.id)) return
         }
         if (assetWarming.isAvailable) {
-            workflow.screens.values.forEach { screen ->
-                assetWarming.warmImages(screen.componentsConfig.base.collectAssets().imageUris)
-            }
+            val assets = workflow.screens.values.map { it.componentsConfig.base.collectAssets() }
+            assets.forEach { assetWarming.warmImages(it.imageUris) }
+            if (assets.any { it.webViews.isNotEmpty() }) assetWarming.prebootWebView()
         }
         offeringFontPreDownloader.preDownloadFontsIfNeeded(uiConfig.app.fonts.values)
     }

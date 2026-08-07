@@ -19,8 +19,13 @@ class PaywallAssetWarmingTest {
 
     private class RecordingWarmer : PaywallAssetWarmer {
         val warmed = mutableListOf<Uri>()
+        var prebootCount = 0
         override fun warmImages(context: Context, imageUris: List<Uri>) {
             warmed.addAll(imageUris)
+        }
+
+        override fun prebootWebView(context: Context) {
+            prebootCount++
         }
     }
 
@@ -58,12 +63,28 @@ class PaywallAssetWarmingTest {
     }
 
     @Test
+    fun `preboots the web view through the registered warmer`() {
+        val warmer = RecordingWarmer()
+
+        warming(warmer).prebootWebView()
+
+        assertThat(warmer.prebootCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `does not preboot when nothing is registered`() {
+        warming(warmer = null).prebootWebView()
+    }
+
+    @Test
     fun `does not propagate a failure from the warmer`() {
         val throwingWarmer = object : PaywallAssetWarmer {
             override fun warmImages(context: Context, imageUris: List<Uri>) = throw RuntimeException("boom")
+            override fun prebootWebView(context: Context) = throw RuntimeException("boom")
         }
 
         warming(throwingWarmer).warmImages(listOf(uri))
+        warming(throwingWarmer).prebootWebView()
     }
 
     @Test
