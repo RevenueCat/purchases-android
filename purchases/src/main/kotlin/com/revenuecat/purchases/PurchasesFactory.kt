@@ -19,6 +19,7 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SharedPreferencesManager
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
+import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsHelper
@@ -342,6 +343,9 @@ internal class PurchasesFactory(
                     onCurrentWorkflowLoaded = workflowAssetPrewarmer?.let { it::onCurrentWorkflowLoaded },
                 )
             }
+            val checkpointsConfigProvider = remoteConfigManager?.let {
+                CheckpointsConfigProvider(it)
+            }
             if (remoteConfigManager != null && uiConfigProvider != null && workflowsConfigProvider != null) {
                 remoteConfigManager.registerListener(uiConfigProvider)
                 remoteConfigManager.registerListener(workflowsConfigProvider)
@@ -546,6 +550,7 @@ internal class PurchasesFactory(
                 remoteConfigManager = remoteConfigManager,
                 uiConfigProvider = uiConfigProvider,
                 workflowsConfigProvider = workflowsConfigProvider,
+                checkpointsConfigProvider = checkpointsConfigProvider,
             )
 
             return Purchases(purchasesOrchestrator)

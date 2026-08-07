@@ -3,9 +3,12 @@ package com.revenuecat.purchases.common.checkpoints
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.NoOpLogHandler
 import com.revenuecat.purchases.common.currentLogHandler
+import com.revenuecat.purchases.common.remoteconfig.ConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.decodeFromString
@@ -22,6 +25,8 @@ internal class CheckpointsConfigProviderTest {
     @Before
     fun setup() {
         currentLogHandler = NoOpLogHandler
+        every { manager.isDisabled } returns false
+        coEvery { manager.committedTopicOrNull(RemoteConfigTopic.CheckpointRules) } returns null
     }
 
     @After
@@ -35,7 +40,7 @@ internal class CheckpointsConfigProviderTest {
     }
 
     @Test
-    fun `getCheckpoint returns the parsed backend payload unchanged`() = runTest {
+    fun `resolveCheckpoint returns the parsed backend payload unchanged`() = runTest {
         returnBlob(
             "app_open",
             """
@@ -56,9 +61,7 @@ internal class CheckpointsConfigProviderTest {
             """.trimIndent(),
         )
 
-        val checkpoint = requireNotNull(provider.getCheckpoint("app_open"))
-
-        assertThat(checkpoint).isEqualTo(
+        assertThat(checkpoint("app_open")).isEqualTo(
             CheckpointResponse(
                 rules = listOf(
                     CheckpointRule(
@@ -77,7 +80,7 @@ internal class CheckpointsConfigProviderTest {
     }
 
     @Test
-    fun `getCheckpoint isolates malformed rules and preserves valid rule order`() = runTest {
+    fun `resolveCheckpoint isolates malformed rules and preserves valid rule order`() = runTest {
         returnBlob(
             "onboarding",
             """
@@ -103,7 +106,7 @@ internal class CheckpointsConfigProviderTest {
             """.trimIndent(),
         )
 
-        val checkpoint = requireNotNull(provider.getCheckpoint("onboarding"))
+        val checkpoint = checkpoint("onboarding")
 
         assertThat(checkpoint.rules.map { it.id }).containsExactly("first", "last")
         assertThat(checkpoint.rules.map { it.workflowId }).containsExactly("wf-first", "wf-last")
@@ -128,7 +131,7 @@ internal class CheckpointsConfigProviderTest {
     }
 
     @Test
-    fun `getCheckpoint ignores the unused checkpoint id`() = runTest {
+    fun `resolveCheckpoint ignores the unused checkpoint id`() = runTest {
         returnBlob(
             "onboarding",
             """
@@ -141,45 +144,80 @@ internal class CheckpointsConfigProviderTest {
             """.trimIndent(),
         )
 
-        val checkpoint = requireNotNull(provider.getCheckpoint("onboarding"))
-
-        assertThat(checkpoint.rules.single().id).isEqualTo("rule")
+        assertThat(checkpoint("onboarding").rules.single().id).isEqualTo("rule")
     }
 
     @Test
-    fun `getCheckpoint keeps a checkpoint with no rules`() = runTest {
+    fun `resolveCheckpoint keeps a checkpoint with no rules`() = runTest {
         returnBlob("onboarding", "{}")
 
-        val checkpoint = requireNotNull(provider.getCheckpoint("onboarding"))
-
-        assertThat(checkpoint.rules).isEmpty()
+        assertThat(checkpoint("onboarding").rules).isEmpty()
     }
 
     @Test
-    fun `getCheckpoint returns null when the checkpoint is unavailable`() = runTest {
+    fun `resolveCheckpoint reports NotConfigured when the topic is absent`() = runTest {
+        returnNoBlob("missing")
+
+        assertThat(provider.resolveCheckpoint("missing")).isEqualTo(CheckpointRulesResolution.NotConfigured)
+    }
+
+    @Test
+    fun `resolveCheckpoint reports NotConfigured when the topic carries no item for the identifier`() = runTest {
+        returnNoBlob("missing")
+        commitTopicWith("app_open")
+
+        assertThat(provider.resolveCheckpoint("missing")).isEqualTo(CheckpointRulesResolution.NotConfigured)
+    }
+
+    @Test
+    fun `resolveCheckpoint reports Disabled when the endpoint is disabled`() = runTest {
+        returnNoBlob("app_open")
+        every { manager.isDisabled } returns true
+
+        assertThat(provider.resolveCheckpoint("app_open")).isEqualTo(CheckpointRulesResolution.Disabled)
+    }
+
+    @Test
+    fun `resolveCheckpoint reports Unavailable when a committed checkpoint's blob cannot be resolved`() = runTest {
+        returnNoBlob("app_open")
+        commitTopicWith("app_open")
+
+        assertThat(provider.resolveCheckpoint("app_open")).isEqualTo(CheckpointRulesResolution.Unavailable)
+    }
+
+    @Test
+    fun `resolveCheckpoint reports Unavailable for a malformed checkpoint`() = runTest {
+        returnBlob("malformed", "not-json")
+        commitTopicWith("malformed")
+
+        assertThat(provider.resolveCheckpoint("malformed")).isEqualTo(CheckpointRulesResolution.Unavailable)
+    }
+
+    @Test
+    fun `resolveCheckpoint reports Unavailable for a checkpoint that is not an object`() = runTest {
+        returnBlob("malformed", """["not", "an", "object"]""")
+        commitTopicWith("malformed")
+
+        assertThat(provider.resolveCheckpoint("malformed")).isEqualTo(CheckpointRulesResolution.Unavailable)
+    }
+
+    private suspend fun checkpoint(identifier: String): CheckpointResponse =
+        (provider.resolveCheckpoint(identifier) as CheckpointRulesResolution.Found).checkpoint
+
+    private fun commitTopicWith(identifier: String) {
+        coEvery { manager.committedTopicOrNull(RemoteConfigTopic.CheckpointRules) } returns ConfigTopic(
+            mapOf(identifier to RemoteConfiguration.ConfigItem(blobRef = "blob_$identifier")),
+        )
+    }
+
+    private fun returnNoBlob(identifier: String) {
         coEvery {
             manager.blobData(
                 RemoteConfigTopic.CheckpointRules,
-                "missing",
+                identifier,
                 any<(ByteArray) -> CheckpointResponse?>(),
             )
         } returns null
-
-        assertThat(provider.getCheckpoint("missing")).isNull()
-    }
-
-    @Test
-    fun `getCheckpoint returns null for a malformed checkpoint`() = runTest {
-        returnBlob("malformed", "not-json")
-
-        assertThat(provider.getCheckpoint("malformed")).isNull()
-    }
-
-    @Test
-    fun `getCheckpoint returns null for a checkpoint that is not an object`() = runTest {
-        returnBlob("malformed", """["not", "an", "object"]""")
-
-        assertThat(provider.getCheckpoint("malformed")).isNull()
     }
 
     private fun returnBlob(identifier: String, json: String) {

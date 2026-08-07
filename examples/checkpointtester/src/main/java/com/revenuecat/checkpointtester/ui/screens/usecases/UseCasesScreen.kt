@@ -53,7 +53,8 @@ private val INLINE_USE_CASES = listOf(
     InlineUseCase(
         identifier = "unknown_checkpoint",
         title = "No action",
-        description = "Resolves without presenting anything. Expect NoAction with reason NO_MATCH.",
+        description = "An identifier the dashboard doesn't know about. " +
+            "Resolves without presenting anything. Expect NoAction with reason UNKNOWN_CHECKPOINT.",
     ),
     InlineUseCase(
         identifier = "error_checkpoint",
