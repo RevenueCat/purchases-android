@@ -5,10 +5,10 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.awaitCheckpoint
-import com.revenuecat.purchases.checkpoints.CheckpointParams
-import com.revenuecat.purchases.checkpoints.CheckpointPaywallOutcome
-import com.revenuecat.purchases.checkpoints.CheckpointResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.awaitCheckpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

@@ -22,7 +22,7 @@ import com.revenuecat.checkpointtester.checkpoints.CheckpointEventLog
 import com.revenuecat.checkpointtester.ui.theme.CheckpointTesterTheme
 
 /**
- * Renders what the app-wide [com.revenuecat.purchases.checkpoints.CheckpointListener] registered in
+ * Renders what the app-wide [com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointListener] registered in
  * MainApplication observed, so hits and results are visible regardless of which screen triggered them.
  */
 @Composable

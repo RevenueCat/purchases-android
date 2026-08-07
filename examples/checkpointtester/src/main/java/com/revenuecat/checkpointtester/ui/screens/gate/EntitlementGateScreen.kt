@@ -26,7 +26,7 @@ fun EntitlementGateScreen(
 ) {
     val state by viewModel.state.collectAsState()
 
-    LaunchedEffect(Unit) { viewModel.refresh() }
+    LaunchedEffect(Unit) { viewModel.refreshIfNeeded() }
 
     Column(
         modifier = modifier
@@ -36,7 +36,8 @@ fun EntitlementGateScreen(
     ) {
         Text(
             text = "Reads CustomerInfo first and only hits 'entitlement_gate' when no entitlement is active. " +
-                "After the paywall it re-reads CustomerInfo, so a purchase flips the state below.",
+                "A purchase or restore carries its own CustomerInfo on the outcome, so the state below " +
+                "flips without a second fetch.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

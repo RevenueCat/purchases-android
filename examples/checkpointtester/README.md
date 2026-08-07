@@ -53,7 +53,8 @@ changes a banner, showing that a soft paywall never blocks.
 step. It always advances, whatever the outcome, and shows the result on the final step.
 
 **Entitlement gate** — the closest to a real integration. Reads `CustomerInfo` first and only hits
-`entitlement_gate` when nothing is active, then re-reads `CustomerInfo` so a purchase visibly flips the gate.
+`entitlement_gate` when nothing is active. A `Purchased` or `Restored` outcome carries its own
+`CustomerInfo`, so the gate visibly flips off that result with no second fetch.
 
 **No action / Simulated error** — run inline from the use-case list using the two deterministic identifiers above.
 

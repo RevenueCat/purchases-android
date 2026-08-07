@@ -2,10 +2,10 @@ package com.revenuecat.checkpointtester.checkpoints
 
 import android.util.Log
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.checkpoints.CheckpointInfo
-import com.revenuecat.purchases.checkpoints.CheckpointListener
-import com.revenuecat.purchases.checkpoints.CheckpointPaywallOutcome
-import com.revenuecat.purchases.checkpoints.CheckpointResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointInfo
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointListener
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

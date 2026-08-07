@@ -6,6 +6,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpointListener
 
 class MainApplication : Application() {
 

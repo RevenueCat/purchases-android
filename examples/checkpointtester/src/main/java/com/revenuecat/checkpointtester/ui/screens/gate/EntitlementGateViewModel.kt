@@ -7,11 +7,11 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.awaitCheckpoint
 import com.revenuecat.purchases.awaitCustomerInfo
-import com.revenuecat.purchases.checkpoints.CheckpointParams
-import com.revenuecat.purchases.checkpoints.CheckpointPaywallOutcome
-import com.revenuecat.purchases.checkpoints.CheckpointResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.awaitCheckpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,15 +32,22 @@ class EntitlementGateViewModel : ViewModel() {
         val running: Boolean = false,
         val message: String? = null,
         val checkpointSkipped: Boolean = false,
+        val hasRun: Boolean = false,
     )
 
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state.asStateFlow()
 
+    fun refreshIfNeeded() {
+        if (!_state.value.hasRun) refresh()
+    }
+
     @OptIn(InternalRevenueCatAPI::class)
     fun refresh() {
         if (_state.value.loading || _state.value.running) return
-        _state.update { it.copy(loading = true, customerInfoError = null, checkpointSkipped = false) }
+        _state.update {
+            it.copy(loading = true, customerInfoError = null, checkpointSkipped = false, hasRun = true)
+        }
         viewModelScope.launch {
             val customerInfo = try {
                 Purchases.sharedInstance.awaitCustomerInfo(CacheFetchPolicy.FETCH_CURRENT)
