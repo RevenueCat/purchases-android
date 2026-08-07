@@ -31,7 +31,7 @@ internal class CheckpointsConfigProviderTest {
 
     @Test
     fun `checkpoints use the backend checkpoint_rules topic`() {
-        assertThat(RemoteConfigTopic.Checkpoints.wireName).isEqualTo("checkpoint_rules")
+        assertThat(RemoteConfigTopic.CheckpointRules.wireName).isEqualTo("checkpoint_rules")
     }
 
     @Test
@@ -153,7 +153,7 @@ internal class CheckpointsConfigProviderTest {
     fun `getCheckpoint returns null when the checkpoint is unavailable`() = runTest {
         coEvery {
             manager.blobData(
-                RemoteConfigTopic.Checkpoints,
+                RemoteConfigTopic.CheckpointRules,
                 "missing",
                 any<(ByteArray) -> CheckpointResponse?>(),
             )
@@ -179,7 +179,7 @@ internal class CheckpointsConfigProviderTest {
     private fun returnBlob(identifier: String, json: String) {
         coEvery {
             manager.blobData(
-                RemoteConfigTopic.Checkpoints,
+                RemoteConfigTopic.CheckpointRules,
                 identifier,
                 any<(ByteArray) -> CheckpointResponse?>(),
             )
