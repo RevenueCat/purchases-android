@@ -1,7 +1,11 @@
 @file:JvmSynthetic
+// This file is the single home for the paywall WebView extensions; keeping the shared builder here
+// is what lets configure() stay private.
+@file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
+import android.content.Context
 import android.graphics.Color
 import android.view.View
 import android.view.ViewGroup
@@ -42,7 +46,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 @JvmSynthetic
 @Composable
-@Suppress("LongMethod", "ReturnCount")
+@Suppress("LongMethod", "ReturnCount", "CyclomaticComplexMethod")
 internal fun WebViewComponentView(
     style: WebViewComponentStyle,
     state: PaywallState.Loaded.Components,
@@ -116,55 +120,39 @@ internal fun WebViewComponentView(
         if (!loadFailed) {
             AndroidView(
                 factory = { context ->
-                    val webView = PaywallWebView(context).apply {
-                        applyFullSizeLayoutParams()
-                        // Must precede attach()/loadUrl: setProfile throws once the WebView has been used.
-                        applyPaywallProfile()
-                        val bridge = WebViewJavaScriptBridge(
-                            webView = this,
-                            componentId = componentId,
-                            expectedUrl = resolvedUrl,
-                            sizeToContentWidth = sizeToContentWidth,
-                            sizeToContentHeight = sizeToContentHeight,
-                            onContentResize = { widthCssPx, heightCssPx ->
-                                widthCssPx?.takeIf { it > 0 }?.let { contentWidthCssPx = it }
-                                heightCssPx?.takeIf { it > 0 }?.let { contentHeightCssPx = it }
-                            },
-                            onDocumentReset = {
-                                contentWidthCssPx = 0
-                                contentHeightCssPx = 0
-                            },
-                            onSecureMessagingUnsupported = { loadFailed = true },
-                        ).also { createdBridge -> createdBridge.attach() }
-                        bridgeHolder.bridge = bridge
-                        // attach() may synchronously flag terminal failure (secure messaging
-                        // unsupported); don't start a JS-enabled load we're about to tear down.
-                        if (!loadFailed) {
-                            configure(
-                                expectedOrigin = resolvedUrl.toOriginOrNull(),
-                                onMainFrameNavigationStarted = {
-                                    bridgeHolder.bridge?.onMainFrameNavigationStarted()
-                                },
-                                onMainFrameLoadFailed = { loadFailed = true },
-                            )
-                            installGestureOwnershipProbe(
-                                expectedOrigin = resolvedUrl.toOriginOrNull(),
-                            ) { wantsGesture -> this@apply.onContentGestureVerdict(wantsGesture) }
-                            loadUrl(resolvedUrl)
-                        }
+                    val onContentResize: (Int?, Int?) -> Unit = { widthCssPx, heightCssPx ->
+                        widthCssPx?.takeIf { it > 0 }?.let { contentWidthCssPx = it }
+                        heightCssPx?.takeIf { it > 0 }?.let { contentHeightCssPx = it }
                     }
-                    webView.hostedInFrameLayout()
+                    val onDocumentReset: () -> Unit = {
+                        contentWidthCssPx = 0
+                        contentHeightCssPx = 0
+                    }
+                    val onLoadFailed: () -> Unit = { loadFailed = true }
+                    val prewarmed = PaywallWebViewPrewarmer.shared.take(identity)
+                    if (prewarmed != null) {
+                        bridgeHolder.bridge = prewarmed.bridge
+                        prewarmed.activateIn(onContentResize, onDocumentReset, onLoadFailed)
+                    } else {
+                        val configured = createPaywallWebView(
+                            context = context,
+                            identity = identity,
+                            onContentResize = onContentResize,
+                            onDocumentReset = onDocumentReset,
+                            onLoadFailed = onLoadFailed,
+                        )
+                        bridgeHolder.bridge = configured?.bridge
+                        // A null result means secure messaging is unsupported, which onLoadFailed has
+                        // already flagged; never start a JS-enabled load we are about to tear down.
+                        configured?.webView?.apply { loadUrl(resolvedUrl) }?.hostedInFrameLayout()
+                            ?: FrameLayout(context)
+                    }
                 },
                 onRelease = { container ->
-                    val webView = (container as FrameLayout).getChildAt(0) as WebView
                     // Only release the bridge that this view installed into this holder.
                     val bridge = bridgeHolder.bridge
                     bridgeHolder.bridge = null
-                    bridge?.release()
-                    webView.removeGestureOwnershipProbe()
-                    webView.stopLoading()
-                    webView.webViewClient = WebViewClient()
-                    webView.destroy()
+                    ((container as FrameLayout).getChildAt(0) as? WebView)?.releasePaywallWebView(bridge)
                 },
                 // Clip: content can briefly overflow while a fit axis animates placeholder -> measured.
                 modifier = modifier
@@ -229,6 +217,71 @@ internal fun resolveAxis(
 /** Holds the per-WebView bridge so factory and onRelease share one instance. */
 internal class WebViewBridgeHolder {
     var bridge: WebViewJavaScriptBridge? = null
+}
+
+internal class ConfiguredPaywallWebView(
+    val webView: PaywallWebView,
+    val bridge: WebViewJavaScriptBridge,
+)
+
+/**
+ * Builds a paywall WebView and its bridge in the one order that works, shared by the display path
+ * and by prewarming so the two cannot drift: a prewarmed view is adopted on identity alone, so any
+ * configuration only one of them applied would silently reach the screen.
+ *
+ * Returns null when the bridge cannot install secure messaging, which is terminal: [onLoadFailed]
+ * has fired and the caller must not start a load. The webView and bridge are already released and
+ * destroyed at that point; a null result needs no teardown from the caller.
+ */
+internal fun createPaywallWebView(
+    context: Context,
+    identity: WebViewIdentity,
+    onContentResize: (widthCssPx: Int?, heightCssPx: Int?) -> Unit,
+    onDocumentReset: () -> Unit,
+    onLoadFailed: () -> Unit,
+): ConfiguredPaywallWebView? {
+    var terminalFailure = false
+    val expectedOrigin = identity.resolvedUrl.toOriginOrNull()
+    val webView = PaywallWebView(context)
+    webView.applyFullSizeLayoutParams()
+    // Must precede attach()/loadUrl: setProfile throws once the WebView has been used.
+    webView.applyPaywallProfile()
+    val bridge = WebViewJavaScriptBridge(
+        webView = webView,
+        componentId = identity.componentId,
+        expectedUrl = identity.resolvedUrl,
+        sizeToContentWidth = identity.sizeToContentWidth,
+        sizeToContentHeight = identity.sizeToContentHeight,
+        onContentResize = onContentResize,
+        onDocumentReset = onDocumentReset,
+        onSecureMessagingUnsupported = {
+            terminalFailure = true
+            onLoadFailed()
+        },
+    )
+    bridge.attach()
+    if (terminalFailure) {
+        bridge.release()
+        webView.destroy()
+        return null
+    }
+    webView.configure(
+        expectedOrigin = expectedOrigin,
+        onMainFrameNavigationStarted = bridge::onMainFrameNavigationStarted,
+        onMainFrameLoadFailed = onLoadFailed,
+    )
+    webView.installGestureOwnershipProbe(expectedOrigin, webView::onContentGestureVerdict)
+    return ConfiguredPaywallWebView(webView, bridge)
+}
+
+/** Teardown for a paywall WebView, whether it was displayed or only prewarmed. */
+internal fun WebView.releasePaywallWebView(bridge: WebViewJavaScriptBridge?) {
+    bridge?.release()
+    removeGestureOwnershipProbe()
+    stopLoading()
+    // Drop PaywallWebViewClient so a late callback cannot fire into a destroyed view.
+    webViewClient = WebViewClient()
+    destroy()
 }
 
 // A hardware WebView drawn while fully off-screen (e.g. a non-visible carousel page) composites its GL
