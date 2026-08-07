@@ -33,8 +33,13 @@ android {
 
         buildConfigField(
             "String",
-            "WORKFLOWS_API_KEY",
-            "\"${resolveProperty("E2E_WORKFLOWS_API_KEY", "workflows_api_key_to_replace")}\"",
+            "API_KEY",
+            "\"${resolveProperty("E2E_API_KEY", "api_key_to_replace")}\"",
+        )
+        buildConfigField(
+            "boolean",
+            "CONFIGURE_PURCHASES_ON_FIRST_ACTIVITY",
+            resolveProperty("E2E_CONFIGURE_PURCHASES_ON_FIRST_ACTIVITY", "false").toBoolean().toString(),
         )
     }
 
