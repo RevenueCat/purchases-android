@@ -42,6 +42,8 @@ internal class OfferingImagePreDownloader(
             errorLog(error) { "Error deserializing paywall components data. Skipping V2 image pre-download." }
             return
         }.componentsConfig.base
-        assetWarming.warmImages(componentsConfig.collectAssets().imageUris)
+        val assets = componentsConfig.collectAssets()
+        assetWarming.warmImages(assets.imageUris)
+        if (assets.webViews.isNotEmpty()) assetWarming.prebootWebView()
     }
 }
