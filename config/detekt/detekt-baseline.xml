@@ -75,6 +75,7 @@
     <ID>ForbiddenPublicSealedClass:PurchaseLogic.kt$PurchaseLogicResult</ID>
     <ID>ForbiddenPublicSealedClass:Purchases.kt$Purchases$DeepLink</ID>
     <ID>ForbiddenPublicSealedClass:RedeemWebPurchaseListener.kt$RedeemWebPurchaseListener$Result</ID>
+    <ID>LargeClass:Purchases.kt$Purchases : LifecycleDelegate</ID>
     <ID>LongMethod:EventsManager.kt$EventsManager$@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class) @Synchronized fun track(event: FeatureEvent)</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$120</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$20</ID>

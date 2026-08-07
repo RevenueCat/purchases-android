@@ -36,7 +36,7 @@ package com.revenuecat.purchases {
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitGetVirtualCurrencies(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesTransactionException::class) public static suspend Object? awaitLogIn(com.revenuecat.purchases.Purchases, String appUserID, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.data.LogInResult>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesTransactionException::class) public static suspend Object? awaitLogOut(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.CustomerInfo>);
-    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static suspend Object? awaitPollRewardVerification(com.revenuecat.purchases.Purchases, String clientTransactionId, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult>);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static suspend Object? awaitPollRewardVerification(com.revenuecat.purchases.Purchases, String clientTransactionId, optional com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata? trackingMetadata, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult>);
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitSetAppstackAttributionParams(com.revenuecat.purchases.Purchases, java.util.Map<java.lang.String,java.lang.String> data, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.Offerings>);
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitStorefrontLocale(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super java.util.Locale>) throws com.revenuecat.purchases.PurchasesException;
     method @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitSyncAttributesAndOfferingsIfNeeded(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.Offerings>);
@@ -428,6 +428,7 @@ package com.revenuecat.purchases {
     method public static com.revenuecat.purchases.WebPurchaseRedemption? parseAsWebPurchaseRedemption(android.content.Intent intent);
     method public static com.revenuecat.purchases.WebPurchaseRedemption? parseAsWebPurchaseRedemption(String string);
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public void pollRewardVerification(String clientTransactionId, com.revenuecat.purchases.interfaces.PollRewardVerificationCallback callback);
+    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public void pollRewardVerification(String clientTransactionId, com.revenuecat.purchases.interfaces.PollRewardVerificationCallback callback, optional com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata? trackingMetadata);
     method public void purchase(com.revenuecat.purchases.PurchaseParams purchaseParams, com.revenuecat.purchases.interfaces.PurchaseCallback callback);
     method @Deprecated public void purchasePackage(android.app.Activity activity, com.revenuecat.purchases.Package packageToPurchase, com.revenuecat.purchases.interfaces.PurchaseCallback listener);
     method @Deprecated public void purchaseProduct(android.app.Activity activity, com.revenuecat.purchases.models.StoreProduct storeProduct, com.revenuecat.purchases.interfaces.PurchaseCallback callback);
@@ -987,6 +988,22 @@ package com.revenuecat.purchases.ads.rewardverification {
     property public final String appUserID;
     property public final String clientTransactionId;
     property public final String customData;
+  }
+
+  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class RewardedAdTrackingMetadata {
+    ctor public RewardedAdTrackingMetadata(String? networkName, String mediatorName, String adFormat, String? placement, String adUnitId, String impressionId);
+    method public String getAdFormat();
+    method public String getAdUnitId();
+    method public String getImpressionId();
+    method public String getMediatorName();
+    method public String? getNetworkName();
+    method public String? getPlacement();
+    property public final String adFormat;
+    property public final String adUnitId;
+    property public final String impressionId;
+    property public final String mediatorName;
+    property public final String? networkName;
+    property public final String? placement;
   }
 
   @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public interface VerifiedReward {
