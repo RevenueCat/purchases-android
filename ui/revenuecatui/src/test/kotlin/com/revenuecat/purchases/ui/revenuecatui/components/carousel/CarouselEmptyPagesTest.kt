@@ -18,9 +18,8 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * `pages` is a plain list off the wire with no non-empty validation, and a page control reads the
- * carousel's logical page before anything guards on the list. The modulo behind that read throws on
- * a zero page count.
+ * `pages` arrives off the wire with no non-empty validation, and a page control reads the logical
+ * page before anything guards on the list. The modulo behind that read throws on zero pages.
  */
 @Config(sdk = [26])
 @RunWith(AndroidJUnit4::class)

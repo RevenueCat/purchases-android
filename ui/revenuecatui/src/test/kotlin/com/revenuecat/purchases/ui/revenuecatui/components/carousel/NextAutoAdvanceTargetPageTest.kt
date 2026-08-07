@@ -19,8 +19,8 @@ internal class NextAutoAdvanceTargetPageTest {
 
     @Test
     fun `loop advances forward through the ring, including past the last real page`() {
-        // Three pages padded with two clones per side: ring 0..6, real zone 2..4. Sliding into the
-        // clone is what makes the wrap look like an ordinary forward transition.
+        // Ring 0..6, real zone 2..4. Sliding on into the clone is what makes the wrap look like an
+        // ordinary forward transition.
         assertThat(nextAutoAdvanceTargetPage(ringCount = 7, currentPage = 2)).isEqualTo(3)
         assertThat(nextAutoAdvanceTargetPage(ringCount = 7, currentPage = 4)).isEqualTo(5)
         assertThat(nextAutoAdvanceTargetPage(ringCount = 7, currentPage = 5)).isEqualTo(6)

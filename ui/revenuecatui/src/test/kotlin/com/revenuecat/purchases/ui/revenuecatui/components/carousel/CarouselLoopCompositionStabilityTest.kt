@@ -49,9 +49,8 @@ class CarouselLoopCompositionStabilityTest {
         const val PAGE_TWO_TEXT = "pageTwoText"
         const val MS_PER_PAGE = 3500
         const val MS_TRANSITION = 500
-        // Two pages padded with two clones per side, so each page lands on three ring indices.
-        // This is the memory ceiling the ticket exists to bound: if the clone pad grows, weigh the
-        // extra live pages rather than just updating the number.
+        // Two pages plus two clones per side puts each page on three ring indices. This is the
+        // memory ceiling the ticket bounds: if the pad grows, weigh the cost, do not just bump it.
         const val EXPECTED_INSTANCES_PER_PAGE = 3
     }
 
