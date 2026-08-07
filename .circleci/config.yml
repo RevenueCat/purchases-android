@@ -809,18 +809,13 @@ jobs:
       - attach_workspace:
           at: .
       - install-mise-tools
-      - run:
-          name: Replace API_KEY (Using Test store API key from Production Integration Tests Android project)
-          working_directory: test-apps/e2etests/src/main/java/com/revenuecat/e2etests/
-          command: |
-            sed -i s/\"api_key_to_replace\"/\"$TEST_STORE_API_KEY\"/ Constants.kt
       - android/create_avd:
           avd_name: test-e2e-tester
           system_image: system-images;android-32;google_apis;x86_64
           install: true
       - android/start_emulator:
           avd_name: test-e2e-tester
-          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug
+          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug -PE2E_API_KEY=$MAESTRO_TEST_STORE_API_KEY
       - android/restore_gradle_cache
       - run:
           name: Install E2E Tester on emulator
@@ -850,11 +845,9 @@ jobs:
           install: true
       - android/start_emulator:
           avd_name: test-e2e-workflow-tester
-          # The workflow project key is baked in at build time (BuildConfig.WORKFLOWS_API_KEY),
-          # which makes E2ETestsApplication configure against the workflow project. A single APK
-          # can only target one project, so this is built and run separately from
-          # run-maestro-e2e-tests.
-          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug -PE2E_WORKFLOWS_API_KEY=$WORKFLOWS_TEST_STORE_API_KEY
+          # Workflow tests defer Purchases configuration so Maestro launch arguments can be
+          # applied before the SDK starts. Both Maestro jobs use the same RevenueCat project.
+          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug -PE2E_API_KEY=$MAESTRO_TEST_STORE_API_KEY -PE2E_ENABLE_WORKFLOW_TESTING=true
       - android/restore_gradle_cache
       - run:
           name: Install E2E Tester on emulator
@@ -1051,6 +1044,8 @@ workflows:
           requires:
             - prepare-tests
       - run-maestro-e2e-tests:
+          context:
+            - maestro
           requires:
             - prepare-tests
       - run-maestro-workflow-tests:
