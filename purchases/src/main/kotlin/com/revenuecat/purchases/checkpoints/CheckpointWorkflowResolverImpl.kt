@@ -53,9 +53,6 @@ internal class CheckpointWorkflowResolverImpl(
 
     @Suppress("ReturnCount")
     private suspend fun resolveConfiguredWorkflow(identifier: String): CheckpointResolution {
-        val workflowManager = workflowManager
-        val uiConfigProvider = uiConfigProvider
-        val checkpointsConfigProvider = checkpointsConfigProvider
         if (workflowManager == null || uiConfigProvider == null || checkpointsConfigProvider == null) {
             return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.DISABLED)
         }
