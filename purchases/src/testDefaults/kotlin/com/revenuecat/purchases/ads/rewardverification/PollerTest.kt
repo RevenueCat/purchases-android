@@ -51,7 +51,7 @@ class PollerTest {
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
-        )
+        ).toResult()
 
         assertEquals("ct_1", receivedClientTransactionId)
         assertNotNull(result.verifiedReward)
@@ -72,7 +72,7 @@ class PollerTest {
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
-        )
+        ).toResult()
 
         assertEquals(1, attempts)
         assertFalse(result.failed)
@@ -93,7 +93,7 @@ class PollerTest {
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
-        )
+        ).toResult()
 
         assertFalse(result.failed)
         assertEquals(VerifiedReward.VirtualCurrency(code = "gems", amount = 10), result.verifiedReward)
@@ -117,7 +117,7 @@ class PollerTest {
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
             logFailure = captureFailure,
-        )
+        ).toResult()
 
         assertEquals(1, attempts)
         assertTrue(result.failed)
@@ -142,7 +142,7 @@ class PollerTest {
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
-        )
+        ).toResult()
 
         assertEquals(3, attempts)
         // A backoff between each attempt: two sleeps for three reads.
@@ -165,7 +165,7 @@ class PollerTest {
             jitterSeconds = fixedJitter,
             maxAttempts = 4,
             logFailure = captureFailure,
-        )
+        ).toResult()
 
         assertEquals(4, attempts)
         assertEquals(3, recordedSleeps.size)
@@ -189,7 +189,7 @@ class PollerTest {
             jitterSeconds = fixedJitter,
             maxAttempts = 3,
             logFailure = captureFailure,
-        )
+        ).toResult()
 
         assertEquals(3, attempts)
         assertTrue(result.failed)
@@ -220,7 +220,7 @@ class PollerTest {
             jitterSeconds = fixedJitter,
             maxAttempts = 3,
             logFailure = captureFailure,
-        )
+        ).toResult()
 
         assertTrue(result.failed)
         // Unknown status wins over transient exhaustion: logged at error level.
@@ -241,7 +241,7 @@ class PollerTest {
             jitterSeconds = fixedJitter,
             maxAttempts = 3,
             logFailure = captureFailure,
-        )
+        ).toResult()
 
         assertTrue(result.failed)
         // Repeated transient errors exhaust to a failure logged at warning level.
@@ -266,7 +266,7 @@ class PollerTest {
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
-        )
+        ).toResult()
 
         assertEquals(2, attempts)
         assertFalse(result.failed)
@@ -291,7 +291,7 @@ class PollerTest {
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
-        )
+        ).toResult()
 
         assertEquals(2, attempts)
         assertFalse(result.failed)
@@ -312,7 +312,7 @@ class PollerTest {
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
-        )
+        ).toResult()
 
         assertEquals(1, attempts)
         assertTrue(result.failed)
@@ -335,7 +335,7 @@ class PollerTest {
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
-        )
+        ).toResult()
 
         assertEquals(1, attempts)
         assertTrue(result.failed)
@@ -362,7 +362,7 @@ class PollerTest {
             },
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
-        )
+        ).toResult()
 
         assertEquals(2, attempts)
         assertFalse(result.failed)
@@ -384,7 +384,7 @@ class PollerTest {
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
             logFailure = captureFailure,
-        )
+        ).toResult()
 
         assertEquals(1, attempts)
         assertTrue(result.failed)
@@ -406,7 +406,7 @@ class PollerTest {
             sleepSeconds = noSleep,
             jitterSeconds = fixedJitter,
             logFailure = captureFailure,
-        )
+        ).toResult()
 
         assertEquals(1, attempts)
         assertTrue(result.failed)
@@ -428,7 +428,7 @@ class PollerTest {
             sleepSeconds = { throw IllegalStateException("scheduler down") },
             jitterSeconds = fixedJitter,
             logFailure = captureFailure,
-        )
+        ).toResult()
 
         // First read returns pending, scheduling the backoff fails before the second read.
         assertEquals(1, attempts)
