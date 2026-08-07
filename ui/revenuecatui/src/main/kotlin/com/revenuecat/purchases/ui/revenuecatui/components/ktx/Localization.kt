@@ -51,6 +51,13 @@ internal fun NonEmptyMap<LocaleId, LocalizationDictionary>.stringForAllLocales(
             .mapError { nonEmptyListOf(MissingStringLocalization(key, locale)) }
     }.mapValuesOrAccumulate { it }
 
+/**
+ * Retrieves a string for every locale, logging a warning and using an empty string when the localization is missing
+ * or is not a string. This matches iOS behavior and prevents a missing base text localization from invalidating the
+ * paywall.
+ *
+ * @return The localized strings keyed by locale, with an empty string for each missing or invalid localization.
+ */
 @JvmSynthetic
 internal fun NonEmptyMap<LocaleId, LocalizationDictionary>.stringForAllLocalesOrEmpty(
     key: LocalizationKey,
