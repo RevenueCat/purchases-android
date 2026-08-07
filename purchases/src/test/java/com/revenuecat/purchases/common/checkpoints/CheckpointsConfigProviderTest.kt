@@ -5,7 +5,6 @@ import com.revenuecat.purchases.NoOpLogHandler
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
-import com.revenuecat.purchases.utils.Iso8601Utils
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
@@ -46,11 +45,7 @@ internal class CheckpointsConfigProviderTest {
                 {
                   "id": "chkptrule_first",
                   "audience": "aud_public_1",
-                  "workflow_id": "wf_public_1",
-                  "schedule": {
-                    "start": "2026-11-25T00:00:00Z",
-                    "end": "2026-11-30T00:00:00Z"
-                  }
+                  "workflow_id": "wf_public_1"
                 },
                 {
                   "id": "chkptrule_second",
@@ -70,11 +65,6 @@ internal class CheckpointsConfigProviderTest {
             .containsExactly("wf_public_1", "wf_public_2")
         assertThat(checkpoint.rules.first().id).isEqualTo("chkptrule_first")
         assertThat(checkpoint.rules.first().audienceId).isEqualTo("aud_public_1")
-        assertThat(checkpoint.rules.first().schedule?.start)
-            .isEqualTo(Iso8601Utils.parse("2026-11-25T00:00:00Z"))
-        assertThat(checkpoint.rules.first().schedule?.end)
-            .isEqualTo(Iso8601Utils.parse("2026-11-30T00:00:00Z"))
-        assertThat(checkpoint.rules.last().schedule).isNull()
     }
 
     @Test
@@ -132,85 +122,6 @@ internal class CheckpointsConfigProviderTest {
         assertThat(checkpoint.identifier).isEqualTo("onboarding")
         assertThat(checkpoint.id).isEqualTo("chkpt_1")
         assertThat(checkpoint.rules.map { it.id }).containsExactly("first", "last")
-    }
-
-    @Test
-    fun `getCheckpoint ignores unsupported frequency cap fields`() = runTest {
-        returnBlob(
-            "onboarding",
-            """
-            {
-              "rules": [
-                {
-                  "id": "rule",
-                  "audience": "aud-1",
-                  "workflow_id": "wf-1",
-                  "frequency_cap": { "unsupported": true }
-                }
-              ]
-            }
-            """.trimIndent(),
-        )
-
-        val checkpoint = requireNotNull(provider.getCheckpoint("onboarding"))
-
-        assertThat(checkpoint.rules.single().id).isEqualTo("rule")
-    }
-
-    @Test
-    fun `getCheckpoint skips a rule when a supplied schedule bound is malformed`() = runTest {
-        returnBlob(
-            "onboarding",
-            """
-            {
-              "rules": [
-                {
-                  "id": "invalid-start",
-                  "audience": "aud-1",
-                  "workflow_id": "wf-1",
-                  "schedule": {
-                    "start": "not-a-date",
-                    "end": "2026-11-30T00:00:00Z"
-                  }
-                },
-                {
-                  "id": "empty-schedule",
-                  "audience": "aud-2",
-                  "workflow_id": "wf-2",
-                  "schedule": {}
-                }
-              ]
-            }
-            """.trimIndent(),
-        )
-
-        val checkpoint = requireNotNull(provider.getCheckpoint("onboarding"))
-
-        assertThat(checkpoint.rules).isEmpty()
-    }
-
-    @Test
-    fun `getCheckpoint parses an open-ended schedule`() = runTest {
-        returnBlob(
-            "onboarding",
-            """
-            {
-              "rules": [
-                {
-                  "id": "scheduled",
-                  "audience": "aud-1",
-                  "workflow_id": "wf-1",
-                  "schedule": { "start": "2026-11-25T00:00:00.251Z" }
-                }
-              ]
-            }
-            """.trimIndent(),
-        )
-
-        val schedule = requireNotNull(provider.getCheckpoint("onboarding")?.rules?.single()?.schedule)
-
-        assertThat(schedule.start).isEqualTo(Iso8601Utils.parse("2026-11-25T00:00:00.251Z"))
-        assertThat(schedule.end).isNull()
     }
 
     @Test

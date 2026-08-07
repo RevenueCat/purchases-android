@@ -1,8 +1,6 @@
 package com.revenuecat.purchases.common.checkpoints
 
 import com.revenuecat.purchases.common.warnLog
-import com.revenuecat.purchases.utils.SerializationException
-import com.revenuecat.purchases.utils.serializers.ISO8601DateSerializer
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -16,7 +14,6 @@ import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.decodeFromJsonElement
-import java.util.Date
 import kotlinx.serialization.SerializationException as JsonSerializationException
 
 @Serializable
@@ -35,15 +32,6 @@ internal data class CheckpointRule(
     val audienceId: String,
     @SerialName("workflow_id")
     val workflowId: String,
-    val schedule: CheckpointRuleSchedule? = null,
-)
-
-@Serializable
-internal data class CheckpointRuleSchedule(
-    @Serializable(with = ISO8601DateSerializer::class)
-    val start: Date? = null,
-    @Serializable(with = ISO8601DateSerializer::class)
-    val end: Date? = null,
 )
 
 private val checkpointRuleListSerializer = ListSerializer(CheckpointRule.serializer())
@@ -77,15 +65,12 @@ internal object CheckpointRulesSerializer : KSerializer<List<CheckpointRule>> {
             validateRule(decoder.json.decodeFromJsonElement<CheckpointRule>(element))
         } catch (_: JsonSerializationException) {
             skipRule("invalid structure")
-        } catch (_: SerializationException) {
-            skipRule("invalid date")
         }
 
     private fun validateRule(rule: CheckpointRule): CheckpointRule? {
         val reason = when {
             rule.audienceId.isEmpty() -> "missing 'audience'"
             rule.workflowId.isEmpty() -> "missing 'workflow_id'"
-            rule.schedule?.let { it.start == null && it.end == null } == true -> "malformed 'schedule'"
             else -> null
         }
         return if (reason == null) rule else skipRule(reason)
