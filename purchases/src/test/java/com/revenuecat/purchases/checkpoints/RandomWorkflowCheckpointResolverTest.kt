@@ -28,7 +28,7 @@ import org.robolectric.annotation.Config
 @Config(manifest = Config.NONE)
 class RandomWorkflowCheckpointResolverTest {
 
-    private val checkpoint = CheckpointInfo("test_checkpoint", CheckpointParams())
+    private val checkpointId = "test_checkpoint"
 
     private lateinit var mockWorkflowManager: WorkflowManager
     private lateinit var mockUiConfigProvider: UiConfigProvider
@@ -67,98 +67,102 @@ class RandomWorkflowCheckpointResolverTest {
     }
 
     @Test
-    fun `simulated error checkpoint fails with ConfigurationError`() = runTest {
-        val resolution = resolver.resolve(CheckpointInfo("error_checkpoint", CheckpointParams()))
+    fun `simulated error checkpoint throws ConfigurationError`() = runTest {
+        val errorCode = try {
+            resolver.resolve("error_checkpoint", emptyMap())
+            null
+        } catch (e: PurchasesException) {
+            e.code
+        }
 
-        val failed = resolution as CheckpointWorkflowResolution.Failed
-        assertThat(failed.error.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        assertThat(errorCode).isEqualTo(PurchasesErrorCode.ConfigurationError)
     }
 
     @Test
-    fun `simulated unknown checkpoint resolves NoMatch with NO_MATCH`() = runTest {
-        val resolution = resolver.resolve(CheckpointInfo("unknown_checkpoint", CheckpointParams()))
+    fun `simulated unknown checkpoint resolves NoAction with UNKNOWN_CHECKPOINT`() = runTest {
+        val resolution = resolver.resolve("unknown_checkpoint", emptyMap())
 
-        assertThat(noMatchReason(resolution)).isEqualTo(CheckpointResult.NoAction.Reason.NO_MATCH)
+        assertThat(noActionReason(resolution)).isEqualTo(CheckpointResolution.NoAction.Reason.UNKNOWN_CHECKPOINT)
     }
 
     @Test
-    fun `checkpoint resolves NoMatch with DISABLED when workflows are disabled`() = runTest {
+    fun `checkpoint resolves NoAction with DISABLED when workflows are disabled`() = runTest {
         resolver = RandomWorkflowCheckpointResolver(
             workflowManager = null,
             uiConfigProvider = null,
             getOfferings = { mockOfferings },
         )
 
-        assertThat(noMatchReason(resolver.resolve(checkpoint)))
-            .isEqualTo(CheckpointResult.NoAction.Reason.DISABLED)
+        assertThat(noActionReason(resolve()))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.DISABLED)
     }
 
     @Test
-    fun `checkpoint resolves NoMatch with CONFIGURATION_UNAVAILABLE when no workflows exist`() =
+    fun `checkpoint resolves NoAction with CONFIGURATION_UNAVAILABLE when no workflows exist`() =
         runTest {
             coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns emptyMap()
 
-            assertThat(noMatchReason(resolver.resolve(checkpoint)))
-                .isEqualTo(CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+            assertThat(noActionReason(resolve()))
+                .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
         }
 
     @Test
-    fun `checkpoint resolves NoMatch with CONFIGURATION_UNAVAILABLE when the workflow fails to load`() =
+    fun `checkpoint resolves NoAction with CONFIGURATION_UNAVAILABLE when the workflow fails to load`() =
         runTest {
             coEvery { mockWorkflowManager.getWorkflow("wf1234") } throws PurchasesException(
                 PurchasesError(PurchasesErrorCode.UnknownError, "Workflow unavailable."),
             )
 
-            assertThat(noMatchReason(resolver.resolve(checkpoint)))
-                .isEqualTo(CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+            assertThat(noActionReason(resolve()))
+                .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
         }
 
     @Test
-    fun `checkpoint resolves NoMatch with CONFIGURATION_UNAVAILABLE when ui config is unavailable`() =
+    fun `checkpoint resolves NoAction with CONFIGURATION_UNAVAILABLE when ui config is unavailable`() =
         runTest {
             coEvery { mockUiConfigProvider.getUiConfig() } returns null
 
-            assertThat(noMatchReason(resolver.resolve(checkpoint)))
-                .isEqualTo(CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+            assertThat(noActionReason(resolve()))
+                .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
         }
 
     @Test
-    fun `checkpoint resolves Matched with the workflow and its offering`() = runTest {
-        val resolution = resolver.resolve(checkpoint)
+    fun `checkpoint resolves Workflow with the workflow and its offering`() = runTest {
+        val resolution = resolve() as CheckpointResolution.Workflow
 
-        val presentation = (resolution as CheckpointWorkflowResolution.Matched).presentation
-        assertThat(presentation.checkpoint).isEqualTo(checkpoint)
-        assertThat(presentation.workflow).isEqualTo(mockWorkflow)
-        assertThat(presentation.uiConfig).isEqualTo(mockUiConfig)
-        assertThat(presentation.offering).isEqualTo(mockOffering)
+        assertThat(resolution.workflow).isEqualTo(mockWorkflow)
+        assertThat(resolution.uiConfig).isEqualTo(mockUiConfig)
+        assertThat(resolution.offering).isEqualTo(mockOffering)
     }
 
     @Test
     fun `workflows without an offering identifier are not picked`() = runTest {
         coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns mapOf("wf1234" to null)
 
-        assertThat(noMatchReason(resolver.resolve(checkpoint)))
-            .isEqualTo(CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        assertThat(noActionReason(resolve()))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
         assertThat(offeringsFetched).isFalse()
     }
 
     @Test
-    fun `checkpoint resolves NoMatch with CONFIGURATION_UNAVAILABLE when the offerings fetch fails`() = runTest {
+    fun `checkpoint resolves NoAction with CONFIGURATION_UNAVAILABLE when the offerings fetch fails`() = runTest {
         offeringsFetchError = PurchasesError(PurchasesErrorCode.NetworkError, "Offline.")
 
-        assertThat(noMatchReason(resolver.resolve(checkpoint)))
-            .isEqualTo(CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        assertThat(noActionReason(resolve()))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
     }
 
     @Test
-    fun `checkpoint resolves NoMatch with CONFIGURATION_UNAVAILABLE when the fetched offerings lack the identifier`() =
+    fun `checkpoint resolves NoAction with CONFIGURATION_UNAVAILABLE when the fetched offerings lack the identifier`() =
         runTest {
             every { mockOfferings.all } returns emptyMap()
 
-            assertThat(noMatchReason(resolver.resolve(checkpoint)))
-                .isEqualTo(CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+            assertThat(noActionReason(resolve()))
+                .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
         }
 
-    private fun noMatchReason(resolution: CheckpointWorkflowResolution): CheckpointResult.NoAction.Reason =
-        (resolution as CheckpointWorkflowResolution.NoMatch).reason
+    private suspend fun resolve(): CheckpointResolution = resolver.resolve(checkpointId, emptyMap())
+
+    private fun noActionReason(resolution: CheckpointResolution): CheckpointResolution.NoAction.Reason =
+        (resolution as CheckpointResolution.NoAction).reason
 }

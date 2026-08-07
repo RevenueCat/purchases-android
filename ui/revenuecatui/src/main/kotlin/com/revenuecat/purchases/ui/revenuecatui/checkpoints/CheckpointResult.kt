@@ -1,4 +1,4 @@
-package com.revenuecat.purchases.checkpoints
+package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import dev.drewhamilton.poko.Poko
@@ -44,6 +44,9 @@ public abstract class CheckpointResult internal constructor() {
 
                 @JvmField
                 public val DISABLED: Reason = Reason("DISABLED")
+
+                @JvmField
+                public val UNKNOWN_CHECKPOINT: Reason = Reason("UNKNOWN_CHECKPOINT")
             }
         }
     }

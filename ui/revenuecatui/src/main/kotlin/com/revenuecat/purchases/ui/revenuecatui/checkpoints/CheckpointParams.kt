@@ -1,10 +1,10 @@
-package com.revenuecat.purchases.checkpoints
+package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 /**
- * Per-call parameters for [com.revenuecat.purchases.Purchases.checkpoint].
+ * Per-call parameters for [com.revenuecat.purchases.ui.revenuecatui.checkpoints.awaitCheckpoint].
  *
  * [customProperties] values must be [String], [Number] or [Boolean]. Invalid values are dropped with a warning.
  */
@@ -19,7 +19,7 @@ public class CheckpointParams(
         when (value) {
             is String, is Number, is Boolean -> key to value
             else -> {
-                warnLog { "Dropping invalid checkpoint custom property '$key': ${value?.javaClass?.name ?: "null"}" }
+                Logger.w("Dropping invalid checkpoint custom property '$key': ${value?.javaClass?.name ?: "null"}")
                 null
             }
         }

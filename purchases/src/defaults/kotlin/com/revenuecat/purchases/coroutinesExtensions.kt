@@ -3,8 +3,6 @@ package com.revenuecat.purchases
 import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
 import com.revenuecat.purchases.ads.rewardverification.Poller
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
-import com.revenuecat.purchases.checkpoints.CheckpointParams
-import com.revenuecat.purchases.checkpoints.CheckpointResult
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
@@ -333,21 +331,3 @@ public suspend fun Purchases.awaitCreateSupportTicket(email: String, description
         )
     }
 }
-
-/**
- * Registers that [checkpointIdentifier] was hit. Depending on the configured targeting rules, this may
- * auto-present an experience (the call resolves when it finishes) or do nothing.
- * Coroutine friendly version of [Purchases.checkpoint].
- *
- * @param checkpointIdentifier The checkpoint identifier, as configured in the RevenueCat dashboard.
- * @param params Optional per-call parameters, like custom properties usable in targeting rules.
- * @throws [PurchasesException] with a [PurchasesError] if the checkpoint could not be handled.
- * @return The [CheckpointResult] for this checkpoint.
- */
-@JvmSynthetic
-@Throws(PurchasesException::class)
-@InternalRevenueCatAPI
-public suspend fun Purchases.awaitCheckpoint(
-    checkpointIdentifier: String,
-    params: CheckpointParams? = null,
-): CheckpointResult = purchasesOrchestrator.checkpoint(checkpointIdentifier, params)

@@ -20,12 +20,9 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
-import com.revenuecat.purchases.checkpoints.CheckpointListener
-import com.revenuecat.purchases.checkpoints.CheckpointParams
-import com.revenuecat.purchases.checkpoints.CheckpointResult
-import com.revenuecat.purchases.checkpoints.CheckpointsManager
+import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolver
 import com.revenuecat.purchases.checkpoints.RandomWorkflowCheckpointResolver
-import com.revenuecat.purchases.checkpoints.UiCheckpointWorkflowExecutor
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -179,15 +176,11 @@ internal class PurchasesOrchestrator(
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
     private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
-    private val checkpointsManager: CheckpointsManager = CheckpointsManager(
-        resolver = RandomWorkflowCheckpointResolver(
-            workflowManager = workflowManager,
-            uiConfigProvider = uiConfigProvider,
-            getOfferings = { Purchases.sharedInstance.awaitOfferings() },
-        ),
-        executor = UiCheckpointWorkflowExecutor(
-            currentActivityProvider = currentActivityTracker::currentActivity,
-        ),
+    @OptIn(InternalRevenueCatAPI::class)
+    private val checkpointWorkflowResolver: CheckpointWorkflowResolver = RandomWorkflowCheckpointResolver(
+        workflowManager = workflowManager,
+        uiConfigProvider = uiConfigProvider,
+        getOfferings = { Purchases.sharedInstance.awaitOfferings() },
     ),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
@@ -239,8 +232,18 @@ internal class PurchasesOrchestrator(
     @set:Synchronized
     var debugEventListener: DebugEventListener? by eventsManager::debugEventListener
 
-    @OptIn(InternalRevenueCatAPI::class)
-    var checkpointListener: CheckpointListener? by checkpointsManager::checkpointListener
+    /**
+     * Storage for the RevenueCat UI module's checkpoints manager, which owns the checkpoint listener and any
+     * in-flight checkpoint presentation. Untyped because that type lives in the UI module, which this module
+     * must not depend on; only the UI module reads and writes it. Living here rather than in a UI-module
+     * singleton ties that state to the lifetime of this instance.
+     */
+    @get:Synchronized
+    @set:Synchronized
+    var checkpointManagerSlot: Any? = null
+
+    val currentActivity: Activity?
+        get() = currentActivityTracker.currentActivity
 
     val isAnonymous: Boolean
         get() = identityManager.currentUserIsAnonymous()
@@ -425,10 +428,10 @@ internal class PurchasesOrchestrator(
     // region Public Methods
 
     @OptIn(InternalRevenueCatAPI::class)
-    suspend fun checkpoint(
+    suspend fun resolveCheckpoint(
         checkpointIdentifier: String,
-        params: CheckpointParams?,
-    ): CheckpointResult = checkpointsManager.checkpoint(checkpointIdentifier, params)
+        customProperties: Map<String, Any>,
+    ): CheckpointResolution = checkpointWorkflowResolver.resolve(checkpointIdentifier, customProperties)
 
     fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
         storefrontCountryCode?.let {
