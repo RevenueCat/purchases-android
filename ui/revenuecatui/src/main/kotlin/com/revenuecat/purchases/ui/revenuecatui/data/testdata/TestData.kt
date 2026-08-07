@@ -610,6 +610,8 @@ internal class MockViewModel(
         refreshStateIfColorsChangedCallCount++
     }
 
+    override fun onPaywallPresented() = Unit
+
     var selectPackageCallCount = 0
         private set
     var selectPackageCallParams = mutableListOf<TemplateConfiguration.PackageInfo>()
