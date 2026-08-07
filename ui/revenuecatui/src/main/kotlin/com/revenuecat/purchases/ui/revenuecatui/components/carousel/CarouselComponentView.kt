@@ -78,6 +78,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import androidx.compose.ui.unit.lerp as lerpUnit
 
+// Two is the minimum that keeps the trailing page_peek populated during the wrap. Matches the web SDK.
+private const val LOOP_CLONE_PAD = 2
+
 @Suppress("LongMethod")
 @JvmSynthetic
 @Composable
@@ -103,24 +106,27 @@ internal fun CarouselComponentView(
 
     val pageCount = style.pages.size
 
-    val initialPage = getInitialPage(carouselState)
+    // Every pager index is a distinct LazyLayout key, so an unbounded index space would rebuild a
+    // page from scratch on every advance. Keep the ring finite.
+    val clonePad = loopClonePad(carouselState.loop, pageCount)
+    val ringCount = pageCount + 2 * clonePad
+    val initialPage = clonePad + carouselState.initialPageIndex.coerceIn(0, maxOf(pageCount - 1, 0))
 
-    val pagerState = rememberPagerState(initialPage = initialPage) {
-        if (carouselState.loop) {
-            Int.MAX_VALUE
-        } else {
-            pageCount
-        }
+    val pagerState = rememberPagerState(initialPage = initialPage) { ringCount }
+
+    val currentLogicalPage by remember(pagerState, clonePad, pageCount) {
+        derivedStateOf { carouselLogicalPage(pagerState.currentPage, clonePad, pageCount) }
     }
 
     val skipProgrammaticPageTracking = remember { ProgrammaticPageTrackingFlag() }
+
+    RecenterLoopClones(pagerState = pagerState, clonePad = clonePad, pageCount = pageCount)
 
     carouselState.autoAdvance?.let { autoAdvance ->
         EnableAutoAdvance(
             autoAdvance,
             pagerState,
-            carouselState.loop,
-            pageCount,
+            ringCount,
             skipProgrammaticPageTracking,
         )
     }
@@ -129,30 +135,30 @@ internal fun CarouselComponentView(
         LaunchedEffect(
             pagerState,
             pageCount,
+            clonePad,
             style.componentName,
             style.pageContextNames,
             style.initialPageIndex,
             componentInteractionTracker,
         ) {
-            var previousPage = pagerState.currentPage
-            snapshotFlow { pagerState.currentPage }.collect { page ->
+            // Logical page, so the invisible clone re-centre does not emit a page change.
+            var previousPage = carouselLogicalPage(pagerState.currentPage, clonePad, pageCount)
+            snapshotFlow { carouselLogicalPage(pagerState.currentPage, clonePad, pageCount) }.collect { page ->
                 if (page != previousPage) {
                     if (skipProgrammaticPageTracking.consumeShouldSkipPageChange()) {
                         // Auto-advance scroll; do not emit component interaction.
                     } else {
-                        val logicalDestination = page % pageCount
-                        val logicalOrigin = previousPage % pageCount
                         fun pageName(logical: Int): String? =
                             style.pageContextNames.getOrNull(logical)?.takeUnless { it.isBlank() }
                         componentInteractionTracker.track(
                             paywallCarouselPageChange(
                                 CarouselPageChangeInteraction(
                                     componentName = style.componentName,
-                                    destinationPageIndex = logicalDestination,
-                                    originPageIndex = logicalOrigin,
+                                    destinationPageIndex = page,
+                                    originPageIndex = previousPage,
                                     defaultPageIndex = style.initialPageIndex,
-                                    originContextName = pageName(logicalOrigin),
-                                    destinationContextName = pageName(logicalDestination),
+                                    originContextName = pageName(previousPage),
+                                    destinationContextName = pageName(page),
                                 ),
                             ),
                         )
@@ -191,6 +197,7 @@ internal fun CarouselComponentView(
                 PagerIndicator(
                     pageControl = it,
                     pageCount = pageCount,
+                    currentPage = currentLogicalPage,
                     pagerState = pagerState,
                 )
             }
@@ -203,13 +210,13 @@ internal fun CarouselComponentView(
         HorizontalPager(
             state = pagerState,
             contentPadding = PaddingValues(horizontal = carouselState.pagePeek + carouselState.pageSpacing),
-            // This will load all the pages at once, which allows the pager to always have the correct size
-            beyondViewportPageCount = pageCount,
+            // Whole ring stays composed, so nothing is torn down. Ceiling: pageCount + 4 live pages.
+            beyondViewportPageCount = ringCount,
             pageSpacing = carouselState.pageSpacing,
             verticalAlignment = carouselState.pageAlignment,
             modifier = Modifier.onSizeChanged { pagerHeightPx = it.height },
         ) { page ->
-            val pageStyle = carouselState.pages[page % pageCount]
+            val pageStyle = carouselState.pages[carouselLogicalPage(page, clonePad, pageCount)]
             StackComponentView(
                 style = pageStyle,
                 state = state,
@@ -229,6 +236,7 @@ internal fun CarouselComponentView(
 private fun ColumnScope.PagerIndicator(
     pageControl: CarouselComponentStyle.PageControlStyles,
     pageCount: Int,
+    currentPage: Int,
     pagerState: PagerState,
     modifier: Modifier = Modifier,
 ) {
@@ -252,7 +260,7 @@ private fun ColumnScope.PagerIndicator(
             Indicator(
                 pagerState = pagerState,
                 pageIndex = iteration,
-                pageCount = pageCount,
+                currentPage = currentPage,
                 pageControl = pageControl,
             )
         }
@@ -264,24 +272,23 @@ private fun ColumnScope.PagerIndicator(
 private fun Indicator(
     pagerState: PagerState,
     pageIndex: Int,
-    pageCount: Int,
+    currentPage: Int,
     pageControl: CarouselComponentStyle.PageControlStyles,
 ) {
-    val progress by remember {
+    val progress by remember(pageIndex, currentPage) {
         derivedStateOf {
-            val processedCurrentPage = pagerState.currentPage % pageCount
             when {
-                pageIndex == processedCurrentPage -> {
+                pageIndex == currentPage -> {
                     if (pagerState.currentPageOffsetFraction >= 0f) {
                         1f - pagerState.currentPageOffsetFraction
                     } else {
                         1f + pagerState.currentPageOffsetFraction
                     }
                 }
-                pageIndex == processedCurrentPage + 1 && pagerState.currentPageOffsetFraction >= 0f -> {
+                pageIndex == currentPage + 1 && pagerState.currentPageOffsetFraction >= 0f -> {
                     pagerState.currentPageOffsetFraction
                 }
-                pageIndex == processedCurrentPage - 1 && pagerState.currentPageOffsetFraction < 0f -> {
+                pageIndex == currentPage - 1 && pagerState.currentPageOffsetFraction < 0f -> {
                     -pagerState.currentPageOffsetFraction
                 }
                 else -> 0f
@@ -289,34 +296,14 @@ private fun Indicator(
         }
     }
 
-    val targetWidth by remember {
-        derivedStateOf {
-            lerpUnit(
-                pageControl.default.width,
-                pageControl.active.width,
-                progress,
-            )
-        }
-    }
-    val targetHeight by remember {
-        derivedStateOf {
-            lerpUnit(
-                pageControl.default.height,
-                pageControl.active.height,
-                progress,
-            )
-        }
-    }
-
-    val targetStrokeWidth by remember {
-        derivedStateOf {
-            lerpUnit(
-                pageControl.default.strokeWidth ?: 0.dp,
-                pageControl.active.strokeWidth ?: 0.dp,
-                progress,
-            )
-        }
-    }
+    // Not remembered: a keyless remember would pin the first `progress` state and freeze the sizes.
+    val targetWidth = lerpUnit(pageControl.default.width, pageControl.active.width, progress)
+    val targetHeight = lerpUnit(pageControl.default.height, pageControl.active.height, progress)
+    val targetStrokeWidth = lerpUnit(
+        pageControl.default.strokeWidth ?: 0.dp,
+        pageControl.active.strokeWidth ?: 0.dp,
+        progress,
+    )
 
     val width by animateDpAsState(
         targetValue = targetWidth,
@@ -356,12 +343,28 @@ private fun Indicator(
     )
 }
 
+/** Snaps back into the real zone on settling on a clone. The clone is identical, so it is invisible. */
+@Composable
+private fun RecenterLoopClones(pagerState: PagerState, clonePad: Int, pageCount: Int) {
+    if (clonePad == 0) return
+    LaunchedEffect(pagerState, clonePad, pageCount) {
+        snapshotFlow { pagerState.settledPage }.collect { settledPage ->
+            val target = carouselRecenterTarget(settledPage, clonePad, pageCount) ?: return@collect
+            try {
+                pagerState.scrollToPage(target)
+            } catch (_: CancellationException) {
+                // A competing scroll won the pager's mutex. Letting this out would kill the effect
+                // for good, and its keys never change, so re-centring would stop for the session.
+            }
+        }
+    }
+}
+
 @Composable
 private fun EnableAutoAdvance(
     autoAdvance: CarouselComponent.AutoAdvancePages,
     pagerState: PagerState,
-    shouldLoop: Boolean,
-    pageCount: Int,
+    ringCount: Int,
     skipProgrammaticPageTracking: ProgrammaticPageTrackingFlag,
 ) {
     LaunchedEffect(Unit) {
@@ -369,8 +372,7 @@ private fun EnableAutoAdvance(
             delay(autoAdvance.msTimePerPage.toLong())
             if (!pagerState.isScrollInProgress) {
                 val nextPage = nextAutoAdvanceTargetPage(
-                    shouldLoop = shouldLoop,
-                    pageCount = pageCount,
+                    ringCount = ringCount,
                     currentPage = pagerState.currentPage,
                 )
                 if (nextPage != null) {
@@ -413,23 +415,21 @@ private class ProgrammaticPageTrackingFlag {
     }
 }
 
-/**
- * Next pager index for carousel auto-advance, or `null` when no scroll should run
- * (empty carousel, or non-loop already on the last page).
- */
-internal fun nextAutoAdvanceTargetPage(
-    shouldLoop: Boolean,
-    pageCount: Int,
-    currentPage: Int,
-): Int? {
-    if (pageCount <= 0) return null
-    return if (shouldLoop) {
-        currentPage + 1
-    } else if (currentPage >= pageCount - 1) {
-        null
-    } else {
-        currentPage + 1
-    }
+internal fun loopClonePad(loop: Boolean, pageCount: Int): Int =
+    if (loop && pageCount > 1) LOOP_CLONE_PAD else 0
+
+internal fun nextAutoAdvanceTargetPage(ringCount: Int, currentPage: Int): Int? =
+    (currentPage + 1).takeIf { it < ringCount }
+
+/** Maps the clone-padded ring back onto `0..pageCount-1`. Guards `mod(0)`: `pages` can be empty. */
+internal fun carouselLogicalPage(pagerIndex: Int, clonePad: Int, pageCount: Int): Int =
+    if (pageCount <= 0) 0 else (pagerIndex - clonePad).mod(pageCount)
+
+/** Index holding the same content as [settledPage] but in the real zone, or `null` if already there. */
+internal fun carouselRecenterTarget(settledPage: Int, clonePad: Int, pageCount: Int): Int? = when {
+    settledPage < clonePad -> settledPage + pageCount
+    settledPage >= clonePad + pageCount -> settledPage - pageCount
+    else -> null
 }
 
 // Only a Fit carousel leaves pages unbounded at measure time; Fixed/Fill already bound them.
@@ -444,19 +444,6 @@ private fun fillPageModifierOrEmpty(carouselHeight: SizeConstraint, measuredHeig
 // sibling's height back into itself.
 private fun pageHeightModifier(pageHeight: SizeConstraint, fillPageModifier: Modifier): Modifier =
     if (pageHeight is SizeConstraint.Fill) fillPageModifier else Modifier
-
-private fun getInitialPage(carouselState: CarouselComponentState) = if (carouselState.loop) {
-    // When looping, we use a very large number of pages to allow for "infinite" scrolling
-    // We need to calculate the initial page index in the middle of that large number of pages to make the carousel
-    // start at the correct page
-    var currentPage = Int.MAX_VALUE / 2
-    while ((currentPage % carouselState.pages.size) != carouselState.initialPageIndex) {
-        currentPage++
-    }
-    currentPage
-} else {
-    carouselState.initialPageIndex
-}
 
 @Preview
 @Composable
