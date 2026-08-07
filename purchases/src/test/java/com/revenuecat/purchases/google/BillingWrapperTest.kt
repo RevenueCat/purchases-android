@@ -1723,6 +1723,104 @@ class BillingWrapperTest {
 
     // endregion diagnostics tracking
 
+    // region queryPurchases purchase context attachment
+
+    @Test
+    fun `queryPurchases attaches cached presented offering context when purchase time is at or after initiation date`() {
+        val productId = "com.revenuecat.lifetime"
+        val presentedOfferingContext = PresentedOfferingContext("offering_a")
+        val initiationDate = Date(timestamp0)
+        val purchaseTime = timestamp123
+
+        wrapper.purchaseContext[productId] = PurchaseContext(
+            ProductType.SUBS,
+            presentedOfferingContext,
+            null,
+            null,
+            null,
+            initiationDate,
+        )
+
+        val purchase = stubGooglePurchase(productIds = listOf(productId), purchaseTime = purchaseTime)
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            listOf(purchase),
+            emptyList(),
+        )
+
+        var purchasesByHashedToken: Map<String, StoreTransaction>? = null
+        wrapper.queryPurchases(
+            appUserID = appUserId,
+            onSuccess = { purchasesByHashedToken = it },
+            onError = { fail("should be a success") },
+        )
+
+        assertThat(purchasesByHashedToken).isNotNull
+        val transaction = purchasesByHashedToken!!.values.first()
+        assertThat(transaction.presentedOfferingContext).isEqualTo(presentedOfferingContext)
+    }
+
+    @Test
+    fun `queryPurchases does not attach cached presented offering context when purchase time is before initiation date`() {
+        val productId = "com.revenuecat.lifetime"
+        val initiationDate = Date(timestamp123)
+        val purchaseTime = timestamp0
+
+        wrapper.purchaseContext[productId] = PurchaseContext(
+            ProductType.SUBS,
+            PresentedOfferingContext("offering_a"),
+            null,
+            null,
+            null,
+            initiationDate,
+        )
+
+        val purchase = stubGooglePurchase(productIds = listOf(productId), purchaseTime = purchaseTime)
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            listOf(purchase),
+            emptyList(),
+        )
+
+        var purchasesByHashedToken: Map<String, StoreTransaction>? = null
+        wrapper.queryPurchases(
+            appUserID = appUserId,
+            onSuccess = { purchasesByHashedToken = it },
+            onError = { fail("should be a success") },
+        )
+
+        assertThat(purchasesByHashedToken).isNotNull
+        val transaction = purchasesByHashedToken!!.values.first()
+        assertThat(transaction.presentedOfferingContext).isNull()
+    }
+
+    @Test
+    fun `queryPurchases returns transaction unchanged when no cached purchase context exists`() {
+        val productId = "com.revenuecat.lifetime"
+        val purchase = stubGooglePurchase(productIds = listOf(productId), purchaseTime = timestamp123)
+        mockClient.mockQueryPurchasesAsync(
+            billingClientOKResult,
+            billingClientOKResult,
+            listOf(purchase),
+            emptyList(),
+        )
+
+        var purchasesByHashedToken: Map<String, StoreTransaction>? = null
+        wrapper.queryPurchases(
+            appUserID = appUserId,
+            onSuccess = { purchasesByHashedToken = it },
+            onError = { fail("should be a success") },
+        )
+
+        assertThat(purchasesByHashedToken).isNotNull
+        val transaction = purchasesByHashedToken!!.values.first()
+        assertThat(transaction.presentedOfferingContext).isNull()
+    }
+
+    // endregion queryPurchases purchase context attachment
+
     // region inapp messages
 
     @Test

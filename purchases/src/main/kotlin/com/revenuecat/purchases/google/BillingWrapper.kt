@@ -341,6 +341,7 @@ internal class BillingWrapper(
                 subscriptionOptionId,
                 replaceProductInfo?.replacementMode.toStoreReplacementModeOrNull(),
                 subscriptionOptionIdForProductIDs,
+                initiationDate = dateProvider.now,
             )
         }
         executeRequestOnUIThread {
@@ -531,7 +532,7 @@ internal class BillingWrapper(
                 diagnosticsTrackerIfEnabled,
                 appInBackground,
             ),
-            onSuccess,
+            { transactions -> onSuccess(attachCachedPurchaseContext(transactions)) },
             onError,
             ::withConnectedClient,
             ::executeRequestOnUIThread,
@@ -870,6 +871,29 @@ internal class BillingWrapper(
         val printWriter = PrintWriter(stringWriter)
         Throwable().printStackTrace(printWriter)
         return stringWriter.toString()
+    }
+
+    private fun attachCachedPurchaseContext(
+        transactions: Map<String, StoreTransaction>,
+    ): Map<String, StoreTransaction> {
+        return transactions.mapValues { (_, transaction) ->
+            if (transaction.presentedOfferingContext != null) {
+                transaction
+            } else {
+                val productId = transaction.productIds.firstOrNull()
+                val context = synchronized(this@BillingWrapper) {
+                    productId?.let { purchaseContext[it] }
+                }
+                if (context != null && transaction.purchaseTime >= context.initiationDate.time) {
+                    log(LogIntent.DEBUG) {
+                        BillingStrings.BILLING_WRAPPER_ATTACHING_CACHED_PURCHASE_CONTEXT.format(productId)
+                    }
+                    transaction.originalGooglePurchase?.toStoreTransaction(context) ?: transaction
+                } else {
+                    transaction
+                }
+            }
+        }
     }
 
     private fun getStoreTransaction(
