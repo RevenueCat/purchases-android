@@ -33,7 +33,6 @@ internal class PaywallWebViewPrewarmerTest {
     private companion object {
         const val URL = "https://example.com/index.html"
         const val OTHER_URL = "https://example.com/other.html"
-        const val THIRD_URL = "https://example.com/third.html"
         const val COMPONENT_ID = "component-1"
     }
 
@@ -229,7 +228,7 @@ internal class PaywallWebViewPrewarmerTest {
         val prewarmer = prewarmer()
         prewarmer.prewarm(context, URL, COMPONENT_ID)
 
-        assertThat(prewarmer.take("https://example.com/other.html")).isNull()
+        assertThat(prewarmer.take(OTHER_URL)).isNull()
     }
 
     @Test
@@ -241,85 +240,127 @@ internal class PaywallWebViewPrewarmerTest {
         assertThat(prewarmer.take(URL)).isNull()
     }
 
-    // The slot can only serve one url, but the others are still worth loading: running a document fills
-    // the profile's http cache, which survives the WebView that filled it.
+    // A paywall can carry several web_view components, so each distinct url gets its own entry.
     @Test
-    fun `holds the first url and warms the cache for the rest`() {
+    fun `holds one entry per distinct url`() {
         val prewarmer = prewarmer()
-        prewarmer.prewarm(context, URL, COMPONENT_ID)
 
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
         prewarmer.prewarm(context, OTHER_URL, "component-2")
 
-        verify(exactly = 2) { WebViewCompat.prerenderUrlAsync(any(), any(), any(), any(), any()) }
-        assertThat(prewarmer.isWarmingCache).isTrue()
         assertThat(prewarmer.take(URL)).isNotNull()
+        assertThat(prewarmer.take(OTHER_URL)).isNotNull()
     }
 
     @Test
-    fun `warms one queued url at a time`() {
-        val prewarmer = prewarmer()
-
-        prewarmer.prewarm(context, URL, COMPONENT_ID)
-        prewarmer.prewarm(context, OTHER_URL, "component-2")
-        prewarmer.prewarm(context, THIRD_URL, "component-3")
-
-        // The slot, plus the first cache warm. The third url waits its turn.
-        verify(exactly = 2) { WebViewCompat.prerenderUrlAsync(any(), any(), any(), any(), any()) }
-        assertThat(prewarmer.queuedCacheWarmCount).isEqualTo(1)
-    }
-
-    @Test
-    fun `starts the next cache warm once the previous document finishes`() {
-        val prewarmer = prewarmer()
-        prewarmer.prewarm(context, URL, COMPONENT_ID)
-        val warming = capturingWebView { prewarmer.prewarm(context, OTHER_URL, "component-2") }
-        prewarmer.prewarm(context, THIRD_URL, "component-3")
-
-        shadowOf(warming).webViewClient.onPageFinished(warming, OTHER_URL)
-
-        verify(exactly = 3) { WebViewCompat.prerenderUrlAsync(any(), any(), any(), any(), any()) }
-        assertThat(prewarmer.queuedCacheWarmCount).isZero()
-    }
-
-    // Whether a prerendered document reports onPageFinished before activation is undocumented, so a warm
-    // that never signals must not stall the queue behind it.
-    @Test
-    fun `abandons a cache warm that never finishes and moves on`() {
-        val prewarmer = prewarmer()
-        prewarmer.prewarm(context, URL, COMPONENT_ID)
-        prewarmer.prewarm(context, OTHER_URL, "component-2")
-        prewarmer.prewarm(context, THIRD_URL, "component-3")
-
-        shadowOf(Looper.getMainLooper())
-            .idleFor(Duration.ofMillis(PaywallWebViewPrewarmer.CACHE_WARM_BUDGET_MS))
-
-        verify(exactly = 3) { WebViewCompat.prerenderUrlAsync(any(), any(), any(), any(), any()) }
-        assertThat(prewarmer.queuedCacheWarmCount).isZero()
-    }
-
-    @Test
-    fun `does not warm a url it is already holding`() {
+    fun `does not prerender a url that is already held`() {
         val prewarmer = prewarmer()
         prewarmer.prewarm(context, URL, COMPONENT_ID)
 
         prewarmer.prewarm(context, URL, "component-2")
 
         verify(exactly = 1) { WebViewCompat.prerenderUrlAsync(any(), any(), any(), any(), any()) }
-        assertThat(prewarmer.isWarmingCache).isFalse()
-        assertThat(prewarmer.take(URL)).isNotNull()
+    }
+
+    // A held entry is worth more than a queued one, so the pool is never evicted to make room. The
+    // overflow is still loaded, for the http cache alone.
+    @Test
+    fun `warms urls beyond the pool for the cache instead of evicting`() {
+        val prewarmer = prewarmer()
+        fillPool(prewarmer)
+
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
+
+        assertThat(prewarmer.heldCount).isEqualTo(PaywallWebViewPrewarmer.MAX_PREWARMED)
+        assertThat(prewarmer.take("https://example.com/0.html")).isNotNull()
+        assertThat(prewarmer.isWarmingCache).isTrue()
+    }
+
+    @Test
+    fun `warms one overflow url at a time`() {
+        val prewarmer = prewarmer()
+        fillPool(prewarmer)
+
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
+        prewarmer.prewarm(context, OTHER_URL, "overflow-2")
+
+        assertThat(prewarmer.isWarmingCache).isTrue()
+        assertThat(prewarmer.queuedCacheWarmCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `starts the next cache warm once the previous document finishes`() {
+        val prewarmer = prewarmer()
+        fillPool(prewarmer)
+        val warming = capturingWebView { prewarmer.prewarm(context, URL, COMPONENT_ID) }
+        prewarmer.prewarm(context, OTHER_URL, "overflow-2")
+
+        shadowOf(warming).webViewClient.onPageFinished(warming, URL)
+
+        assertThat(prewarmer.queuedCacheWarmCount).isZero()
+        assertThat(prewarmer.isWarmingCache).isTrue()
+    }
+
+    // Whether a prerendered document reports onPageFinished before activation is undocumented, so a warm
+    // that never signals must not stall the ones behind it.
+    @Test
+    fun `abandons a cache warm that never finishes and moves on`() {
+        val prewarmer = prewarmer()
+        fillPool(prewarmer)
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
+        prewarmer.prewarm(context, OTHER_URL, "overflow-2")
+
+        shadowOf(Looper.getMainLooper())
+            .idleFor(Duration.ofMillis(PaywallWebViewPrewarmer.CACHE_WARM_BUDGET_MS))
+
+        assertThat(prewarmer.queuedCacheWarmCount).isZero()
+        assertThat(prewarmer.isWarmingCache).isTrue()
     }
 
     // The display path's own load fills the http cache, so a queued warm for that url is pure waste.
     @Test
     fun `drops a queued warm for a url the display path asks for`() {
         val prewarmer = prewarmer()
+        fillPool(prewarmer)
         prewarmer.prewarm(context, URL, COMPONENT_ID)
-        prewarmer.prewarm(context, OTHER_URL, "component-2")
-        prewarmer.prewarm(context, THIRD_URL, "component-3")
+        prewarmer.prewarm(context, OTHER_URL, "overflow-2")
 
-        prewarmer.take(THIRD_URL)
+        prewarmer.take(OTHER_URL)
 
         assertThat(prewarmer.queuedCacheWarmCount).isZero()
+    }
+
+    private fun fillPool(prewarmer: PaywallWebViewPrewarmer) {
+        repeat(PaywallWebViewPrewarmer.MAX_PREWARMED) { index ->
+            prewarmer.prewarm(context, "https://example.com/$index.html", "component-$index")
+        }
+    }
+
+    @Test
+    fun `an async error only drops the entry it belongs to`() {
+        val callbacks = mutableListOf<PrerenderOperationCallback>()
+        every {
+            WebViewCompat.prerenderUrlAsync(any(), any(), any(), any(), capture(callbacks))
+        } returns Unit
+        val prewarmer = prewarmer()
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
+        prewarmer.prewarm(context, OTHER_URL, "component-2")
+
+        callbacks.first().onError(mockk<PrerenderException>(relaxed = true))
+
+        assertThat(prewarmer.take(URL)).isNull()
+        assertThat(prewarmer.take(OTHER_URL)).isNotNull()
+    }
+
+    // Siblings belong to other components on the same paywall and are very likely about to be taken.
+    @Test
+    fun `a miss leaves the other entries held`() {
+        val prewarmer = prewarmer()
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
+
+        assertThat(prewarmer.take(OTHER_URL)).isNull()
+
+        assertThat(prewarmer.take(URL)).isNotNull()
     }
 
     @Test
@@ -345,24 +386,39 @@ internal class PaywallWebViewPrewarmerTest {
     @Test
     fun `abandons every tier when the app is asked to trim memory`() {
         val prewarmer = prewarmer()
+        fillPool(prewarmer)
         prewarmer.prewarm(context, URL, COMPONENT_ID)
-        prewarmer.prewarm(context, OTHER_URL, "component-2")
-        prewarmer.prewarm(context, THIRD_URL, "component-3")
+        prewarmer.prewarm(context, OTHER_URL, "overflow-2")
 
         (context as Application).onTrimMemory(ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN)
 
-        assertThat(prewarmer.take(URL)).isNull()
+        assertThat(prewarmer.heldCount).isZero()
         assertThat(prewarmer.isWarmingCache).isFalse()
         assertThat(prewarmer.queuedCacheWarmCount).isZero()
     }
 
     @Test
-    fun `releaseAll drops the prewarmed view`() {
+    fun `each entry expires on its own schedule`() {
         val prewarmer = prewarmer()
         prewarmer.prewarm(context, URL, COMPONENT_ID)
+        val half = PaywallWebViewPrewarmer.HOLD_TIMEOUT_MS / 2
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(half))
+        prewarmer.prewarm(context, OTHER_URL, "component-2")
+
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(PaywallWebViewPrewarmer.HOLD_TIMEOUT_MS - half))
+
+        assertThat(prewarmer.take(URL)).isNull()
+        assertThat(prewarmer.take(OTHER_URL)).isNotNull()
+    }
+
+    @Test
+    fun `releaseAll drops every prewarmed view`() {
+        val prewarmer = prewarmer()
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
+        prewarmer.prewarm(context, OTHER_URL, "component-2")
 
         prewarmer.releaseAll()
 
-        assertThat(prewarmer.take(URL)).isNull()
+        assertThat(prewarmer.heldCount).isZero()
     }
 }

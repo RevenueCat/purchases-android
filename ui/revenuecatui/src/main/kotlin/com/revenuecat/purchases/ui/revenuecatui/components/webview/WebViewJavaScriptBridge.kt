@@ -133,6 +133,7 @@ internal class WebViewJavaScriptBridge(
      * during the handshake, which [onMainFrameNavigationStarted] resets, so updating them here is
      * enough for the next `init` and `fit` to carry the adopting component's values.
      */
+    @MainThread
     fun rebindComponent(componentId: String, sizeToContentWidth: Boolean, sizeToContentHeight: Boolean) {
         this.componentId = componentId
         this.sizeToContentWidth = sizeToContentWidth
@@ -143,7 +144,7 @@ internal class WebViewJavaScriptBridge(
      * Starts a new main-frame document (load, same-origin nav, or reload): resets handshake and
      * resize state so it can `connect` again.
      */
-
+    @MainThread
     fun onMainFrameNavigationStarted() {
         if (released) return
         documentScope.cancel()
