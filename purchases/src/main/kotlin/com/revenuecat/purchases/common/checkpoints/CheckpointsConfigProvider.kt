@@ -7,5 +7,5 @@ internal class CheckpointsConfigProvider(
     private val manager: RemoteConfigManager,
 ) {
     suspend fun getCheckpoint(identifier: String): CheckpointResponse? =
-        manager.blobData(RemoteConfigTopic.Checkpoints, identifier)
+        manager.blobData<CheckpointResponse>(RemoteConfigTopic.CheckpointRules, identifier)
 }
