@@ -38,8 +38,8 @@ android {
         )
         buildConfigField(
             "boolean",
-            "ENABLE_WORKFLOW_TESTING",
-            resolveProperty("E2E_ENABLE_WORKFLOW_TESTING", "false").toBoolean().toString(),
+            "DEFER_PURCHASES_CONFIGURATION",
+            resolveProperty("E2E_DEFER_PURCHASES_CONFIGURATION", "false").toBoolean().toString(),
         )
     }
 
