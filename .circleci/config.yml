@@ -802,7 +802,7 @@ jobs:
           cache_prefix: ui-tests-v1
 
   run-maestro-e2e-tests:
-    description: "Run Maestro tests for Paywall Tester app"
+    description: "Run Maestro E2E tests for E2E Tester app"
     <<: *android-machine-emulator
     steps:
       - checkout
