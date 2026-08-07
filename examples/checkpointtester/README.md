@@ -27,18 +27,20 @@ Checkpoints are `@InternalRevenueCatAPI`, so every call site here needs `@OptIn(
 
 ## Which experience gets presented
 
-The current resolver (`RandomWorkflowCheckpointResolver`) picks a **random** presentable workflow from remote
-config, so the checkpoint identifier does **not** select a specific experience. Only two identifiers behave
-deterministically:
+The identifier selects the experience. `CheckpointWorkflowResolverImpl` reads the checkpoint's rules from the
+`checkpoint_rules` remote-config topic and serves the workflow of the first rule that resolves, presented as a
+real workflow paywall by `CheckpointWorkflowActivity`. So `hard_paywall`, `soft_paywall`, `onboarding_complete`
+and `entitlement_gate` each need a checkpoint of that name configured in the dashboard; the names are still the
+app's labels for its own gating behavior, but they now also pick what gets shown.
+
+An identifier the dashboard doesn't know about resolves to `CheckpointResult.NoAction` with reason
+`UNKNOWN_CHECKPOINT` and presents nothing. A configured checkpoint with no rules resolves to `NO_MATCH`.
+
+One identifier is still simulated, since nothing in the config-driven path throws:
 
 | Identifier | Result |
 |---|---|
-| `unknown_checkpoint` | `CheckpointResult.NoAction` with reason `NO_MATCH`, no UI presented |
 | `error_checkpoint` | The call throws a `PurchasesException` with `ConfigurationError` |
-
-Everything else (`hard_paywall`, `soft_paywall`, `onboarding_complete`, `entitlement_gate`) resolves to whatever
-workflow the resolver happens to pick, presented as a real workflow paywall by
-`CheckpointWorkflowActivity`. The names are the app's labels for its own gating behavior, not a selector.
 
 ## Use cases
 
@@ -56,7 +58,8 @@ step. It always advances, whatever the outcome, and shows the result on the fina
 `entitlement_gate` when nothing is active. A `Purchased` or `Restored` outcome carries its own
 `CustomerInfo`, so the gate visibly flips off that result with no second fetch.
 
-**No action / Simulated error** — run inline from the use-case list using the two deterministic identifiers above.
+**No action / Simulated error** — run inline from the use-case list, using an identifier the dashboard doesn't
+know about and the `error_checkpoint` identifier above.
 
 **Listener log** — the second tab renders everything the app-wide `CheckpointListener` (registered in
 `MainApplication` as `CheckpointEventLog`) observed: an `onCheckpointHit` and an `onCheckpointCompleted` entry per

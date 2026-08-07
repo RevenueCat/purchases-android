@@ -6,9 +6,8 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesException
 
 /**
- * Resolves a checkpoint to the workflow that should run for it, or to the reason none should. The production
- * implementation will read a checkpoints topic from the config endpoint; the PoC stands it in with
- * [RandomWorkflowCheckpointResolver].
+ * Resolves a checkpoint to the workflow that should run for it, or to the reason none should.
+ * [CheckpointWorkflowResolverImpl] does this from the `checkpoint_rules` remote-config topic.
  */
 internal interface CheckpointWorkflowResolver {
 

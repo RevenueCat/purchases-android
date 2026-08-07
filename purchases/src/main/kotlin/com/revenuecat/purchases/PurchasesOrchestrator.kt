@@ -22,7 +22,7 @@ import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolver
-import com.revenuecat.purchases.checkpoints.RandomWorkflowCheckpointResolver
+import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolverImpl
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -39,6 +39,7 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.debugLogsEnabled
@@ -173,13 +174,15 @@ internal class PurchasesOrchestrator(
     private val remoteConfigManager: RemoteConfigManager? = null,
     private val uiConfigProvider: UiConfigProvider? = null,
     private val workflowsConfigProvider: WorkflowsConfigProvider? = null,
+    private val checkpointsConfigProvider: CheckpointsConfigProvider? = null,
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
     private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
     @OptIn(InternalRevenueCatAPI::class)
-    private val checkpointWorkflowResolver: CheckpointWorkflowResolver = RandomWorkflowCheckpointResolver(
+    private val checkpointWorkflowResolver: CheckpointWorkflowResolver = CheckpointWorkflowResolverImpl(
         workflowManager = workflowManager,
         uiConfigProvider = uiConfigProvider,
+        checkpointsConfigProvider = checkpointsConfigProvider,
         getOfferings = { Purchases.sharedInstance.awaitOfferings() },
     ),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
