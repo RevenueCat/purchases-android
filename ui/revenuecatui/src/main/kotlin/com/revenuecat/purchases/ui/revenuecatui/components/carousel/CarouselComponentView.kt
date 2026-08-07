@@ -355,7 +355,14 @@ private fun RecenterLoopClones(pagerState: PagerState, clonePad: Int, pageCount:
     if (clonePad == 0) return
     LaunchedEffect(pagerState, clonePad, pageCount) {
         snapshotFlow { pagerState.settledPage }.collect { settledPage ->
-            carouselRecenterTarget(settledPage, clonePad, pageCount)?.let { pagerState.scrollToPage(it) }
+            val target = carouselRecenterTarget(settledPage, clonePad, pageCount) ?: return@collect
+            try {
+                pagerState.scrollToPage(target)
+            } catch (_: CancellationException) {
+                // A competing scroll (a swipe, or auto-advance) won the pager's mutex. Swallow it
+                // so the collector survives: letting it out would kill this effect for good, and
+                // its keys never change, so the carousel would never re-centre again.
+            }
         }
     }
 }
