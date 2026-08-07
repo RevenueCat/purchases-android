@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.checkpoints
 
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.NoOpLogHandler
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
@@ -8,6 +9,7 @@ import com.revenuecat.purchases.utils.Iso8601Utils
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.decodeFromString
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -109,6 +111,29 @@ internal class CheckpointsConfigProviderTest {
     }
 
     @Test
+    fun `checkpoint payload deserialization isolates malformed rules`() {
+        val payload = JsonTools.json.decodeFromString<CheckpointPayload>(
+            """
+            {
+              "id": "chkpt_1",
+              "rules": [
+                { "id": "first", "audience": "aud-first", "workflow_id": "wf-first" },
+                "not-an-object",
+                { "id": "missing-audience", "workflow_id": "wf-missing-audience" },
+                { "id": "last", "audience": "aud-last", "workflow_id": "wf-last" }
+              ]
+            }
+            """.trimIndent(),
+        )
+
+        val checkpoint = payload.toCheckpointResponse("onboarding")
+
+        assertThat(checkpoint.identifier).isEqualTo("onboarding")
+        assertThat(checkpoint.id).isEqualTo("chkpt_1")
+        assertThat(checkpoint.rules.map { it.id }).containsExactly("first", "last")
+    }
+
+    @Test
     fun `getCheckpoint ignores unsupported frequency cap fields`() = runTest {
         returnBlob(
             "onboarding",
@@ -204,7 +229,7 @@ internal class CheckpointsConfigProviderTest {
             manager.blobData(
                 RemoteConfigTopic.Checkpoints,
                 "missing",
-                any<(ByteArray) -> CheckpointResponse?>(),
+                any<(ByteArray) -> CheckpointPayload?>(),
             )
         } returns null
 
@@ -230,10 +255,10 @@ internal class CheckpointsConfigProviderTest {
             manager.blobData(
                 RemoteConfigTopic.Checkpoints,
                 identifier,
-                any<(ByteArray) -> CheckpointResponse?>(),
+                any<(ByteArray) -> CheckpointPayload?>(),
             )
         } answers {
-            thirdArg<(ByteArray) -> CheckpointResponse?>().invoke(json.toByteArray())
+            thirdArg<(ByteArray) -> CheckpointPayload?>().invoke(json.toByteArray())
         }
     }
 }
