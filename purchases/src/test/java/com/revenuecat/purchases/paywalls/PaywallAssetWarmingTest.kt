@@ -19,8 +19,13 @@ class PaywallAssetWarmingTest {
 
     private class RecordingWarmer : PaywallAssetWarmer {
         val warmed = mutableListOf<Uri>()
+        var prebootCount = 0
         override fun warmImages(context: Context, imageUris: List<Uri>) {
             warmed.addAll(imageUris)
+        }
+
+        override fun prebootWebView(context: Context) {
+            prebootCount++
         }
     }
 
@@ -57,15 +62,31 @@ class PaywallAssetWarmingTest {
         assertThat(warmer.warmed).isEmpty()
     }
 
+    @Test
+    fun `preboots the web view through the registered warmer`() {
+        val warmer = RecordingWarmer()
+
+        warming(warmer).prebootWebView()
+
+        assertThat(warmer.prebootCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `does not preboot when nothing is registered`() {
+        warming(warmer = null).prebootWebView()
+    }
+
     // Warming runs inline on the offerings success path, before the offerings are cached and handed to the
     // app, so a misbehaving implementation must not take that path down with it.
     @Test
     fun `does not propagate a failure from the warmer`() {
         val throwingWarmer = object : PaywallAssetWarmer {
             override fun warmImages(context: Context, imageUris: List<Uri>) = throw RuntimeException("boom")
+            override fun prebootWebView(context: Context) = throw RuntimeException("boom")
         }
 
         warming(throwingWarmer).warmImages(listOf(uri))
+        warming(throwingWarmer).prebootWebView()
     }
 
     // The ServiceLoader scan is not free, and configure() constructs this before any paywall exists.

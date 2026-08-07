@@ -19,4 +19,10 @@ public interface PaywallAssetWarmer {
 
     /** Pre-downloads [imageUris] into the cache the paywall renderer reads from. */
     public fun warmImages(context: Context, imageUris: List<Uri>)
+
+    /**
+     * Starts the WebView engine ahead of the first `web_view` component render, which otherwise pays for
+     * it on the UI thread. Only called when a paywall actually contains one: startup is not free.
+     */
+    public fun prebootWebView(context: Context)
 }
