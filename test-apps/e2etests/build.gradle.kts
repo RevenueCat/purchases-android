@@ -38,8 +38,8 @@ android {
         )
         buildConfigField(
             "boolean",
-            "DEFER_PURCHASES_CONFIGURATION",
-            resolveProperty("E2E_DEFER_PURCHASES_CONFIGURATION", "false").toBoolean().toString(),
+            "CONFIGURE_PURCHASES_ON_FIRST_ACTIVITY",
+            resolveProperty("E2E_CONFIGURE_PURCHASES_ON_FIRST_ACTIVITY", "false").toBoolean().toString(),
         )
     }
 
