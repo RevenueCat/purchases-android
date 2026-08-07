@@ -65,11 +65,13 @@ import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.utils.CoilImageDownloader
+import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
 import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.PaywallComponentsImagePreDownloader
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
+import com.revenuecat.purchases.utils.UrlConnectionFactory
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
@@ -307,7 +309,12 @@ internal class PurchasesFactory(
                     blobStore = remoteConfigBlobStore,
                     topicStore = remoteConfigTopicStore,
                     sourceProvider = apiSourceProvider,
-                    blobFetcher = RemoteConfigBlobFetcher(remoteConfigBlobStore, apiSourceProvider, timeoutManager),
+                    blobFetcher = RemoteConfigBlobFetcher(
+                        remoteConfigBlobStore,
+                        apiSourceProvider,
+                        timeoutManager,
+                        urlConnectionFactory = blobUrlConnectionFactory(forceServerErrorStrategy),
+                    ),
                     // Bootstrap source for a cold on-demand read's self-triggered sync (see blobData()); after
                     // the first identity change the manager syncs for the user clearCache() binds instead.
                     appUserIDProvider = { cache.getCachedAppUserID() },
@@ -613,6 +620,11 @@ internal class PurchasesFactory(
             return apiKeyValidationResult
         }
     }
+
+    private fun blobUrlConnectionFactory(strategy: ForceServerErrorStrategy?): UrlConnectionFactory =
+        DefaultUrlConnectionFactory().let { default ->
+            strategy?.let { ForcedFailureUrlConnectionFactory(default, it) } ?: default
+        }
 
     private fun Context.getApplication() = applicationContext as Application
 
