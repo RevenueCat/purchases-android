@@ -33,6 +33,7 @@ import io.mockk.spyk
 import io.mockk.verify
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.SocketPolicy
 import okio.Buffer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -2230,6 +2231,86 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         verify(exactly = 1) {
             timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.OTHER_RESULT)
+        }
+    }
+
+    @Test
+    fun `a connection that goes silent after connecting fails within the configured timeout instead of hanging`() {
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+
+        val appConfig = createAppConfig(proxyURL = null)
+        val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
+        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
+
+        // The server accepts the connection but never sends a single response byte, so only the
+        // read timeout can bound this request: the connection itself succeeds.
+        server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
+
+        assertThatThrownBy {
+            client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+                fallbackBaseURLs = emptyList(),
+            )
+        }.isInstanceOf(SocketTimeoutException::class.java)
+    }
+
+    @Test
+    fun `a connection that goes silent after connecting fails over to the fallback URL`() {
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val appConfig = createAppConfig(proxyURL = null)
+        val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
+        val host = baseURL.host
+        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
+
+        // The main server accepts the connection but never responds; the fallback server works.
+        server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+        val validJsonPayload = """{"offerings": [], "current_offering_id": null}"""
+        fallbackServer.enqueue(
+            MockResponse()
+                .setBody(validJsonPayload)
+                .setResponseCode(RCHTTPStatusCodes.SUCCESS)
+        )
+
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                RCHTTPStatusCodes.SUCCESS,
+                validJsonPayload,
+                eTagHeader = any(),
+                urlString = any(),
+                refreshETag = false,
+                requestDate = any(),
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
+                isFallbackURL = true,
+            )
+        } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
+
+        try {
+            val result = client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+                fallbackBaseURLs = listOf(fallbackBaseURL),
+            )
+
+            assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+            // The silent socket counts as a main-source timeout for the fail-fast memory.
+            verify(exactly = 1) {
+                timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
+            }
+        } finally {
+            fallbackServer.shutdown()
         }
     }
 
