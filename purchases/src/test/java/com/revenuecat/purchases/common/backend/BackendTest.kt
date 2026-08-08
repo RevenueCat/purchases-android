@@ -494,6 +494,43 @@ class BackendTest {
     }
 
     @Test
+    fun `postReceipt is enqueued on the receipt post dispatcher when one is provided`() {
+        val receiptPostDispatcher = spyk(SyncDispatcher())
+        val backendWithLane = Backend(
+            mockAppConfig,
+            dispatcher,
+            dispatcher,
+            mockClient,
+            backendHelper,
+            receiptPostDispatcher = receiptPostDispatcher,
+        )
+
+        mockPostReceiptResponseAndPost(
+            backendWithLane,
+            isRestore = false,
+            finishTransactions = true,
+            receiptInfo = basicReceiptInfo,
+            initiationSource = initiationSource,
+        )
+
+        verify(exactly = 1) { receiptPostDispatcher.enqueue(any(), any()) }
+        verify(exactly = 0) { dispatcher.enqueue(any(), any()) }
+    }
+
+    @Test
+    fun `postReceipt is enqueued on the shared dispatcher when no receipt post dispatcher is provided`() {
+        mockPostReceiptResponseAndPost(
+            backend,
+            isRestore = false,
+            finishTransactions = true,
+            receiptInfo = basicReceiptInfo,
+            initiationSource = initiationSource,
+        )
+
+        verify(exactly = 1) { dispatcher.enqueue(any(), any()) }
+    }
+
+    @Test
     fun `postReceipt calls backend once`() {
         mockPostReceiptResponseAndPost(
             backend,

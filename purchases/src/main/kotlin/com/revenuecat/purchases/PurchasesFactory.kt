@@ -123,6 +123,7 @@ internal class PurchasesFactory(
                 runningIntegrationTests,
                 forceSigningError,
                 baseUrlString = baseUrlString,
+                unsyncedTransactionsWaitPolicy = unsyncedTransactionsWaitPolicy,
             )
 
             val contextForStorage = if (context.isDeviceProtectedStorageCompat) {
@@ -175,6 +176,16 @@ internal class PurchasesFactory(
                 createRemoteConfigExecutor(),
                 runningIntegrationTests = runningIntegrationTests,
             )
+
+            // Apps that opted out of waiting for unsynced purchases get their own thread for receipt posts,
+            // so a slow post doesn't head-of-line block reads on the backend dispatcher.
+            val receiptPostDispatcher = if (
+                unsyncedTransactionsWaitPolicy == UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT
+            ) {
+                Dispatcher(createDefaultExecutor(), runningIntegrationTests = runningIntegrationTests)
+            } else {
+                backendDispatcher
+            }
 
             var diagnosticsFileHelper: DiagnosticsFileHelper? = null
             var diagnosticsHelper: DiagnosticsHelper? = null
@@ -244,6 +255,7 @@ internal class PurchasesFactory(
                 httpClient,
                 backendHelper,
                 remoteConfigDispatcher,
+                receiptPostDispatcher,
             )
             val coilImageDownloader = CoilImageDownloader(application)
             val fileRepository = DefaultFileRepository(application)
@@ -411,6 +423,7 @@ internal class PurchasesFactory(
             val customerInfoHelper = CustomerInfoHelper(
                 cache,
                 backend,
+                appConfig,
                 offlineEntitlementsManager,
                 customerInfoUpdateHandler,
                 postPendingTransactionsHelper,

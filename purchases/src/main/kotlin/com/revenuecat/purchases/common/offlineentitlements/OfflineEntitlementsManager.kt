@@ -42,9 +42,11 @@ internal class OfflineEntitlementsManager(
     fun shouldCalculateOfflineCustomerInfoInGetCustomerInfoRequest(
         isServerError: Boolean,
         appUserId: String,
-    ) = isServerError &&
+    ) = isServerError && canCalculateOfflineCustomerInfo(appUserId)
+
+    fun canCalculateOfflineCustomerInfo(appUserId: String) =
         isOfflineEntitlementsEnabled() &&
-        deviceCache.getCachedCustomerInfo(appUserId) == null
+            deviceCache.getCachedCustomerInfo(appUserId) == null
 
     fun shouldCalculateOfflineCustomerInfoInPostReceipt(
         isServerError: Boolean,
@@ -96,6 +98,28 @@ internal class OfflineEntitlementsManager(
                 }
             },
         )
+    }
+
+    /**
+     * Computes [CustomerInfo] from the purchases on the device, without entering offline entitlements
+     * mode: nothing is cached and no diagnostics are reported, because the backend is reachable and this
+     * was the app's choice rather than a fallback.
+     */
+    fun computeOfflineCustomerInfo(
+        appUserId: String,
+        onSuccess: (CustomerInfo) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        if (!isOfflineEntitlementsEnabled()) {
+            onError(
+                PurchasesError(
+                    PurchasesErrorCode.UnsupportedError,
+                    OfflineEntitlementsStrings.OFFLINE_ENTITLEMENTS_NOT_ENABLED,
+                ),
+            )
+            return
+        }
+        offlineCustomerInfoCalculator.computeOfflineCustomerInfo(appUserId, onSuccess, onError)
     }
 
     fun updateProductEntitlementMappingCacheIfStale(completion: ((PurchasesError?) -> Unit)? = null) {
