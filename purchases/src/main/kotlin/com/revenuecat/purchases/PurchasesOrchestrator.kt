@@ -1437,9 +1437,11 @@ internal class PurchasesOrchestrator(
         val type = typesRemaining.firstOrNull()?.also { typesRemaining.remove(it) }
 
         type?.let {
+            val isFinalQuery = typesRemaining.isEmpty()
             billing.queryProductDetailsAsync(
                 productType = it,
                 productIds = productIds,
+                logUnfetchedProducts = isFinalQuery,
                 onReceive = { storeProducts ->
                     dispatch {
                         getProductsOfTypes(
