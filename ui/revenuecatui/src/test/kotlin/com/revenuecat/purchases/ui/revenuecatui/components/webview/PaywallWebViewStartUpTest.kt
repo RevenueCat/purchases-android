@@ -31,7 +31,6 @@ internal class PaywallWebViewStartUpTest {
 
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
-    // Runs the submitted task inline, so what production defers to Dispatchers.IO stays assertable here.
     private val directExecutor = Executor { runnable -> runnable.run() }
 
     private fun startUp() = PaywallWebViewStartUp.startUp(context, directExecutor)
@@ -48,8 +47,6 @@ internal class PaywallWebViewStartUpTest {
         unmockkAll()
     }
 
-    // Named profiles get resources allocated during startup, so loading the wrong one is wasted memory on
-    // every device: `applyPaywallProfile` only uses the paywall profile where MULTI_PROFILE is supported.
     @Test
     fun `loads only the profile the component will actually use`() {
         val config = slot<WebViewStartUpConfig>()
@@ -74,8 +71,6 @@ internal class PaywallWebViewStartUpTest {
         assertThat(config.captured.profilesToLoadDuringStartup).containsExactly(Profile.DEFAULT_PROFILE_NAME)
     }
 
-    // The whole point of the async API. `isFeatureSupported` loads the WebView provider, and the caller here is
-    // the SDK's single-threaded dispatcher, so anything done inline blocks every other queued SDK job.
     @Test
     fun `touches no webkit API on the calling thread`() {
         mockkStatic(WebViewFeature::class)
@@ -109,7 +104,7 @@ internal class PaywallWebViewStartUpTest {
     }
 
     // androidx: "If a failure has been reported to the callback, calling any other WebView APIs is likely to
-    // throw an exception or immediately crash." Retrying would just re-attempt that on every later warm.
+    // throw an exception or immediately crash."
     @Test
     fun `does not retry after the outcome receiver reports an error`() {
         val receiver = slot<StartUpReceiver>()
@@ -122,8 +117,6 @@ internal class PaywallWebViewStartUpTest {
         verify(exactly = 1) { WebViewCompat.startUpWebView(any(), any(), any<StartUpReceiver>()) }
     }
 
-    // The guard is the crash gate: androidx runs provider class loading inside this executor, and it throws on
-    // devices with a missing or mid-update WebView package. Escaping there would kill the host app.
     @Test
     fun `the background executor swallows a failure from the task it runs`() {
         val executor = PaywallWebViewStartUp.guarded { runnable -> runnable.run() }
@@ -131,7 +124,6 @@ internal class PaywallWebViewStartUpTest {
         executor.execute { throw RuntimeException("missing WebView package") }
     }
 
-    // Provider class loading throws Error subclasses, not Exception, on a broken WebView install.
     @Test
     fun `the background executor swallows an Error from the task it runs`() {
         val executor = PaywallWebViewStartUp.guarded { runnable -> runnable.run() }
