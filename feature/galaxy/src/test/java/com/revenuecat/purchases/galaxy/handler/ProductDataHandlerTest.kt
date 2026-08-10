@@ -493,10 +493,7 @@ class ProductDataHandlerTest : GalaxyStoreTest() {
             Config.logLevel = previousLogLevel
         }
 
-        val expectedMessage =
-            "✨‼️ The Galaxy Store returned product details for only some of the requested product IDs. " +
-                "Requested: iap, sub. Missing: sub"
-        assertThat(loggedMessages).doesNotContain(expectedMessage)
+        assertThat(loggedMessages).isEmpty()
     }
 
     @OptIn(GalaxySerialOperation::class, InternalRevenueCatAPI::class)
