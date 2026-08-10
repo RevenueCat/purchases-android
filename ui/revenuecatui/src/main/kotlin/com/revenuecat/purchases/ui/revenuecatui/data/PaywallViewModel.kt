@@ -1157,10 +1157,6 @@ internal class PaywallViewModelImpl(
     ) {
         // Any presentation supersedes a pending replay, including the one that consumes it.
         dismissedWorkflowPresentation = null
-        // The selection that actually produced this workflow. `options` is mutable and can be retargeted
-        // mid-presentation without a reload (its hash covers only the offering identifier), so reading it
-        // at dismiss instead would pair this workflow with whatever the host swapped in.
-        currentWorkflowOfferingSelection = options.offeringSelection
         val initialStep = workflow.steps[workflow.initialStepId]
         if (initialStep == null) {
             updateExitOfferData(ExitOfferData.Unavailable())
@@ -1175,6 +1171,10 @@ internal class PaywallViewModelImpl(
         trackCurrentWorkflowStepCompleted()
 
         currentWorkflow = workflow
+        // Set alongside currentWorkflow, never before it: an early return above would otherwise leave this
+        // pointing at the new target while currentWorkflow still held the previous one, and a later dismiss
+        // would snapshot that mismatched pair.
+        currentWorkflowOfferingSelection = options.offeringSelection
         currentWorkflowUiConfig = uiConfig
         currentWorkflowOfferings = offerings
         currentWorkflowPresentedOfferingContext = presentedOfferingContext

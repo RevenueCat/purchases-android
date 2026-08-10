@@ -1457,9 +1457,16 @@ class PaywallViewModelWorkflowTest {
         assertThat(retargetedOptions.hashCode()).isEqualTo(originalOptions.hashCode())
 
         coEvery { purchases.resolveWorkflow(offeringId) } returns WorkflowResolution.NoWorkflow
+        val staleStepTwoState = vm.state.value
         vm.updateOptions(retargetedOptions)
 
         vm.onPaywallPresented()
+
+        // Checked before advanceUntilIdle: the stale step must be gone for the whole reload window, not
+        // merely replaced once the reload lands.
+        assertThat(vm.state.value).isEqualTo(PaywallState.Loading)
+        assertThat(vm.state.value).isNotSameAs(staleStepTwoState)
+
         advanceUntilIdle()
 
         // Replaying the snapshot here would show the old workflow, and attribute events to it, for a
