@@ -18,7 +18,8 @@ public interface PaywallAssetWarmer {
 
     /**
      * Starts the WebView engine ahead of the first `web_view` render, which otherwise pays for it on the
-     * UI thread. Called only when a paywall contains one: the engine costs ~90 MB resident.
+     * UI thread. Called only when a paywall contains one: the engine's memory is held for the process
+     * lifetime once started.
      */
     public fun prebootWebView(context: Context)
 }
