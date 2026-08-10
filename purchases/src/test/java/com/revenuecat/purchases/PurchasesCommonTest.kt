@@ -151,7 +151,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         val productIds = subProductIds + inappProductIds
 
         val subStoreProducts = mockStoreProduct(productIds, subProductIds, ProductType.SUBS)
-        val inappStoreProducts = mockStoreProduct(productIds, inappProductIds, ProductType.INAPP)
+        val inappStoreProducts = mockStoreProduct(inappProductIds, inappProductIds, ProductType.INAPP)
         val storeProducts = subStoreProducts + inappStoreProducts
 
         purchases.getProducts(productIds,
@@ -170,10 +170,12 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
-    fun `getProducts logs unfetched products only for the final product type query`() {
-        val productIds = listOf("product")
-        mockStoreProduct(productIds, emptyList(), ProductType.SUBS)
-        mockStoreProduct(productIds, emptyList(), ProductType.INAPP)
+    fun `getProducts queries only remaining IDs and logs unfetched products for the final product type query`() {
+        val subscriptionProductId = "subscription"
+        val unfetchedProductId = "unfetched"
+        val productIds = listOf(subscriptionProductId, unfetchedProductId)
+        mockStoreProduct(productIds, listOf(subscriptionProductId), ProductType.SUBS)
+        mockStoreProduct(listOf(unfetchedProductId), emptyList(), ProductType.INAPP)
 
         purchases.getProducts(
             productIds,
@@ -193,10 +195,19 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             )
             mockBillingAbstract.queryProductDetailsAsync(
                 ProductType.INAPP,
-                productIds.toSet(),
+                setOf(unfetchedProductId),
                 true,
                 any(),
                 any(),
+            )
+        }
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetProductsResult(
+                requestedProductIds = productIds.toSet(),
+                notFoundProductIds = setOf(unfetchedProductId),
+                errorMessage = null,
+                errorCode = null,
+                responseTime = any(),
             )
         }
     }
@@ -483,7 +494,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         every {
             mockBillingAbstract.queryProductDetailsAsync(
                 ProductType.INAPP,
-                setOf(normalizedProductId, productIdWithoutBasePlan),
+                setOf(productIdWithoutBasePlan),
                 any(),
                 captureLambda(),
                 any(),
@@ -2399,6 +2410,54 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 errorMessage = null,
                 errorCode = null,
                 responseTime = 123.milliseconds
+            )
+        }
+    }
+
+    @Test
+    fun `getProducts tracks diagnostics with INAPP and SUBS queries`() {
+        val subscriptionProductId = "subscription"
+        val inAppProductId = "inapp"
+        val productIds = listOf(subscriptionProductId, inAppProductId)
+
+        every { mockDateProvider.now } returnsMany listOf(
+            Date(0),
+            Date(123),
+        )
+        mockStoreProduct(productIds, listOf(subscriptionProductId), ProductType.SUBS)
+        mockStoreProduct(listOf(inAppProductId), listOf(inAppProductId), ProductType.INAPP)
+
+        purchases.getProducts(
+            productIds,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) = Unit
+                override fun onError(error: PurchasesError) = fail("shouldn't be error")
+            },
+        )
+
+        verifyOrder {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.SUBS,
+                productIds.toSet(),
+                false,
+                any(),
+                any(),
+            )
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.INAPP,
+                setOf(inAppProductId),
+                true,
+                any(),
+                any(),
+            )
+        }
+        verify(exactly = 1) {
+            mockDiagnosticsTracker.trackGetProductsResult(
+                requestedProductIds = productIds.toSet(),
+                notFoundProductIds = emptySet(),
+                errorMessage = null,
+                errorCode = null,
+                responseTime = 123.milliseconds,
             )
         }
     }

@@ -1428,24 +1428,26 @@ internal class PurchasesOrchestrator(
         startTime: Date? = null,
         callback: GetStoreProductsCallback,
     ) {
+        val collectedProductIds = collectedStoreProducts.map { it.purchasingData.productId }
+        val requestedProductIds = productIds + collectedProductIds
         val nonNullStartTime = startTime ?: run {
-            trackGetProductsStarted(productIds)
+            trackGetProductsStarted(requestedProductIds)
             dateProvider.now
         }
 
         val typesRemaining = types.toMutableSet()
         val type = typesRemaining.firstOrNull()?.also { typesRemaining.remove(it) }
 
-        type?.let {
+        type?.let { productType ->
             val isFinalQuery = typesRemaining.isEmpty()
             billing.queryProductDetailsAsync(
-                productType = it,
+                productType = productType,
                 productIds = productIds,
                 logUnfetchedProducts = isFinalQuery,
                 onReceive = { storeProducts ->
                     dispatch {
                         getProductsOfTypes(
-                            productIds,
+                            productIds - storeProducts.map { it.purchasingData.productId }.toSet(),
                             typesRemaining,
                             collectedStoreProducts + storeProducts,
                             nonNullStartTime,
@@ -1455,14 +1457,13 @@ internal class PurchasesOrchestrator(
                 },
                 onError = {
                     dispatch {
-                        trackGetProductsResult(nonNullStartTime, productIds, productIds, it)
+                        trackGetProductsResult(nonNullStartTime, requestedProductIds, productIds, it)
                         callback.onError(it)
                     }
                 },
             )
         } ?: run {
-            val notFoundProductIds = productIds - collectedStoreProducts.map { it.id }.toSet()
-            trackGetProductsResult(nonNullStartTime, productIds, notFoundProductIds, null)
+            trackGetProductsResult(nonNullStartTime, requestedProductIds, productIds, null)
             callback.onReceived(collectedStoreProducts)
         }
     }
