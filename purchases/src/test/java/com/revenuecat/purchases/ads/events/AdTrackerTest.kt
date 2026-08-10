@@ -414,7 +414,7 @@ class AdTrackerTest {
                 placement = "rewarded_video",
                 adUnitId = "ca-app-pub-123456",
                 impressionId = "impression-123",
-                failureReason = AdRewardFailureReason.TIMEOUT,
+                failureReason = AdRewardFailureReason.Timeout,
             ),
             captureMethod = AdCaptureMethod.MANUAL,
         )
@@ -427,7 +427,7 @@ class AdTrackerTest {
         assertThat(eventSlot.captured.placement).isEqualTo("rewarded_video")
         assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-123456")
         assertThat(eventSlot.captured.impressionId).isEqualTo("impression-123")
-        assertThat(eventSlot.captured.failureReason).isEqualTo(AdRewardFailureReason.TIMEOUT)
+        assertThat(eventSlot.captured.failureReason).isEqualTo(AdRewardFailureReason.Timeout)
         assertThat(eventSlot.captured.type).isEqualTo(AdEventType.REWARD_FAILED_TO_VERIFY)
         assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
     }
@@ -445,7 +445,7 @@ class AdTrackerTest {
                 placement = "rewarded_video",
                 adUnitId = "ca-app-pub-123456",
                 impressionId = "impression-123",
-                failureReason = AdRewardFailureReason.backendError("no_reward_rule"),
+                failureReason = AdRewardFailureReason.BackendError("no_reward_rule"),
             ),
             captureMethod = AdCaptureMethod.ADAPTER,
         )

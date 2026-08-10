@@ -715,7 +715,7 @@ class EventsManagerTest {
             placement = "rewarded_video",
             adUnitId = "ad-unit-999",
             impressionId = "impression-789",
-            failureReason = AdRewardFailureReason.TIMEOUT,
+            failureReason = AdRewardFailureReason.Timeout,
         )
 
         eventsManager.track(adEvent)
