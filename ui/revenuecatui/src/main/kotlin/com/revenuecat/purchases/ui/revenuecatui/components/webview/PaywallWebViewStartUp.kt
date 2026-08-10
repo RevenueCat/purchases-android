@@ -20,8 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * Moves WebView startup off the UI thread ahead of the first paywall `web_view` render, loading the
- * profile that render will use. Measured at ~190 ms of UI-thread work for a first render without it,
- * ~112 ms with it.
+ * profile that render will use. Without it, the first render pays for startup on the UI thread.
  *
  * Needs no feature check: the API degrades internally on older WebViews, and below that still moves
  * provider class loading off the UI thread.
