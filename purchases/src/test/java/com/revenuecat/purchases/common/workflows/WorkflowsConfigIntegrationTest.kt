@@ -380,13 +380,11 @@ class WorkflowsConfigIntegrationTest {
         }
 
     @Test
-    fun `repeated onPaywallConfigReady for a project with no paywalls issues a single config request`() =
+    fun `cold onPaywallConfigReady completes an empty config fetch without blob warnings or downloads`() =
         runTest(testDispatcher) {
             // A project with no paywalls configured still gets both paywall topics, committed with no items, so
-            // every ui_config part misses. Each of those misses used to self-prime its own sync, since a
-            // successful sync clears the attempt cooldown — one (or more) config request per getOfferings.
-            sync(NO_PAYWALLS_CONFIG)
-
+            // readiness should self-prime one config request, then treat the empty ui_config as not configured.
+            assertThat(persistedState).isNull()
             val workflowManager = workflowManagerWithRealUiConfig()
             val warningLogs = mutableListOf<String>()
             val previousLogHandler = currentLogHandler
@@ -400,10 +398,22 @@ class WorkflowsConfigIntegrationTest {
                     }
                     override fun e(tag: String, msg: String, throwable: Throwable?) = Unit
                 }
-                repeat(3) {
-                    var completed = false
-                    workflowManager.onPaywallConfigReady { completed = true }
-                    assertThat(completed).isTrue()
+
+                var completed = false
+                workflowManager.onPaywallConfigReady { completed = true }
+
+                assertThat(completed).isFalse()
+                verify(exactly = 1) {
+                    backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any())
+                }
+
+                onSuccess.invoke(containerWith(NO_PAYWALLS_CONFIG), Date(), VerificationResult.VERIFIED)
+
+                assertThat(completed).isTrue()
+                repeat(2) {
+                    var warmCompleted = false
+                    workflowManager.onPaywallConfigReady { warmCompleted = true }
+                    assertThat(warmCompleted).isTrue()
                 }
             } finally {
                 currentLogHandler = previousLogHandler
