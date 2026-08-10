@@ -16,7 +16,7 @@ import java.net.URL
 
 internal class OfferingVideoPredownloader(
     context: Context,
-    private val assetWarming: PaywallAssetWarming = PaywallAssetWarming(context),
+    private val assetWarming: PaywallAssetWarming,
     private val fileRepository: FileRepository = DefaultFileRepository(context),
 ) {
 

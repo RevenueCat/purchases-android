@@ -106,6 +106,22 @@ class WorkflowAssetPrewarmerTest {
         verify(exactly = 1) { assetWarming.warmImages(screenConfig.collectAssets().imageUris) }
     }
 
+    @Test
+    fun `preDownloadWorkflowAssets warms every screen's images in a single call`() {
+        val workflow = createWorkflow(
+            "wf_1",
+            screens = mapOf(
+                "screen_1" to createScreen(emptyComponentsConfig()),
+                "screen_2" to createScreen(emptyComponentsConfig()),
+                "screen_3" to createScreen(emptyComponentsConfig()),
+            ),
+        )
+
+        prewarmer.preDownloadWorkflowAssets(workflow, uiConfig)
+
+        verify(exactly = 1) { assetWarming.warmImages(any()) }
+    }
+
     // endregion render path
 
     // region load path (onCurrentWorkflowLoaded)
