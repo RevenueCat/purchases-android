@@ -305,6 +305,9 @@ internal class PaywallViewModelImpl(
 
     private var dismissedWorkflowPresentation: DismissedWorkflowPresentation? = null
 
+    /** The [OfferingSelection] that produced [currentWorkflow], captured when its presentation started. */
+    private var currentWorkflowOfferingSelection: OfferingSelection? = null
+
     private data class PaywallPresentationFingerprint(
         val paywallIdentifier: String?,
         val presentedOfferingContext: PresentedOfferingContext,
@@ -408,10 +411,12 @@ internal class PaywallViewModelImpl(
         if (dismissed.offeringSelection != options.offeringSelection) {
             // Retargeted while dismissed. The snapshot describes a paywall we are no longer showing, and
             // updateOptions may not have reloaded (the options hash only covers the offering identifier).
+            // Unlike the dismiss boundary there is nothing valid to keep on screen here, so drop the stale
+            // step rather than let it render and bill an impression while the reload is in flight.
+            _state.value = PaywallState.Loading
             updateState()
             return
         }
-        // Synchronous, so the replayed step one is in place before the composition reads state.
         startWorkflowPresentation(
             dismissed.workflow,
             dismissed.uiConfig,
@@ -435,6 +440,7 @@ internal class PaywallViewModelImpl(
         preWarmJob = null
         workflowNavigator = null
         currentWorkflow = null
+        currentWorkflowOfferingSelection = null
         currentWorkflowOfferings = null
         currentWorkflowPresentedOfferingContext = null
         currentWorkflowStepTracksPaywallEvents = true
@@ -466,13 +472,14 @@ internal class PaywallViewModelImpl(
         // Only overwrite when a workflow is actually live. A second dismiss before the next presentation
         // (a double back press while the host is still animating out) finds the fields already cleared by
         // the first, and must not erase the snapshot that first dismiss captured.
-        if (workflow != null && offerings != null) {
+        val workflowSelection = currentWorkflowOfferingSelection
+        if (workflow != null && offerings != null && workflowSelection != null) {
             dismissedWorkflowPresentation = DismissedWorkflowPresentation(
                 workflow = workflow,
                 uiConfig = currentWorkflowUiConfig,
                 offerings = offerings,
                 presentedOfferingContext = currentWorkflowPresentedOfferingContext,
-                offeringSelection = options.offeringSelection,
+                offeringSelection = workflowSelection,
             )
         }
         // An in-flight load is left running on purpose. A dismiss before the first load finishes leaves no
@@ -1150,6 +1157,10 @@ internal class PaywallViewModelImpl(
     ) {
         // Any presentation supersedes a pending replay, including the one that consumes it.
         dismissedWorkflowPresentation = null
+        // The selection that actually produced this workflow. `options` is mutable and can be retargeted
+        // mid-presentation without a reload (its hash covers only the offering identifier), so reading it
+        // at dismiss instead would pair this workflow with whatever the host swapped in.
+        currentWorkflowOfferingSelection = options.offeringSelection
         val initialStep = workflow.steps[workflow.initialStepId]
         if (initialStep == null) {
             updateExitOfferData(ExitOfferData.Unavailable())

@@ -1468,6 +1468,37 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `retargeting before the dismiss also stops the workflow being replayed`() = runTest {
+        stubWorkflowFetch()
+
+        val vm = createVm(offering = testOffering)
+        advanceUntilIdle()
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+
+        // Retarget while the paywall is still up. Reading options.offeringSelection at dismiss would pair
+        // the live workflow with this new selection and the guard would see a match.
+        val retargetedOffering = Offering(
+            identifier = offeringId,
+            serverDescription = "retargeted",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = null,
+            webCheckoutURL = null,
+        )
+        coEvery { purchases.resolveWorkflow(offeringId) } returns WorkflowResolution.NoWorkflow
+        vm.updateOptions(
+            PaywallOptions.Builder(dismissRequest = {}).setOffering(retargetedOffering).build(),
+        )
+
+        vm.closePaywall(result = null)
+        vm.onPaywallPresented()
+        advanceUntilIdle()
+
+        assertThat(vm.workflowState.value).isNull()
+    }
+
+    @Test
     fun `reopening after a RevenueCat purchase dismiss tracks a fresh workflow impression`() = runTest {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
