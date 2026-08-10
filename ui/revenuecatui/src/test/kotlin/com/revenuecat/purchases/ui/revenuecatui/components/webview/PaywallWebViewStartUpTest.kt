@@ -131,6 +131,15 @@ internal class PaywallWebViewStartUpTest {
         executor.execute { throw RuntimeException("missing WebView package") }
     }
 
+    // Provider class loading throws Error subclasses, not Exception, on a broken WebView install.
+    @Test
+    fun `the background executor swallows an Error from the task it runs`() {
+        val executor = PaywallWebViewStartUp.guarded { runnable -> runnable.run() }
+
+        executor.execute { throw NoClassDefFoundError("org.chromium.WebViewChromiumFactoryProvider") }
+        executor.execute { throw UnsatisfiedLinkError("libwebviewchromium.so") }
+    }
+
     @Test
     fun `allows a retry when the submission itself is rejected`() {
         every {

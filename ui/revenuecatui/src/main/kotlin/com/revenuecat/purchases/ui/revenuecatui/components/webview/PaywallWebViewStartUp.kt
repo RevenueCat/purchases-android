@@ -48,10 +48,12 @@ internal object PaywallWebViewStartUp {
     @VisibleForTesting
     internal fun guarded(delegate: Executor) = Executor { runnable ->
         delegate.execute {
+            // Throwable, not Exception: a missing or mid-update WebView package surfaces as
+            // NoClassDefFoundError / UnsatisfiedLinkError / ExceptionInInitializerError.
             @Suppress("TooGenericExceptionCaught")
             try {
                 runnable.run()
-            } catch (error: Exception) {
+            } catch (error: Throwable) {
                 Logger.w("Paywalls V2 WebView startup failed: $error")
             }
         }
