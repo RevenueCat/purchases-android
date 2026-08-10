@@ -174,6 +174,7 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 productType = ProductType.SUBS,
                 productIds = productIds.toSet(),
+                logUnfetchedProducts = false,
                 onReceive = captureLambda(),
                 onError = any(),
             )
@@ -183,7 +184,8 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
         every {
             mockBillingAbstract.queryProductDetailsAsync(
                 productType = ProductType.INAPP,
-                productIds = productIds.toSet(),
+                productIds = inAppIds.toSet(),
+                logUnfetchedProducts = true,
                 onReceive = captureLambda(),
                 onError = any(),
             )
@@ -209,6 +211,7 @@ internal class PurchasesCoroutinesCommonTest : BasePurchasesTest() {
             mockBillingAbstract.queryProductDetailsAsync(
                 productType = ProductType.SUBS,
                 productIds = productIds.toSet(),
+                logUnfetchedProducts = false,
                 onReceive = any(),
                 onError = captureLambda(),
             )
