@@ -123,8 +123,11 @@ internal class UiConfigProvider(
         // available, an absent topic or one with none of the ui_config parts means the project has no ui_config;
         // avoid asking the generic all-or-nothing merger to resolve four known-missing blobs and warning about it.
         val topic = manager.topic(RemoteConfigTopic.UiConfig)
-        if (topic == null || ITEM_KEYS.none(topic::containsKey)) return null
-        return manager.mergeItemsBlobData<UiConfig>(RemoteConfigTopic.UiConfig, ITEM_KEYS)
+        return if (topic == null || ITEM_KEYS.none(topic::containsKey)) {
+            null
+        } else {
+            manager.mergeItemsBlobData<UiConfig>(RemoteConfigTopic.UiConfig, ITEM_KEYS)
+        }
     }
 
     /**
