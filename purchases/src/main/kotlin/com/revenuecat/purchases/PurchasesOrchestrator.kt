@@ -1438,7 +1438,7 @@ internal class PurchasesOrchestrator(
         val typesRemaining = types.toMutableSet()
         val type = typesRemaining.firstOrNull()?.also { typesRemaining.remove(it) }
 
-        type?.let { productType ->
+        type?.takeIf { productIds.isNotEmpty() }?.let { productType ->
             val isFinalQuery = typesRemaining.isEmpty()
             billing.queryProductDetailsAsync(
                 productType = productType,

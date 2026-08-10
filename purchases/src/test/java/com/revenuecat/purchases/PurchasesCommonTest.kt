@@ -213,6 +213,39 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `getProducts does not query the next product type when all IDs were found`() {
+        val productIds = listOf("subscription")
+        mockStoreProduct(productIds, productIds, ProductType.SUBS)
+
+        purchases.getProducts(
+            productIds,
+            object : GetStoreProductsCallback {
+                override fun onReceived(storeProducts: List<StoreProduct>) = Unit
+                override fun onError(error: PurchasesError) = fail("shouldn't be error")
+            },
+        )
+
+        verify(exactly = 1) {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.SUBS,
+                productIds.toSet(),
+                false,
+                any(),
+                any(),
+            )
+        }
+        verify(exactly = 0) {
+            mockBillingAbstract.queryProductDetailsAsync(
+                ProductType.INAPP,
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        }
+    }
+
+    @Test
     fun `getProducts logs unfetched products for a single product type query`() {
         val productIds = listOf("product")
         mockStoreProduct(productIds, emptyList(), ProductType.SUBS)
