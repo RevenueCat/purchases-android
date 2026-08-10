@@ -336,6 +336,24 @@ internal class PaywallWebViewPrewarmerTest {
         }
     }
 
+    // The bound caps live renderer processes, not just map size, so the eldest view has to be gone before
+    // the new one is built.
+    @Test
+    fun `evicts the oldest entry before building the new view`() {
+        val prewarmer = prewarmer()
+        repeat(PaywallWebViewPrewarmer.MAX_PREWARMED) { index ->
+            prewarmer.prewarm(context, "https://example.com/$index.html", "component-$index")
+        }
+        var heldWhileBuilding = -1
+        every { WebViewCompat.prerenderUrlAsync(any(), URL, any(), any(), any()) } answers {
+            heldWhileBuilding = prewarmer.heldCount()
+        }
+
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
+
+        assertThat(heldWhileBuilding).isEqualTo(PaywallWebViewPrewarmer.MAX_PREWARMED - 1)
+    }
+
     @Test
     fun `an async error only drops the entry it belongs to`() {
         val callbacks = mutableListOf<PrerenderOperationCallback>()

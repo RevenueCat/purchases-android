@@ -285,12 +285,11 @@ internal class PaywallWebViewPrewarmer {
             return null
         }
         expiries.remove(resolvedUrl)?.let(mainHandler::removeCallbacks)
-        if (taken.loadFailed) {
+        return taken.takeUnless { it.loadFailed } ?: run {
             Logger.d("Paywalls V2 web_view prewarm discarded: its document failed to load while prewarming.")
             taken.destroy()
-            return null
+            null
         }
-        return taken
     }
 
     /**
