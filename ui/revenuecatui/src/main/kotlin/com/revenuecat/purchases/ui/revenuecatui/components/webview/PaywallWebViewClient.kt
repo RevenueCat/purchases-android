@@ -24,6 +24,7 @@ internal class PaywallWebViewClient(
     private val expectedOrigin: String?,
     private val onMainFrameNavigationStarted: () -> Unit,
     private val onMainFrameLoadFailed: () -> Unit,
+    private val onMainFrameLoadFinished: () -> Unit = {},
 ) : WebViewClient() {
 
     @Volatile
@@ -57,6 +58,13 @@ internal class PaywallWebViewClient(
             return
         }
         onMainFrameNavigationStarted()
+    }
+
+    override fun onPageFinished(view: WebView, url: String?) {
+        super.onPageFinished(view, url)
+        if (failed) return
+        if (url?.toOriginOrNull() == null) return
+        onMainFrameLoadFinished()
     }
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {

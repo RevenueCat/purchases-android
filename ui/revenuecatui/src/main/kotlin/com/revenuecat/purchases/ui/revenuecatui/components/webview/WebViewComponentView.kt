@@ -231,12 +231,14 @@ internal class ConfiguredPaywallWebView(
  * has fired and the caller must not start a load. The webView and bridge are already released and
  * destroyed at that point; a null result needs no teardown from the caller.
  */
+@Suppress("LongParameterList")
 internal fun createPaywallWebView(
     context: Context,
     identity: WebViewIdentity,
     onContentResize: (widthCssPx: Int?, heightCssPx: Int?) -> Unit,
     onDocumentReset: () -> Unit,
     onLoadFailed: () -> Unit,
+    onLoadFinished: () -> Unit = {},
 ): ConfiguredPaywallWebView? {
     var terminalFailure = false
     val expectedOrigin = identity.resolvedUrl.toOriginOrNull()
@@ -267,6 +269,7 @@ internal fun createPaywallWebView(
         expectedOrigin = expectedOrigin,
         onMainFrameNavigationStarted = bridge::onMainFrameNavigationStarted,
         onMainFrameLoadFailed = onLoadFailed,
+        onMainFrameLoadFinished = onLoadFinished,
     )
     webView.installGestureOwnershipProbe(expectedOrigin, webView::onContentGestureVerdict)
     return ConfiguredPaywallWebView(webView, bridge)
@@ -310,6 +313,7 @@ private fun WebView.configure(
     expectedOrigin: String?,
     onMainFrameNavigationStarted: () -> Unit,
     onMainFrameLoadFailed: () -> Unit,
+    onMainFrameLoadFinished: () -> Unit,
 ) {
     setBackgroundColor(Color.TRANSPARENT)
     isVerticalScrollBarEnabled = false
@@ -333,6 +337,7 @@ private fun WebView.configure(
         expectedOrigin = expectedOrigin,
         onMainFrameNavigationStarted = onMainFrameNavigationStarted,
         onMainFrameLoadFailed = onMainFrameLoadFailed,
+        onMainFrameLoadFinished = onMainFrameLoadFinished,
     )
     // Inspect the bundle from Chrome DevTools in debug builds only; process-global, never in release.
     if (BuildConfig.DEBUG) WebView.setWebContentsDebuggingEnabled(true)
