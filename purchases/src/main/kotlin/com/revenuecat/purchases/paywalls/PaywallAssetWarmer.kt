@@ -16,10 +16,6 @@ public interface PaywallAssetWarmer {
 
     public fun warmImages(context: Context, imageUris: List<Uri>)
 
-    /**
-     * Starts the WebView engine ahead of the first `web_view` render, which otherwise pays for it on the
-     * UI thread. Called only when a paywall contains one: the engine's memory is held for the process
-     * lifetime once started.
-     */
+    /** Starts the WebView engine, so the first `web_view` render does not pay for it on the UI thread. */
     public fun prebootWebView(context: Context)
 }
