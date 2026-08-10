@@ -441,10 +441,12 @@ class PaywallViewModelWorkflowTest {
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
         listener: PaywallListener? = null,
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
+        offering: Offering? = null,
     ): PaywallViewModelImpl {
         val builder = PaywallOptions.Builder(dismissRequest = {})
         dismissRequestWithExitOffering?.let { builder.setDismissRequestWithExitOffering(it) }
         listener?.let { builder.setListener(it) }
+        offering?.let { builder.setOffering(it) }
         return PaywallViewModelImpl(
             resourceProvider = MockResourceProvider(),
             purchases = purchases,
@@ -1420,6 +1422,49 @@ class PaywallViewModelWorkflowTest {
         vm.onPaywallPresented()
 
         assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `retargeting to a same-id standalone offering does not replay the dismissed workflow`() = runTest {
+        stubWorkflowFetch()
+
+        val vm = createVm(offering = testOffering)
+        advanceUntilIdle()
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+        vm.closePaywall(result = null)
+
+        // Same identifier, different Offering object. PaywallOptions.hashCode only covers the offering
+        // *identifier*, so updateOptions sees no change and never reloads: the snapshot survives, and only
+        // the offeringSelection guard stops it being replayed.
+        val retargetedOffering = Offering(
+            identifier = offeringId,
+            serverDescription = "retargeted",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = null,
+            webCheckoutURL = null,
+        )
+        val retargetedOptions = PaywallOptions.Builder(dismissRequest = {})
+            .setOffering(retargetedOffering)
+            .build()
+        // The premise of this test: the ViewModel was created from equivalent options, so updateOptions
+        // will see an unchanged hash. If PaywallOptions.hashCode ever widens, this fails loudly rather
+        // than leaving the test silently exercising the reload path instead of the guard.
+        val originalOptions = PaywallOptions.Builder(dismissRequest = {})
+            .setOffering(testOffering)
+            .build()
+        assertThat(retargetedOptions.hashCode()).isEqualTo(originalOptions.hashCode())
+
+        coEvery { purchases.resolveWorkflow(offeringId) } returns WorkflowResolution.NoWorkflow
+        vm.updateOptions(retargetedOptions)
+
+        vm.onPaywallPresented()
+        advanceUntilIdle()
+
+        // Replaying the snapshot here would show the old workflow, and attribute events to it, for a
+        // target that no longer uses one.
+        assertThat(vm.workflowState.value).isNull()
     }
 
     @Test

@@ -120,9 +120,10 @@ internal fun InternalPaywall(
     options: PaywallOptions,
     viewModel: PaywallViewModel = getPaywallViewModel(options),
 ) {
-    LaunchedEffect(viewModel) {
-        viewModel.onPaywallPresented()
-    }
+    // Runs during composition, not as an effect, so the replayed step one is in place before `state` is
+    // read below. As a LaunchedEffect this would land after the first composition had already read the
+    // dismissed step and composed it through the non-workflow branch.
+    remember(viewModel) { viewModel.onPaywallPresented() }
 
     BackHandler {
         if (!viewModel.handleBackNavigation()) {

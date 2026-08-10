@@ -294,6 +294,13 @@ internal class PaywallViewModelImpl(
         val uiConfig: UiConfig,
         val offerings: Offerings,
         val presentedOfferingContext: PresentedOfferingContext?,
+        /**
+         * What the paywall was pointed at when this was captured. `PaywallOptions.hashCode` keys only on
+         * the offering *identifier*, so a host can retarget the same ViewModel at a different Offering
+         * object carrying the same id without `updateOptions` triggering a reload. Replaying blindly would
+         * then show the old workflow for a target that no longer uses it.
+         */
+        val offeringSelection: OfferingSelection,
     )
 
     private var dismissedWorkflowPresentation: DismissedWorkflowPresentation? = null
@@ -398,6 +405,12 @@ internal class PaywallViewModelImpl(
 
     override fun onPaywallPresented() {
         val dismissed = dismissedWorkflowPresentation ?: return
+        if (dismissed.offeringSelection != options.offeringSelection) {
+            // Retargeted while dismissed. The snapshot describes a paywall we are no longer showing, and
+            // updateOptions may not have reloaded (the options hash only covers the offering identifier).
+            updateState()
+            return
+        }
         // Synchronous, so the replayed step one is in place before the composition reads state.
         startWorkflowPresentation(
             dismissed.workflow,
@@ -459,6 +472,7 @@ internal class PaywallViewModelImpl(
                 uiConfig = currentWorkflowUiConfig,
                 offerings = offerings,
                 presentedOfferingContext = currentWorkflowPresentedOfferingContext,
+                offeringSelection = options.offeringSelection,
             )
         }
         // An in-flight load is left running on purpose. A dismiss before the first load finishes leaves no
