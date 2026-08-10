@@ -48,6 +48,7 @@ internal class UiConfigProviderTest {
         every { manager.isDisabled } returns false
         coEvery { manager.topic(RemoteConfigTopic.UiConfig) } returns uiConfigTopic()
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) } returns null
+        coEvery { manager.committedTopicAfterInFlightRefresh(RemoteConfigTopic.UiConfig) } returns null
         currentLogHandler = object : LogHandler {
             override fun v(tag: String, msg: String) {}
             override fun d(tag: String, msg: String) {}
@@ -229,6 +230,22 @@ internal class UiConfigProviderTest {
 
         assertThat(provider.resolveUiConfig()).isEqualTo(UiConfigResolution.NotConfigured)
         coVerify(exactly = 0) {
+            manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())
+        }
+    }
+
+    @Test
+    fun `resolveUiConfig uses ui_config parts committed by an in-flight refresh`() = runTest {
+        coEvery { manager.topic(RemoteConfigTopic.UiConfig) } returns ConfigTopic(emptyMap())
+        coEvery {
+            manager.committedTopicAfterInFlightRefresh(RemoteConfigTopic.UiConfig)
+        } returns uiConfigTopic()
+        stubMergedRead(minimalUiConfigJson())
+
+        assertThat(provider.resolveUiConfig()).isInstanceOf(UiConfigResolution.Found::class.java)
+        coVerifyOrder {
+            manager.topic(RemoteConfigTopic.UiConfig)
+            manager.committedTopicAfterInFlightRefresh(RemoteConfigTopic.UiConfig)
             manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())
         }
     }

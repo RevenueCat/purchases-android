@@ -122,7 +122,10 @@ internal class UiConfigProvider(
         // topic() waits for or primes the initial config sync on a cold cache. Once that authoritative topic is
         // available, an absent topic or one with none of the ui_config parts means the project has no ui_config;
         // avoid asking the generic all-or-nothing merger to resolve four known-missing blobs and warning about it.
-        val topic = manager.topic(RemoteConfigTopic.UiConfig)
+        var topic = manager.topic(RemoteConfigTopic.UiConfig)
+        if (topic != null && ITEM_KEYS.none(topic::containsKey)) {
+            topic = manager.committedTopicAfterInFlightRefresh(RemoteConfigTopic.UiConfig)
+        }
         return if (topic == null || ITEM_KEYS.none(topic::containsKey)) {
             null
         } else {

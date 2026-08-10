@@ -425,6 +425,72 @@ class WorkflowsConfigIntegrationTest {
         }
 
     @Test
+    fun `onPaywallConfigReady awaits an in-flight refresh when the cached ui_config topic is empty`() =
+        runTest(testDispatcher) {
+            sync(NO_PAYWALLS_CONFIG)
+            val uiConfigProvider = UiConfigProvider(manager, scope = testScope)
+            val workflowManager = WorkflowManager(
+                workflowsConfigProvider = provider,
+                uiConfigProvider = uiConfigProvider,
+                workflowAssetPrewarmer = mockk(relaxed = true),
+                scope = testScope,
+            )
+
+            manager.refreshRemoteConfig(
+                appInBackground = false,
+                appUserID = "user-1",
+                fetchContext = RemoteConfigFetchContext.Foreground,
+            )
+            var completed = false
+            workflowManager.onPaywallConfigReady { completed = true }
+
+            assertThat(completed).isFalse()
+
+            val app = """{"colors":{},"fonts":{}}"""
+            val localizations = "{}"
+            val variableConfig = """{"variable_compatibility_map":{},"function_compatibility_map":{}}"""
+            val customVariables = "{}"
+            val appRef = refOf(app.toByteArray())
+            val localizationsRef = refOf(localizations.toByteArray())
+            val variableConfigRef = refOf(variableConfig.toByteArray())
+            val customVariablesRef = refOf(customVariables.toByteArray())
+            val config = """
+                {
+                  "domain": "app",
+                  "manifest": "v1.ui_config:etag2",
+                  "active_topics": ["workflows", "ui_config"],
+                  "topics": {
+                    "workflows": {},
+                    "ui_config": {
+                      "app": { "blob_ref": "$appRef" },
+                      "localizations": { "blob_ref": "$localizationsRef" },
+                      "variable_config": { "blob_ref": "$variableConfigRef" },
+                      "custom_variables": { "blob_ref": "$customVariablesRef" }
+                    }
+                  }
+                }
+            """.trimIndent()
+            onSuccess.invoke(
+                containerWith(
+                    config,
+                    appRef to app,
+                    localizationsRef to localizations,
+                    variableConfigRef to variableConfig,
+                    customVariablesRef to customVariables,
+                ),
+                Date(),
+                VerificationResult.VERIFIED,
+            )
+
+            assertThat(completed).isTrue()
+            assertThat(uiConfigProvider.isWarm()).isTrue()
+            verify(exactly = 2) {
+                backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any())
+            }
+            assertThat(downloadCount).isZero()
+        }
+
+    @Test
     fun `a paywall published later is picked up on the next commit`() = runTest(testDispatcher) {
         // The flip side of gating read priming: a project that had no paywalls must still converge on one
         // published later. That happens on the next ordinary (stale-driven) sync, not on every getOfferings.
