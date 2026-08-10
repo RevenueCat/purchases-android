@@ -57,15 +57,18 @@ import io.mockk.verify
 import io.mockk.verifyAll
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdEvent
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
+import com.revenuecat.purchases.ads.events.types.AdRewardFailureReason
 import com.revenuecat.purchases.ads.rewardverification.Outcome
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult as PollResult
 import com.revenuecat.purchases.ads.rewardverification.VerifiedReward as PollReward
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationPollLauncher
 import com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -2225,6 +2228,29 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(tracked[0]).isInstanceOf(AdEvent.RewardEarnedUnverified::class.java)
         val failed = tracked[1] as AdEvent.RewardFailedToVerify
         assertThat(failed.failureReason.value).isEqualTo("no_reward_rule")
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @Test
+    fun `pollRewardVerification tracks failed to verify with Cancelled reason when poll is cancelled`() {
+        val tracked = mutableListOf<AdEvent>()
+        every { mockAdEventsManager.track(any()) } answers { tracked.add(firstArg<AdEvent>()) }
+
+        assertThatThrownBy {
+            runBlocking {
+                purchases.pollRewardVerification(
+                    clientTransactionId = "ct_1",
+                    trackingMetadata = testTrackingMetadata,
+                    captureMethod = AdCaptureMethod.MANUAL,
+                    poll = { throw CancellationException() },
+                )
+            }
+        }.isInstanceOf(CancellationException::class.java)
+
+        assertThat(tracked).hasSize(2)
+        assertThat(tracked[0]).isInstanceOf(AdEvent.RewardEarnedUnverified::class.java)
+        val failed = tracked[1] as AdEvent.RewardFailedToVerify
+        assertThat(failed.failureReason).isEqualTo(AdRewardFailureReason.Cancelled)
     }
 
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)

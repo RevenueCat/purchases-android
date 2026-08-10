@@ -69,6 +69,16 @@ internal sealed interface Outcome {
             override val isUnexpected: Boolean get() = true
             override val trackingFailureReason: AdRewardFailureReason get() = AdRewardFailureReason.Unknown
         }
+
+        // The poll was cancelled before reaching a terminal status — e.g. the ad was dismissed or the SDK
+        // closed while polling was in flight. Never returned by Poller itself (cancellation propagates as a
+        // thrown CancellationException); callers that catch it synthesize this Outcome to track the attempt.
+        object Cancelled : Failed {
+            override val logMessage: String
+                get() = "Reward verification was cancelled before it could complete."
+            override val isUnexpected: Boolean get() = false
+            override val trackingFailureReason: AdRewardFailureReason get() = AdRewardFailureReason.Cancelled
+        }
     }
 }
 

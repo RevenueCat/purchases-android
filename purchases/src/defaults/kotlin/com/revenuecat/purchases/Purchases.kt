@@ -64,6 +64,7 @@ import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import kotlinx.coroutines.CancellationException
 import org.json.JSONObject
 import java.net.URL
 import java.util.Locale
@@ -881,7 +882,14 @@ public class Purchases internal constructor(
             )
         }
 
-        val outcome = poll(clientTransactionId)
+        val outcome = try {
+            poll(clientTransactionId)
+        } catch (e: CancellationException) {
+            if (trackingMetadata != null) {
+                trackRewardOutcome(trackingMetadata, Outcome.Failed.Cancelled, captureMethod)
+            }
+            throw e
+        }
         if (trackingMetadata != null) {
             trackRewardOutcome(trackingMetadata, outcome, captureMethod)
         }
