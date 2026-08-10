@@ -97,14 +97,19 @@ internal class PaywallWebViewPrewarmer {
     @Suppress("TooGenericExceptionCaught")
     private fun createPrerendered(context: Context, identity: WebViewIdentity): PrewarmedWebView? {
         val callbacks = PrewarmBridgeCallbacks()
-        // Application context: this view is never attached to a window, so holding an Activity here
-        // would outlive it.
+        // Application context: prewarm has no Activity to borrow, and this view must not outlive the one
+        // that happens to be showing. The cost is that it cannot host JS dialogs, <select> popups, file
+        // choosers or fullscreen video, unlike a view the display path builds from an Activity.
         val configured = createPaywallWebView(
             context = context.applicationContext,
             identity = identity,
             onContentResize = callbacks::dispatchResize,
             onDocumentReset = callbacks::dispatchDocumentReset,
-            onLoadFailed = callbacks::dispatchLoadFailed,
+            onLoadFailed = {
+                callbacks.dispatchLoadFailed()
+                // Posted: this arrives inside a WebViewClient callback, and destroy() must not run there.
+                mainHandler.post { releaseIfHeld(identity) }
+            },
         ) ?: return null
 
         val prewarmed = PrewarmedWebView(
@@ -131,22 +136,33 @@ internal class PaywallWebViewPrewarmer {
     }
 
     /**
-     * Hands the prewarmed WebView to the display factory, clearing the slot either way. A prewarmed
-     * view for a different component is destroyed rather than kept: the paywall being shown is not
-     * the one it was warmed for.
+     * Hands the prewarmed WebView to the display factory, clearing the slot either way. A view warmed for
+     * a different component, or one whose document failed to load, is destroyed instead of handed over so
+     * the caller loads cold.
      */
     @MainThread
     fun take(identity: WebViewIdentity): PrewarmedWebView? {
         val current = slot ?: return null
         slot = null
         mainHandler.removeCallbacks(releaseOnTimeout)
-        return if (current.identity == identity) {
+        val rejection = when {
+            current.identity != identity -> "it was held for a different component"
+            current.loadFailed -> "its document failed to load while prewarming"
+            else -> null
+        }
+        return if (rejection == null) {
             current
         } else {
-            Logger.d("Paywalls V2 web_view prewarm discarded: held for a different component than requested.")
+            Logger.d("Paywalls V2 web_view prewarm discarded: $rejection.")
             current.destroy()
             null
         }
+    }
+
+    /** Releases the held view if it is still the one [identity] was warmed for. */
+    @MainThread
+    private fun releaseIfHeld(identity: WebViewIdentity) {
+        if (slot?.identity == identity) releaseAll()
     }
 
     @MainThread
@@ -156,8 +172,6 @@ internal class PaywallWebViewPrewarmer {
         slot = null
     }
 
-    // Inner, not nested: an async failure must release the slot it prerendered into, if that slot is
-    // still the one this callback was created for (take() may have already cleared or replaced it).
     private inner class PrerenderLogger(private val identity: WebViewIdentity) : PrerenderOperationCallback {
         override fun onPrerenderActivated() {
             Logger.d("Paywalls V2 web_view prerender activated for component '${identity.componentId}'.")
@@ -165,9 +179,7 @@ internal class PaywallWebViewPrewarmer {
 
         override fun onError(exception: PrerenderException) {
             Logger.d("Paywalls V2 web_view prerender failed for component '${identity.componentId}': $exception")
-            if (slot?.identity == identity) {
-                releaseAll()
-            }
+            releaseIfHeld(identity)
         }
     }
 

@@ -2,6 +2,8 @@ package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import android.content.Context
 import android.os.Looper
+import android.webkit.WebResourceRequest
+import android.webkit.WebView
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.webkit.PrerenderException
@@ -154,6 +156,46 @@ internal class PaywallWebViewPrewarmerTest {
         callback.captured.onError(mockk<PrerenderException>(relaxed = true))
 
         assertThat(prewarmer.take(identity())).isNull()
+    }
+
+    // Replaying a prewarm-time load failure onto the adopting component would make prewarming worse than
+    // no prewarming: the display path renders nothing where a cold load would have succeeded.
+    @Test
+    fun `refuses a view whose document failed to load while prewarming`() {
+        val prewarmer = prewarmer()
+        val webView = prewarmedWebView(prewarmer)
+
+        failMainFrameLoad(webView)
+
+        assertThat(prewarmer.take(identity())).isNull()
+    }
+
+    @Test
+    fun `a failed prewarm releases its slot instead of blocking the next one`() {
+        val prewarmer = prewarmer()
+        val webView = prewarmedWebView(prewarmer)
+
+        failMainFrameLoad(webView)
+        shadowOf(Looper.getMainLooper()).idle()
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
+
+        verify(exactly = 2) { WebViewCompat.prerenderUrlAsync(any(), any(), any(), any(), any()) }
+    }
+
+    /** Prewarms and returns the WebView it built, captured as it installs its message listener. */
+    private fun prewarmedWebView(prewarmer: PaywallWebViewPrewarmer): WebView {
+        val webViewSlot = slot<WebView>()
+        every {
+            WebViewCompat.addWebMessageListener(capture(webViewSlot), any(), any(), any())
+        } returns Unit
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
+        return webViewSlot.captured
+    }
+
+    private fun failMainFrameLoad(webView: WebView) {
+        val request = mockk<WebResourceRequest>(relaxed = true)
+        every { request.isForMainFrame } returns true
+        shadowOf(webView).webViewClient.onReceivedError(webView, request, mockk(relaxed = true))
     }
 
     @Test

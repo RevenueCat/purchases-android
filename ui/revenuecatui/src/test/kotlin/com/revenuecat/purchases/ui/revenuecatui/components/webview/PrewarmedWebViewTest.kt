@@ -92,14 +92,28 @@ internal class PrewarmedWebViewTest {
         assertThat(height).isEqualTo(240)
     }
 
+    // A failure from prewarm is surfaced for the prewarmer to refuse the view, not replayed onto the
+    // component: the display path must be free to load cold.
     @Test
-    fun `activation replays a failure reported during prewarm`() {
+    fun `reports a failure from prewarm without replaying it on activation`() {
         callbacks.dispatchLoadFailed()
         var failed = false
 
+        assertThat(prewarmed.loadFailed).isTrue()
         activate(onLoadFailed = { failed = true })
 
-        assertThat(failed).isTrue()
+        assertThat(failed).isFalse()
+    }
+
+    @Test
+    fun `activation keeps the replayed content size when the document reset arrives`() {
+        callbacks.dispatchResize(320, 240)
+        var width: Int? = null
+
+        activate(onContentResize = { w, _ -> width = w })
+        callbacks.dispatchDocumentReset()
+
+        assertThat(width).isEqualTo(320)
     }
 
     @Test

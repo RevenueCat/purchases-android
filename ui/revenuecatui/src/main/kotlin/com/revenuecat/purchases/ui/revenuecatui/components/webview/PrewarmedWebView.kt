@@ -18,6 +18,10 @@ internal class PrewarmedWebView(
     val cancellationSignal: CancellationSignal,
 ) {
 
+    /** Whether this view's document failed to load during prewarm, making it unfit to adopt. */
+    val loadFailed: Boolean
+        get() = callbacks.loadFailed
+
     /**
      * Hands this view to the composition adopting it. It is already configured down to its
      * document-start scripts, so only the callbacks need repointing; loading the prerendered URL
@@ -30,6 +34,7 @@ internal class PrewarmedWebView(
         onLoadFailed: () -> Unit,
     ): FrameLayout {
         callbacks.rebind(onContentResize, onDocumentReset, onLoadFailed)
+        callbacks.ignoreDocumentResetFromActivation()
         webView.loadUrl(identity.resolvedUrl)
         return webView.hostedInFrameLayout()
     }

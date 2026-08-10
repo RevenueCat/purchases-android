@@ -1,6 +1,4 @@
 @file:JvmSynthetic
-// This file is the single home for the paywall WebView extensions; keeping the shared builder here
-// is what lets configure() stay private.
 @file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui.components.webview

@@ -9,8 +9,9 @@ internal class PrewarmBridgeCallbacksTest {
 
     private fun rebind(
         onContentResize: (Int?, Int?) -> Unit = { _, _ -> },
+        onDocumentReset: () -> Unit = {},
         onLoadFailed: () -> Unit = {},
-    ) = callbacks.rebind(onContentResize, onDocumentReset = {}, onLoadFailed = onLoadFailed)
+    ) = callbacks.rebind(onContentResize, onDocumentReset = onDocumentReset, onLoadFailed = onLoadFailed)
 
     @Test
     fun `replays the last content size delivered before adoption`() {
@@ -66,26 +67,53 @@ internal class PrewarmBridgeCallbacksTest {
         assertThat(resized).isFalse()
     }
 
+    // A prewarm-time failure must not become the adopting component's failure: it is recorded so the
+    // prewarmer can refuse the entry, and the display path then loads cold.
     @Test
-    fun `replays a terminal failure delivered before adoption`() {
+    fun `records a terminal failure without replaying it`() {
         callbacks.dispatchLoadFailed()
 
         var failed = false
         rebind(onLoadFailed = { failed = true })
 
+        assertThat(callbacks.loadFailed).isTrue()
+        assertThat(failed).isFalse()
+    }
+
+    @Test
+    fun `forwards a terminal failure that arrives after adoption`() {
+        var failed = false
+        rebind(onLoadFailed = { failed = true })
+
+        callbacks.dispatchLoadFailed()
+
         assertThat(failed).isTrue()
     }
 
     @Test
-    fun `does not replay a stale size once the load has failed`() {
+    fun `keeps the replayed size across the activation navigation`() {
         callbacks.dispatchResize(320, 240)
-        callbacks.dispatchLoadFailed()
 
-        var resized = false
-        var failed = false
-        rebind(onContentResize = { _, _ -> resized = true }, onLoadFailed = { failed = true })
+        var width: Int? = null
+        var reset = false
+        rebind(onContentResize = { w, _ -> width = w }, onDocumentReset = { reset = true })
+        callbacks.ignoreDocumentResetFromActivation()
+        callbacks.dispatchDocumentReset()
 
-        assertThat(failed).isTrue()
-        assertThat(resized).isFalse()
+        assertThat(width).isEqualTo(320)
+        assertThat(reset).isFalse()
+    }
+
+    @Test
+    fun `only the activation navigation is ignored`() {
+        callbacks.dispatchResize(320, 240)
+        callbacks.ignoreDocumentResetFromActivation()
+        callbacks.dispatchDocumentReset()
+
+        var reset = false
+        rebind(onDocumentReset = { reset = true })
+        callbacks.dispatchDocumentReset()
+
+        assertThat(reset).isTrue()
     }
 }
