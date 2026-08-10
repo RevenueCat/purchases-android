@@ -441,7 +441,7 @@ class BackendStoredEventAdTest {
             adUnitId = "ad-unit-999",
             impressionId = "impression-789",
             captureMethod = AdCaptureMethod.MANUAL,
-            failureReason = AdRewardFailureReason.backendError("no_reward_rule"),
+            failureReason = AdRewardFailureReason.BackendError("no_reward_rule"),
         )
 
         val storedEvent = failedEvent.toBackendStoredEvent(appUserID, appSessionID)
