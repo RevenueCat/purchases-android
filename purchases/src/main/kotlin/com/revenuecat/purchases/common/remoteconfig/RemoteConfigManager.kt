@@ -612,6 +612,17 @@ internal class RemoteConfigManager(
     }
 
     /**
+     * Waits for the refresh that is currently in flight, if any, then returns the latest committed [topic].
+     * Unlike [topic], this never starts a refresh. This lets a consumer avoid treating a stale-but-committed
+     * empty topic as authoritative while AppStart is already fetching a newer configuration.
+     */
+    suspend fun committedTopicAfterInFlightRefresh(topic: RemoteConfigTopic): ConfigTopic? =
+        withContext(ioDispatcher) {
+            awaitInFlightRefresh()
+            if (disabled) null else topicStore.topic(topic)
+        }
+
+    /**
      * Like [topic], but additionally waits for the topic's `prefetch`-marked blobs to finish caching before
      * returning: the config request must be committed **and** every item in [topic] flagged `prefetch` must have
      * its referenced blob resolved (already inlined-and-cached, or downloaded now). Inlined blobs are cached
