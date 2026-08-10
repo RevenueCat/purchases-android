@@ -1405,6 +1405,79 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `closing twice before re-presenting still replays the workflow from its initial step`() = runTest {
+        stubWorkflowFetch()
+
+        val vm = createVm()
+        advanceUntilIdle()
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+
+        // A second back press while the host is still animating out. The first close already cleared the
+        // live workflow fields, so the second must not overwrite the snapshot with nothing.
+        vm.closePaywall(result = null)
+        vm.closePaywall(result = null)
+        vm.onPaywallPresented()
+
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `reopening after a RevenueCat purchase dismiss tracks a fresh workflow impression`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            storeTransaction = mockk<StoreTransaction>(),
+            customerInfo = mockk<CustomerInfo>(),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        advanceUntilIdle()
+        vm.trackPaywallImpressionIfNeeded()
+
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+        advanceUntilIdle()
+        captured.clear()
+
+        vm.onPaywallPresented()
+        vm.trackPaywallImpressionIfNeeded()
+
+        // Without the impression reset at the dismiss boundary the replayed presentation matches the old
+        // fingerprint and bills nothing, leaving workflow_step_started with nothing to attribute to.
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impressions).hasSize(1)
+        assertThat(impressions.single().data.workflowId).isEqualTo(workflow.id)
+        assertThat(impressions.single().data.traceId).isNotNull()
+    }
+
+    @Test
+    fun `reopening after a RevenueCat restore dismiss tracks a fresh workflow impression`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitRestore() } returns mockk<CustomerInfo>()
+
+        val vm = createVm(shouldDisplayBlock = { false })
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        advanceUntilIdle()
+        vm.trackPaywallImpressionIfNeeded()
+
+        vm.handleRestorePurchases()
+        advanceUntilIdle()
+        captured.clear()
+
+        vm.onPaywallPresented()
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impressions).hasSize(1)
+        assertThat(impressions.single().data.workflowId).isEqualTo(workflow.id)
+        assertThat(impressions.single().data.traceId).isNotNull()
+    }
+
+    @Test
     fun `reopening retained ViewModel after a RevenueCat purchase dismiss starts at initial step`() = runTest {
         coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
             storeTransaction = mockk<StoreTransaction>(),

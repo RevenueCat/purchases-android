@@ -450,15 +450,16 @@ internal class PaywallViewModelImpl(
         paywallPresentationData = null
         val workflow = currentWorkflow
         val offerings = currentWorkflowOfferings
-        dismissedWorkflowPresentation = if (workflow != null && offerings != null) {
-            DismissedWorkflowPresentation(
+        // Only overwrite when a workflow is actually live. A second dismiss before the next presentation
+        // (a double back press while the host is still animating out) finds the fields already cleared by
+        // the first, and must not erase the snapshot that first dismiss captured.
+        if (workflow != null && offerings != null) {
+            dismissedWorkflowPresentation = DismissedWorkflowPresentation(
                 workflow = workflow,
                 uiConfig = currentWorkflowUiConfig,
                 offerings = offerings,
                 presentedOfferingContext = currentWorkflowPresentedOfferingContext,
             )
-        } else {
-            null
         }
         // An in-flight load is left running on purpose. A dismiss before the first load finishes leaves no
         // workflow to snapshot, and unchanged options do not trigger another updateState() on the next
