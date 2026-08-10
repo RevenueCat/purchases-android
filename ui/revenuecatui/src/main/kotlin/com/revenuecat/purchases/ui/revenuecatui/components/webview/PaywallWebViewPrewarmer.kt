@@ -129,7 +129,12 @@ internal class PaywallWebViewPrewarmer {
             sizeToContentHeight = sizeToContentHeight,
         )
         applicationContext = context.applicationContext
-        registerTrimCallbacks(context)
+        // Registered on first hold rather than on construction, so an SDK that never prewarms adds no
+        // callback to the host application. Kept for the process lifetime: this instance is a singleton.
+        if (!trimCallbacksRegistered) {
+            trimCallbacksRegistered = true
+            context.applicationContext.registerComponentCallbacks(trimCallbacks)
+        }
         // At capacity nothing is evicted: a held entry is worth more than a queued one, and the overflow
         // still gets its bundle into the http cache.
         if (pool.size >= MAX_PREWARMED) {
@@ -204,14 +209,6 @@ internal class PaywallWebViewPrewarmer {
     private fun discard(resolvedUrl: String) {
         expiries.remove(resolvedUrl)?.let(mainHandler::removeCallbacks)
         pool.remove(resolvedUrl)?.destroy()
-    }
-
-    // Registered on first hold rather than on construction, so an SDK that never prewarms adds no
-    // callback to the host application. Kept for the process lifetime: this instance is a singleton.
-    private fun registerTrimCallbacks(context: Context) {
-        if (trimCallbacksRegistered) return
-        trimCallbacksRegistered = true
-        context.applicationContext.registerComponentCallbacks(trimCallbacks)
     }
 
     @Suppress("TooGenericExceptionCaught")

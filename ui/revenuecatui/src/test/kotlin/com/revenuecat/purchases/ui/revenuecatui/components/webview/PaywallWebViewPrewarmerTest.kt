@@ -33,6 +33,7 @@ internal class PaywallWebViewPrewarmerTest {
     private companion object {
         const val URL = "https://example.com/index.html"
         const val OTHER_URL = "https://example.com/other.html"
+        const val THIRD_URL = "https://example.com/third.html"
         const val COMPONENT_ID = "component-1"
     }
 
@@ -336,22 +337,21 @@ internal class PaywallWebViewPrewarmerTest {
         }
     }
 
-    // The bound caps live renderer processes, not just map size, so the eldest view has to be gone before
-    // the new one is built.
+    // The bound caps live renderer processes, not just map size. An overflow url is loaded too, so at most
+    // one cache warm may be in flight alongside a full pool.
     @Test
-    fun `evicts the oldest entry before building the new view`() {
+    fun `never holds more than the pool bound plus one cache warm`() {
         val prewarmer = prewarmer()
-        repeat(PaywallWebViewPrewarmer.MAX_PREWARMED) { index ->
-            prewarmer.prewarm(context, "https://example.com/$index.html", "component-$index")
-        }
-        var heldWhileBuilding = -1
-        every { WebViewCompat.prerenderUrlAsync(any(), URL, any(), any(), any()) } answers {
-            heldWhileBuilding = prewarmer.heldCount()
-        }
+        fillPool(prewarmer)
 
         prewarmer.prewarm(context, URL, COMPONENT_ID)
+        prewarmer.prewarm(context, OTHER_URL, "overflow-2")
+        prewarmer.prewarm(context, THIRD_URL, "overflow-3")
 
-        assertThat(heldWhileBuilding).isEqualTo(PaywallWebViewPrewarmer.MAX_PREWARMED - 1)
+        assertThat(prewarmer.heldCount).isEqualTo(PaywallWebViewPrewarmer.MAX_PREWARMED)
+        verify(exactly = PaywallWebViewPrewarmer.MAX_PREWARMED + 1) {
+            WebViewCompat.prerenderUrlAsync(any(), any(), any(), any(), any())
+        }
     }
 
     @Test
