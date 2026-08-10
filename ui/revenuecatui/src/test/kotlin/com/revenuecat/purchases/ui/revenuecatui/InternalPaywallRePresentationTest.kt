@@ -133,6 +133,35 @@ class InternalPaywallRePresentationTest {
         assertThat(observedStates).doesNotContain(PaywallState.Loading)
     }
 
+    /**
+     * Characterizes the limitation documented on `PaywallViewModel.onPaywallPresented`: the replay hangs
+     * off composition entry, so a host that dismisses without unmounting never fires it. This test exists
+     * to make that boundary explicit and to fail loudly if a future change quietly moves it, in either
+     * direction.
+     */
+    @Test
+    fun `a host that never unmounts the paywall does not get the workflow replayed`() {
+        val options = PaywallOptions.Builder(dismissRequest = {}).build()
+        val vm = createVm(options)
+
+        composeTestRule.setContent { InternalPaywall(options = options, viewModel = vm) }
+
+        composeTestRule.waitUntil { vm.workflowState.value?.currentStepId == "step-1" }
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        composeTestRule.waitForIdle()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+        val stepTwoState = vm.state.value
+
+        // dismissRequest is a no-op here, so InternalPaywall stays composed across the dismiss.
+        vm.closePaywall(result = null)
+        composeTestRule.waitForIdle()
+
+        // No composition entry, so no replay: workflow state is gone and _state is still the very same
+        // step-two state, which InternalPaywall renders through the non-workflow branch.
+        assertThat(vm.workflowState.value).isNull()
+        assertThat(vm.state.value).isSameAs(stepTwoState)
+    }
+
     @Test
     fun `re-presenting a dismissed paywall tracks one impression, not one per stale frame`() {
         val captured = mutableListOf<FeatureEvent>()
@@ -165,5 +194,10 @@ class InternalPaywallRePresentationTest {
         val impressions = captured.filterIsInstance<PaywallEvent>()
             .filter { it.type == PaywallEventType.IMPRESSION }
         assertThat(impressions).hasSize(1)
+        // Counting alone would still pass if the one impression were the stale step's: that one is billed
+        // outside a workflow presentation, so it carries no workflowId and no traceId.
+        val impression = impressions.single()
+        assertThat(impression.data.workflowId).isEqualTo(workflow.id)
+        assertThat(impression.data.traceId).isNotNull()
     }
 }

@@ -387,7 +387,6 @@ internal class PaywallViewModelImpl(
         if (exitOffering != null) {
             trackExitOffer(ExitOfferType.DISMISS, exitOffering.identifier)
         }
-        paywallPresentationData = null
         endPresentationSession()
         val dismissWithExitOffering = options.dismissRequestWithExitOffering
         if (dismissWithExitOffering != null) {
@@ -442,8 +441,13 @@ internal class PaywallViewModelImpl(
      *
      * [_state] is deliberately left holding the last rendered step. The host owns the exit animation, so
      * blanking it here would swap the paywall for the loading skeleton while it is still on screen.
+     *
+     * [paywallPresentationData] is cleared, on the other hand: a replayed presentation would otherwise
+     * match the old visual fingerprint and skip its impression, emitting `workflow_step_started` with
+     * nothing to attribute to.
      */
     private fun endPresentationSession() {
+        paywallPresentationData = null
         val workflow = currentWorkflow
         val offerings = currentWorkflowOfferings
         dismissedWorkflowPresentation = if (workflow != null && offerings != null) {

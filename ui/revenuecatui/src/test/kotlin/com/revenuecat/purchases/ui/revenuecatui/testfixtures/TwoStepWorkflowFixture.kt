@@ -33,10 +33,10 @@ import java.net.URL
 internal object TwoStepWorkflowFixture {
 
     const val OFFERING_ID = "test_offering"
-    const val INITIAL_STEP_ID = "step-1"
-    const val SECOND_STEP_ID = "step-2"
-    const val NEXT_BUTTON_ID = "btn-next"
 
+    private const val INITIAL_STEP_ID = "step-1"
+    private const val SECOND_STEP_ID = "step-2"
+    private const val NEXT_BUTTON_ID = "btn-next"
     private const val SCREEN_ID_1 = "screen-1"
     private const val SCREEN_ID_2 = "screen-2"
 
