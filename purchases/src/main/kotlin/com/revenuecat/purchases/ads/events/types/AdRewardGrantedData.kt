@@ -17,8 +17,8 @@ import dev.drewhamilton.poko.Poko
  * @property impressionId The impression ID.
  * @property reward The reward that was granted.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @InternalRevenueCatAPI
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Poko
 public class AdRewardGrantedData(
     public val networkName: String?,
