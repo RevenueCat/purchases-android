@@ -60,14 +60,13 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
     }
 
     /**
-     * Dev-only: triggers WebView preboot on demand, so its main-thread cost can be timed on a device.
+     * Dev-only, for timing preboot's main-thread cost on a device:
      *
      * adb shell am start -n <pkg>/.MainActivity --ez prewarm_startup true
      */
     @OptIn(InternalRevenueCatAPI::class)
     private fun handleWebViewPrebootExtra() {
         if (intent.getBooleanExtra("prewarm_startup", false)) {
-            // Through ServiceLoader, the same way core reaches it, rather than the internal impl.
             ServiceLoader.load(PaywallAssetWarmer::class.java, PaywallAssetWarmer::class.java.classLoader)
                 .firstOrNull()?.prebootWebView(this)
         }
