@@ -117,8 +117,15 @@ internal class UiConfigProvider(
         scope.cancel()
     }
 
-    private suspend fun resolve(): UiConfig? =
-        manager.mergeItemsBlobData<UiConfig>(RemoteConfigTopic.UiConfig, ITEM_KEYS)
+    private suspend fun resolve(): UiConfig? {
+        if (manager.isDisabled) return null
+        // topic() waits for or primes the initial config sync on a cold cache. Once that authoritative topic is
+        // available, an absent topic or one with none of the ui_config parts means the project has no ui_config;
+        // avoid asking the generic all-or-nothing merger to resolve four known-missing blobs and warning about it.
+        val topic = manager.topic(RemoteConfigTopic.UiConfig)
+        if (topic == null || ITEM_KEYS.none(topic::containsKey)) return null
+        return manager.mergeItemsBlobData<UiConfig>(RemoteConfigTopic.UiConfig, ITEM_KEYS)
+    }
 
     /**
      * Tells "there is nothing to resolve" apart from "resolving what is published failed". Only ever called

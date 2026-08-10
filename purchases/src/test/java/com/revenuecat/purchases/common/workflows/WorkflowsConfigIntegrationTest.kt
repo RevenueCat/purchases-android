@@ -5,12 +5,14 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.emptyUiConfig
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCElement
 import com.revenuecat.purchases.common.remoteconfig.PersistedRemoteConfigurationState
@@ -386,14 +388,30 @@ class WorkflowsConfigIntegrationTest {
             sync(NO_PAYWALLS_CONFIG)
 
             val workflowManager = workflowManagerWithRealUiConfig()
-            repeat(3) {
-                var completed = false
-                workflowManager.onPaywallConfigReady { completed = true }
-                assertThat(completed).isTrue()
+            val warningLogs = mutableListOf<String>()
+            val previousLogHandler = currentLogHandler
+            try {
+                currentLogHandler = object : LogHandler {
+                    override fun v(tag: String, msg: String) = Unit
+                    override fun d(tag: String, msg: String) = Unit
+                    override fun i(tag: String, msg: String) = Unit
+                    override fun w(tag: String, msg: String) {
+                        warningLogs += msg
+                    }
+                    override fun e(tag: String, msg: String, throwable: Throwable?) = Unit
+                }
+                repeat(3) {
+                    var completed = false
+                    workflowManager.onPaywallConfigReady { completed = true }
+                    assertThat(completed).isTrue()
+                }
+            } finally {
+                currentLogHandler = previousLogHandler
             }
 
             verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
             assertThat(downloadCount).isZero()
+            assertThat(warningLogs).noneMatch { it.contains("Could not resolve remote config blob(s)") }
         }
 
     @Test
