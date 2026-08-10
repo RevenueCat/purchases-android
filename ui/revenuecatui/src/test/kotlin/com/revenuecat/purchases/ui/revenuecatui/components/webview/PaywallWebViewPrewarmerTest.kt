@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
+import android.app.Application
+import android.content.ComponentCallbacks2
 import android.content.Context
 import android.os.Looper
 import android.webkit.WebResourceRequest
@@ -252,6 +254,16 @@ internal class PaywallWebViewPrewarmerTest {
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(PaywallWebViewPrewarmer.HOLD_TIMEOUT_MS - 1))
 
         assertThat(prewarmer.take(identity())).isNotNull()
+    }
+
+    @Test
+    fun `releases the prewarmed view when the app is asked to trim memory`() {
+        val prewarmer = prewarmer()
+        prewarmer.prewarm(context, URL, COMPONENT_ID)
+
+        (context as Application).onTrimMemory(ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN)
+
+        assertThat(prewarmer.take(identity())).isNull()
     }
 
     @Test

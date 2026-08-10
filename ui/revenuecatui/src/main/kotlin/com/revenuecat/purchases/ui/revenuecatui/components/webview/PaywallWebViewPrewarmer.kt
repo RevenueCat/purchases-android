@@ -2,7 +2,9 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
+import android.content.ComponentCallbacks2
 import android.content.Context
+import android.content.res.Configuration
 import android.os.CancellationSignal
 import android.os.Handler
 import android.os.Looper
@@ -48,6 +50,24 @@ internal class PaywallWebViewPrewarmer {
         releaseAll()
     }
 
+    private var trimCallbacksRegistered = false
+
+    /**
+     * A held prerender is a discardable cache, so it is dropped at every trim level rather than left to
+     * compete with the host app for memory. Android delivers these on the main thread.
+     */
+    @VisibleForTesting
+    internal val trimCallbacks = object : ComponentCallbacks2 {
+        override fun onTrimMemory(level: Int) {
+            if (slot != null) Logger.d("Paywalls V2 web_view prewarm released on memory trim (level $level).")
+            releaseAll()
+        }
+
+        override fun onLowMemory() = onTrimMemory(ComponentCallbacks2.TRIM_MEMORY_COMPLETE)
+
+        override fun onConfigurationChanged(newConfig: Configuration) = Unit
+    }
+
     /**
      * Prerenders [url] for the component that will render it. [url] is resolved through
      * [WebViewUrlResolver] so the resulting identity matches the display path's byte for byte;
@@ -90,8 +110,17 @@ internal class PaywallWebViewPrewarmer {
             sizeToContentHeight = sizeToContentHeight,
         )
         slot = createPrerendered(context, identity) ?: return
+        registerTrimCallbacks(context)
         mainHandler.removeCallbacks(releaseOnTimeout)
         mainHandler.postDelayed(releaseOnTimeout, HOLD_TIMEOUT_MS)
+    }
+
+    // Registered on first hold rather than on construction, so an SDK that never prewarms adds no
+    // callback to the host application. Kept for the process lifetime: this instance is a singleton.
+    private fun registerTrimCallbacks(context: Context) {
+        if (trimCallbacksRegistered) return
+        trimCallbacksRegistered = true
+        context.applicationContext.registerComponentCallbacks(trimCallbacks)
     }
 
     @Suppress("TooGenericExceptionCaught")
