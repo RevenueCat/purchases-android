@@ -120,6 +120,12 @@ internal fun InternalPaywall(
     options: PaywallOptions,
     viewModel: PaywallViewModel = getPaywallViewModel(options),
 ) {
+    // Runs once per composition entry. A retained ViewModel re-presented after a dismiss replays its
+    // workflow from step one here; every other case is a no-op.
+    LaunchedEffect(viewModel) {
+        viewModel.onPaywallPresented()
+    }
+
     BackHandler {
         if (!viewModel.handleBackNavigation()) {
             viewModel.closePaywall()

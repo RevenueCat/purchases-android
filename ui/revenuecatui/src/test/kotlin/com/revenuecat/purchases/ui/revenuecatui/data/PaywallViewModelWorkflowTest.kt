@@ -59,6 +59,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import io.mockk.Runs
 import io.mockk.clearAllMocks
+import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -1372,6 +1373,47 @@ class PaywallViewModelWorkflowTest {
         vm.closePaywall(result = null)
 
         assertThat(vm.workflowState.value).isNull()
+    }
+
+    @Test
+    fun `reopening retained ViewModel after closing from second step starts at initial step`() = runTest {
+        coEvery { purchases.resolveWorkflow(offeringId) } returns WorkflowResolution.Found(workflow.id)
+        coEvery { purchases.awaitGetWorkflow(workflow.id) } returns workflow
+        coEvery { purchases.awaitGetUiConfig() } returns uiConfig
+
+        val vm = createVm()
+        advanceUntilIdle()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+
+        vm.closePaywall(result = null)
+
+        vm.onPaywallPresented()
+
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `reopening retained ViewModel replays the workflow without refetching it`() = runTest {
+        coEvery { purchases.resolveWorkflow(offeringId) } returns WorkflowResolution.Found(workflow.id)
+        coEvery { purchases.awaitGetWorkflow(workflow.id) } returns workflow
+        coEvery { purchases.awaitGetUiConfig() } returns uiConfig
+
+        val vm = createVm()
+        advanceUntilIdle()
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.closePaywall(result = null)
+        clearMocks(purchases, answers = false, recordedCalls = true, verificationMarks = true)
+
+        vm.onPaywallPresented()
+
+        // The replay is synchronous and offline: step one is on screen before anything could be awaited.
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(vm.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
+        coVerify(exactly = 0) { purchases.resolveWorkflow(any()) }
     }
 
     @Test
