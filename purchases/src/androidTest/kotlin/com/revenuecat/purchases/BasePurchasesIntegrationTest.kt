@@ -88,6 +88,9 @@ abstract class BasePurchasesIntegrationTest {
         override fun modifyRequestURL(url: URL, endpoint: Endpoint): URL {
             return forceServerErrorsStrategy?.modifyRequestURL(url, endpoint) ?: url
         }
+        override fun shouldForceConnectionFailure(url: String): Boolean {
+            return forceServerErrorsStrategy?.shouldForceConnectionFailure(url) ?: false
+        }
         override fun fakeResponseWithoutPerformingRequest(baseURL: URL, endpoint: Endpoint): HTTPResult? {
             return forceServerErrorsStrategy?.fakeResponseWithoutPerformingRequest(baseURL, endpoint)
         }

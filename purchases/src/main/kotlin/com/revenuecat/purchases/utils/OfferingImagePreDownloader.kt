@@ -53,7 +53,7 @@ internal class OfferingImagePreDownloader(
                 errorLog(error) { "Error deserializing paywall components data. Skipping V2 image pre-download." }
                 return
             }.componentsConfig.base
-            paywallComponentsImagePreDownloader.preDownloadImages(componentsConfig)
+            paywallComponentsImagePreDownloader.preDownloadImages(componentsConfig.collectAssets())
         }
     }
 }
