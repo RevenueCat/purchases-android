@@ -56,6 +56,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvid
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
+import com.revenuecat.purchases.ui.revenuecatui.testfixtures.TwoStepWorkflowFixture
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
 import io.mockk.Runs
 import io.mockk.clearAllMocks
@@ -100,16 +101,12 @@ class PaywallViewModelWorkflowTest {
     private lateinit var purchases: PurchasesType
 
     // Both steps share one offering; screen1 and screen2 differ only by ID.
-    private val offeringId = "test_offering"
+    private val offeringId = TwoStepWorkflowFixture.OFFERING_ID
     private val screenId1 = "screen-1"
     private val screenId2 = "screen-2"
 
-    private val defaultLocaleId = LocaleId("en_US")
-    private val localizations = mapOf(
-        defaultLocaleId to mapOf(
-            LocalizationKey("dummy_text") to LocalizationData.Text("dummy"),
-        ),
-    )
+    private val defaultLocaleId = TwoStepWorkflowFixture.defaultLocaleId
+    private val localizations = TwoStepWorkflowFixture.localizations
     private val componentsConfig = ComponentsConfig(
         base = PaywallComponentsConfig(
             // At least one PackageComponent is required for calculateState to produce
@@ -131,27 +128,8 @@ class PaywallViewModelWorkflowTest {
         offeringIdentifier = offeringId,
     )
 
-    private val step1 = WorkflowStep(
-        id = "step-1",
-        type = "screen",
-        screenId = screenId1,
-        triggers = listOf(
-            WorkflowTrigger(
-                name = "Next",
-                type = WorkflowTriggerType.ON_PRESS,
-                actionId = "action-next",
-                componentId = "btn-next",
-            ),
-        ),
-        triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
-    )
-    private val step2 = WorkflowStep(
-        id = "step-2",
-        type = "screen",
-        screenId = screenId2,
-        triggers = emptyList(),
-        triggerActions = emptyMap(),
-    )
+    private val step1 = TwoStepWorkflowFixture.step1
+    private val step2 = TwoStepWorkflowFixture.step2
 
     // Two-package fixture: monthly (default) + annual, for propagation tests.
     private val annualPackageComponent = PackageComponent(
@@ -259,26 +237,11 @@ class PaywallViewModelWorkflowTest {
     // localizations the way they did when this lived on the workflow itself.
     private val uiConfig = UiConfig()
 
-    private val workflow = PublishedWorkflow(
-        id = "wfl-test",
-        displayName = "Test",
-        initialStepId = "step-1",
-        steps = mapOf("step-1" to step1, "step-2" to step2),
-        screens = mapOf(screenId1 to makeScreen(screenId1), screenId2 to makeScreen(screenId2)),
-        metadata = emptyMap(),
-        singleStepFallbackId = "step-1",
-    )
+    private val workflow = TwoStepWorkflowFixture.workflow
     private val fetchResult = workflow
 
-    private val testOffering = Offering(
-        identifier = offeringId,
-        serverDescription = "",
-        metadata = emptyMap(),
-        availablePackages = listOf(TestData.Packages.monthly),
-        paywallComponents = null,
-        webCheckoutURL = null,
-    )
-    private val testOfferings = Offerings(testOffering, mapOf(offeringId to testOffering))
+    private val testOffering = TwoStepWorkflowFixture.offering
+    private val testOfferings = TwoStepWorkflowFixture.offerings
 
     private val exitOfferingId = "exit-offering-id"
     private val exitOffering = Offering(
@@ -467,9 +430,17 @@ class PaywallViewModelWorkflowTest {
         clearAllMocks()
     }
 
+    /** Stubs the three fetches the workflow load path makes for [workflow]. */
+    private fun stubWorkflowFetch() {
+        coEvery { purchases.resolveWorkflow(offeringId) } returns WorkflowResolution.Found(workflow.id)
+        coEvery { purchases.awaitGetWorkflow(workflow.id) } returns workflow
+        coEvery { purchases.awaitGetUiConfig() } returns uiConfig
+    }
+
     private fun createVm(
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
         listener: PaywallListener? = null,
+        shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
         val builder = PaywallOptions.Builder(dismissRequest = {})
         dismissRequestWithExitOffering?.let { builder.setDismissRequestWithExitOffering(it) }
@@ -480,7 +451,7 @@ class PaywallViewModelWorkflowTest {
             options = builder.build(),
             colorScheme = TestData.Constants.currentColorScheme,
             isDarkMode = false,
-            shouldDisplayBlock = null,
+            shouldDisplayBlock = shouldDisplayBlock,
             // Run the step-state pre-warm on the test scheduler so advanceUntilIdle() awaits it
             // instead of it escaping to Dispatchers.Default and resuming after resetMain().
             backgroundDispatcher = testDispatcher,
@@ -1377,9 +1348,7 @@ class PaywallViewModelWorkflowTest {
 
     @Test
     fun `reopening retained ViewModel after closing from second step starts at initial step`() = runTest {
-        coEvery { purchases.resolveWorkflow(offeringId) } returns WorkflowResolution.Found(workflow.id)
-        coEvery { purchases.awaitGetWorkflow(workflow.id) } returns workflow
-        coEvery { purchases.awaitGetUiConfig() } returns uiConfig
+        stubWorkflowFetch()
 
         val vm = createVm()
         advanceUntilIdle()
@@ -1397,9 +1366,7 @@ class PaywallViewModelWorkflowTest {
 
     @Test
     fun `reopening retained ViewModel replays the workflow without refetching it`() = runTest {
-        coEvery { purchases.resolveWorkflow(offeringId) } returns WorkflowResolution.Found(workflow.id)
-        coEvery { purchases.awaitGetWorkflow(workflow.id) } returns workflow
-        coEvery { purchases.awaitGetUiConfig() } returns uiConfig
+        stubWorkflowFetch()
 
         val vm = createVm()
         advanceUntilIdle()
@@ -1412,8 +1379,70 @@ class PaywallViewModelWorkflowTest {
         // The replay is synchronous and offline: step one is on screen before anything could be awaited.
         assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
         assertThat(vm.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
-        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
+        // Every fetch the normal workflow load path makes, so a replay that refreshes any of them fails here.
         coVerify(exactly = 0) { purchases.resolveWorkflow(any()) }
+        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
+        coVerify(exactly = 0) { purchases.awaitGetUiConfig() }
+        coVerify(exactly = 0) { purchases.awaitOfferings() }
+    }
+
+    @Test
+    fun `dismissing before the first load finishes still leaves the retained ViewModel loadable`() = runTest {
+        stubWorkflowFetch()
+
+        // init kicks off updateState, but nothing has run on the test dispatcher yet, so the paywall is
+        // still Loading and there is no workflow to snapshot when the user backs out.
+        val vm = createVm()
+        assertThat(vm.state.value).isEqualTo(PaywallState.Loading)
+
+        vm.closePaywall(result = null)
+        vm.onPaywallPresented()
+        advanceUntilIdle()
+
+        // Cancelling the only in-flight load here would strand the retained ViewModel on the skeleton.
+        assertThat(vm.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `reopening retained ViewModel after a RevenueCat purchase dismiss starts at initial step`() = runTest {
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            storeTransaction = mockk<StoreTransaction>(),
+            customerInfo = mockk<CustomerInfo>(),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        advanceUntilIdle()
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+
+        // A REVENUECAT purchase completion auto-dismisses, bypassing closePaywall.
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+        advanceUntilIdle()
+
+        vm.onPaywallPresented()
+
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `reopening retained ViewModel after a RevenueCat restore dismiss starts at initial step`() = runTest {
+        coEvery { purchases.awaitRestore() } returns mockk<CustomerInfo>()
+
+        // Returning false makes a successful restore auto-dismiss, bypassing closePaywall.
+        val vm = createVm(shouldDisplayBlock = { false })
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        advanceUntilIdle()
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+
+        vm.handleRestorePurchases()
+        advanceUntilIdle()
+
+        vm.onPaywallPresented()
+
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
     }
 
     @Test

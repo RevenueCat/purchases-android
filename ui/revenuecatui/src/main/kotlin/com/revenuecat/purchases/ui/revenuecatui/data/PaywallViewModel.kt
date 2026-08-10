@@ -125,6 +125,10 @@ internal interface PaywallViewModel {
      * embedded or dialog presentation can be dismissed and shown again on the same instance. When that
      * happens the retained workflow must restart from its initial step rather than resume where the user
      * left off. No-op for a first presentation or a non-workflow paywall.
+     *
+     * Known limitation: this fires on composition entry, so a host that keeps the paywall composed after
+     * dismissing it never calls this and keeps rendering the step the user left off on. `PaywallActivity`
+     * finishes and `PaywallDialog` unmounts its content, so both are unaffected.
      */
     fun onPaywallPresented()
 
@@ -278,9 +282,12 @@ internal class PaywallViewModelImpl(
     private var updateStateJob: Job? = null
 
     /**
-     * Everything [startWorkflowPresentation] needs to replay a dismissed workflow from its initial step,
-     * captured at the dismiss boundary before [clearWorkflowState] drops the live fields. Non-null only
-     * between a dismiss and the next presentation of a retained ViewModel.
+     * Everything [startWorkflowPresentation] needs to replay a dismissed workflow from its initial step.
+     *
+     * This duplicates the live `currentWorkflow*` fields on purpose. Those cannot simply be left set past
+     * the dismiss: `currentWorkflow != null` is what gates [paywallEventTraceId],
+     * [trackPaywallImpressionIfNeeded] and [trackComponentInteraction] into workflow mode, so keeping them
+     * alive would attribute post-dismiss events to a presentation that already ended.
      */
     private data class DismissedWorkflowPresentation(
         val workflow: PublishedWorkflow,
@@ -392,10 +399,7 @@ internal class PaywallViewModelImpl(
 
     override fun onPaywallPresented() {
         val dismissed = dismissedWorkflowPresentation ?: return
-        dismissedWorkflowPresentation = null
-        // Replays the workflow from its initial step off the retained snapshot: no /workflows fetch, no
-        // offerings reload, and no trip through PaywallState.Loading, so the paywall is on screen for the
-        // frame it re-enters composition.
+        // Synchronous, so the replayed step one is in place before the composition reads state.
         startWorkflowPresentation(
             dismissed.workflow,
             dismissed.uiConfig,
@@ -434,27 +438,27 @@ internal class PaywallViewModelImpl(
     }
 
     /**
-     * Runs at every dismiss boundary. Snapshots the workflow so [onPaywallPresented] can replay it from
-     * step one, then tears the session down exactly as before.
+     * Runs at every dismiss boundary.
      *
-     * Deliberately leaves [_state] alone. This ViewModel can outlive an embedded or dialog presentation,
-     * and the host owns the exit animation, so blanking the last rendered frame here would swap the
-     * paywall for the loading skeleton while it is still on screen, and would strand any host that keeps
-     * the paywall composed after dismissing it.
+     * [_state] is deliberately left holding the last rendered step. The host owns the exit animation, so
+     * blanking it here would swap the paywall for the loading skeleton while it is still on screen.
      */
     private fun endPresentationSession() {
-        // An in-flight load belongs to the session being torn down, so stop it writing _state afterwards.
-        cancelStateUpdate()
-        dismissedWorkflowPresentation = currentWorkflow?.let { workflow ->
-            currentWorkflowOfferings?.let { offerings ->
-                DismissedWorkflowPresentation(
-                    workflow = workflow,
-                    uiConfig = currentWorkflowUiConfig,
-                    offerings = offerings,
-                    presentedOfferingContext = currentWorkflowPresentedOfferingContext,
-                )
-            }
+        val workflow = currentWorkflow
+        val offerings = currentWorkflowOfferings
+        dismissedWorkflowPresentation = if (workflow != null && offerings != null) {
+            DismissedWorkflowPresentation(
+                workflow = workflow,
+                uiConfig = currentWorkflowUiConfig,
+                offerings = offerings,
+                presentedOfferingContext = currentWorkflowPresentedOfferingContext,
+            )
+        } else {
+            null
         }
+        // An in-flight load is left running on purpose. A dismiss before the first load finishes leaves no
+        // workflow to snapshot, and unchanged options do not trigger another updateState() on the next
+        // presentation, so cancelling here would strand the retained ViewModel on the loading skeleton.
         standaloneStateStore = null
         clearWorkflowState()
     }
@@ -1125,6 +1129,8 @@ internal class PaywallViewModelImpl(
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
     ) {
+        // Any presentation supersedes a pending replay, including the one that consumes it.
+        dismissedWorkflowPresentation = null
         val initialStep = workflow.steps[workflow.initialStepId]
         if (initialStep == null) {
             updateExitOfferData(ExitOfferData.Unavailable())

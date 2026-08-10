@@ -610,12 +610,7 @@ internal class MockViewModel(
         refreshStateIfColorsChangedCallCount++
     }
 
-    var onPaywallPresentedCallCount = 0
-        private set
-
-    override fun onPaywallPresented() {
-        onPaywallPresentedCallCount++
-    }
+    override fun onPaywallPresented() = Unit
 
     var selectPackageCallCount = 0
         private set
