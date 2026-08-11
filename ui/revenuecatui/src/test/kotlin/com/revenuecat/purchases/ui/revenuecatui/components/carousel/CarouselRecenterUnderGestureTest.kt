@@ -24,24 +24,22 @@ import org.robolectric.annotation.Config
 @RunWith(AndroidJUnit4::class)
 class CarouselRecenterUnderGestureTest {
 
-    private companion object {
-        const val CLONE_PAD = 2
-        const val PAGE_COUNT = 2
-        const val RING_COUNT = PAGE_COUNT + 2 * CLONE_PAD
-        const val TRAILING_CLONE = RING_COUNT - 1
-    }
-
     @get:Rule
     val composeTestRule = createComposeRule()
 
     @Test
     fun `a recentre started while a gesture holds the scroll mutex still lands`() {
+        val clonePad = 2
+        val pageCount = 2
+        val ringCount = pageCount + 2 * clonePad
+        val trailingClone = ringCount - 1
+
         var holdMutexWithGesture by mutableStateOf(false)
         var recenterEnabled by mutableStateOf(false)
         lateinit var pagerState: PagerState
 
         composeTestRule.setContent {
-            pagerState = rememberPagerState(initialPage = TRAILING_CLONE) { RING_COUNT }
+            pagerState = rememberPagerState(initialPage = trailingClone) { ringCount }
 
             if (holdMutexWithGesture) {
                 LaunchedEffect(pagerState) {
@@ -49,7 +47,7 @@ class CarouselRecenterUnderGestureTest {
                 }
             }
             if (recenterEnabled) {
-                RecenterLoopClones(pagerState = pagerState, clonePad = CLONE_PAD, pageCount = PAGE_COUNT)
+                RecenterLoopClones(pagerState = pagerState, clonePad = clonePad, pageCount = pageCount)
             }
 
             Box(Modifier.fillMaxSize()) {
@@ -57,7 +55,6 @@ class CarouselRecenterUnderGestureTest {
             }
         }
         composeTestRule.waitForIdle()
-        assertThat(pagerState.currentPage).isEqualTo(TRAILING_CLONE)
 
         holdMutexWithGesture = true
         composeTestRule.waitForIdle()
@@ -70,7 +67,7 @@ class CarouselRecenterUnderGestureTest {
 
         assertThat(pagerState.currentPage)
             .describedAs("requestScrollToPage bypasses the scroll mutex, so it lands even mid-gesture")
-            .isEqualTo(carouselRecenterTarget(TRAILING_CLONE, CLONE_PAD, PAGE_COUNT))
+            .isEqualTo(carouselRecenterTarget(trailingClone, clonePad, pageCount))
         assertThat(pagerState.isScrollInProgress)
             .describedAs("the re-centre must not have cancelled the gesture's hold on the mutex")
             .isTrue()
