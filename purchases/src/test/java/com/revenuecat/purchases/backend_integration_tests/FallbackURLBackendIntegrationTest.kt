@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
+import org.json.JSONObject
 import org.junit.Test
 
 internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
@@ -82,8 +83,8 @@ internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse, originalDataSource, _ ->
-                    assertThat(offeringsResponse.getJSONArray("offerings").length()).isGreaterThan(0)
+                onSuccess = { offeringsResponse, originalDataSource ->
+                    assertThat(JSONObject(offeringsResponse).getJSONArray("offerings").length()).isGreaterThan(0)
                     assertThat(originalDataSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
                     latch.countDown()
                 },
@@ -110,8 +111,8 @@ internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse, originalDataSource, _ ->
-                    assertThat(offeringsResponse.getJSONArray("offerings").length()).isGreaterThan(0)
+                onSuccess = { offeringsResponse, originalDataSource ->
+                    assertThat(JSONObject(offeringsResponse).getJSONArray("offerings").length()).isGreaterThan(0)
                     assertThat(originalDataSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
                     latch.countDown()
                 },

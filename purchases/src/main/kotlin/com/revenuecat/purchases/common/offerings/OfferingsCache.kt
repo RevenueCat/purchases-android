@@ -8,7 +8,6 @@ import com.revenuecat.purchases.common.LocaleProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
 import com.revenuecat.purchases.common.caching.isCacheStale
-import org.json.JSONObject
 
 @OptIn(InternalRevenueCatAPI::class)
 internal class OfferingsCache(
@@ -69,9 +68,9 @@ internal class OfferingsCache(
 
     // region Offerings response cache
 
-    val cachedOfferingsResponse: JSONObject?
+    val cachedOfferingsResponse: String?
         @Synchronized
-        get() = deviceCache.getOfferingsResponseCache()
+        get() = deviceCache.getOfferingsResponseCacheText()
 
     // endregion Offerings response cache
 }

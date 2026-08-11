@@ -29,12 +29,13 @@ internal class OfferingsFactory(
 
     @SuppressWarnings("TooGenericExceptionCaught", "LongMethod")
     fun createOfferings(
-        offeringsJSON: JSONObject,
+        parsedResponse: ParsedOfferingsResponse,
         originalDataSource: HTTPResponseOriginalSource?,
         loadedFromDiskCache: Boolean,
         onError: (PurchasesError) -> Unit,
         onSuccess: (OfferingsResultData) -> Unit,
     ) {
+        val offeringsJSON = parsedResponse.json
         try {
             val allRequestedProductIdentifiers = extractProductIdentifiers(offeringsJSON)
             if (allRequestedProductIdentifiers.isEmpty()) {
@@ -74,6 +75,7 @@ internal class OfferingsFactory(
                                 originalDataSource,
                                 loadedFromDiskCache,
                                 appConfig.store,
+                                parsedResponse.paywallComponents,
                             )
                             if (offerings.all.isEmpty()) {
                                 onError(

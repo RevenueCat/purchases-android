@@ -35,7 +35,7 @@ class OfferingsSourceTest {
         offeringParser = GoogleOfferingParser()
         deviceCache = mockk()
         every { deviceCache.cacheOfferingsResponse(any()) } returns Unit
-        every { deviceCache.getOfferingsResponseCache() } returns null
+        every { deviceCache.getOfferingsResponseCacheText() } returns null
         offeringsCache = OfferingsCache(deviceCache, localeProvider = com.revenuecat.purchases.common.DefaultLocaleProvider())
     }
 

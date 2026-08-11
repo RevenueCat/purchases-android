@@ -9,6 +9,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
+import com.revenuecat.purchases.common.offerings.OfferingsResponseParser
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -649,6 +650,60 @@ class OfferingsTest {
             .isEqualTo("monthly")
         assertThat(uiConfig.variableConfig.variableCompatibilityMap["new var"]).isEqualTo("guaranteed var")
         assertThat(uiConfig.variableConfig.functionCompatibilityMap["new fun"]).isEqualTo("guaranteed fun")
+    }
+
+    @Test
+    fun `createOfferings from an elided response yields the same paywallComponents as the un-elided one`() {
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
+        val uiConfigJson = getUiConfigJson(
+            colors = mapOf("primary" to "#ff00ff"),
+            fonts = emptyMap(),
+            localizations = emptyMap(),
+        )
+        val offeringJson = getOfferingJSON(paywallComponents = getPaywallComponentsDataJson())
+        val offeringsJson = getOfferingsJSON(offerings = JSONArray(listOf(offeringJson)), uiConfig = uiConfigJson)
+        val parsedResponse = OfferingsResponseParser.parse(offeringsJson.toString())
+        assertThat(parsedResponse.paywallComponents.filterNotNull()).hasSize(1)
+
+        val fromElided = offeringsParser.createOfferings(
+            offeringsJson = parsedResponse.json,
+            productsById = products,
+            paywallComponents = parsedResponse.paywallComponents,
+        ).all.values.first()
+        val fromUnElided = offeringsParser.createOfferings(offeringsJson, products).all.values.first()
+
+        assertThat(fromElided.hasPaywallComponents).isTrue
+        val elidedComponents = fromElided.paywallComponents ?: fail("paywallComponents is null")
+        assertThat(elidedComponents.data.getOrNull())
+            .isEqualTo((fromUnElided.paywallComponents ?: fail("paywallComponents is null")).data.getOrNull())
+        assertThat(elidedComponents).isEqualTo(fromUnElided.paywallComponents)
+    }
+
+    @Test
+    fun `createOfferings from an elided response yields null paywallComponents for a malformed components object`() {
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly))
+        val uiConfigJson = getUiConfigJson(
+            colors = mapOf("primary" to "#ff00ff"),
+            fonts = emptyMap(),
+            localizations = emptyMap(),
+        )
+        val malformedComponents = JSONObject(getPaywallComponentsDataJson().toString())
+            .apply { remove("default_locale") }
+        val offeringJson = getOfferingJSON(paywallComponents = malformedComponents)
+        val offeringsJson = getOfferingsJSON(offerings = JSONArray(listOf(offeringJson)), uiConfig = uiConfigJson)
+        val parsedResponse = OfferingsResponseParser.parse(offeringsJson.toString())
+
+        val offering = offeringsParser.createOfferings(
+            offeringsJson = parsedResponse.json,
+            productsById = products,
+            paywallComponents = parsedResponse.paywallComponents,
+        ).all.values.first()
+
+        assertThat(offering.paywallComponents).isNull()
+        assertThat(offering.hasPaywallComponents).isFalse
     }
 
     @Test

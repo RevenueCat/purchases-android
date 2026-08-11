@@ -65,7 +65,7 @@ internal typealias CallbackCacheKey = List<String>
 
 /** @suppress */
 @OptIn(InternalRevenueCatAPI::class)
-internal typealias OfferingsSuccessCallback = (JSONObject, HTTPResponseOriginalSource, responsePayload: String) -> Unit
+internal typealias OfferingsSuccessCallback = (responsePayload: String, HTTPResponseOriginalSource) -> Unit
 
 /** @suppress */
 @OptIn(InternalRevenueCatAPI::class)
@@ -457,12 +457,7 @@ internal class Backend(
                     offeringsCallbacks.remove(cacheKey)
                 }?.forEach { (onSuccess, onError) ->
                     if (result.isSuccessful()) {
-                        try {
-                            onSuccess(result.body, result.originalDataSource, result.payloadText)
-                        } catch (e: JSONException) {
-                            val errorBehavior = GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS
-                            onError(e.toPurchasesError().also { errorLog(it) }, errorBehavior)
-                        }
+                        onSuccess(result.payloadText, result.originalDataSource)
                     } else {
                         val errorBehavior = if (RCHTTPStatusCodes.isServerError(result.responseCode)) {
                             GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS

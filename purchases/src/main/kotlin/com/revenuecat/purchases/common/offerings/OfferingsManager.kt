@@ -15,12 +15,13 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.toPurchasesError
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
-import org.json.JSONObject
+import org.json.JSONException
 import java.util.Date
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
@@ -217,36 +218,28 @@ internal class OfferingsManager(
         backend.getOfferings(
             appUserID,
             appInBackground,
-            { body, originalDataSource, responsePayload ->
-                createAndCacheOfferings(
-                    offeringsJSON = body,
-                    originalDataSource = originalDataSource,
-                    responsePayloadToCache = responsePayload,
-                    fetchGeneration = fetchGeneration,
-                    onError,
-                    onSuccess,
-                )
+            { responsePayload, originalDataSource ->
+                val parsedResponse = try {
+                    OfferingsResponseParser.parse(responsePayload)
+                } catch (e: JSONException) {
+                    fallBackToCachedOfferingsOrError(e.toPurchasesError(), fetchGeneration, onError, onSuccess)
+                    null
+                }
+                parsedResponse?.let {
+                    createAndCacheOfferings(
+                        parsedResponse = it,
+                        originalDataSource = originalDataSource,
+                        responsePayloadToCache = responsePayload,
+                        fetchGeneration = fetchGeneration,
+                        onError = onError,
+                        onSuccess = onSuccess,
+                    )
+                }
             },
             { backendError, errorBehavior ->
                 when (errorBehavior) {
                     GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS -> {
-                        val cachedOfferingsResponse = offeringsCache.cachedOfferingsResponse
-                        if (cachedOfferingsResponse == null) {
-                            handleErrorFetchingOfferings(backendError, onError)
-                        } else {
-                            warnLog { OfferingStrings.ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE }
-                            createAndCacheOfferings(
-                                offeringsJSON = cachedOfferingsResponse,
-                                // Unknown: the source of the response that originally populated the
-                                // disk cache is not persisted, because persisting it is what forced the
-                                // response body to be re-serialized on every write.
-                                originalDataSource = null,
-                                responsePayloadToCache = null,
-                                fetchGeneration = fetchGeneration,
-                                onError,
-                                onSuccess,
-                            )
-                        }
+                        fallBackToCachedOfferingsOrError(backendError, fetchGeneration, onError, onSuccess)
                     }
                     GetOfferingsErrorHandlingBehavior.SHOULD_NOT_FALLBACK -> {
                         handleErrorFetchingOfferings(backendError, onError)
@@ -256,8 +249,39 @@ internal class OfferingsManager(
         )
     }
 
+    private fun fallBackToCachedOfferingsOrError(
+        backendError: PurchasesError,
+        fetchGeneration: Int,
+        onError: ((PurchasesError) -> Unit)?,
+        onSuccess: ((OfferingsResultData) -> Unit)?,
+    ) {
+        val parsedDiskResponse = offeringsCache.cachedOfferingsResponse?.let { responseText ->
+            warnLog { OfferingStrings.ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE }
+            try {
+                OfferingsResponseParser.parse(responseText)
+            } catch (@Suppress("SwallowedException") e: JSONException) {
+                null
+            }
+        }
+        if (parsedDiskResponse == null) {
+            handleErrorFetchingOfferings(backendError, onError)
+            return
+        }
+        createAndCacheOfferings(
+            parsedResponse = parsedDiskResponse,
+            // Unknown: the source of the response that originally populated the
+            // disk cache is not persisted, because persisting it is what forced the
+            // response body to be re-serialized on every write.
+            originalDataSource = null,
+            responsePayloadToCache = null,
+            fetchGeneration = fetchGeneration,
+            onError = onError,
+            onSuccess = onSuccess,
+        )
+    }
+
     private fun createAndCacheOfferings(
-        offeringsJSON: JSONObject,
+        parsedResponse: ParsedOfferingsResponse,
         originalDataSource: HTTPResponseOriginalSource?,
         /** Null when this parse came from the disk cache; see [OfferingsCache.cacheOfferings]. */
         responsePayloadToCache: String?,
@@ -267,7 +291,7 @@ internal class OfferingsManager(
     ) {
         val loadedFromDiskCache = responsePayloadToCache == null
         offeringsFactory.createOfferings(
-            offeringsJSON,
+            parsedResponse,
             originalDataSource,
             loadedFromDiskCache,
             onError = { error ->
@@ -293,7 +317,7 @@ internal class OfferingsManager(
                 } else {
                     log(LogIntent.DEBUG) { OfferingStrings.OFFERINGS_CACHE_INVALIDATED_SKIPPING_STALE_WRITE }
                     createAndCacheOfferings(
-                        offeringsJSON = offeringsJSON,
+                        parsedResponse = parsedResponse,
                         originalDataSource = originalDataSource,
                         responsePayloadToCache = responsePayloadToCache,
                         fetchGeneration = cacheGeneration.get(),

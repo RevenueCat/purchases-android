@@ -9,6 +9,7 @@ import io.mockk.every
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
+import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
 import java.net.URL
@@ -132,8 +133,8 @@ internal open class LoadShedderUSEast1BackendIntegrationTest: BaseBackendIntegra
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse, originalDataSource, _ ->
-                    assertThat(offeringsResponse.getString("current_offering_id")).isEqualTo("default")
+                onSuccess = { offeringsResponse, originalDataSource ->
+                    assertThat(JSONObject(offeringsResponse).getString("current_offering_id")).isEqualTo("default")
                     assertThat(originalDataSource).isEqualTo(HTTPResponseOriginalSource.LOAD_SHEDDER)
                     latch.countDown()
                 },
@@ -158,8 +159,8 @@ internal open class LoadShedderUSEast1BackendIntegrationTest: BaseBackendIntegra
             backend.getOfferings(
                 appUserID = "test-user-id",
                 appInBackground = false,
-                onSuccess = { offeringsResponse, originalDataSource, _ ->
-                    assertThat(offeringsResponse.getString("current_offering_id")).isEqualTo("default")
+                onSuccess = { offeringsResponse, originalDataSource ->
+                    assertThat(JSONObject(offeringsResponse).getString("current_offering_id")).isEqualTo("default")
                     assertThat(originalDataSource).isEqualTo(HTTPResponseOriginalSource.LOAD_SHEDDER)
                     latch.countDown()
                 },

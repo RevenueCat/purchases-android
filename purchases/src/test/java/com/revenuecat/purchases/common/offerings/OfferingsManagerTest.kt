@@ -464,7 +464,7 @@ class OfferingsManagerTest {
         } just Runs
 
         mockBackendResponseError()
-        val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
+        val backendResponse = ONE_OFFERINGS_RESPONSE
         every { cache.cachedOfferingsResponse } returns backendResponse
         mockDeviceCache(wasSuccessful = false)
         mockOfferingsFactory()
@@ -484,7 +484,7 @@ class OfferingsManagerTest {
         verify(exactly = 1) { cache.cacheOfferings(testOfferings, null) }
         verify(exactly = 1) {
             offeringsFactory.createOfferings(
-                offeringsJSON = backendResponse,
+                parsedResponse = match { it.json.toString() == JSONObject(backendResponse).toString() },
                 originalDataSource = null,
                 loadedFromDiskCache = true,
                 onError = any(),
@@ -507,7 +507,7 @@ class OfferingsManagerTest {
             error = expectedError,
             errorBehavior = GetOfferingsErrorHandlingBehavior.SHOULD_NOT_FALLBACK,
         )
-        val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
+        val backendResponse = ONE_OFFERINGS_RESPONSE
         every { cache.cachedOfferingsResponse } returns backendResponse
         mockDeviceCache(wasSuccessful = false)
         mockOfferingsFactory()
@@ -562,7 +562,7 @@ class OfferingsManagerTest {
         } just Runs
 
         mockBackendResponseError()
-        val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
+        val backendResponse = ONE_OFFERINGS_RESPONSE
         every { cache.cachedOfferingsResponse } returns backendResponse
         mockDeviceCache(wasSuccessful = false)
         val expectedError = PurchasesError(PurchasesErrorCode.StoreProblemError)
@@ -631,7 +631,7 @@ class OfferingsManagerTest {
         } just Runs
 
         mockBackendResponseError()
-        val backendResponse = JSONObject(ONE_OFFERINGS_RESPONSE)
+        val backendResponse = ONE_OFFERINGS_RESPONSE
         every { cache.cachedOfferingsResponse } returns backendResponse
         mockDeviceCache(wasSuccessful = false)
         mockOfferingsFactory()
@@ -971,7 +971,7 @@ class OfferingsManagerTest {
         if (error == null) {
             every {
                 offeringsFactory.createOfferings(
-                    offeringsJSON = any(),
+                    parsedResponse = any(),
                     originalDataSource = any(),
                     loadedFromDiskCache = any(),
                     onError = any(),
@@ -989,7 +989,7 @@ class OfferingsManagerTest {
         } else {
             every {
                 offeringsFactory.createOfferings(
-                    offeringsJSON = any(),
+                    parsedResponse = any(),
                     originalDataSource = any(),
                     loadedFromDiskCache = any(),
                     onError = captureLambda(),
@@ -1009,7 +1009,7 @@ class OfferingsManagerTest {
         val onSuccessSlot = slot<(OfferingsResultData) -> Unit>()
         every {
             offeringsFactory.createOfferings(
-                offeringsJSON = any(),
+                parsedResponse = any(),
                 originalDataSource = any(),
                 loadedFromDiskCache = any(),
                 onError = any(),
@@ -1023,10 +1023,9 @@ class OfferingsManagerTest {
         every {
             backend.getOfferings(any(), any(), captureLambda(), any())
         } answers {
-            lambda<(JSONObject, HTTPResponseOriginalSource, String) -> Unit>().captured.invoke(
-                JSONObject(response),
-                HTTPResponseOriginalSource.MAIN,
+            lambda<(String, HTTPResponseOriginalSource) -> Unit>().captured.invoke(
                 response,
+                HTTPResponseOriginalSource.MAIN,
             )
         }
     }

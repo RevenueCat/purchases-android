@@ -589,8 +589,8 @@ public open class DeviceCache(
     // region offerings response
 
     @Synchronized
-    internal fun getOfferingsResponseCache(): JSONObject? {
-        return getJSONObjectOrNull(offeringsResponseCacheKey)
+    internal fun getOfferingsResponseCacheText(): String? {
+        return preferences.getString(offeringsResponseCacheKey, null)
     }
 
     /**

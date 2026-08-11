@@ -707,9 +707,9 @@ class DeviceCacheTest {
     @Test
     fun `gets offerings from shared preferences`() {
         every { mockPrefs.getString(offeringsResponseCacheKey, null) } returns "{\"test-key\": \"test-value\"}"
-        val offeringsResponse = cache.getOfferingsResponseCache()
+        val offeringsResponse = cache.getOfferingsResponseCacheText()
         assertThat(offeringsResponse).isNotNull
-        assertThat(offeringsResponse?.getString("test-key")).isEqualTo("test-value")
+        assertThat(JSONObject(offeringsResponse!!).getString("test-key")).isEqualTo("test-value")
     }
 
     @Test

@@ -266,7 +266,7 @@ class OfferingsFactoryTest {
         every { appConfig.store } returns Store.PLAY_STORE
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = oneOfferingWithNoProductsResponse,
+            parsedResponse = ParsedOfferingsResponse(json = oneOfferingWithNoProductsResponse, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { purchasesError = it },
@@ -293,7 +293,7 @@ class OfferingsFactoryTest {
 
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = oneOfferingWithNoProductsResponse,
+            parsedResponse = ParsedOfferingsResponse(json = oneOfferingWithNoProductsResponse, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { purchasesError = it },
@@ -320,7 +320,7 @@ class OfferingsFactoryTest {
 
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = oneOfferingWithNoProductsResponse,
+            parsedResponse = ParsedOfferingsResponse(json = oneOfferingWithNoProductsResponse, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { purchasesError = it },
@@ -347,7 +347,7 @@ class OfferingsFactoryTest {
 
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = oneOfferingWithNoProductsResponse,
+            parsedResponse = ParsedOfferingsResponse(json = oneOfferingWithNoProductsResponse, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { purchasesError = it },
@@ -374,7 +374,7 @@ class OfferingsFactoryTest {
 
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = oneOfferingWithNoProductsResponse,
+            parsedResponse = ParsedOfferingsResponse(json = oneOfferingWithNoProductsResponse, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { purchasesError = it },
@@ -418,7 +418,7 @@ class OfferingsFactoryTest {
     fun `createOfferings returns error if json with wrong format`() {
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = JSONObject("{}"),
+            parsedResponse = ParsedOfferingsResponse(json = JSONObject("{}"), paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { purchasesError = it },
@@ -436,7 +436,7 @@ class OfferingsFactoryTest {
 
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = oneOfferingResponse,
+            parsedResponse = ParsedOfferingsResponse(json = oneOfferingResponse, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { purchasesError = it },
@@ -460,7 +460,7 @@ class OfferingsFactoryTest {
 
         var purchasesError: PurchasesError? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = oneOfferingResponse,
+            parsedResponse = ParsedOfferingsResponse(json = oneOfferingResponse, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { purchasesError = it },
@@ -481,7 +481,7 @@ class OfferingsFactoryTest {
 
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = oneOfferingResponse,
+            parsedResponse = ParsedOfferingsResponse(json = oneOfferingResponse, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { fail("Expected success. Got error: $it") },
@@ -501,7 +501,7 @@ class OfferingsFactoryTest {
 
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = oneOfferingInAppProductResponse,
+            parsedResponse = ParsedOfferingsResponse(json = oneOfferingInAppProductResponse, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { fail("Expected success. Got error: $it") },
@@ -521,7 +521,7 @@ class OfferingsFactoryTest {
 
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = oneOfferingWithPaywall,
+            parsedResponse = ParsedOfferingsResponse(json = oneOfferingWithPaywall, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
@@ -541,7 +541,7 @@ class OfferingsFactoryTest {
 
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = oneOfferingWithInvalidPaywallResponse,
+            parsedResponse = ParsedOfferingsResponse(json = oneOfferingWithInvalidPaywallResponse, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
@@ -561,7 +561,7 @@ class OfferingsFactoryTest {
 
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = oneOfferingWithPlacement,
+            parsedResponse = ParsedOfferingsResponse(json = oneOfferingWithPlacement, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
@@ -586,7 +586,7 @@ class OfferingsFactoryTest {
 
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = oneOfferingWithPlacementWithNullFallback,
+            parsedResponse = ParsedOfferingsResponse(json = oneOfferingWithPlacementWithNullFallback, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
@@ -611,7 +611,7 @@ class OfferingsFactoryTest {
 
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = oneOfferingWithTargeting,
+            parsedResponse = ParsedOfferingsResponse(json = oneOfferingWithTargeting, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
@@ -645,7 +645,7 @@ class OfferingsFactoryTest {
 
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = oneOfferingResponse,
+            parsedResponse = ParsedOfferingsResponse(json = oneOfferingResponse, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { fail("Expected success. Got error: $it") },
@@ -668,7 +668,7 @@ class OfferingsFactoryTest {
 
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = oneOfferingWithWPL,
+            parsedResponse = ParsedOfferingsResponse(json = oneOfferingWithWPL, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
@@ -698,7 +698,7 @@ class OfferingsFactoryTest {
 
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = invalidUrlWPL,
+            parsedResponse = ParsedOfferingsResponse(json = invalidUrlWPL, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { fail("Error: $it") },
@@ -720,7 +720,7 @@ class OfferingsFactoryTest {
 
         var offerings: Offerings? = null
         offeringsFactory.createOfferings(
-            offeringsJSON = oneOfferingResponse,
+            parsedResponse = ParsedOfferingsResponse(json = oneOfferingResponse, paywallComponents = emptyList()),
             originalDataSource = HTTPResponseOriginalSource.MAIN,
             loadedFromDiskCache = false,
             onError = { fail("Expected success. Got error: $it") },

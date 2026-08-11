@@ -17,7 +17,6 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
-import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -170,7 +169,7 @@ class OfferingsCacheTest {
     @Test
     fun `clearInMemoryOfferingsCache preserves disk cache for fallback`() {
         mockDeviceCacheOfferingResponse()
-        every { deviceCache.getOfferingsResponseCache() } returns JSONObject(ONE_OFFERINGS_RESPONSE)
+        every { deviceCache.getOfferingsResponseCacheText() } returns ONE_OFFERINGS_RESPONSE
         offeringsCache.cacheOfferings(mockk<Offerings>().apply {
             every { originalSource } returns HTTPResponseOriginalSource.MAIN
         }, ONE_OFFERINGS_RESPONSE)
@@ -282,8 +281,8 @@ class OfferingsCacheTest {
 
     @Test
     fun `offerings cache returns device cache offerings response`() {
-        val offeringsResponse = mockk<JSONObject>()
-        every { deviceCache.getOfferingsResponseCache() } returns offeringsResponse
+        val offeringsResponse = ONE_OFFERINGS_RESPONSE
+        every { deviceCache.getOfferingsResponseCacheText() } returns offeringsResponse
         assertThat(offeringsCache.cachedOfferingsResponse).isEqualTo(offeringsResponse)
     }
 
