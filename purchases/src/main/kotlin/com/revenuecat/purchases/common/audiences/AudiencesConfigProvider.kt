@@ -24,7 +24,13 @@ internal class AudiencesConfigProvider(
         cache.cached?.get(identifier)?.let { return it }
         val generation = manager.configGeneration
         val resolved = manager.blobData<JsonObject>(RemoteConfigTopic.Audiences, identifier)
-        return if (cache.isCurrent(generation)) resolved else cache.cached?.get(identifier)
+        val cacheGenerationIsCurrent = cache.isCurrent(generation)
+        val currentGeneration = manager.configGeneration
+        return when {
+            cacheGenerationIsCurrent && currentGeneration == generation -> resolved
+            cache.isAtOrAbove(currentGeneration) -> cache.cached?.get(identifier)
+            else -> null
+        }
     }
 
     suspend fun warm(generation: Int) {

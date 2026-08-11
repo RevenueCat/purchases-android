@@ -5,11 +5,18 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkConstructor
 import io.mockk.slot
+import io.mockk.unmockkConstructor
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
@@ -17,6 +24,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 
 @RunWith(AndroidJUnit4::class)
 class PurchasesFactoryTest {
@@ -42,6 +50,8 @@ class PurchasesFactoryTest {
 
     @After
     fun tearDown() {
+        unmockkConstructor(AudiencesConfigProvider::class)
+        unmockkConstructor(RemoteConfigManager::class)
         clearAllMocks()
     }
 
@@ -163,6 +173,64 @@ class PurchasesFactoryTest {
 
         // Assert
         verify(exactly = 0) { applicationMock.startActivity(any()) }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `factory registers warms and owns the same audiences config provider`() {
+        val initialGeneration = 37
+        var registeredProvider: AudiencesConfigProvider? = null
+        var warmedGeneration: Int? = null
+        mockkConstructor(RemoteConfigManager::class)
+        mockkConstructor(AudiencesConfigProvider::class)
+        every { anyConstructed<RemoteConfigManager>().configGeneration } returns initialGeneration
+        every {
+            anyConstructed<RemoteConfigManager>().registerListener(ofType<AudiencesConfigProvider>())
+        } answers {
+            registeredProvider = firstArg()
+            callOriginal()
+        }
+        every { anyConstructed<AudiencesConfigProvider>().warmAsync(any()) } answers {
+            warmedGeneration = firstArg()
+        }
+        every { anyConstructed<AudiencesConfigProvider>().close() } answers {
+            callOriginal()
+        }
+        val application = ApplicationProvider.getApplicationContext<Application>().apply {
+            shadowOf(this).grantPermissions(Manifest.permission.INTERNET)
+        }
+        val configuration = PurchasesConfiguration.Builder(application, "fakeApiKey")
+            .appUserID("appUserID")
+            .store(Store.PLAY_STORE)
+            .dangerousSettings(DangerousSettings.forPreviewMode())
+            .build()
+
+        val created = purchasesFactory.createPurchases(
+            configuration = configuration,
+            platformInfo = PlatformInfo("test", null),
+            proxyURL = null,
+            overrideBillingAbstract = mockk<BillingAbstract>(relaxed = true),
+            runningIntegrationTests = true,
+        )
+        try {
+            val registeredAudiencesProvider = checkNotNull(registeredProvider)
+            val ownedAudiencesProvider = PurchasesOrchestrator::class.java
+                .getDeclaredField("audiencesConfigProvider")
+                .apply { isAccessible = true }
+                .get(created.purchasesOrchestrator)
+            assertThat(ownedAudiencesProvider).isSameAs(registeredAudiencesProvider)
+            assertThat(warmedGeneration).isEqualTo(initialGeneration)
+            verify(exactly = 1) {
+                anyConstructed<RemoteConfigManager>().registerListener(ofType<AudiencesConfigProvider>())
+            }
+            verify(exactly = 1) {
+                registeredAudiencesProvider.warmAsync(initialGeneration)
+            }
+        } finally {
+            created.close()
+        }
+        val registeredAudiencesProvider = checkNotNull(registeredProvider)
+        verify(exactly = 1) { registeredAudiencesProvider.close() }
     }
 
     // region shouldInitializeDiagnostics

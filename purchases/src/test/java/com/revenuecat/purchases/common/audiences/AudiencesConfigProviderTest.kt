@@ -13,7 +13,9 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
@@ -88,19 +90,23 @@ internal class AudiencesConfigProviderTest {
             "aud_valid" to configItem(prefetch = true),
             "aud_missing" to configItem(prefetch = true),
             "aud_malformed" to configItem(prefetch = true),
+            "aud_array" to configItem(prefetch = true),
             "aud_not_prefetched" to configItem(prefetch = false),
         )
         val validAudience = audience("""{"id":"aud_valid","rules":{"country":"ES"}}""")
         coEvery { blobRead("aud_valid") } returns validAudience
         coEvery { blobRead("aud_missing") } returns null
         returnBlob("aud_malformed", "not-json")
+        returnBlob("aud_array", "[1, 2, 3]")
 
         provider.warm(generation = 0)
 
         assertThat(provider.getAudience("aud_valid")).isEqualTo(validAudience)
+        assertThat(provider.getAudience("aud_array")).isNull()
         coVerify(exactly = 1) { blobRead("aud_valid") }
         coVerify(exactly = 1) { blobRead("aud_missing") }
         coVerify(exactly = 1) { blobRead("aud_malformed") }
+        coVerify(exactly = 2) { blobRead("aud_array") }
         coVerify(exactly = 0) { blobRead("aud_not_prefetched") }
     }
 
@@ -176,6 +182,55 @@ internal class AudiencesConfigProviderTest {
         }
 
         assertThat(provider.getAudience("aud_stale")).isNull()
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `getAudience does not serve a stale body while a newer commit warm is pending`() = runTest {
+        // Catches checking only the cache generation after a direct read while a newer commit warm is suspended.
+        var managerGeneration = 0
+        every { manager.configGeneration } answers { managerGeneration }
+        coEvery { manager.committedTopicOrNull(RemoteConfigTopic.Audiences) } returns audienceTopic(
+            "aud_changed" to configItem(prefetch = true),
+        )
+        val oldLookupStarted = CompletableDeferred<Unit>()
+        val releaseOldLookup = CompletableDeferred<Unit>()
+        val commitWarmStarted = CompletableDeferred<Unit>()
+        val releaseCommitWarm = CompletableDeferred<Unit>()
+        val staleAudience = audience("""{"id":"aud_changed","generation":0}""")
+        val currentAudience = audience("""{"id":"aud_changed","generation":1}""")
+        var readCount = 0
+        coEvery { blobRead("aud_changed") } coAnswers {
+            when (++readCount) {
+                1 -> {
+                    oldLookupStarted.complete(Unit)
+                    releaseOldLookup.await()
+                    staleAudience
+                }
+                2 -> staleAudience
+                3 -> {
+                    commitWarmStarted.complete(Unit)
+                    releaseCommitWarm.await()
+                    currentAudience
+                }
+                else -> error("Unexpected audience read")
+            }
+        }
+        val commitScopedProvider = AudiencesConfigProvider(manager, this)
+        val lookup = async { commitScopedProvider.getAudience("aud_changed") }
+        oldLookupStarted.await()
+        commitScopedProvider.warm(generation = 0)
+
+        managerGeneration = 1
+        commitScopedProvider.onConfigCommitted(generation = 1)
+        commitWarmStarted.await()
+        releaseOldLookup.complete(Unit)
+
+        assertThat(lookup.await()).isNull()
+
+        releaseCommitWarm.complete(Unit)
+        runCurrent()
+        assertThat(commitScopedProvider.getAudience("aud_changed")).isEqualTo(currentAudience)
     }
 
     private suspend fun MockKMatcherScope.blobRead(identifier: String): JsonObject? =
