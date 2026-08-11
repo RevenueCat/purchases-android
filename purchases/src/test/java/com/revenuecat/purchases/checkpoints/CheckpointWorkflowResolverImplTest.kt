@@ -138,6 +138,7 @@ class CheckpointWorkflowResolverImplTest {
 
         assertThat(noActionReason(resolve()))
             .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        assertThat(offeringsFetched).isZero()
     }
 
     @Test
@@ -178,10 +179,9 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `rules whose workflow has no offering identifier are skipped`() = runTest {
+    fun `rules whose workflow is not mapped to an offering are skipped`() = runTest {
         configureRules(rule("wf5678"), rule("wf1234"))
-        coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns
-            mapOf("wf5678" to null, "wf1234" to "default")
+        coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns mapOf("wf1234" to "default")
 
         val resolution = resolve() as CheckpointResolution.Workflow
 
@@ -225,15 +225,6 @@ class CheckpointWorkflowResolverImplTest {
 
         assertThat(noActionReason(resolve()))
             .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
-    }
-
-    @Test
-    fun `workflows without an offering identifier are not picked`() = runTest {
-        coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns mapOf("wf1234" to null)
-
-        assertThat(noActionReason(resolve()))
-            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
-        assertThat(offeringsFetched).isZero()
     }
 
     @Test
