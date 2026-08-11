@@ -142,8 +142,8 @@ internal fun CarouselComponentView(
             componentInteractionTracker,
         ) {
             // Logical page, so the invisible clone re-centre does not emit a page change.
-            var previousPage = carouselLogicalPage(pagerState.currentPage, clonePad, pageCount)
-            snapshotFlow { carouselLogicalPage(pagerState.currentPage, clonePad, pageCount) }.collect { page ->
+            var previousPage = currentLogicalPage
+            snapshotFlow { currentLogicalPage }.collect { page ->
                 if (page != previousPage) {
                     if (skipProgrammaticPageTracking.consumeShouldSkipPageChange()) {
                         // Auto-advance scroll; do not emit component interaction.
@@ -380,7 +380,7 @@ private fun EnableAutoAdvance(
                             ),
                         )
                     } catch (_: CancellationException) {
-                        skipProgrammaticPageTracking.clear()
+                        skipProgrammaticPageTracking.consumeShouldSkipPageChange()
                         // Do nothing, so we continue scrolling on the next loop
                     }
                 }
@@ -403,10 +403,6 @@ private class ProgrammaticPageTrackingFlag {
         val shouldSkip = shouldSkipNextPageChange
         shouldSkipNextPageChange = false
         return shouldSkip
-    }
-
-    fun clear() {
-        shouldSkipNextPageChange = false
     }
 }
 
