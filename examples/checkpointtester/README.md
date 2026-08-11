@@ -58,6 +58,9 @@ step. It always advances, whatever the outcome, and shows the result on the fina
 `entitlement_gate` when nothing is active. A `Purchased` or `Restored` outcome carries its own
 `CustomerInfo`, so the gate visibly flips off that result with no second fetch.
 
+**Custom checkpoint** — a text field for any identifier, plus the raw `CheckpointResult` it produced. Nothing is
+gated on the outcome, so this is how you exercise a checkpoint configured in the dashboard without rebuilding.
+
 **No action / Simulated error** — run inline from the use-case list, using an identifier the dashboard doesn't
 know about and the `error_checkpoint` identifier above.
 

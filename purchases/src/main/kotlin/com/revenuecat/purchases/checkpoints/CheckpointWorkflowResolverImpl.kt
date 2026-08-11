@@ -66,13 +66,13 @@ internal class CheckpointWorkflowResolverImpl(
         }
         if (checkpoint.rules.isEmpty()) return noMatch(identifier)
 
-        // A rule whose workflow has no offering can never be served, so filtering on the (memory-first) workflow
-        // index first keeps an entirely unservable checkpoint from triggering an offerings fetch.
+        // A rule whose workflow has no offering can never be served, so filtering on the workflow index first
+        // keeps an entirely unservable checkpoint from also triggering an offerings fetch.
         val offeringIdByWorkflowId = workflowManager.offeringIdByWorkflowId()
         val candidates = checkpoint.rules.mapNotNull { rule ->
             val offeringId = offeringIdByWorkflowId[rule.workflowId]
             if (offeringId == null) {
-                logSkippedRule(rule, "no offering ID is configured for it")
+                logSkippedRule(rule, "no offering is mapped to it in the workflows topic")
                 null
             } else {
                 rule to offeringId
