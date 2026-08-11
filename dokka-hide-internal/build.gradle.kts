@@ -22,6 +22,4 @@ dependencies {
     testImplementation(libs.dokka.testApi)
     testImplementation(libs.dokka.baseTestUtils)
     testRuntimeOnly(libs.dokka.analysisKotlinSymbols)
-    // Dokka 2.2 K2 analysis needs Kotlin stdlib APIs newer than the repo's 2.0.21 (test runtime only).
-    testRuntimeOnly("org.jetbrains.kotlin:kotlin-stdlib:${libs.versions.dokkaAnalysisKotlin.get()}")
 }
