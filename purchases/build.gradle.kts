@@ -139,6 +139,10 @@ metalava {
         "src/androidTest",
         "src/androidTestDefaults",
         "src/androidTestCustomEntitlementComputation",
+        // AGP's generated BuildConfig is not part of the published API surface, and some of its
+        // fields are machine-dependent (ENABLE_EXTRA_REQUEST_LOGGING comes from local.properties).
+        "build/generated/source/buildConfig/defaults/release",
+        "build/generated/source/buildConfig/customEntitlementComputation/release",
     )
 
     val name = if (variantName.lowercase().contains("defaults")) {

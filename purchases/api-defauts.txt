@@ -977,20 +977,6 @@ package com.revenuecat.purchases.amazon {
 
 }
 
-package com.revenuecat.purchases.api {
-
-  public final class BuildConfig {
-    ctor public BuildConfig();
-    field public static final String BILLING_CLIENT_VERSION = "8.3.0";
-    field public static final String BUILD_TYPE = "release";
-    field public static final boolean DEBUG = false;
-    field public static final boolean ENABLE_EXTRA_REQUEST_LOGGING = false;
-    field public static final String FLAVOR = "defaults";
-    field public static final String LIBRARY_PACKAGE_NAME = "com.revenuecat.purchases.api";
-  }
-
-}
-
 package com.revenuecat.purchases.backup {
 
   public final class RevenueCatBackupAgent extends android.app.backup.BackupAgentHelper {

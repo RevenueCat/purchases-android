@@ -1,14 +1,6 @@
 // Signature format: 4.0
 package com.revenuecat.purchases.ui.revenuecatui {
 
-  public final class BuildConfig {
-    ctor public BuildConfig();
-    field public static final String BUILD_TYPE = "release";
-    field public static final boolean DEBUG = false;
-    field public static final String FLAVOR = "defaults";
-    field public static final String LIBRARY_PACKAGE_NAME = "com.revenuecat.purchases.ui.revenuecatui";
-  }
-
   public abstract class CustomVariableValue implements android.os.Parcelable {
     method @InaccessibleFromKotlin public final String getStringValue();
     property public final String stringValue;

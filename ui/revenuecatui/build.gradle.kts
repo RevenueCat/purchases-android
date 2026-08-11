@@ -64,6 +64,9 @@ metalava {
         "src/androidTest",
         "src/androidTestDefaults",
         "src/androidTestCustomEntitlementComputation",
+        // AGP's generated BuildConfig is not part of the published API surface.
+        "build/generated/source/buildConfig/defaults/release",
+        "build/generated/source/buildConfig/customEntitlementComputation/release",
     )
 }
 
