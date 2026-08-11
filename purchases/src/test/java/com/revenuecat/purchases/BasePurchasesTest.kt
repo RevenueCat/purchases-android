@@ -21,6 +21,7 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
@@ -97,6 +98,7 @@ internal open class BasePurchasesTest {
     internal val mockWorkflowManager = mockk<WorkflowManager>(relaxed = true)
     internal val mockRemoteConfigManager = mockk<RemoteConfigManager>(relaxed = true)
     internal val mockUiConfigProvider = mockk<UiConfigProvider>(relaxed = true)
+    internal val mockAudiencesConfigProvider = mockk<AudiencesConfigProvider>(relaxed = true)
     private val mockBlockstoreHelper = mockk<BlockstoreHelper>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
@@ -516,6 +518,7 @@ internal open class BasePurchasesTest {
             workflowManager = mockWorkflowManager,
             remoteConfigManager = mockRemoteConfigManager,
             uiConfigProvider = mockUiConfigProvider,
+            audiencesConfigProvider = mockAudiencesConfigProvider,
         )
 
         purchases = Purchases(

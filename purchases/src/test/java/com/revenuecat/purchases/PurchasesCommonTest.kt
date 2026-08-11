@@ -2836,6 +2836,15 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         }
     }
 
+    @Test
+    fun `when closing instance, the audiences config provider is closed`() {
+        mockCloseActions()
+
+        purchases.close()
+
+        verify(exactly = 1) { mockAudiencesConfigProvider.close() }
+    }
+
     // endregion
 
     // region getWorkflow

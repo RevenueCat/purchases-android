@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SharedPreferencesManager
+import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
@@ -332,9 +333,9 @@ internal class PurchasesFactory(
                 fontLoader = fontLoader,
             )
 
-            // Single shared instances so the in-memory caches the render path reads synchronously are the same
-            // ones the manager warms on commit. Registered as commit listeners; a null manager means workflows
-            // are off, so neither exists.
+            // Single shared instances so the in-memory caches the render and audiences paths read synchronously
+            // are the same ones the manager warms on commit. Registered as commit listeners; a null manager means
+            // workflows and audiences are off, so none exists.
             val uiConfigProvider = remoteConfigManager?.let { UiConfigProvider(it) }
             // Warms a workflow's assets (images + ui_config fonts) once — eagerly at load time for the current
             // offering's workflow (transiently so the cache stays byte-only, mirroring how offerings pre-download
@@ -350,18 +351,21 @@ internal class PurchasesFactory(
                     onCurrentWorkflowLoaded = workflowAssetPrewarmer?.let { it::onCurrentWorkflowLoaded },
                 )
             }
+            val audiencesConfigProvider = remoteConfigManager?.let { AudiencesConfigProvider(it) }
             val checkpointsConfigProvider = remoteConfigManager?.let {
                 CheckpointsConfigProvider(it)
             }
             if (remoteConfigManager != null && uiConfigProvider != null && workflowsConfigProvider != null) {
                 remoteConfigManager.registerListener(uiConfigProvider)
                 remoteConfigManager.registerListener(workflowsConfigProvider)
+                audiencesConfigProvider?.let { remoteConfigManager.registerListener(it) }
                 // Cold-start-with-warm-disk: preload the in-memory caches from whatever is already committed on
                 // disk without triggering a network config sync. A subsequent network commit re-warms with a
                 // higher generation and supersedes this (store-if-newer).
                 val initialGeneration = remoteConfigManager.configGeneration
                 uiConfigProvider.warmAsync(initialGeneration)
                 workflowsConfigProvider.warmAsync(initialGeneration)
+                audiencesConfigProvider?.warmAsync(initialGeneration)
             }
 
             val identityManager = IdentityManager(
@@ -557,6 +561,7 @@ internal class PurchasesFactory(
                 remoteConfigManager = remoteConfigManager,
                 uiConfigProvider = uiConfigProvider,
                 workflowsConfigProvider = workflowsConfigProvider,
+                audiencesConfigProvider = audiencesConfigProvider,
                 checkpointsConfigProvider = checkpointsConfigProvider,
             )
 
