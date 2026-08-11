@@ -255,6 +255,15 @@ internal class OfferingsManager(
         onError: ((PurchasesError) -> Unit)?,
         onSuccess: ((OfferingsResultData) -> Unit)?,
     ) {
+        val inMemoryOfferings = offeringsCache.cachedOfferings
+        // A generation bump means this copy was parsed with components skipped, so use the disk copy instead.
+        if (inMemoryOfferings != null && cacheGeneration.get() == fetchGeneration) {
+            warnLog { OfferingStrings.FETCHING_OFFERINGS_ERROR.format(backendError) }
+            log(LogIntent.DEBUG) { OfferingStrings.VENDING_OFFERINGS_CACHE }
+            offeringsCache.cacheOfferings(inMemoryOfferings, responsePayload = null)
+            deliverSuccess(OfferingsResultData(inMemoryOfferings, emptySet(), emptySet()), onSuccess)
+            return
+        }
         val parsedDiskResponse = offeringsCache.cachedOfferingsResponse?.let { responseText ->
             warnLog { OfferingStrings.ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE }
             try {
@@ -278,6 +287,12 @@ internal class OfferingsManager(
             onError = onError,
             onSuccess = onSuccess,
         )
+    }
+
+    /** Delivers [result] only once the workflows paywall config the render path reads is primed. */
+    private fun deliverSuccess(result: OfferingsResultData, onSuccess: ((OfferingsResultData) -> Unit)?) {
+        val dispatchSuccess = { dispatch { onSuccess?.invoke(result) } }
+        workflowManager?.onPaywallConfigReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
     }
 
     private fun createAndCacheOfferings(
@@ -312,8 +327,7 @@ internal class OfferingsManager(
                     }
                     offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                     offeringsCache.cacheOfferings(offeringsResultData.offerings, responsePayloadToCache)
-                    val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
-                    workflowManager?.onPaywallConfigReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
+                    deliverSuccess(offeringsResultData, onSuccess)
                 } else {
                     log(LogIntent.DEBUG) { OfferingStrings.OFFERINGS_CACHE_INVALIDATED_SKIPPING_STALE_WRITE }
                     createAndCacheOfferings(

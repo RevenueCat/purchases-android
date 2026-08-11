@@ -1183,5 +1183,100 @@ class OfferingsManagerTest {
         assertThat(receivedOfferings).isEqualTo(testOfferings)
     }
 
+    @Test
+    fun `in-memory fallback does not call onSuccess until onPaywallConfigReady completes`() {
+        val mockWorkflowManager = mockk<WorkflowManager>()
+        val onCompleteSlot = slot<() -> Unit>()
+        every {
+            mockWorkflowManager.onPaywallConfigReady(onComplete = capture(onCompleteSlot))
+        } just Runs
+
+        val managerWithWorkflow = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            workflowManager = mockWorkflowManager,
+        )
+
+        mockBackendResponseError()
+        every { cache.cachedOfferings } returns testOfferings
+        every { cache.cacheOfferings(any(), any()) } just Runs
+        mockCacheStale(offeringsStale = true)
+
+        var receivedOfferings: OfferingsResultData? = null
+        managerWithWorkflow.fetchAndCacheOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be success") },
+            onSuccess = { receivedOfferings = it },
+        )
+
+        assertThat(receivedOfferings).isNull()
+
+        onCompleteSlot.captured.invoke()
+
+        assertThat(receivedOfferings?.offerings).isEqualTo(testOfferings)
+    }
+
+    @Test
+    fun `in-memory fallback neither reads the disk copy nor re-parses it`() {
+        mockBackendResponseError()
+        every { cache.cachedOfferings } returns testOfferings
+        every { cache.cacheOfferings(any(), any()) } just Runs
+        mockCacheStale(offeringsStale = true)
+
+        var received: OfferingsResultData? = null
+        offeringsManager.fetchAndCacheOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be success") },
+            onSuccess = { received = it },
+        )
+
+        assertThat(received?.offerings).isEqualTo(testOfferings)
+        verify(exactly = 0) { cache.cachedOfferingsResponse }
+        verify(exactly = 0) {
+            offeringsFactory.createOfferings(any(), any(), any(), onError = any(), onSuccess = any())
+        }
+    }
+
+    @Test
+    fun `in-memory fallback is skipped after an invalidating clear so the disk copy is re-parsed`() {
+        mockBackendResponseError()
+        every { cache.cachedOfferings } returns testOfferings
+        every { cache.cachedOfferingsResponse } returns ONE_OFFERINGS_RESPONSE
+        every { cache.cacheOfferings(any(), any()) } just Runs
+        every { cache.clearInMemoryOfferingsCache() } just Runs
+        mockDeviceCache(wasSuccessful = false)
+        mockOfferingsFactory()
+
+        val onSuccessSlot = slot<(String, HTTPResponseOriginalSource) -> Unit>()
+        val onErrorSlot = slot<(PurchasesError, GetOfferingsErrorHandlingBehavior) -> Unit>()
+        every {
+            backend.getOfferings(any(), any(), capture(onSuccessSlot), capture(onErrorSlot))
+        } just Runs
+
+        offeringsManager.fetchAndCacheOfferings(appUserId, appInBackground = false)
+        offeringsManager.clearInMemoryOfferingsCache(invalidateInFlightFetches = true)
+        onErrorSlot.captured.invoke(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+            GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS,
+        )
+
+        verify(atLeast = 1) { cache.cachedOfferingsResponse }
+        verify(atLeast = 1) {
+            offeringsFactory.createOfferings(
+                parsedResponse = any(),
+                originalDataSource = null,
+                loadedFromDiskCache = true,
+                onError = any(),
+                onSuccess = any(),
+            )
+        }
+    }
+
     // endregion workflowManager onComplete integration
 }
