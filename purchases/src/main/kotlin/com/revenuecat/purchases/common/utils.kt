@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Base64
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.models.toHexString
 import java.security.MessageDigest
 import java.util.Locale
 
@@ -34,6 +35,18 @@ public fun String.sha256(): String =
         .digest(this.toByteArray()).let {
             String(Base64.encode(it, Base64.NO_WRAP))
         }
+
+/**
+ * The MD5 of these bytes, as a lowercase hex string.
+ *
+ * This creates a new [MessageDigest] on every call, on purpose. [MessageDigest] is not thread-safe. A shared
+ * instance corrupts its internal state when two threads digest at the same time. It then either throws or
+ * returns a wrong digest, depending on the security provider.
+ */
+internal fun ByteArray.md5Hex(): String =
+    MessageDigest.getInstance("MD5")
+        .digest(this)
+        .toHexString()
 
 internal val Context.versionName: String?
     get() = this.packageManager.getPackageInfo(this.packageName, 0).versionName
