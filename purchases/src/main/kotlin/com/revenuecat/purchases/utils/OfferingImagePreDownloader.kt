@@ -35,9 +35,7 @@ internal class OfferingImagePreDownloader(
 
     private fun downloadV2Images(offering: Offering) {
         val paywallComponents = offering.paywallComponents ?: return
-        // `paywallComponents.data` is decoded lazily on first access and fails if the component tree passed
-        // the cheap parse-time shape check but is structurally invalid. Pre-downloading is best-effort, so a
-        // decode failure here must not abort the offerings success/caching path — log and skip instead.
+        // `data` decodes lazily here, and best-effort warming must not abort the offerings success/caching path.
         val componentsConfig = paywallComponents.data.getOrElse { error ->
             errorLog(error) { "Error deserializing paywall components data. Skipping V2 image pre-download." }
             return

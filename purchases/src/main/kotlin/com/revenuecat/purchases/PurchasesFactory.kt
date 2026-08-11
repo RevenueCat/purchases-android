@@ -247,7 +247,6 @@ internal class PurchasesFactory(
                 remoteConfigDispatcher,
             )
             val fileRepository = DefaultFileRepository(application)
-            // One instance so the offerings and workflow paths share a single ServiceLoader lookup.
             val paywallAssetWarming = PaywallAssetWarming(application)
 
             val purchasesStateProvider = PurchasesStateCache(PurchasesState())

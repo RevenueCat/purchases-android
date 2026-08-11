@@ -84,8 +84,6 @@ class OfferingImagePreDownloaderTest {
         assertThat(warmer.warmed).isEmpty()
     }
 
-    // Asserts the short-circuit itself, not just an empty warmer: a strict mock with no stubs fails the
-    // test if anything touches the offering, so the gate must return before the lazy component decode.
     @Test
     fun `if disabled, it does not download anything`() {
         val offering = mockk<Offering>()

@@ -4,10 +4,6 @@ import android.content.Context
 import coil.ImageLoader
 import coil.disk.DiskCache
 
-/**
- * The single [ImageLoader] every paywall image goes through, so what warming pre-downloads is what
- * rendering reads back.
- */
 internal object PaywallImageLoader {
 
     private const val MAX_CACHE_SIZE_BYTES = 25L * 1024 * 1024

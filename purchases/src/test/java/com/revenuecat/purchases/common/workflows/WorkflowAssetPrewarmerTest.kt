@@ -63,8 +63,6 @@ class WorkflowAssetPrewarmerTest {
 
     // region render path (preDownloadWorkflowAssets)
 
-    // The walk decodes every screen's component tree. Without a warmer there is nothing to warm into, so
-    // doing it anyway is pure cost on the workflow load path.
     @Test
     fun `preDownloadWorkflowAssets skips the component walk but still downloads fonts when disabled`() {
         every { assetWarming.isAvailable } returns false
@@ -198,7 +196,6 @@ class WorkflowAssetPrewarmerTest {
             screens = screens,
         )
 
-    // A real config rather than a mock: the prewarmer traverses it via collectAssets().
     private fun emptyComponentsConfig(): PaywallComponentsConfig =
         PaywallComponentsConfig(
             stack = StackComponent(components = emptyList()),

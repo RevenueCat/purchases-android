@@ -10,17 +10,14 @@ import com.revenuecat.purchases.common.errorLog
 import java.util.ServiceLoader
 
 /**
- * Core's handle on the [PaywallAssetWarmer] the RevenueCat UI module registers.
- *
- * [isAvailable] doubles as the "is the paywalls SDK here" answer: without it there is nothing to warm
- * into, so callers skip the work that would only feed it.
+ * Core's handle on the [PaywallAssetWarmer] the RevenueCat UI module registers. When [isAvailable] is
+ * false there is nothing to warm into, so callers skip the collection work that would only feed it.
  */
 internal class PaywallAssetWarming(
     private val context: Context,
     warmerProvider: () -> PaywallAssetWarmer? = ::loadWarmer,
 ) {
 
-    // Lazy so the ServiceLoader scan happens on the first warm rather than during Purchases.configure().
     private val warmer: PaywallAssetWarmer? by lazy { warmerProvider() }
 
     val isAvailable: Boolean
@@ -30,8 +27,8 @@ internal class PaywallAssetWarming(
         if (imageUris.isEmpty()) return
         val warmer = warmer ?: return
         debugLog { "Pre-downloading ${imageUris.size} paywall image(s): $imageUris" }
-        // Warming runs inline on the offerings success path, before the offerings are cached and handed to
-        // the app. A misbehaving implementation must not take that path down with it.
+        // An implementation comes from outside this module and runs before offerings are cached and
+        // delivered, so it must not be able to fail that.
         runCatching { warmer.warmImages(context, imageUris.toList()) }.onFailure { error ->
             errorLog(error) { "Paywall image warming failed." }
         }
@@ -39,8 +36,7 @@ internal class PaywallAssetWarming(
 
     private companion object {
         fun loadWarmer(): PaywallAssetWarmer? {
-            // A missing service descriptor is not an error: ServiceLoader yields nothing and this succeeds
-            // with null. Only a descriptor naming a class that cannot be loaded throws.
+            // A missing descriptor yields nothing rather than throwing; only one naming an unloadable class throws.
             val warmer = runCatching {
                 ServiceLoader.load(
                     PaywallAssetWarmer::class.java,
