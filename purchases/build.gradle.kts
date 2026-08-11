@@ -235,6 +235,8 @@ dependencies {
 
     baselineProfile(project(":baselineprofile"))
     testImplementation(kotlin("test"))
+
+    kover(project(":feature:amazon"))
 }
 
 fun DokkaSourceSetSpec.configureDocumentedSourceSet() {
@@ -273,14 +275,6 @@ dokka {
                 suppress.set(true)
             }
         }
-    }
-}
-
-// Remove afterEvaluate
-// after https://github.com/Kotlin/kotlinx-kover/issues/362 is fixed
-afterEvaluate {
-    dependencies {
-        add("kover", project(":feature:amazon"))
     }
 }
 
