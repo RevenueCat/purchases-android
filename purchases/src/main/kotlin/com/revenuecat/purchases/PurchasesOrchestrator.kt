@@ -37,7 +37,6 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
-import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
@@ -175,7 +174,6 @@ internal class PurchasesOrchestrator(
     private val remoteConfigManager: RemoteConfigManager? = null,
     private val uiConfigProvider: UiConfigProvider? = null,
     private val workflowsConfigProvider: WorkflowsConfigProvider? = null,
-    private val audiencesConfigProvider: AudiencesConfigProvider? = null,
     private val checkpointsConfigProvider: CheckpointsConfigProvider? = null,
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
@@ -930,7 +928,6 @@ internal class PurchasesOrchestrator(
         this.workflowManager?.close()
         this.uiConfigProvider?.close()
         this.workflowsConfigProvider?.close()
-        this.audiencesConfigProvider?.close()
 
         billing.close()
         updatedCustomerInfoListener = null // Do not call on state since the setter does more stuff
