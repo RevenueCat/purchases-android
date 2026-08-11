@@ -38,14 +38,25 @@ internal class PaywallAssetWarming(
     }
 
     private companion object {
-        fun loadWarmer(): PaywallAssetWarmer? = runCatching {
-            ServiceLoader.load(
-                PaywallAssetWarmer::class.java,
-                PaywallAssetWarmer::class.java.classLoader,
-            ).firstOrNull()
-        }.getOrElse { error ->
-            errorLog(error) { "Failed to load a PaywallAssetWarmer implementation." }
-            null
+        fun loadWarmer(): PaywallAssetWarmer? {
+            // A missing service descriptor is not an error: ServiceLoader yields nothing and this succeeds
+            // with null. Only a descriptor naming a class that cannot be loaded throws.
+            val warmer = runCatching {
+                ServiceLoader.load(
+                    PaywallAssetWarmer::class.java,
+                    PaywallAssetWarmer::class.java.classLoader,
+                ).firstOrNull()
+            }.getOrElse { error ->
+                errorLog(error) { "Failed to load a PaywallAssetWarmer implementation." }
+                null
+            }
+            if (warmer == null) {
+                debugLog {
+                    "No PaywallAssetWarmer found, so paywall asset warming is off " +
+                        "(no RevenueCatUI dependency, or META-INF/services stripped by packaging)."
+                }
+            }
+            return warmer
         }
     }
 }
