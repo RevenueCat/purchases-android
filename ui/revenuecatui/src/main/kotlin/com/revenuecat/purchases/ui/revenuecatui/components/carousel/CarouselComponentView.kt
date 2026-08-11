@@ -345,17 +345,14 @@ private fun Indicator(
 
 /** Snaps back into the real zone on settling on a clone. The clone is identical, so it is invisible. */
 @Composable
-private fun RecenterLoopClones(pagerState: PagerState, clonePad: Int, pageCount: Int) {
+internal fun RecenterLoopClones(pagerState: PagerState, clonePad: Int, pageCount: Int) {
     if (clonePad == 0) return
     LaunchedEffect(pagerState, clonePad, pageCount) {
         snapshotFlow { pagerState.settledPage }.collect { settledPage ->
             val target = carouselRecenterTarget(settledPage, clonePad, pageCount) ?: return@collect
-            try {
-                pagerState.scrollToPage(target)
-            } catch (_: CancellationException) {
-                // A competing scroll won the pager's mutex. Letting this out would kill the effect
-                // for good, and its keys never change, so re-centring would stop for the session.
-            }
+            // Not scrollToPage: it runs on the pager's scroll mutex, which a gesture holds at a
+            // higher (UserInput) priority and can't be interrupted by this (Default) caller.
+            pagerState.requestScrollToPage(target)
         }
     }
 }
