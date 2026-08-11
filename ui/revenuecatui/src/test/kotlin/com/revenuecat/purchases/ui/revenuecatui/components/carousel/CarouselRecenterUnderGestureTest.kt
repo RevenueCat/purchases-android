@@ -20,10 +20,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
-/**
- * Regression test for the Bugbot finding on purchases-android#3911: a re-centre attempted while
- * a gesture holds the pager's scroll mutex at `UserInput` priority must still land.
- */
 @Config(sdk = [26])
 @RunWith(AndroidJUnit4::class)
 class CarouselRecenterUnderGestureTest {
@@ -32,7 +28,6 @@ class CarouselRecenterUnderGestureTest {
         const val CLONE_PAD = 2
         const val PAGE_COUNT = 2
         const val RING_COUNT = PAGE_COUNT + 2 * CLONE_PAD
-        // Ring 0..5, real zone 2..3. Index 5 is the trailing clone of logical page 0.
         const val TRAILING_CLONE = RING_COUNT - 1
     }
 
@@ -50,7 +45,6 @@ class CarouselRecenterUnderGestureTest {
 
             if (holdMutexWithGesture) {
                 LaunchedEffect(pagerState) {
-                    // Mirrors a drag: same priority, holds the mutex until cancelled.
                     pagerState.scroll(MutatePriority.UserInput) { awaitCancellation() }
                 }
             }

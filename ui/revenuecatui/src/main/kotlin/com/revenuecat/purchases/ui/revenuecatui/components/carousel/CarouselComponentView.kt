@@ -350,8 +350,6 @@ internal fun RecenterLoopClones(pagerState: PagerState, clonePad: Int, pageCount
     LaunchedEffect(pagerState, clonePad, pageCount) {
         snapshotFlow { pagerState.settledPage }.collect { settledPage ->
             val target = carouselRecenterTarget(settledPage, clonePad, pageCount) ?: return@collect
-            // Not scrollToPage: it runs on the pager's scroll mutex, which a gesture holds at a
-            // higher (UserInput) priority and can't be interrupted by this (Default) caller.
             pagerState.requestScrollToPage(target)
         }
     }
