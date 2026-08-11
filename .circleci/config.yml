@@ -893,9 +893,9 @@ jobs:
       - android/save_build_cache
       - android/save_gradle_cache
       - store_artifacts:
-          path: purchases/src/main/baseline-prof.txt
+          path: purchases/src/main/generated/baselineProfiles/baseline-prof.txt
       - store_artifacts:
-          path: ui/revenuecatui/src/main/baseline-prof.txt
+          path: ui/revenuecatui/src/main/generated/baselineProfiles/baseline-prof.txt
 
   update-paywall-preview-resources-submodule:
     docker:
