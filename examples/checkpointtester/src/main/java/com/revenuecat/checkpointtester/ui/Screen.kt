@@ -7,4 +7,5 @@ sealed class Screen(val route: String, val title: String) {
     data object SoftPaywall : Screen("soft_paywall", "Soft paywall")
     data object Onboarding : Screen("onboarding", "Onboarding")
     data object EntitlementGate : Screen("entitlement_gate", "Entitlement gate")
+    data object CustomCheckpoint : Screen("custom_checkpoint", "Custom checkpoint")
 }

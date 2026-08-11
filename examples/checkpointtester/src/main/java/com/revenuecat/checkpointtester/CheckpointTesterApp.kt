@@ -24,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.revenuecat.checkpointtester.ui.Screen
+import com.revenuecat.checkpointtester.ui.screens.custom.CustomCheckpointScreen
 import com.revenuecat.checkpointtester.ui.screens.gate.EntitlementGateScreen
 import com.revenuecat.checkpointtester.ui.screens.hardpaywall.HardPaywallScreen
 import com.revenuecat.checkpointtester.ui.screens.log.ListenerLogScreen
@@ -43,6 +44,7 @@ private val ALL_SCREENS: List<Screen> = listOf(
     Screen.SoftPaywall,
     Screen.Onboarding,
     Screen.EntitlementGate,
+    Screen.CustomCheckpoint,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -94,6 +96,9 @@ fun CheckpointTesterApp(
             }
             composable(Screen.EntitlementGate.route) {
                 EntitlementGateScreen(modifier = contentModifier)
+            }
+            composable(Screen.CustomCheckpoint.route) {
+                CustomCheckpointScreen(modifier = contentModifier)
             }
         }
     }
