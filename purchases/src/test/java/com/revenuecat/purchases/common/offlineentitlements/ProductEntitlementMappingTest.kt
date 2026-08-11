@@ -70,7 +70,7 @@ class ProductEntitlementMappingTest {
         assertThat(productEntitlementMapping.mappings["com.revenuecat.foo_2"]).isEqualTo(
             ProductEntitlementMapping.Mapping("com.revenuecat.foo_2", null, listOf("pro_3"))
         )
-        val expectedEntitlementMapping = createProductEntitlementMapping()
+        val expectedEntitlementMapping = createProductEntitlementMapping(originalSource = null)
         assertThat(productEntitlementMapping).isEqualTo(expectedEntitlementMapping)
     }
 
@@ -107,12 +107,8 @@ class ProductEntitlementMappingTest {
     }
 
     @Test
-    fun `toJson transforms mappings back to original Json while adding original data source field`() {
+    fun `toJson transforms mappings back to original Json`() {
         val mappings = ProductEntitlementMapping.fromJson(sampleResponseJson)
-        val json = mappings.toJson()
-        val toJsonWithoutOriginalDataSource = json.apply {
-            remove("rc_original_source")
-        }
-        assertThat(toJsonWithoutOriginalDataSource.toString()).isEqualTo(sampleResponseJson.toString())
+        assertThat(mappings.toJson().toString()).isEqualTo(sampleResponseJson.toString())
     }
 }
