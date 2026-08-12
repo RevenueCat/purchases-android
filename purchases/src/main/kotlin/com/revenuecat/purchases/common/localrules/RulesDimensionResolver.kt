@@ -45,8 +45,15 @@ internal class RulesDimensionResolver(
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
 
+    /**
+     * [customVariables] are the caller's own values for this one evaluation, exposed under
+     * [RulesDimensionNamespace.Custom]. An empty map contributes no namespace at all rather than an empty object,
+     * which is truthy in JSON Logic: a call with no values should read as absent, not as present-but-empty.
+     */
     @Suppress("ReturnCount")
-    suspend fun snapshot(): Result<RulesDimensionSnapshot> {
+    suspend fun snapshot(
+        customVariables: Map<String, RulesDimensionValue> = emptyMap(),
+    ): Result<RulesDimensionSnapshot> {
         val date = dateProvider.now
         val values = mutableMapOf<String, MutableMap<String, Value>>()
 
@@ -63,16 +70,14 @@ internal class RulesDimensionResolver(
                     ),
                 )
             }
-            val namespace = values.getOrPut(provider.namespace.key) { mutableMapOf() }
-            for ((name, value) in dimensions) {
-                if (namespace.containsKey(name)) {
-                    return Result.failure(
-                        RulesDimensionResolutionException.ConflictingDimension(
-                            "${provider.namespace.key}.$name",
-                        ),
-                    )
-                }
-                namespace[name] = value.asRulesEngineValue
+            values.addDimensions(provider.namespace, dimensions)?.let { conflict ->
+                return Result.failure(conflict)
+            }
+        }
+
+        if (customVariables.isNotEmpty()) {
+            values.addDimensions(RulesDimensionNamespace.Custom, customVariables)?.let { conflict ->
+                return Result.failure(conflict)
             }
         }
 
@@ -83,6 +88,21 @@ internal class RulesDimensionResolver(
             ),
         )
     }
+}
+
+/** Nests [dimensions] under [namespace], or returns the conflict that stops the whole snapshot. */
+private fun MutableMap<String, MutableMap<String, Value>>.addDimensions(
+    namespace: RulesDimensionNamespace,
+    dimensions: Map<String, RulesDimensionValue>,
+): RulesDimensionResolutionException.ConflictingDimension? {
+    val target = getOrPut(namespace.key) { mutableMapOf() }
+    for ((name, value) in dimensions) {
+        if (target.containsKey(name)) {
+            return RulesDimensionResolutionException.ConflictingDimension("${namespace.key}.$name")
+        }
+        target[name] = value.asRulesEngineValue
+    }
+    return null
 }
 
 private val RulesDimensionValue.asRulesEngineValue: Value
