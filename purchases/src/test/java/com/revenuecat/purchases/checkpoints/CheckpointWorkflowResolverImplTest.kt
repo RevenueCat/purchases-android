@@ -278,7 +278,7 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `offering checkpoint works when no UI config provider is installed`() = runTest {
+    fun `offering checkpoint resolves DISABLED when no UI config provider is installed`() = runTest {
         coEvery { mockWorkflowManager.getPublishedWorkflow("wf1234") } returns offeringWorkflow("wf1234", "default")
         resolver = CheckpointWorkflowResolverImpl(
             workflowManager = mockWorkflowManager,
@@ -291,12 +291,13 @@ class CheckpointWorkflowResolverImplTest {
             },
         )
 
-        assertThat(resolve()).isInstanceOf(CheckpointResolution.Offering::class.java)
-        assertThat(offeringsFetched).isEqualTo(1)
+        assertThat(noActionReason(resolve())).isEqualTo(CheckpointResolution.NoAction.Reason.DISABLED)
+        assertThat(offeringsFetched).isZero()
+        coVerify(exactly = 0) { mockWorkflowManager.getPublishedWorkflow(any()) }
     }
 
     @Test
-    fun `terminal offering workflow resolves its offering without UI dependencies`() = runTest {
+    fun `terminal offering workflow requires ui config`() = runTest {
         coEvery { mockWorkflowManager.getPublishedWorkflow("wf1234") } returns offeringWorkflow("wf1234", "default")
 
         val resolution = resolve() as CheckpointResolution.Offering
@@ -304,8 +305,19 @@ class CheckpointWorkflowResolverImplTest {
         assertThat(resolution.offering).isEqualTo(mockOffering)
         assertThat(offeringsFetched).isEqualTo(1)
         coVerify(exactly = 0) { mockWorkflowManager.offeringIdByWorkflowId() }
-        coVerify(exactly = 0) { mockUiConfigProvider.getUiConfig() }
+        coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
         verify(exactly = 0) { mockWorkflowManager.prewarmWorkflowAssets(any(), any()) }
+    }
+
+    @Test
+    fun `offering checkpoint resolves CONFIGURATION_UNAVAILABLE when ui config is unavailable`() = runTest {
+        coEvery { mockWorkflowManager.getPublishedWorkflow("wf1234") } returns offeringWorkflow("wf1234", "default")
+        coEvery { mockUiConfigProvider.getUiConfig() } returns null
+
+        assertThat(noActionReason(resolve()))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        assertThat(offeringsFetched).isZero()
+        coVerify(exactly = 0) { mockWorkflowManager.getPublishedWorkflow(any()) }
     }
 
     @Test
@@ -392,8 +404,8 @@ class CheckpointWorkflowResolverImplTest {
         assertThat(noActionReason(resolve()))
             .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
         coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
-        coVerify(exactly = 1) { mockWorkflowManager.offeringIdByWorkflowId() }
-        coVerify(exactly = 0) { mockWorkflowManager.getPublishedWorkflow("wf-offering") }
+        coVerify(exactly = 0) { mockWorkflowManager.offeringIdByWorkflowId() }
+        coVerify(exactly = 0) { mockWorkflowManager.getPublishedWorkflow(any()) }
         assertThat(offeringsFetched).isZero()
     }
 

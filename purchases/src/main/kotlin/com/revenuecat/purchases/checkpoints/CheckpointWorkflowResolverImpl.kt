@@ -28,9 +28,9 @@ import kotlinx.serialization.json.JsonPrimitive
  * Resolves a checkpoint through the `checkpoint_rules` topic: the checkpoint's rules are read from remote config
  * and evaluated in order against locally collected dimensions, and the first rule whose audience matches wins.
  *
- * Each workflow body is inspected before presentation dependencies are loaded. A terminal offering step
- * returns its offering to the app, while a UI workflow keeps the existing presentation path. The winner is final.
- * If its workflow turns out to be unservable, the checkpoint resolves to
+ * UI config remains a prerequisite for every matched checkpoint workflow. After it is loaded, a terminal offering
+ * step returns its offering to the app without presentation, while a UI workflow keeps the existing presentation
+ * path. The winner is final. If its workflow turns out to be unservable, the checkpoint resolves to
  * [CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE] rather than falling through to a rule the
  * customer was not the first choice for.
  *
@@ -62,7 +62,7 @@ internal class CheckpointWorkflowResolverImpl(
 
     @Suppress("ReturnCount")
     private suspend fun resolveConfiguredWorkflow(identifier: String): CheckpointResolution {
-        if (workflowManager == null || checkpointsConfigProvider == null) {
+        if (workflowManager == null || uiConfigProvider == null || checkpointsConfigProvider == null) {
             return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.DISABLED)
         }
         val checkpoint = when (val resolution = checkpointsConfigProvider.resolveCheckpoint(identifier)) {
@@ -88,13 +88,16 @@ internal class CheckpointWorkflowResolverImpl(
             uiConfigProvider = uiConfigProvider,
             getOfferings = getOfferings,
         )
-        return resolveRule(workflowManager, dependencies, rule)
+        val uiConfig = dependencies.uiConfig()
+            ?: return configurationUnavailable("UI config is unavailable for checkpoint '$identifier'.")
+        return resolveRule(workflowManager, dependencies, rule, uiConfig)
     }
 
     private suspend fun resolveRule(
         workflowManager: WorkflowManager,
         dependencies: CheckpointResolutionDependencies,
         rule: CheckpointRule,
+        uiConfig: UiConfig,
     ): CheckpointResolution {
         val workflow = try {
             workflowManager.getPublishedWorkflow(rule.workflowId)
@@ -103,7 +106,7 @@ internal class CheckpointWorkflowResolverImpl(
         }
         val offeringSteps = workflow.steps.values.filter { it.type == OFFERING_STEP_TYPE }
         return if (offeringSteps.isEmpty()) {
-            resolveUiRule(dependencies, rule, workflow)
+            resolveUiRule(dependencies, rule, workflow, uiConfig)
         } else {
             resolveOfferingRule(dependencies, rule, workflow, offeringSteps)
         }
@@ -157,14 +160,11 @@ internal class CheckpointWorkflowResolverImpl(
         dependencies: CheckpointResolutionDependencies,
         rule: CheckpointRule,
         workflow: PublishedWorkflow,
+        uiConfig: UiConfig,
     ): CheckpointResolution {
         val offeringId = dependencies.offeringIdForWorkflow(rule.workflowId)
         if (offeringId == null) {
             return unservableRule(rule, "no offering is mapped to it in the workflows topic")
-        }
-        val uiConfig = dependencies.uiConfig()
-        if (uiConfig == null) {
-            return unservableRule(rule, "UI config is unavailable")
         }
         val offering = dependencies.offering(offeringId)
         if (offering == null) {
