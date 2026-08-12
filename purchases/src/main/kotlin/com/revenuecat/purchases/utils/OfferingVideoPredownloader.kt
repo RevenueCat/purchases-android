@@ -5,9 +5,9 @@ package com.revenuecat.purchases.utils
 import android.content.Context
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.common.canUsePaywallUI
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.models.Checksum
+import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.storage.DefaultFileRepository
@@ -16,13 +16,12 @@ import java.net.URL
 
 internal class OfferingVideoPredownloader(
     context: Context,
-    canShowPaywalls: Boolean = canUsePaywallUI,
+    private val assetWarming: PaywallAssetWarming,
     private val fileRepository: FileRepository = DefaultFileRepository(context),
 ) {
-    private val shouldPredownload: Boolean = canShowPaywalls
 
     fun downloadVideos(offering: Offering) {
-        if (shouldPredownload) {
+        if (assetWarming.isAvailable) {
             val paywallComponents = offering.paywallComponents ?: return
             // `paywallComponents.data` is decoded lazily on first access and fails if the component tree passed
             // the cheap parse-time shape check but is structurally invalid. Pre-downloading is best-effort, so a

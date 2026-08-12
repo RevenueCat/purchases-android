@@ -1,9 +1,12 @@
 package com.revenuecat.purchases.utils
 
+import android.content.Context
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.PaywallAssetWarmer
+import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
@@ -35,13 +38,11 @@ import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
-import io.mockk.Runs
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
-import io.mockk.verifyAll
 import kotlinx.serialization.SerializationException
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -50,7 +51,7 @@ import java.net.URL
 @RunWith(AndroidJUnit4::class)
 class OfferingImagePreDownloaderTest {
 
-    private lateinit var coilImageDownloader: CoilImageDownloader
+    private val warmer = RecordingWarmer()
 
     private lateinit var preDownloader: OfferingImagePreDownloader
 
@@ -58,11 +59,17 @@ class OfferingImagePreDownloaderTest {
 
     @Before
     fun setUp() {
-        coilImageDownloader = mockk<CoilImageDownloader>().apply {
-            every { downloadImage(any()) } just Runs
-        }
+        preDownloader = OfferingImagePreDownloader(warming(warmer))
+    }
 
-        preDownloader = OfferingImagePreDownloader(shouldPredownloadImages = true, coilImageDownloader)
+    private fun warming(warmer: PaywallAssetWarmer?) =
+        PaywallAssetWarming(context = mockk(relaxed = true), warmerProvider = { warmer })
+
+    private class RecordingWarmer : PaywallAssetWarmer {
+        val warmed = mutableListOf<Uri>()
+        override fun warmImages(context: Context, imageUris: List<Uri>) {
+            warmed.addAll(imageUris)
+        }
     }
 
     @Test
@@ -74,19 +81,17 @@ class OfferingImagePreDownloaderTest {
             }
         )
 
-        verify(exactly = 0) {
-            coilImageDownloader.downloadImage(any())
-        }
+        assertThat(warmer.warmed).isEmpty()
     }
 
     @Test
     fun `if disabled, it does not download anything`() {
-        preDownloader = OfferingImagePreDownloader(shouldPredownloadImages = false, coilImageDownloader)
-        preDownloader.preDownloadOfferingImages(createOfferings())
+        val offering = mockk<Offering>()
 
-        verify(exactly = 0) {
-            coilImageDownloader.downloadImage(any())
-        }
+        OfferingImagePreDownloader(warming(warmer = null)).preDownloadOfferingImages(offering)
+
+        verify(exactly = 0) { offering.paywall }
+        verify(exactly = 0) { offering.paywallComponents }
     }
 
     // region Paywalls V1
@@ -95,20 +100,18 @@ class OfferingImagePreDownloaderTest {
     fun `downloads images from offering paywall data`() {
         preDownloader.preDownloadOfferingImages(createOfferings())
 
-        verifyAll {
-            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_header.png"))
-            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_background.png"))
-            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_icon.png"))
-        }
+        assertThat(warmer.warmed).containsExactlyInAnyOrder(
+            Uri.parse("https://www.revenuecat.com/test_header.png"),
+            Uri.parse("https://www.revenuecat.com/test_background.png"),
+            Uri.parse("https://www.revenuecat.com/test_icon.png"),
+        )
     }
 
     @Test
     fun `if no images, it does not download anything`() {
         preDownloader.preDownloadOfferingImages(createOfferings(null, null, null))
 
-        verify(exactly = 0) {
-            coilImageDownloader.downloadImage(any())
-        }
+        assertThat(warmer.warmed).isEmpty()
     }
 
     // endregion Paywalls V1
@@ -119,9 +122,7 @@ class OfferingImagePreDownloaderTest {
     fun `paywalls V2 - if no images, it does not download anything`() {
         preDownloader.preDownloadOfferingImages(createOfferingWithV2Paywall())
 
-        verify(exactly = 0) {
-            coilImageDownloader.downloadImage(any())
-        }
+        assertThat(warmer.warmed).isEmpty()
     }
 
     @Test
@@ -140,9 +141,7 @@ class OfferingImagePreDownloaderTest {
         // offerings success/caching path that invokes this.
         preDownloader.preDownloadOfferingImages(offering)
 
-        verify(exactly = 0) {
-            coilImageDownloader.downloadImage(any())
-        }
+        assertThat(warmer.warmed).isEmpty()
     }
 
     @Test
@@ -392,11 +391,8 @@ class OfferingImagePreDownloaderTest {
             ),
         ))
 
-        verifyAll {
-            expectedImageDownloads.forEach { url ->
-                coilImageDownloader.downloadImage(Uri.parse(url))
-            }
-        }
+        assertThat(warmer.warmed)
+            .containsExactlyInAnyOrderElementsOf(expectedImageDownloads.map { Uri.parse(it) })
     }
 
 
