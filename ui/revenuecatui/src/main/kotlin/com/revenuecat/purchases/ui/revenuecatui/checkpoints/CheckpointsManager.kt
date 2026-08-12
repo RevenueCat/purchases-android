@@ -17,9 +17,9 @@ import java.util.UUID
 
 /**
  * Runs a checkpoint hit end to end: fires listener events, asks the core module what the checkpoint resolves
- * to, and presents the resolved workflow through [CheckpointWorkflowActivity]. Owns the
- * one-presentation-at-a-time constraint and the pending call that routes the presented paywall's terminal
- * outcome back to the suspended [checkpoint] call.
+ * to, and either returns its data or presents the resolved workflow through [CheckpointWorkflowActivity]. Owns
+ * the one-presentation-at-a-time constraint and the pending call that routes a presented paywall's terminal
+ * outcome back to the suspended [checkpoint] call. Data-only results never claim that presentation slot.
  *
  * There is one instance per [Purchases] instance, held in its `checkpointManagerSlot` and reached through
  * [checkpointsManager], so the listener and any in-flight presentation die with the SDK instance that owns
@@ -63,6 +63,7 @@ internal class CheckpointsManager {
         checkpointListener?.onCheckpointHit(checkpoint)
         val resolution = purchases.resolveCheckpoint(identifier, checkpoint.params.customProperties)
         val result = when (resolution) {
+            is CheckpointResolution.Offering -> CheckpointResult.Offering(checkpoint, resolution.offering)
             is CheckpointResolution.Workflow ->
                 CheckpointResult.PaywallPresented(checkpoint, present(purchases, resolution))
             is CheckpointResolution.NoAction ->

@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
  * when nothing is active. A purchase or restore carries its own [CustomerInfo] on the outcome, so the refreshed
  * entitlements come straight off the result with no second fetch.
  */
+@OptIn(InternalRevenueCatAPI::class)
 class EntitlementGateViewModel : ViewModel() {
 
     data class UiState(
@@ -42,7 +43,6 @@ class EntitlementGateViewModel : ViewModel() {
         if (!_state.value.hasRun) refresh()
     }
 
-    @OptIn(InternalRevenueCatAPI::class)
     fun refresh() {
         if (_state.value.loading || _state.value.running) return
         _state.update {
@@ -72,23 +72,31 @@ class EntitlementGateViewModel : ViewModel() {
                     "entitlement_gate",
                     CheckpointParams("gate" to "entitlement"),
                 )
-                when (result) {
-                    is CheckpointResult.PaywallPresented -> when (val outcome = result.paywallOutcome) {
-                        // The outcome carries the up-to-date CustomerInfo, so there's no need to fetch again.
-                        is CheckpointPaywallOutcome.Purchased ->
-                            granted("Purchased.", outcome.customerInfo)
-                        is CheckpointPaywallOutcome.Restored ->
-                            granted("Restored.", outcome.customerInfo)
-                        CheckpointPaywallOutcome.Dismissed -> finish("Dismissed, still no entitlement.")
-                        is CheckpointPaywallOutcome.Error -> finish("Paywall error: ${outcome.error.message}")
-                        else -> finish("Unknown paywall outcome.")
-                    }
-                    is CheckpointResult.NoAction -> finish("No paywall shown (${result.reason.value}).")
-                    else -> finish("Unknown checkpoint result.")
-                }
+                handleCheckpointResult(result)
             } catch (e: PurchasesException) {
                 finish("Checkpoint failed: ${e.message}")
             }
+        }
+    }
+
+    private fun handleCheckpointResult(result: CheckpointResult) {
+        when (result) {
+            is CheckpointResult.Offering ->
+                finish("Offering ${result.offering.identifier} returned; the app should present it.")
+            is CheckpointResult.PaywallPresented -> handlePaywallOutcome(result.paywallOutcome)
+            is CheckpointResult.NoAction -> finish("No paywall shown (${result.reason.value}).")
+            else -> finish("Unknown checkpoint result.")
+        }
+    }
+
+    private fun handlePaywallOutcome(outcome: CheckpointPaywallOutcome) {
+        when (outcome) {
+            // The outcome carries the up-to-date CustomerInfo, so there's no need to fetch again.
+            is CheckpointPaywallOutcome.Purchased -> granted("Purchased.", outcome.customerInfo)
+            is CheckpointPaywallOutcome.Restored -> granted("Restored.", outcome.customerInfo)
+            CheckpointPaywallOutcome.Dismissed -> finish("Dismissed, still no entitlement.")
+            is CheckpointPaywallOutcome.Error -> finish("Paywall error: ${outcome.error.message}")
+            else -> finish("Unknown paywall outcome.")
         }
     }
 

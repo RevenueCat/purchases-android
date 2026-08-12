@@ -2,11 +2,22 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import dev.drewhamilton.poko.Poko
+import com.revenuecat.purchases.Offering as RevenueCatOffering
 
 @InternalRevenueCatAPI
 public abstract class CheckpointResult internal constructor() {
 
     public abstract val checkpoint: CheckpointInfo
+
+    /**
+     * The checkpoint selected [offering] without presenting RevenueCat-managed UI. The app decides how to use
+     * the offering, including whether and where to present it.
+     */
+    @Poko
+    public class Offering internal constructor(
+        override val checkpoint: CheckpointInfo,
+        public val offering: RevenueCatOffering,
+    ) : CheckpointResult()
 
     /**
      * A checkpoint-triggered paywall was presented and finished with [paywallOutcome].

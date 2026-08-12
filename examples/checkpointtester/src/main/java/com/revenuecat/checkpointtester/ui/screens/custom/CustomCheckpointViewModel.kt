@@ -40,6 +40,11 @@ class CustomCheckpointViewModel : ViewModel() {
         viewModelScope.launch {
             val result = try {
                 when (val result = Purchases.sharedInstance.awaitCheckpoint(checkpointIdentifier)) {
+                    is CheckpointResult.Offering -> UiState(
+                        title = "Offering returned",
+                        detail = "Identifier: ${result.offering.identifier}. The app now owns presentation.",
+                        raw = result.toString(),
+                    )
                     is CheckpointResult.PaywallPresented -> UiState(
                         title = "Paywall presented",
                         detail = when (val outcome = result.paywallOutcome) {

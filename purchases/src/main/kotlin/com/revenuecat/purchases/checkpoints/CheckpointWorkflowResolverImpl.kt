@@ -16,7 +16,11 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
+import com.revenuecat.purchases.common.workflows.WorkflowStep
+import kotlinx.coroutines.CancellationException
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Resolves a checkpoint through the `checkpoint_rules` topic: the checkpoint's rules are read from remote
@@ -24,10 +28,10 @@ import com.revenuecat.purchases.common.workflows.WorkflowManager
  * in order is the placeholder for the audience evaluation that will eventually pick the first rule whose
  * `audience_id` matches this customer — until then the order the dashboard published is the only signal.
  *
- * A rule is skipped when its workflow can't be served (no offering configured for it, that offering absent from
- * the fetched offerings, or its body unavailable), mirroring the "unservable outcome → next rule" rule the
- * evaluator will keep. The shared reads a presentation needs — `ui_config` and offerings — happen once, outside
- * the walk, since a failure there is not specific to any rule.
+ * Each workflow body is inspected before presentation dependencies are loaded. A terminal offering step
+ * returns its offering to the app, while a UI workflow keeps the existing presentation path. Unsupported or
+ * unavailable rules are skipped so a later rule can still be served. Shared dependencies are loaded lazily and
+ * at most once per checkpoint resolution.
  *
  * [SIMULATED_ERROR_CHECKPOINT_ID] is the one piece of PoC scaffolding left: it is the only way for the tester
  * apps to exercise the throw path, since nothing in the config-driven path throws.
@@ -53,7 +57,7 @@ internal class CheckpointWorkflowResolverImpl(
 
     @Suppress("ReturnCount")
     private suspend fun resolveConfiguredWorkflow(identifier: String): CheckpointResolution {
-        if (workflowManager == null || uiConfigProvider == null || checkpointsConfigProvider == null) {
+        if (workflowManager == null || checkpointsConfigProvider == null) {
             return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.DISABLED)
         }
         val checkpoint = when (val resolution = checkpointsConfigProvider.resolveCheckpoint(identifier)) {
@@ -66,57 +70,108 @@ internal class CheckpointWorkflowResolverImpl(
         }
         if (checkpoint.rules.isEmpty()) return noMatch(identifier)
 
-        // A rule whose workflow has no offering can never be served, so filtering on the workflow index first
-        // keeps an entirely unservable checkpoint from also triggering an offerings fetch.
-        val offeringIdByWorkflowId = workflowManager.offeringIdByWorkflowId()
-        val candidates = checkpoint.rules.mapNotNull { rule ->
-            val offeringId = offeringIdByWorkflowId[rule.workflowId]
-            if (offeringId == null) {
-                logSkippedRule(rule, "no offering is mapped to it in the workflows topic")
-                null
-            } else {
-                rule to offeringId
-            }
+        val dependencies = CheckpointResolutionDependencies(
+            identifier = identifier,
+            workflowManager = workflowManager,
+            uiConfigProvider = uiConfigProvider,
+            getOfferings = getOfferings,
+        )
+        for (rule in checkpoint.rules) {
+            resolveRule(workflowManager, dependencies, rule)?.let { return it }
         }
-        if (candidates.isEmpty()) {
-            return configurationUnavailable("No rule for checkpoint '$identifier' points at a servable workflow.")
-        }
-        val uiConfig = uiConfigProvider.getUiConfig()
-            ?: return configurationUnavailable("UI config is unavailable for checkpoint '$identifier'.")
-        val offerings = try {
-            getOfferings()
+        return configurationUnavailable("No rule for checkpoint '$identifier' resolved to a servable workflow.")
+    }
+
+    private suspend fun resolveRule(
+        workflowManager: WorkflowManager,
+        dependencies: CheckpointResolutionDependencies,
+        rule: CheckpointRule,
+    ): CheckpointResolution? {
+        val workflow = try {
+            workflowManager.getPublishedWorkflow(rule.workflowId)
         } catch (e: PurchasesException) {
-            return configurationUnavailable(
-                "Offerings could not be fetched for checkpoint '$identifier': ${e.error}",
-            )
+            logSkippedRule(rule, "it could not be loaded: ${e.error}")
+            return null
         }
-        return candidates.firstNotNullOfOrNull { (rule, offeringId) ->
-            resolveRule(workflowManager, rule, offeringId, offerings, uiConfig)
-        } ?: configurationUnavailable("No rule for checkpoint '$identifier' resolved to a presentable workflow.")
+        val offeringSteps = workflow.steps.values.filter { it.type == OFFERING_STEP_TYPE }
+        return if (offeringSteps.isEmpty()) {
+            resolveUiRule(dependencies, rule, workflow)
+        } else {
+            resolveOfferingRule(dependencies, rule, workflow, offeringSteps)
+        }
     }
 
     @Suppress("ReturnCount")
-    private suspend fun resolveRule(
-        workflowManager: WorkflowManager,
+    private suspend fun resolveOfferingRule(
+        dependencies: CheckpointResolutionDependencies,
         rule: CheckpointRule,
-        offeringId: String,
-        offerings: Offerings,
-        uiConfig: UiConfig,
+        workflow: PublishedWorkflow,
+        offeringSteps: List<WorkflowStep>,
+    ): CheckpointResolution.Offering? {
+        val step = offeringSteps.singleOrNull()
+            ?: return unsupportedOfferingRule(rule, "it contains more than one offering step")
+        if (workflow.steps.size != 1) {
+            return unsupportedOfferingRule(rule, "an offering step cannot be mixed with other steps")
+        }
+        if (workflow.steps[workflow.initialStepId] != step) {
+            return unsupportedOfferingRule(rule, "the offering step is not the initial step")
+        }
+        if (step.screenId != null) {
+            return unsupportedOfferingRule(rule, "the offering step contains a screen")
+        }
+        if (step.triggers.isNotEmpty()) {
+            return unsupportedOfferingRule(rule, "the offering step contains triggers")
+        }
+        if (step.triggerActions.isNotEmpty()) {
+            return unsupportedOfferingRule(rule, "the offering step contains trigger actions")
+        }
+        val offeringIdentifier = (step.paramValues[OFFERING_IDENTIFIER_PARAM] as? JsonPrimitive)
+            ?.takeIf { it.isString }
+            ?.content
+            ?.takeIf { it.isNotBlank() }
+            ?: return unsupportedOfferingRule(rule, "the offering step has no valid offering identifier")
+
+        val offering = dependencies.offering(offeringIdentifier)
+        if (offering == null) {
+            logSkippedRule(rule, "offering '$offeringIdentifier' was not found in offerings")
+            return null
+        }
+        debugLog {
+            "Checkpoint resolved to offering '${offering.identifier}' from workflow '${rule.workflowId}'"
+        }
+        return CheckpointResolution.Offering(offering)
+    }
+
+    private fun unsupportedOfferingRule(rule: CheckpointRule, reason: String): CheckpointResolution.Offering? {
+        logSkippedRule(rule, reason)
+        return null
+    }
+
+    @Suppress("ReturnCount")
+    private suspend fun resolveUiRule(
+        dependencies: CheckpointResolutionDependencies,
+        rule: CheckpointRule,
+        workflow: PublishedWorkflow,
     ): CheckpointResolution.Workflow? {
-        val offering: Offering = offerings.all[offeringId]
-            ?: run {
-                logSkippedRule(rule, "offering '$offeringId' was not found in offerings")
-                return null
-            }
-        val workflow = try {
-            workflowManager.getWorkflow(rule.workflowId)
-        } catch (e: PurchasesException) {
-            logSkippedRule(rule, "it could not be loaded: ${e.error}")
+        val offeringId = dependencies.offeringIdForWorkflow(rule.workflowId)
+        if (offeringId == null) {
+            logSkippedRule(rule, "no offering is mapped to it in the workflows topic")
+            return null
+        }
+        val uiConfig = dependencies.uiConfig()
+        if (uiConfig == null) {
+            logSkippedRule(rule, "UI config is unavailable")
+            return null
+        }
+        val offering = dependencies.offering(offeringId)
+        if (offering == null) {
+            logSkippedRule(rule, "offering '$offeringId' was not found in offerings")
             return null
         }
         debugLog {
             "Checkpoint resolved to workflow '${rule.workflowId}' (offering: ${offering.identifier})"
         }
+        dependencies.prewarmWorkflowAssets(workflow, uiConfig)
         return CheckpointResolution.Workflow(workflow, uiConfig, offering)
     }
 
@@ -141,5 +196,72 @@ internal class CheckpointWorkflowResolverImpl(
 
     private companion object {
         const val SIMULATED_ERROR_CHECKPOINT_ID = "error_checkpoint"
+        const val OFFERING_STEP_TYPE = "offering"
+        const val OFFERING_IDENTIFIER_PARAM = "offering_identifier"
+    }
+}
+
+private class CheckpointResolutionDependencies(
+    private val identifier: String,
+    private val workflowManager: WorkflowManager,
+    private val uiConfigProvider: UiConfigProvider?,
+    private val getOfferings: suspend () -> Offerings,
+) {
+    private var offeringsLoaded = false
+    private var offerings: Offerings? = null
+    private var workflowOfferingIndexLoaded = false
+    private var workflowOfferingIndex: Map<String, String> = emptyMap()
+    private var uiConfigLoaded = false
+    private var resolvedUiConfig: UiConfig? = null
+
+    suspend fun offering(identifier: String): Offering? = loadOfferings()?.all?.get(identifier)
+
+    suspend fun offeringIdForWorkflow(workflowId: String): String? = loadWorkflowOfferingIndex()[workflowId]
+
+    suspend fun uiConfig(): UiConfig? {
+        if (!uiConfigLoaded) {
+            uiConfigLoaded = true
+            resolvedUiConfig = try {
+                uiConfigProvider?.getUiConfig()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                errorLog(e) { "UI config could not be fetched for checkpoint '$identifier'." }
+                null
+            }
+        }
+        return resolvedUiConfig
+    }
+
+    fun prewarmWorkflowAssets(workflow: PublishedWorkflow, uiConfig: UiConfig) {
+        workflowManager.prewarmWorkflowAssets(workflow, uiConfig)
+    }
+
+    private suspend fun loadOfferings(): Offerings? {
+        if (!offeringsLoaded) {
+            offeringsLoaded = true
+            offerings = try {
+                getOfferings()
+            } catch (e: PurchasesException) {
+                errorLog { "Offerings could not be fetched for checkpoint '$identifier': ${e.error}" }
+                null
+            }
+        }
+        return offerings
+    }
+
+    private suspend fun loadWorkflowOfferingIndex(): Map<String, String> {
+        if (!workflowOfferingIndexLoaded) {
+            workflowOfferingIndexLoaded = true
+            workflowOfferingIndex = try {
+                workflowManager.offeringIdByWorkflowId()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+                errorLog(e) { "Workflow offering metadata could not be fetched for checkpoint '$identifier'." }
+                emptyMap()
+            }
+        }
+        return workflowOfferingIndex
     }
 }

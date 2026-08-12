@@ -42,6 +42,7 @@ object CheckpointEventLog : CheckpointListener {
     }
 
     private fun describe(result: CheckpointResult): String = when (result) {
+        is CheckpointResult.Offering -> "Offering (${result.offering.identifier})"
         is CheckpointResult.PaywallPresented -> when (val outcome = result.paywallOutcome) {
             is CheckpointPaywallOutcome.Purchased -> "Purchased"
             is CheckpointPaywallOutcome.Restored -> "Restored"
