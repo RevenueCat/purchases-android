@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
@@ -28,7 +30,7 @@ internal class OverlayLayoutAccessibilityTests {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun `header body and footer have explicit traversal order`(): Unit = with(composeTestRule) {
+    fun `sets header traversal priority without overriding footer order`(): Unit = with(composeTestRule) {
         val state = FakePaywallState()
         setContent {
             PaywallComponentsScaffold(
@@ -39,6 +41,7 @@ internal class OverlayLayoutAccessibilityTests {
                     Box(
                         Modifier
                             .testTag("header")
+                            .semantics { contentDescription = "Header" }
                             .fillMaxWidth()
                             .height(40.dp),
                     )
@@ -47,32 +50,34 @@ internal class OverlayLayoutAccessibilityTests {
                     Box(
                         Modifier
                             .testTag("footer")
+                            .semantics { contentDescription = "Footer" }
                             .fillMaxWidth()
                             .height(60.dp),
                     )
                 },
             ) {
-                Box(Modifier.testTag("body").fillMaxSize())
+                Box(
+                    Modifier
+                        .testTag("body")
+                        .semantics { contentDescription = "Body" }
+                        .fillMaxSize(),
+                )
             }
         }
 
         val headerGroup = onNodeWithTag("header", useUnmergedTree = true)
             .onParent()
             .assertTraversalGroup(index = -1f)
-        val bodyGroup = onNodeWithTag("body", useUnmergedTree = true)
-            .onParent()
-            .assertTraversalGroup(index = 0f)
-        val footerGroup = onNodeWithTag("footer", useUnmergedTree = true)
-            .onParent()
-            .assertTraversalGroup(index = 1f)
-
-        val overlayGroup = bodyGroup.onParent()
+        val bodyParent = onNodeWithTag("body", useUnmergedTree = true).onParent()
+        val footerParent = onNodeWithTag("footer", useUnmergedTree = true).onParent()
+        val overlayGroup = headerGroup.onParent()
         overlayGroup.assert(
             SemanticsMatcher.expectValue(SemanticsProperties.IsTraversalGroup, true),
         )
         val overlayId = overlayGroup.fetchSemanticsNode().id
-        assertThat(headerGroup.onParent().fetchSemanticsNode().id).isEqualTo(overlayId)
-        assertThat(footerGroup.onParent().fetchSemanticsNode().id).isEqualTo(overlayId)
+        assertThat(bodyParent.fetchSemanticsNode().id).isEqualTo(overlayId)
+        assertThat(footerParent.fetchSemanticsNode().id).isEqualTo(overlayId)
+        assertThat(footerParent.fetchSemanticsNode().config.contains(SemanticsProperties.TraversalIndex)).isFalse()
     }
 
     private fun SemanticsNodeInteraction.assertTraversalGroup(index: Float): SemanticsNodeInteraction =
