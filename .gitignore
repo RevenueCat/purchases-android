@@ -28,6 +28,7 @@ Icon
 
 # Built application files
 *.apk
+*.aab
 *.ap_
 
 # Files for ART and Dalvik VM
@@ -122,6 +123,7 @@ fastlane/report.xml
 fastlane/.env
 /docs/*
 integration-tests/keystore
+examples/paywall-tester/keystore
 
 # share settings
 !/.idea/codeStyles/
