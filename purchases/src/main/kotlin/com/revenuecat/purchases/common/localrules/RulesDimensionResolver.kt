@@ -1,0 +1,94 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
+package com.revenuecat.purchases.common.localrules
+
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.rules.Value
+import kotlinx.coroutines.CancellationException
+import java.util.Date
+
+/**
+ * An immutable, point-in-time scope ready to be handed to the rules engine.
+ */
+internal data class RulesDimensionSnapshot(
+    val values: Map<String, Value>,
+    val evaluationDate: Date,
+)
+
+internal sealed class RulesDimensionResolutionException(message: String) : Exception(message) {
+
+    internal data class ProviderFailed(
+        val identifier: String,
+        val reason: String,
+    ) : RulesDimensionResolutionException("dimension provider '$identifier' failed: $reason")
+
+    internal data class ConflictingDimension(
+        val path: String,
+    ) : RulesDimensionResolutionException("two dimension providers supplied '$path'")
+}
+
+/**
+ * Builds the scope local rule evaluation runs against by collecting every provider once and nesting its values
+ * under the provider's namespace.
+ *
+ * All providers see the same reference instant, so every dimension in one snapshot is consistent with the others.
+ *
+ * Both failure modes are configuration bugs rather than runtime conditions — a provider that cannot produce its
+ * values, and two providers claiming the same path — so they fail the whole snapshot instead of silently
+ * degrading a rule to a non-match, which would be indistinguishable from a customer who genuinely does not match.
+ * Cancellation is neither, and propagates.
+ */
+internal class RulesDimensionResolver(
+    private val providers: List<RulesDimensionProvider>,
+    private val dateProvider: DateProvider = DefaultDateProvider(),
+) {
+
+    @Suppress("ReturnCount")
+    suspend fun snapshot(): Result<RulesDimensionSnapshot> {
+        val date = dateProvider.now
+        val values = mutableMapOf<String, MutableMap<String, Value>>()
+
+        for (provider in providers) {
+            val dimensions = try {
+                provider.dimensions(date)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (@Suppress("TooGenericExceptionCaught") error: Exception) {
+                return Result.failure(
+                    RulesDimensionResolutionException.ProviderFailed(
+                        identifier = provider.identifier,
+                        reason = error.message ?: error.toString(),
+                    ),
+                )
+            }
+            val namespace = values.getOrPut(provider.namespace.key) { mutableMapOf() }
+            for ((name, value) in dimensions) {
+                if (namespace.containsKey(name)) {
+                    return Result.failure(
+                        RulesDimensionResolutionException.ConflictingDimension(
+                            "${provider.namespace.key}.$name",
+                        ),
+                    )
+                }
+                namespace[name] = value.asRulesEngineValue
+            }
+        }
+
+        return Result.success(
+            RulesDimensionSnapshot(
+                values = values.mapValues { (_, dimensions) -> Value.ObjectValue(dimensions) },
+                evaluationDate = date,
+            ),
+        )
+    }
+}
+
+private val RulesDimensionValue.asRulesEngineValue: Value
+    get() = when (this) {
+        is RulesDimensionValue.StringValue -> Value.StringValue(value)
+        is RulesDimensionValue.BoolValue -> Value.BoolValue(value)
+        is RulesDimensionValue.IntValue -> Value.IntValue(value)
+        is RulesDimensionValue.DoubleValue -> Value.FloatValue(value)
+    }

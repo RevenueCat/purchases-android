@@ -29,6 +29,8 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
+import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
+import com.revenuecat.purchases.common.localrules.RulesEngineLoggerBridge
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.APISourceFailover
 import com.revenuecat.purchases.common.networking.DeviceConnectivityChecker
@@ -60,6 +62,7 @@ import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
+import com.revenuecat.purchases.rules.RulesEngine
 import com.revenuecat.purchases.storage.DefaultFileRepository
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.Emojis
@@ -349,6 +352,10 @@ internal class PurchasesFactory(
             val checkpointsConfigProvider = remoteConfigManager?.let {
                 CheckpointsConfigProvider(it)
             }
+            // Dimension providers are added here as they land; with none registered, only predicates that read no
+            // dimensions can match.
+            RulesEngine.setLogger(RulesEngineLoggerBridge)
+            val localRulesEvaluator = LocalRulesEvaluator(providers = emptyList())
             if (remoteConfigManager != null && uiConfigProvider != null && workflowsConfigProvider != null) {
                 remoteConfigManager.registerListener(uiConfigProvider)
                 remoteConfigManager.registerListener(workflowsConfigProvider)
@@ -551,6 +558,7 @@ internal class PurchasesFactory(
                 uiConfigProvider = uiConfigProvider,
                 workflowsConfigProvider = workflowsConfigProvider,
                 checkpointsConfigProvider = checkpointsConfigProvider,
+                localRulesEvaluator = localRulesEvaluator,
             )
 
             return Purchases(purchasesOrchestrator)
