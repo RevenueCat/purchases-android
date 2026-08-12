@@ -97,7 +97,7 @@ class CheckpointWorkflowActivityTest {
 
         launchActivity<CheckpointWorkflowActivity>(intentFor("call-id-from-a-previous-process"))
 
-        assertThat(mockPurchases.checkpointsManager.resolution(liveCallId)).isNotNull
+        assertThat(mockPurchases.checkpointsManager.presentation(liveCallId)).isNotNull
     }
 
     private fun intentFor(callId: String) = Intent(

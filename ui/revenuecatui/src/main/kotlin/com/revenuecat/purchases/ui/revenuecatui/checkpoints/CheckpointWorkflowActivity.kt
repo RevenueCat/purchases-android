@@ -41,15 +41,17 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
         // when the pending call no longer exists.
         val manager = if (Purchases.isConfigured) Purchases.sharedInstance.checkpointsManager else null
         this.manager = manager
-        val resolution = id?.let { manager?.resolution(it) }
-        if (id == null || manager == null || resolution == null) {
+        val presentation = id?.let { manager?.presentation(it) }
+        if (id == null || manager == null || presentation == null) {
             Logger.w("Checkpoint call '$id' no longer exists. Closing the checkpoint workflow.")
             finish()
             return
         }
         manager.onPresentationStarted(id, this)
+        val resolution = presentation.resolution
         val options = PaywallOptions.Builder(dismissRequest = ::finish)
             .injectedWorkflow(resolution.workflow, resolution.offering, resolution.uiConfig)
+            .setCustomVariables(presentation.customVariables)
             .setListener(outcomeListener)
             .build()
         setContent {

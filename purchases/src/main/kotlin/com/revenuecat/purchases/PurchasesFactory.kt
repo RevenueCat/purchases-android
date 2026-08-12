@@ -29,6 +29,8 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
+import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
+import com.revenuecat.purchases.common.localrules.RulesEngineLoggerBridge
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.APISourceFailover
 import com.revenuecat.purchases.common.networking.DeviceConnectivityChecker
@@ -57,20 +59,20 @@ import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
+import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
+import com.revenuecat.purchases.rules.RulesEngine
 import com.revenuecat.purchases.storage.DefaultFileRepository
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.Emojis
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
-import com.revenuecat.purchases.utils.CoilImageDownloader
 import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
 import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
-import com.revenuecat.purchases.utils.PaywallComponentsImagePreDownloader
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.UrlConnectionFactory
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
@@ -247,11 +249,8 @@ internal class PurchasesFactory(
                 backendHelper,
                 remoteConfigDispatcher,
             )
-            val coilImageDownloader = CoilImageDownloader(application)
             val fileRepository = DefaultFileRepository(application)
-            val paywallComponentsImagePreDownloader = PaywallComponentsImagePreDownloader(
-                coilImageDownloader = coilImageDownloader,
-            )
+            val paywallAssetWarming = PaywallAssetWarming(application)
 
             val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
@@ -341,7 +340,7 @@ internal class PurchasesFactory(
             // only the current offering's assets) and on the render path. Shared with WorkflowManager so both
             // dedup against one set of warmed workflow ids.
             val workflowAssetPrewarmer = uiConfigProvider?.let {
-                WorkflowAssetPrewarmer(it, paywallComponentsImagePreDownloader, offeringFontPreDownloader)
+                WorkflowAssetPrewarmer(it, paywallAssetWarming, offeringFontPreDownloader)
             }
             val workflowsConfigProvider = remoteConfigManager?.let {
                 WorkflowsConfigProvider(
@@ -353,6 +352,10 @@ internal class PurchasesFactory(
             val checkpointsConfigProvider = remoteConfigManager?.let {
                 CheckpointsConfigProvider(it)
             }
+            // Dimension providers are added here as they land; with none registered, only predicates that read no
+            // dimensions can match.
+            RulesEngine.setLogger(RulesEngineLoggerBridge)
+            val localRulesEvaluator = LocalRulesEvaluator(providers = emptyList())
             if (remoteConfigManager != null && uiConfigProvider != null && workflowsConfigProvider != null) {
                 remoteConfigManager.registerListener(uiConfigProvider)
                 remoteConfigManager.registerListener(workflowsConfigProvider)
@@ -478,10 +481,7 @@ internal class PurchasesFactory(
                 offeringsCache,
                 backend,
                 OfferingsFactory(billing, offeringParser, dispatcher, appConfig),
-                OfferingImagePreDownloader(
-                    coilImageDownloader = coilImageDownloader,
-                    paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
-                ),
+                OfferingImagePreDownloader(assetWarming = paywallAssetWarming),
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
                 uiPreviewMode = appConfig.uiPreviewMode,
@@ -558,6 +558,7 @@ internal class PurchasesFactory(
                 uiConfigProvider = uiConfigProvider,
                 workflowsConfigProvider = workflowsConfigProvider,
                 checkpointsConfigProvider = checkpointsConfigProvider,
+                localRulesEvaluator = localRulesEvaluator,
             )
 
             return Purchases(purchasesOrchestrator)

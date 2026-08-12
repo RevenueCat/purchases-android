@@ -14,6 +14,10 @@ import com.revenuecat.purchases.common.checkpoints.CheckpointResponse
 import com.revenuecat.purchases.common.checkpoints.CheckpointRule
 import com.revenuecat.purchases.common.checkpoints.CheckpointRulesResolution
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
+import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
+import com.revenuecat.purchases.common.localrules.RulesDimensionNamespace
+import com.revenuecat.purchases.common.localrules.RulesDimensionProvider
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
@@ -38,6 +42,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.util.Date
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -78,6 +83,7 @@ class CheckpointWorkflowResolverImplTest {
             workflowManager = mockWorkflowManager,
             uiConfigProvider = mockUiConfigProvider,
             checkpointsConfigProvider = mockCheckpointsConfigProvider,
+            localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
             getOfferings = {
                 offeringsFetched++
                 offeringsFetchError?.let { throw PurchasesException(it) }
@@ -104,6 +110,7 @@ class CheckpointWorkflowResolverImplTest {
             workflowManager = null,
             uiConfigProvider = null,
             checkpointsConfigProvider = null,
+            localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
             getOfferings = { mockOfferings },
         )
 
@@ -191,29 +198,28 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `rules whose workflow is not mapped to an offering are skipped`() = runTest {
+    fun `a matched rule whose workflow is not mapped to an offering does not fall through`() = runTest {
         configureRules(rule("wf5678"), rule("wf1234"))
         coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns mapOf("wf1234" to "default")
 
-        val resolution = resolve() as CheckpointResolution.Workflow
-
-        assertThat(resolution.workflow).isEqualTo(mockWorkflow)
+        assertThat(noActionReason(resolve()))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        coVerify(exactly = 0) { mockWorkflowManager.getPublishedWorkflow("wf1234") }
     }
 
     @Test
-    fun `rules whose offering is missing from offerings are skipped`() = runTest {
+    fun `a matched rule whose offering is missing from offerings does not fall through`() = runTest {
         configureRules(rule("wf5678"), rule("wf1234"))
         coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns
             mapOf("wf5678" to "missing", "wf1234" to "default")
 
-        val resolution = resolve() as CheckpointResolution.Workflow
-
-        assertThat(resolution.workflow).isEqualTo(mockWorkflow)
-        coVerify(exactly = 1) { mockWorkflowManager.getPublishedWorkflow("wf5678") }
+        assertThat(noActionReason(resolve()))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        coVerify(exactly = 0) { mockWorkflowManager.getPublishedWorkflow("wf1234") }
     }
 
     @Test
-    fun `rules whose workflow fails to load are skipped`() = runTest {
+    fun `a matched rule whose workflow fails to load does not fall through`() = runTest {
         configureRules(rule("wf5678"), rule("wf1234"))
         coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns
             mapOf("wf5678" to "default", "wf1234" to "default")
@@ -221,23 +227,26 @@ class CheckpointWorkflowResolverImplTest {
             PurchasesError(PurchasesErrorCode.UnknownError, "Workflow unavailable."),
         )
 
-        val resolution = resolve() as CheckpointResolution.Workflow
-
-        assertThat(resolution.workflow).isEqualTo(mockWorkflow)
+        assertThat(noActionReason(resolve()))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        coVerify(exactly = 0) { mockWorkflowManager.getPublishedWorkflow("wf1234") }
     }
 
     @Test
-    fun `checkpoint resolves NoAction with CONFIGURATION_UNAVAILABLE when no rule is servable`() = runTest {
-        configureRules(rule("wf1234"), rule("wf5678"))
-        coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns
-            mapOf("wf1234" to "default", "wf5678" to "default")
-        coEvery { mockWorkflowManager.getPublishedWorkflow(any()) } throws PurchasesException(
-            PurchasesError(PurchasesErrorCode.UnknownError, "Workflow unavailable."),
-        )
+    fun `checkpoint resolves NoAction with CONFIGURATION_UNAVAILABLE when audiences cannot be evaluated`() =
+        runTest {
+            resolver = CheckpointWorkflowResolverImpl(
+                workflowManager = mockWorkflowManager,
+                uiConfigProvider = mockUiConfigProvider,
+                checkpointsConfigProvider = mockCheckpointsConfigProvider,
+                localRulesEvaluator = LocalRulesEvaluator(providers = listOf(FailingDimensionProvider)),
+                getOfferings = { mockOfferings },
+            )
 
-        assertThat(noActionReason(resolve()))
-            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
-    }
+            assertThat(noActionReason(resolve()))
+                .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+            coVerify(exactly = 0) { mockWorkflowManager.getPublishedWorkflow(any()) }
+        }
 
     @Test
     fun `checkpoint resolves NoAction with CONFIGURATION_UNAVAILABLE when the offerings fetch fails`() = runTest {
@@ -257,10 +266,10 @@ class CheckpointWorkflowResolverImplTest {
         }
 
     @Test
-    fun `offerings and ui config are resolved once regardless of how many rules are walked`() = runTest {
-        configureRules(rule("wf5678"), rule("wf9012"), rule("wf1234"))
+    fun `offerings and ui config are resolved once`() = runTest {
+        configureRules(rule("wf1234"), rule("wf5678"))
         coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns
-            mapOf("wf5678" to "missing-1", "wf9012" to "missing-2", "wf1234" to "default")
+            mapOf("wf1234" to "default", "wf5678" to "default")
 
         assertThat(resolve()).isInstanceOf(CheckpointResolution.Workflow::class.java)
         assertThat(offeringsFetched).isEqualTo(1)
@@ -275,6 +284,7 @@ class CheckpointWorkflowResolverImplTest {
             workflowManager = mockWorkflowManager,
             uiConfigProvider = null,
             checkpointsConfigProvider = mockCheckpointsConfigProvider,
+            localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
             getOfferings = {
                 offeringsFetched++
                 mockOfferings
@@ -310,7 +320,7 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `unsupported offering step shapes are skipped for a later valid offering rule`() = runTest {
+    fun `unsupported offering step shapes do not fall through to a later rule`() = runTest {
         val baseOfferingStep = offeringStep("default")
         val invalidWorkflows = listOf(
             workflow(
@@ -362,15 +372,16 @@ class CheckpointWorkflowResolverImplTest {
         invalidWorkflows.forEach { invalidWorkflow ->
             coEvery { mockWorkflowManager.getPublishedWorkflow("wf-invalid") } returns invalidWorkflow
 
-            assertThat(resolve())
+            assertThat(noActionReason(resolve()))
                 .describedAs(invalidWorkflow.displayName)
-                .isInstanceOf(CheckpointResolution.Offering::class.java)
+                .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
         }
-        assertThat(offeringsFetched).isEqualTo(invalidWorkflows.size)
+        assertThat(offeringsFetched).isZero()
+        coVerify(exactly = 0) { mockWorkflowManager.getPublishedWorkflow("wf1234") }
     }
 
     @Test
-    fun `UI rule without UI config is skipped for a later offering rule`() = runTest {
+    fun `UI rule without UI config does not fall through to a later offering rule`() = runTest {
         configureRules(rule("wf-ui"), rule("wf-offering"))
         coEvery { mockWorkflowManager.getPublishedWorkflow("wf-ui") } returns uiWorkflow("wf-ui")
         coEvery { mockWorkflowManager.getPublishedWorkflow("wf-offering") } returns
@@ -378,24 +389,26 @@ class CheckpointWorkflowResolverImplTest {
         coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns mapOf("wf-ui" to "default")
         coEvery { mockUiConfigProvider.getUiConfig() } returns null
 
-        assertThat(resolve()).isInstanceOf(CheckpointResolution.Offering::class.java)
+        assertThat(noActionReason(resolve()))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
         coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
         coVerify(exactly = 1) { mockWorkflowManager.offeringIdByWorkflowId() }
-        assertThat(offeringsFetched).isEqualTo(1)
+        coVerify(exactly = 0) { mockWorkflowManager.getPublishedWorkflow("wf-offering") }
+        assertThat(offeringsFetched).isZero()
     }
 
     @Test
-    fun `missing offering for offering rule is skipped for a later UI rule`() = runTest {
+    fun `missing offering for offering rule does not fall through to a later UI rule`() = runTest {
         configureRules(rule("wf-offering"), rule("wf-ui"))
         coEvery { mockWorkflowManager.getPublishedWorkflow("wf-offering") } returns
             offeringWorkflow("wf-offering", "missing")
         coEvery { mockWorkflowManager.getPublishedWorkflow("wf-ui") } returns uiWorkflow("wf-ui")
         coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns mapOf("wf-ui" to "default")
 
-        val resolution = resolve() as CheckpointResolution.Workflow
-
-        assertThat(resolution.workflow.id).isEqualTo("wf-ui")
+        assertThat(noActionReason(resolve()))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
         assertThat(offeringsFetched).isEqualTo(1)
+        coVerify(exactly = 0) { mockWorkflowManager.getPublishedWorkflow("wf-ui") }
     }
 
     @Test
@@ -405,12 +418,20 @@ class CheckpointWorkflowResolverImplTest {
             workflowManager = mockWorkflowManager,
             uiConfigProvider = mockUiConfigProvider,
             checkpointsConfigProvider = mockCheckpointsConfigProvider,
+            localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
             getOfferings = { throw CancellationException("cancelled") },
         )
 
         val thrown = runCatching { resolve() }.exceptionOrNull()
 
         assertThat(thrown).isInstanceOf(CancellationException::class.java)
+    }
+
+    private object FailingDimensionProvider : RulesDimensionProvider {
+        override val identifier = "failing"
+        override val namespace = RulesDimensionNamespace.Device
+        override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> =
+            throw IllegalStateException("no dimensions")
     }
 
     private fun rule(workflowId: String) = CheckpointRule(
