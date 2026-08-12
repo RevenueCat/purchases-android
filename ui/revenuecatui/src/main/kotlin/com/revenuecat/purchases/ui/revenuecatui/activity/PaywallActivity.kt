@@ -30,8 +30,8 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
-import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
@@ -237,7 +237,7 @@ internal class PaywallActivity : ComponentActivity() {
                             viewModel.preloadExitOffering()
                         }
 
-                        Paywall(paywallOptions)
+                        InternalPaywall(paywallOptions, viewModel)
                     }
                 }
             }

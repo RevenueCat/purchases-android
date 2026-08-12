@@ -18,10 +18,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.currentCompositeKeyHash
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,7 +35,11 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.unit.Density
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelStoreOwner
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -49,6 +55,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallViewModelStoreHolder
 import com.revenuecat.purchases.ui.revenuecatui.data.currentColors
 import com.revenuecat.purchases.ui.revenuecatui.data.isInFullScreenMode
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
@@ -363,8 +370,9 @@ internal fun getPaywallViewModel(
     shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
 ): PaywallViewModel {
     val applicationContext = LocalContext.current.applicationContext
+    val viewModelStoreOwner = rememberPaywallViewModelStoreOwner(currentCompositeKeyHash)
     val viewModel = viewModel<PaywallViewModelImpl>(
-        key = options.hashCode().toString(),
+        viewModelStoreOwner = viewModelStoreOwner,
         factory = PaywallViewModelFactory(
             applicationContext.toResourceProvider(),
             options,
@@ -376,6 +384,32 @@ internal fun getPaywallViewModel(
     )
     viewModel.updateOptions(options)
     return viewModel
+}
+
+/**
+ * Scopes a Paywall ViewModel to one presentation while retaining it through configuration changes.
+ *
+ * This deliberately does not provide SavedStateHandle support. Replace it with Lifecycle's scoped ViewModel APIs
+ * instead of extending it if PaywallViewModelImpl starts depending on saved state.
+ */
+@Composable
+internal fun rememberPaywallViewModelStoreOwner(
+    key: Any,
+    parentOwner: ViewModelStoreOwner = checkNotNull(LocalViewModelStoreOwner.current) {
+        "CompositionLocal LocalViewModelStoreOwner not present"
+    },
+    holder: PaywallViewModelStoreHolder = viewModel(viewModelStoreOwner = parentOwner),
+): ViewModelStoreOwner {
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val lease = remember(holder, key, lifecycle) { holder.acquire(key) }
+
+    DisposableEffect(lease, lifecycle) {
+        onDispose {
+            lease.release(clear = lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED))
+        }
+    }
+
+    return lease.owner
 }
 
 @ReadOnlyComposable
