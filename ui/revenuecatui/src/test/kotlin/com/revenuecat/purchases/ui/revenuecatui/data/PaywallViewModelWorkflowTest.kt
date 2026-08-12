@@ -1771,6 +1771,74 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `RevenueCat purchase auto-dismiss starts a fresh paywall event session on re-presentation`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            storeTransaction = mockk<StoreTransaction>(),
+            customerInfo = mockk<CustomerInfo>(),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        vm.trackPaywallImpressionIfNeeded()
+        val firstImpression = captured.filterIsInstance<PaywallEvent>()
+            .single { it.type == PaywallEventType.IMPRESSION }
+
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impressions).hasSize(2)
+        val secondImpression = impressions.last()
+        val secondStepStarted = captured.filterIsInstance<WorkflowEvent.StepStarted>().last()
+        assertThat(secondImpression.data.sessionIdentifier)
+            .isNotEqualTo(firstImpression.data.sessionIdentifier)
+        assertThat(secondImpression.data.workflowId).isEqualTo(fetchResult.id)
+        assertThat(secondImpression.data.stepId).isEqualTo("step-1")
+        assertThat(secondImpression.data.traceId).isEqualTo(secondStepStarted.traceId)
+        assertThat(secondImpression.data.traceId).isNotEqualTo(firstImpression.data.traceId)
+    }
+
+    @Test
+    fun `RevenueCat restore auto-dismiss starts a fresh paywall event session on re-presentation`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitRestore() } returns mockk<CustomerInfo>()
+        val vm = PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = PaywallOptions.Builder(dismissRequest = {}).build(),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = { false },
+            backgroundDispatcher = testDispatcher,
+        )
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        vm.trackPaywallImpressionIfNeeded()
+        val firstImpression = captured.filterIsInstance<PaywallEvent>()
+            .single { it.type == PaywallEventType.IMPRESSION }
+
+        vm.handleRestorePurchases()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impressions).hasSize(2)
+        val secondImpression = impressions.last()
+        val secondStepStarted = captured.filterIsInstance<WorkflowEvent.StepStarted>().last()
+        assertThat(secondImpression.data.sessionIdentifier)
+            .isNotEqualTo(firstImpression.data.sessionIdentifier)
+        assertThat(secondImpression.data.workflowId).isEqualTo(fetchResult.id)
+        assertThat(secondImpression.data.stepId).isEqualTo("step-1")
+        assertThat(secondImpression.data.traceId).isEqualTo(secondStepStarted.traceId)
+        assertThat(secondImpression.data.traceId).isNotEqualTo(firstImpression.data.traceId)
+    }
+
+    @Test
     fun `paywall impression traceId survives forward navigation within one presentation`() {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }

@@ -358,7 +358,6 @@ internal class PaywallViewModelImpl(
         if (exitOffering != null) {
             trackExitOffer(ExitOfferType.DISMISS, exitOffering.identifier)
         }
-        paywallPresentationData = null
         endPresentationSession()
         val dismissWithExitOffering = options.dismissRequestWithExitOffering
         if (dismissWithExitOffering != null) {
@@ -406,6 +405,7 @@ internal class PaywallViewModelImpl(
 
     private fun endPresentationSession() {
         cancelStateUpdate()
+        paywallPresentationData = null
         standaloneStateStore = null
         clearWorkflowState()
         // This ViewModel can outlive an embedded or dialog presentation. Do not leave the last rendered
