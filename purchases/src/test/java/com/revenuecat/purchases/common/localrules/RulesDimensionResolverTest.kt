@@ -20,13 +20,13 @@ class RulesDimensionResolverTest {
     @Test
     fun `dimensions are nested under their provider's namespace`() = runTest {
         val resolver = resolver(
-            provider(RulesDimensionNamespace.Device, "app_version" to string("1.2.3")),
+            provider(RulesDimensionNamespace.Device, "appVersion" to string("1.2.3")),
         )
 
         val values = resolver.snapshot().getOrThrow().values
 
         assertThat(values).isEqualTo(
-            mapOf("device" to Value.ObjectValue(mapOf("app_version" to Value.StringValue("1.2.3")))),
+            mapOf("device" to Value.ObjectValue(mapOf("appVersion" to Value.StringValue("1.2.3")))),
         )
     }
 
