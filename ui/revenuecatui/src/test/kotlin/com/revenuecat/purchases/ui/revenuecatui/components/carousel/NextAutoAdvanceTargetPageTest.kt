@@ -33,8 +33,8 @@ internal class NextAutoAdvanceTargetPageTest {
 
     @Test
     fun `single page loop never advances`() {
-        val ringCount = 1 + 2 * loopClonePad(loop = true, pageCount = 1)
-        assertThat(nextAutoAdvanceTargetPage(ringCount = ringCount, currentPage = 0)).isNull()
+        // A single page gets no clones, so its ring is just the one index.
+        assertThat(nextAutoAdvanceTargetPage(ringCount = 1, currentPage = 0)).isNull()
     }
 
     @Test

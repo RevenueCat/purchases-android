@@ -30,7 +30,8 @@ class CarouselRecenterUnderGestureTest {
     @Test
     fun `a recentre started while a gesture holds the scroll mutex still lands`() {
         val pageCount = 2
-        val clonePad = loopClonePad(loop = true, pageCount = pageCount)
+        // Any non-zero pad exercises this; where it comes from is CarouselLoopIndexTest's business.
+        val clonePad = 2
         val ringCount = pageCount + 2 * clonePad
         val trailingClone = ringCount - 1
 

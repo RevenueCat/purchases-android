@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
@@ -26,6 +27,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -76,10 +78,15 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteract
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallCarouselPageChange
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
+import kotlin.math.ceil
+import kotlin.math.max
 import androidx.compose.ui.unit.lerp as lerpUnit
 
 // Two is the minimum that keeps the trailing page_peek populated during the wrap. Matches the web SDK.
-private const val LOOP_CLONE_PAD = 2
+private const val MIN_LOOP_CLONE_PAD = 2
+
+// Eight clones a side is seven visible neighbours, past any real carousel design.
+private const val MAX_LOOP_CLONE_PAD = 8
 
 @Suppress("LongMethod")
 @JvmSynthetic
@@ -104,82 +111,8 @@ internal fun CarouselComponentView(
     val borderStyle = carouselState.border?.let { rememberBorderStyle(border = it) }
     val shadowStyle = carouselState.shadow?.let { rememberShadowStyle(shadow = it) }
 
-    val pageCount = style.pages.size
-
-    // Every pager index is a distinct LazyLayout key, so an unbounded index space would rebuild a
-    // page from scratch on every advance. Keep the ring finite.
-    val clonePad = loopClonePad(carouselState.loop, pageCount)
-    val ringCount = pageCount + 2 * clonePad
-    val initialPage = clonePad + carouselState.initialPageIndex.coerceIn(0, maxOf(pageCount - 1, 0))
-
-    val pagerState = rememberPagerState(initialPage = initialPage) { ringCount }
-
-    val currentLogicalPage by remember(pagerState, clonePad, pageCount) {
-        derivedStateOf { carouselLogicalPage(pagerState.currentPage, clonePad, pageCount) }
-    }
-
-    val skipProgrammaticPageTracking = remember { ProgrammaticPageTrackingFlag() }
-
-    RecenterLoopClones(pagerState = pagerState, clonePad = clonePad, pageCount = pageCount)
-
-    carouselState.autoAdvance?.let { autoAdvance ->
-        EnableAutoAdvance(
-            autoAdvance,
-            pagerState,
-            ringCount,
-            skipProgrammaticPageTracking,
-        )
-    }
-
-    if (pageCount > 0) {
-        LaunchedEffect(
-            pagerState,
-            pageCount,
-            clonePad,
-            style.componentName,
-            style.pageContextNames,
-            style.initialPageIndex,
-            componentInteractionTracker,
-        ) {
-            // Logical page, so the invisible clone re-centre does not emit a page change.
-            var previousPage = currentLogicalPage
-            snapshotFlow { currentLogicalPage }.collect { page ->
-                if (page != previousPage) {
-                    if (skipProgrammaticPageTracking.consumeShouldSkipPageChange()) {
-                        // Auto-advance scroll; do not emit component interaction.
-                    } else {
-                        fun pageName(logical: Int): String? =
-                            style.pageContextNames.getOrNull(logical)?.takeUnless { it.isBlank() }
-                        componentInteractionTracker.track(
-                            paywallCarouselPageChange(
-                                CarouselPageChangeInteraction(
-                                    componentName = style.componentName,
-                                    destinationPageIndex = page,
-                                    originPageIndex = previousPage,
-                                    defaultPageIndex = style.initialPageIndex,
-                                    originContextName = pageName(previousPage),
-                                    destinationContextName = pageName(page),
-                                ),
-                            ),
-                        )
-                    }
-                    previousPage = page
-                }
-            }
-        }
-    }
-
-    // A Fit carousel sizes to its tallest page, but each page is measured before that height is
-    // known, so a Fill page wraps its own (smaller) content instead of matching. Pin the Fill pages
-    // to the measured height; leave the Pager unpinned so it keeps tracking the tallest page as
-    // content grows (async WebView), which avoids latching to the first frame.
-    // A SubcomposeLayout single pass would avoid this measure -> recompose reflow, but it would
-    // compose every page (WebViews included) twice, so it isn't worth it for one settle frame.
-    val density = LocalDensity.current
-    var pagerHeightPx by remember(carouselState.pages) { mutableIntStateOf(0) }
-    val fillPageModifier = fillPageModifierOrEmpty(carouselState.size.height, pagerHeightPx, density)
-
-    Column(
+    // propagateMinConstraints, or a Fill or Fixed carousel wraps its content instead of filling.
+    BoxWithConstraints(
         modifier = modifier
             .size(carouselState.size)
             .padding(carouselState.margin)
@@ -191,43 +124,138 @@ internal fun CarouselComponentView(
                     .padding(it.width)
             }
             .padding(carouselState.padding),
+        propagateMinConstraints = true,
     ) {
-        val pageControl = @Composable {
-            carouselState.pageControl?.let {
-                PagerIndicator(
-                    pageControl = it,
-                    pageCount = pageCount,
-                    currentPage = currentLogicalPage,
-                    pagerState = pagerState,
-                )
-            }
-        }
+        val pageCount = style.pages.size
 
-        if (carouselState.pageControl?.position == CarouselComponent.PageControl.Position.TOP) {
-            pageControl()
-        }
+        val contentPadding = carouselState.pagePeek + carouselState.pageSpacing
 
-        HorizontalPager(
-            state = pagerState,
-            contentPadding = PaddingValues(horizontal = carouselState.pagePeek + carouselState.pageSpacing),
-            // Whole ring stays composed, so nothing is torn down. Ceiling: pageCount + 4 live pages.
-            beyondViewportPageCount = ringCount,
+        // Every pager index is a distinct LazyLayout key, so an unbounded index space would rebuild a
+        // page from scratch on every advance. Keep the ring finite.
+        val clonePad = loopClonePad(
+            loop = carouselState.loop,
+            pageCount = pageCount,
+            viewportWidth = maxWidth,
+            contentPadding = contentPadding,
             pageSpacing = carouselState.pageSpacing,
-            verticalAlignment = carouselState.pageAlignment,
-            modifier = Modifier.onSizeChanged { pagerHeightPx = it.height },
-        ) { page ->
-            val pageStyle = carouselState.pages[carouselLogicalPage(page, clonePad, pageCount)]
-            StackComponentView(
-                style = pageStyle,
-                state = state,
-                clickHandler = clickHandler,
-                componentInteractionTracker = componentInteractionTracker,
-                modifier = pageHeightModifier(pageStyle.size.height, fillPageModifier),
+        )
+        val ringCount = pageCount + 2 * clonePad
+        val initialPage = carouselRealZoneIndex(
+            pageIndex = carouselState.initialPageIndex.coerceIn(0, maxOf(pageCount - 1, 0)),
+            clonePad = clonePad,
+            pageCount = pageCount,
+        )
+
+        val pagerState = rememberPagerState(initialPage = initialPage) { ringCount }
+
+        val currentLogicalPage by remember(pagerState, pageCount) {
+            derivedStateOf { carouselLogicalPage(pagerState.currentPage, pageCount) }
+        }
+
+        val skipProgrammaticPageTracking = remember { ProgrammaticPageTrackingFlag() }
+
+        ReanchorOnPadChange(
+            pagerState = pagerState,
+            pageBeforeChange = currentLogicalPage,
+            clonePad = clonePad,
+            pageCount = pageCount,
+        )
+
+        RecenterLoopClones(pagerState = pagerState, clonePad = clonePad, pageCount = pageCount)
+
+        carouselState.autoAdvance?.let { autoAdvance ->
+            EnableAutoAdvance(
+                autoAdvance,
+                pagerState,
+                ringCount,
+                skipProgrammaticPageTracking,
             )
         }
 
-        if (carouselState.pageControl?.position == CarouselComponent.PageControl.Position.BOTTOM) {
-            pageControl()
+        if (pageCount > 0) {
+            LaunchedEffect(
+                pagerState,
+                pageCount,
+                style.componentName,
+                style.pageContextNames,
+                style.initialPageIndex,
+                componentInteractionTracker,
+            ) {
+                // Logical page, so the invisible clone re-centre does not emit a page change.
+                var previousPage = currentLogicalPage
+                snapshotFlow { currentLogicalPage }.collect { page ->
+                    if (page != previousPage) {
+                        if (skipProgrammaticPageTracking.consumeShouldSkipPageChange()) {
+                            // Auto-advance scroll; do not emit component interaction.
+                        } else {
+                            fun pageName(logical: Int): String? =
+                                style.pageContextNames.getOrNull(logical)?.takeUnless { it.isBlank() }
+                            componentInteractionTracker.track(
+                                paywallCarouselPageChange(
+                                    CarouselPageChangeInteraction(
+                                        componentName = style.componentName,
+                                        destinationPageIndex = page,
+                                        originPageIndex = previousPage,
+                                        defaultPageIndex = style.initialPageIndex,
+                                        originContextName = pageName(previousPage),
+                                        destinationContextName = pageName(page),
+                                    ),
+                                ),
+                            )
+                        }
+                        previousPage = page
+                    }
+                }
+            }
+        }
+
+        // A Fit carousel sizes to its tallest page, but each page is measured before that height is
+        // known, so a Fill page wraps its own (smaller) content instead of matching. Pin the Fill pages
+        // to the measured height; leave the Pager unpinned so it keeps tracking the tallest page as
+        // content grows (async WebView), which avoids latching to the first frame.
+        // A SubcomposeLayout single pass would avoid this measure -> recompose reflow, but it would
+        // compose every page (WebViews included) twice, so it isn't worth it for one settle frame.
+        val density = LocalDensity.current
+        var pagerHeightPx by remember(carouselState.pages) { mutableIntStateOf(0) }
+        val fillPageModifier = fillPageModifierOrEmpty(carouselState.size.height, pagerHeightPx, density)
+
+        Column {
+            val pageControl = @Composable {
+                carouselState.pageControl?.let {
+                    PagerIndicator(
+                        pageControl = it,
+                        pageCount = pageCount,
+                        pagerState = pagerState,
+                    )
+                }
+            }
+
+            if (carouselState.pageControl?.position == CarouselComponent.PageControl.Position.TOP) {
+                pageControl()
+            }
+
+            HorizontalPager(
+                state = pagerState,
+                contentPadding = PaddingValues(horizontal = contentPadding),
+                // Every ring index stays composed, so LazyLayout never tears a page down to rebuild it.
+                beyondViewportPageCount = ringCount,
+                pageSpacing = carouselState.pageSpacing,
+                verticalAlignment = carouselState.pageAlignment,
+                modifier = Modifier.onSizeChanged { pagerHeightPx = it.height },
+            ) { page ->
+                val pageStyle = carouselState.pages[carouselLogicalPage(page, pageCount)]
+                StackComponentView(
+                    style = pageStyle,
+                    state = state,
+                    clickHandler = clickHandler,
+                    componentInteractionTracker = componentInteractionTracker,
+                    modifier = pageHeightModifier(pageStyle.size.height, fillPageModifier),
+                )
+            }
+
+            if (carouselState.pageControl?.position == CarouselComponent.PageControl.Position.BOTTOM) {
+                pageControl()
+            }
         }
     }
 }
@@ -236,7 +264,6 @@ internal fun CarouselComponentView(
 private fun ColumnScope.PagerIndicator(
     pageControl: CarouselComponentStyle.PageControlStyles,
     pageCount: Int,
-    currentPage: Int,
     pagerState: PagerState,
     modifier: Modifier = Modifier,
 ) {
@@ -260,7 +287,7 @@ private fun ColumnScope.PagerIndicator(
             Indicator(
                 pagerState = pagerState,
                 pageIndex = iteration,
-                currentPage = currentPage,
+                pageCount = pageCount,
                 pageControl = pageControl,
             )
         }
@@ -272,11 +299,14 @@ private fun ColumnScope.PagerIndicator(
 private fun Indicator(
     pagerState: PagerState,
     pageIndex: Int,
-    currentPage: Int,
+    pageCount: Int,
     pageControl: CarouselComponentStyle.PageControlStyles,
 ) {
-    val progress by remember(pageIndex, currentPage) {
+    val progress by remember(pageIndex, pageCount) {
         derivedStateOf {
+            // Both reads have to come from one snapshot: a page hoisted into the remember key lags
+            // the offset by a frame, and the boundary frame then animates the wrong dot.
+            val currentPage = carouselLogicalPage(pagerState.currentPage, pageCount)
             when {
                 pageIndex == currentPage -> {
                     if (pagerState.currentPageOffsetFraction >= 0f) {
@@ -343,6 +373,21 @@ private fun Indicator(
     )
 }
 
+/**
+ * Puts [pageBeforeChange] back under the pager once a new pad has moved the real zone. It is passed
+ * in rather than read here: `PagerState` coerces its current page during the measure pass that
+ * follows, and a coerced index is a different page.
+ */
+@Composable
+private fun ReanchorOnPadChange(pagerState: PagerState, pageBeforeChange: Int, clonePad: Int, pageCount: Int) {
+    // Without clones there is no real zone to return to, and requestScrollToPage invalidates the
+    // pager's measure scope even when it already sits on the target page.
+    if (clonePad == 0) return
+    LaunchedEffect(clonePad, pageCount) {
+        pagerState.requestScrollToPage(carouselRealZoneIndex(pageBeforeChange, clonePad, pageCount))
+    }
+}
+
 /** Snaps back into the real zone on settling on a clone. The clone is identical, so it is invisible. */
 @Composable
 internal fun RecenterLoopClones(pagerState: PagerState, clonePad: Int, pageCount: Int) {
@@ -362,12 +407,16 @@ private fun EnableAutoAdvance(
     ringCount: Int,
     skipProgrammaticPageTracking: ProgrammaticPageTrackingFlag,
 ) {
+    // LaunchedEffect(Unit) runs once and outlives recomposition, so the ring bound and the timings
+    // have to be read live rather than captured as effect keys.
+    val currentRingCount by rememberUpdatedState(ringCount)
+    val currentAutoAdvance by rememberUpdatedState(autoAdvance)
     LaunchedEffect(Unit) {
         while (true) {
-            delay(autoAdvance.msTimePerPage.toLong())
+            delay(currentAutoAdvance.msTimePerPage.toLong())
             if (!pagerState.isScrollInProgress) {
                 val nextPage = nextAutoAdvanceTargetPage(
-                    ringCount = ringCount,
+                    ringCount = currentRingCount,
                     currentPage = pagerState.currentPage,
                 )
                 if (nextPage != null) {
@@ -376,7 +425,7 @@ private fun EnableAutoAdvance(
                         pagerState.animateScrollToPage(
                             page = nextPage,
                             animationSpec = tween(
-                                autoAdvance.msTransitionTime,
+                                currentAutoAdvance.msTransitionTime,
                             ),
                         )
                     } catch (_: CancellationException) {
@@ -406,22 +455,45 @@ private class ProgrammaticPageTrackingFlag {
     }
 }
 
-internal fun loopClonePad(loop: Boolean, pageCount: Int): Int =
-    if (loop && pageCount > 1) LOOP_CLONE_PAD else 0
+/**
+ * Clones per side. The pager cannot scroll past the ends of the ring, so anything the peek exposes
+ * beyond the last clone renders blank: a 3-across carousel already needs more than the minimum.
+ */
+internal fun loopClonePad(
+    loop: Boolean,
+    pageCount: Int,
+    viewportWidth: Dp,
+    contentPadding: Dp,
+    pageSpacing: Dp,
+): Int {
+    if (!loop || pageCount <= 1) return 0
+    // Pages are PageSize.Fill, so they get whatever the content padding leaves.
+    val pitch = viewportWidth - contentPadding * 2 + pageSpacing
+    // page_peek and page_spacing arrive unvalidated, so they can leave no room to lay a page out.
+    val visiblePerSide = if (pitch <= 0.dp) 0 else ceil(contentPadding / pitch).toInt()
+    // One clone per page the peek exposes, plus one that stays populated while the wrap animates.
+    // Capped: every ring index is composed for as long as the paywall is open, and a peek that
+    // approaches half the viewport drives this into the hundreds. Past the cap the peek gaps.
+    return max(MIN_LOOP_CLONE_PAD, visiblePerSide + 1).coerceAtMost(MAX_LOOP_CLONE_PAD)
+}
 
 internal fun nextAutoAdvanceTargetPage(ringCount: Int, currentPage: Int): Int? =
     (currentPage + 1).takeIf { it < ringCount }
 
-/** Maps the clone-padded ring back onto `0..pageCount-1`. Guards `mod(0)`: `pages` can be empty. */
-internal fun carouselLogicalPage(pagerIndex: Int, clonePad: Int, pageCount: Int): Int =
-    if (pageCount <= 0) 0 else (pagerIndex - clonePad).mod(pageCount)
+/**
+ * Maps the ring back onto `0..pageCount-1`. Independent of the pad, so a pad change leaves every
+ * index showing the page it already showed. Guards `mod(0)`: `pages` can be empty.
+ */
+internal fun carouselLogicalPage(pagerIndex: Int, pageCount: Int): Int =
+    if (pageCount <= 0) 0 else pagerIndex.mod(pageCount)
+
+/** First index in the real zone showing [pageIndex]. */
+internal fun carouselRealZoneIndex(pageIndex: Int, clonePad: Int, pageCount: Int): Int =
+    if (pageCount <= 0) 0 else clonePad + (pageIndex - clonePad).mod(pageCount)
 
 /** Index holding the same content as [settledPage] but in the real zone, or `null` if already there. */
-internal fun carouselRecenterTarget(settledPage: Int, clonePad: Int, pageCount: Int): Int? = when {
-    settledPage < clonePad -> settledPage + pageCount
-    settledPage >= clonePad + pageCount -> settledPage - pageCount
-    else -> null
-}
+internal fun carouselRecenterTarget(settledPage: Int, clonePad: Int, pageCount: Int): Int? =
+    carouselRealZoneIndex(settledPage, clonePad, pageCount).takeIf { it != settledPage }
 
 // Only a Fit carousel leaves pages unbounded at measure time; Fixed/Fill already bound them.
 private fun fillPageModifierOrEmpty(carouselHeight: SizeConstraint, measuredHeightPx: Int, density: Density): Modifier =
