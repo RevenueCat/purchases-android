@@ -89,7 +89,7 @@ class CheckpointsManagerTest {
         every { mockPurchases.currentActivity } returns null
         resolvesTo(CheckpointResolution.Offering(offering))
 
-        val result = checkpoint() as CheckpointResult.Offering
+        val result = checkpoint() as CheckpointResult.ReceivedOffering
 
         assertThat(result.offering).isEqualTo(offering)
         assertThat(result.checkpoint.identifier).isEqualTo(checkpointId)
@@ -109,7 +109,7 @@ class CheckpointsManagerTest {
         )
         val presentedCall = launch { checkpoint() }
 
-        val offeringResult = checkpoint() as CheckpointResult.Offering
+        val offeringResult = checkpoint() as CheckpointResult.ReceivedOffering
 
         assertThat(offeringResult.offering).isEqualTo(offering)
         verify(exactly = 1) { mockActivity.startActivity(any()) }

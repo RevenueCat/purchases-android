@@ -78,7 +78,7 @@ class OnboardingViewModel : ViewModel() {
                     CheckpointParams("step" to Step.Personalize.name),
                 )
                 when (result) {
-                    is CheckpointResult.Offering ->
+                    is CheckpointResult.ReceivedOffering ->
                         "Offering ${result.offering.identifier} returned for app-owned presentation."
                     is CheckpointResult.PaywallPresented -> when (val outcome = result.paywallOutcome) {
                         is CheckpointPaywallOutcome.Purchased -> "Purchased during onboarding."

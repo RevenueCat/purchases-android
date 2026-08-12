@@ -74,7 +74,7 @@ internal class CheckpointsManager {
         checkpointListener?.onCheckpointHit(checkpoint)
         val resolution = purchases.resolveCheckpoint(identifier, checkpoint.params.customProperties)
         val result = when (resolution) {
-            is CheckpointResolution.Offering -> CheckpointResult.Offering(checkpoint, resolution.offering)
+            is CheckpointResolution.Offering -> CheckpointResult.ReceivedOffering(checkpoint, resolution.offering)
             is CheckpointResolution.Workflow ->
                 CheckpointResult.PaywallPresented(
                     checkpoint,

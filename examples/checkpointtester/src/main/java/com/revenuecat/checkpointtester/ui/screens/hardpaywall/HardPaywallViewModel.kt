@@ -46,7 +46,7 @@ class HardPaywallViewModel : ViewModel() {
                     CheckpointParams("gate" to "hard", "attempt" to _state.value.attempts),
                 )
                 when (result) {
-                    is CheckpointResult.Offering -> stayLocked(
+                    is CheckpointResult.ReceivedOffering -> stayLocked(
                         "Offering ${result.offering.identifier} returned; app-owned UI is required.",
                     )
                     is CheckpointResult.PaywallPresented -> when (val outcome = result.paywallOutcome) {

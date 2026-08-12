@@ -81,7 +81,7 @@ class EntitlementGateViewModel : ViewModel() {
 
     private fun handleCheckpointResult(result: CheckpointResult) {
         when (result) {
-            is CheckpointResult.Offering ->
+            is CheckpointResult.ReceivedOffering ->
                 finish("Offering ${result.offering.identifier} returned; the app should present it.")
             is CheckpointResult.PaywallPresented -> handlePaywallOutcome(result.paywallOutcome)
             is CheckpointResult.NoAction -> finish("No paywall shown (${result.reason.value}).")

@@ -1,8 +1,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offering
 import dev.drewhamilton.poko.Poko
-import com.revenuecat.purchases.Offering as RevenueCatOffering
 
 @InternalRevenueCatAPI
 public abstract class CheckpointResult internal constructor() {
@@ -14,9 +14,9 @@ public abstract class CheckpointResult internal constructor() {
      * the offering, including whether and where to present it.
      */
     @Poko
-    public class Offering internal constructor(
+    public class ReceivedOffering internal constructor(
         override val checkpoint: CheckpointInfo,
-        public val offering: RevenueCatOffering,
+        public val offering: Offering,
     ) : CheckpointResult()
 
     /**

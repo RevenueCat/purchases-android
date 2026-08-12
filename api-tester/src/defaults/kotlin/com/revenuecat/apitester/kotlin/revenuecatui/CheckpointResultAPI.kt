@@ -16,7 +16,7 @@ private class CheckpointResultAPI {
         val checkpoint: CheckpointInfo = result.checkpoint
 
         when (result) {
-            is CheckpointResult.Offering -> {
+            is CheckpointResult.ReceivedOffering -> {
                 val offering: Offering = result.offering
             }
             is CheckpointResult.PaywallPresented -> {
