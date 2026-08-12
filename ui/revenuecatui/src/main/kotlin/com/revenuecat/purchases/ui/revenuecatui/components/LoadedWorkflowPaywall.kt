@@ -237,7 +237,7 @@ private fun WorkflowStepContent(
             background = background,
             modifier = Modifier.fillMaxSize(),
         ) {
-            // The header for a workflow step is rendered by the scaffold, so hasHeader is false here.
+            // The header for a workflow step is rendered by the scaffold, so no headerContent is supplied here.
             // A sticky footer, when present, overlays the bottom on top of the full-height content and
             // reserves clearance via footerBottomPadding (see PaywallComponentsScaffold).
             OverlayLayout(
