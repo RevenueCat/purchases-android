@@ -74,8 +74,10 @@ internal class ETagPayloadStore(
         return try {
             FileInputStream(fileFor(urlString)).use { input ->
                 val sizeBytes = input.channel.size()
-                // Not an integrity check: ByteArray would throw past the IOException catch below.
-                if (sizeBytes > Int.MAX_VALUE) return null
+                // Guards against OOM on low-heap devices: a ByteArray this large, plus the String
+                // built from it, would exhaust the heap. Oversized files fall back to a fresh
+                // network request. MAX_PAYLOAD_BYTES < Int.MAX_VALUE so the cast below is safe.
+                if (sizeBytes > MAX_PAYLOAD_BYTES) return null
                 val bytes = ByteArray(sizeBytes.toInt())
                 DataInputStream(input).readFully(bytes)
                 if (crc32Of(bytes) != expectedChecksum) return null
@@ -169,5 +171,8 @@ internal class ETagPayloadStore(
         const val TRASH_SUFFIX = ".trash"
         const val CHUNK_CHARS = 64 * 1024
         const val WRITE_BUFFER_BYTES = 256 * 1024
+        // A read allocates ~2x this in heap (ByteArray + String). Cap at 10 MB so the spike is at
+        // most ~20 MB; larger payloads fall back to a fresh network request instead of OOMing.
+        const val MAX_PAYLOAD_BYTES = 10L * 1024 * 1024
     }
 }

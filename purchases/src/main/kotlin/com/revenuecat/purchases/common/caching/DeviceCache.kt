@@ -37,6 +37,9 @@ import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import org.json.JSONException
 import org.json.JSONObject
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.util.Date
 import kotlin.time.Duration.Companion.hours
 
@@ -60,6 +63,7 @@ public open class DeviceCache(
     private val preferences: SharedPreferences,
     private val apiKey: String,
     private val dateProvider: DateProvider = DefaultDateProvider(),
+    private val offeringsResponseFile: File? = null,
 ) : StorefrontProvider {
     private companion object {
         private const val CUSTOMER_INFO_SCHEMA_VERSION_KEY = "schema_version"
@@ -590,15 +594,38 @@ public open class DeviceCache(
 
     @Synchronized
     internal fun getOfferingsResponseCache(): JSONObject? {
+        val file = offeringsResponseFile
+        if (file != null && file.exists()) {
+            return try {
+                JSONObject(file.readText(Charsets.UTF_8))
+            } catch (e: Exception) {
+                null
+            }
+        }
+        // Fallback: read from SharedPreferences for users upgrading from a previous version.
         return getJSONObjectOrNull(offeringsResponseCacheKey)
     }
 
     /**
-     * Serializing a [JSONObject] here instead of storing [offeringsResponse] as received would cost a
-     * contiguous allocation of several times the response size, which OOMs on low-heap devices.
+     * Persists [offeringsResponse] to a file rather than SharedPreferences so the payload is not
+     * loaded into the in-memory preferences map on every app start, which OOMs on low-heap devices
+     * when the response is several megabytes.
      */
     @Synchronized
     internal fun cacheOfferingsResponse(offeringsResponse: String) {
+        val file = offeringsResponseFile
+        if (file != null) {
+            try {
+                file.parentFile?.mkdirs()
+                // Stream through OutputStreamWriter so no full-payload ByteArray is allocated.
+                FileOutputStream(file).writer(Charsets.UTF_8).use { it.write(offeringsResponse) }
+                // Clean up any legacy SharedPreferences entry left by a previous version.
+                preferences.edit().remove(offeringsResponseCacheKey).apply()
+            } catch (e: IOException) {
+                errorLog(e) { "Failed to write offerings response to disk." }
+            }
+            return
+        }
         preferences.edit()
             .putString(offeringsResponseCacheKey, offeringsResponse)
             .apply()
@@ -606,6 +633,7 @@ public open class DeviceCache(
 
     @Synchronized
     internal fun clearOfferingsResponseCache() {
+        offeringsResponseFile?.delete()
         preferences.edit().remove(offeringsResponseCacheKey).apply()
     }
 
