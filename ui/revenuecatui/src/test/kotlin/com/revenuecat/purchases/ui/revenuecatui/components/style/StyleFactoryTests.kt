@@ -245,7 +245,7 @@ class StyleFactoryTests {
     }
 
     @Test
-    fun `Should fail to create a TextComponentStyle if localized text is missing`() {
+    fun `Should use empty string if localized base text is missing`() {
         // Arrange
         val otherLocale = LocaleId("nl_NL")
         val defaultLocale = LocaleId("en_US")
@@ -257,7 +257,7 @@ class StyleFactoryTests {
             text = localizationKey,
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
         )
-        val incorrectStyleFactory = StyleFactory(
+        val styleFactory = StyleFactory(
             localizations = nonEmptyMapOf(
                 defaultLocale to nonEmptyMapOf(
                     localizationKey to LocalizationData.Text(expectedText)
@@ -273,14 +273,13 @@ class StyleFactoryTests {
         )
 
         // Act
-        val result = incorrectStyleFactory.create(component)
+        val result = styleFactory.create(component)
 
         // Assert
-        assertThat(result.isError).isTrue()
-        val errors = result.errorOrNull()!!
-        assertThat(errors.size).isEqualTo(1)
-        val error = errors[0]
-        assertThat(error).isInstanceOf(PaywallValidationError.MissingStringLocalization::class.java)
+        assertThat(result.isSuccess).isTrue()
+        val style = (result as Result.Success).value.componentStyle as TextComponentStyle
+        assertThat(style.texts[defaultLocale]).isEqualTo(expectedText)
+        assertThat(style.texts[otherLocale]).isEmpty()
     }
 
     @Test

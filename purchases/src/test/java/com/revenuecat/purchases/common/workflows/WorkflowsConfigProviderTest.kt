@@ -20,6 +20,7 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.entry
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -356,6 +357,25 @@ internal class WorkflowsConfigProviderTest {
         }
 
     @Test
+    fun `offeringIdByWorkflowId omits workflows with no offering identifier`() = runTest {
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns topicWith(
+            WF_PREFETCH to configItem(prefetch = true, offeringId = null),
+            WF_CURRENT to configItem(prefetch = false, offeringId = CURRENT_OFFERING),
+            WF_OTHER to configItem(prefetch = false, offeringId = OTHER_OFFERING),
+        )
+
+        assertThat(provider.offeringIdByWorkflowId())
+            .containsOnly(entry(WF_CURRENT, CURRENT_OFFERING), entry(WF_OTHER, OTHER_OFFERING))
+    }
+
+    @Test
+    fun `offeringIdByWorkflowId is empty when the topic cannot be read`() = runTest {
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns null
+
+        assertThat(provider.offeringIdByWorkflowId()).isEmpty()
+    }
+
+    @Test
     fun `warm notifies onCurrentWorkflowLoaded with only the current offering's workflow`() = runTest {
         var announcedId: String? = null
         val providerWithListener = WorkflowsConfigProvider(
@@ -398,6 +418,47 @@ internal class WorkflowsConfigProviderTest {
         // ...but it must still be announced for asset prewarming — resolveWorkflowBody fetches the body on demand,
         // so gating on the byte-warm cache would drop it purely on preload timing.
         assertThat(announcedId).isEqualTo(WF_CURRENT)
+    }
+
+    // Cold start: warm() runs before the offerings response, so it has no current offering to announce.
+    @Test
+    fun `prewarmCurrentOfferingAssets announces once the offering is known after a warm that had none`() = runTest {
+        var announcedId: String? = null
+        currentOfferingId = null
+        val providerWithListener = WorkflowsConfigProvider(
+            manager,
+            currentOfferingIdProvider = { currentOfferingId },
+            onCurrentWorkflowLoaded = { workflowId, _ -> announcedId = workflowId },
+            scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+        )
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        stubWorkflowBody(WF_CURRENT)
+
+        providerWithListener.warm(generation = 0)
+        assertThat(announcedId).isNull()
+        // Bytes are warm, so the guards would now short-circuit any further warm().
+        assertThat(providerWithListener.isWarmForCurrentOffering()).isTrue
+
+        currentOfferingId = CURRENT_OFFERING
+        providerWithListener.prewarmCurrentOfferingAssets()
+
+        assertThat(announcedId).isEqualTo(WF_CURRENT)
+    }
+
+    @Test
+    fun `prewarmCurrentOfferingAssets does not announce when nothing has been warmed yet`() = runTest {
+        var announced = false
+        val providerWithListener = WorkflowsConfigProvider(
+            manager,
+            currentOfferingIdProvider = { currentOfferingId },
+            onCurrentWorkflowLoaded = { _, _ -> announced = true },
+            scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+        )
+
+        providerWithListener.prewarmCurrentOfferingAssets()
+
+        assertThat(announced).isFalse
     }
 
     @Test

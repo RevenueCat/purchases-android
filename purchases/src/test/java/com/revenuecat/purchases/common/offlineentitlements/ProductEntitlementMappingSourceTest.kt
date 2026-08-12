@@ -119,40 +119,20 @@ class ProductEntitlementMappingSourceTest {
     }
 
     @Test
-    fun `productEntitlementMapping reads originalSource from cached JSON when present`() {
-        val httpResult = HTTPResult.createResult(
-            origin = HTTPResult.Origin.BACKEND,
-            isLoadShedderResponse = false,
-            isFallbackURL = true,
-        )
+    fun `productEntitlementMapping ignores originalSource in JSON, always returns null`() {
+        // originalSource is intentionally not persisted, so fromJson doesn't read it back even if
+        // present, e.g. from a cache file written by an older SDK version.
+        val mapping = ProductEntitlementMapping.fromJson(sampleResponseJsonWithSource, loadedFromCache = true)
 
-        val originalMapping = ProductEntitlementMapping.fromNetwork(sampleResponseJson, httpResult)
-
-        every { deviceCache.cacheProductEntitlementMapping(any()) } returns Unit
-
-        // Cache the mapping
-        deviceCache.cacheProductEntitlementMapping(originalMapping)
-
-        // Mock retrieval with preserved originalSource
-        every { deviceCache.getProductEntitlementMapping() } returns ProductEntitlementMapping.fromJson(
-            sampleResponseJsonWithSource,
-            loadedFromCache = true,
-        )
-
-        // Retrieve from cache - originalSource should be preserved
-        val cachedMapping = deviceCache.getProductEntitlementMapping()
-
-        assertThat(cachedMapping).isNotNull
-        assertThat(cachedMapping!!.originalSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
-        assertThat(cachedMapping.loadedFromCache).isTrue
+        assertThat(mapping.originalSource).isNull()
+        assertThat(mapping.loadedFromCache).isTrue
     }
 
     @Test
-    fun `productEntitlementMapping defaults to MAIN when no source information provided`() {
-        // Create mapping without specifying source (should default to MAIN)
+    fun `productEntitlementMapping originalSource is null when no source information provided`() {
         val mapping = ProductEntitlementMapping.fromJson(sampleResponseJson)
 
-        assertThat(mapping.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+        assertThat(mapping.originalSource).isNull()
         assertThat(mapping.loadedFromCache).isFalse
     }
 

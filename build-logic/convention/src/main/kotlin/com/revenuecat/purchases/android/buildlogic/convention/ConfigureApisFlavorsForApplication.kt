@@ -18,6 +18,8 @@ internal fun Project.configureApisFlavorsForApplication() {
             }
             create("customEntitlementComputation") {
                 dimension = "apis"
+                // Library modules other than :purchases only publish the "defaults" flavor
+                matchingFallbacks += "defaults"
             }
         }
     }

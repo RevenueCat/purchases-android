@@ -107,7 +107,7 @@ internal class WorkflowManager(
         workflowsConfigProvider.resolveWorkflow(offeringId)
 
     /** See [WorkflowsConfigProvider.offeringIdByWorkflowId]. */
-    suspend fun offeringIdByWorkflowId(): Map<String, String?> =
+    suspend fun offeringIdByWorkflowId(): Map<String, String> =
         workflowsConfigProvider.offeringIdByWorkflowId()
 
     /**
@@ -138,6 +138,9 @@ internal class WorkflowManager(
      * cache next reads committed data.
      */
     fun onPaywallConfigReady(onComplete: () -> Unit) {
+        // warm() may already have run with no current offering (config commits before offerings land), and the
+        // fast path below would then never re-run it. Deduped by workflow id, so a repeat call is free.
+        workflowsConfigProvider.prewarmCurrentOfferingAssets()
         if (uiConfigProvider.isWarm() && workflowsConfigProvider.isWarmForCurrentOffering()) {
             onComplete()
             return

@@ -139,6 +139,10 @@ metalava {
         "src/androidTest",
         "src/androidTestDefaults",
         "src/androidTestCustomEntitlementComputation",
+        // AGP's generated BuildConfig is not part of the published API surface, and some of its
+        // fields are machine-dependent (ENABLE_EXTRA_REQUEST_LOGGING comes from local.properties).
+        "build/generated/source/buildConfig/defaults/release",
+        "build/generated/source/buildConfig/customEntitlementComputation/release",
     )
 
     val name = if (variantName.lowercase().contains("defaults")) {
@@ -198,17 +202,16 @@ dependencies {
     implementation(libs.tink)
     implementation(libs.playServices.ads.identifier)
     implementation(libs.coroutines.core)
+    implementation(libs.coroutines.android)
     api(libs.billing)
 
     compileOnly(libs.compose.annotations)
     compileOnly(libs.amazon.appstore.sdk)
-    compileOnly(libs.coil.base)
 
     debugImplementation(libs.androidx.annotation.experimental)
 
     dokkaPlugin(project(":dokka-hide-internal"))
 
-    testImplementation(libs.coil.base)
     testImplementation(libs.bundles.test)
     testImplementation(libs.billing)
     testImplementation(libs.coroutines.test)
@@ -234,6 +237,8 @@ dependencies {
 
     baselineProfile(project(":baselineprofile"))
     testImplementation(kotlin("test"))
+
+    kover(project(":feature:amazon"))
 }
 
 fun DokkaSourceSetSpec.configureDocumentedSourceSet() {
@@ -272,14 +277,6 @@ dokka {
                 suppress.set(true)
             }
         }
-    }
-}
-
-// Remove afterEvaluate
-// after https://github.com/Kotlin/kotlinx-kover/issues/362 is fixed
-afterEvaluate {
-    dependencies {
-        add("kover", project(":feature:amazon"))
     }
 }
 
