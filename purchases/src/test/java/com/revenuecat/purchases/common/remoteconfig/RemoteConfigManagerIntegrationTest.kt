@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerTestData
 import com.revenuecat.purchases.common.networking.RCContentEncoding
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineScope
@@ -45,6 +46,7 @@ class RemoteConfigManagerIntegrationTest {
     private lateinit var backend: Backend
     private lateinit var diskCache: RemoteConfigDiskCache
     private lateinit var blobStore: RemoteConfigBlobStore
+    private lateinit var blobFetcher: RemoteConfigBlobFetcher
     private lateinit var manager: RemoteConfigManager
 
     // Unconfined so the launched 200-path coroutine runs eagerly: settle(onSuccess) then assert still works.
@@ -69,6 +71,8 @@ class RemoteConfigManagerIntegrationTest {
         backend = mockk()
         diskCache = RemoteConfigDiskCache(applicationContext)
         blobStore = RemoteConfigBlobStore(applicationContext)
+        blobFetcher = mockk(relaxed = true)
+        coEvery { blobFetcher.ensureDownloaded(any<String>()) } answers { blobStore.contains(firstArg()) }
         // This suite exercises the real disk/blob-store path; network prefetch is unit-tested separately, so the
         // fetcher is mocked here to keep the test hermetic (no real CDN calls from the background worker pool).
         val topicStore = RemoteConfigTopicStore { diskCache.read()?.topics?.get(it.wireName) }
@@ -80,7 +84,7 @@ class RemoteConfigManagerIntegrationTest {
             scope = testScope,
             topicStore = topicStore,
             sourceProvider = DefaultRemoteConfigSourceProvider(topicStore),
-            blobFetcher = mockk(relaxed = true),
+            blobFetcher = blobFetcher,
         )
 
         every {
@@ -289,6 +293,37 @@ class RemoteConfigManagerIntegrationTest {
         // blobData(): an item with no blob_ref has no payload, so it resolves to null off disk.
         val body = runBlocking { manager.blobData(RemoteConfigTopic.Workflows, "wf1234") { it } }
         assertThat(body).isNull()
+    }
+
+    @Test
+    fun `audiences topic preserves valid and missing prefetched items independently`() {
+        val payload = """{"id":"aud_valid","rules":{"==":[1,1]}}""".toByteArray()
+        val ref = RCContainerTestData.refOf(payload)
+        val config = """
+            {
+              "domain": "app",
+              "manifest": "v1.1.audiences:etag1",
+              "active_topics": ["audiences"],
+              "prefetch_blobs": ["$ref"],
+              "topics": {
+                "audiences": {
+                  "aud_valid": { "blob_ref": "$ref", "prefetch": true },
+                  "aud_missing": { "prefetch": true }
+                }
+              }
+            }
+        """.trimIndent()
+
+        sync(container(config, payload))
+
+        val topic = runBlocking { manager.awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.Audiences) }
+        val valid = runBlocking { manager.blobData(RemoteConfigTopic.Audiences, "aud_valid") { it } }
+        val missing = runBlocking { manager.blobData(RemoteConfigTopic.Audiences, "aud_missing") { it } }
+        assertThat(topic!!.keys).containsExactlyInAnyOrder("aud_valid", "aud_missing")
+        assertThat(topic["aud_valid"]!!.prefetch).isTrue
+        assertThat(blobStore.read(ref)).isEqualTo(payload)
+        assertThat(valid).isEqualTo(payload)
+        assertThat(missing).isNull()
     }
 
     /** Builds a workflows-topic config. Each item maps an item key to its `blob_ref`, or `null` for inline-only. */
