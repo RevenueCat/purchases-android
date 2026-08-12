@@ -1,10 +1,12 @@
 @file:JvmSynthetic
 @file:OptIn(InternalRevenueCatAPI::class)
+@file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
@@ -19,6 +21,9 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.offset
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -168,36 +173,17 @@ internal fun PaywallComponentsScaffold(
         modifier = background?.let { modifier.background(it) } ?: modifier,
     ) {
         WithOptionalBackgroundOverlay(state, background = background) {
-            if (footerContent != null) {
-                // Overlapping footer: main content fills the whole area and the footer is pinned to the
-                // bottom, drawn on top. Main content reserves bottom clearance equal to the footer height
-                // (see footerBottomPadding), so an opaque footer looks identical to the old stacked layout
-                // while a transparent footer lets content draw behind it.
-                OverlayLayout(
-                    state = state,
-                    modifier = Modifier.fillMaxSize(),
-                    hasHeader = headerContent != null,
-                    hasFooter = true,
-                ) {
-                    // Child 0: caller-supplied main content.
-                    mainContent()
-                    // Child 1 (optional): fixed header overlay.
-                    headerContent?.invoke()
-                    // Child 2: sticky footer overlay, pinned to the bottom.
-                    footerContent.invoke()
-                }
-            } else {
-                OverlayLayout(
-                    state = state,
-                    modifier = Modifier.fillMaxSize(),
-                    hasHeader = headerContent != null,
-                ) {
-                    // Child 0: caller-supplied main content.
-                    mainContent()
-                    // Child 1 (optional): fixed header overlay.
-                    headerContent?.invoke()
-                }
-            }
+            // Overlapping footer: main content fills the whole area and the footer is pinned to the
+            // bottom, drawn on top. Main content reserves bottom clearance equal to the footer height
+            // (see footerBottomPadding), so an opaque footer looks identical to the old stacked layout
+            // while a transparent footer lets content draw behind it.
+            OverlayLayout(
+                state = state,
+                modifier = Modifier.fillMaxSize(),
+                headerContent = headerContent,
+                footerContent = footerContent,
+                mainContent = mainContent,
+            )
         }
     }
 }
@@ -206,33 +192,40 @@ internal fun PaywallComponentsScaffold(
  * Custom Layout that measures the fixed header and footer overlays first, stores their pixel heights
  * in [state], then measures the main content so its inner [Modifier.layout] blocks can read those
  * heights in the same pass. The header is placed at the top and the footer pinned to the bottom, both
- * drawn on top of the main content.
+ * drawn on top of the main content. Its named slots define the accessibility traversal order: header,
+ * body, then footer.
  *
  * Only the heights of the overlays this layout owns are written to [state]: [state.headerHeightPx]
- * [PaywallState.Loaded.Components.headerHeightPx] only when [hasHeader], and [state.footerHeightPx]
- * [PaywallState.Loaded.Components.footerHeightPx] only when [hasFooter]. This lets a nested
+ * [PaywallState.Loaded.Components.headerHeightPx] only when [headerContent] is non-null, and
+ * [state.footerHeightPx] [PaywallState.Loaded.Components.footerHeightPx] only when [footerContent]
+ * is non-null. This lets a nested
  * OverlayLayout (workflow steps render one inside the scaffold's, sharing the same state) avoid
  * clobbering a height already set by the outer layout.
- *
- * Children (in emission order): index 0 = main scrollable content, then the optional header overlay
- * (present when [hasHeader]), then the optional footer overlay (present when [hasFooter]).
  */
 @Composable
 internal fun OverlayLayout(
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
-    hasHeader: Boolean = false,
-    hasFooter: Boolean = false,
-    content: @Composable () -> Unit,
+    headerContent: (@Composable () -> Unit)? = null,
+    footerContent: (@Composable () -> Unit)? = null,
+    mainContent: @Composable () -> Unit,
 ) {
     Layout(
-        content = content,
-        modifier = modifier,
+        content = {
+            PaywallTraversalRegion(index = 0f, content = mainContent)
+            headerContent?.let { PaywallTraversalRegion(index = -1f, content = it) }
+            footerContent?.let { PaywallTraversalRegion(index = 1f, content = it) }
+        },
+        modifier = modifier.semantics { isTraversalGroup = true },
     ) { measurables, constraints ->
         // Measure the overlays first to get their heights before the main content is measured.
         // Emission order after main content (index 0) is: header (if any), then footer (if any).
-        val headerMeasurable = if (hasHeader) measurables[1] else null
-        val footerMeasurable = if (hasFooter) measurables[if (hasHeader) 2 else 1] else null
+        val headerMeasurable = if (headerContent != null) measurables[1] else null
+        val footerMeasurable = if (footerContent != null) {
+            measurables[if (headerContent != null) 2 else 1]
+        } else {
+            null
+        }
 
         val headerPlaceable = headerMeasurable?.measure(constraints.copy(minHeight = 0))
         val footerPlaceable = footerMeasurable?.measure(constraints.copy(minHeight = 0))
@@ -243,10 +236,10 @@ internal fun OverlayLayout(
         //
         // Only publish the height of an overlay this layout actually owns. A nested OverlayLayout
         // (workflow steps render one inside the scaffold's, sharing the same state) must not clobber a
-        // height set by the outer layout: e.g. an inner layout with hasHeader = false wiping
+        // height set by the outer layout: e.g. an inner layout without headerContent wiping
         // headerHeightPx to 0 would collapse the step's header clearance.
-        if (hasHeader) state.headerHeightPx = headerPlaceable?.height ?: 0
-        if (hasFooter) state.footerHeightPx = footerPlaceable?.height ?: 0
+        if (headerContent != null) state.headerHeightPx = headerPlaceable?.height ?: 0
+        if (footerContent != null) state.footerHeightPx = footerPlaceable?.height ?: 0
 
         // Measure main content. Its inner Modifier.layout blocks can now read the stored heights.
         val mainPlaceable = measurables[0].measure(constraints)
@@ -256,6 +249,22 @@ internal fun OverlayLayout(
             headerPlaceable?.placeRelative(0, 0)
             footerPlaceable?.placeRelative(0, constraints.maxHeight - footerPlaceable.height)
         }
+    }
+}
+
+@Composable
+private fun PaywallTraversalRegion(
+    index: Float,
+    content: @Composable () -> Unit,
+) {
+    Box(
+        modifier = Modifier.semantics {
+            isTraversalGroup = true
+            traversalIndex = index
+        },
+        propagateMinConstraints = true,
+    ) {
+        content()
     }
 }
 

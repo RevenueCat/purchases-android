@@ -243,7 +243,17 @@ private fun WorkflowStepContent(
             OverlayLayout(
                 state = stepState,
                 modifier = Modifier.fillMaxSize(),
-                hasFooter = stepState.stickyFooter != null,
+                footerContent = stepState.stickyFooter?.let { footerStyle ->
+                    {
+                        ComponentView(
+                            style = footerStyle,
+                            state = stepState,
+                            onClick = onClick,
+                            componentInteractionTracker = tracker,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                },
             ) {
                 ComponentView(
                     style = stepState.stack,
@@ -262,15 +272,6 @@ private fun WorkflowStepContent(
                             footerBottomPadding(stepState)
                         },
                 )
-                stepState.stickyFooter?.let { footerStyle ->
-                    ComponentView(
-                        style = footerStyle,
-                        state = stepState,
-                        onClick = onClick,
-                        componentInteractionTracker = tracker,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
             }
         }
     }
