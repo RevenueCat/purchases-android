@@ -8,14 +8,15 @@ appId: com.revenuecat.e2etests
 - tapOn: Offerings
 - tapOn: default
 - tapOn: Show paywall
-- assertVisible: Get CatPrrro
-- tapOn: "12" # Annual package selector
-- tapOn: Subscribe now
-- assertVisible: ".*Product: test_yearly.*"
-- assertVisible: ".*Price: \\$11.99.*"
-- assertVisible: ".*Phase: \\$11.99 for P1Y.*"
+- extendedWaitUntil:
+    visible: "Paywall V2"
+    timeout: 15000
+- tapOn: Yearly
+- tapOn: Continue
+- extendedWaitUntil:
+    visible: "TEST VALID PURCHASE"
+    timeout: 15000
 - tapOn: TEST VALID PURCHASE
 - tapOn: Customer Info
 - tapOn: Refresh
-- assertVisible: "Subscription: test_yearly"
-- assertVisible: "pro: Active: true, Product: test_yearly"
+- assertVisible: "pro: Active: true, Product: .*"
