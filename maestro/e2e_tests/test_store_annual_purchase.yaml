@@ -18,4 +18,4 @@ appId: com.revenuecat.e2etests
 - tapOn: Customer Info
 - tapOn: Refresh
 - assertVisible: "Subscription: test_yearly"
-- assertVisible: "pro_cat: Active: true, Product: test_yearly"
+- assertVisible: "pro: Active: true, Product: test_yearly"
