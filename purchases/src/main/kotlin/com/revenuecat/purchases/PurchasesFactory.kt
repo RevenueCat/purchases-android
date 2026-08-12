@@ -65,6 +65,7 @@ import com.revenuecat.purchases.strings.Emojis
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
+import java.io.File
 import com.revenuecat.purchases.utils.CoilImageDownloader
 import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
 import com.revenuecat.purchases.utils.EventsFileHelper
@@ -206,7 +207,11 @@ internal class PurchasesFactory(
             }
             val signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey)
 
-            val cache = DeviceCache(prefs, apiKey)
+            val offeringsResponseFile = File(
+                File(contextForStorage.cacheDir, "RevenueCat"),
+                "offerings_response",
+            )
+            val cache = DeviceCache(prefs, apiKey, offeringsResponseFile = offeringsResponseFile)
 
             val localeProvider = DefaultLocaleProvider()
 
