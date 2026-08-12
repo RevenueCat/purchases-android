@@ -23,7 +23,6 @@ import kotlinx.coroutines.launch
  * when nothing is active. A purchase or restore carries its own [CustomerInfo] on the outcome, so the refreshed
  * entitlements come straight off the result with no second fetch.
  */
-@OptIn(InternalRevenueCatAPI::class)
 class EntitlementGateViewModel : ViewModel() {
 
     data class UiState(
@@ -43,6 +42,7 @@ class EntitlementGateViewModel : ViewModel() {
         if (!_state.value.hasRun) refresh()
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
     fun refresh() {
         if (_state.value.loading || _state.value.running) return
         _state.update {
@@ -79,6 +79,7 @@ class EntitlementGateViewModel : ViewModel() {
         }
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
     private fun handleCheckpointResult(result: CheckpointResult) {
         when (result) {
             is CheckpointResult.ReceivedOffering ->
@@ -89,6 +90,7 @@ class EntitlementGateViewModel : ViewModel() {
         }
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
     private fun handlePaywallOutcome(outcome: CheckpointPaywallOutcome) {
         when (outcome) {
             // The outcome carries the up-to-date CustomerInfo, so there's no need to fetch again.
