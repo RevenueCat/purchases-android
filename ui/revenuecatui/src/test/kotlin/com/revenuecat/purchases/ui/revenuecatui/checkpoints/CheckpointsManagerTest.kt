@@ -11,6 +11,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -135,11 +136,39 @@ class CheckpointsManagerTest {
     fun `only valid custom properties are forwarded to the resolver`() = runTest(dispatcher) {
         resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
 
-        checkpoint(CheckpointParams("goal" to "test", "invalid" to Any()))
+        checkpoint(CheckpointParams("goal" to "test", "invalid" to Any(), "unsupportedNumber" to 1.toShort()))
 
         val customProperties = slot<Map<String, Any>>()
         coVerify { mockPurchases.resolveCheckpoint(checkpointId, capture(customProperties)) }
         assertThat(customProperties.captured).isEqualTo(mapOf("goal" to "test"))
+    }
+
+    @Test
+    fun `custom properties are exposed to the presented paywall as custom variables`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val call = launch {
+            checkpoint(
+                CheckpointParams(
+                    "gate" to "hard",
+                    "attempt" to 2,
+                    "ratio" to 0.5,
+                    "flag" to true,
+                    "invalid" to Any(),
+                ),
+            )
+        }
+
+        assertThat(manager.presentation(currentCallId())!!.customVariables).isEqualTo(
+            mapOf(
+                "gate" to CustomVariableValue.String("hard"),
+                "attempt" to CustomVariableValue.Number(2),
+                "ratio" to CustomVariableValue.Number(0.5),
+                "flag" to CustomVariableValue.Boolean(true),
+            ),
+        )
+
+        finishPaywall(CheckpointPaywallOutcome.Dismissed)
+        call.join()
     }
 
     @Test
@@ -253,7 +282,7 @@ class CheckpointsManagerTest {
         manager.onActivityDestroyed("unknown-call-id", isChangingConfigurations = false)
         manager.recordOutcome("unknown-call-id", CheckpointPaywallOutcome.Dismissed)
 
-        assertThat(manager.resolution("unknown-call-id")).isNull()
+        assertThat(manager.presentation("unknown-call-id")).isNull()
     }
 
     @Test
@@ -266,7 +295,7 @@ class CheckpointsManagerTest {
         manager.onActivityDestroyed(callId, isChangingConfigurations = true)
 
         assertThat(result).isNull()
-        assertThat(manager.resolution(callId)).isNotNull
+        assertThat(manager.presentation(callId)).isNotNull
 
         finishPaywall(CheckpointPaywallOutcome.Dismissed)
         call.join()
@@ -288,7 +317,7 @@ class CheckpointsManagerTest {
 
         assertThat((result as CheckpointResult.PaywallPresented).paywallOutcome)
             .isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo))
-        assertThat(manager.resolution(callId)).isNull()
+        assertThat(manager.presentation(callId)).isNull()
     }
 
     @Test
@@ -318,7 +347,7 @@ class CheckpointsManagerTest {
     // record the outcome, then report the paywall as finished.
     private fun finishPaywall(outcome: CheckpointPaywallOutcome) {
         val callId = currentCallId()
-        assertThat(manager.resolution(callId)).isNotNull
+        assertThat(manager.presentation(callId)).isNotNull
         manager.recordOutcome(callId, outcome)
         manager.onActivityDestroyed(callId, isChangingConfigurations = false)
     }
