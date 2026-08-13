@@ -5,7 +5,6 @@
 
 package com.revenuecat.purchases.admob.nextgen.tracking
 
-import android.util.Log
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdValue
 import com.google.android.libraries.ads.mobile.sdk.common.PrecisionType
@@ -24,9 +23,9 @@ import com.revenuecat.purchases.ads.events.types.AdRevenueData
 import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.slot
-import io.mockk.mockkStatic
-import io.mockk.unmockkStatic
+import io.mockk.unmockkObject
 import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -40,23 +39,22 @@ class TrackingAdEventCallbackTest {
 
     @Before
     fun setUp() {
-        mockkStatic(Log::class)
-        every { Log.w(any(), any<String>()) } returns 0
         every { purchases.adTracker } returns adTracker
         every { responseInfo.adapterClassName } returns "test-network"
         every { responseInfo.responseId } returns "response-id"
-        PurchasesTestHelper.setSharedInstance(purchases)
+        mockkObject(Purchases)
+        every { Purchases.isConfigured } returns true
+        every { Purchases.sharedInstance } returns purchases
     }
 
     @After
     fun tearDown() {
-        PurchasesTestHelper.setSharedInstance(null)
-        unmockkStatic(Log::class)
+        unmockkObject(Purchases)
     }
 
     @Test
     fun `banner ignores full screen show and tracks display from impression`() {
-        val callback = TrackingBannerAdEventCallback(null, "home", "ad-unit", responseInfo)
+        val callback = TrackingBannerAdEventCallback(null, "home", "ad-unit") { responseInfo }
 
         callback.onAdShowedFullScreenContent()
 
@@ -73,7 +71,7 @@ class TrackingAdEventCallbackTest {
 
     @Test
     fun `full screen ad ignores impression and tracks display from show`() {
-        val callback = TrackingInterstitialAdEventCallback(null, "home", "ad-unit", responseInfo)
+        val callback = TrackingInterstitialAdEventCallback(null, "home", "ad-unit") { responseInfo }
 
         callback.onAdImpression()
 
@@ -97,7 +95,7 @@ class TrackingAdEventCallbackTest {
                 order += "delegate"
             }
         }
-        val callback = TrackingInterstitialAdEventCallback(delegate, "home", "ad-unit", responseInfo)
+        val callback = TrackingInterstitialAdEventCallback(delegate, "home", "ad-unit") { responseInfo }
 
         callback.onAdClicked()
 
@@ -127,7 +125,7 @@ class TrackingAdEventCallbackTest {
                 delegatedValue = value
             }
         }
-        val callback = TrackingBannerAdEventCallback(delegate, "load-placement", "ad-unit", responseInfo)
+        val callback = TrackingBannerAdEventCallback(delegate, "load-placement", "ad-unit") { responseInfo }
         callback.placement = "show-placement"
         val value = AdValue(PrecisionType.PUBLISHER_PROVIDED, 50_000L, "USD")
 
@@ -155,8 +153,38 @@ class TrackingAdEventCallbackTest {
     }
 
     @Test
+    fun `refreshed banner reads current response info at event time`() {
+        val refreshedResponseInfo = mockk<ResponseInfo>()
+        every { refreshedResponseInfo.adapterClassName } returns "refreshed-network"
+        every { refreshedResponseInfo.responseId } returns "refreshed-response"
+        var currentResponseInfo = responseInfo
+        val callback = TrackingBannerAdEventCallback(null, "home", "ad-unit") { currentResponseInfo }
+        currentResponseInfo = refreshedResponseInfo
+
+        callback.onAdImpression()
+        callback.onAdClicked()
+        callback.onAdPaid(AdValue(PrecisionType.PRECISE, 50_000L, "USD"))
+
+        val displayedData = slot<AdDisplayedData>()
+        val openedData = slot<AdOpenedData>()
+        val revenueData = slot<AdRevenueData>()
+        verify(exactly = 1) {
+            adTracker.trackAdDisplayed(capture(displayedData), AdCaptureMethod.ADAPTER)
+            adTracker.trackAdOpened(capture(openedData), AdCaptureMethod.ADAPTER)
+            adTracker.trackAdRevenue(capture(revenueData), AdCaptureMethod.ADAPTER)
+        }
+        listOf(
+            displayedData.captured.networkName to displayedData.captured.impressionId,
+            openedData.captured.networkName to openedData.captured.impressionId,
+            revenueData.captured.networkName to revenueData.captured.impressionId,
+        ).forEach {
+            assertEquals("refreshed-network" to "refreshed-response", it)
+        }
+    }
+
+    @Test
     fun `unconfigured Purchases skips tracking but still delegates`() {
-        PurchasesTestHelper.setSharedInstance(null)
+        every { Purchases.isConfigured } returns false
         var delegated = false
         val callback = TrackingBannerAdEventCallback(
             delegate = object : BannerAdEventCallback {
@@ -166,7 +194,7 @@ class TrackingAdEventCallbackTest {
             },
             placement = null,
             adUnitId = "ad-unit",
-            responseInfo = responseInfo,
+            responseInfoProvider = { responseInfo },
         )
 
         callback.onAdImpression()
