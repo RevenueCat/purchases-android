@@ -1,4 +1,7 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@file:OptIn(
+    ExperimentalPreviewRevenueCatPurchasesAPI::class,
+    InternalRevenueCatAPI::class,
+)
 
 package com.revenuecat.purchases.admob.nextgen
 
@@ -10,8 +13,15 @@ import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingInterstitialAdEventCallback
+import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdTracker
+import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
+import com.revenuecat.purchases.ads.events.types.AdFormat
+import com.revenuecat.purchases.ads.events.types.AdLoadedData
+import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -34,13 +44,21 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 class InterstitialAdFlowTest {
 
+    private val adTracker = mockk<AdTracker>(relaxed = true)
+    private val purchases = mockk<Purchases>(relaxed = true)
+
     @Before
     fun setUp() {
+        every { purchases.adTracker } returns adTracker
         mockkObject(InterstitialAd.Companion)
+        mockkObject(Purchases)
+        every { Purchases.isConfigured } returns true
+        every { Purchases.sharedInstance } returns purchases
     }
 
     @After
     fun tearDown() {
+        unmockkObject(Purchases)
         unmockkObject(InterstitialAd.Companion)
     }
 
@@ -49,7 +67,10 @@ class InterstitialAdFlowTest {
         val adRequest = mockk<AdRequest> {
             every { adUnitId } returns "interstitial-unit"
         }
-        val responseInfo = mockk<ResponseInfo>(relaxed = true)
+        val responseInfo = mockk<ResponseInfo>(relaxed = true) {
+            every { adapterClassName } returns "test-network"
+            every { responseId } returns "response-id"
+        }
         var installedCallback: InterstitialAdEventCallback? = null
         val interstitialAd = mockk<InterstitialAd>(relaxed = true) {
             every { getResponseInfo() } returns responseInfo
@@ -64,7 +85,7 @@ class InterstitialAdFlowTest {
 
         every { InterstitialAd.load(adRequest, capture(trackingLoadCallback)) } just runs
 
-        mockk<AdTracker>().loadAndTrackInterstitialAd(
+        adTracker.loadAndTrackInterstitialAd(
             adRequest = adRequest,
             placement = "load-placement",
             loadCallback = loadCallback,
@@ -73,6 +94,24 @@ class InterstitialAdFlowTest {
         trackingLoadCallback.captured.onAdLoaded(interstitialAd)
 
         assertSame(interstitialAd, loadCallback.loadedAd)
+
+        // Pins the format, ad unit and placement this entry point hands to the load tracker;
+        // the wrapper classes are covered separately, so only the wiring is asserted here.
+        val loadedData = slot<AdLoadedData>()
+        verify(exactly = 1) {
+            adTracker.trackAdLoaded(capture(loadedData), AdCaptureMethod.ADAPTER)
+        }
+        assertEquals(
+            AdLoadedData(
+                networkName = "test-network",
+                mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.INTERSTITIAL,
+                placement = "load-placement",
+                adUnitId = "interstitial-unit",
+                impressionId = "response-id",
+            ),
+            loadedData.captured,
+        )
         val trackingCallback = installedCallback as TrackingInterstitialAdEventCallback
         trackingCallback.onAppEvent("name", "data")
         assertTrue(initialEventCallback.appEventCalled)
@@ -97,13 +136,22 @@ class InterstitialAdFlowTest {
 
         every { InterstitialAd.load(adRequest, capture(trackingLoadCallback)) } just runs
 
-        mockk<AdTracker>().loadAndTrackInterstitialAd(
+        adTracker.loadAndTrackInterstitialAd(
             adRequest = adRequest,
+            placement = "load-placement",
             loadCallback = loadCallback,
         )
         trackingLoadCallback.captured.onAdFailedToLoad(error)
 
         assertSame(error, loadCallback.loadError)
+
+        val failedData = slot<AdFailedToLoadData>()
+        verify(exactly = 1) {
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
+        }
+        assertEquals(AdFormat.INTERSTITIAL, failedData.captured.adFormat)
+        assertEquals("interstitial-unit", failedData.captured.adUnitId)
+        assertEquals("load-placement", failedData.captured.placement)
     }
 
     @Test
