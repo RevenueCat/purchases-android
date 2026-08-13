@@ -17,4 +17,6 @@ android {
 dependencies {
     implementation(project(":purchases"))
     implementation(libs.google.mobile.ads.next.gen)
+
+    testImplementation(libs.bundles.test)
 }
