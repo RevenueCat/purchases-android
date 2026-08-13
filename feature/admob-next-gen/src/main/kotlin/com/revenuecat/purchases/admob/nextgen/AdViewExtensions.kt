@@ -20,9 +20,10 @@ import kotlin.jvm.JvmSynthetic
 /**
  * Loads a banner ad into this [AdView] and automatically tracks RevenueCat ad events.
  *
- * The returned [BannerAd] has tracking callbacks installed before it is forwarded to
+ * The loaded [BannerAd] has tracking callbacks installed before it is forwarded to
  * [loadCallback]. Pass app callbacks here instead of assigning them directly to the loaded ad,
- * as direct assignment would replace RevenueCat's tracking callbacks.
+ * as direct assignment would replace RevenueCat's tracking callbacks. To change them later, use
+ * [BannerAd.setTrackingAdEventCallback] and [BannerAd.setTrackingBannerAdRefreshCallback].
  *
  * @param adRequest The [BannerAdRequest] to load. Its ad unit ID is used for tracking.
  * @param placement Optional placement identifier used in RevenueCat tracking.

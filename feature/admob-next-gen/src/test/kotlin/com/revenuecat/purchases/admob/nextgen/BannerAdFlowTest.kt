@@ -73,6 +73,64 @@ class BannerAdFlowTest {
     }
 
     @Test
+    fun `banner callbacks can be replaced without losing tracking`() {
+        val adView = mockk<AdView>()
+        val adRequest = mockk<BannerAdRequest> {
+            every { adUnitId } returns "banner-unit"
+        }
+        val responseInfo = mockk<ResponseInfo>(relaxed = true)
+        var installedEventCallback: BannerAdEventCallback? = null
+        var installedRefreshCallback: BannerAdRefreshCallback? = null
+        val bannerAd = mockk<BannerAd>(relaxed = true) {
+            every { getResponseInfo() } returns responseInfo
+            every { adEventCallback } answers { installedEventCallback }
+            every { adEventCallback = any() } answers { installedEventCallback = firstArg() }
+            every { bannerAdRefreshCallback } answers { installedRefreshCallback }
+            every { bannerAdRefreshCallback = any() } answers { installedRefreshCallback = firstArg() }
+        }
+        val replacementEventCallback = RecordingBannerAdEventCallback()
+        val replacementRefreshCallback = RecordingBannerAdRefreshCallback()
+        val trackingLoadCallback = slot<AdLoadCallback<BannerAd>>()
+
+        every { adView.loadAd(adRequest, capture(trackingLoadCallback)) } just runs
+
+        adView.loadAndTrackAd(adRequest = adRequest, placement = "home-banner")
+        trackingLoadCallback.captured.onAdLoaded(bannerAd)
+
+        val trackingEventCallback = installedEventCallback as TrackingBannerAdEventCallback
+        val trackingRefreshCallback = installedRefreshCallback as TrackingBannerAdRefreshCallback
+
+        bannerAd.setTrackingAdEventCallback(replacementEventCallback)
+        bannerAd.setTrackingBannerAdRefreshCallback(replacementRefreshCallback)
+
+        // The tracking wrappers are still installed, and now forward to the new delegates.
+        assertSame(trackingEventCallback, installedEventCallback)
+        assertSame(trackingRefreshCallback, installedRefreshCallback)
+
+        trackingEventCallback.onAppEvent("name", "data")
+        trackingRefreshCallback.onAdRefreshed()
+
+        assertTrue(replacementEventCallback.appEventCalled)
+        assertTrue(replacementRefreshCallback.refreshedCalled)
+    }
+
+    @Test
+    fun `setting banner callbacks directly falls back when tracking is not installed`() {
+        val eventCallback = RecordingBannerAdEventCallback()
+        val refreshCallback = RecordingBannerAdRefreshCallback()
+        val bannerAd = mockk<BannerAd>(relaxed = true) {
+            every { adEventCallback } returns null
+            every { bannerAdRefreshCallback } returns null
+        }
+
+        bannerAd.setTrackingAdEventCallback(eventCallback)
+        bannerAd.setTrackingBannerAdRefreshCallback(refreshCallback)
+
+        verify(exactly = 1) { bannerAd.adEventCallback = eventCallback }
+        verify(exactly = 1) { bannerAd.bannerAdRefreshCallback = refreshCallback }
+    }
+
+    @Test
     fun `banner failure is forwarded through tracker entry point`() {
         val adView = mockk<AdView>()
         val adRequest = mockk<BannerAdRequest> {
