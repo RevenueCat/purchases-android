@@ -209,6 +209,10 @@ private class LoadingViewModel(
         // no-op
     }
 
+    override fun onPaywallDismissed() {
+        // no-op
+    }
+
     override fun closePaywall(result: PaywallResult?) {
         // no-op
     }

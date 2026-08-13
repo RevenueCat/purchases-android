@@ -611,6 +611,7 @@ internal class MockViewModel(
     }
 
     override fun onPaywallPresented() = Unit
+    override fun onPaywallDismissed() = Unit
 
     var selectPackageCallCount = 0
         private set
