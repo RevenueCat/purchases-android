@@ -15,6 +15,11 @@ package com.revenuecat.purchases.admob.nextgen {
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static boolean startAndTrack(com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdPreloader.Companion, String preloadId, com.google.android.libraries.ads.mobile.sdk.common.PreloadConfiguration preloadConfiguration, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.common.PreloadCallback? preloadCallback);
   }
 
+  public final class BannerAdExtensionsKt {
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingAdEventCallback(com.google.android.libraries.ads.mobile.sdk.banner.BannerAd, com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback? callback);
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingBannerAdRefreshCallback(com.google.android.libraries.ads.mobile.sdk.banner.BannerAd, com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback? callback);
+  }
+
   public final class BannerAdPreloaderExtensionsKt {
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static com.google.android.libraries.ads.mobile.sdk.banner.BannerAd? pollAndTrackAd(com.google.android.libraries.ads.mobile.sdk.banner.BannerAdPreloader.Companion, String preloadId, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback? adEventCallback, optional com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback? bannerAdRefreshCallback);
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static boolean startAndTrack(com.google.android.libraries.ads.mobile.sdk.banner.BannerAdPreloader.Companion, String preloadId, com.google.android.libraries.ads.mobile.sdk.common.PreloadConfiguration preloadConfiguration, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.common.PreloadCallback? preloadCallback);
