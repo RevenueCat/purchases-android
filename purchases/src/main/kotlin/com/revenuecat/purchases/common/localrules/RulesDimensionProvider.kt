@@ -7,7 +7,7 @@ import java.util.Date
  * the contract predicates are authored against, so a provider must not be able to invent one.
  *
  * Each entry becomes a real nested object in the evaluated scope, because the engine's `var` operator walks
- * nested objects by strict dot-path and has no flat-key fallback — `device.app_version` resolves *through*
+ * nested objects by strict dot-path and has no flat-key fallback — `device.appVersion` resolves *through*
  * `device`, it is never a literal key.
  */
 internal enum class RulesDimensionNamespace(val key: String) {
@@ -42,7 +42,7 @@ internal interface RulesDimensionProvider {
     val namespace: RulesDimensionNamespace
 
     /**
-     * The complete current set of values relative to [namespace], keyed in lowercase snake_case (`app_version`);
+     * The complete current set of values relative to [namespace], keyed in camelCase (`appVersion`);
      * [RulesDimensionResolver] adds the namespace.
      *
      * A value that is unavailable is omitted rather than guessed: an absent key resolves to null in the engine,

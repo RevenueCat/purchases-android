@@ -9,7 +9,6 @@ import android.os.Build
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
@@ -664,7 +663,7 @@ internal class HTTPClient(
             // compression and never the HTTP transport encoding.
             RC_FORMAT_ACCEPT_ENCODING_HEADER to
                 if (endpoint.expectsRCFormatResponse) RC_FORMAT_ACCEPT_ENCODING else null,
-            "X-Platform" to getXPlatformHeader(),
+            "X-Platform" to appConfig.store.platformName,
             "X-Platform-Flavor" to appConfig.platformInfo.flavor,
             "X-Platform-Flavor-Version" to appConfig.platformInfo.version,
             "X-Platform-Version" to Build.VERSION.SDK_INT.toString(),
@@ -712,11 +711,6 @@ internal class HTTPClient(
                 writeFully(buffer(os), body.toString())
             }
         }
-    }
-
-    private fun getXPlatformHeader() = when (appConfig.store) {
-        Store.AMAZON -> "amazon"
-        else -> "android"
     }
 
     private fun verifyResponse(
