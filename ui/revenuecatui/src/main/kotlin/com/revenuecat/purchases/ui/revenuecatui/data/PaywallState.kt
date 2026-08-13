@@ -192,6 +192,11 @@ internal sealed interface PaywallState {
             private val initialSelectedPackageOutsideTabs = packages.packagesOutsideTabs
                 .firstOrNull { it.isSelectedByDefault && it.resolvesVisible(mergedCustomVariables) }
                 ?.uniqueId
+
+            /** Fallback for when nothing is selected by default anywhere, or a rule hid the one that is. */
+            private val firstVisiblePackageOutsideTabs = packages.packagesOutsideTabs
+                .firstOrNull { it.resolvesVisible(mergedCustomVariables) }
+                ?.uniqueId
             private val packagesOutsideTabsUniqueIds: Set<String> = packages.packagesOutsideTabs
                 .mapTo(mutableSetOf()) { it.uniqueId }
             private val tabsByUniqueId: Map<String, Set<Int>> = mutableMapOf<String, Set<Int>>().apply {
@@ -263,6 +268,8 @@ internal sealed interface PaywallState {
             private val initialSelectedPackageUniqueId: String? = initialSelectedPackageOutsideTabs
                 ?: selectedPackageByTab[selectedTabIndex]
                 ?: packages.packagesByTab[selectedTabIndex]?.defaultSelection(mergedCustomVariables)?.uniqueId
+                // Last, so a default declared inside a tab still wins.
+                ?: firstVisiblePackageOutsideTabs
 
             private var selectedPackageUniqueId by mutableStateOf(initialSelectedPackageUniqueId)
 
@@ -348,13 +355,17 @@ internal sealed interface PaywallState {
 
                     selectedPackageUniqueId = selectedPackageByTab[selectedTabIndex]
                         ?: initialSelectedPackageOutsideTabs
-                        ?: packages.packagesByTab[selectedTabIndex]?.firstOrNull()?.uniqueId?.also {
-                            Logger.w(
-                                "Could not find default package for tab $selectedTabIndex. " +
-                                    "Using first package instead. " +
-                                    "This could be caused by not having any package marked as selected by default.",
-                            )
-                        }
+                        ?: packages.packagesByTab[selectedTabIndex]
+                            ?.defaultSelection(mergedCustomVariables)
+                            ?.also { selection ->
+                                if (!selection.isSelectedByDefault) {
+                                    Logger.w(
+                                        "Could not find a visible default package for tab $selectedTabIndex. " +
+                                            "Using the first visible package instead.",
+                                    )
+                                }
+                            }
+                            ?.uniqueId
                 }
 
                 if (actionInProgress != null) this.actionInProgress = actionInProgress

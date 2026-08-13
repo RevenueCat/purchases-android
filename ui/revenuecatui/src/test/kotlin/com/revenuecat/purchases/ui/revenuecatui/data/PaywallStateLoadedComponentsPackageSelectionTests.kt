@@ -259,6 +259,61 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         assertThat(state.selectedPackageInfo).isNull()
     }
 
+    @Test
+    fun `Should fall back to a visible package outside tabs when the default is hidden`() {
+        val state = paywallState(
+            packagesOutsideTabs = listOf(
+                packageInfo(
+                    TestData.Packages.annual,
+                    isSelectedByDefault = true,
+                    visibilityOverrides = listOf(canTrialOverride(false, visible = false)),
+                ),
+                packageInfo(TestData.Packages.monthly, isSelectedByDefault = false),
+            ),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+            customVariables = mapOf("can_trial" to CustomVariableValue.Boolean(false)),
+        )
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
+    fun `Should keep a default inside a tab ahead of a package outside tabs`() {
+        val state = paywallState(
+            packagesOutsideTabs = listOf(packageInfo(TestData.Packages.monthly, isSelectedByDefault = false)),
+            packagesByTab = mapOf(
+                0 to listOf(packageInfo(TestData.Packages.annual, isSelectedByDefault = true)),
+            ),
+            initialSelectedTabIndex = 0,
+        )
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Should not select a hidden package when switching to a tab with nothing visible`() {
+        val state = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = mapOf(
+                0 to listOf(packageInfo(TestData.Packages.weekly, isSelectedByDefault = true)),
+                1 to listOf(
+                    packageInfo(
+                        TestData.Packages.annual,
+                        isSelectedByDefault = false,
+                        visibilityOverrides = listOf(canTrialOverride(false, visible = false)),
+                    ),
+                ),
+            ),
+            initialSelectedTabIndex = 0,
+            customVariables = mapOf("can_trial" to CustomVariableValue.Boolean(false)),
+        )
+
+        state.update(selectedTabIndex = 1)
+
+        assertThat(state.selectedPackageInfo).isNull()
+    }
+
     // endregion
 
     private fun canTrialOverride(
