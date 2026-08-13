@@ -193,9 +193,13 @@ internal sealed interface PaywallState {
                 .firstOrNull { it.isSelectedByDefault && it.resolvesVisible(mergedCustomVariables) }
                 ?.uniqueId
 
-            /** Fallback for when nothing is selected by default anywhere, or a rule hid the one that is. */
-            private val firstVisiblePackageOutsideTabs = packages.packagesOutsideTabs
-                .firstOrNull { it.resolvesVisible(mergedCustomVariables) }
+            /**
+             * Only used when a default *is* declared outside the tabs but a rule hid it, which would
+             * otherwise leave nothing selected. A paywall that declares no default still starts unselected.
+             */
+            private val visibleFallbackForHiddenDefaultOutsideTabs = packages.packagesOutsideTabs
+                .takeIf { infos -> infos.any { it.isSelectedByDefault } }
+                ?.firstOrNull { it.resolvesVisible(mergedCustomVariables) }
                 ?.uniqueId
             private val packagesOutsideTabsUniqueIds: Set<String> = packages.packagesOutsideTabs
                 .mapTo(mutableSetOf()) { it.uniqueId }
@@ -269,7 +273,7 @@ internal sealed interface PaywallState {
                 ?: selectedPackageByTab[selectedTabIndex]
                 ?: packages.packagesByTab[selectedTabIndex]?.defaultSelection(mergedCustomVariables)?.uniqueId
                 // Last, so a default declared inside a tab still wins.
-                ?: firstVisiblePackageOutsideTabs
+                ?: visibleFallbackForHiddenDefaultOutsideTabs
 
             private var selectedPackageUniqueId by mutableStateOf(initialSelectedPackageUniqueId)
 

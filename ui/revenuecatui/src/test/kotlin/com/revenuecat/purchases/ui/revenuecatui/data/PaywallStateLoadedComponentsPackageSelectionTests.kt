@@ -279,6 +279,20 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
+    fun `Should select nothing outside tabs when no package is selected by default`() {
+        val state = paywallState(
+            packagesOutsideTabs = listOf(
+                packageInfo(TestData.Packages.annual, isSelectedByDefault = false),
+                packageInfo(TestData.Packages.monthly, isSelectedByDefault = false),
+            ),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+
+        assertThat(state.selectedPackageInfo).isNull()
+    }
+
+    @Test
     fun `Should keep a default inside a tab ahead of a package outside tabs`() {
         val state = paywallState(
             packagesOutsideTabs = listOf(packageInfo(TestData.Packages.monthly, isSelectedByDefault = false)),
