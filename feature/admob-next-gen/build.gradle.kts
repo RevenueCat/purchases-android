@@ -12,6 +12,10 @@ android {
     defaultConfig {
         missingDimensionStrategy("apis", "defaults")
     }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
 dependencies {
