@@ -23,7 +23,7 @@ class WorkflowEventsRequestSerializationTest {
                 timestampMs = 123456789L,
                 appUserID = "appUserID",
                 context = BackendEvent.Workflows.Context(
-                    platform = "android",
+                    platform = "Android",
                     sdkVersion = RevenueCatConfig.frameworkVersion,
                     locale = "en_US",
                 ),
@@ -53,7 +53,7 @@ class WorkflowEventsRequestSerializationTest {
                         "\"timestamp_ms\":123456789," +
                         "\"app_user_id\":\"appUserID\"," +
                         "\"context\":{" +
-                            "\"platform\":\"android\"," +
+                            "\"platform\":\"Android\"," +
                             "\"sdk_version\":\"${RevenueCatConfig.frameworkVersion}\"," +
                             "\"locale\":\"en_US\"" +
                         "}," +
@@ -113,7 +113,7 @@ class WorkflowEventsRequestSerializationTest {
                     timestampMs = 123456789L,
                     appUserID = "appUserID",
                     context = BackendEvent.Workflows.Context(
-                        platform = "android",
+                        platform = "Android",
                         sdkVersion = RevenueCatConfig.frameworkVersion,
                     ),
                     properties = BackendEvent.Workflows.Properties(
