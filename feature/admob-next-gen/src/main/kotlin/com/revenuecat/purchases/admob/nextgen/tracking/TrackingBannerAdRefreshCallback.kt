@@ -8,13 +8,11 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingBannerAdRefreshCallback(
-    delegate: BannerAdRefreshCallback?,
+    internal var delegate: BannerAdRefreshCallback?,
     private val placement: String?,
     private val adUnitId: String,
     private val responseInfoProvider: () -> ResponseInfo,
 ) : BannerAdRefreshCallback {
-
-    internal var delegate: BannerAdRefreshCallback? = delegate
 
     override fun onAdRefreshed() {
         trackAdLoaded(responseInfoProvider(), AdFormat.BANNER, placement, adUnitId)
