@@ -1,4 +1,7 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@file:OptIn(
+    ExperimentalPreviewRevenueCatPurchasesAPI::class,
+    InternalRevenueCatAPI::class,
+)
 
 package com.revenuecat.purchases.admob.nextgen
 
@@ -11,17 +14,29 @@ import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdEventCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdRefreshCallback
+import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdTracker
+import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
+import com.revenuecat.purchases.ads.events.types.AdFormat
+import com.revenuecat.purchases.ads.events.types.AdLoadedData
+import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.runs
 import io.mockk.slot
+import io.mockk.unmockkObject
 import io.mockk.verify
+import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -31,13 +46,32 @@ import org.robolectric.annotation.Config
 @Config(sdk = [35])
 class BannerAdFlowTest {
 
+    private val adTracker = mockk<AdTracker>(relaxed = true)
+    private val purchases = mockk<Purchases>(relaxed = true)
+
+    @Before
+    fun setUp() {
+        every { purchases.adTracker } returns adTracker
+        mockkObject(Purchases)
+        every { Purchases.isConfigured } returns true
+        every { Purchases.sharedInstance } returns purchases
+    }
+
+    @After
+    fun tearDown() {
+        unmockkObject(Purchases)
+    }
+
     @Test
     fun `banner success installs tracking callbacks before forwarding loaded ad`() {
         val adView = mockk<AdView>()
         val adRequest = mockk<BannerAdRequest> {
             every { adUnitId } returns "banner-unit"
         }
-        val responseInfo = mockk<ResponseInfo>(relaxed = true)
+        val responseInfo = mockk<ResponseInfo>(relaxed = true) {
+            every { adapterClassName } returns "test-network"
+            every { responseId } returns "response-id"
+        }
         val bannerAd = mockk<BannerAd>(relaxed = true) {
             every { getResponseInfo() } returns responseInfo
         }
@@ -64,6 +98,24 @@ class BannerAdFlowTest {
         assertSame(bannerAd, loadCallback.loadedAd)
         assertTrue(installedEventCallback.captured is TrackingBannerAdEventCallback)
         assertTrue(installedRefreshCallback.captured is TrackingBannerAdRefreshCallback)
+
+        // Pins the format, ad unit and placement this entry point hands to the load tracker;
+        // the wrapper classes are covered separately, so only the wiring is asserted here.
+        val loadedData = slot<AdLoadedData>()
+        verify(exactly = 1) {
+            adTracker.trackAdLoaded(capture(loadedData), AdCaptureMethod.ADAPTER)
+        }
+        assertEquals(
+            AdLoadedData(
+                networkName = "test-network",
+                mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.BANNER,
+                placement = "home-banner",
+                adUnitId = "banner-unit",
+                impressionId = "response-id",
+            ),
+            loadedData.captured,
+        )
 
         installedEventCallback.captured.onAppEvent("name", "data")
         installedRefreshCallback.captured.onAdRefreshed()
@@ -142,15 +194,24 @@ class BannerAdFlowTest {
 
         every { adView.loadAd(adRequest, capture(trackingLoadCallback)) } just runs
 
-        mockk<AdTracker>().loadAndTrackBannerAd(
+        adTracker.loadAndTrackBannerAd(
             adView = adView,
             adRequest = adRequest,
+            placement = "home-banner",
             loadCallback = loadCallback,
         )
         trackingLoadCallback.captured.onAdFailedToLoad(error)
 
         assertSame(error, loadCallback.loadError)
         verify(exactly = 1) { adView.loadAd(adRequest, any()) }
+
+        val failedData = slot<AdFailedToLoadData>()
+        verify(exactly = 1) {
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
+        }
+        assertEquals(AdFormat.BANNER, failedData.captured.adFormat)
+        assertEquals("banner-unit", failedData.captured.adUnitId)
+        assertEquals("home-banner", failedData.captured.placement)
     }
 
     private class RecordingBannerAdEventCallback : BannerAdEventCallback {
