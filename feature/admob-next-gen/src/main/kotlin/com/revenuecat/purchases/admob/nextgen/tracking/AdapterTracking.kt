@@ -9,6 +9,12 @@ import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
 
+/**
+ * Adapter-internal wrappers around the public [AdTracker] `trackAd*` API that stamp
+ * [AdCaptureMethod.ADAPTER], so events auto-captured by the AdMob adapter are
+ * distinguishable from developer-invoked (`manual`) events.
+ */
+
 internal fun AdTracker.trackFromAdapter(data: AdLoadedData) =
     trackAdLoaded(data, AdCaptureMethod.ADAPTER)
 

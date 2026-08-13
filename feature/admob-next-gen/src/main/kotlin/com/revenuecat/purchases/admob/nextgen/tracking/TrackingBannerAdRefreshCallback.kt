@@ -6,6 +6,18 @@ import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdFormat
 
+/**
+ * A [BannerAdRefreshCallback] wrapper that injects RevenueCat ad-event tracking
+ * before delegating every callback to the user-provided [delegate].
+ *
+ * Banner refreshes are reported as load lifecycle events:
+ * - [onAdRefreshed] → `trackAdLoaded`
+ * - [onAdFailedToRefresh] → `trackAdFailedToLoad`
+ *
+ * The SDK does not pass the new [ResponseInfo] to [onAdRefreshed], so
+ * [responseInfoProvider] is read when the callback fires rather than captured up
+ * front, to report the refreshed response instead of the original one.
+ */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingBannerAdRefreshCallback(
     internal var delegate: BannerAdRefreshCallback?,

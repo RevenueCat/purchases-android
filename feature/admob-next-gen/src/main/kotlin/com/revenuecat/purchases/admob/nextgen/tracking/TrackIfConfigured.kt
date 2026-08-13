@@ -4,6 +4,13 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.Logger
 
+/**
+ * Executes [block] with the [Purchases] ad tracker if the SDK is configured.
+ * If [Purchases] has not been configured yet, logs a warning and skips the block.
+ *
+ * This prevents crashes in ad callbacks when the developer has not yet called
+ * [Purchases.configure].
+ */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal inline fun trackIfConfigured(block: Purchases.() -> Unit) {
     if (!Purchases.isConfigured) {
