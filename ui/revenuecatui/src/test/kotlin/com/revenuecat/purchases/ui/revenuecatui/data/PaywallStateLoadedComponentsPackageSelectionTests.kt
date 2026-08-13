@@ -301,6 +301,51 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
+    fun `Should prefer an outside-tabs default over a tab package that is not a default`() {
+        val state = paywallState(
+            packagesOutsideTabs = listOf(packageInfo(TestData.Packages.annual, isSelectedByDefault = true)),
+            packagesByTab = mapOf(
+                0 to listOf(packageInfo(TestData.Packages.monthly, isSelectedByDefault = false)),
+            ),
+            initialSelectedTabIndex = 0,
+        )
+
+        state.resetToDefaultPackage()
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Should fall back outside tabs when switching to a tab with nothing visible`() {
+        val state = paywallState(
+            packagesOutsideTabs = listOf(
+                packageInfo(
+                    TestData.Packages.annual,
+                    isSelectedByDefault = true,
+                    visibilityOverrides = listOf(canTrialOverride(false, visible = false)),
+                ),
+                packageInfo(TestData.Packages.monthly, isSelectedByDefault = false),
+            ),
+            packagesByTab = mapOf(
+                0 to listOf(packageInfo(TestData.Packages.weekly, isSelectedByDefault = true)),
+                1 to listOf(
+                    packageInfo(
+                        TestData.Packages.lifetime,
+                        isSelectedByDefault = false,
+                        visibilityOverrides = listOf(canTrialOverride(false, visible = false)),
+                    ),
+                ),
+            ),
+            initialSelectedTabIndex = 0,
+            customVariables = mapOf("can_trial" to CustomVariableValue.Boolean(false)),
+        )
+
+        state.update(selectedTabIndex = 1)
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
     fun `Should select nothing outside tabs when no package is selected by default`() {
         val state = paywallState(
             packagesOutsideTabs = listOf(

@@ -370,6 +370,8 @@ internal sealed interface PaywallState {
                                 }
                             }
                             ?.uniqueId
+                        // Nothing in the tab renders, so fall back outside it rather than clearing.
+                        ?: visibleFallbackForHiddenDefaultOutsideTabs
                 }
 
                 if (actionInProgress != null) this.actionInProgress = actionInProgress
@@ -392,11 +394,16 @@ internal sealed interface PaywallState {
 
             fun peekDefaultPackageUniqueIdAfterSheetDismiss(): String? = defaultPackageUniqueIdForCurrentTab()
 
-            private fun defaultPackageUniqueIdForCurrentTab(): String? =
-                packages.packagesByTab[selectedTabIndex]?.defaultSelection(mergedCustomVariables)?.uniqueId
+            private fun defaultPackageUniqueIdForCurrentTab(): String? {
+                val tabPackages = packages.packagesByTab[selectedTabIndex]
+                // A default authored outside the tabs outranks a tab package that was never authored as
+                // one, so the tab's own default is consulted first and its first visible package last.
+                return tabPackages?.authoredDefaultIfVisible(mergedCustomVariables)?.uniqueId
                     ?: initialSelectedPackageOutsideTabs
                     ?: selectedPackageByTab[selectedTabIndex]
+                    ?: tabPackages?.firstVisible(mergedCustomVariables)?.uniqueId
                     ?: visibleFallbackForHiddenDefaultOutsideTabs
+            }
 
             fun peekSelectedPackageInfoAfterSheetDismiss(): SelectedPackageInfo? {
                 val uid = peekDefaultPackageUniqueIdAfterSheetDismiss()
@@ -505,5 +512,15 @@ private fun PaywallState.Loaded.Components.AvailablePackages.Info.resolvesVisibl
 private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.defaultSelection(
     customVariables: Map<String, CustomVariableValue>,
 ): PaywallState.Loaded.Components.AvailablePackages.Info? =
+    authoredDefaultIfVisible(customVariables) ?: firstVisible(customVariables)
+
+/** The package authored as the default, only when it renders. */
+private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.authoredDefaultIfVisible(
+    customVariables: Map<String, CustomVariableValue>,
+): PaywallState.Loaded.Components.AvailablePackages.Info? =
     firstOrNull { it.isSelectedByDefault && it.resolvesVisible(customVariables) }
-        ?: firstOrNull { it.resolvesVisible(customVariables) }
+
+private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.firstVisible(
+    customVariables: Map<String, CustomVariableValue>,
+): PaywallState.Loaded.Components.AvailablePackages.Info? =
+    firstOrNull { it.resolvesVisible(customVariables) }
