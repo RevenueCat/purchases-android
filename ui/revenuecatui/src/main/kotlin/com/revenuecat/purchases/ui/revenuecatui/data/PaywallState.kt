@@ -389,12 +389,11 @@ internal sealed interface PaywallState {
             }
 
             fun resetToDefaultPackage() {
-                selectedPackageUniqueId = defaultPackageUniqueIdForCurrentTab()
+                selectedPackageUniqueId = peekDefaultPackageUniqueIdAfterSheetDismiss()
             }
 
-            fun peekDefaultPackageUniqueIdAfterSheetDismiss(): String? = defaultPackageUniqueIdForCurrentTab()
-
-            private fun defaultPackageUniqueIdForCurrentTab(): String? {
+            /** The package the current tab should fall back to, which is also what a reset restores. */
+            fun peekDefaultPackageUniqueIdAfterSheetDismiss(): String? {
                 val tabPackages = packages.packagesByTab[selectedTabIndex]
                 // A default authored outside the tabs outranks a tab package that was never authored as
                 // one, so the tab's own default is consulted first and its first visible package last.
