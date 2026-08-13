@@ -10,6 +10,18 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 
+/**
+ * An [AdLoadCallback] wrapper that injects RevenueCat ad-event tracking before
+ * delegating every callback to the user-provided [delegate].
+ *
+ * Tracked events:
+ * - [onAdLoaded] → `trackAdLoaded`
+ * - [onAdFailedToLoad] → `trackAdFailedToLoad`
+ *
+ * [configureAd] runs on a successfully loaded ad, after tracking and before the
+ * delegate, so the caller can wire up the tracking that the ad object itself
+ * exposes. It is not invoked for an ad that failed to load.
+ */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingAdLoadCallback<AdT : Ad>(
     private val delegate: AdLoadCallback<AdT>?,
