@@ -191,6 +191,80 @@ class TrackingAdEventCallbackTest {
         assertEquals(value, delegatedValue)
     }
 
+    /**
+     * [TrackingAdEventCallback.delegate] is a var so show-time code can swap the application
+     * callback after the ad was loaded. Both an inherited override and a format-specific one are
+     * exercised: the format classes take a constructor parameter that shares the property's name,
+     * so this pins that their overrides follow the current delegate rather than the original.
+     */
+    @Test
+    fun `swapping the delegate redirects inherited and format callbacks`() {
+        val seen = mutableListOf<String>()
+        val callback = TrackingBannerAdEventCallback(
+            delegate = recordingBannerDelegate("original", seen),
+            placement = "home",
+            adUnitId = "ad-unit",
+            responseInfoProvider = { responseInfo },
+        )
+
+        callback.delegate = recordingBannerDelegate("replacement", seen)
+        callback.onAdClicked()
+        callback.onAppEvent("event", null)
+
+        assertEquals(listOf("replacement.onAdClicked", "replacement.onAppEvent"), seen)
+    }
+
+    @Test
+    fun `clearing the delegate stops forwarding but keeps tracking`() {
+        val seen = mutableListOf<String>()
+        val callback = TrackingBannerAdEventCallback(
+            delegate = recordingBannerDelegate("original", seen),
+            placement = "home",
+            adUnitId = "ad-unit",
+            responseInfoProvider = { responseInfo },
+        )
+
+        callback.delegate = null
+        callback.onAdClicked()
+        callback.onAppEvent("event", null)
+
+        assertEquals(emptyList<String>(), seen)
+        verify(exactly = 1) { adTracker.trackAdOpened(any(), AdCaptureMethod.ADAPTER) }
+    }
+
+    /**
+     * The paid callback covers this for revenue; display and click read the same var, so a
+     * placement captured at construction instead of at event time would only show up here.
+     */
+    @Test
+    fun `placement is read at event time for display and click events`() {
+        val callback = TrackingBannerAdEventCallback(null, "load-placement", "ad-unit") { responseInfo }
+        callback.placement = "show-placement"
+
+        callback.onAdImpression()
+        callback.onAdClicked()
+
+        val displayedData = slot<AdDisplayedData>()
+        val openedData = slot<AdOpenedData>()
+        verify(exactly = 1) {
+            adTracker.trackAdDisplayed(capture(displayedData), AdCaptureMethod.ADAPTER)
+            adTracker.trackAdOpened(capture(openedData), AdCaptureMethod.ADAPTER)
+        }
+        assertEquals("show-placement", displayedData.captured.placement)
+        assertEquals("show-placement", openedData.captured.placement)
+    }
+
+    private fun recordingBannerDelegate(name: String, seen: MutableList<String>) =
+        object : BannerAdEventCallback {
+            override fun onAdClicked() {
+                seen += "$name.onAdClicked"
+            }
+
+            override fun onAppEvent(eventName: String, data: String?) {
+                seen += "$name.onAppEvent"
+            }
+        }
+
     @Test
     fun `refreshed banner reads current response info at event time`() {
         val refreshedResponseInfo = mockk<ResponseInfo>()
