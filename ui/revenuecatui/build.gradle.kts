@@ -170,7 +170,6 @@ tasks.withType<KotlinCompilationTask<*>>().configureEach {
 
 baselineProfile {
     mergeIntoMain = true
-    baselineProfileOutputDir = "."
     filter {
         include("com.revenuecat.purchases.ui.revenuecatui.**")
     }
