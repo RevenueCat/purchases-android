@@ -12,11 +12,15 @@ class TrackingCallbackContractTest {
     @Test
     fun `load callback overrides every SDK callback`() {
         assertOverridesAllSdkCallbacks(AdLoadCallback::class.java, TrackingAdLoadCallback::class.java)
+    }
+
+    @Test
+    fun `banner refresh callback overrides every SDK callback`() {
         assertOverridesAllSdkCallbacks(BannerAdRefreshCallback::class.java, TrackingBannerAdRefreshCallback::class.java)
     }
 }
 
-internal fun assertOverridesAllSdkCallbacks(sdkCallback: Class<*>, trackingCallback: Class<*>) {
+private fun assertOverridesAllSdkCallbacks(sdkCallback: Class<*>, trackingCallback: Class<*>) {
     val sdkMethods = sdkCallback.methods
         .filter { Modifier.isPublic(it.modifiers) && !Modifier.isStatic(it.modifiers) }
         .map { it.signature() }
