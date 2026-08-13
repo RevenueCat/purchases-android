@@ -279,6 +279,28 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
+    fun `Should restore the visible fallback after a sheet dismiss`() {
+        val state = paywallState(
+            packagesOutsideTabs = listOf(
+                packageInfo(
+                    TestData.Packages.annual,
+                    isSelectedByDefault = true,
+                    visibilityOverrides = listOf(canTrialOverride(false, visible = false)),
+                ),
+                packageInfo(TestData.Packages.monthly, isSelectedByDefault = false),
+            ),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+            customVariables = mapOf("can_trial" to CustomVariableValue.Boolean(false)),
+        )
+
+        state.resetToDefaultPackage()
+
+        assertThat(state.peekDefaultPackageUniqueIdAfterSheetDismiss()).isNotNull()
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
     fun `Should select nothing outside tabs when no package is selected by default`() {
         val state = paywallState(
             packagesOutsideTabs = listOf(

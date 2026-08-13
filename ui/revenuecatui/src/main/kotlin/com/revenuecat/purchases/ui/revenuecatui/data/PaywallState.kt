@@ -387,16 +387,16 @@ internal sealed interface PaywallState {
             }
 
             fun resetToDefaultPackage() {
-                selectedPackageUniqueId =
-                    packages.packagesByTab[selectedTabIndex]?.defaultSelection(mergedCustomVariables)?.uniqueId
-                        ?: initialSelectedPackageOutsideTabs
-                        ?: selectedPackageByTab[selectedTabIndex]
+                selectedPackageUniqueId = defaultPackageUniqueIdForCurrentTab()
             }
 
-            fun peekDefaultPackageUniqueIdAfterSheetDismiss(): String? =
+            fun peekDefaultPackageUniqueIdAfterSheetDismiss(): String? = defaultPackageUniqueIdForCurrentTab()
+
+            private fun defaultPackageUniqueIdForCurrentTab(): String? =
                 packages.packagesByTab[selectedTabIndex]?.defaultSelection(mergedCustomVariables)?.uniqueId
                     ?: initialSelectedPackageOutsideTabs
                     ?: selectedPackageByTab[selectedTabIndex]
+                    ?: visibleFallbackForHiddenDefaultOutsideTabs
 
             fun peekSelectedPackageInfoAfterSheetDismiss(): SelectedPackageInfo? {
                 val uid = peekDefaultPackageUniqueIdAfterSheetDismiss()
