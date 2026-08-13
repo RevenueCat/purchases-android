@@ -1,3 +1,4 @@
+@file:JvmName("RCAdMobNextGenAdView")
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @file:SuppressLint("MissingPermission")
 
