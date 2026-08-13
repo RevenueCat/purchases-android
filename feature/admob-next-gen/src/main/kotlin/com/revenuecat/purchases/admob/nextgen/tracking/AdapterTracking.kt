@@ -14,7 +14,6 @@ import com.revenuecat.purchases.ads.events.types.AdLoadedData
  * [AdCaptureMethod.ADAPTER], so events auto-captured by the AdMob adapter are
  * distinguishable from developer-invoked (`manual`) events.
  */
-
 internal fun AdTracker.trackFromAdapter(data: AdLoadedData) =
     trackAdLoaded(data, AdCaptureMethod.ADAPTER)
 
