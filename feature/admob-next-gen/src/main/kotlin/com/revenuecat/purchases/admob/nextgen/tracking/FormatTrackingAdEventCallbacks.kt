@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-
 package com.revenuecat.purchases.admob.nextgen.tracking
 
 import com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdEventCallback
@@ -12,6 +10,7 @@ import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.Rewarded
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdFormat
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingBannerAdEventCallback(
     delegate: BannerAdEventCallback?,
     placement: String?,
@@ -31,6 +30,7 @@ internal class TrackingBannerAdEventCallback(
     }
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingInterstitialAdEventCallback(
     delegate: InterstitialAdEventCallback?,
     placement: String?,
@@ -50,6 +50,7 @@ internal class TrackingInterstitialAdEventCallback(
     }
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingAppOpenAdEventCallback(
     delegate: AppOpenAdEventCallback?,
     placement: String?,
@@ -65,6 +66,7 @@ internal class TrackingAppOpenAdEventCallback(
 ),
     AppOpenAdEventCallback
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingRewardedAdEventCallback(
     delegate: RewardedAdEventCallback?,
     placement: String?,
@@ -84,6 +86,7 @@ internal class TrackingRewardedAdEventCallback(
     }
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingRewardedInterstitialAdEventCallback(
     delegate: RewardedInterstitialAdEventCallback?,
     placement: String?,
@@ -103,6 +106,7 @@ internal class TrackingRewardedInterstitialAdEventCallback(
     }
 }
 
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingNativeAdEventCallback(
     delegate: NativeAdEventCallback?,
     placement: String?,
