@@ -28,17 +28,13 @@ internal enum class AdDisplayedTrigger {
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal abstract class TrackingAdEventCallback<CallbackT : AdEventCallback>(
-    delegate: CallbackT?,
+    internal var delegate: CallbackT?,
     private val adFormat: AdFormat,
-    placement: String?,
+    internal var placement: String?,
     private val adUnitId: String,
     private val responseInfoProvider: () -> ResponseInfo,
     private val adDisplayedTrigger: AdDisplayedTrigger,
 ) : AdEventCallback {
-
-    internal var delegate: CallbackT? = delegate
-
-    internal var placement: String? = placement
 
     override fun onAdShowedFullScreenContent() {
         if (adDisplayedTrigger == AdDisplayedTrigger.FULL_SCREEN_SHOW) {
