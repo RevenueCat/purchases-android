@@ -1,3 +1,4 @@
+@file:JvmName("AdTrackerAdMobNextGen")
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @file:SuppressLint("MissingPermission")
 

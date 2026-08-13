@@ -1,3 +1,4 @@
+@file:JvmName("RCAdMobNextGenBannerAd")
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
 package com.revenuecat.purchases.admob.nextgen
