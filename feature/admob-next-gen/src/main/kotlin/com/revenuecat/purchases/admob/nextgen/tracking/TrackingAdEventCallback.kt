@@ -17,13 +17,21 @@ internal enum class AdDisplayedTrigger {
     FULL_SCREEN_SHOW,
 }
 
+/**
+ * An [AdEventCallback] wrapper that injects RevenueCat ad-event tracking before
+ * delegating every callback to the user-provided [delegate].
+ *
+ * [responseInfoProvider] is read at event time rather than captured up front, so that
+ * formats whose response info changes over the callback's lifetime (auto-refreshing
+ * banners) report the currently displayed creative instead of the first-loaded one.
+ */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal abstract class TrackingAdEventCallback<CallbackT : AdEventCallback>(
     delegate: CallbackT?,
     private val adFormat: AdFormat,
     placement: String?,
     private val adUnitId: String,
-    private val responseInfo: ResponseInfo,
+    private val responseInfoProvider: () -> ResponseInfo,
     private val adDisplayedTrigger: AdDisplayedTrigger,
 ) : AdEventCallback {
 
@@ -55,6 +63,7 @@ internal abstract class TrackingAdEventCallback<CallbackT : AdEventCallback>(
 
     override fun onAdClicked() {
         trackIfConfigured {
+            val responseInfo = responseInfoProvider()
             adTracker.trackFromAdapter(
                 AdOpenedData(
                     networkName = responseInfo.adapterClassName,
@@ -71,6 +80,7 @@ internal abstract class TrackingAdEventCallback<CallbackT : AdEventCallback>(
 
     override fun onAdPaid(value: AdValue) {
         trackIfConfigured {
+            val responseInfo = responseInfoProvider()
             adTracker.trackFromAdapter(
                 AdRevenueData(
                     networkName = responseInfo.adapterClassName,
@@ -90,6 +100,7 @@ internal abstract class TrackingAdEventCallback<CallbackT : AdEventCallback>(
 
     private fun trackAdDisplayed() {
         trackIfConfigured {
+            val responseInfo = responseInfoProvider()
             adTracker.trackFromAdapter(
                 AdDisplayedData(
                     networkName = responseInfo.adapterClassName,

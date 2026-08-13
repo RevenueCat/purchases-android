@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.admob.nextgen.tracking
 
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
-import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback
 import io.mockk.mockk
@@ -21,7 +20,7 @@ class FormatTrackingAdEventCallbacksTest {
             },
             placement = null,
             adUnitId = "ad-unit",
-            responseInfo = mockk(),
+            responseInfoProvider = { mockk() },
         )
 
         callback.onAppEvent("event", null)
@@ -40,7 +39,7 @@ class FormatTrackingAdEventCallbacksTest {
             },
             placement = null,
             adUnitId = "ad-unit",
-            responseInfo = mockk<ResponseInfo>(),
+            responseInfoProvider = { mockk() },
         )
 
         callback.onAdMetadataChanged()
@@ -63,7 +62,7 @@ class FormatTrackingAdEventCallbacksTest {
             },
             placement = null,
             adUnitId = "ad-unit",
-            responseInfo = mockk(),
+            responseInfoProvider = { mockk() },
         )
 
         callback.onAdSwipeGestureClicked()
