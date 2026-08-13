@@ -88,8 +88,9 @@ tasks.withType<KotlinCompile>().configureEach {
 
 dependencies {
     api(project(":purchases"))
+    api(platform(libs.compose.bom))
+    api(libs.compose.foundation.layout)
 
-    implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.util)
     implementation(libs.compose.ui.graphics)

@@ -126,6 +126,7 @@ commonmark-strikethrough = { module = "org.commonmark:commonmark-ext-gfm-striket
 
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-constraintlayout = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraintlayout" }
+compose-foundation-layout = { module = "androidx.compose.foundation:foundation-layout" }
 compose-material = { module = "androidx.compose.material:material" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-material3Adaptive = { module = "androidx.compose.material3.adaptive:adaptive" }
