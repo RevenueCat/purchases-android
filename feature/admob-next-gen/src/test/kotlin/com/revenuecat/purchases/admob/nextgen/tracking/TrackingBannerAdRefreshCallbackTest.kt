@@ -23,6 +23,7 @@ import io.mockk.slot
 import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
@@ -113,6 +114,27 @@ class TrackingBannerAdRefreshCallbackTest {
             trackedData.captured,
         )
         assertEquals(error, delegatedError)
+    }
+
+    @Test
+    fun `still delegates refresh when Purchases is not configured`() {
+        PurchasesTestHelper.setSharedInstance(null)
+        var delegated = false
+        val callback = TrackingBannerAdRefreshCallback(
+            delegate = object : BannerAdRefreshCallback {
+                override fun onAdRefreshed() {
+                    delegated = true
+                }
+            },
+            placement = "home",
+            adUnitId = "ad-unit",
+            responseInfoProvider = { responseInfo("test-network", "response-id") },
+        )
+
+        callback.onAdRefreshed()
+
+        verify(exactly = 0) { adTracker.trackAdLoaded(any(), any()) }
+        assertTrue(delegated)
     }
 
     private fun responseInfo(adapterClassName: String, responseId: String): ResponseInfo =

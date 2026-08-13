@@ -118,6 +118,30 @@ class TrackingAdLoadCallbackTest {
         assertEquals(error, delegatedError)
     }
 
+    @Test
+    fun `still configures and delegates when Purchases is not configured`() {
+        PurchasesTestHelper.setSharedInstance(null)
+        val ad = mockk<Ad>()
+        every { ad.getResponseInfo() } returns responseInfo("test-network", "response-id")
+        val order = mutableListOf<String>()
+        val callback = TrackingAdLoadCallback(
+            delegate = object : AdLoadCallback<Ad> {
+                override fun onAdLoaded(ad: Ad) {
+                    order += "delegate"
+                }
+            },
+            adFormat = AdFormat.BANNER,
+            placement = "home",
+            adUnitId = "ad-unit",
+            configureAd = { order += "configure" },
+        )
+
+        callback.onAdLoaded(ad)
+
+        verify(exactly = 0) { adTracker.trackAdLoaded(any(), any()) }
+        assertEquals(listOf("configure", "delegate"), order)
+    }
+
     private fun responseInfo(adapterClassName: String, responseId: String): ResponseInfo =
         mockk<ResponseInfo>().also {
             every { it.adapterClassName } returns adapterClassName
