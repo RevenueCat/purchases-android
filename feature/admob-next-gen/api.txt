@@ -2,13 +2,22 @@
 package com.revenuecat.purchases.admob.nextgen {
 
   public final class AdTrackerAdMobNextGen {
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackAppOpenAd(com.revenuecat.purchases.ads.events.AdTracker, com.google.android.libraries.ads.mobile.sdk.common.AdRequest adRequest, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback<com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAd>? loadCallback, optional com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdEventCallback? adEventCallback);
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackBannerAd(com.revenuecat.purchases.ads.events.AdTracker, com.google.android.libraries.ads.mobile.sdk.banner.AdView adView, com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRequest adRequest, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback<com.google.android.libraries.ads.mobile.sdk.banner.BannerAd>? loadCallback, optional com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback? adEventCallback, optional com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback? bannerAdRefreshCallback);
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackInterstitialAd(com.revenuecat.purchases.ads.events.AdTracker, com.google.android.libraries.ads.mobile.sdk.common.AdRequest adRequest, optional String? placement, com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback<com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd> loadCallback, optional com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback? adEventCallback);
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static suspend Object? loadAndTrackInterstitialAd(com.revenuecat.purchases.ads.events.AdTracker, com.google.android.libraries.ads.mobile.sdk.common.AdRequest adRequest, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback? adEventCallback, kotlin.coroutines.Continuation<? super com.google.android.libraries.ads.mobile.sdk.common.AdLoadResult<com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd>>);
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackNativeAd(com.revenuecat.purchases.ads.events.AdTracker, com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdRequest adRequest, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoaderCallback? nativeAdLoaderCallback, optional com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback? adEventCallback);
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackRewardedAd(com.revenuecat.purchases.ads.events.AdTracker, com.google.android.libraries.ads.mobile.sdk.common.AdRequest adRequest, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback<com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd>? loadCallback, optional com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback? adEventCallback);
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackRewardedInterstitialAd(com.revenuecat.purchases.ads.events.AdTracker, com.google.android.libraries.ads.mobile.sdk.common.AdRequest adRequest, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback<com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAd>? loadCallback, optional com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAdEventCallback? adEventCallback);
   }
 
   public final class RCAdMobNextGenAdView {
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackAd(com.google.android.libraries.ads.mobile.sdk.banner.AdView, com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRequest adRequest, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback<com.google.android.libraries.ads.mobile.sdk.banner.BannerAd>? loadCallback, optional com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback? adEventCallback, optional com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback? bannerAdRefreshCallback);
+  }
+
+  public final class RCAdMobNextGenAppOpenAd {
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingAdEventCallback(com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAd, com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdEventCallback? callback);
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAd, android.app.Activity activity, String? placement);
   }
 
   public final class RCAdMobNextGenBannerAd {
@@ -19,6 +28,20 @@ package com.revenuecat.purchases.admob.nextgen {
   public final class RCAdMobNextGenInterstitialAd {
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingAdEventCallback(com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd, com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback? callback);
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd, android.app.Activity activity, String? placement);
+  }
+
+  public final class RCAdMobNextGenNativeAd {
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingAdEventCallback(com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd, com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback? callback);
+  }
+
+  public final class RCAdMobNextGenRewardedAd {
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingAdEventCallback(com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd, com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback? callback);
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd, android.app.Activity activity, String? placement, com.google.android.libraries.ads.mobile.sdk.rewarded.OnUserEarnedRewardListener onUserEarnedRewardListener);
+  }
+
+  public final class RCAdMobNextGenRewardedInterstitialAd {
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingAdEventCallback(com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAd, com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAdEventCallback? callback);
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAd, android.app.Activity activity, String? placement, com.google.android.libraries.ads.mobile.sdk.rewarded.OnUserEarnedRewardListener onUserEarnedRewardListener);
   }
 
 }

@@ -5,6 +5,8 @@
 package com.revenuecat.purchases.admob.nextgen
 
 import android.annotation.SuppressLint
+import com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAd
+import com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.banner.AdView
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAd
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
@@ -15,9 +17,21 @@ import com.google.android.libraries.ads.mobile.sdk.common.AdLoadResult
 import com.google.android.libraries.ads.mobile.sdk.common.AdRequest
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoader
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoaderCallback
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdRequest
+import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
+import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback
+import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAd
+import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAdEventCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingAdLoadCallback
+import com.revenuecat.purchases.admob.nextgen.tracking.TrackingAppOpenAdEventCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingInterstitialAdEventCallback
+import com.revenuecat.purchases.admob.nextgen.tracking.TrackingNativeAdLoaderCallback
+import com.revenuecat.purchases.admob.nextgen.tracking.TrackingRewardedAdEventCallback
+import com.revenuecat.purchases.admob.nextgen.tracking.TrackingRewardedInterstitialAdEventCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.trackAdFailedToLoad
 import com.revenuecat.purchases.admob.nextgen.tracking.trackAdLoaded
 import com.revenuecat.purchases.ads.events.AdTracker
@@ -134,5 +148,153 @@ private fun InterstitialAd.installTrackingEventCallback(
         placement = placement,
         adUnitId = adUnitId,
         responseInfoProvider = ::getResponseInfo,
+    )
+}
+
+/**
+ * Loads a [RewardedAd] and automatically tracks RevenueCat ad events.
+ *
+ * The loaded ad has event tracking installed before it is forwarded to [loadCallback].
+ * Call via `Purchases.sharedInstance.adTracker`.
+ *
+ * @param adRequest The [AdRequest] to load. Its ad unit ID is used for tracking.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param loadCallback Optional callback to receive load success and failure events.
+ * @param adEventCallback Optional callback for rewarded ad lifecycle and paid events.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+public fun AdTracker.loadAndTrackRewardedAd(
+    adRequest: AdRequest,
+    placement: String? = null,
+    loadCallback: AdLoadCallback<RewardedAd>? = null,
+    adEventCallback: RewardedAdEventCallback? = null,
+) {
+    val adUnitId = adRequest.adUnitId
+    RewardedAd.load(
+        adRequest,
+        TrackingAdLoadCallback(
+            delegate = loadCallback,
+            adFormat = AdFormat.REWARDED,
+            placement = placement,
+            adUnitId = adUnitId,
+            configureAd = { ad ->
+                ad.adEventCallback = TrackingRewardedAdEventCallback(
+                    delegate = adEventCallback,
+                    placement = placement,
+                    adUnitId = adUnitId,
+                    responseInfoProvider = ad::getResponseInfo,
+                )
+            },
+        ),
+    )
+}
+
+/**
+ * Loads a [RewardedInterstitialAd] and automatically tracks RevenueCat ad events.
+ *
+ * The loaded ad has event tracking installed before it is forwarded to [loadCallback].
+ * Call via `Purchases.sharedInstance.adTracker`.
+ *
+ * @param adRequest The [AdRequest] to load. Its ad unit ID is used for tracking.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param loadCallback Optional callback to receive load success and failure events.
+ * @param adEventCallback Optional callback for rewarded interstitial lifecycle and paid events.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+public fun AdTracker.loadAndTrackRewardedInterstitialAd(
+    adRequest: AdRequest,
+    placement: String? = null,
+    loadCallback: AdLoadCallback<RewardedInterstitialAd>? = null,
+    adEventCallback: RewardedInterstitialAdEventCallback? = null,
+) {
+    val adUnitId = adRequest.adUnitId
+    RewardedInterstitialAd.load(
+        adRequest,
+        TrackingAdLoadCallback(
+            delegate = loadCallback,
+            adFormat = AdFormat.REWARDED_INTERSTITIAL,
+            placement = placement,
+            adUnitId = adUnitId,
+            configureAd = { ad ->
+                ad.adEventCallback = TrackingRewardedInterstitialAdEventCallback(
+                    delegate = adEventCallback,
+                    placement = placement,
+                    adUnitId = adUnitId,
+                    responseInfoProvider = ad::getResponseInfo,
+                )
+            },
+        ),
+    )
+}
+
+/**
+ * Loads an [AppOpenAd] and automatically tracks RevenueCat ad events.
+ *
+ * The loaded ad has event tracking installed before it is forwarded to [loadCallback].
+ * Call via `Purchases.sharedInstance.adTracker`.
+ *
+ * @param adRequest The [AdRequest] to load. Its ad unit ID is used for tracking.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param loadCallback Optional callback to receive load success and failure events.
+ * @param adEventCallback Optional callback for app open ad lifecycle and paid events.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+public fun AdTracker.loadAndTrackAppOpenAd(
+    adRequest: AdRequest,
+    placement: String? = null,
+    loadCallback: AdLoadCallback<AppOpenAd>? = null,
+    adEventCallback: AppOpenAdEventCallback? = null,
+) {
+    val adUnitId = adRequest.adUnitId
+    AppOpenAd.load(
+        adRequest,
+        TrackingAdLoadCallback(
+            delegate = loadCallback,
+            adFormat = AdFormat.APP_OPEN,
+            placement = placement,
+            adUnitId = adUnitId,
+            configureAd = { ad ->
+                ad.adEventCallback = TrackingAppOpenAdEventCallback(
+                    delegate = adEventCallback,
+                    placement = placement,
+                    adUnitId = adUnitId,
+                    responseInfoProvider = ad::getResponseInfo,
+                )
+            },
+        ),
+    )
+}
+
+/**
+ * Loads a native ad and automatically tracks RevenueCat ad events.
+ *
+ * The loaded native ad has event tracking installed before it is forwarded to
+ * [nativeAdLoaderCallback]. Custom native and banner results are forwarded unchanged.
+ * Call via `Purchases.sharedInstance.adTracker`.
+ *
+ * @param adRequest The [NativeAdRequest] to load. Its ad unit ID is used for tracking.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param nativeAdLoaderCallback Optional callback to receive native load results.
+ * @param adEventCallback Optional callback for native ad lifecycle and paid events.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+public fun AdTracker.loadAndTrackNativeAd(
+    adRequest: NativeAdRequest,
+    placement: String? = null,
+    nativeAdLoaderCallback: NativeAdLoaderCallback? = null,
+    adEventCallback: NativeAdEventCallback? = null,
+) {
+    NativeAdLoader.load(
+        adRequest,
+        TrackingNativeAdLoaderCallback(
+            delegate = nativeAdLoaderCallback,
+            placement = placement,
+            adUnitId = adRequest.adUnitId,
+            adEventCallback = adEventCallback,
+        ),
     )
 }
