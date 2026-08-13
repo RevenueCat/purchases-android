@@ -3,19 +3,16 @@
 package com.revenuecat.purchases.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesException
 
 /**
- * Resolves a checkpoint to the workflow that should run for it, or to the reason none should. The production
- * implementation will read a checkpoints topic from the config endpoint; the PoC stands it in with
- * [RandomWorkflowCheckpointResolver].
+ * Resolves a checkpoint to the workflow that should run for it, or to the reason none should.
+ * [CheckpointWorkflowResolverImpl] does this from the `checkpoint_rules` remote-config topic.
  */
 internal interface CheckpointWorkflowResolver {
-    suspend fun resolve(checkpoint: CheckpointInfo): CheckpointWorkflowResolution
-}
 
-internal sealed class CheckpointWorkflowResolution {
-    data class Matched(val presentation: CheckpointWorkflowPresentation) : CheckpointWorkflowResolution()
-    data class NoMatch(val reason: CheckpointResult.NoAction.Reason) : CheckpointWorkflowResolution()
-    data class Failed(val error: PurchasesError) : CheckpointWorkflowResolution()
+    /**
+     * @throws PurchasesException when the checkpoint should be served but can't be resolved.
+     */
+    suspend fun resolve(identifier: String, customProperties: Map<String, Any>): CheckpointResolution
 }

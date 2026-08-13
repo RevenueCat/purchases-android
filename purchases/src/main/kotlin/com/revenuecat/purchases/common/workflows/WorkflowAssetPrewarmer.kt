@@ -7,7 +7,8 @@ import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
-import com.revenuecat.purchases.utils.PaywallComponentsImagePreDownloader
+import com.revenuecat.purchases.paywalls.PaywallAssetWarming
+import com.revenuecat.purchases.utils.collectAssets
 import kotlinx.coroutines.CancellationException
 
 /**
@@ -25,7 +26,7 @@ import kotlinx.coroutines.CancellationException
  */
 internal class WorkflowAssetPrewarmer(
     private val uiConfigProvider: UiConfigProvider,
-    private val paywallComponentsImagePreDownloader: PaywallComponentsImagePreDownloader,
+    private val assetWarming: PaywallAssetWarming,
     private val offeringFontPreDownloader: OfferingFontPreDownloader,
 ) {
 
@@ -41,8 +42,9 @@ internal class WorkflowAssetPrewarmer(
         synchronized(warmedWorkflowIds) {
             if (!warmedWorkflowIds.add(workflow.id)) return
         }
-        workflow.screens.values.forEach { screen ->
-            paywallComponentsImagePreDownloader.preDownloadImages(screen.componentsConfig.base)
+        if (assetWarming.isAvailable) {
+            val assets = workflow.screens.values.map { it.componentsConfig.base.collectAssets() }
+            assetWarming.warmImages(assets.flatMapTo(mutableSetOf()) { it.imageUris })
         }
         offeringFontPreDownloader.preDownloadFontsIfNeeded(uiConfig.app.fonts.values)
     }

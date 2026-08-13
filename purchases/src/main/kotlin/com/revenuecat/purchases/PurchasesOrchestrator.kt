@@ -12,20 +12,15 @@ import android.util.Pair
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import coil.ImageLoader
-import coil.disk.DiskCache
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
-import com.revenuecat.purchases.checkpoints.CheckpointListener
-import com.revenuecat.purchases.checkpoints.CheckpointParams
-import com.revenuecat.purchases.checkpoints.CheckpointResult
-import com.revenuecat.purchases.checkpoints.CheckpointsManager
-import com.revenuecat.purchases.checkpoints.RandomWorkflowCheckpointResolver
-import com.revenuecat.purchases.checkpoints.UiCheckpointWorkflowExecutor
+import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolver
+import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolverImpl
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -42,6 +37,7 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.debugLogsEnabled
@@ -50,6 +46,7 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.events.FeatureEvent
+import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -176,18 +173,18 @@ internal class PurchasesOrchestrator(
     private val remoteConfigManager: RemoteConfigManager? = null,
     private val uiConfigProvider: UiConfigProvider? = null,
     private val workflowsConfigProvider: WorkflowsConfigProvider? = null,
+    private val checkpointsConfigProvider: CheckpointsConfigProvider? = null,
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
     private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
-    private val checkpointsManager: CheckpointsManager = CheckpointsManager(
-        resolver = RandomWorkflowCheckpointResolver(
-            workflowManager = workflowManager,
-            uiConfigProvider = uiConfigProvider,
-            getOfferings = { Purchases.sharedInstance.awaitOfferings() },
-        ),
-        executor = UiCheckpointWorkflowExecutor(
-            currentActivityProvider = currentActivityTracker::currentActivity,
-        ),
+    private val localRulesEvaluator: LocalRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
+    @OptIn(InternalRevenueCatAPI::class)
+    private val checkpointWorkflowResolver: CheckpointWorkflowResolver = CheckpointWorkflowResolverImpl(
+        workflowManager = workflowManager,
+        uiConfigProvider = uiConfigProvider,
+        checkpointsConfigProvider = checkpointsConfigProvider,
+        localRulesEvaluator = localRulesEvaluator,
+        getOfferings = { Purchases.sharedInstance.awaitOfferings() },
     ),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
@@ -239,8 +236,18 @@ internal class PurchasesOrchestrator(
     @set:Synchronized
     var debugEventListener: DebugEventListener? by eventsManager::debugEventListener
 
-    @OptIn(InternalRevenueCatAPI::class)
-    var checkpointListener: CheckpointListener? by checkpointsManager::checkpointListener
+    /**
+     * Storage for the RevenueCat UI module's checkpoints manager, which owns the checkpoint listener and any
+     * in-flight checkpoint presentation. Untyped because that type lives in the UI module, which this module
+     * must not depend on; only the UI module reads and writes it. Living here rather than in a UI-module
+     * singleton ties that state to the lifetime of this instance.
+     */
+    @get:Synchronized
+    @set:Synchronized
+    var checkpointManagerSlot: Any? = null
+
+    val currentActivity: Activity?
+        get() = currentActivityTracker.currentActivity
 
     val isAnonymous: Boolean
         get() = identityManager.currentUserIsAnonymous()
@@ -425,10 +432,10 @@ internal class PurchasesOrchestrator(
     // region Public Methods
 
     @OptIn(InternalRevenueCatAPI::class)
-    suspend fun checkpoint(
+    suspend fun resolveCheckpoint(
         checkpointIdentifier: String,
-        params: CheckpointParams?,
-    ): CheckpointResult = checkpointsManager.checkpoint(checkpointIdentifier, params)
+        customProperties: Map<String, Any>,
+    ): CheckpointResolution = checkpointWorkflowResolver.resolve(checkpointIdentifier, customProperties)
 
     fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
         storefrontCountryCode?.let {
@@ -1937,33 +1944,9 @@ internal class PurchasesOrchestrator(
                 currentLogHandler = value
             }
 
-        private var cachedImageLoader: ImageLoader? = null
-
         const val frameworkVersion = Config.frameworkVersion
 
         var proxyURL: URL? = null
-
-        @Suppress("MagicNumber")
-        @Synchronized
-        fun getImageLoader(context: Context): ImageLoader {
-            val currentImageLoader = cachedImageLoader
-            return if (currentImageLoader == null) {
-                val maxCacheSizeBytes = 25 * 1024 * 1024L // 25 MB
-                val cacheFolder = "revenuecatui_cache"
-                val imageLoader = ImageLoader.Builder(context)
-                    .diskCache {
-                        DiskCache.Builder()
-                            .directory(context.cacheDir.resolve(cacheFolder))
-                            .maxSizeBytes(maxCacheSizeBytes)
-                            .build()
-                    }
-                    .build()
-                cachedImageLoader = imageLoader
-                imageLoader
-            } else {
-                currentImageLoader
-            }
-        }
 
         /**
          * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.

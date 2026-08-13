@@ -10,11 +10,12 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.checkpoints.CheckpointInfo
-import com.revenuecat.purchases.checkpoints.CheckpointListener
-import com.revenuecat.purchases.checkpoints.CheckpointResult
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointInfo
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointListener
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpointListener
 
 private const val TAG = "MainApplication"
 

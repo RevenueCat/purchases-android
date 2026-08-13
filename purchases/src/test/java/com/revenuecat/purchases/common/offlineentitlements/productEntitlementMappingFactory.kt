@@ -9,6 +9,6 @@ internal fun createProductEntitlementMapping(
         "com.revenuecat.foo_1" to ProductEntitlementMapping.Mapping("com.revenuecat.foo_1", "p1m", listOf("pro_1")),
         "com.revenuecat.foo_2" to ProductEntitlementMapping.Mapping("com.revenuecat.foo_2", null, listOf("pro_3")),
     ),
-    originalSource: HTTPResponseOriginalSource = HTTPResponseOriginalSource.MAIN,
+    originalSource: HTTPResponseOriginalSource? = HTTPResponseOriginalSource.MAIN,
     loadedFromCache: Boolean = false,
 ) = ProductEntitlementMapping(mappings, originalSource, loadedFromCache)

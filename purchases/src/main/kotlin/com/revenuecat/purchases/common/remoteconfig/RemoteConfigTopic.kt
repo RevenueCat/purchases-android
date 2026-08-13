@@ -12,5 +12,6 @@ internal enum class RemoteConfigTopic(val wireName: String) {
     Workflows("workflows"),
     UiConfig("ui_config"),
     Sources("sources"),
-    Checkpoints("checkpoints"),
+    CheckpointRules("checkpoint_rules"),
+    Audiences("audiences"),
 }

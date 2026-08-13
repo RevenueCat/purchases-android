@@ -107,7 +107,7 @@ internal class WorkflowManager(
         workflowsConfigProvider.resolveWorkflow(offeringId)
 
     /** See [WorkflowsConfigProvider.offeringIdByWorkflowId]. */
-    suspend fun offeringIdByWorkflowId(): Map<String, String?> =
+    suspend fun offeringIdByWorkflowId(): Map<String, String> =
         workflowsConfigProvider.offeringIdByWorkflowId()
 
     /**

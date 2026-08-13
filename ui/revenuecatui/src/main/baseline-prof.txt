@@ -262,6 +262,14 @@ HSPLcom/revenuecat/purchases/ui/revenuecatui/activity/PaywallContract;-><clinit>
 HSPLcom/revenuecat/purchases/ui/revenuecatui/activity/PaywallContract;-><init>()V
 Lcom/revenuecat/purchases/ui/revenuecatui/activity/PaywallResult;
 Lcom/revenuecat/purchases/ui/revenuecatui/activity/PaywallResultHandler;
+Lcom/revenuecat/purchases/ui/revenuecatui/checkpoints/CheckpointListener;
+Lcom/revenuecat/purchases/ui/revenuecatui/checkpoints/CheckpointsExtensionsKt;
+HSPLcom/revenuecat/purchases/ui/revenuecatui/checkpoints/CheckpointsExtensionsKt;->getCheckpointsManager(Lcom/revenuecat/purchases/Purchases;)Lcom/revenuecat/purchases/ui/revenuecatui/checkpoints/CheckpointsManager;
+HSPLcom/revenuecat/purchases/ui/revenuecatui/checkpoints/CheckpointsExtensionsKt;->setCheckpointListener(Lcom/revenuecat/purchases/Purchases;Lcom/revenuecat/purchases/ui/revenuecatui/checkpoints/CheckpointListener;)V
+Lcom/revenuecat/purchases/ui/revenuecatui/checkpoints/CheckpointsManager;
+HSPLcom/revenuecat/purchases/ui/revenuecatui/checkpoints/CheckpointsManager;-><clinit>()V
+HSPLcom/revenuecat/purchases/ui/revenuecatui/checkpoints/CheckpointsManager;-><init>()V
+HSPLcom/revenuecat/purchases/ui/revenuecatui/checkpoints/CheckpointsManager;->setCheckpointListener(Lcom/revenuecat/purchases/ui/revenuecatui/checkpoints/CheckpointListener;)V
 Lcom/revenuecat/purchases/ui/revenuecatui/composables/AdaptiveComposableKt;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/composables/AdaptiveComposableKt;->AdaptiveComposable$lambda$1(Landroidx/compose/runtime/MutableState;)I
 HSPLcom/revenuecat/purchases/ui/revenuecatui/composables/AdaptiveComposableKt;->AdaptiveComposable$lambda$14$lambda$12(Landroidx/compose/runtime/State;)I
@@ -746,7 +754,7 @@ HSPLcom/revenuecat/purchases/ui/revenuecatui/helpers/LocaleHelpersKt;->toLayoutD
 Lcom/revenuecat/purchases/ui/revenuecatui/helpers/Logger;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/helpers/Logger;-><clinit>()V
 HSPLcom/revenuecat/purchases/ui/revenuecatui/helpers/Logger;-><init>()V
-HSPLcom/revenuecat/purchases/ui/revenuecatui/helpers/Logger;->d(Ljava/lang/String;)V
+PLcom/revenuecat/purchases/ui/revenuecatui/helpers/Logger;->d(Ljava/lang/String;)V
 Lcom/revenuecat/purchases/ui/revenuecatui/helpers/NonEmptyList;
 Lcom/revenuecat/purchases/ui/revenuecatui/helpers/OfferingToStateMapperKt;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/helpers/OfferingToStateMapperKt;->toLegacyPaywallState(Lcom/revenuecat/purchases/Offering;Lcom/revenuecat/purchases/ui/revenuecatui/data/processed/VariableDataProvider;Lcom/revenuecat/purchases/ui/revenuecatui/PaywallMode;Lcom/revenuecat/purchases/paywalls/PaywallData;Lcom/revenuecat/purchases/ui/revenuecatui/data/processed/PaywallTemplate;ZLjava/lang/String;Lcom/revenuecat/purchases/ui/revenuecatui/helpers/PaywallWarning;)Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallState;
@@ -816,4 +824,3 @@ Lcom/revenuecat/purchases/ui/revenuecatui/templates/Template1Kt$HeaderImage$1$1$
 HSPLcom/revenuecat/purchases/ui/revenuecatui/templates/Template1Kt$HeaderImage$1$1$2$1;-><init>(I)V
 Lcom/revenuecat/purchases/ui/revenuecatui/templates/Template1Kt$Template1MainContent$2;
 HSPLcom/revenuecat/purchases/ui/revenuecatui/templates/Template1Kt$Template1MainContent$2;-><init>(Landroidx/compose/foundation/layout/ColumnScope;Lcom/revenuecat/purchases/ui/revenuecatui/data/PaywallState$Loaded$Legacy;I)V
-Lcom/revenuecat/purchases/ui/revenuecatui/workflow/WorkflowNavigator;
