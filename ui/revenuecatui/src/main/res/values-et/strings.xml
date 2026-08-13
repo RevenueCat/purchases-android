@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="OK">OK</string>
+    <string name="all_plans">Kõik tellimused</string>
+    <string name="privacy">Privaatsus</string>
+    <string name="privacy_policy">Privaatsuspoliitika</string>
+    <string name="restore">Taasta</string>
+    <string name="restore_purchases">Taasta ostud</string>
+    <string name="terms">Tingimused</string>
+    <string name="terms_and_conditions">Tingimused</string>
+    <string name="annual">Aastane</string>
+    <string name="semester">6 kuud</string>
+    <string name="quarter">3 kuud</string>
+    <string name="bimonthly">2 kuud</string>
+    <string name="monthly">Igakuine</string>
+    <string name="weekly">Iganädalane</string>
+    <string name="lifetime">Eluaegne</string>
+    <string name="package_discount">%1$d%% soodustust</string>
+    <string name="continue_cta">Jätka</string>
+    <string name="default_offer_details_with_intro_offer">Alusta oma {{ sub_offer_duration }} prooviperioodi, seejärel {{ total_price_and_per_month }}.</string>
+    <string name="no_browser_cannot_open_link">Brauserit pole installitud. Linki ei saanud avada.</string>
+    <string name="cannot_open_link">Vigane link. Ei saanud avada.</string>
+    <string name="revenuecatui_purchase">Osta</string>
+    <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+</resources>
