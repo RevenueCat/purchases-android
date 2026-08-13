@@ -5,6 +5,7 @@ import com.google.android.libraries.ads.mobile.sdk.common.AdValue
 import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError
 import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
@@ -62,16 +63,15 @@ internal abstract class TrackingAdEventCallback<CallbackT : AdEventCallback>(
     }
 
     override fun onAdClicked() {
-        trackIfConfigured {
-            val responseInfo = responseInfoProvider()
-            adTracker.trackFromAdapter(
+        track { networkName, impressionId ->
+            trackFromAdapter(
                 AdOpenedData(
-                    networkName = responseInfo.adapterClassName,
+                    networkName = networkName,
                     mediatorName = AdMediatorName.AD_MOB,
                     adFormat = adFormat,
                     placement = placement,
                     adUnitId = adUnitId,
-                    impressionId = responseInfo.responseId.orEmpty(),
+                    impressionId = impressionId,
                 ),
             )
         }
@@ -79,16 +79,15 @@ internal abstract class TrackingAdEventCallback<CallbackT : AdEventCallback>(
     }
 
     override fun onAdPaid(value: AdValue) {
-        trackIfConfigured {
-            val responseInfo = responseInfoProvider()
-            adTracker.trackFromAdapter(
+        track { networkName, impressionId ->
+            trackFromAdapter(
                 AdRevenueData(
-                    networkName = responseInfo.adapterClassName,
+                    networkName = networkName,
                     mediatorName = AdMediatorName.AD_MOB,
                     adFormat = adFormat,
                     placement = placement,
                     adUnitId = adUnitId,
-                    impressionId = responseInfo.responseId.orEmpty(),
+                    impressionId = impressionId,
                     revenueMicros = value.valueMicros,
                     currency = value.currencyCode,
                     precision = value.precisionType.toAdRevenuePrecision(),
@@ -99,18 +98,30 @@ internal abstract class TrackingAdEventCallback<CallbackT : AdEventCallback>(
     }
 
     private fun trackAdDisplayed() {
-        trackIfConfigured {
-            val responseInfo = responseInfoProvider()
-            adTracker.trackFromAdapter(
+        track { networkName, impressionId ->
+            trackFromAdapter(
                 AdDisplayedData(
-                    networkName = responseInfo.adapterClassName,
+                    networkName = networkName,
                     mediatorName = AdMediatorName.AD_MOB,
                     adFormat = adFormat,
                     placement = placement,
                     adUnitId = adUnitId,
-                    impressionId = responseInfo.responseId.orEmpty(),
+                    impressionId = impressionId,
                 ),
             )
+        }
+    }
+
+    /**
+     * Runs [trackEvent] against the ad tracker, skipping it when Purchases is not configured.
+     *
+     * Response info is resolved here rather than in each caller so that every tracked event reads
+     * it at event time, which is what keeps refreshing banners attributed to the creative on screen.
+     */
+    private inline fun track(trackEvent: AdTracker.(networkName: String?, impressionId: String) -> Unit) {
+        trackIfConfigured {
+            val responseInfo = responseInfoProvider()
+            adTracker.trackEvent(responseInfo.adapterClassName, responseInfo.responseId.orEmpty())
         }
     }
 }
