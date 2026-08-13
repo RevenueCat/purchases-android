@@ -1,1 +1,19 @@
 // Signature format: 4.0
+package com.revenuecat.purchases.admob.nextgen {
+
+  public final class AdTrackerAdMobExtensionsKt {
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackBannerAd(com.revenuecat.purchases.ads.events.AdTracker, com.google.android.libraries.ads.mobile.sdk.banner.AdView adView, com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRequest adRequest, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback<com.google.android.libraries.ads.mobile.sdk.banner.BannerAd>? loadCallback, optional com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback? adEventCallback, optional com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback? bannerAdRefreshCallback);
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackInterstitialAd(com.revenuecat.purchases.ads.events.AdTracker, com.google.android.libraries.ads.mobile.sdk.common.AdRequest adRequest, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback<com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd>? loadCallback, optional com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback? adEventCallback);
+  }
+
+  public final class AdViewExtensionsKt {
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackAd(com.google.android.libraries.ads.mobile.sdk.banner.AdView, com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRequest adRequest, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback<com.google.android.libraries.ads.mobile.sdk.banner.BannerAd>? loadCallback, optional com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback? adEventCallback, optional com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback? bannerAdRefreshCallback);
+  }
+
+  public final class InterstitialAdExtensionsKt {
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingAdEventCallback(com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd, com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback? callback);
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd, android.app.Activity activity, String? placement);
+  }
+
+}
+
