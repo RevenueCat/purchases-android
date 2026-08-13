@@ -111,4 +111,42 @@ class PaywallActivityTest {
         assertThat(scenario.state).isEqualTo(Lifecycle.State.DESTROYED)
         assertThat(viewModel.state.value).isEqualTo(PaywallState.Loading)
     }
+
+    @Test
+    fun `activity configuration change retains loaded paywall without reloading`() {
+        val offeringSelection = OfferingSelection.IdAndPresentedOfferingContext(
+            offeringId = TestData.template1Offering.identifier,
+            presentedOfferingContext = null,
+        )
+        val args = PaywallActivityArgs(offeringIdAndPresentedOfferingContext = offeringSelection)
+        val intent = Intent(
+            ApplicationProvider.getApplicationContext<Context>(),
+            PaywallActivity::class.java,
+        ).putExtra(PaywallActivity.ARGS_EXTRA, args)
+        val viewModelKey = PaywallOptions.Builder(dismissRequest = {})
+            .setOfferingSelection(offeringSelection)
+            .setShouldDisplayDismissButton(DEFAULT_DISPLAY_DISMISS_BUTTON)
+            .build()
+            .hashCode()
+            .toString()
+        lateinit var retainedViewModel: PaywallViewModelImpl
+        lateinit var renderedState: PaywallState
+
+        val scenario = launchActivity<PaywallActivity>(intent)
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+        scenario.onActivity { activity ->
+            retainedViewModel = ViewModelProvider(activity).get(viewModelKey, PaywallViewModelImpl::class.java)
+            renderedState = retainedViewModel.state.value
+            assertThat(renderedState).isInstanceOf(PaywallState.Loaded::class.java)
+        }
+
+        scenario.recreate()
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+
+        scenario.onActivity { activity ->
+            val recreatedViewModel = ViewModelProvider(activity).get(viewModelKey, PaywallViewModelImpl::class.java)
+            assertThat(recreatedViewModel).isSameAs(retainedViewModel)
+            assertThat(recreatedViewModel.state.value).isSameAs(renderedState)
+        }
+    }
 }
