@@ -6,6 +6,7 @@
 package com.revenuecat.purchases.admob.nextgen.tracking
 
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
+import com.google.android.libraries.ads.mobile.sdk.common.AdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdValue
 import com.google.android.libraries.ads.mobile.sdk.common.PrecisionType
 import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
@@ -52,39 +53,77 @@ class TrackingAdEventCallbackTest {
         unmockkObject(Purchases)
     }
 
+    /**
+     * The six format callbacks differ only in the [AdFormat] and [AdDisplayedTrigger] they hand to
+     * the base class, so a copy-paste slip is the likely failure. Driving all of them here catches
+     * both a wrong format and a wrong trigger, the latter of which would double-count displays for
+     * full-screen formats since the SDK fires onAdImpression alongside onAdShowedFullScreenContent.
+     */
     @Test
-    fun `banner ignores full screen show and tracks display from impression`() {
-        val callback = TrackingBannerAdEventCallback(null, "home", "ad-unit") { responseInfo }
+    fun `each format tracks display from its own trigger only`() {
+        displayTrackingCases().forEach { case ->
+            val caseTracker = mockk<AdTracker>(relaxed = true)
+            every { purchases.adTracker } returns caseTracker
+            val callback = case.create { responseInfo }
 
-        callback.onAdShowedFullScreenContent()
+            when (case.displayTrigger) {
+                AdDisplayedTrigger.IMPRESSION -> callback.onAdShowedFullScreenContent()
+                AdDisplayedTrigger.FULL_SCREEN_SHOW -> callback.onAdImpression()
+            }
 
-        verify(exactly = 0) { adTracker.trackAdDisplayed(any(), any()) }
+            verify(exactly = 0) { caseTracker.trackAdDisplayed(any(), any()) }
 
-        callback.onAdImpression()
+            when (case.displayTrigger) {
+                AdDisplayedTrigger.IMPRESSION -> callback.onAdImpression()
+                AdDisplayedTrigger.FULL_SCREEN_SHOW -> callback.onAdShowedFullScreenContent()
+            }
 
-        val trackedData = slot<AdDisplayedData>()
-        verify(exactly = 1) {
-            adTracker.trackAdDisplayed(capture(trackedData), AdCaptureMethod.ADAPTER)
+            val trackedData = slot<AdDisplayedData>()
+            verify(exactly = 1) {
+                caseTracker.trackAdDisplayed(capture(trackedData), AdCaptureMethod.ADAPTER)
+            }
+            assertEquals(case.description, case.adFormat, trackedData.captured.adFormat)
         }
-        assertEquals(AdFormat.BANNER, trackedData.captured.adFormat)
     }
 
     @Test
-    fun `full screen ad ignores impression and tracks display from show`() {
-        val callback = TrackingInterstitialAdEventCallback(null, "home", "ad-unit") { responseInfo }
+    fun `display tracking covers every format callback`() {
+        val covered = displayTrackingCases().map { it.create { responseInfo }.javaClass }.toSet()
 
-        callback.onAdImpression()
-
-        verify(exactly = 0) { adTracker.trackAdDisplayed(any(), any()) }
-
-        callback.onAdShowedFullScreenContent()
-
-        val trackedData = slot<AdDisplayedData>()
-        verify(exactly = 1) {
-            adTracker.trackAdDisplayed(capture(trackedData), AdCaptureMethod.ADAPTER)
-        }
-        assertEquals(AdFormat.INTERSTITIAL, trackedData.captured.adFormat)
+        assertEquals(trackingEventCallbacksBySdkInterface.values.toSet(), covered)
     }
+
+    private class DisplayTrackingCase(
+        val description: String,
+        val adFormat: AdFormat,
+        val displayTrigger: AdDisplayedTrigger,
+        val create: (() -> ResponseInfo) -> AdEventCallback,
+    )
+
+    private fun displayTrackingCases() = listOf(
+        DisplayTrackingCase("banner", AdFormat.BANNER, AdDisplayedTrigger.IMPRESSION) {
+            TrackingBannerAdEventCallback(null, "home", "ad-unit", it)
+        },
+        DisplayTrackingCase("native", AdFormat.NATIVE, AdDisplayedTrigger.IMPRESSION) {
+            TrackingNativeAdEventCallback(null, "home", "ad-unit", it)
+        },
+        DisplayTrackingCase("interstitial", AdFormat.INTERSTITIAL, AdDisplayedTrigger.FULL_SCREEN_SHOW) {
+            TrackingInterstitialAdEventCallback(null, "home", "ad-unit", it)
+        },
+        DisplayTrackingCase("app open", AdFormat.APP_OPEN, AdDisplayedTrigger.FULL_SCREEN_SHOW) {
+            TrackingAppOpenAdEventCallback(null, "home", "ad-unit", it)
+        },
+        DisplayTrackingCase("rewarded", AdFormat.REWARDED, AdDisplayedTrigger.FULL_SCREEN_SHOW) {
+            TrackingRewardedAdEventCallback(null, "home", "ad-unit", it)
+        },
+        DisplayTrackingCase(
+            "rewarded interstitial",
+            AdFormat.REWARDED_INTERSTITIAL,
+            AdDisplayedTrigger.FULL_SCREEN_SHOW,
+        ) {
+            TrackingRewardedInterstitialAdEventCallback(null, "home", "ad-unit", it)
+        },
+    )
 
     @Test
     fun `tracks click before forwarding callback`() {
