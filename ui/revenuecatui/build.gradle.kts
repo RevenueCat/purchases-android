@@ -88,8 +88,6 @@ tasks.withType<KotlinCompile>().configureEach {
 
 dependencies {
     api(project(":purchases"))
-    // PaddingValues and BoxScope appear in this module's public API, so the BOM that versions
-    // them has to be exported too: without it the published api variant has no version for them.
     api(platform(libs.compose.bom))
     api(libs.compose.foundation.layout)
 
