@@ -4,10 +4,11 @@ import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
 
 /**
- * A value type for custom paywall variables that can be passed to paywalls at runtime.
+ * A value type for custom variables that can be passed to RevenueCat UI at runtime.
  *
- * Custom variables allow developers to personalize paywall text with dynamic values.
- * Variables are defined in the RevenueCat dashboard and can be overridden at runtime.
+ * Custom variables allow developers to personalize paywall content with dynamic values, and supply the values a
+ * checkpoint's targeting rules are evaluated against. Variables are defined in the RevenueCat dashboard and can be
+ * overridden at runtime.
  *
  * ### Usage
  * ```kotlin
@@ -28,6 +29,20 @@ import kotlinx.parcelize.Parcelize
 public abstract class CustomVariableValue internal constructor() : Parcelable {
 
     /**
+     * Maps the underlying value, one lambda per variant.
+     *
+     * Abstract on purpose: a new variant has to implement it, so it can't silently be handled as one of the
+     * existing ones. Callers get a total function without an unreachable `else` branch. Kotlin can't offer that
+     * through a `when` here, since this class is not sealed — and it can't become sealed without breaking
+     * consumers' exhaustive `when`s.
+     */
+    internal abstract fun <T> map(
+        string: (kotlin.String) -> T,
+        number: (kotlin.Double) -> T,
+        boolean: (kotlin.Boolean) -> T,
+    ): T
+
+    /**
      * A string value.
      */
     @Parcelize
@@ -38,6 +53,12 @@ public abstract class CustomVariableValue internal constructor() : Parcelable {
         override fun hashCode(): Int = value.hashCode()
 
         override fun toString(): kotlin.String = "CustomVariableValue.String(value=$value)"
+
+        override fun <T> map(
+            string: (kotlin.String) -> T,
+            number: (kotlin.Double) -> T,
+            boolean: (kotlin.Boolean) -> T,
+        ): T = string(value)
     }
 
     /**
@@ -55,6 +76,12 @@ public abstract class CustomVariableValue internal constructor() : Parcelable {
         override fun hashCode(): Int = value.hashCode()
 
         override fun toString(): kotlin.String = "CustomVariableValue.Number(value=$value)"
+
+        override fun <T> map(
+            string: (kotlin.String) -> T,
+            number: (kotlin.Double) -> T,
+            boolean: (kotlin.Boolean) -> T,
+        ): T = number(value)
     }
 
     /**
@@ -68,25 +95,24 @@ public abstract class CustomVariableValue internal constructor() : Parcelable {
         override fun hashCode(): Int = value.hashCode()
 
         override fun toString(): kotlin.String = "CustomVariableValue.Boolean(value=$value)"
+
+        override fun <T> map(
+            string: (kotlin.String) -> T,
+            number: (kotlin.Double) -> T,
+            boolean: (kotlin.Boolean) -> T,
+        ): T = boolean(value)
     }
 
     /**
      * The string representation of this value for use in paywall text replacement.
      */
     public val stringValue: kotlin.String
-        get() = when (this) {
-            is String -> value
-            is Number -> {
-                // Format nicely: 100.0 -> "100", 99.99 -> "99.99"
-                if (value % 1.0 == 0.0) {
-                    value.toLong().toString()
-                } else {
-                    value.toString()
-                }
-            }
-            is Boolean -> value.toString()
-            else -> error("Unknown CustomVariableValue type")
-        }
+        get() = map(
+            string = { it },
+            // Format nicely: 100.0 -> "100", 99.99 -> "99.99"
+            number = { if (it % 1.0 == 0.0) it.toLong().toString() else it.toString() },
+            boolean = { it.toString() },
+        )
 
     internal companion object {
         fun from(value: Any): CustomVariableValue = when (value) {

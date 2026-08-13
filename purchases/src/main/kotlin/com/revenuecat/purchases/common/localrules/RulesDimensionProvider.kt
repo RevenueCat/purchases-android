@@ -1,5 +1,8 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.common.localrules
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import java.util.Date
 
 /**
@@ -14,19 +17,6 @@ internal enum class RulesDimensionNamespace(val key: String) {
     /** Values supplied by the caller for one evaluation; see [LocalRulesEvaluator.match]. */
     Custom("custom"),
     Device("device"),
-}
-
-/**
- * A scalar exposed to the rules engine.
- *
- * Keeps providers independent from the engine's own value representation, and encodes that a dimension is a
- * scalar: arrays and objects are deliberately not expressible yet.
- */
-internal sealed class RulesDimensionValue {
-    internal data class StringValue(val value: String) : RulesDimensionValue()
-    internal data class BoolValue(val value: Boolean) : RulesDimensionValue()
-    internal data class IntValue(val value: Long) : RulesDimensionValue()
-    internal data class DoubleValue(val value: Double) : RulesDimensionValue()
 }
 
 /**

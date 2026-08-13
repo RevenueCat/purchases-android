@@ -10,6 +10,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.common.CustomVariableKeyValidator
 import com.revenuecat.purchases.common.checkpoints.CheckpointRule
 import com.revenuecat.purchases.common.checkpoints.CheckpointRulesResolution
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
@@ -17,7 +18,7 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.localrules.LocalRule
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
-import com.revenuecat.purchases.common.localrules.customVariableDimensions
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.WorkflowManager
@@ -47,7 +48,10 @@ internal class CheckpointWorkflowResolverImpl(
     private val audiencePredicate: String = PLACEHOLDER_AUDIENCE_PREDICATE,
 ) : CheckpointWorkflowResolver {
 
-    override suspend fun resolve(identifier: String, customVariables: Map<String, Any>): CheckpointResolution {
+    override suspend fun resolve(
+        identifier: String,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): CheckpointResolution {
         if (identifier == SIMULATED_ERROR_CHECKPOINT_ID) {
             val error = PurchasesError(
                 PurchasesErrorCode.ConfigurationError,
@@ -62,7 +66,7 @@ internal class CheckpointWorkflowResolverImpl(
     @Suppress("ReturnCount")
     private suspend fun resolveConfiguredWorkflow(
         identifier: String,
-        customVariables: Map<String, Any>,
+        customVariables: Map<String, RulesDimensionValue>,
     ): CheckpointResolution {
         if (workflowManager == null || uiConfigProvider == null || checkpointsConfigProvider == null) {
             return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.DISABLED)
@@ -77,7 +81,7 @@ internal class CheckpointWorkflowResolverImpl(
         }
         val matchResult = localRulesEvaluator.match(
             rules = checkpoint.rules.map { rule -> AudienceRule(rule, audiencePredicate) },
-            customVariables = customVariableDimensions(customVariables),
+            customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables),
         )
         // An audience the SDK failed to evaluate is not the same answer as an audience the customer is outside of,
         // so it can't report NO_MATCH.
