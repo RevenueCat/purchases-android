@@ -6,8 +6,11 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdTracker
+import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
+import com.revenuecat.purchases.ads.events.types.AdOpenedData
+import com.revenuecat.purchases.ads.events.types.AdRevenueData
 
 /**
  * Adapter-internal wrappers around the public [AdTracker] `trackAd*` API that stamp
@@ -16,6 +19,15 @@ import com.revenuecat.purchases.ads.events.types.AdLoadedData
  */
 internal fun AdTracker.trackFromAdapter(data: AdLoadedData) =
     trackAdLoaded(data, AdCaptureMethod.ADAPTER)
+
+internal fun AdTracker.trackFromAdapter(data: AdDisplayedData) =
+    trackAdDisplayed(data, AdCaptureMethod.ADAPTER)
+
+internal fun AdTracker.trackFromAdapter(data: AdOpenedData) =
+    trackAdOpened(data, AdCaptureMethod.ADAPTER)
+
+internal fun AdTracker.trackFromAdapter(data: AdRevenueData) =
+    trackAdRevenue(data, AdCaptureMethod.ADAPTER)
 
 internal fun AdTracker.trackFromAdapter(data: AdFailedToLoadData) =
     trackAdFailedToLoad(data, AdCaptureMethod.ADAPTER)
