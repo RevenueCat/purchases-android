@@ -20,7 +20,9 @@ import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.slot
+import io.mockk.unmockkObject
 import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -34,12 +36,14 @@ class TrackingAdLoadCallbackTest {
     @Before
     fun setUp() {
         every { purchases.adTracker } returns adTracker
-        PurchasesTestHelper.setSharedInstance(purchases)
+        mockkObject(Purchases)
+        every { Purchases.isConfigured } returns true
+        every { Purchases.sharedInstance } returns purchases
     }
 
     @After
     fun tearDown() {
-        PurchasesTestHelper.setSharedInstance(null)
+        unmockkObject(Purchases)
     }
 
     @Test
@@ -120,7 +124,7 @@ class TrackingAdLoadCallbackTest {
 
     @Test
     fun `still configures and delegates when Purchases is not configured`() {
-        PurchasesTestHelper.setSharedInstance(null)
+        every { Purchases.isConfigured } returns false
         val ad = mockk<Ad>()
         every { ad.getResponseInfo() } returns responseInfo("test-network", "response-id")
         val order = mutableListOf<String>()

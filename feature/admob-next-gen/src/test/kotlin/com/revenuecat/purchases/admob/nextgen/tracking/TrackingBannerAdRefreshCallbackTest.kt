@@ -19,7 +19,9 @@ import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.slot
+import io.mockk.unmockkObject
 import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -34,12 +36,14 @@ class TrackingBannerAdRefreshCallbackTest {
     @Before
     fun setUp() {
         every { purchases.adTracker } returns adTracker
-        PurchasesTestHelper.setSharedInstance(purchases)
+        mockkObject(Purchases)
+        every { Purchases.isConfigured } returns true
+        every { Purchases.sharedInstance } returns purchases
     }
 
     @After
     fun tearDown() {
-        PurchasesTestHelper.setSharedInstance(null)
+        unmockkObject(Purchases)
     }
 
     @Test
@@ -118,7 +122,7 @@ class TrackingBannerAdRefreshCallbackTest {
 
     @Test
     fun `still delegates refresh when Purchases is not configured`() {
-        PurchasesTestHelper.setSharedInstance(null)
+        every { Purchases.isConfigured } returns false
         var delegated = false
         val callback = TrackingBannerAdRefreshCallback(
             delegate = object : BannerAdRefreshCallback {
