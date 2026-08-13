@@ -26,6 +26,7 @@ import io.mockk.unmockkObject
 import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
 
@@ -91,6 +92,7 @@ class TrackingAdLoadCallbackTest {
         val error = mockk<LoadAdError>()
         every { error.code } returns LoadAdError.ErrorCode.NOT_FOUND
         var delegatedError: LoadAdError? = null
+        var configured = false
         val callback = TrackingAdLoadCallback<Ad>(
             delegate = object : AdLoadCallback<Ad> {
                 override fun onAdFailedToLoad(adError: LoadAdError) {
@@ -100,7 +102,7 @@ class TrackingAdLoadCallbackTest {
             adFormat = AdFormat.INTERSTITIAL,
             placement = null,
             adUnitId = "ad-unit",
-            configureAd = {},
+            configureAd = { configured = true },
         )
 
         callback.onAdFailedToLoad(error)
@@ -120,6 +122,7 @@ class TrackingAdLoadCallbackTest {
             trackedData.captured,
         )
         assertEquals(error, delegatedError)
+        assertFalse("configureAd must not run for an ad that never loaded", configured)
     }
 
     @Test
