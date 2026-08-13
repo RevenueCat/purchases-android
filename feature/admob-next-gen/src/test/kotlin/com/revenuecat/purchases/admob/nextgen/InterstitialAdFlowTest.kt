@@ -21,6 +21,7 @@ import io.mockk.slot
 import io.mockk.unmockkObject
 import io.mockk.verify
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -81,7 +82,7 @@ class InterstitialAdFlowTest {
         assertTrue(replacementEventCallback.appEventCalled)
 
         interstitialAd.show(activity, "show-placement")
-        assertSame("show-placement", trackingCallback.placement)
+        assertEquals("show-placement", trackingCallback.placement)
         verify(exactly = 1) { interstitialAd.show(activity) }
     }
 
