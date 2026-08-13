@@ -14,20 +14,23 @@ import com.revenuecat.purchases.common.checkpoints.CheckpointRulesResolution
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.localrules.LocalRule
+import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 
 /**
- * Resolves a checkpoint through the `checkpoint_rules` topic: the checkpoint's rules are read from remote
- * config, and the first one that resolves to a presentable workflow wins. Rules arrive ordered, and walking them
- * in order is the placeholder for the audience evaluation that will eventually pick the first rule whose
- * `audience_id` matches this customer — until then the order the dashboard published is the only signal.
+ * Resolves a checkpoint through the `checkpoint_rules` topic: the checkpoint's rules are read from remote config
+ * and evaluated in order against locally collected dimensions, and the first rule whose audience matches wins.
  *
- * A rule is skipped when its workflow can't be served (no offering configured for it, that offering absent from
- * the fetched offerings, or its body unavailable), mirroring the "unservable outcome → next rule" rule the
- * evaluator will keep. The shared reads a presentation needs — `ui_config` and offerings — happen once, outside
- * the walk, since a failure there is not specific to any rule.
+ * The winner is final. If its workflow turns out to be unservable — no offering configured for it, that offering
+ * absent from the fetched offerings, or its body unavailable — the checkpoint resolves to
+ * [CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE] rather than falling through to a rule the
+ * customer was not the first choice for.
+ *
+ * Audience predicates are not served yet, so every rule currently carries [PLACEHOLDER_AUDIENCE_PREDICATE] and the
+ * published order remains the effective signal; see [AudienceRule].
  *
  * [SIMULATED_ERROR_CHECKPOINT_ID] is the one piece of PoC scaffolding left: it is the only way for the tester
  * apps to exercise the throw path, since nothing in the config-driven path throws.
@@ -36,6 +39,7 @@ internal class CheckpointWorkflowResolverImpl(
     private val workflowManager: WorkflowManager?,
     private val uiConfigProvider: UiConfigProvider?,
     private val checkpointsConfigProvider: CheckpointsConfigProvider?,
+    private val localRulesEvaluator: LocalRulesEvaluator,
     private val getOfferings: suspend () -> Offerings,
 ) : CheckpointWorkflowResolver {
 
@@ -64,23 +68,18 @@ internal class CheckpointWorkflowResolverImpl(
             CheckpointRulesResolution.Unavailable ->
                 return configurationUnavailable("The rules for checkpoint '$identifier' could not be read.")
         }
-        if (checkpoint.rules.isEmpty()) return noMatch(identifier)
+        val matchResult = localRulesEvaluator.match(checkpoint.rules.map { rule -> AudienceRule(rule) })
+        // An audience the SDK failed to evaluate is not the same answer as an audience the customer is outside of,
+        // so it can't report NO_MATCH.
+        val rule = matchResult.getOrElse { error ->
+            return configurationUnavailable(
+                "The audiences for checkpoint '$identifier' could not be evaluated: ${error.message}",
+            )
+        }?.checkpointRule ?: return noMatch(identifier)
 
-        // A rule whose workflow has no offering can never be served, so filtering on the workflow index first
-        // keeps an entirely unservable checkpoint from also triggering an offerings fetch.
-        val offeringIdByWorkflowId = workflowManager.offeringIdByWorkflowId()
-        val candidates = checkpoint.rules.mapNotNull { rule ->
-            val offeringId = offeringIdByWorkflowId[rule.workflowId]
-            if (offeringId == null) {
-                logSkippedRule(rule, "no offering is mapped to it in the workflows topic")
-                null
-            } else {
-                rule to offeringId
-            }
-        }
-        if (candidates.isEmpty()) {
-            return configurationUnavailable("No rule for checkpoint '$identifier' points at a servable workflow.")
-        }
+        // Resolved before ui_config and offerings so an unservable winner doesn't also trigger an offerings fetch.
+        val offeringId = workflowManager.offeringIdByWorkflowId()[rule.workflowId]
+            ?: return unservableRule(rule, "no offering is mapped to it in the workflows topic")
         val uiConfig = uiConfigProvider.getUiConfig()
             ?: return configurationUnavailable("UI config is unavailable for checkpoint '$identifier'.")
         val offerings = try {
@@ -90,9 +89,7 @@ internal class CheckpointWorkflowResolverImpl(
                 "Offerings could not be fetched for checkpoint '$identifier': ${e.error}",
             )
         }
-        return candidates.firstNotNullOfOrNull { (rule, offeringId) ->
-            resolveRule(workflowManager, rule, offeringId, offerings, uiConfig)
-        } ?: configurationUnavailable("No rule for checkpoint '$identifier' resolved to a presentable workflow.")
+        return resolveRule(workflowManager, rule, offeringId, offerings, uiConfig)
     }
 
     @Suppress("ReturnCount")
@@ -102,17 +99,13 @@ internal class CheckpointWorkflowResolverImpl(
         offeringId: String,
         offerings: Offerings,
         uiConfig: UiConfig,
-    ): CheckpointResolution.Workflow? {
+    ): CheckpointResolution {
         val offering: Offering = offerings.all[offeringId]
-            ?: run {
-                logSkippedRule(rule, "offering '$offeringId' was not found in offerings")
-                return null
-            }
+            ?: return unservableRule(rule, "offering '$offeringId' was not found in offerings")
         val workflow = try {
             workflowManager.getWorkflow(rule.workflowId)
         } catch (e: PurchasesException) {
-            logSkippedRule(rule, "it could not be loaded: ${e.error}")
-            return null
+            return unservableRule(rule, "it could not be loaded: ${e.error}")
         }
         debugLog {
             "Checkpoint resolved to workflow '${rule.workflowId}' (offering: ${offering.identifier})"
@@ -120,8 +113,9 @@ internal class CheckpointWorkflowResolverImpl(
         return CheckpointResolution.Workflow(workflow, uiConfig, offering)
     }
 
-    private fun logSkippedRule(rule: CheckpointRule, reason: String) {
-        warnLog { "Skipping checkpoint rule for workflow '${rule.workflowId}': $reason." }
+    private fun unservableRule(rule: CheckpointRule, reason: String): CheckpointResolution.NoAction {
+        warnLog { "The matched checkpoint rule for workflow '${rule.workflowId}' can't be served: $reason." }
+        return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
     }
 
     private fun configurationUnavailable(message: String): CheckpointResolution.NoAction {
@@ -135,11 +129,21 @@ internal class CheckpointWorkflowResolverImpl(
     }
 
     private fun noMatch(identifier: String): CheckpointResolution.NoAction {
-        debugLog { "Checkpoint '$identifier' is configured, but has no rules." }
+        debugLog { "No rule for checkpoint '$identifier' matched." }
         return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH)
+    }
+
+    /**
+     * Pairs a checkpoint rule with the predicate its audience stands for. Audience predicates will arrive in their
+     * own remote-config topic, whose shape is not settled, so until then every audience matches and the rules are
+     * effectively still walked in published order.
+     */
+    private class AudienceRule(val checkpointRule: CheckpointRule) : LocalRule {
+        override val predicate: String = PLACEHOLDER_AUDIENCE_PREDICATE
     }
 
     private companion object {
         const val SIMULATED_ERROR_CHECKPOINT_ID = "error_checkpoint"
+        const val PLACEHOLDER_AUDIENCE_PREDICATE = "true"
     }
 }

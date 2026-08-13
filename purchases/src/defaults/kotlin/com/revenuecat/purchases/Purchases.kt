@@ -1363,11 +1363,6 @@ public class Purchases internal constructor(
         @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
         internal var serviceDispatcher: PurchasesServiceDispatcher = PurchasesServices.default()
 
-        @InternalRevenueCatAPI
-        public fun getImageLoader(context: Context): Any {
-            return PurchasesOrchestrator.getImageLoader(context)
-        }
-
         /**
          * Given an intent, parses the associated link if any and returns a [WebPurchaseRedemption], which can
          * be used to redeem a web purchase using [Purchases.redeemWebPurchase]
