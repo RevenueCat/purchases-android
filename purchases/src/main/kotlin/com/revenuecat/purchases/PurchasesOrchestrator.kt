@@ -181,7 +181,8 @@ internal class PurchasesOrchestrator(
     private val uiConfigProvider: UiConfigProvider? = null,
     private val workflowsConfigProvider: WorkflowsConfigProvider? = null,
     private val checkpointsConfigProvider: CheckpointsConfigProvider? = null,
-    private val audiencesConfigProvider: AudiencesConfigProvider? = null,
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val audiencesConfigProvider: AudiencesConfigProvider? = null,
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
     private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
