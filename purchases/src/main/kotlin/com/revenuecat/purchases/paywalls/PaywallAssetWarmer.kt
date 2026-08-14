@@ -15,4 +15,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 public interface PaywallAssetWarmer {
 
     public fun warmImages(context: Context, imageUris: List<Uri>)
+
+    /** Starts the WebView engine, so the first `web_view` render does not pay for it on the UI thread. */
+    public fun prebootWebView(context: Context)
 }
