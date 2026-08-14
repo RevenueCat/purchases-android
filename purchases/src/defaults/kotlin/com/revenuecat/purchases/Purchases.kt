@@ -79,6 +79,7 @@ import com.revenuecat.purchases.VerifiedReward as CoreVerifiedReward
  * guide to setup your RevenueCat account.
  * @warning Only one instance of Purchases should be instantiated at a time!
  */
+@Suppress("LargeClass")
 public class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
 ) : LifecycleDelegate {

@@ -74,7 +74,6 @@
     <ID>ForbiddenPublicSealedClass:PurchaseLogic.kt$PurchaseLogicResult</ID>
     <ID>ForbiddenPublicSealedClass:Purchases.kt$Purchases$DeepLink</ID>
     <ID>ForbiddenPublicSealedClass:RedeemWebPurchaseListener.kt$RedeemWebPurchaseListener$Result</ID>
-    <ID>LargeClass:Purchases.kt$Purchases : LifecycleDelegate</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$120</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$20</ID>
     <ID>MagicNumber:SampleWeatherData.kt$SampleWeatherData.Companion$32</ID>
