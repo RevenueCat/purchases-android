@@ -108,6 +108,39 @@ class LocalRulesEvaluatorTest {
     }
 
     @Test
+    fun `a predicate reading a custom variable matches`() = runTest {
+        val rules = listOf(TestRule("only", """{"==": [{"var": "custom.source"}, "settings"]}"""))
+
+        assertThat(
+            evaluator().match(rules, mapOf("source" to RulesDimensionValue.StringValue("settings")))
+                .getOrThrow()?.name,
+        ).isEqualTo("only")
+        assertThat(
+            evaluator().match(rules, mapOf("source" to RulesDimensionValue.StringValue("other")))
+                .getOrThrow(),
+        ).isNull()
+        assertThat(evaluator().match(rules).getOrThrow()).isNull()
+    }
+
+    @Test
+    fun `custom variables and ambient dimensions are visible in the same call`() = runTest {
+        val rules = listOf(
+            TestRule(
+                "only",
+                """{"and": [
+                    {"==": [{"var": "device.platform"}, "android"]},
+                    {"==": [{"var": "custom.source"}, "settings"]}
+                ]}""",
+            ),
+        )
+
+        val matched = evaluator()
+            .match(rules, mapOf("source" to RulesDimensionValue.StringValue("settings")))
+
+        assertThat(matched.getOrThrow()?.name).isEqualTo("only")
+    }
+
+    @Test
     fun `dimensions are collected once per call regardless of rule count`() = runTest {
         evaluator().match(
             listOf(

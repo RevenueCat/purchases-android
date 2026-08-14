@@ -74,6 +74,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.serialization.json.JsonArray
@@ -467,10 +468,11 @@ class PaywallViewModelWorkflowTest {
     }
 
     private fun createVm(
+        dismissRequest: () -> Unit = {},
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
         listener: PaywallListener? = null,
     ): PaywallViewModelImpl {
-        val builder = PaywallOptions.Builder(dismissRequest = {})
+        val builder = PaywallOptions.Builder(dismissRequest = dismissRequest)
         dismissRequestWithExitOffering?.let { builder.setDismissRequestWithExitOffering(it) }
         listener?.let { builder.setListener(it) }
         return PaywallViewModelImpl(
@@ -1375,7 +1377,68 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `impression after closePaywall reuse does not carry stale workflowId`() {
+    fun `dismissed retained ViewModel resets to Loading then reopens at initial step`() = runTest {
+        coEvery { purchases.resolveWorkflow(offeringId) } returns WorkflowResolution.Found(workflow.id)
+        coEvery { purchases.awaitGetWorkflow(workflow.id) } returns workflow
+        coEvery { purchases.awaitGetUiConfig() } returns uiConfig
+
+        val vm = createVm()
+        advanceUntilIdle()
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-2")
+        val renderedState = vm.state.value
+
+        vm.closePaywall(result = null)
+        assertThat(vm.state.value).isSameAs(renderedState)
+
+        vm.onPaywallDismissed()
+        assertThat(vm.state.value).isEqualTo(PaywallState.Loading)
+
+        vm.onPaywallPresented()
+        advanceUntilIdle()
+
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+    }
+
+    @Test
+    fun `refresh requested during teardown cannot overwrite Loading after disposal`() = runTest {
+        val refreshGate = CompletableDeferred<Unit>()
+        coEvery { purchases.awaitOfferings() } coAnswers {
+            refreshGate.await()
+            Offerings(
+                current = TestData.template1Offering,
+                all = mapOf(TestData.template1Offering.identifier to TestData.template1Offering),
+            )
+        }
+        val vm = PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = PaywallOptions.Builder(dismissRequest = {})
+                .setOffering(TestData.template1Offering)
+                .build(),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            backgroundDispatcher = testDispatcher,
+        )
+        advanceUntilIdle()
+        assertThat(vm.state.value).isInstanceOf(PaywallState.Loaded::class.java)
+
+        vm.closePaywall(result = null)
+        vm.updateOptions(PaywallOptions.Builder(dismissRequest = {}).build())
+        runCurrent()
+        vm.onPaywallDismissed()
+
+        assertThat(vm.state.value).isEqualTo(PaywallState.Loading)
+        refreshGate.complete(Unit)
+        advanceUntilIdle()
+        assertThat(vm.state.value).isEqualTo(PaywallState.Loading)
+    }
+
+    @Test
+    fun `impression is not tracked from stale state after closePaywall`() {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
 
@@ -1389,8 +1452,7 @@ class PaywallViewModelWorkflowTest {
 
         val impressions = captured.filterIsInstance<PaywallEvent>()
             .filter { it.type == PaywallEventType.IMPRESSION }
-        assertThat(impressions).isNotEmpty()
-        assertThat(impressions.first().data.workflowId).isNull()
+        assertThat(impressions).isEmpty()
     }
 
     @Test
@@ -1408,8 +1470,9 @@ class PaywallViewModelWorkflowTest {
         vm.closePaywall(result = null)
         captured.clear()
 
-        // After close, simulate the VM being reused: navigate to step-2 (paywall step) via a new
-        // workflow presentation and verify impression is tracked normally (not suppressed by stale state).
+        // After close, simulate the VM being re-presented at step-2 and verify impression is tracked normally
+        // (not suppressed by stale state).
+        vm.onPaywallPresented()
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
         vm.trackPaywallImpressionIfNeeded()
 
@@ -1750,6 +1813,94 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `RevenueCat purchase auto-dismiss starts a fresh paywall event session on re-presentation`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitPurchase(any()) } returns PurchaseResult(
+            storeTransaction = mockk<StoreTransaction>(),
+            customerInfo = mockk<CustomerInfo>(),
+        )
+
+        lateinit var vm: PaywallViewModelImpl
+        var stateWhenDismissRequested: PaywallState? = null
+        vm = createVm(
+            dismissRequest = {
+                stateWhenDismissRequested = vm.state.value
+                vm.onPaywallDismissed()
+            },
+        )
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        vm.trackPaywallImpressionIfNeeded()
+        val firstImpression = captured.filterIsInstance<PaywallEvent>()
+            .single { it.type == PaywallEventType.IMPRESSION }
+
+        vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
+        assertThat(stateWhenDismissRequested).isInstanceOf(PaywallState.Loaded::class.java)
+        assertThat(vm.state.value).isEqualTo(PaywallState.Loading)
+        vm.onPaywallPresented()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impressions).hasSize(2)
+        val secondImpression = impressions.last()
+        val secondStepStarted = captured.filterIsInstance<WorkflowEvent.StepStarted>().last()
+        assertThat(secondImpression.data.sessionIdentifier)
+            .isNotEqualTo(firstImpression.data.sessionIdentifier)
+        assertThat(secondImpression.data.workflowId).isEqualTo(fetchResult.id)
+        assertThat(secondImpression.data.stepId).isEqualTo("step-1")
+        assertThat(secondImpression.data.traceId).isEqualTo(secondStepStarted.traceId)
+        assertThat(secondImpression.data.traceId).isNotEqualTo(firstImpression.data.traceId)
+    }
+
+    @Test
+    fun `RevenueCat restore auto-dismiss starts a fresh paywall event session on re-presentation`() = runTest {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        coEvery { purchases.awaitRestore() } returns mockk<CustomerInfo>()
+        lateinit var vm: PaywallViewModelImpl
+        var stateWhenDismissRequested: PaywallState? = null
+        vm = PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = PaywallOptions.Builder(
+                dismissRequest = {
+                    stateWhenDismissRequested = vm.state.value
+                    vm.onPaywallDismissed()
+                },
+            ).build(),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = { false },
+            backgroundDispatcher = testDispatcher,
+        )
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        vm.trackPaywallImpressionIfNeeded()
+        val firstImpression = captured.filterIsInstance<PaywallEvent>()
+            .single { it.type == PaywallEventType.IMPRESSION }
+
+        vm.handleRestorePurchases()
+        assertThat(stateWhenDismissRequested).isInstanceOf(PaywallState.Loaded::class.java)
+        assertThat(vm.state.value).isEqualTo(PaywallState.Loading)
+        vm.onPaywallPresented()
+        vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>()
+            .filter { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impressions).hasSize(2)
+        val secondImpression = impressions.last()
+        val secondStepStarted = captured.filterIsInstance<WorkflowEvent.StepStarted>().last()
+        assertThat(secondImpression.data.sessionIdentifier)
+            .isNotEqualTo(firstImpression.data.sessionIdentifier)
+        assertThat(secondImpression.data.workflowId).isEqualTo(fetchResult.id)
+        assertThat(secondImpression.data.stepId).isEqualTo("step-1")
+        assertThat(secondImpression.data.traceId).isEqualTo(secondStepStarted.traceId)
+        assertThat(secondImpression.data.traceId).isNotEqualTo(firstImpression.data.traceId)
+    }
+
+    @Test
     fun `paywall impression traceId survives forward navigation within one presentation`() {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
@@ -1802,16 +1953,35 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `paywall impression outside a workflow presentation carries no traceId`() {
+    fun `paywall impression outside a workflow presentation carries no traceId`() = runTest {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
 
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
         vm.trackPaywallImpressionIfNeeded()
+        val renderedWorkflowOffering = (vm.state.value as PaywallState.Loaded.Components).offering
         vm.closePaywall(result = null)
         captured.clear()
 
+        val standaloneOffering = Offering(
+            identifier = "standalone-offering",
+            serverDescription = "",
+            metadata = emptyMap(),
+            availablePackages = renderedWorkflowOffering.availablePackages,
+            paywallComponents = renderedWorkflowOffering.paywallComponents,
+            webCheckoutURL = null,
+        )
+        coEvery {
+            purchases.resolveWorkflow(standaloneOffering.identifier)
+        } returns WorkflowResolution.NoWorkflow
+        vm.onPaywallPresented()
+        vm.updateOptions(
+            PaywallOptions.Builder(dismissRequest = {})
+                .setOffering(standaloneOffering)
+                .build(),
+        )
+        advanceUntilIdle()
         vm.trackPaywallImpressionIfNeeded()
 
         // The backing trace id field is always populated, so an ungated read would leak a meaningless

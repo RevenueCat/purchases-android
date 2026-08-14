@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui
 
 import android.os.Parcelable
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.parcelize.Parcelize
 
 /**
@@ -103,39 +102,4 @@ public abstract class CustomVariableValue internal constructor() : Parcelable {
             )
         }
     }
-}
-
-/**
- * Validates custom variable keys and logs warnings for invalid keys.
- *
- * Valid keys:
- * - Must not be empty
- * - Must start with a letter
- * - Can only contain letters, numbers, and underscores
- */
-internal object CustomVariableKeyValidator {
-
-    /**
-     * Validates all keys in a custom variables map, logs warnings for invalid keys,
-     * and returns a new map containing only valid entries.
-     */
-    fun validateAndFilter(variables: Map<String, CustomVariableValue>): Map<String, CustomVariableValue> {
-        val validEntries = mutableMapOf<String, CustomVariableValue>()
-        for ((key, value) in variables) {
-            if (isValidKey(key)) {
-                validEntries[key] = value
-            } else {
-                Logger.w(
-                    "Custom variable key '$key' is invalid and will be ignored. " +
-                        "Keys must start with a letter and contain only letters, numbers, and underscores.",
-                )
-            }
-        }
-        return validEntries
-    }
-
-    private fun isValidKey(key: String): Boolean =
-        key.isNotEmpty() &&
-            key.first().isLetter() &&
-            key.all { it.isLetter() || it.isDigit() || it == '_' }
 }

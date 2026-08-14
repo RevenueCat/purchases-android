@@ -30,7 +30,7 @@ object CheckpointEventLog : CheckpointListener {
     val events: StateFlow<List<String>> = _events.asStateFlow()
 
     override fun onCheckpointHit(checkpoint: CheckpointInfo) {
-        track("Hit · ${checkpoint.identifier} · params=${checkpoint.params.customProperties}")
+        track("Hit · ${checkpoint.identifier} · params=${checkpoint.params.customVariables}")
     }
 
     override fun onCheckpointCompleted(checkpoint: CheckpointInfo, result: CheckpointResult) {

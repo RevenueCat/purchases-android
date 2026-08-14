@@ -14,5 +14,5 @@ internal interface CheckpointWorkflowResolver {
     /**
      * @throws PurchasesException when the checkpoint should be served but can't be resolved.
      */
-    suspend fun resolve(identifier: String, customProperties: Map<String, Any>): CheckpointResolution
+    suspend fun resolve(identifier: String, customVariables: Map<String, Any>): CheckpointResolution
 }

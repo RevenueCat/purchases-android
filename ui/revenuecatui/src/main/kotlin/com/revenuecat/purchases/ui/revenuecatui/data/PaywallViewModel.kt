@@ -116,6 +116,8 @@ internal interface PaywallViewModel {
             ),
         )
     }
+    fun onPaywallPresented()
+    fun onPaywallDismissed()
     fun closePaywall(result: PaywallResult? = null)
 
     /**
@@ -266,6 +268,7 @@ internal class PaywallViewModelImpl(
 
     private var exitOfferData: ExitOfferData = ExitOfferData.Loading()
     private var updateStateJob: Job? = null
+    private var shouldReloadStateOnNextPresentation = false
 
     private data class PaywallPresentationFingerprint(
         val paywallIdentifier: String?,
@@ -356,14 +359,26 @@ internal class PaywallViewModelImpl(
         if (exitOffering != null) {
             trackExitOffer(ExitOfferType.DISMISS, exitOffering.identifier)
         }
-        paywallPresentationData = null
-        standaloneStateStore = null
-        clearWorkflowState()
+        endPresentationSession()
         val dismissWithExitOffering = options.dismissRequestWithExitOffering
         if (dismissWithExitOffering != null) {
             dismissWithExitOffering(exitOffering, result)
         } else {
             options.dismissRequest()
+        }
+    }
+
+    override fun onPaywallPresented() {
+        if (!shouldReloadStateOnNextPresentation) return
+
+        shouldReloadStateOnNextPresentation = false
+        updateState()
+    }
+
+    override fun onPaywallDismissed() {
+        if (shouldReloadStateOnNextPresentation) {
+            cancelStateUpdate()
+            _state.value = PaywallState.Loading
         }
     }
 
@@ -394,6 +409,17 @@ internal class PaywallViewModelImpl(
         // pass through here, so an in-session completion (e.g. a restore that leaves the paywall up)
         // is preserved across refreshes.
         workflowCompletedInSession = false
+    }
+
+    private fun endPresentationSession() {
+        cancelStateUpdate()
+        paywallPresentationData = null
+        standaloneStateStore = null
+        clearWorkflowState()
+        // This ViewModel can outlive an embedded or dialog presentation, so reload from the initial step when
+        // the paywall enters composition again. Keep the last generic state rendered until then: activity and
+        // navigation dismissals can leave InternalPaywall composed while their exit animation finishes.
+        shouldReloadStateOnNextPresentation = true
     }
 
     private fun updateExitOfferData(data: ExitOfferData) {
@@ -464,6 +490,8 @@ internal class PaywallViewModelImpl(
 
     @Suppress("ReturnCount")
     override fun trackPaywallImpressionIfNeeded() {
+        if (shouldReloadStateOnNextPresentation) return
+
         val isWorkflowPresentation = currentWorkflow != null
         if (isWorkflowPresentation && !currentWorkflowStepTracksPaywallEvents) {
             paywallPresentationData = null
@@ -604,10 +632,9 @@ internal class PaywallViewModelImpl(
                             _purchaseCompleted.value = true
                             Logger.d("Dismissing paywall after restore since display condition has not been met")
                             trackCurrentWorkflowStepCompleted()
+                            // Bypasses closePaywall, so end the retained ViewModel's presentation session here.
+                            endPresentationSession()
                             options.dismissRequest()
-                            // Bypasses closePaywall, so run the same session cleanup here to reset
-                            // workflowCompletedInSession at the dismiss boundary.
-                            clearWorkflowState()
                         }
                     }
                 }
@@ -772,10 +799,10 @@ internal class PaywallViewModelImpl(
                     listener?.onPurchaseCompleted(purchaseResult.customerInfo, purchaseResult.storeTransaction)
                     Logger.d("Dismissing paywall after purchase")
                     trackCurrentWorkflowStepCompleted()
+                    // This direct-dismiss completion bypasses closePaywall, so end the retained ViewModel's
+                    // presentation session here.
+                    endPresentationSession()
                     options.dismissRequest()
-                    // This direct-dismiss completion bypasses closePaywall, so run the same session
-                    // cleanup here to reset workflowCompletedInSession at the dismiss boundary.
-                    clearWorkflowState()
                 }
                 else -> {
                     Logger.e("Unsupported purchase completion type: ${purchases.purchasesAreCompletedBy}")
@@ -804,6 +831,8 @@ internal class PaywallViewModelImpl(
         }
     }
     private fun updateState() {
+        if (shouldReloadStateOnNextPresentation) return
+
         cancelStateUpdate()
         updateStateJob = viewModelScope.launch {
             try {

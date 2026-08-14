@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.checkpoints
 
+import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
@@ -16,6 +17,7 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.localrules.LocalRule
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
+import com.revenuecat.purchases.common.localrules.customVariableDimensions
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
@@ -46,9 +48,11 @@ internal class CheckpointWorkflowResolverImpl(
     private val checkpointsConfigProvider: CheckpointsConfigProvider?,
     private val localRulesEvaluator: LocalRulesEvaluator,
     private val getOfferings: suspend () -> Offerings,
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    private val audiencePredicate: String = PLACEHOLDER_AUDIENCE_PREDICATE,
 ) : CheckpointWorkflowResolver {
 
-    override suspend fun resolve(identifier: String, customProperties: Map<String, Any>): CheckpointResolution {
+    override suspend fun resolve(identifier: String, customVariables: Map<String, Any>): CheckpointResolution {
         if (identifier == SIMULATED_ERROR_CHECKPOINT_ID) {
             val error = PurchasesError(
                 PurchasesErrorCode.ConfigurationError,
@@ -57,11 +61,14 @@ internal class CheckpointWorkflowResolverImpl(
             errorLog(error)
             throw PurchasesException(error)
         }
-        return resolveConfiguredWorkflow(identifier)
+        return resolveConfiguredWorkflow(identifier, customVariables)
     }
 
     @Suppress("ReturnCount")
-    private suspend fun resolveConfiguredWorkflow(identifier: String): CheckpointResolution {
+    private suspend fun resolveConfiguredWorkflow(
+        identifier: String,
+        customVariables: Map<String, Any>,
+    ): CheckpointResolution {
         if (workflowManager == null || uiConfigProvider == null || checkpointsConfigProvider == null) {
             return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.DISABLED)
         }
@@ -73,7 +80,10 @@ internal class CheckpointWorkflowResolverImpl(
             CheckpointRulesResolution.Unavailable ->
                 return configurationUnavailable("The rules for checkpoint '$identifier' could not be read.")
         }
-        val matchResult = localRulesEvaluator.match(checkpoint.rules.map { rule -> AudienceRule(rule) })
+        val matchResult = localRulesEvaluator.match(
+            rules = checkpoint.rules.map { rule -> AudienceRule(rule, audiencePredicate) },
+            customVariables = customVariableDimensions(customVariables),
+        )
         // An audience the SDK failed to evaluate is not the same answer as an audience the customer is outside of,
         // so it can't report NO_MATCH.
         val rule = matchResult.getOrElse { error ->
@@ -192,9 +202,10 @@ internal class CheckpointWorkflowResolverImpl(
      * own remote-config topic, whose shape is not settled, so until then every audience matches and the rules are
      * effectively still walked in published order.
      */
-    private class AudienceRule(val checkpointRule: CheckpointRule) : LocalRule {
-        override val predicate: String = PLACEHOLDER_AUDIENCE_PREDICATE
-    }
+    private class AudienceRule(
+        val checkpointRule: CheckpointRule,
+        override val predicate: String,
+    ) : LocalRule
 
     private companion object {
         const val SIMULATED_ERROR_CHECKPOINT_ID = "error_checkpoint"

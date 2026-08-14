@@ -1731,10 +1731,11 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `trackPaywallImpression after close tracks again`() {
+    fun `trackPaywallImpression after re-presentation tracks again`() {
         val model = create()
         model.trackPaywallImpressionIfNeeded()
         model.closePaywall()
+        model.onPaywallPresented()
         model.trackPaywallImpressionIfNeeded()
         verifyEventTracked(PaywallEventType.IMPRESSION, 2)
     }
@@ -1770,6 +1771,7 @@ class PaywallViewModelTest {
                 },
             )
         }
+        model.onPaywallPresented()
         model.trackPaywallImpressionIfNeeded()
         model.closePaywall()
         verifyEventTracked(PaywallEventType.CLOSE, 2)

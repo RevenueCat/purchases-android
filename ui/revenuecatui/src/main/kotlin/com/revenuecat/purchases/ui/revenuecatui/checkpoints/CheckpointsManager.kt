@@ -72,7 +72,7 @@ internal class CheckpointsManager {
     ): CheckpointResult = withContext(Dispatchers.Main) {
         val checkpoint = CheckpointInfo(identifier, params ?: CheckpointParams())
         checkpointListener?.onCheckpointHit(checkpoint)
-        val resolution = purchases.resolveCheckpoint(identifier, checkpoint.params.customProperties)
+        val resolution = purchases.resolveCheckpoint(identifier, checkpoint.params.customVariables)
         val result = when (resolution) {
             is CheckpointResolution.MatchedOffering -> CheckpointResult.ReceivedOffering(
                 checkpoint,
@@ -81,7 +81,7 @@ internal class CheckpointsManager {
             is CheckpointResolution.MatchedWorkflow ->
                 CheckpointResult.PaywallPresented(
                     checkpoint,
-                    present(purchases, resolution, checkpoint.params.customVariables),
+                    present(purchases, resolution, checkpoint.params.paywallCustomVariables),
                 )
             is CheckpointResolution.NoAction ->
                 CheckpointResult.NoAction(checkpoint, resolution.reason.toResultReason())
