@@ -86,21 +86,21 @@ internal class CheckpointWorkflowResolverImpl(
             )
         }?.checkpointRule ?: return noMatch(identifier)
 
-        val dependencies = CheckpointResolutionDependencies(
-            identifier = identifier,
-            workflowManager = workflowManager,
-            uiConfigProvider = uiConfigProvider,
-            getOfferings = getOfferings,
-        )
-        val uiConfig = dependencies.uiConfig()
-            ?: return configurationUnavailable("UI config is unavailable for checkpoint '$identifier'.")
-        return resolveRule(workflowManager, dependencies, rule, uiConfig)
+        val uiConfig = try {
+            uiConfigProvider.getUiConfig()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            errorLog(e) { "UI config could not be fetched for checkpoint '$identifier'." }
+            null
+        } ?: return configurationUnavailable("UI config is unavailable for checkpoint '$identifier'.")
+        return resolveRule(identifier, workflowManager, rule, uiConfig)
     }
 
     @Suppress("ReturnCount")
     private suspend fun resolveRule(
+        checkpointIdentifier: String,
         workflowManager: WorkflowManager,
-        dependencies: CheckpointResolutionDependencies,
         rule: CheckpointRule,
         uiConfig: UiConfig,
     ): CheckpointResolution {
@@ -113,20 +113,20 @@ internal class CheckpointWorkflowResolverImpl(
             ?: return unservableRule(rule, "its initial step was not found")
         return if (initialStep.type == OFFERING_STEP_TYPE) {
             if (workflow.steps.size != 1) {
-                unsupportedOfferingRule(rule, "an offering step cannot be mixed with other steps")
+                unservableRule(rule, "an offering step cannot be mixed with other steps")
             } else {
-                resolveOfferingRule(dependencies, rule, initialStep)
+                resolveOfferingRule(checkpointIdentifier, rule, initialStep)
             }
         } else if (workflow.steps.values.any { it.type == OFFERING_STEP_TYPE }) {
             unservableRule(rule, "a UI workflow cannot contain offering steps")
         } else {
-            resolveUiRule(dependencies, rule, workflow, uiConfig)
+            resolveUiRule(checkpointIdentifier, workflowManager, rule, workflow, uiConfig)
         }
     }
 
     @Suppress("ReturnCount")
     private suspend fun resolveOfferingRule(
-        dependencies: CheckpointResolutionDependencies,
+        checkpointIdentifier: String,
         rule: CheckpointRule,
         step: WorkflowStep,
     ): CheckpointResolution {
@@ -134,9 +134,9 @@ internal class CheckpointWorkflowResolverImpl(
             ?.takeIf { it.isString }
             ?.content
             ?.takeIf { it.isNotBlank() }
-            ?: return unsupportedOfferingRule(rule, "the offering step has no valid offering identifier")
+            ?: return unservableRule(rule, "the offering step has no valid offering identifier")
 
-        val offering = dependencies.offering(offeringIdentifier)
+        val offering = loadOffering(checkpointIdentifier, offeringIdentifier)
         if (offering == null) {
             return unservableRule(rule, "offering '$offeringIdentifier' was not found in offerings")
         }
@@ -146,30 +146,43 @@ internal class CheckpointWorkflowResolverImpl(
         return CheckpointResolution.MatchedOffering(offering)
     }
 
-    private fun unsupportedOfferingRule(rule: CheckpointRule, reason: String): CheckpointResolution.NoAction =
-        unservableRule(rule, reason)
-
     @Suppress("ReturnCount")
     private suspend fun resolveUiRule(
-        dependencies: CheckpointResolutionDependencies,
+        checkpointIdentifier: String,
+        workflowManager: WorkflowManager,
         rule: CheckpointRule,
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
     ): CheckpointResolution {
-        val offeringId = dependencies.offeringIdForWorkflow(rule.workflowId)
+        val offeringId = try {
+            workflowManager.offeringIdByWorkflowId()[rule.workflowId]
+        } catch (e: CancellationException) {
+            throw e
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            errorLog(e) { "Workflow offering metadata could not be fetched for checkpoint '$checkpointIdentifier'." }
+            null
+        }
         if (offeringId == null) {
             return unservableRule(rule, "no offering is mapped to it in the workflows topic")
         }
-        val offering = dependencies.offering(offeringId)
+        val offering = loadOffering(checkpointIdentifier, offeringId)
         if (offering == null) {
             return unservableRule(rule, "offering '$offeringId' was not found in offerings")
         }
         debugLog {
             "Checkpoint resolved to workflow '${rule.workflowId}' (offering: ${offering.identifier})"
         }
-        dependencies.prewarmWorkflowAssets(workflow, uiConfig)
+        workflowManager.prewarmWorkflowAssets(workflow, uiConfig)
         return CheckpointResolution.MatchedWorkflow(workflow, uiConfig, offering)
     }
+
+    private suspend fun loadOffering(checkpointIdentifier: String, offeringIdentifier: String): Offering? =
+        try {
+            getOfferings().all[offeringIdentifier]
+        } catch (e: PurchasesException) {
+            errorLog { "Offerings could not be fetched for checkpoint '$checkpointIdentifier': ${e.error}" }
+            null
+        }
 
     private fun unservableRule(rule: CheckpointRule, reason: String): CheckpointResolution.NoAction {
         warnLog { "The matched checkpoint rule for workflow '${rule.workflowId}' can't be served: $reason." }
@@ -206,70 +219,5 @@ internal class CheckpointWorkflowResolverImpl(
         const val OFFERING_STEP_TYPE = "offering"
         const val OFFERING_IDENTIFIER_PARAM = "offering_identifier"
         const val PLACEHOLDER_AUDIENCE_PREDICATE = "true"
-    }
-}
-
-private class CheckpointResolutionDependencies(
-    private val identifier: String,
-    private val workflowManager: WorkflowManager,
-    private val uiConfigProvider: UiConfigProvider?,
-    private val getOfferings: suspend () -> Offerings,
-) {
-    private var offeringsLoaded = false
-    private var offerings: Offerings? = null
-    private var workflowOfferingIndexLoaded = false
-    private var workflowOfferingIndex: Map<String, String> = emptyMap()
-    private var uiConfigLoaded = false
-    private var resolvedUiConfig: UiConfig? = null
-
-    suspend fun offering(identifier: String): Offering? = loadOfferings()?.all?.get(identifier)
-
-    suspend fun offeringIdForWorkflow(workflowId: String): String? = loadWorkflowOfferingIndex()[workflowId]
-
-    suspend fun uiConfig(): UiConfig? {
-        if (!uiConfigLoaded) {
-            uiConfigLoaded = true
-            resolvedUiConfig = try {
-                uiConfigProvider?.getUiConfig()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                errorLog(e) { "UI config could not be fetched for checkpoint '$identifier'." }
-                null
-            }
-        }
-        return resolvedUiConfig
-    }
-
-    fun prewarmWorkflowAssets(workflow: PublishedWorkflow, uiConfig: UiConfig) {
-        workflowManager.prewarmWorkflowAssets(workflow, uiConfig)
-    }
-
-    private suspend fun loadOfferings(): Offerings? {
-        if (!offeringsLoaded) {
-            offeringsLoaded = true
-            offerings = try {
-                getOfferings()
-            } catch (e: PurchasesException) {
-                errorLog { "Offerings could not be fetched for checkpoint '$identifier': ${e.error}" }
-                null
-            }
-        }
-        return offerings
-    }
-
-    private suspend fun loadWorkflowOfferingIndex(): Map<String, String> {
-        if (!workflowOfferingIndexLoaded) {
-            workflowOfferingIndexLoaded = true
-            workflowOfferingIndex = try {
-                workflowManager.offeringIdByWorkflowId()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-                errorLog(e) { "Workflow offering metadata could not be fetched for checkpoint '$identifier'." }
-                emptyMap()
-            }
-        }
-        return workflowOfferingIndex
     }
 }
