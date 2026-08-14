@@ -90,11 +90,11 @@ class WorkflowManagerTest {
     }
 
     @Test
-    fun `getPublishedWorkflow loads directly by workflow id without preparing UI`() = runTest {
+    fun `getWorkflowBody loads directly by workflow id without preparing UI`() = runTest {
         val expectedResult = mockk<PublishedWorkflow>(relaxed = true)
         coEvery { mockProvider.getWorkflow("wf_1") } returns expectedResult
 
-        val result = workflowManager.getPublishedWorkflow("wf_1")
+        val result = workflowManager.getWorkflowBody("wf_1")
 
         assertThat(result).isEqualTo(expectedResult)
         coVerify(exactly = 0) { mockProvider.workflowIdForOfferingId(any()) }
@@ -103,10 +103,10 @@ class WorkflowManagerTest {
     }
 
     @Test
-    fun `getPublishedWorkflow throws when the provider cannot resolve the workflow`() = runTest {
+    fun `getWorkflowBody throws when the provider cannot resolve the workflow`() = runTest {
         coEvery { mockProvider.getWorkflow("wf_missing") } returns null
 
-        val thrown = runCatching { workflowManager.getPublishedWorkflow("wf_missing") }.exceptionOrNull()
+        val thrown = runCatching { workflowManager.getWorkflowBody("wf_missing") }.exceptionOrNull()
 
         assertThat(thrown).isInstanceOf(PurchasesException::class.java)
         assertThat((thrown as PurchasesException).error.code).isEqualTo(PurchasesErrorCode.UnknownError)

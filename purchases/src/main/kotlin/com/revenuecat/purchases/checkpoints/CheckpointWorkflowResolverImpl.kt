@@ -105,7 +105,7 @@ internal class CheckpointWorkflowResolverImpl(
         uiConfig: UiConfig,
     ): CheckpointResolution {
         val workflow = try {
-            workflowManager.getPublishedWorkflow(rule.workflowId)
+            workflowManager.getWorkflowBody(rule.workflowId)
         } catch (e: PurchasesException) {
             return unservableRule(rule, "it could not be loaded: ${e.error}")
         }

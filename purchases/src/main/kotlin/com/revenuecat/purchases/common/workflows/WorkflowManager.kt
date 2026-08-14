@@ -67,7 +67,7 @@ internal class WorkflowManager(
         // passes through. No backend round-trip, no lazy offering→workflow conversion.
         val workflowId = workflowsConfigProvider.workflowIdForOfferingId(workflowOrOfferingId)
             ?: workflowOrOfferingId
-        val workflow = getPublishedWorkflow(workflowId)
+        val workflow = getWorkflowBody(workflowId)
         val uiConfig = loadUiConfig(workflowId)
             ?: throw PurchasesException(
                 PurchasesError(
@@ -97,7 +97,7 @@ internal class WorkflowManager(
      * or prewarming presentation assets. Checkpoint resolution uses this to inspect the workflow kind before it
      * decides which additional dependencies, if any, are needed to serve it.
      */
-    suspend fun getPublishedWorkflow(workflowId: String): PublishedWorkflow =
+    suspend fun getWorkflowBody(workflowId: String): PublishedWorkflow =
         workflowsConfigProvider.getWorkflow(workflowId)
             ?: throw PurchasesException(
                 PurchasesError(
