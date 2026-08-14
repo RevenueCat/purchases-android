@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.android.buildlogic.convention
 
+import com.android.build.api.variant.HasUnitTestBuilder
+import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import com.android.build.gradle.LibraryExtension
 import com.revenuecat.purchases.android.buildlogic.ktx.getVersion
 import com.revenuecat.purchases.android.buildlogic.ktx.versionCatalog
@@ -22,6 +24,14 @@ internal fun Project.configureAndroidLibrary() {
             result = project.property("minSdkVersion").toString().toInt()
         }
         return result
+    }
+
+    extensions.configure<LibraryAndroidComponentsExtension> {
+        beforeVariants { variantBuilder ->
+            // AGP 9 only creates unit tests for the testBuildType variant, but the published
+            // variant is release, so its tests would otherwise never run.
+            (variantBuilder as? HasUnitTestBuilder)?.enableUnitTest = true
+        }
     }
 
     extensions.configure<LibraryExtension> {
