@@ -149,7 +149,7 @@ internal class CheckpointWorkflowResolverImpl(
         debugLog {
             "Checkpoint resolved to offering '${offering.identifier}' from workflow '${rule.workflowId}'"
         }
-        return CheckpointResolution.Offering(offering)
+        return CheckpointResolution.MatchedOffering(offering)
     }
 
     private fun unsupportedOfferingRule(rule: CheckpointRule, reason: String): CheckpointResolution.NoAction =
@@ -174,7 +174,7 @@ internal class CheckpointWorkflowResolverImpl(
             "Checkpoint resolved to workflow '${rule.workflowId}' (offering: ${offering.identifier})"
         }
         dependencies.prewarmWorkflowAssets(workflow, uiConfig)
-        return CheckpointResolution.Workflow(workflow, uiConfig, offering)
+        return CheckpointResolution.MatchedWorkflow(workflow, uiConfig, offering)
     }
 
     private fun unservableRule(rule: CheckpointRule, reason: String): CheckpointResolution.NoAction {

@@ -13,10 +13,10 @@ import com.revenuecat.purchases.Offering as RevenueCatOffering
 public sealed class CheckpointResolution {
 
     /** The checkpoint selected [offering] without requiring RevenueCat-managed UI. */
-    public data class Offering(val offering: RevenueCatOffering) : CheckpointResolution()
+    public data class MatchedOffering(val offering: RevenueCatOffering) : CheckpointResolution()
 
     /** The checkpoint matched [workflow], which should be presented against [offering]. */
-    public data class Workflow(
+    public data class MatchedWorkflow(
         val workflow: PublishedWorkflow,
         val uiConfig: UiConfig,
         val offering: RevenueCatOffering,

@@ -21,7 +21,7 @@ import java.util.UUID
  * a call that was taken between two accessors.
  */
 internal class CheckpointPresentation(
-    val resolution: CheckpointResolution.Workflow,
+    val resolution: CheckpointResolution.MatchedWorkflow,
     val customVariables: Map<String, CustomVariableValue>,
 )
 
@@ -39,7 +39,7 @@ internal class CheckpointsManager {
 
     private class PendingCall(
         val callId: String,
-        val resolution: CheckpointResolution.Workflow,
+        val resolution: CheckpointResolution.MatchedWorkflow,
         val customVariables: Map<String, CustomVariableValue>,
         val paywallFinished: CompletableDeferred<CheckpointPaywallOutcome>,
     ) {
@@ -74,8 +74,11 @@ internal class CheckpointsManager {
         checkpointListener?.onCheckpointHit(checkpoint)
         val resolution = purchases.resolveCheckpoint(identifier, checkpoint.params.customProperties)
         val result = when (resolution) {
-            is CheckpointResolution.Offering -> CheckpointResult.ReceivedOffering(checkpoint, resolution.offering)
-            is CheckpointResolution.Workflow ->
+            is CheckpointResolution.MatchedOffering -> CheckpointResult.ReceivedOffering(
+                checkpoint,
+                resolution.offering,
+            )
+            is CheckpointResolution.MatchedWorkflow ->
                 CheckpointResult.PaywallPresented(
                     checkpoint,
                     present(purchases, resolution, checkpoint.params.customVariables),
@@ -111,7 +114,7 @@ internal class CheckpointsManager {
 
     private suspend fun present(
         purchases: Purchases,
-        resolution: CheckpointResolution.Workflow,
+        resolution: CheckpointResolution.MatchedWorkflow,
         customVariables: Map<String, CustomVariableValue>,
     ): CheckpointPaywallOutcome {
         val activity = purchases.currentActivity ?: presentationError(

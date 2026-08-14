@@ -178,8 +178,8 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `checkpoint resolves Workflow with the workflow and its offering`() = runTest {
-        val resolution = resolve() as CheckpointResolution.Workflow
+    fun `checkpoint resolves MatchedWorkflow with the workflow and its offering`() = runTest {
+        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
 
         assertThat(resolution.workflow).isEqualTo(mockWorkflow)
         assertThat(resolution.uiConfig).isEqualTo(mockUiConfig)
@@ -191,7 +191,7 @@ class CheckpointWorkflowResolverImplTest {
     fun `checkpoint resolves the workflow of the first rule`() = runTest {
         configureRules(rule("wf1234"), rule("wf5678"))
 
-        val resolution = resolve() as CheckpointResolution.Workflow
+        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
 
         assertThat(resolution.workflow).isEqualTo(mockWorkflow)
         coVerify(exactly = 0) { mockWorkflowManager.getPublishedWorkflow("wf5678") }
@@ -271,7 +271,7 @@ class CheckpointWorkflowResolverImplTest {
         coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns
             mapOf("wf1234" to "default", "wf5678" to "default")
 
-        assertThat(resolve()).isInstanceOf(CheckpointResolution.Workflow::class.java)
+        assertThat(resolve()).isInstanceOf(CheckpointResolution.MatchedWorkflow::class.java)
         assertThat(offeringsFetched).isEqualTo(1)
         coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
         coVerify(exactly = 1) { mockWorkflowManager.offeringIdByWorkflowId() }
@@ -300,7 +300,7 @@ class CheckpointWorkflowResolverImplTest {
     fun `terminal offering workflow requires ui config`() = runTest {
         coEvery { mockWorkflowManager.getPublishedWorkflow("wf1234") } returns offeringWorkflow("wf1234", "default")
 
-        val resolution = resolve() as CheckpointResolution.Offering
+        val resolution = resolve() as CheckpointResolution.MatchedOffering
 
         assertThat(resolution.offering).isEqualTo(mockOffering)
         assertThat(offeringsFetched).isEqualTo(1)
@@ -328,7 +328,7 @@ class CheckpointWorkflowResolverImplTest {
         )
         coEvery { mockWorkflowManager.getPublishedWorkflow("wf1234") } returns workflow("wf1234", step)
 
-        assertThat(resolve()).isInstanceOf(CheckpointResolution.Offering::class.java)
+        assertThat(resolve()).isInstanceOf(CheckpointResolution.MatchedOffering::class.java)
     }
 
     @Test
