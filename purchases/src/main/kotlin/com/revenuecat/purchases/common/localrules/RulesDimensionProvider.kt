@@ -17,6 +17,7 @@ internal enum class RulesDimensionNamespace(val key: String) {
     /** Values supplied by the caller for one evaluation; see [LocalRulesEvaluator.match]. */
     Custom("custom"),
     Device("device"),
+    Store("store"),
 }
 
 /**

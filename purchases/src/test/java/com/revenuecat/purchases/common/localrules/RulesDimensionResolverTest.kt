@@ -191,6 +191,20 @@ class RulesDimensionResolverTest {
     }
 
     @Test
+    fun `a provider with nothing to contribute leaves its namespace absent`() = runTest {
+        val resolver = resolver(
+            provider(RulesDimensionNamespace.Device, "platform" to string("android")),
+            provider(RulesDimensionNamespace.Store),
+        )
+
+        val values = resolver.snapshot().getOrThrow().values
+
+        assertThat(values).containsOnlyKeys("device")
+        // An empty object would be truthy, which is what makes the absence matter.
+        assertThat(RulesEngine.evaluate("""{"!!": [{"var": "store"}]}""", values).getOrThrow()).isFalse()
+    }
+
+    @Test
     fun `no providers yields an empty scope`() = runTest {
         assertThat(resolver().snapshot().getOrThrow().values).isEmpty()
     }

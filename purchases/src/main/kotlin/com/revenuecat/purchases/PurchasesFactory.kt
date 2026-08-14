@@ -32,6 +32,7 @@ import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
 import com.revenuecat.purchases.common.localrules.DeviceDimensionProvider
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesEngineLoggerBridge
+import com.revenuecat.purchases.common.localrules.StoreDimensionProvider
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.APISourceFailover
 import com.revenuecat.purchases.common.networking.DeviceConnectivityChecker
@@ -355,7 +356,12 @@ internal class PurchasesFactory(
             }
             RulesEngine.setLogger(RulesEngineLoggerBridge)
             val localRulesEvaluator = LocalRulesEvaluator(
-                providers = listOf(DeviceDimensionProvider(appConfig, localeProvider)),
+                providers = listOf(
+                    DeviceDimensionProvider(appConfig, localeProvider),
+                    // Only read during a checkpoint evaluation, so the instance is configured by then. Same
+                    // reasoning as CheckpointWorkflowResolverImpl's getOfferings.
+                    StoreDimensionProvider { Purchases.sharedInstance.awaitStorefrontCountryCode() },
+                ),
             )
             if (remoteConfigManager != null && uiConfigProvider != null && workflowsConfigProvider != null) {
                 remoteConfigManager.registerListener(uiConfigProvider)
