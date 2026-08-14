@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SharedPreferencesManager
+import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
@@ -355,6 +356,9 @@ internal class PurchasesFactory(
             val checkpointsConfigProvider = remoteConfigManager?.let {
                 CheckpointsConfigProvider(it)
             }
+            val audiencesConfigProvider = remoteConfigManager?.let {
+                AudiencesConfigProvider(it)
+            }
             if (remoteConfigManager != null && uiConfigProvider != null && workflowsConfigProvider != null) {
                 remoteConfigManager.registerListener(uiConfigProvider)
                 remoteConfigManager.registerListener(workflowsConfigProvider)
@@ -575,6 +579,7 @@ internal class PurchasesFactory(
                 uiConfigProvider = uiConfigProvider,
                 workflowsConfigProvider = workflowsConfigProvider,
                 checkpointsConfigProvider = checkpointsConfigProvider,
+                audiencesConfigProvider = audiencesConfigProvider,
                 localRulesEvaluator = localRulesEvaluator,
             )
 
