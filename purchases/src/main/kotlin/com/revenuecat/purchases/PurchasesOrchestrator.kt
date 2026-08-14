@@ -47,6 +47,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -434,7 +435,7 @@ internal class PurchasesOrchestrator(
     @OptIn(InternalRevenueCatAPI::class)
     suspend fun resolveCheckpoint(
         checkpointIdentifier: String,
-        customVariables: Map<String, Any>,
+        customVariables: Map<String, RulesDimensionValue>,
     ): CheckpointResolution = checkpointWorkflowResolver.resolve(checkpointIdentifier, customVariables)
 
     fun getStorefrontCountryCode(callback: GetStorefrontCallback) {

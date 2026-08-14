@@ -257,7 +257,7 @@ class CheckpointWorkflowResolverImplTest {
     fun `a custom variable the audience requires resolves the workflow`() = runTest {
         resolver = resolverWithPredicate("""{"==": [{"var": "custom.source"}, "settings"]}""")
 
-        val resolution = resolver.resolve(checkpointId, mapOf("source" to "settings"))
+        val resolution = resolver.resolve(checkpointId, mapOf("source" to RulesDimensionValue.StringValue("settings")))
 
         assertThat(resolution).isInstanceOf(CheckpointResolution.Workflow::class.java)
     }
@@ -266,7 +266,7 @@ class CheckpointWorkflowResolverImplTest {
     fun `a custom variable the audience does not accept resolves NoAction with NO_MATCH`() = runTest {
         resolver = resolverWithPredicate("""{"==": [{"var": "custom.source"}, "settings"]}""")
 
-        assertThat(noActionReason(resolver.resolve(checkpointId, mapOf("source" to "onboarding"))))
+        assertThat(noActionReason(resolver.resolve(checkpointId, mapOf("source" to RulesDimensionValue.StringValue("onboarding")))))
             .isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
         assertThat(noActionReason(resolver.resolve(checkpointId, emptyMap())))
             .isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)

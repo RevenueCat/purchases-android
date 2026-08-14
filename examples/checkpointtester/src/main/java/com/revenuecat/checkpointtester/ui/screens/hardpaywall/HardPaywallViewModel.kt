@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
@@ -43,7 +44,10 @@ class HardPaywallViewModel : ViewModel() {
             try {
                 val result = Purchases.sharedInstance.awaitCheckpoint(
                     "hard_paywall",
-                    CheckpointParams("gate" to "hard", "attempt" to _state.value.attempts),
+                    CheckpointParams(
+                        "gate" to CustomVariableValue.String("hard"),
+                        "attempt" to CustomVariableValue.Number(_state.value.attempts),
+                    ),
                 )
                 when (result) {
                     is CheckpointResult.PaywallPresented -> when (val outcome = result.paywallOutcome) {

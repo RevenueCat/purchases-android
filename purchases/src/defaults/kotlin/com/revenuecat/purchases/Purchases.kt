@@ -21,6 +21,7 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
@@ -218,7 +219,7 @@ public class Purchases internal constructor(
     @InternalRevenueCatAPI
     public suspend fun resolveCheckpoint(
         checkpointIdentifier: String,
-        customVariables: Map<String, Any> = emptyMap(),
+        customVariables: Map<String, RulesDimensionValue> = emptyMap(),
     ): CheckpointResolution = purchasesOrchestrator.resolveCheckpoint(checkpointIdentifier, customVariables)
 
     /**

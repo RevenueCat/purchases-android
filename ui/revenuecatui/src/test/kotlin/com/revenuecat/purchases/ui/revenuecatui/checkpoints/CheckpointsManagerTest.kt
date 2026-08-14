@@ -11,6 +11,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -115,7 +116,9 @@ class CheckpointsManagerTest {
         resolvesToWorkflow()
 
         var result: CheckpointResult? = null
-        val call = launch { result = checkpoint(CheckpointParams("goal" to "test")) }
+        val call = launch {
+            result = checkpoint(CheckpointParams("goal" to CustomVariableValue.String("test")))
+        }
 
         assertThat(result).isNull()
 
@@ -125,7 +128,8 @@ class CheckpointsManagerTest {
         val presented = result as CheckpointResult.PaywallPresented
         assertThat(presented.paywallOutcome).isEqualTo(CheckpointPaywallOutcome.Dismissed)
         assertThat(presented.checkpoint.identifier).isEqualTo(checkpointId)
-        assertThat(presented.checkpoint.params.customVariables).isEqualTo(mapOf("goal" to "test"))
+        assertThat(presented.checkpoint.params.customVariables)
+            .isEqualTo(mapOf("goal" to CustomVariableValue.String("test")))
         verifyOrder {
             mockListener.onCheckpointHit(any())
             mockListener.onCheckpointCompleted(presented.checkpoint, presented)
@@ -133,27 +137,38 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `only valid custom properties are forwarded to the resolver`() = runTest(dispatcher) {
+    fun `custom variables reach the resolver as rule dimensions`() = runTest(dispatcher) {
         resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
 
-        checkpoint(CheckpointParams("goal" to "test", "invalid" to Any(), "unsupportedNumber" to 1.toShort()))
+        checkpoint(
+            CheckpointParams(
+                "goal" to CustomVariableValue.String("test"),
+                "attempt" to CustomVariableValue.Number(2),
+                "flag" to CustomVariableValue.Boolean(true),
+            ),
+        )
 
-        val customVariables = slot<Map<String, Any>>()
+        val customVariables = slot<Map<String, RulesDimensionValue>>()
         coVerify { mockPurchases.resolveCheckpoint(checkpointId, capture(customVariables)) }
-        assertThat(customVariables.captured).isEqualTo(mapOf("goal" to "test"))
+        assertThat(customVariables.captured).isEqualTo(
+            mapOf(
+                "goal" to RulesDimensionValue.StringValue("test"),
+                "attempt" to RulesDimensionValue.DoubleValue(2.0),
+                "flag" to RulesDimensionValue.BoolValue(true),
+            ),
+        )
     }
 
     @Test
-    fun `custom properties are exposed to the presented paywall as custom variables`() = runTest(dispatcher) {
+    fun `custom variables are exposed to the presented paywall`() = runTest(dispatcher) {
         resolvesToWorkflow()
         val call = launch {
             checkpoint(
                 CheckpointParams(
-                    "gate" to "hard",
-                    "attempt" to 2,
-                    "ratio" to 0.5,
-                    "flag" to true,
-                    "invalid" to Any(),
+                    "gate" to CustomVariableValue.String("hard"),
+                    "attempt" to CustomVariableValue.Number(2),
+                    "ratio" to CustomVariableValue.Number(0.5),
+                    "flag" to CustomVariableValue.Boolean(true),
                 ),
             )
         }
