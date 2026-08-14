@@ -21,15 +21,15 @@ import java.util.UUID
  * a call that was taken between two accessors.
  */
 internal class CheckpointPresentation(
-    val resolution: CheckpointResolution.Workflow,
+    val resolution: CheckpointResolution.MatchedWorkflow,
     val customVariables: Map<String, CustomVariableValue>,
 )
 
 /**
  * Runs a checkpoint hit end to end: fires listener events, asks the core module what the checkpoint resolves
- * to, and presents the resolved workflow through [CheckpointWorkflowActivity]. Owns the
- * one-presentation-at-a-time constraint and the pending call that routes the presented paywall's terminal
- * outcome back to the suspended [checkpoint] call.
+ * to, and either returns its data or presents the resolved workflow through [CheckpointWorkflowActivity]. Owns
+ * the one-presentation-at-a-time constraint and the pending call that routes a presented paywall's terminal
+ * outcome back to the suspended [checkpoint] call. Data-only results never claim that presentation slot.
  *
  * There is one instance per [Purchases] instance, held in its `checkpointManagerSlot` and reached through
  * [checkpointsManager], so the listener and any in-flight presentation die with the SDK instance that owns
@@ -39,7 +39,7 @@ internal class CheckpointsManager {
 
     private class PendingCall(
         val callId: String,
-        val resolution: CheckpointResolution.Workflow,
+        val resolution: CheckpointResolution.MatchedWorkflow,
         val customVariables: Map<String, CustomVariableValue>,
         val paywallFinished: CompletableDeferred<CheckpointPaywallOutcome>,
     ) {
@@ -77,7 +77,11 @@ internal class CheckpointsManager {
             checkpoint.params.customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
         )
         val result = when (resolution) {
-            is CheckpointResolution.Workflow ->
+            is CheckpointResolution.MatchedOffering -> CheckpointResult.ReceivedOffering(
+                checkpoint,
+                resolution.offering,
+            )
+            is CheckpointResolution.MatchedWorkflow ->
                 CheckpointResult.PaywallPresented(
                     checkpoint,
                     present(purchases, resolution, checkpoint.params.customVariables),
@@ -113,7 +117,7 @@ internal class CheckpointsManager {
 
     private suspend fun present(
         purchases: Purchases,
-        resolution: CheckpointResolution.Workflow,
+        resolution: CheckpointResolution.MatchedWorkflow,
         customVariables: Map<String, CustomVariableValue>,
     ): CheckpointPaywallOutcome {
         val activity = purchases.currentActivity ?: presentationError(

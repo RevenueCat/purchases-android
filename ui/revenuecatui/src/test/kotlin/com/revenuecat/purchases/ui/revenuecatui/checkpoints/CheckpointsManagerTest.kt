@@ -6,6 +6,7 @@ import android.app.Activity
 import android.content.Intent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -81,6 +82,39 @@ class CheckpointsManagerTest {
             mockListener.onCheckpointHit(result.checkpoint)
             mockListener.onCheckpointCompleted(result.checkpoint, result)
         }
+    }
+
+    @Test
+    fun `offering checkpoint returns without an activity or presentation`() = runTest(dispatcher) {
+        val offering = mockk<Offering>()
+        every { mockPurchases.currentActivity } returns null
+        resolvesTo(CheckpointResolution.MatchedOffering(offering))
+
+        val result = checkpoint() as CheckpointResult.ReceivedOffering
+
+        assertThat(result.offering).isEqualTo(offering)
+        assertThat(result.checkpoint.identifier).isEqualTo(checkpointId)
+        verify(exactly = 0) { mockActivity.startActivity(any()) }
+        verifyOrder {
+            mockListener.onCheckpointHit(result.checkpoint)
+            mockListener.onCheckpointCompleted(result.checkpoint, result)
+        }
+    }
+
+    @Test
+    fun `offering checkpoint completes while a UI checkpoint is being presented`() = runTest(dispatcher) {
+        val offering = mockk<Offering>()
+        coEvery { mockPurchases.resolveCheckpoint(any(), any()) } returnsMany listOf(
+            CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk()),
+            CheckpointResolution.MatchedOffering(offering),
+        )
+        val presentedCall = launch { checkpoint() }
+
+        val offeringResult = checkpoint() as CheckpointResult.ReceivedOffering
+
+        assertThat(offeringResult.offering).isEqualTo(offering)
+        verify(exactly = 1) { mockActivity.startActivity(any()) }
+        presentedCall.cancel()
     }
 
     @Test
@@ -348,7 +382,7 @@ class CheckpointsManagerTest {
     }
 
     private fun resolvesToWorkflow() {
-        resolvesTo(CheckpointResolution.Workflow(mockk(), mockk(), mockk()))
+        resolvesTo(CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk()))
     }
 
     private fun capturesStartedIntents() {

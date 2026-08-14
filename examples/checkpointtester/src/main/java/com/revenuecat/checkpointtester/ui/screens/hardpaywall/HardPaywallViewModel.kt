@@ -50,6 +50,9 @@ class HardPaywallViewModel : ViewModel() {
                     ),
                 )
                 when (result) {
+                    is CheckpointResult.ReceivedOffering -> stayLocked(
+                        "Offering ${result.offering.identifier} returned; app-owned UI is required.",
+                    )
                     is CheckpointResult.PaywallPresented -> when (val outcome = result.paywallOutcome) {
                         is CheckpointPaywallOutcome.Purchased -> unlock("Purchased. Access granted.")
                         is CheckpointPaywallOutcome.Restored -> unlock("Restored. Access granted.")
