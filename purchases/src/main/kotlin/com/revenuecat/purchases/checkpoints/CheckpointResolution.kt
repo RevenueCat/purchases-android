@@ -1,9 +1,9 @@
 package com.revenuecat.purchases.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
-import com.revenuecat.purchases.Offering as RevenueCatOffering
 
 /**
  * What a checkpoint resolves to. Exposed to the RevenueCat UI module, which owns the checkpoints API and
@@ -13,13 +13,13 @@ import com.revenuecat.purchases.Offering as RevenueCatOffering
 public sealed class CheckpointResolution {
 
     /** The checkpoint selected [offering] without requiring RevenueCat-managed UI. */
-    public data class MatchedOffering(val offering: RevenueCatOffering) : CheckpointResolution()
+    public data class MatchedOffering(val offering: Offering) : CheckpointResolution()
 
     /** The checkpoint matched [workflow], which should be presented against [offering]. */
     public data class MatchedWorkflow(
         val workflow: PublishedWorkflow,
         val uiConfig: UiConfig,
-        val offering: RevenueCatOffering,
+        val offering: Offering,
     ) : CheckpointResolution()
 
     /** Nothing should be served for this checkpoint; the user continues uninterrupted. */
