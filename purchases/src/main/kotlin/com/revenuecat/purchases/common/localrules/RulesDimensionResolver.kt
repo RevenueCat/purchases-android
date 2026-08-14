@@ -47,8 +47,7 @@ internal class RulesDimensionResolver(
 
     /**
      * [customVariables] are the caller's own values for this one evaluation, exposed under
-     * [RulesDimensionNamespace.Custom]. An empty map contributes no namespace at all rather than an empty object,
-     * which is truthy in JSON Logic: a call with no values should read as absent, not as present-but-empty.
+     * [RulesDimensionNamespace.Custom].
      */
     @Suppress("ReturnCount")
     suspend fun snapshot(
@@ -75,10 +74,8 @@ internal class RulesDimensionResolver(
             }
         }
 
-        if (customVariables.isNotEmpty()) {
-            values.addDimensions(RulesDimensionNamespace.Custom, customVariables)?.let { conflict ->
-                return Result.failure(conflict)
-            }
+        values.addDimensions(RulesDimensionNamespace.Custom, customVariables)?.let { conflict ->
+            return Result.failure(conflict)
         }
 
         return Result.success(
@@ -91,10 +88,14 @@ internal class RulesDimensionResolver(
 }
 
 /** Nests [dimensions] under [namespace], or returns the conflict that stops the whole snapshot. */
+@Suppress("ReturnCount")
 private fun MutableMap<String, MutableMap<String, Value>>.addDimensions(
     namespace: RulesDimensionNamespace,
     dimensions: Map<String, RulesDimensionValue>,
 ): RulesDimensionResolutionException.ConflictingDimension? {
+    // A source with nothing to say contributes no namespace at all: an empty object is truthy in JSON Logic, so
+    // `{"var": "store"}` would read as present for a customer whose store never answered.
+    if (dimensions.isEmpty()) return null
     val target = getOrPut(namespace.key) { mutableMapOf() }
     for ((name, value) in dimensions) {
         if (target.containsKey(name)) {
