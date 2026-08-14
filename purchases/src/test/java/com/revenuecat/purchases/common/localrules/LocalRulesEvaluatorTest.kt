@@ -106,6 +106,34 @@ class LocalRulesEvaluatorTest {
     }
 
     @Test
+    fun `lazy predicates are resolved in order only until a rule matches`() = runTest {
+        val resolved = mutableListOf<String>()
+        val rules = listOf("first", "second", "unused")
+
+        val result = evaluator().match(rules) { rule ->
+            resolved += rule
+            Result.success(if (rule == "second") matchingPredicate else nonMatchingPredicate)
+        }
+
+        assertThat(result.getOrThrow()).isEqualTo("second")
+        assertThat(resolved).containsExactly("first", "second")
+    }
+
+    @Test
+    fun `predicate resolution failure stops evaluation`() = runTest {
+        val resolved = mutableListOf<String>()
+        val failure = IllegalStateException("audience unavailable")
+
+        val result = evaluator().match(listOf("missing", "unused")) { rule ->
+            resolved += rule
+            if (rule == "missing") Result.failure(failure) else Result.success(matchingPredicate)
+        }
+
+        assertThat(result.exceptionOrNull()).isSameAs(failure)
+        assertThat(resolved).containsExactly("missing")
+    }
+
+    @Test
     fun `a predicate reading a custom variable matches`() = runTest {
         val rules = listOf(TestRule("only", """{"==": [{"var": "custom.source"}, "settings"]}"""))
 
@@ -140,13 +168,9 @@ class LocalRulesEvaluatorTest {
 
     @Test
     fun `dimensions are collected once per call regardless of rule count`() = runTest {
-        evaluator().match(
-            listOf(
-                TestRule("first", nonMatchingPredicate),
-                TestRule("second", nonMatchingPredicate),
-                TestRule("third", matchingPredicate),
-            ),
-        )
+        evaluator().match(listOf("first", "second", "third")) { rule ->
+            Result.success(if (rule == "third") matchingPredicate else nonMatchingPredicate)
+        }
 
         assertThat(snapshotsTaken).isEqualTo(1)
     }
