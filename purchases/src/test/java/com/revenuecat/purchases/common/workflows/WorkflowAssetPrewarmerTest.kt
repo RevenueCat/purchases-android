@@ -116,7 +116,6 @@ class WorkflowAssetPrewarmerTest {
         }
     }
 
-    // Warming is bounded and gets cut short by a paywall opening, so the page that opens must be queued first.
     @Test
     fun `preDownloadWorkflowAssets warms the first page's bundle ahead of later pages`() {
         val workflow = createWorkflow(

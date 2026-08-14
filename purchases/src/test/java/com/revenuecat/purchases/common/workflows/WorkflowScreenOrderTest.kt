@@ -29,12 +29,10 @@ class WorkflowScreenOrderTest {
             screens = screens("screen_3", "screen_1", "screen_2"),
         )
 
-        assertThat(workflow.screensInWarmOrder().map { it.name })
+        assertThat(workflow.screensInVisitOrder().map { it.name })
             .containsExactly("screen_1", "screen_2", "screen_3")
     }
 
-    // A step's triggers are declared in the order the components firing them appear, which is a better guess
-    // at what the customer reaches next than the trigger_actions map order.
     @Test
     fun `follows trigger declaration order for sibling steps`() {
         val firstStep = WorkflowStep(
@@ -56,12 +54,10 @@ class WorkflowScreenOrderTest {
             screens = screens("screen_1", "screen_a", "screen_b"),
         )
 
-        assertThat(workflow.screensInWarmOrder().map { it.name })
+        assertThat(workflow.screensInVisitOrder().map { it.name })
             .containsExactly("screen_1", "screen_b", "screen_a")
     }
 
-    // WorkflowTriggerAction has an Unknown variant, so a navigation this SDK version cannot read must not be
-    // able to drop a page from warming entirely.
     @Test
     fun `appends screens no step reaches`() {
         val workflow = workflow(
@@ -70,7 +66,7 @@ class WorkflowScreenOrderTest {
             screens = screens("screen_orphan", "screen_1"),
         )
 
-        assertThat(workflow.screensInWarmOrder().map { it.name })
+        assertThat(workflow.screensInVisitOrder().map { it.name })
             .containsExactly("screen_1", "screen_orphan")
     }
 
@@ -89,7 +85,7 @@ class WorkflowScreenOrderTest {
             screens = screens("screen_2", "screen_1"),
         )
 
-        assertThat(workflow.screensInWarmOrder().map { it.name })
+        assertThat(workflow.screensInVisitOrder().map { it.name })
             .containsExactly("screen_1", "screen_2")
     }
 
@@ -104,12 +100,10 @@ class WorkflowScreenOrderTest {
             screens = screens("screen_1", "screen_2"),
         )
 
-        assertThat(workflow.screensInWarmOrder().map { it.name })
+        assertThat(workflow.screensInVisitOrder().map { it.name })
             .containsExactly("screen_1", "screen_2")
     }
 
-    // Nothing guarantees the fallback step is reachable through triggers, and it is the step dismissExitOffer
-    // reads.
     @Test
     fun `roots at the single step fallback as well as the initial step`() {
         val workflow = workflow(
@@ -123,7 +117,7 @@ class WorkflowScreenOrderTest {
             singleStepFallbackId = "step_fallback",
         )
 
-        assertThat(workflow.screensInWarmOrder().map { it.name })
+        assertThat(workflow.screensInVisitOrder().map { it.name })
             .containsExactly("screen_1", "screen_fallback", "screen_deep")
     }
 
@@ -138,7 +132,7 @@ class WorkflowScreenOrderTest {
             screens = screens("screen_2"),
         )
 
-        assertThat(workflow.screensInWarmOrder().map { it.name }).containsExactly("screen_2")
+        assertThat(workflow.screensInVisitOrder().map { it.name }).containsExactly("screen_2")
     }
 
     @Test
@@ -149,7 +143,7 @@ class WorkflowScreenOrderTest {
             screens = emptyMap(),
         )
 
-        assertThat(workflow.screensInWarmOrder()).isEmpty()
+        assertThat(workflow.screensInVisitOrder()).isEmpty()
     }
 
     private fun workflow(
@@ -167,9 +161,7 @@ class WorkflowScreenOrderTest {
     )
 
     private fun step(id: String, screenId: String?, next: List<String> = emptyList()): WorkflowStep {
-        val actions = next.withIndex().associate { (index, stepId) ->
-            "action_${id}_$index" to WorkflowTriggerAction.Step(stepId)
-        }
+        val actions = next.associate { stepId -> "action_to_$stepId" to WorkflowTriggerAction.Step(stepId) }
         return WorkflowStep(
             id = id,
             type = "screen",
@@ -186,7 +178,6 @@ class WorkflowScreenOrderTest {
         componentId = "component_$actionId",
     )
 
-    /** Screens keyed by id, in the given order, so a test can put response order at odds with visit order. */
     private fun screens(vararg ids: String): Map<String, WorkflowScreen> =
         ids.associateWith { id -> screen(id) }
 
