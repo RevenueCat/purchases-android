@@ -161,6 +161,36 @@ class RulesDimensionResolverTest {
     }
 
     @Test
+    fun `custom variables are nested under the custom namespace`() = runTest {
+        val resolver = resolver(provider(RulesDimensionNamespace.Device, "platform" to string("android")))
+
+        val values = resolver.snapshot(mapOf("source" to string("settings"))).getOrThrow().values
+
+        val matches = RulesEngine.evaluate("""{"==": [{"var": "custom.source"}, "settings"]}""", values)
+        assertThat(matches.getOrThrow()).isTrue()
+    }
+
+    @Test
+    fun `no custom variables leaves the namespace absent rather than empty`() = runTest {
+        val resolver = resolver(provider(RulesDimensionNamespace.Device, "platform" to string("android")))
+
+        val values = resolver.snapshot().getOrThrow().values
+
+        assertThat(values).containsOnlyKeys("device")
+        // An empty object would be truthy, so an absent namespace is what makes this a non-match.
+        assertThat(RulesEngine.evaluate("""{"!!": [{"var": "custom"}]}""", values).getOrThrow()).isFalse()
+    }
+
+    @Test
+    fun `a custom variable colliding with a provider fails the snapshot`() = runTest {
+        val resolver = resolver(provider(RulesDimensionNamespace.Custom, "source" to string("provided")))
+
+        val error = resolver.snapshot(mapOf("source" to string("call"))).exceptionOrNull()
+
+        assertThat(error).isEqualTo(RulesDimensionResolutionException.ConflictingDimension("custom.source"))
+    }
+
+    @Test
     fun `no providers yields an empty scope`() = runTest {
         assertThat(resolver().snapshot().getOrThrow().values).isEmpty()
     }

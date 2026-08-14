@@ -254,6 +254,25 @@ class CheckpointWorkflowResolverImplTest {
         }
 
     @Test
+    fun `a custom variable the audience requires resolves the workflow`() = runTest {
+        resolver = resolverWithPredicate("""{"==": [{"var": "custom.source"}, "settings"]}""")
+
+        val resolution = resolver.resolve(checkpointId, mapOf("source" to "settings"))
+
+        assertThat(resolution).isInstanceOf(CheckpointResolution.Workflow::class.java)
+    }
+
+    @Test
+    fun `a custom variable the audience does not accept resolves NoAction with NO_MATCH`() = runTest {
+        resolver = resolverWithPredicate("""{"==": [{"var": "custom.source"}, "settings"]}""")
+
+        assertThat(noActionReason(resolver.resolve(checkpointId, mapOf("source" to "onboarding"))))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
+        assertThat(noActionReason(resolver.resolve(checkpointId, emptyMap())))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
+    }
+
+    @Test
     fun `offerings and ui config are resolved once`() = runTest {
         configureRules(rule("wf1234"), rule("wf5678"))
         coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns
@@ -270,6 +289,15 @@ class CheckpointWorkflowResolverImplTest {
         override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> =
             throw IllegalStateException("no dimensions")
     }
+
+    private fun resolverWithPredicate(predicate: String) = CheckpointWorkflowResolverImpl(
+        workflowManager = mockWorkflowManager,
+        uiConfigProvider = mockUiConfigProvider,
+        checkpointsConfigProvider = mockCheckpointsConfigProvider,
+        localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
+        getOfferings = { mockOfferings },
+        audiencePredicate = predicate,
+    )
 
     private fun rule(workflowId: String) = CheckpointRule(
         id = "rule_$workflowId",

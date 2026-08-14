@@ -41,12 +41,17 @@ internal class LocalRulesEvaluator(
      * nothing matched does the first such failure surface, because then "no match" cannot be told apart from "we
      * failed to ask". A predicate that reads a dimension this SDK version does not supply is not a failure at all
      * — the engine resolves it to null, which is an ordinary non-match.
+     *
+     * [customVariables] are the caller's own values for this evaluation, readable under `custom.*`.
      */
     @Suppress("ReturnCount")
-    suspend fun <Rule : LocalRule> match(rules: List<Rule>): Result<Rule?> {
+    suspend fun <Rule : LocalRule> match(
+        rules: List<Rule>,
+        customVariables: Map<String, RulesDimensionValue> = emptyMap(),
+    ): Result<Rule?> {
         if (rules.isEmpty()) return Result.success(null)
 
-        val snapshot = dimensionResolver.snapshot().fold(
+        val snapshot = dimensionResolver.snapshot(customVariables).fold(
             onSuccess = { snapshot -> snapshot },
             onFailure = { error ->
                 return Result.failure(LocalRulesEvaluationException.DimensionResolution(error))

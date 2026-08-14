@@ -9,7 +9,7 @@ import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 private class CheckpointParamsAPI {
 
     fun check(params: CheckpointParams) {
-        val customProperties: Map<String, Any> = params.customProperties
+        val customVariables: Map<String, Any> = params.customVariables
 
         val empty = CheckpointParams()
         val fromMap = CheckpointParams(mapOf("source" to "api-tester", "count" to 1, "enabled" to true))

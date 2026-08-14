@@ -434,8 +434,8 @@ internal class PurchasesOrchestrator(
     @OptIn(InternalRevenueCatAPI::class)
     suspend fun resolveCheckpoint(
         checkpointIdentifier: String,
-        customProperties: Map<String, Any>,
-    ): CheckpointResolution = checkpointWorkflowResolver.resolve(checkpointIdentifier, customProperties)
+        customVariables: Map<String, Any>,
+    ): CheckpointResolution = checkpointWorkflowResolver.resolve(checkpointIdentifier, customVariables)
 
     fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
         storefrontCountryCode?.let {

@@ -125,7 +125,7 @@ class CheckpointsManagerTest {
         val presented = result as CheckpointResult.PaywallPresented
         assertThat(presented.paywallOutcome).isEqualTo(CheckpointPaywallOutcome.Dismissed)
         assertThat(presented.checkpoint.identifier).isEqualTo(checkpointId)
-        assertThat(presented.checkpoint.params.customProperties).isEqualTo(mapOf("goal" to "test"))
+        assertThat(presented.checkpoint.params.customVariables).isEqualTo(mapOf("goal" to "test"))
         verifyOrder {
             mockListener.onCheckpointHit(any())
             mockListener.onCheckpointCompleted(presented.checkpoint, presented)
@@ -138,9 +138,9 @@ class CheckpointsManagerTest {
 
         checkpoint(CheckpointParams("goal" to "test", "invalid" to Any(), "unsupportedNumber" to 1.toShort()))
 
-        val customProperties = slot<Map<String, Any>>()
-        coVerify { mockPurchases.resolveCheckpoint(checkpointId, capture(customProperties)) }
-        assertThat(customProperties.captured).isEqualTo(mapOf("goal" to "test"))
+        val customVariables = slot<Map<String, Any>>()
+        coVerify { mockPurchases.resolveCheckpoint(checkpointId, capture(customVariables)) }
+        assertThat(customVariables.captured).isEqualTo(mapOf("goal" to "test"))
     }
 
     @Test
