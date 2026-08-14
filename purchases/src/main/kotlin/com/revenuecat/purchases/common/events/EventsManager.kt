@@ -203,39 +203,7 @@ internal class EventsManager(
                     identityManager.currentAppUserID,
                     appSessionID.toString(),
                 )
-                is AdEvent.Displayed -> event.toBackendStoredEvent(
-                    identityManager.currentAppUserID,
-                    appSessionID.toString(),
-                )
-                is AdEvent.Open -> event.toBackendStoredEvent(
-                    identityManager.currentAppUserID,
-                    appSessionID.toString(),
-                )
-                is AdEvent.Revenue -> event.toBackendStoredEvent(
-                    identityManager.currentAppUserID,
-                    appSessionID.toString(),
-                )
-                is AdEvent.Loaded -> event.toBackendStoredEvent(
-                    identityManager.currentAppUserID,
-                    appSessionID.toString(),
-                )
-                is AdEvent.FailedToLoad -> event.toBackendStoredEvent(
-                    identityManager.currentAppUserID,
-                    appSessionID.toString(),
-                )
-                is AdEvent.RewardEarnedUnverified -> event.toBackendStoredEvent(
-                    identityManager.currentAppUserID,
-                    appSessionID.toString(),
-                )
-                is AdEvent.RewardVerified -> event.toBackendStoredEvent(
-                    identityManager.currentAppUserID,
-                    appSessionID.toString(),
-                )
-                is AdEvent.RewardGranted -> event.toBackendStoredEvent(
-                    identityManager.currentAppUserID,
-                    appSessionID.toString(),
-                )
-                is AdEvent.RewardFailedToVerify -> event.toBackendStoredEvent(
+                is AdEvent -> event.toBackendStoredEvent(
                     identityManager.currentAppUserID,
                     appSessionID.toString(),
                 )
