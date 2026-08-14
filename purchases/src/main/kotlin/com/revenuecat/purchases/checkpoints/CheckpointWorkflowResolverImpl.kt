@@ -42,7 +42,7 @@ internal class CheckpointWorkflowResolverImpl(
     private val workflowManager: WorkflowManager?,
     private val uiConfigProvider: UiConfigProvider?,
     private val checkpointsConfigProvider: CheckpointsConfigProvider?,
-    private val audiencesConfigProvider: AudiencesConfigProvider? = null,
+    private val audiencesConfigProvider: AudiencesConfigProvider?,
     private val localRulesEvaluator: LocalRulesEvaluator,
     private val getOfferings: suspend () -> Offerings,
 ) : CheckpointWorkflowResolver {

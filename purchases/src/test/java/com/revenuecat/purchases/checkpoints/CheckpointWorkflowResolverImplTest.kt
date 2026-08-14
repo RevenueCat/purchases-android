@@ -134,6 +134,7 @@ class CheckpointWorkflowResolverImplTest {
 
         assertThat(noActionReason(resolve()))
             .isEqualTo(CheckpointResolution.NoAction.Reason.DISABLED)
+        coVerify(exactly = 0) { mockAudiencesConfigProvider.getAudience(any()) }
     }
 
     @Test
@@ -150,6 +151,7 @@ class CheckpointWorkflowResolverImplTest {
 
         assertThat(noActionReason(resolve()))
             .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        coVerify(exactly = 0) { mockAudiencesConfigProvider.getAudience(any()) }
     }
 
     @Test
@@ -214,8 +216,9 @@ class CheckpointWorkflowResolverImplTest {
     fun `audiences after the first match are not loaded`() = runTest {
         configureRules(rule("wf1234"), rule("wf5678"))
 
-        resolve()
+        val resolution = resolve() as CheckpointResolution.Workflow
 
+        assertThat(resolution.workflow).isEqualTo(mockWorkflow)
         coVerify(exactly = 0) { mockAudiencesConfigProvider.getAudience("aud_wf5678") }
     }
 

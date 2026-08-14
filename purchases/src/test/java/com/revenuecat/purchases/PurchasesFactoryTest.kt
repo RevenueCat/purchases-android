@@ -191,6 +191,29 @@ class PurchasesFactoryTest {
         purchases.close()
     }
 
+    @Test
+    fun `creating purchases with custom entitlement computation does not provide audiences config to the orchestrator`() {
+        val application = spyk(ApplicationProvider.getApplicationContext<Application>())
+        every { application.applicationContext } returns application
+        every { application.checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns
+            PackageManager.PERMISSION_GRANTED
+        val configuration = PurchasesConfiguration.Builder(application, "fakeApiKey")
+            .appUserID("appUserID")
+            .store(Store.PLAY_STORE)
+            .dangerousSettings(DangerousSettings(customEntitlementComputation = true))
+            .build()
+
+        val purchases = purchasesFactory.createPurchases(
+            configuration = configuration,
+            platformInfo = PlatformInfo(flavor = "test", version = null),
+            proxyURL = null,
+            overrideBillingAbstract = mockk<BillingAbstract>(relaxed = true),
+        )
+
+        assertThat(purchases.purchasesOrchestrator.audiencesConfigProvider).isNull()
+        purchases.close()
+    }
+
     // region shouldInitializeDiagnostics
 
     @Test
