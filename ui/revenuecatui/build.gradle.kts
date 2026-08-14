@@ -142,10 +142,8 @@ dependencies {
 
 dokka {
     dokkaSourceSets {
-        named("defaults") {
-            dependentSourceSets.addLater(dokkaSourceSets.named("main").flatMap { it.sourceSetId })
-        }
-        named("main") {
+        // Variant source sets are registered after this block runs, so they can only be reached lazily.
+        matching { it.name == "defaultsRelease" }.configureEach {
             reportUndocumented.set(true)
             skipDeprecated.set(true)
 

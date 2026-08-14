@@ -1,8 +1,8 @@
 package com.revenuecat.purchases.android.buildlogic.convention
 
+import com.android.build.api.dsl.LibraryExtension
 import com.android.build.api.variant.HasUnitTestBuilder
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
-import com.android.build.gradle.LibraryExtension
 import com.revenuecat.purchases.android.buildlogic.ktx.getVersion
 import com.revenuecat.purchases.android.buildlogic.ktx.versionCatalog
 import org.gradle.api.JavaVersion

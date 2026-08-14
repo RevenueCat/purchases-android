@@ -251,14 +251,13 @@ fun DokkaSourceSetSpec.configureDocumentedSourceSet() {
 
 dokka {
     dokkaSourceSets {
-        named("customEntitlementComputation") {
+        // Dokka only documents release variants, which still leaves the release variant of the
+        // customEntitlementComputation flavor. Variant source sets are registered after this
+        // block runs, so they can only be reached lazily.
+        matching { it.name.startsWith("customEntitlementComputation") }.configureEach {
             suppress.set(true)
         }
-        named("defaults") {
-            dependentSourceSets.addLater(dokkaSourceSets.named("main").flatMap { it.sourceSetId })
-            configureDocumentedSourceSet()
-        }
-        named("main") {
+        matching { it.name == "defaultsRelease" }.configureEach {
             configureDocumentedSourceSet()
             sourceLink {
                 localDirectory.set(file("src/main/kotlin"))
