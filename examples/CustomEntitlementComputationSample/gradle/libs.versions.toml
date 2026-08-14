@@ -1,12 +1,15 @@
 [versions]
 agp = "8.13.2"
-kotlin = "1.8.22"
+# Must be able to read the SDK's Kotlin metadata: a compiler reads metadata up to one
+# minor ahead, and the published snapshot this app consumes is now built with 2.3.x.
+kotlin = "2.2.21"
 purchases = "10.20.0-SNAPSHOT"
 androidxCore = "1.10.1"
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 
 [libraries]
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
