@@ -93,6 +93,7 @@ internal class CheckpointWorkflowResolverImpl(
         return resolveRule(workflowManager, dependencies, rule, uiConfig)
     }
 
+    @Suppress("ReturnCount")
     private suspend fun resolveRule(
         workflowManager: WorkflowManager,
         dependencies: CheckpointResolutionDependencies,
@@ -104,11 +105,18 @@ internal class CheckpointWorkflowResolverImpl(
         } catch (e: PurchasesException) {
             return unservableRule(rule, "it could not be loaded: ${e.error}")
         }
-        val offeringSteps = workflow.steps.values.filter { it.type == OFFERING_STEP_TYPE }
-        return if (offeringSteps.isEmpty()) {
-            resolveUiRule(dependencies, rule, workflow, uiConfig)
+        val initialStep = workflow.steps[workflow.initialStepId]
+            ?: return unservableRule(rule, "its initial step was not found")
+        return if (initialStep.type == OFFERING_STEP_TYPE) {
+            if (workflow.steps.size != 1) {
+                unsupportedOfferingRule(rule, "an offering step cannot be mixed with other steps")
+            } else {
+                resolveOfferingRule(dependencies, rule, initialStep)
+            }
+        } else if (workflow.steps.values.any { it.type == OFFERING_STEP_TYPE }) {
+            unservableRule(rule, "a UI workflow cannot contain offering steps")
         } else {
-            resolveOfferingRule(dependencies, rule, workflow, offeringSteps)
+            resolveUiRule(dependencies, rule, workflow, uiConfig)
         }
     }
 
@@ -116,26 +124,8 @@ internal class CheckpointWorkflowResolverImpl(
     private suspend fun resolveOfferingRule(
         dependencies: CheckpointResolutionDependencies,
         rule: CheckpointRule,
-        workflow: PublishedWorkflow,
-        offeringSteps: List<WorkflowStep>,
+        step: WorkflowStep,
     ): CheckpointResolution {
-        val step = offeringSteps.singleOrNull()
-            ?: return unsupportedOfferingRule(rule, "it contains more than one offering step")
-        if (workflow.steps.size != 1) {
-            return unsupportedOfferingRule(rule, "an offering step cannot be mixed with other steps")
-        }
-        if (workflow.steps[workflow.initialStepId] != step) {
-            return unsupportedOfferingRule(rule, "the offering step is not the initial step")
-        }
-        if (step.screenId != null) {
-            return unsupportedOfferingRule(rule, "the offering step contains a screen")
-        }
-        if (step.triggers.isNotEmpty()) {
-            return unsupportedOfferingRule(rule, "the offering step contains triggers")
-        }
-        if (step.triggerActions.isNotEmpty()) {
-            return unsupportedOfferingRule(rule, "the offering step contains trigger actions")
-        }
         val offeringIdentifier = (step.paramValues[OFFERING_IDENTIFIER_PARAM] as? JsonPrimitive)
             ?.takeIf { it.isString }
             ?.content

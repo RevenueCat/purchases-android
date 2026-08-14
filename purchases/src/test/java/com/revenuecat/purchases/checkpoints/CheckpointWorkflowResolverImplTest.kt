@@ -321,9 +321,19 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `offering step outputs and metadata do not prevent resolution`() = runTest {
+    fun `offering step ancillary fields do not prevent resolution`() = runTest {
         val step = offeringStep("default").copy(
+            screenId = "screen-id",
+            triggers = listOf(
+                WorkflowTrigger(
+                    name = "continue",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "action-id",
+                    componentId = "component-id",
+                ),
+            ),
             outputs = mapOf("selected" to JsonPrimitive(true)),
+            triggerActions = mapOf("action-id" to WorkflowTriggerAction.Unknown),
             metadata = JsonPrimitive("metadata"),
         )
         coEvery { mockWorkflowManager.getPublishedWorkflow("wf1234") } returns workflow("wf1234", step)
@@ -332,7 +342,7 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `unsupported offering step shapes do not fall through to a later rule`() = runTest {
+    fun `unsupported workflow shapes do not fall through to a later rule`() = runTest {
         val baseOfferingStep = offeringStep("default")
         val invalidWorkflows = listOf(
             workflow(
@@ -345,27 +355,14 @@ class CheckpointWorkflowResolverImplTest {
                 baseOfferingStep,
                 WorkflowStep("screen-step", "screen", screenId = "screen-id"),
             ),
+            workflow(
+                "mixed-ui-and-offering",
+                WorkflowStep("screen-step", "screen", screenId = "screen-id"),
+                baseOfferingStep,
+            ),
             workflow("missing-initial-step", baseOfferingStep).copy(initialStepId = "missing-step"),
             workflow("mismatched-step-map-key", baseOfferingStep).copy(
                 steps = mapOf("different-key" to baseOfferingStep),
-            ),
-            workflow("offering-with-screen", baseOfferingStep.copy(screenId = "screen-id")),
-            workflow(
-                "offering-with-triggers",
-                baseOfferingStep.copy(
-                    triggers = listOf(
-                        WorkflowTrigger(
-                            name = "continue",
-                            type = WorkflowTriggerType.ON_PRESS,
-                            actionId = "action-id",
-                            componentId = "component-id",
-                        ),
-                    ),
-                ),
-            ),
-            workflow(
-                "offering-with-trigger-actions",
-                baseOfferingStep.copy(triggerActions = mapOf("action-id" to WorkflowTriggerAction.Unknown)),
             ),
             workflow("offering-without-identifier", baseOfferingStep.copy(paramValues = emptyMap())),
             workflow(
