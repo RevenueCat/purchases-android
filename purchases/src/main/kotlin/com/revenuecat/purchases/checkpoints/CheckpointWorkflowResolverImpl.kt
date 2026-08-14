@@ -30,12 +30,6 @@ import kotlinx.serialization.json.JsonPrimitive
  * Resolves a checkpoint through the `checkpoint_rules` topic: the checkpoint's rules are read from remote config
  * and evaluated in order against locally collected dimensions, and the first rule whose audience matches wins.
  *
- * UI config remains a prerequisite for every matched checkpoint workflow. After it is loaded, a terminal offering
- * step returns its offering to the app without presentation, while a UI workflow keeps the existing presentation
- * path. The winner is final. If its workflow turns out to be unservable, the checkpoint resolves to
- * [CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE] rather than falling through to a rule the
- * customer was not the first choice for.
- *
  * Audience predicates are not served yet, so every rule currently carries [PLACEHOLDER_AUDIENCE_PREDICATE] and the
  * published order remains the effective signal; see [AudienceRule].
  *
