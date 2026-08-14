@@ -10,6 +10,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -40,6 +41,17 @@ fun OnboardingScreen(
         )
         Text(text = state.step.title, style = MaterialTheme.typography.headlineSmall)
         Text(text = state.step.body, style = MaterialTheme.typography.bodyMedium)
+
+        if (state.step == Step.Personalize) {
+            OutlinedTextField(
+                value = state.name,
+                onValueChange = viewModel::onNameChange,
+                label = { Text(text = "custom.name (optional)") },
+                singleLine = true,
+                enabled = !state.running,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
 
         StepControls(
             step = state.step,

@@ -37,6 +37,8 @@ import kotlinx.serialization.json.JsonPrimitive
  * [SIMULATED_ERROR_CHECKPOINT_ID] is the one piece of PoC scaffolding left: it is the only way for the tester
  * apps to exercise the throw path, since nothing in the config-driven path throws.
  */
+// TooManyFunctions/LongParameterList: both are the hardcoded test-rule scaffolding, not the real shape.
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class CheckpointWorkflowResolverImpl(
     private val workflowManager: WorkflowManager?,
     private val uiConfigProvider: UiConfigProvider?,
@@ -45,6 +47,9 @@ internal class CheckpointWorkflowResolverImpl(
     private val getOfferings: suspend () -> Offerings,
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     private val audiencePredicate: String = PLACEHOLDER_AUDIENCE_PREDICATE,
+    // TEMPORARY, not for main: see [TEST_RULES]. Tests opt out to exercise the published-rule walk.
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    private val useHardcodedTestRules: Boolean = true,
 ) : CheckpointWorkflowResolver {
 
     override suspend fun resolve(
@@ -78,8 +83,13 @@ internal class CheckpointWorkflowResolverImpl(
             CheckpointRulesResolution.Unavailable ->
                 return configurationUnavailable("The rules for checkpoint '$identifier' could not be read.")
         }
+        val rules = if (useHardcodedTestRules) {
+            hardcodedTestRules(workflowManager)
+        } else {
+            checkpoint.rules.map { rule -> AudienceRule(rule, audiencePredicate) }
+        }
         val matchResult = localRulesEvaluator.match(
-            rules = checkpoint.rules.map { rule -> AudienceRule(rule, audiencePredicate) },
+            rules = rules,
             customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables),
         )
         // An audience the SDK failed to evaluate is not the same answer as an audience the customer is outside of,
@@ -209,6 +219,40 @@ internal class CheckpointWorkflowResolverImpl(
     }
 
     /**
+     * TEMPORARY, not for main: builds [TEST_RULES] into rules the evaluator can walk.
+     *
+     * The targets are named by offering rather than by workflow because workflow ids are generated per project,
+     * while the offering ids are the ones a tester recognises, so the workflow that renders each target offering is
+     * looked up by inverting [WorkflowManager.offeringIdByWorkflowId].
+     *
+     * A rule whose offering no workflow renders is skipped rather than kept, unlike the real walk where it would
+     * win and then fail: skipping keeps the remaining rules testable on a project that lacks one of the offerings.
+     */
+    private suspend fun hardcodedTestRules(workflowManager: WorkflowManager): List<AudienceRule> {
+        val workflowIdByOfferingId = workflowManager.offeringIdByWorkflowId()
+            .entries
+            .associate { (workflowId, offeringId) -> offeringId to workflowId }
+        return TEST_RULES.mapNotNull { (predicate, offeringId) ->
+            val workflowId = workflowIdByOfferingId[offeringId]
+            if (workflowId == null) {
+                warnLog { "Skipping hardcoded test rule for offering '$offeringId': no workflow renders it." }
+                null
+            } else {
+                AudienceRule(
+                    checkpointRule = CheckpointRule(
+                        id = "hardcoded_$offeringId",
+                        audienceId = "hardcoded_$offeringId",
+                        workflowId = workflowId,
+                    ),
+                    predicate = predicate,
+                )
+            }
+        }.also { rules ->
+            debugLog { "Evaluating ${rules.size} hardcoded test rules instead of the published ones." }
+        }
+    }
+
+    /**
      * Pairs a checkpoint rule with the predicate its audience stands for. Audience predicates will arrive in their
      * own remote-config topic, whose shape is not settled, so until then every audience matches and the rules are
      * effectively still walked in published order.
@@ -223,5 +267,16 @@ internal class CheckpointWorkflowResolverImpl(
         const val OFFERING_STEP_TYPE = "offering"
         const val OFFERING_IDENTIFIER_PARAM = "offering_identifier"
         const val PLACEHOLDER_AUDIENCE_PREDICATE = "true"
+
+        /**
+         * TEMPORARY, not for main: predicate to target offering, in priority order. Stands in for the audiences
+         * topic so rule selection can be exercised by hand before that topic exists.
+         */
+        val TEST_RULES = listOf(
+            """{"and": [{"==": [{"var": "custom.name"}, "Antonio"]}, """ +
+                """{"==": [{"var": "device.locale"}, "en_us"]}]}""" to "default",
+            """{"==": [{"var": "custom.name"}, "Antonio"]}""" to "rick",
+            "true" to "no_name",
+        )
     }
 }

@@ -89,6 +89,7 @@ class CheckpointWorkflowResolverImplTest {
                 offeringsFetchError?.let { throw PurchasesException(it) }
                 mockOfferings
             },
+            useHardcodedTestRules = false,
         )
     }
 
@@ -112,6 +113,7 @@ class CheckpointWorkflowResolverImplTest {
             checkpointsConfigProvider = null,
             localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
             getOfferings = { mockOfferings },
+            useHardcodedTestRules = false,
         )
 
         assertThat(noActionReason(resolve()))
@@ -241,6 +243,7 @@ class CheckpointWorkflowResolverImplTest {
                 checkpointsConfigProvider = mockCheckpointsConfigProvider,
                 localRulesEvaluator = LocalRulesEvaluator(providers = listOf(FailingDimensionProvider)),
                 getOfferings = { mockOfferings },
+                useHardcodedTestRules = false,
             )
 
             assertThat(noActionReason(resolve()))
@@ -308,6 +311,7 @@ class CheckpointWorkflowResolverImplTest {
                 offeringsFetched++
                 mockOfferings
             },
+            useHardcodedTestRules = false,
         )
 
         assertThat(noActionReason(resolve())).isEqualTo(CheckpointResolution.NoAction.Reason.DISABLED)
@@ -448,6 +452,7 @@ class CheckpointWorkflowResolverImplTest {
             checkpointsConfigProvider = mockCheckpointsConfigProvider,
             localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
             getOfferings = { throw CancellationException("cancelled") },
+            useHardcodedTestRules = false,
         )
 
         val thrown = runCatching { resolve() }.exceptionOrNull()
@@ -462,6 +467,39 @@ class CheckpointWorkflowResolverImplTest {
             throw IllegalStateException("no dimensions")
     }
 
+    @Test
+    fun `the hardcoded test rules select a workflow by custom name`() = runTest {
+        // No device provider, so device.locale is absent and the first rule can never match: the name alone
+        // decides between the 'rick' and 'no_name' rules.
+        coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns mapOf(
+            "wf_default" to "default",
+            "wf_rick" to "rick",
+            "wf_no_name" to "no_name",
+        )
+        every { mockOfferings.all } returns mapOf("rick" to mockOffering, "no_name" to mockOffering)
+        val resolver = CheckpointWorkflowResolverImpl(
+            workflowManager = mockWorkflowManager,
+            uiConfigProvider = mockUiConfigProvider,
+            checkpointsConfigProvider = mockCheckpointsConfigProvider,
+            localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
+            getOfferings = { mockOfferings },
+        )
+
+        val named = resolver.resolve(
+            checkpointId,
+            mapOf("name" to RulesDimensionValue.StringValue("Antonio")),
+        ) as CheckpointResolution.MatchedWorkflow
+        val other = resolver.resolve(
+            checkpointId,
+            mapOf("name" to RulesDimensionValue.StringValue("Someone else")),
+        ) as CheckpointResolution.MatchedWorkflow
+        val nameless = resolver.resolve(checkpointId, emptyMap()) as CheckpointResolution.MatchedWorkflow
+
+        assertThat(named.workflow.id).isEqualTo("wf_rick")
+        assertThat(other.workflow.id).isEqualTo("wf_no_name")
+        assertThat(nameless.workflow.id).isEqualTo("wf_no_name")
+    }
+
     private fun resolverWithPredicate(predicate: String) = CheckpointWorkflowResolverImpl(
         workflowManager = mockWorkflowManager,
         uiConfigProvider = mockUiConfigProvider,
@@ -469,6 +507,7 @@ class CheckpointWorkflowResolverImplTest {
         localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
         getOfferings = { mockOfferings },
         audiencePredicate = predicate,
+        useHardcodedTestRules = false,
     )
 
     private fun rule(workflowId: String) = CheckpointRule(

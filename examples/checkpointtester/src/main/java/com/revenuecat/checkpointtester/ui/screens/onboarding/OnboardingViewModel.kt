@@ -39,6 +39,7 @@ class OnboardingViewModel : ViewModel() {
 
     data class UiState(
         val step: Step = Step.Welcome,
+        val name: String = "",
         val running: Boolean = false,
         val message: String? = null,
     ) {
@@ -48,6 +49,11 @@ class OnboardingViewModel : ViewModel() {
 
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state.asStateFlow()
+
+    fun onNameChange(value: String) {
+        if (_state.value.running) return
+        _state.update { it.copy(name = value) }
+    }
 
     fun next() {
         if (_state.value.running) return
@@ -73,10 +79,17 @@ class OnboardingViewModel : ViewModel() {
     private fun runCheckpointThenFinish() {
         _state.update { it.copy(running = true, message = null) }
         viewModelScope.launch {
+            // An empty name sends no `custom.name` at all, so a rule reading it sees an absent dimension rather
+            // than an empty string.
+            val customVariables = buildMap {
+                put("step", CustomVariableValue.String(Step.Personalize.name))
+                _state.value.name.trim().takeIf { it.isNotEmpty() }
+                    ?.let { name -> put("name", CustomVariableValue.String(name)) }
+            }
             val message = try {
                 val result = Purchases.sharedInstance.awaitCheckpoint(
                     "onboarding_complete",
-                    CheckpointParams("step" to CustomVariableValue.String(Step.Personalize.name)),
+                    CheckpointParams(customVariables),
                 )
                 when (result) {
                     is CheckpointResult.ReceivedOffering ->
