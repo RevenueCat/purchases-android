@@ -172,6 +172,22 @@ Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAd(
 interstitialAd?.show(this, placement = "level_complete_interstitial")
 ```
 
+The coroutine overload returns Google's original load result:
+
+```kotlin
+lifecycleScope.launch {
+    when (
+        val result = Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAd(
+            adRequest = adRequest,
+            placement = "game_interstitial",
+        )
+    ) {
+        is AdLoadResult.Success -> interstitialAd = result.ad
+        is AdLoadResult.Failure -> interstitialAd = null
+    }
+}
+```
+
 > [!IMPORTANT]
 > Do not assign `interstitialAd.adEventCallback` directly after a tracked load. Direct assignment replaces
 > RevenueCat's tracking wrapper and prevents `show(activity, placement)` from applying its placement override. Pass
