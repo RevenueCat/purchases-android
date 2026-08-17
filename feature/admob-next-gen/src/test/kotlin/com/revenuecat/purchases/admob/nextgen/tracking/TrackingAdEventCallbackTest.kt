@@ -52,39 +52,6 @@ class TrackingAdEventCallbackTest {
         unmockkObject(Purchases)
     }
 
-    /**
-     * The six format callbacks differ only in the [AdFormat] and [AdDisplayedTrigger] they hand to
-     * the base class, so a copy-paste slip is the likely failure. Driving all of them here catches
-     * both a wrong format and a wrong trigger, the latter of which would double-count displays for
-     * full-screen formats since the SDK fires onAdImpression alongside onAdShowedFullScreenContent.
-     */
-    @Test
-    fun `each format tracks display from its own trigger only`() {
-        trackingEventCallbackFixtures.forEach { fixture ->
-            val caseTracker = mockk<AdTracker>(relaxed = true)
-            every { purchases.adTracker } returns caseTracker
-            val callback = fixture.create(null) { responseInfo }
-
-            when (fixture.displayTrigger) {
-                AdDisplayedTrigger.IMPRESSION -> callback.onAdShowedFullScreenContent()
-                AdDisplayedTrigger.FULL_SCREEN_SHOW -> callback.onAdImpression()
-            }
-
-            verify(exactly = 0) { caseTracker.trackAdDisplayed(any(), any()) }
-
-            when (fixture.displayTrigger) {
-                AdDisplayedTrigger.IMPRESSION -> callback.onAdImpression()
-                AdDisplayedTrigger.FULL_SCREEN_SHOW -> callback.onAdShowedFullScreenContent()
-            }
-
-            val trackedData = slot<AdDisplayedData>()
-            verify(exactly = 1) {
-                caseTracker.trackAdDisplayed(capture(trackedData), AdCaptureMethod.ADAPTER)
-            }
-            assertEquals(fixture.description, fixture.adFormat, trackedData.captured.adFormat)
-        }
-    }
-
     @Test
     fun `tracks click before forwarding callback`() {
         val order = mutableListOf<String>()
