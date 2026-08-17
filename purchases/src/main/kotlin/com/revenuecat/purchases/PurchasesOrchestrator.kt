@@ -5,7 +5,10 @@ package com.revenuecat.purchases
 import android.app.Activity
 import android.app.Application
 import android.app.backup.BackupManager
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.util.Pair
@@ -978,7 +981,7 @@ internal class PurchasesOrchestrator(
             object : ReceiveCustomerInfoCallback {
                 override fun onReceived(customerInfo: CustomerInfo) {
                     val managementURL = customerInfo.managementURL
-                        ?: appConfig.store.managementUrl?.let { android.net.Uri.parse(it) }
+                        ?: appConfig.store.managementUrl?.let { Uri.parse(it) }
                     if (managementURL == null) {
                         val error = PurchasesError(
                             PurchasesErrorCode.CustomerInfoError,
@@ -990,11 +993,11 @@ internal class PurchasesOrchestrator(
                     }
                     try {
                         context.startActivity(
-                            android.content.Intent(android.content.Intent.ACTION_VIEW, managementURL)
-                                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                            Intent(Intent.ACTION_VIEW, managementURL)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                         )
                         callback?.onSuccess()
-                    } catch (e: android.content.ActivityNotFoundException) {
+                    } catch (e: ActivityNotFoundException) {
                         val error = PurchasesError(
                             PurchasesErrorCode.UnknownError,
                             "Cannot open subscription management URL: ${e.message}",

@@ -706,10 +706,17 @@ public class Purchases internal constructor(
     /**
      * Opens the subscription management page for the current user.
      *
-     * Uses [CustomerInfo.managementURL] if available, otherwise falls back to the store's default
-     * subscription management URL.
+     * Uses [CustomerInfo.managementURL] if available, which covers non-Play purchases such as
+     * Stripe or web purchases. Otherwise falls back to the store's default subscription management
+     * URL for the configured store.
      *
-     * @param context Android context used to start the browser intent.
+     * The page is opened in a new task, so an application context is enough. Note that
+     * [CustomerInfo] may be fetched from the network first, so the page can end up being requested
+     * after your app is no longer in the foreground. In that case Android may silently drop the
+     * launch, and [ManageSubscriptionsCallback.onSuccess] is still reported.
+     *
+     * @param context Context used to start the subscription management page. An application
+     * context is sufficient.
      * @param callback Optional [ManageSubscriptionsCallback] called on success or error.
      */
     @JvmOverloads

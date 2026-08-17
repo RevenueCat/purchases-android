@@ -5,9 +5,14 @@
 
 package com.revenuecat.purchases
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.Purchase
+import com.revenuecat.purchases.common.Constants
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
@@ -2280,6 +2285,150 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     // endregion redeemWebPurchase
+
+    // region showManageSubscriptions
+
+    @Test
+    fun `showManageSubscriptions opens management URL from CustomerInfo`() {
+        every { mockInfo.managementURL } returns Uri.parse("https://billing.stripe.com/portal/session/1234")
+
+        val context = mockk<Context>(relaxed = true)
+        val intentSlot = slot<Intent>()
+        every { context.startActivity(capture(intentSlot)) } just Runs
+
+        purchases.showManageSubscriptions(context)
+
+        assertThat(intentSlot.captured.data.toString()).isEqualTo("https://billing.stripe.com/portal/session/1234")
+        assertThat(intentSlot.captured.action).isEqualTo(Intent.ACTION_VIEW)
+    }
+
+    @Test
+    fun `showManageSubscriptions opens the management page in a new task`() {
+        every { mockInfo.managementURL } returns Uri.parse("https://app.revenuecat.com/manage")
+
+        val context = mockk<Context>(relaxed = true)
+        val intentSlot = slot<Intent>()
+        every { context.startActivity(capture(intentSlot)) } just Runs
+
+        purchases.showManageSubscriptions(context)
+
+        assertThat(intentSlot.captured.flags and Intent.FLAG_ACTIVITY_NEW_TASK)
+            .isEqualTo(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    @Test
+    fun `showManageSubscriptions uses store default URL when CustomerInfo has no management URL`() {
+        every { mockInfo.managementURL } returns null
+
+        val context = mockk<Context>(relaxed = true)
+        val intentSlot = slot<Intent>()
+        every { context.startActivity(capture(intentSlot)) } just Runs
+
+        purchases.showManageSubscriptions(context)
+
+        assertThat(intentSlot.captured.data.toString()).isEqualTo(Constants.GOOGLE_PLAY_MANAGEMENT_URL)
+    }
+
+    @Test
+    fun `showManageSubscriptions uses Amazon store default URL when configured store is Amazon`() {
+        buildPurchases(anonymous = false, store = Store.AMAZON)
+        every { mockInfo.managementURL } returns null
+
+        val context = mockk<Context>(relaxed = true)
+        val intentSlot = slot<Intent>()
+        every { context.startActivity(capture(intentSlot)) } just Runs
+
+        purchases.showManageSubscriptions(context)
+
+        assertThat(intentSlot.captured.data.toString()).isEqualTo(Constants.AMAZON_STORE_MANAGEMENT_URL)
+    }
+
+    @Test
+    fun `showManageSubscriptions calls success callback after opening URL`() {
+        every { mockInfo.managementURL } returns Uri.parse("https://app.revenuecat.com/manage")
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.startActivity(any()) } just Runs
+
+        var successCalled = false
+        var errorReceived: PurchasesError? = null
+        purchases.showManageSubscriptions(
+            context,
+            object : ManageSubscriptionsCallback {
+                override fun onSuccess() { successCalled = true }
+                override fun onError(error: PurchasesError) { errorReceived = error }
+            },
+        )
+
+        assertThat(successCalled).isTrue()
+        assertThat(errorReceived).isNull()
+    }
+
+    @Test
+    fun `showManageSubscriptions calls error callback when CustomerInfo fetch fails`() {
+        val fetchError = PurchasesError(PurchasesErrorCode.NetworkError, "Network error")
+        mockCustomerInfoHelper(errorGettingCustomerInfo = fetchError)
+
+        val context = mockk<Context>(relaxed = true)
+
+        var successCalled = false
+        var errorReceived: PurchasesError? = null
+        purchases.showManageSubscriptions(
+            context,
+            object : ManageSubscriptionsCallback {
+                override fun onSuccess() { successCalled = true }
+                override fun onError(error: PurchasesError) { errorReceived = error }
+            },
+        )
+
+        assertThat(successCalled).isFalse()
+        assertThat(errorReceived?.code).isEqualTo(PurchasesErrorCode.NetworkError)
+    }
+
+    @Test
+    fun `showManageSubscriptions calls error callback when store has no management URL`() {
+        buildPurchases(anonymous = false, store = Store.TEST_STORE)
+        every { mockInfo.managementURL } returns null
+
+        val context = mockk<Context>(relaxed = true)
+
+        var successCalled = false
+        var errorReceived: PurchasesError? = null
+        purchases.showManageSubscriptions(
+            context,
+            object : ManageSubscriptionsCallback {
+                override fun onSuccess() { successCalled = true }
+                override fun onError(error: PurchasesError) { errorReceived = error }
+            },
+        )
+
+        assertThat(successCalled).isFalse()
+        assertThat(errorReceived?.code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
+        verify(exactly = 0) { context.startActivity(any()) }
+    }
+
+    @Test
+    fun `showManageSubscriptions calls error callback when no activity can handle the intent`() {
+        every { mockInfo.managementURL } returns Uri.parse("https://app.revenuecat.com/manage")
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.startActivity(any()) } throws ActivityNotFoundException("no handler")
+
+        var successCalled = false
+        var errorReceived: PurchasesError? = null
+        purchases.showManageSubscriptions(
+            context,
+            object : ManageSubscriptionsCallback {
+                override fun onSuccess() { successCalled = true }
+                override fun onError(error: PurchasesError) { errorReceived = error }
+            },
+        )
+
+        assertThat(successCalled).isFalse()
+        assertThat(errorReceived?.code).isEqualTo(PurchasesErrorCode.UnknownError)
+    }
+
+    // endregion showManageSubscriptions
 
     // region Paywall fonts
 
