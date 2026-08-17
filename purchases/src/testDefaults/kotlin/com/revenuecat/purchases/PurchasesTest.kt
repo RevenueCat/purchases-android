@@ -2288,6 +2288,12 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     // region showManageSubscriptions
 
+    // These tests assert on the Intent handed to Context.startActivity. Whether a real device
+    // actually resolves that Intent to the Play Store app cannot be covered here, since it depends
+    // on which packages are installed. That part is verified manually on an emulator running a
+    // Play Store system image: tapping "Show manage subscriptions" in paywall-tester's App Info
+    // screen opens the Google Play Subscriptions page and onSuccess is reported.
+
     @Test
     fun `showManageSubscriptions opens management URL from CustomerInfo`() {
         every { mockInfo.managementURL } returns Uri.parse("https://billing.stripe.com/portal/session/1234")
