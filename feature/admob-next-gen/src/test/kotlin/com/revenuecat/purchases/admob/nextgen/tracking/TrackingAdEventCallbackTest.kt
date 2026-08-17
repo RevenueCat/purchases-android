@@ -194,15 +194,15 @@ class TrackingAdEventCallbackTest {
     /**
      * [TrackingAdEventCallback.delegate] is a var so show-time code can swap the application
      * callback after the ad was loaded. Both an inherited override and a format-specific one are
-     * exercised: the format classes take a constructor parameter that shares the property's name,
-     * so this pins that their overrides follow the current delegate rather than the original.
+     * exercised, since the format classes reach the property through their own overrides and would
+     * otherwise be free to hold on to the delegate they were constructed with.
      */
     @Test
     fun `swapping the delegate redirects inherited and format callbacks`() {
         val seen = mutableListOf<String>()
         val callback = TrackingBannerAdEventCallback(
-            delegate = recordingBannerDelegate("original", seen),
-            placement = "home",
+            initialDelegate = recordingBannerDelegate("original", seen),
+            initialPlacement = "home",
             adUnitId = "ad-unit",
             responseInfoProvider = { responseInfo },
         )
@@ -218,8 +218,8 @@ class TrackingAdEventCallbackTest {
     fun `clearing the delegate stops forwarding but keeps tracking`() {
         val seen = mutableListOf<String>()
         val callback = TrackingBannerAdEventCallback(
-            delegate = recordingBannerDelegate("original", seen),
-            placement = "home",
+            initialDelegate = recordingBannerDelegate("original", seen),
+            initialPlacement = "home",
             adUnitId = "ad-unit",
             responseInfoProvider = { responseInfo },
         )
@@ -300,12 +300,12 @@ class TrackingAdEventCallbackTest {
         every { Purchases.isConfigured } returns false
         var delegated = false
         val callback = TrackingBannerAdEventCallback(
-            delegate = object : BannerAdEventCallback {
+            initialDelegate = object : BannerAdEventCallback {
                 override fun onAdImpression() {
                     delegated = true
                 }
             },
-            placement = null,
+            initialPlacement = null,
             adUnitId = "ad-unit",
             responseInfoProvider = { responseInfo },
         )
