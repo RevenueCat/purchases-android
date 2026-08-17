@@ -5,15 +5,15 @@ package com.revenuecat.purchases.common.workflows
 import com.revenuecat.purchases.InternalRevenueCatAPI
 
 /**
- * The screens a customer reaches, breadth first from this workflow's entry steps. Asset warming is bounded and
- * gets cut short by a paywall opening or a memory trim, so this order decides which pages are warm by then.
+ * The screens a customer reaches, breadth first from this workflow's entry steps. Warming gets cut short by a
+ * paywall opening or a memory trim, so this order decides which pages are warm by then.
  *
- * Screens no step reaches come last rather than being dropped: [WorkflowTriggerAction] has an `Unknown`
- * variant and [WorkflowStep.type] is an open string, so a navigation this SDK version cannot read would
- * otherwise silently stop warming a page that really does get shown.
+ * Unreachable screens come last rather than being dropped: [WorkflowTriggerAction] has an `Unknown` variant
+ * and [WorkflowStep.type] is an open string, so a navigation this SDK version cannot read must not silently
+ * stop a page that really is shown from warming.
  *
- * [PublishedWorkflow.singleStepFallbackId] is an entry step alongside [PublishedWorkflow.initialStepId]: it is
- * the step [PublishedWorkflow.dismissExitOffer] reads, and nothing guarantees triggers reach it.
+ * [PublishedWorkflow.singleStepFallbackId] counts as an entry step: [PublishedWorkflow.dismissExitOffer]
+ * reads it, and nothing guarantees triggers reach it.
  */
 internal fun PublishedWorkflow.screensInVisitOrder(): List<WorkflowScreen> {
     val roots = setOfNotNull(initialStepId, singleStepFallbackId)
