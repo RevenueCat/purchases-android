@@ -3,6 +3,11 @@
 The `purchases-admob-next-gen` module integrates RevenueCat with the
 [Google Mobile Ads Next-Gen SDK](https://developers.google.com/admob/android/next-gen/quick-start).
 
+It provides one-call wrappers around Google Mobile Ads loading APIs so RevenueCat can automatically track the ad
+lifecycle while preserving your application callbacks.
+
+**Kotlin only.** The load-and-track helpers and the underlying ad-tracking APIs are not currently available from Java.
+
 > [!IMPORTANT]
 > `purchases-admob-next-gen` and the legacy `purchases-admob` adapter are mutually exclusive.
 > Remove the legacy adapter and `com.google.android.gms:play-services-ads` before adding this module.
