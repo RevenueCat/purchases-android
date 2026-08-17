@@ -212,6 +212,31 @@ internal fun CustomerCenterSurveyOptionChosenEvent.toBackendStoredEvent(
     )
 }
 
+/**
+ * Converts an `AdEvent` into a `BackendStoredEvent`, dispatching to the matching subtype conversion.
+ *
+ * @receiver The `AdEvent` to be converted.
+ * @param appUserID The user ID associated with the event.
+ * @param appSessionID The session ID of the app session when this event occurred.
+ * @return A `BackendStoredEvent` containing a `BackendEvent.Ad`.
+ */
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@JvmSynthetic
+internal fun AdEvent.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent = when (this) {
+    is AdEvent.Displayed -> toBackendStoredEvent(appUserID, appSessionID)
+    is AdEvent.Open -> toBackendStoredEvent(appUserID, appSessionID)
+    is AdEvent.Revenue -> toBackendStoredEvent(appUserID, appSessionID)
+    is AdEvent.Loaded -> toBackendStoredEvent(appUserID, appSessionID)
+    is AdEvent.FailedToLoad -> toBackendStoredEvent(appUserID, appSessionID)
+    is AdEvent.RewardEarnedUnverified -> toBackendStoredEvent(appUserID, appSessionID)
+    is AdEvent.RewardVerified -> toBackendStoredEvent(appUserID, appSessionID)
+    is AdEvent.RewardGranted -> toBackendStoredEvent(appUserID, appSessionID)
+    is AdEvent.RewardFailedToVerify -> toBackendStoredEvent(appUserID, appSessionID)
+}
+
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Open.toBackendStoredEvent(
