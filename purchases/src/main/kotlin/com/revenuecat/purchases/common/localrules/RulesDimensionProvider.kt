@@ -18,6 +18,9 @@ internal enum class RulesDimensionNamespace(val key: String) {
     Custom("custom"),
     Device("device"),
     Store("store"),
+
+    /** What the customer has bought. Named for the dashboard's own word for it, not for `CustomerInfo`. */
+    Subscriber("subscriber"),
 }
 
 /**
