@@ -11,12 +11,17 @@ import com.google.android.libraries.ads.mobile.sdk.common.PrecisionType
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdTracker
+import com.revenuecat.purchases.ads.events.types.AdDisplayedData
+import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkClass
 import io.mockk.mockkObject
+import io.mockk.slot
 import io.mockk.unmockkObject
+import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -73,6 +78,51 @@ class TrackingEventCallbackContractTest {
                     listOf(method.name to arguments.toList()),
                     invoked,
                 )
+            }
+        }
+    }
+
+    /**
+     * The forwarding sweep above only checks that the delegate ran, so a callback that quietly
+     * tracked something extra — a second display on dismissal, say — would still pass it. Drive
+     * every callback against a fresh tracker, require exactly the event the fixture declares, and
+     * close with [confirmVerified] so anything beyond it fails.
+     */
+    @Test
+    fun `each SDK callback tracks exactly the event the fixture declares`() {
+        trackingEventCallbackFixtures.forEach { fixture ->
+            assertEquals(
+                "${fixture.description}: expectedEvents must list every SDK callback, no more and no less",
+                fixture.sdkCallback.callbackMethods().map { it.name }.toSet(),
+                fixture.expectedEvents.keys,
+            )
+
+            fixture.sdkCallback.callbackMethods().forEach { method ->
+                val tracker = mockk<AdTracker>(relaxed = true)
+                every { purchases.adTracker } returns tracker
+                val trackingCallback = fixture.create(null, ::stubResponseInfo)
+                val label = "${fixture.description}.${method.name}"
+
+                method.invoke(trackingCallback, *method.distinctArguments())
+
+                when (fixture.expectedEvents.getValue(method.name)) {
+                    ExpectedAdEvent.NONE -> Unit
+                    ExpectedAdEvent.DISPLAYED -> {
+                        val tracked = slot<AdDisplayedData>()
+                        verify(exactly = 1) {
+                            tracker.trackAdDisplayed(capture(tracked), AdCaptureMethod.ADAPTER)
+                        }
+                        assertEquals(label, fixture.adFormat, tracked.captured.adFormat)
+                    }
+                    ExpectedAdEvent.OPENED -> verify(exactly = 1) {
+                        tracker.trackAdOpened(any(), AdCaptureMethod.ADAPTER)
+                    }
+                    ExpectedAdEvent.REVENUE -> verify(exactly = 1) {
+                        tracker.trackAdRevenue(any(), AdCaptureMethod.ADAPTER)
+                    }
+                }
+
+                confirmVerified(tracker)
             }
         }
     }
