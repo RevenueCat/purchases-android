@@ -121,7 +121,7 @@ instead, since no creative was served.
 
 Network and impression id are read when the callback fires rather than when the ad loads, so an auto-refreshing
 banner attributes events to the creative currently on screen instead of the first one loaded. `placement` is read
-at the same moment, so if it changes before the ad is shown, the newer value is the one reported.
+at the same moment, so a placement that changes after the ad loads is reported with its newer value.
 
 ### Display triggers
 
