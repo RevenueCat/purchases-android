@@ -115,6 +115,29 @@ internal class WorkflowModelsDeserializationTest {
         assertThat(declaration?.defaultValue?.content).isEqualTo("monthly")
     }
 
+    @Test
+    fun `WorkflowScreen reads automatically_scale_font_size`() {
+        val json = """
+            {
+              "template_name": "components",
+              "asset_base_url": "https://assets.pawwalls.com",
+              "components_config": {
+                "base": {
+                  "stack": {"type": "stack", "components": []},
+                  "background": {"type": "color", "value": {"light": {"type": "hex", "value": "#ffffff"}}}
+                }
+              },
+              "components_localizations": {"en_US": {}},
+              "default_locale": "en_US",
+              "automatically_scale_font_size": false
+            }
+        """.trimIndent()
+
+        val screen = JsonTools.json.decodeFromString(WorkflowScreen.serializer(), json)
+
+        assertThat(screen.automaticallyScaleFontSize).isFalse()
+    }
+
     /**
      * A workflow screen and an offering's paywall are the same backend document decoded through two
      * independent field lists, which is how `state_declarations` went missing.
@@ -130,8 +153,6 @@ internal class WorkflowModelsDeserializationTest {
             // Absent from the backend's per-screen payload (serialize_paywalls_as_screens).
             "zero_decimal_place_countries",
             "play_store_product_change_mode",
-            // Sent per screen but not wired through yet: workflow-backed paywalls use the default.
-            "automatically_scale_font_size",
         )
 
         val missing = PaywallComponentsData.serializer().descriptor.elementNames.toSet() -
