@@ -20,7 +20,7 @@ class AdMobPrecisionMappingTest {
         )
 
         // toAdRevenuePrecision falls back to UNKNOWN instead of throwing on unrecognized constants,
-        // so this assertion is the only build-time signal that the SDK grew a new precision type.
+        // so this assertion is the only signal that a bump to the pinned SDK grew a precision type.
         assertEquals(
             "Google Mobile Ads added or removed a PrecisionType. Update toAdRevenuePrecision.",
             PrecisionType.values().toSet(),
