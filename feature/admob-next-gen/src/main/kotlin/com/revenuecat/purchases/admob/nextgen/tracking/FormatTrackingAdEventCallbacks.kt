@@ -12,14 +12,14 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingBannerAdEventCallback(
-    delegate: BannerAdEventCallback?,
-    placement: String?,
+    initialDelegate: BannerAdEventCallback?,
+    initialPlacement: String?,
     adUnitId: String,
     responseInfoProvider: () -> ResponseInfo,
 ) : TrackingAdEventCallback<BannerAdEventCallback>(
-    delegate,
+    initialDelegate,
     AdFormat.BANNER,
-    placement,
+    initialPlacement,
     adUnitId,
     responseInfoProvider,
     AdDisplayedTrigger.IMPRESSION,
@@ -32,14 +32,14 @@ internal class TrackingBannerAdEventCallback(
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingInterstitialAdEventCallback(
-    delegate: InterstitialAdEventCallback?,
-    placement: String?,
+    initialDelegate: InterstitialAdEventCallback?,
+    initialPlacement: String?,
     adUnitId: String,
     responseInfoProvider: () -> ResponseInfo,
 ) : TrackingAdEventCallback<InterstitialAdEventCallback>(
-    delegate,
+    initialDelegate,
     AdFormat.INTERSTITIAL,
-    placement,
+    initialPlacement,
     adUnitId,
     responseInfoProvider,
     AdDisplayedTrigger.FULL_SCREEN_SHOW,
@@ -52,14 +52,14 @@ internal class TrackingInterstitialAdEventCallback(
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingAppOpenAdEventCallback(
-    delegate: AppOpenAdEventCallback?,
-    placement: String?,
+    initialDelegate: AppOpenAdEventCallback?,
+    initialPlacement: String?,
     adUnitId: String,
     responseInfoProvider: () -> ResponseInfo,
 ) : TrackingAdEventCallback<AppOpenAdEventCallback>(
-    delegate,
+    initialDelegate,
     AdFormat.APP_OPEN,
-    placement,
+    initialPlacement,
     adUnitId,
     responseInfoProvider,
     AdDisplayedTrigger.FULL_SCREEN_SHOW,
@@ -68,14 +68,14 @@ internal class TrackingAppOpenAdEventCallback(
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingRewardedAdEventCallback(
-    delegate: RewardedAdEventCallback?,
-    placement: String?,
+    initialDelegate: RewardedAdEventCallback?,
+    initialPlacement: String?,
     adUnitId: String,
     responseInfoProvider: () -> ResponseInfo,
 ) : TrackingAdEventCallback<RewardedAdEventCallback>(
-    delegate,
+    initialDelegate,
     AdFormat.REWARDED,
-    placement,
+    initialPlacement,
     adUnitId,
     responseInfoProvider,
     AdDisplayedTrigger.FULL_SCREEN_SHOW,
@@ -88,14 +88,14 @@ internal class TrackingRewardedAdEventCallback(
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingRewardedInterstitialAdEventCallback(
-    delegate: RewardedInterstitialAdEventCallback?,
-    placement: String?,
+    initialDelegate: RewardedInterstitialAdEventCallback?,
+    initialPlacement: String?,
     adUnitId: String,
     responseInfoProvider: () -> ResponseInfo,
 ) : TrackingAdEventCallback<RewardedInterstitialAdEventCallback>(
-    delegate,
+    initialDelegate,
     AdFormat.REWARDED_INTERSTITIAL,
-    placement,
+    initialPlacement,
     adUnitId,
     responseInfoProvider,
     AdDisplayedTrigger.FULL_SCREEN_SHOW,
@@ -108,14 +108,14 @@ internal class TrackingRewardedInterstitialAdEventCallback(
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingNativeAdEventCallback(
-    delegate: NativeAdEventCallback?,
-    placement: String?,
+    initialDelegate: NativeAdEventCallback?,
+    initialPlacement: String?,
     adUnitId: String,
     responseInfoProvider: () -> ResponseInfo,
 ) : TrackingAdEventCallback<NativeAdEventCallback>(
-    delegate,
+    initialDelegate,
     AdFormat.NATIVE,
-    placement,
+    initialPlacement,
     adUnitId,
     responseInfoProvider,
     AdDisplayedTrigger.IMPRESSION,

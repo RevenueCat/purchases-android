@@ -144,12 +144,12 @@ class TrackingEventCallbackContractTest {
     fun `app event forwards a null payload unchanged`() {
         val seen = mutableListOf<Pair<String, String?>>()
         val callback = TrackingBannerAdEventCallback(
-            delegate = object : BannerAdEventCallback {
+            initialDelegate = object : BannerAdEventCallback {
                 override fun onAppEvent(name: String, data: String?) {
                     seen += name to data
                 }
             },
-            placement = "home",
+            initialPlacement = "home",
             adUnitId = "ad-unit",
             responseInfoProvider = ::stubResponseInfo,
         )
