@@ -967,6 +967,12 @@ workflows:
     jobs:
       - revenuecat/danger:
           ruby_version: "3.2.0"
+          context:
+            - slack-secrets
+          post-steps:
+            - run:
+                name: Run api diff report unit tests
+                command: ruby danger/api_diff_report_test.rb
 
   snapshot-deploy-manual:
     when:
