@@ -68,7 +68,21 @@ configurations.configureEach {
 
 See Google's
 [migration guide](https://developers.google.com/admob/android/next-gen/migration)
-for additional mediation-specific requirements.
+for the SDK-wide dependency, initialization, request, callback, and mediation changes.
+
+## Migrate from the legacy RevenueCat adapter
+
+After migrating your app to Google Mobile Ads Next-Gen, update the RevenueCat integration:
+
+1. Replace `com.revenuecat.purchases:purchases-admob` with
+   `com.revenuecat.purchases:purchases-admob-next-gen`.
+2. Replace imports from `com.revenuecat.purchases.admob` with `com.revenuecat.purchases.admob.nextgen`.
+3. Update each RevenueCat load helper to the signature shown below. The helper names remain familiar, but they accept
+   Next-Gen request and callback types and read the ad unit ID from the request.
+4. Replace the legacy native integration's `AdLoader.Builder.forNativeAdWithTracking()` call with
+   `AdTracker.loadAndTrackNativeAd()`.
+5. Pass event callbacks to the load helper. If you replace one after loading, use the tracking-safe setter documented
+   for that format so RevenueCat's wrapper remains installed.
 
 ## Initialize Google Mobile Ads Next-Gen
 
@@ -109,10 +123,11 @@ Use the optional `placement` to identify the logical location of an ad in your a
 `"level_complete_interstitial"`. Choose stable names and apply them consistently so events from the same slot can be
 grouped together.
 
-For banners, pass the placement when loading the ad. For interstitials, the load-time placement is attached to load
-success and failure events and is the default for later events. If the final location is only known when the ad is
-shown, use `InterstitialAd.show(activity, placement)` to override the placement for display, click, and revenue
-events. Calling the Next-Gen SDK's regular `show(activity)` keeps the load-time placement.
+For banners and native ads, pass the placement when loading the ad. For full-screen formats, the load-time placement
+is attached to load success and failure events and is the default for later events. If the final location is only
+known when the ad is shown, use the RevenueCat `show` extension for `InterstitialAd`, `RewardedAd`,
+`RewardedInterstitialAd`, or `AppOpenAd` to override the placement for display, click, and revenue events. Calling the
+Next-Gen SDK's regular `show` method keeps the load-time placement.
 
 ## Usage
 
@@ -284,15 +299,169 @@ lifecycleScope.launch {
 interstitialAd?.setTrackingAdEventCallback(newAdEventCallback)
 ```
 
+### Rewarded ads
+
+```kotlin
+val adRequest = AdRequest.Builder("AD_UNIT_ID").build()
+
+Purchases.sharedInstance.adTracker.loadAndTrackRewardedAd(
+    adRequest = adRequest,
+    placement = "bonus_coins",
+    loadCallback = object : AdLoadCallback<RewardedAd> {
+        override fun onAdLoaded(ad: RewardedAd) {
+            rewardedAd = ad
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            rewardedAd = null
+        }
+    },
+    adEventCallback = object : RewardedAdEventCallback {
+        override fun onAdDismissedFullScreenContent() {
+            rewardedAd = null
+        }
+    },
+)
+
+// Later, override the load-time placement for show-time events:
+rewardedAd?.show(
+    activity = this,
+    placement = "daily_bonus",
+    onUserEarnedRewardListener = OnUserEarnedRewardListener { rewardItem ->
+        val rewardAmount = rewardItem.amount
+        val rewardType = rewardItem.type
+    },
+)
+```
+
+Pass the event callback to `loadAndTrackRewardedAd`. To replace it after loading without removing RevenueCat's
+tracking wrapper, use:
+
+```kotlin
+rewardedAd?.setTrackingAdEventCallback(newAdEventCallback)
+```
+
+### Rewarded interstitial ads
+
+```kotlin
+val adRequest = AdRequest.Builder("AD_UNIT_ID").build()
+
+Purchases.sharedInstance.adTracker.loadAndTrackRewardedInterstitialAd(
+    adRequest = adRequest,
+    placement = "between_levels",
+    loadCallback = object : AdLoadCallback<RewardedInterstitialAd> {
+        override fun onAdLoaded(ad: RewardedInterstitialAd) {
+            rewardedInterstitialAd = ad
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            rewardedInterstitialAd = null
+        }
+    },
+    adEventCallback = object : RewardedInterstitialAdEventCallback {
+        override fun onAdDismissedFullScreenContent() {
+            rewardedInterstitialAd = null
+        }
+    },
+)
+
+// Later, override the load-time placement for show-time events:
+rewardedInterstitialAd?.show(
+    activity = this,
+    placement = "level_complete",
+    onUserEarnedRewardListener = OnUserEarnedRewardListener { rewardItem ->
+        val rewardAmount = rewardItem.amount
+        val rewardType = rewardItem.type
+    },
+)
+```
+
+Pass the event callback to `loadAndTrackRewardedInterstitialAd`. To replace it after loading without removing
+RevenueCat's tracking wrapper, use:
+
+```kotlin
+rewardedInterstitialAd?.setTrackingAdEventCallback(newAdEventCallback)
+```
+
+### App open ads
+
+```kotlin
+val adRequest = AdRequest.Builder("AD_UNIT_ID").build()
+
+Purchases.sharedInstance.adTracker.loadAndTrackAppOpenAd(
+    adRequest = adRequest,
+    placement = "app_launch",
+    loadCallback = object : AdLoadCallback<AppOpenAd> {
+        override fun onAdLoaded(ad: AppOpenAd) {
+            appOpenAd = ad
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            appOpenAd = null
+        }
+    },
+    adEventCallback = object : AppOpenAdEventCallback {
+        override fun onAdDismissedFullScreenContent() {
+            appOpenAd = null
+        }
+    },
+)
+
+// Later, override the load-time placement for show-time events:
+appOpenAd?.show(activity = this, placement = "foreground_resume")
+```
+
+Pass the event callback to `loadAndTrackAppOpenAd`. To replace it after loading without removing RevenueCat's
+tracking wrapper, use:
+
+```kotlin
+appOpenAd?.setTrackingAdEventCallback(newAdEventCallback)
+```
+
+### Native ads
+
+```kotlin
+val adRequest = NativeAdRequest.Builder(
+    "AD_UNIT_ID",
+    listOf(NativeAd.NativeAdType.NATIVE),
+).build()
+
+Purchases.sharedInstance.adTracker.loadAndTrackNativeAd(
+    adRequest = adRequest,
+    placement = "feed",
+    nativeAdLoaderCallback = object : NativeAdLoaderCallback {
+        override fun onNativeAdLoaded(nativeAd: NativeAd) {
+            loadedNativeAd = nativeAd
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            loadedNativeAd = null
+        }
+    },
+    adEventCallback = object : NativeAdEventCallback {},
+)
+```
+
+Pass the event callback to `loadAndTrackNativeAd`. To replace it after loading without removing RevenueCat's
+tracking wrapper, use:
+
+```kotlin
+loadedNativeAd?.setTrackingAdEventCallback(newAdEventCallback)
+```
+
 Google Mobile Ads Next-Gen invokes load and event callbacks on a background thread. Dispatch explicitly to the main
 thread before updating views or other UI-confined state from a callback.
 
 ## Supported formats
 
-| Format       | RevenueCat tracking entry point                                 |
-| ------------ | --------------------------------------------------------------- |
-| Banner       | `AdView.loadAndTrackAd()` or `AdTracker.loadAndTrackBannerAd()` |
-| Interstitial | `AdTracker.loadAndTrackInterstitialAd()`                        |
+| Format                | RevenueCat tracking entry point                                 |
+| --------------------- | --------------------------------------------------------------- |
+| Banner                | `AdView.loadAndTrackAd()` or `AdTracker.loadAndTrackBannerAd()` |
+| Interstitial          | `AdTracker.loadAndTrackInterstitialAd()`                        |
+| Rewarded              | `AdTracker.loadAndTrackRewardedAd()`                            |
+| Rewarded interstitial | `AdTracker.loadAndTrackRewardedInterstitialAd()`                |
+| App open              | `AdTracker.loadAndTrackAppOpenAd()`                             |
+| Native                | `AdTracker.loadAndTrackNativeAd()`                              |
 
 ## Events tracked
 
