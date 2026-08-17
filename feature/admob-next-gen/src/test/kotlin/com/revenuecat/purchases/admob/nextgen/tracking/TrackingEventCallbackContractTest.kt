@@ -101,21 +101,23 @@ class TrackingEventCallbackContractTest {
     /**
      * Overriding a callback is not enough: an override with an empty body silently swallows the
      * application's own callback. Tracking also runs before delegation, so a throw on the tracking
-     * path would drop the delegate call. Drive every SDK callback for real and assert it lands.
+     * path would drop the delegate call. Drive every SDK callback for real and assert it lands
+     * exactly once with its arguments unchanged, which also rules out a swapped or dropped argument.
      */
     @Test
     fun `format callbacks forward every SDK callback to the delegate`() {
         trackingEventCallbackFactories.forEach { (sdkCallback, create) ->
             sdkCallback.callbackMethods().forEach { method ->
-                val invoked = mutableListOf<String>()
+                val invoked = mutableListOf<Pair<String, List<Any?>>>()
                 val delegate = recordingDelegate(sdkCallback, invoked)
                 val trackingCallback = create(delegate)
+                val arguments = method.distinctArguments()
 
-                method.invoke(trackingCallback, *method.defaultArguments())
+                method.invoke(trackingCallback, *arguments)
 
                 assertEquals(
-                    "${trackingCallback.javaClass.simpleName}.${method.name} must forward to the delegate",
-                    listOf(method.name),
+                    "${trackingCallback.javaClass.simpleName}.${method.name} must forward unchanged",
+                    listOf(method.name to arguments.toList()),
                     invoked,
                 )
             }
@@ -128,9 +130,33 @@ class TrackingEventCallbackContractTest {
             val trackingCallback = create(null)
 
             sdkCallback.callbackMethods().forEach { method ->
-                method.invoke(trackingCallback, *method.defaultArguments())
+                method.invoke(trackingCallback, *method.distinctArguments())
             }
         }
+    }
+
+    /**
+     * The reflective sweep cannot supply nulls, because Java reflection does not expose which SDK
+     * parameters are nullable and a null would trip the Kotlin null check on the non-null ones.
+     * `onAppEvent` carries the only nullable parameter in the callback surface, so it is covered here.
+     */
+    @Test
+    fun `app event forwards a null payload unchanged`() {
+        val seen = mutableListOf<Pair<String, String?>>()
+        val callback = TrackingBannerAdEventCallback(
+            delegate = object : BannerAdEventCallback {
+                override fun onAppEvent(name: String, data: String?) {
+                    seen += name to data
+                }
+            },
+            placement = "home",
+            adUnitId = "ad-unit",
+            responseInfoProvider = ::stubResponseInfo,
+        )
+
+        callback.onAppEvent("event", null)
+
+        assertEquals(listOf("event" to null), seen)
     }
 }
 
@@ -138,17 +164,19 @@ private fun Class<*>.callbackMethods(): List<Method> = methods
     .filter { Modifier.isPublic(it.modifiers) && !Modifier.isStatic(it.modifiers) }
     .filterNot { it.name in setOf("equals", "hashCode", "toString") }
 
-private fun Method.defaultArguments(): Array<Any> = parameterTypes.map { it.defaultArgument() }.toTypedArray()
+/** Distinct per position, so forwarding arguments in the wrong order fails the assertion. */
+private fun Method.distinctArguments(): Array<Any> =
+    parameterTypes.mapIndexed { index, type -> type.argument(index) }.toTypedArray()
 
-private fun Class<*>.defaultArgument(): Any = when {
-    this == String::class.java -> "value"
+private fun Class<*>.argument(index: Int): Any = when {
+    this == String::class.java -> "arg$index"
     // Relaxed mocks return null for the precisionType enum, which the revenue mapping dereferences.
     this == AdValue::class.java -> AdValue(PrecisionType.PRECISE, 1_000L, "USD")
     else -> mockkClass(kotlin, relaxed = true)
 }
 
-private fun recordingDelegate(sdkCallback: Class<*>, invoked: MutableList<String>): Any =
-    Proxy.newProxyInstance(sdkCallback.classLoader, arrayOf(sdkCallback)) { _, method, _ ->
-        invoked += method.name
+private fun recordingDelegate(sdkCallback: Class<*>, invoked: MutableList<Pair<String, List<Any?>>>): Any =
+    Proxy.newProxyInstance(sdkCallback.classLoader, arrayOf(sdkCallback)) { _, method, arguments ->
+        invoked += method.name to (arguments?.toList() ?: emptyList())
         null
     }
