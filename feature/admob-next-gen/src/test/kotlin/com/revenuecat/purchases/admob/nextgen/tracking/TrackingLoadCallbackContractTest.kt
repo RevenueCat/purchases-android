@@ -4,7 +4,7 @@ import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallbac
 import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
 import org.junit.Test
 
-class TrackingCallbackContractTest {
+class TrackingLoadCallbackContractTest {
 
     @Test
     fun `load callback overrides every SDK callback`() {
