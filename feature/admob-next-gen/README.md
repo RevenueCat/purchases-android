@@ -387,6 +387,30 @@ lifecycleScope.launch {
 interstitialAd?.setTrackingAdEventCallback(newAdEventCallback)
 ```
 
+Server-to-server interstitial responses use the callback API exposed by the pinned Google Mobile Ads SDK. Provide
+the ad unit ID explicitly so both successful and failed loads have the required attribution:
+
+```kotlin
+Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAdFromResponse(
+    adResponse = serverAdResponse,
+    adUnitId = "AD_UNIT_ID",
+    placement = "game_interstitial",
+    loadCallback = object : AdLoadCallback<InterstitialAd> {
+        override fun onAdLoaded(ad: InterstitialAd) {
+            interstitialAd = ad
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            interstitialAd = null
+        }
+    },
+    adEventCallback = interstitialAdEventCallback,
+)
+```
+
+The pinned SDK does not expose a suspending interstitial response-loading API, so the adapter intentionally does not
+add one.
+
 Google Mobile Ads Next-Gen invokes load and event callbacks on a background thread. Dispatch explicitly to the main
 thread before updating views or other UI-confined state from a callback.
 
@@ -394,7 +418,7 @@ thread before updating views or other UI-confined state from a callback.
 
 | Format       | RevenueCat tracking entry point                                 |
 | ------------ | --------------------------------------------------------------- |
-| Interstitial | `AdTracker.loadAndTrackInterstitialAd()`                        |
+| Interstitial | `AdTracker.loadAndTrackInterstitialAd()` or `AdTracker.loadAndTrackInterstitialAdFromResponse()` |
 
 ## Events tracked
 

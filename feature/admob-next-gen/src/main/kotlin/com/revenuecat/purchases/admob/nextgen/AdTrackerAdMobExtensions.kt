@@ -91,3 +91,44 @@ public suspend fun AdTracker.loadAndTrackInterstitialAd(
 
     return result
 }
+
+/**
+ * Loads an [InterstitialAd] from a server-to-server ad response and automatically tracks RevenueCat ad events.
+ *
+ * The loaded ad has event tracking installed before it is forwarded to [loadCallback]. [adUnitId] is required
+ * because neither the opaque response nor a failed load reliably provides it. Call via
+ * `Purchases.sharedInstance.adTracker`.
+ *
+ * @param adResponse The opaque server-to-server ad response supplied by Google Mobile Ads.
+ * @param adUnitId The ad unit ID associated with [adResponse], used for RevenueCat tracking.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param loadCallback Callback to receive load success and failure events.
+ * @param adEventCallback Optional callback for interstitial lifecycle and paid events.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+@Suppress("LongParameterList")
+public fun AdTracker.loadAndTrackInterstitialAdFromResponse(
+    adResponse: String,
+    adUnitId: String,
+    placement: String? = null,
+    loadCallback: AdLoadCallback<InterstitialAd>,
+    adEventCallback: InterstitialAdEventCallback? = null,
+) {
+    InterstitialAd.loadFromAdResponse(
+        adResponse,
+        TrackingAdLoadCallback(
+            delegate = loadCallback,
+            adFormat = AdFormat.INTERSTITIAL,
+            placement = placement,
+            adUnitId = adUnitId,
+            configureAd = { ad ->
+                ad.installTrackingEventCallback(
+                    delegate = adEventCallback,
+                    placement = placement,
+                    adUnitId = adUnitId,
+                )
+            },
+        ),
+    )
+}
