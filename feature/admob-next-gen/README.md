@@ -288,6 +288,180 @@ rewardedInterstitialAd?.show(this) { rewardItem ->
 If preloading was started through Google's plain `start` API, `pollAndTrackAd` still installs tracking for later
 lifecycle events. RevenueCat cannot retroactively observe the original preload completion, so it does not synthesize
 a loaded event when the ad is polled.
+## Placement
+
+Use the optional `placement` to identify the logical location of an ad in your app, such as `"home_banner"` or
+`"level_complete_interstitial"`. Choose stable names and apply them consistently so events from the same slot can be
+grouped together.
+
+For banners, pass the placement when loading the ad. For interstitials, the load-time placement is attached to load
+success and failure events and is the default for later events. If the final location is only known when the ad is
+shown, use `InterstitialAd.show(activity, placement)` to override the placement for display, click, and revenue
+events. Calling the Next-Gen SDK's regular `show(activity)` keeps the load-time placement.
+
+## Usage
+
+### Banner ads
+
+**Google Mobile Ads Next-Gen only**
+
+```kotlin
+val adView = AdView(this)
+binding.adViewContainer.addView(adView)
+
+val adRequest = BannerAdRequest.Builder(
+    "AD_UNIT_ID",
+    AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, 360),
+).build()
+
+adView.loadAd(
+    adRequest,
+    object : AdLoadCallback<BannerAd> {
+        override fun onAdLoaded(ad: BannerAd) {
+            bannerAd = ad
+            ad.adEventCallback = object : BannerAdEventCallback {}
+            ad.bannerAdRefreshCallback = object : BannerAdRefreshCallback {}
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            bannerAd = null
+        }
+    },
+)
+```
+
+**With RevenueCat tracking**
+
+```kotlin
+val adView = AdView(this)
+binding.adViewContainer.addView(adView)
+
+val adRequest = BannerAdRequest.Builder(
+    "AD_UNIT_ID",
+    AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, 360),
+).build()
+
+adView.loadAndTrackAd(
+    adRequest = adRequest,
+    placement = "home_banner",
+    loadCallback = object : AdLoadCallback<BannerAd> {
+        override fun onAdLoaded(ad: BannerAd) {
+            bannerAd = ad
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            bannerAd = null
+        }
+    },
+    adEventCallback = object : BannerAdEventCallback {},
+    bannerAdRefreshCallback = object : BannerAdRefreshCallback {},
+)
+```
+
+Or use the `AdTracker` extension with the same Next-Gen request and callbacks:
+
+```kotlin
+Purchases.sharedInstance.adTracker.loadAndTrackBannerAd(
+    adView = adView,
+    adRequest = adRequest,
+    placement = "home_banner",
+    loadCallback = loadCallback,
+    adEventCallback = adEventCallback,
+    bannerAdRefreshCallback = bannerAdRefreshCallback,
+)
+```
+
+> [!IMPORTANT]
+> Do not assign `bannerAd.adEventCallback` or `bannerAd.bannerAdRefreshCallback` directly after a tracked load.
+> Direct assignment replaces RevenueCat's tracking wrappers. Pass callbacks to the load helper, or replace only the
+> forwarded callbacks with the tracking-safe setters:
+
+```kotlin
+bannerAd?.setTrackingAdEventCallback(newAdEventCallback)
+bannerAd?.setTrackingBannerAdRefreshCallback(newBannerAdRefreshCallback)
+```
+
+### Interstitial ads
+
+**Google Mobile Ads Next-Gen only**
+
+```kotlin
+val adRequest = AdRequest.Builder("AD_UNIT_ID").build()
+
+InterstitialAd.load(
+    adRequest,
+    object : AdLoadCallback<InterstitialAd> {
+        override fun onAdLoaded(ad: InterstitialAd) {
+            interstitialAd = ad
+            ad.adEventCallback = object : InterstitialAdEventCallback {
+                override fun onAdDismissedFullScreenContent() {
+                    interstitialAd = null
+                }
+            }
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            interstitialAd = null
+        }
+    },
+)
+
+// Later, to show:
+interstitialAd?.show(this)
+```
+
+**With RevenueCat tracking**
+
+```kotlin
+val adRequest = AdRequest.Builder("AD_UNIT_ID").build()
+
+Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAd(
+    adRequest = adRequest,
+    placement = "game_interstitial",
+    loadCallback = object : AdLoadCallback<InterstitialAd> {
+        override fun onAdLoaded(ad: InterstitialAd) {
+            interstitialAd = ad
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            interstitialAd = null
+        }
+    },
+    adEventCallback = object : InterstitialAdEventCallback {
+        override fun onAdDismissedFullScreenContent() {
+            interstitialAd = null
+        }
+
+        override fun onAdFailedToShowFullScreenContent(
+            fullScreenContentError: FullScreenContentError,
+        ) {
+            interstitialAd = null
+        }
+    },
+)
+
+// Later, override the load-time placement for events emitted while showing:
+interstitialAd?.show(this, placement = "level_complete_interstitial")
+```
+
+> [!IMPORTANT]
+> Do not assign `interstitialAd.adEventCallback` directly after a tracked load. Direct assignment replaces
+> RevenueCat's tracking wrapper and prevents `show(activity, placement)` from applying its placement override. Pass
+> the callback to `loadAndTrackInterstitialAd`, or replace only the forwarded callback safely:
+
+```kotlin
+interstitialAd?.setTrackingAdEventCallback(newAdEventCallback)
+```
+
+Google Mobile Ads Next-Gen invokes load and event callbacks on a background thread. Dispatch explicitly to the main
+thread before updating views or other UI-confined state from a callback.
+
+## Supported formats
+
+| Format       | RevenueCat tracking entry point                                 |
+| ------------ | --------------------------------------------------------------- |
+| Banner       | `AdView.loadAndTrackAd()` or `AdTracker.loadAndTrackBannerAd()` |
+| Interstitial | `AdTracker.loadAndTrackInterstitialAd()`                        |
 
 ## Events tracked
 
@@ -330,3 +504,18 @@ callback after the RevenueCat event is tracked — including the event callbacks
 
 Forwarding is unconditional. If RevenueCat is not configured the adapter logs a warning and skips tracking, and if
 tracking itself fails the adapter logs the error and swallows it. Either way your callback still runs.
+
+## Experimental API
+
+The tracking helpers use `@ExperimentalPreviewRevenueCatPurchasesAPI`. Opt in at the narrowest scope that calls them:
+
+```kotlin
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+fun loadBanner(adView: AdView) {
+    val adRequest = BannerAdRequest.Builder("AD_UNIT_ID", AdSize.BANNER).build()
+    adView.loadAndTrackAd(
+        adRequest = adRequest,
+        placement = "home_banner",
+    )
+}
+```
