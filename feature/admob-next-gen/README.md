@@ -123,5 +123,5 @@ reports the creative it just loaded instead of the first one.
 The adapter wraps your callbacks instead of replacing them. Every callback the SDK exposes is forwarded to your own
 callback after the RevenueCat event is tracked.
 
-Forwarding is unconditional. If RevenueCat is not configured the adapter logs a warning and skips tracking, but
-your callback still runs.
+Forwarding is unconditional. If RevenueCat is not configured the adapter logs a warning and skips tracking, and if
+tracking itself fails the adapter logs the error and swallows it. Either way your callback still runs.
