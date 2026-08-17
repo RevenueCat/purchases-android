@@ -5,16 +5,9 @@
 
 package com.revenuecat.purchases.admob.nextgen.tracking
 
-import com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
-import com.google.android.libraries.ads.mobile.sdk.common.AdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdValue
 import com.google.android.libraries.ads.mobile.sdk.common.PrecisionType
-import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
-import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback
-import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback
-import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback
-import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAdEventCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
@@ -31,49 +24,6 @@ import org.junit.Test
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import java.lang.reflect.Proxy
-
-/**
- * Builds every format-specific tracking callback around a caller-supplied delegate, keyed by the
- * SDK interface it wraps.
- *
- * Tests assert coverage against this map, so adding a format here forces the new callback to be
- * covered everywhere instead of silently skipping a suite.
- */
-internal val trackingEventCallbackFactories: Map<Class<*>, (Any?) -> AdEventCallback> = mapOf(
-    BannerAdEventCallback::class.java to { delegate ->
-        TrackingBannerAdEventCallback(delegate as BannerAdEventCallback?, "home", "ad-unit", ::stubResponseInfo)
-    },
-    InterstitialAdEventCallback::class.java to { delegate ->
-        TrackingInterstitialAdEventCallback(
-            delegate as InterstitialAdEventCallback?,
-            "home",
-            "ad-unit",
-            ::stubResponseInfo,
-        )
-    },
-    AppOpenAdEventCallback::class.java to { delegate ->
-        TrackingAppOpenAdEventCallback(delegate as AppOpenAdEventCallback?, "home", "ad-unit", ::stubResponseInfo)
-    },
-    RewardedAdEventCallback::class.java to { delegate ->
-        TrackingRewardedAdEventCallback(delegate as RewardedAdEventCallback?, "home", "ad-unit", ::stubResponseInfo)
-    },
-    RewardedInterstitialAdEventCallback::class.java to { delegate ->
-        TrackingRewardedInterstitialAdEventCallback(
-            delegate as RewardedInterstitialAdEventCallback?,
-            "home",
-            "ad-unit",
-            ::stubResponseInfo,
-        )
-    },
-    NativeAdEventCallback::class.java to { delegate ->
-        TrackingNativeAdEventCallback(delegate as NativeAdEventCallback?, "home", "ad-unit", ::stubResponseInfo)
-    },
-)
-
-internal val trackingEventCallbacksBySdkInterface: Map<Class<*>, Class<*>> =
-    trackingEventCallbackFactories.mapValues { (_, create) -> create(null).javaClass }
-
-private fun stubResponseInfo(): ResponseInfo = mockk(relaxed = true)
 
 class TrackingEventCallbackContractTest {
     private val purchases = mockk<Purchases>(relaxed = true)
@@ -93,8 +43,11 @@ class TrackingEventCallbackContractTest {
 
     @Test
     fun `format callbacks override every SDK callback`() {
-        trackingEventCallbacksBySdkInterface.forEach { (sdkCallback, trackingCallback) ->
-            assertOverridesAllSdkCallbacks(sdkCallback, trackingCallback)
+        trackingEventCallbackFixtures.forEach { fixture ->
+            assertOverridesAllSdkCallbacks(
+                fixture.sdkCallback,
+                fixture.create(null, ::stubResponseInfo).javaClass,
+            )
         }
     }
 
@@ -106,11 +59,11 @@ class TrackingEventCallbackContractTest {
      */
     @Test
     fun `format callbacks forward every SDK callback to the delegate`() {
-        trackingEventCallbackFactories.forEach { (sdkCallback, create) ->
-            sdkCallback.callbackMethods().forEach { method ->
+        trackingEventCallbackFixtures.forEach { fixture ->
+            fixture.sdkCallback.callbackMethods().forEach { method ->
                 val invoked = mutableListOf<Pair<String, List<Any?>>>()
-                val delegate = recordingDelegate(sdkCallback, invoked)
-                val trackingCallback = create(delegate)
+                val delegate = recordingDelegate(fixture.sdkCallback, invoked)
+                val trackingCallback = fixture.create(delegate, ::stubResponseInfo)
                 val arguments = method.distinctArguments()
 
                 method.invoke(trackingCallback, *arguments)
@@ -126,10 +79,10 @@ class TrackingEventCallbackContractTest {
 
     @Test
     fun `format callbacks tolerate a null delegate`() {
-        trackingEventCallbackFactories.forEach { (sdkCallback, create) ->
-            val trackingCallback = create(null)
+        trackingEventCallbackFixtures.forEach { fixture ->
+            val trackingCallback = fixture.create(null, ::stubResponseInfo)
 
-            sdkCallback.callbackMethods().forEach { method ->
+            fixture.sdkCallback.callbackMethods().forEach { method ->
                 method.invoke(trackingCallback, *method.distinctArguments())
             }
         }
