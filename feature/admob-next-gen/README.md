@@ -113,8 +113,7 @@ RevenueCat ad events:
   report here too.
 - **Ad Displayed** — the ad was shown. Which callback triggers this depends on the format, see below.
 - **Ad Opened** — the user clicked the ad.
-- **Ad Revenue** — revenue from the SDK's paid callback, with currency, micros, and the reported precision
-  mapped to the RevenueCat equivalent.
+- **Ad Revenue** — the ad generated revenue, with the amount, currency, and precision reported by the SDK.
 
 Every event carries the ad format, the ad unit, and the optional `placement`. Ad Loaded, Ad Displayed, Ad Opened
 and Ad Revenue also carry the mediation network and the impression id; Ad Failed to Load carries the error code
@@ -131,9 +130,10 @@ at the same moment, so if it changes before the ad is shown, the newer value is 
 | Banner, native                                          | `onAdImpression()`               |
 | Interstitial, rewarded, rewarded interstitial, app open | `onAdShowedFullScreenContent()`  |
 
-Full-screen formats emit both callbacks, so tracking the display from the show callback is what keeps a single
-display from being counted twice. Banner and native never emit the show callback. The adapter keeps no
-deduplication state.
+Full-screen formats emit both callbacks, so tracking the display from only one of them is what keeps a single
+display from being counted twice. Banner and native emit `onAdShowedFullScreenContent()` too — the SDK reports any
+screen-covering overlay there, such as an expanding banner or the AdChoices overlay — and the adapter forwards it
+without tracking a display. The adapter keeps no deduplication state.
 
 ### Callback forwarding
 
