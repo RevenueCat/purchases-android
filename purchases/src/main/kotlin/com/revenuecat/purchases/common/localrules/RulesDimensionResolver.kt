@@ -112,4 +112,6 @@ private val RulesDimensionValue.asRulesEngineValue: Value
         is RulesDimensionValue.BoolValue -> Value.BoolValue(value)
         is RulesDimensionValue.IntValue -> Value.IntValue(value)
         is RulesDimensionValue.DoubleValue -> Value.FloatValue(value)
+        is RulesDimensionValue.DateValue -> Value.IntValue(value.time)
+        is RulesDimensionValue.StringListValue -> Value.ArrayValue(value.map { item -> Value.StringValue(item) })
     }

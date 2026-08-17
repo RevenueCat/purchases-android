@@ -143,6 +143,8 @@ class RulesDimensionResolverTest {
                 "flag" to RulesDimensionValue.BoolValue(true),
                 "count" to RulesDimensionValue.IntValue(3),
                 "ratio" to RulesDimensionValue.DoubleValue(1.5),
+                "date" to RulesDimensionValue.DateValue(evaluationDate),
+                "list" to RulesDimensionValue.StringListValue(listOf("first", "second")),
             ),
         )
 
@@ -155,9 +157,50 @@ class RulesDimensionResolverTest {
                     "flag" to Value.BoolValue(true),
                     "count" to Value.IntValue(3),
                     "ratio" to Value.FloatValue(1.5),
+                    "date" to Value.IntValue(1_700_000_000_000),
+                    "list" to Value.ArrayValue(
+                        listOf(Value.StringValue("first"), Value.StringValue("second")),
+                    ),
                 ),
             ),
         )
+    }
+
+    @Test
+    fun `a date dimension is ordered by a predicate`() = runTest {
+        val resolver = resolver(
+            provider(
+                RulesDimensionNamespace.Device,
+                "expiresAt" to RulesDimensionValue.DateValue(Date(1_700_000_000_000)),
+            ),
+        )
+        val values = resolver.snapshot().getOrThrow().values
+
+        assertThat(
+            RulesEngine.evaluate("""{">": [{"var": "device.expiresAt"}, 1699999999999]}""", values).getOrThrow(),
+        ).isTrue()
+        assertThat(
+            RulesEngine.evaluate("""{">": [{"var": "device.expiresAt"}, 1700000000001]}""", values).getOrThrow(),
+        ).isFalse()
+    }
+
+    @Test
+    fun `a string list dimension is searched by a predicate`() = runTest {
+        val resolver = resolver(
+            provider(
+                RulesDimensionNamespace.Device,
+                "entitlements" to RulesDimensionValue.StringListValue(listOf("pro_annual", "plus")),
+            ),
+        )
+        val values = resolver.snapshot().getOrThrow().values
+
+        assertThat(
+            RulesEngine.evaluate("""{"in": ["plus", {"var": "device.entitlements"}]}""", values).getOrThrow(),
+        ).isTrue()
+        // An array member is matched whole, unlike `in` over a string, which would match this prefix.
+        assertThat(
+            RulesEngine.evaluate("""{"in": ["pro", {"var": "device.entitlements"}]}""", values).getOrThrow(),
+        ).isFalse()
     }
 
     @Test
