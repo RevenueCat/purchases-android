@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.events.EventsManager
  */
 @OptIn(InternalRevenueCatAPI::class)
 @ExperimentalPreviewRevenueCatPurchasesAPI
+@Suppress("TooManyFunctions")
 public class AdTracker internal constructor(
     private val eventsManager: EventsManager,
 ) {
