@@ -97,3 +97,26 @@ class MyApplication : Application() {
 If you use mediation, wait for the initialization callback before loading ads so every mediation adapter is ready.
 Configure consent and any request-specific privacy flags before initialization because the SDK or a mediation partner
 may preload ads during initialization.
+
+## Events tracked
+
+All formats — banner, interstitial, rewarded, rewarded interstitial, app open, and native — report these
+RevenueCat ad events:
+
+- **Ad Loaded** — the ad loaded successfully. Banner auto-refresh reports each refreshed creative as a new load.
+- **Ad Failed to Load** — the load failed, tagged with the SDK's numeric error code. Banner refresh failures
+  report here too.
+
+Every event carries the ad format, the ad unit, and the optional `placement`. Ad Loaded also carries the mediation
+network and the impression id; Ad Failed to Load carries the error code instead, since no creative was served.
+
+Network and impression id are read when the callback fires rather than when the ad loads, so a refreshed banner
+reports the creative it just loaded instead of the first one.
+
+### Callback forwarding
+
+The adapter wraps your callbacks instead of replacing them. Every callback the SDK exposes is forwarded to your own
+callback after the RevenueCat event is tracked.
+
+Forwarding is unconditional. If RevenueCat is not configured the adapter logs a warning and skips tracking, but
+your callback still runs.
