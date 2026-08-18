@@ -656,6 +656,38 @@ class OfferingsManagerTest {
         }
     }
 
+    // Each placement target decodes its own component tree, so the fan-out must not sit ahead of the
+    // caller's callback the way the current offering's single decode does.
+    @Test
+    fun `getOfferings pre downloads placement target images only after delivering offerings`() {
+        val other = mockk<Offering>(relaxed = true).apply { every { identifier } returns "onboarding" }
+        val offerings = testOfferings.copy(
+            all = testOfferings.all + ("onboarding" to other),
+            placements = Offerings.Placements(
+                fallbackOfferingId = null,
+                offeringIdsByPlacement = mapOf("onboarding" to "onboarding"),
+            ),
+        )
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory(offerings)
+        mockDeviceCache()
+        val warmed = mutableListOf<String>()
+        every { offeringImagePreDownloader.preDownloadOfferingImages(any()) } answers {
+            warmed += firstArg<Offering>().identifier
+        }
+        var warmedAtDelivery: List<String>? = null
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = { warmedAtDelivery = warmed.toList() },
+        )
+
+        assertThat(warmedAtDelivery).containsExactly(offerings.current!!.identifier)
+        assertThat(warmed).containsExactly(offerings.current!!.identifier, "onboarding")
+    }
+
     // endregion pre download offering images
 
     // region prewarm web_view bundles

@@ -286,14 +286,17 @@ internal class OfferingsManager(
                 // the decoded result is cached and delivered to the original caller. This re-runs the store-product
                 // query; it is bounded to once per session because the kill-switch disable is one-shot.
                 if (cacheGeneration.get() == fetchGeneration) {
-                    val prewarmTargets = offeringsResultData.offerings.prewarmTargetOfferings()
-                    prewarmTargets.forEach(offeringImagePreDownloader::preDownloadOfferingImages)
+                    val current = offeringsResultData.offerings.current
+                    current?.let(offeringImagePreDownloader::preDownloadOfferingImages)
                     offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
                     offeringsCache.cacheOfferings(offeringsResultData.offerings, responsePayloadToCache)
                     val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
                     workflowManager?.onPaywallConfigReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
-                    // After delivery: this decodes a component tree per placement offering, and warming has
-                    // no reason to sit ahead of the caller's callback.
+                    // After delivery: each of these decodes its own component tree, and warming has no
+                    // reason to sit ahead of the caller's callback.
+                    val prewarmTargets = offeringsResultData.offerings.prewarmTargetOfferings()
+                    prewarmTargets.filterNot { it.identifier == current?.identifier }
+                        .forEach(offeringImagePreDownloader::preDownloadOfferingImages)
                     offeringWebViewPrewarmer.prewarmWebViews(prewarmTargets)
                 } else {
                     log(LogIntent.DEBUG) { OfferingStrings.OFFERINGS_CACHE_INVALIDATED_SKIPPING_STALE_WRITE }
