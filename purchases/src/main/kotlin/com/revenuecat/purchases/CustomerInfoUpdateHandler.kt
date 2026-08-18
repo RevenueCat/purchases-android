@@ -27,11 +27,23 @@ internal class CustomerInfoUpdateHandler constructor(
     private val handler: Handler = Handler(Looper.getMainLooper()),
 ) {
 
+    /**
+     * Per-listener delivery bookkeeping.
+     *
+     * [lastDeliveredCustomerInfo] lets each listener dedup independently, so a listener that
+     * already received a value through its initial delivery is not notified again by a
+     * subsequent broadcast of that same value.
+     *
+     * [initialDeliveryPending] guards the initial cached-info delivery, which is dispatched
+     * asynchronously. If a broadcast reaches this listener while that delivery is still queued,
+     * the broadcast clears the flag and the queued delivery is dropped, so a stale cached value
+     * can never land after a newer one.
+     */
     private class ListenerState(
         val listener: UpdatedCustomerInfoListener,
     ) {
         var lastDeliveredCustomerInfo: CustomerInfo? = null
-        var pendingInitialDeliveryId: Long? = null
+        var initialDeliveryPending: Boolean = false
     }
 
     private var legacyUpdatedCustomerInfoListener: UpdatedCustomerInfoListener? = null
@@ -50,7 +62,6 @@ internal class CustomerInfoUpdateHandler constructor(
     private var legacyListenerState: ListenerState? = null
 
     private var lastSentCustomerInfo: CustomerInfo? = null
-    private var nextInitialDeliveryId: Long = 0
 
     fun addUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
         log(LogIntent.DEBUG) { ConfigureStrings.LISTENER_SET }
@@ -59,12 +70,7 @@ internal class CustomerInfoUpdateHandler constructor(
                 ?: ListenerState(listener).also { listeners.add(it) }
         }
         if (!appConfig.customEntitlementComputation) {
-            val initialDeliveryId = reserveInitialDelivery(listenerState)
-            if (initialDeliveryId != null) {
-                getCachedCustomerInfo(identityManager.currentAppUserID)?.let { cachedInfo ->
-                    sendToSingleListener(listenerState, initialDeliveryId, cachedInfo)
-                } ?: clearInitialDeliveryReservation(listenerState, initialDeliveryId)
-            }
+            sendCachedCustomerInfoToNewListener(listenerState, trackVerification = false)
         }
     }
 
@@ -92,47 +98,37 @@ internal class CustomerInfoUpdateHandler constructor(
 
     @Suppress("DEPRECATION")
     fun notifyListeners(customerInfo: CustomerInfo) {
-        val (listenerStatesToNotify, lastSent) = synchronized(this@CustomerInfoUpdateHandler) {
-            val currentLastSent = lastSentCustomerInfo
-            if (currentLastSent == customerInfo) {
-                emptyList<ListenerState>() to currentLastSent
+        // Claim the broadcast and mark every listener under a single lock, so the shared dedup
+        // gate can never advance without the per-listener bookkeeping advancing with it.
+        val notification = synchronized(this@CustomerInfoUpdateHandler) {
+            val previouslySent = lastSentCustomerInfo
+            if (previouslySent == customerInfo) {
+                null
             } else {
-                val listenerStates = buildList {
-                    legacyListenerState?.let { listenerState ->
+                lastSentCustomerInfo = customerInfo
+                val statesToNotify = buildList {
+                    (listOfNotNull(legacyListenerState) + listeners).forEach { listenerState ->
+                        // Any broadcast supersedes a queued initial delivery.
+                        listenerState.initialDeliveryPending = false
                         if (listenerState.lastDeliveredCustomerInfo != customerInfo) {
                             listenerState.lastDeliveredCustomerInfo = customerInfo
-                            listenerState.pendingInitialDeliveryId = null
                             add(listenerState)
-                        } else {
-                            listenerState.pendingInitialDeliveryId = null
-                        }
-                    }
-                    listeners.forEach { listenerState ->
-                        if (listenerState.lastDeliveredCustomerInfo != customerInfo) {
-                            listenerState.lastDeliveredCustomerInfo = customerInfo
-                            listenerState.pendingInitialDeliveryId = null
-                            add(listenerState)
-                        } else {
-                            listenerState.pendingInitialDeliveryId = null
                         }
                     }
                 }
-                listenerStates to currentLastSent
+                previouslySent to statesToNotify
             }
+        } ?: return
+
+        val (previouslySent, statesToNotify) = notification
+        diagnosticsTracker?.trackCustomerInfoVerificationResultIfNeeded(customerInfo)
+        if (previouslySent != null) {
+            log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_UPDATED_NOTIFYING_LISTENER }
+        } else {
+            log(LogIntent.DEBUG) { CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER }
         }
-        if (lastSent != customerInfo) {
-            diagnosticsTracker?.trackCustomerInfoVerificationResultIfNeeded(customerInfo)
-            if (lastSent != null) {
-                log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_UPDATED_NOTIFYING_LISTENER }
-            } else {
-                log(LogIntent.DEBUG) { CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER }
-            }
-            synchronized(this@CustomerInfoUpdateHandler) {
-                this.lastSentCustomerInfo = customerInfo
-            }
-            listenerStatesToNotify.forEach { listenerState ->
-                dispatch { listenerState.listener.onReceived(customerInfo) }
-            }
+        statesToNotify.forEach { listenerState ->
+            dispatch { listenerState.listener.onReceived(customerInfo) }
         }
     }
 
@@ -145,70 +141,74 @@ internal class CustomerInfoUpdateHandler constructor(
                 ListenerState(listener).also { legacyListenerState = it }
             }
         }
-        if (listener != null) {
+        if (listenerState != null) {
             log(LogIntent.DEBUG) { ConfigureStrings.LISTENER_SET }
-            sendCachedCustomerInfoToLegacyListener(listenerState)
-        }
-    }
-
-    private fun sendCachedCustomerInfoToLegacyListener(listenerState: ListenerState?) {
-        if (appConfig.customEntitlementComputation || listenerState == null) return
-        val initialDeliveryId = reserveInitialDelivery(listenerState)
-        if (initialDeliveryId != null) {
-            val cachedInfo = getCachedCustomerInfo(identityManager.currentAppUserID)
-            if (cachedInfo != null) {
-                if (synchronized(this@CustomerInfoUpdateHandler) { lastSentCustomerInfo } != cachedInfo) {
-                    diagnosticsTracker?.trackCustomerInfoVerificationResultIfNeeded(cachedInfo)
-                }
-                sendToSingleListener(listenerState, initialDeliveryId, cachedInfo)
-            } else {
-                clearInitialDeliveryReservation(listenerState, initialDeliveryId)
+            if (!appConfig.customEntitlementComputation) {
+                sendCachedCustomerInfoToNewListener(listenerState, trackVerification = true)
             }
         }
     }
 
-    private fun sendToSingleListener(
+    /**
+     * Delivers the currently cached customer info to a freshly registered listener, without
+     * touching the shared [lastSentCustomerInfo] gate. That gate is only ever advanced by
+     * [notifyListeners]; rolling it backwards here would re-broadcast to every other listener.
+     */
+    private fun sendCachedCustomerInfoToNewListener(
         listenerState: ListenerState,
-        initialDeliveryId: Long,
-        customerInfo: CustomerInfo,
+        trackVerification: Boolean,
     ) {
+        if (!reserveInitialDelivery(listenerState)) return
+
+        val cachedInfo = getCachedCustomerInfo(identityManager.currentAppUserID)
+        if (cachedInfo == null) {
+            clearInitialDeliveryReservation(listenerState)
+            return
+        }
+        if (trackVerification &&
+            synchronized(this@CustomerInfoUpdateHandler) { lastSentCustomerInfo } != cachedInfo
+        ) {
+            diagnosticsTracker?.trackCustomerInfoVerificationResultIfNeeded(cachedInfo)
+        }
+        sendToSingleListener(listenerState, cachedInfo)
+    }
+
+    private fun sendToSingleListener(listenerState: ListenerState, customerInfo: CustomerInfo) {
         log(LogIntent.DEBUG) { CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER }
         dispatch {
+            // Re-check under the lock at delivery time: the listener may have been removed, or a
+            // broadcast may have overtaken this queued delivery and cleared the reservation.
             val listener = synchronized(this@CustomerInfoUpdateHandler) {
-                if (
-                    !contains(listenerState) ||
-                    listenerState.pendingInitialDeliveryId != initialDeliveryId
-                ) {
+                if (!contains(listenerState) || !listenerState.initialDeliveryPending) {
                     null
                 } else {
-                    listenerState.pendingInitialDeliveryId = null
-                    if (listenerState.lastDeliveredCustomerInfo == customerInfo) {
-                        null
-                    } else {
-                        listenerState.lastDeliveredCustomerInfo = customerInfo
-                        listenerState.listener
-                    }
+                    listenerState.initialDeliveryPending = false
+                    listenerState.lastDeliveredCustomerInfo = customerInfo
+                    listenerState.listener
                 }
             }
             listener?.onReceived(customerInfo)
         }
     }
 
-    private fun reserveInitialDelivery(listenerState: ListenerState): Long? {
+    /**
+     * Reserves the one-shot initial delivery for [listenerState], returning false when the
+     * listener has already received a value or already has a delivery in flight.
+     */
+    private fun reserveInitialDelivery(listenerState: ListenerState): Boolean {
         return synchronized(this@CustomerInfoUpdateHandler) {
-            if (listenerState.lastDeliveredCustomerInfo != null || listenerState.pendingInitialDeliveryId != null) {
-                null
+            if (listenerState.lastDeliveredCustomerInfo != null || listenerState.initialDeliveryPending) {
+                false
             } else {
-                (++nextInitialDeliveryId).also { listenerState.pendingInitialDeliveryId = it }
+                listenerState.initialDeliveryPending = true
+                true
             }
         }
     }
 
-    private fun clearInitialDeliveryReservation(listenerState: ListenerState, initialDeliveryId: Long) {
+    private fun clearInitialDeliveryReservation(listenerState: ListenerState) {
         synchronized(this@CustomerInfoUpdateHandler) {
-            if (listenerState.pendingInitialDeliveryId == initialDeliveryId) {
-                listenerState.pendingInitialDeliveryId = null
-            }
+            listenerState.initialDeliveryPending = false
         }
     }
 

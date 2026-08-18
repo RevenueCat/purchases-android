@@ -186,7 +186,9 @@ class ConfigureFragment : Fragment() {
         // More info: https://docs.revenuecat.com/docs/user-attributes
         Purchases.sharedInstance.setAttributes(mapOf("favorite_cat" to "garfield"))
 
-        Purchases.sharedInstance.updatedCustomerInfoListener = application
+        // Two independent listeners, to exercise multi-listener support end to end.
+        Purchases.sharedInstance.addUpdatedCustomerInfoListener(application)
+        Purchases.sharedInstance.addUpdatedCustomerInfoListener(application.secondaryCustomerInfoListener)
 
         // Preserve the separately-entered app user ID because this screen only edits SDK configuration fields.
         val existingConfiguration = dataStoreUtils.getSdkConfig().first()
