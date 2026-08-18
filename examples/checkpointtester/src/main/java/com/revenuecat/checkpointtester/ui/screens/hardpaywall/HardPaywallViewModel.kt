@@ -43,7 +43,7 @@ class HardPaywallViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val result = Purchases.sharedInstance.awaitCheckpoint(
-                    "hard_paywall",
+                    "android_device_test",
                     CheckpointParams(
                         "gate" to CustomVariableValue.String("hard"),
                         "attempt" to CustomVariableValue.Number(_state.value.attempts),
