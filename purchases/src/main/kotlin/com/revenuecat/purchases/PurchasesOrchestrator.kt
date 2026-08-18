@@ -222,12 +222,26 @@ internal class PurchasesOrchestrator(
     val appUserID: String
         @Synchronized get() = identityManager.currentAppUserID
 
+    @Deprecated("Use addUpdatedCustomerInfoListener/removeUpdatedCustomerInfoListener instead")
     var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
-        @Synchronized get() = customerInfoUpdateHandler.updatedCustomerInfoListener
+        @Suppress("DEPRECATION")
+        @Synchronized
+        get() =
+            customerInfoUpdateHandler.updatedCustomerInfoListener
 
-        @Synchronized set(value) {
+        @Suppress("DEPRECATION")
+        @Synchronized
+        set(value) {
             customerInfoUpdateHandler.updatedCustomerInfoListener = value
         }
+
+    fun addUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
+        customerInfoUpdateHandler.addUpdatedCustomerInfoListener(listener)
+    }
+
+    fun removeUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
+        customerInfoUpdateHandler.removeUpdatedCustomerInfoListener(listener)
+    }
 
     @get:Synchronized
     @set:Synchronized
@@ -936,7 +950,7 @@ internal class PurchasesOrchestrator(
         this.workflowsConfigProvider?.close()
 
         billing.close()
-        updatedCustomerInfoListener = null // Do not call on state since the setter does more stuff
+        customerInfoUpdateHandler.removeAllListeners()
 
         dispatch {
             processLifecycleOwnerProvider().lifecycle.removeObserver(lifecycleHandler)
@@ -964,7 +978,8 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    fun removeUpdatedCustomerInfoListener() {
+    @Suppress("DEPRECATION")
+    fun removeLegacyUpdatedCustomerInfoListener() {
         // Don't set on state directly since setter does more things
         this.updatedCustomerInfoListener = null
     }
