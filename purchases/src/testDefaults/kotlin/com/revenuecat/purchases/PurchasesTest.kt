@@ -13,6 +13,7 @@ import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.Constants
+import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
@@ -2432,6 +2433,50 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         assertThat(successCalled).isFalse()
         assertThat(errorReceived?.code).isEqualTo(PurchasesErrorCode.UnknownError)
+    }
+
+    @Test
+    fun `showManageSubscriptions logs the underlying detail when no activity can handle the intent`() {
+        every { mockInfo.managementURL } returns Uri.parse("https://app.revenuecat.com/manage")
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.startActivity(any()) } throws ActivityNotFoundException("no handler")
+
+        val loggedErrors = recordErrorLogs { purchases.showManageSubscriptions(context) }
+
+        assertThat(loggedErrors).anyMatch { it.contains("Cannot open subscription management URL: no handler") }
+    }
+
+    @Test
+    fun `showManageSubscriptions logs the underlying detail when store has no management URL`() {
+        buildPurchases(anonymous = false, store = Store.TEST_STORE)
+        every { mockInfo.managementURL } returns null
+
+        val context = mockk<Context>(relaxed = true)
+
+        val loggedErrors = recordErrorLogs { purchases.showManageSubscriptions(context) }
+
+        assertThat(loggedErrors).anyMatch { it.contains("No management URL found for current subscription") }
+    }
+
+    private fun recordErrorLogs(block: () -> Unit): List<String> {
+        val loggedErrors = mutableListOf<String>()
+        val previousLogHandler = currentLogHandler
+        currentLogHandler = object : LogHandler {
+            override fun v(tag: String, msg: String) = Unit
+            override fun d(tag: String, msg: String) = Unit
+            override fun i(tag: String, msg: String) = Unit
+            override fun w(tag: String, msg: String) = Unit
+            override fun e(tag: String, msg: String, throwable: Throwable?) {
+                loggedErrors.add(msg)
+            }
+        }
+        try {
+            block()
+        } finally {
+            currentLogHandler = previousLogHandler
+        }
+        return loggedErrors
     }
 
     // endregion showManageSubscriptions

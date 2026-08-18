@@ -987,7 +987,7 @@ internal class PurchasesOrchestrator(
                             PurchasesErrorCode.UnsupportedError,
                             "No management URL found for current subscription",
                         )
-                        log(LogIntent.RC_ERROR) { error.message }
+                        errorLog(error)
                         callback?.onError(error)
                         return
                     }
@@ -1002,7 +1002,7 @@ internal class PurchasesOrchestrator(
                             PurchasesErrorCode.UnknownError,
                             "Cannot open subscription management URL: ${e.message}",
                         )
-                        log(LogIntent.RC_ERROR) { error.message }
+                        errorLog(error)
                         callback?.onError(error)
                     }
                 }
