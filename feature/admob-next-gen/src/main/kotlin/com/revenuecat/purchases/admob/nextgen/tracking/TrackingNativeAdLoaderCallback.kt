@@ -15,7 +15,7 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
  *
  * [configureAd] runs after a native ad is tracked and before it is forwarded to [delegate], allowing callers to
  * install post-load tracking without coupling this load wrapper to the event-tracking implementation. Custom native
- * and banner results are forwarded unchanged because they are separate ad formats.
+ * results are tracked as native ads, while banner results are forwarded unchanged because they are a separate format.
  */
 internal class TrackingNativeAdLoaderCallback(
     private val delegate: NativeAdLoaderCallback?,
@@ -31,6 +31,7 @@ internal class TrackingNativeAdLoaderCallback(
     }
 
     override fun onCustomNativeAdLoaded(customNativeAd: CustomNativeAd) {
+        trackAdLoaded(customNativeAd.getResponseInfo(), AdFormat.NATIVE, placement, adUnitId)
         delegate?.onCustomNativeAdLoaded(customNativeAd)
     }
 

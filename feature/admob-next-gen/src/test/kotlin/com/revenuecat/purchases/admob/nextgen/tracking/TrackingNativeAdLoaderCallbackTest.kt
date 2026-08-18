@@ -126,19 +126,51 @@ class TrackingNativeAdLoaderCallbackTest {
     }
 
     @Test
-    fun `forwards non-native results and completion without tracking or configuring`() {
+    fun `tracks custom native load and delegates without configuring`() {
         val customNativeAd = mockk<CustomNativeAd>()
-        val bannerAd = mockk<BannerAd>()
+        every { customNativeAd.getResponseInfo() } returns responseInfo("test-network", "response-id")
         var delegatedCustomNativeAd: CustomNativeAd? = null
-        var delegatedBannerAd: BannerAd? = null
-        var loadingCompleted = false
         var configured = false
         val callback = TrackingNativeAdLoaderCallback(
             delegate = object : NativeAdLoaderCallback {
                 override fun onCustomNativeAdLoaded(customNativeAd: CustomNativeAd) {
                     delegatedCustomNativeAd = customNativeAd
                 }
+            },
+            placement = "home",
+            adUnitId = "ad-unit",
+            configureAd = { configured = true },
+        )
 
+        callback.onCustomNativeAdLoaded(customNativeAd)
+
+        val trackedData = slot<AdLoadedData>()
+        verify(exactly = 1) {
+            adTracker.trackAdLoaded(capture(trackedData), AdCaptureMethod.ADAPTER)
+        }
+        assertEquals(
+            AdLoadedData(
+                networkName = "test-network",
+                mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.NATIVE,
+                placement = "home",
+                adUnitId = "ad-unit",
+                impressionId = "response-id",
+            ),
+            trackedData.captured,
+        )
+        assertSame(customNativeAd, delegatedCustomNativeAd)
+        assertFalse(configured)
+    }
+
+    @Test
+    fun `forwards banner and completion without tracking or configuring`() {
+        val bannerAd = mockk<BannerAd>()
+        var delegatedBannerAd: BannerAd? = null
+        var loadingCompleted = false
+        var configured = false
+        val callback = TrackingNativeAdLoaderCallback(
+            delegate = object : NativeAdLoaderCallback {
                 override fun onBannerAdLoaded(bannerAd: BannerAd) {
                     delegatedBannerAd = bannerAd
                 }
@@ -152,12 +184,10 @@ class TrackingNativeAdLoaderCallbackTest {
             configureAd = { configured = true },
         )
 
-        callback.onCustomNativeAdLoaded(customNativeAd)
         callback.onBannerAdLoaded(bannerAd)
         callback.onAdLoadingCompleted()
 
         verify(exactly = 0) { adTracker.trackAdLoaded(any(), any()) }
-        assertSame(customNativeAd, delegatedCustomNativeAd)
         assertSame(bannerAd, delegatedBannerAd)
         assertTrue(loadingCompleted)
         assertFalse(configured)
