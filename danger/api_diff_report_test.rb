@@ -208,6 +208,25 @@ class ApiDiffReportTest < Minitest::Test
     "purchases/src/main/kotlin/Purchases.kt" => "irrelevant"
   }.freeze
 
+  CHANNEL_CREDENTIALS = ["xoxb-1", "C0BLWE7VBS4"].freeze
+
+  def history_getter(texts)
+    lambda do |_url, _headers|
+      Struct.new(:code, :body).new("200", { ok: true, messages: texts.map { |text| { "text" => text } } }.to_json)
+    end
+  end
+
+  def collecting_poster(posted)
+    lambda do |_url, request_body, _headers|
+      posted << JSON.parse(request_body)
+      Struct.new(:code, :body).new("200", '{"ok":true}')
+    end
+  end
+
+  def announcement_for(link)
+    ApiDiffReport.slack_message(ApiDiffReport.build("purchases/api-defauts.txt" => ADDED_METHOD_PATCH), link)
+  end
+
   def test_run_returns_the_comment_body_and_posts_to_slack
     posted = []
 
@@ -215,17 +234,174 @@ class ApiDiffReportTest < Minitest::Test
       changed_files: PATCHES.keys,
       patch_for: ->(file) { PATCHES[file] },
       pull_request_link: "<url|#42>",
-      credentials: ["xoxb-1", "#some-channel"],
-      poster: lambda do |_url, request_body, _headers|
-        posted << JSON.parse(request_body)
-        Struct.new(:code, :body).new("200", '{"ok":true}')
-      end
+      credentials: CHANNEL_CREDENTIALS,
+      getter: history_getter([]),
+      poster: collecting_poster(posted)
     )
 
     assert_includes body[:comment], "+ method public void apiDiffDemoPong"
     assert_nil body[:slack_error]
+    assert_nil body[:degraded_dedupe]
     assert_equal 1, posted.count
     assert_includes posted.first["text"], "<url|#42>"
+  end
+
+  def test_run_skips_slack_when_the_last_word_on_this_pull_request_is_this_summary
+    body = ApiDiffReport.run(
+      changed_files: PATCHES.keys,
+      patch_for: ->(file) { PATCHES[file] },
+      pull_request_link: "<url|#42>",
+      credentials: CHANNEL_CREDENTIALS,
+      getter: history_getter([announcement_for("<url|#42>"), "unrelated"]),
+      poster: ->(*) { raise "must not post" }
+    )
+
+    assert_includes body[:comment], "+ method public void apiDiffDemoPong"
+    assert_nil body[:slack_error]
+  end
+
+  # A PR that changes the API, changes it again, then reverts to the first state: the channel's
+  # newest word on it must be the current one, so this announces again.
+  def test_run_reannounces_a_surface_the_pull_request_had_already_left_behind
+    posted = []
+    superseded = ApiDiffReport.slack_message(
+      ApiDiffReport.build("purchases/api-defauts.txt" => ADDED_METHOD_PATCH.gsub("Pong", "Pang")), "<url|#42>"
+    )
+
+    ApiDiffReport.run(
+      changed_files: PATCHES.keys,
+      patch_for: ->(file) { PATCHES[file] },
+      pull_request_link: "<url|#42>",
+      credentials: CHANNEL_CREDENTIALS,
+      getter: history_getter([superseded, announcement_for("<url|#42>")]),
+      poster: collecting_poster(posted)
+    )
+
+    assert_equal 1, posted.count
+  end
+
+  # Only messages about this PR, from this platform, say anything about what it announced.
+  def test_last_announcement_ignores_other_pull_requests_and_platforms
+    ours = announcement_for("<url|#42>")
+    texts = ["#{ours.sub(ApiDiffReport::PLATFORM_LABEL, 'iOS :ios:')}", announcement_for("<url|#41>"), ours]
+
+    assert_equal ours, ApiDiffReport.last_announcement(texts, "<url|#42>")
+  end
+
+  # The same declaration on another PR is news; the link is part of the message for that reason.
+  def test_run_posts_when_the_channel_holds_another_pull_requests_summary
+    posted = []
+
+    ApiDiffReport.run(
+      changed_files: PATCHES.keys,
+      patch_for: ->(file) { PATCHES[file] },
+      pull_request_link: "<url|#42>",
+      credentials: CHANNEL_CREDENTIALS,
+      getter: history_getter([announcement_for("<url|#41>")]),
+      poster: collecting_poster(posted)
+    )
+
+    assert_equal 1, posted.count
+  end
+
+  # The marker written into the comment is what the next run looks for, so the helper owns its shape.
+  def test_run_falls_back_to_the_marker_on_the_pull_request_when_history_is_unreadable
+    markers = []
+
+    body = ApiDiffReport.run(
+      changed_files: PATCHES.keys,
+      patch_for: ->(file) { PATCHES[file] },
+      pull_request_link: "<url|#42>",
+      credentials: CHANNEL_CREDENTIALS,
+      getter: ->(*) { Struct.new(:code, :body).new("200", '{"ok":false,"error":"missing_scope"}') },
+      announced_in_comment: ->(marker) { markers << marker; true },
+      poster: ->(*) { raise "must not post" }
+    )
+
+    assert_match(/\A<!-- api-diff:[0-9a-f]{12} -->\z/, markers.first)
+    assert_includes body[:comment], markers.first
+    assert_nil body[:slack_error]
+  end
+
+  def test_run_posts_and_reports_degraded_dedupe_when_neither_store_is_readable
+    posted = []
+
+    body = ApiDiffReport.run(
+      changed_files: PATCHES.keys,
+      patch_for: ->(file) { PATCHES[file] },
+      pull_request_link: "<url|#42>",
+      credentials: CHANNEL_CREDENTIALS,
+      getter: ->(*) { raise "slack is down" },
+      announced_in_comment: ->(_marker) { false },
+      poster: collecting_poster(posted)
+    )
+
+    assert_equal 1, posted.count
+    assert_equal "slack is down", body[:degraded_dedupe]
+    assert_nil body[:slack_error]
+  end
+
+  # A recorded fingerprint would make the next run treat the failure as already announced.
+  def test_run_records_the_fingerprint_only_once_announced
+    announced = ApiDiffReport.run(
+      changed_files: PATCHES.keys,
+      patch_for: ->(file) { PATCHES[file] },
+      pull_request_link: "<url|#42>",
+      credentials: CHANNEL_CREDENTIALS,
+      getter: history_getter([]),
+      poster: ->(*) { Struct.new(:code, :body).new("200", '{"ok":true}') }
+    )
+    failed = ApiDiffReport.run(
+      changed_files: PATCHES.keys,
+      patch_for: ->(file) { PATCHES[file] },
+      pull_request_link: "<url|#42>",
+      credentials: CHANNEL_CREDENTIALS,
+      getter: history_getter([]),
+      poster: ->(*) { raise "slack is down" }
+    )
+
+    assert_match(/<!-- api-diff:[0-9a-f]{12} -->/, announced[:comment])
+    refute_match(/<!-- api-diff:/, failed[:comment])
+  end
+
+  def test_fingerprint_survives_a_rerun_and_moves_with_the_report
+    unchanged = ApiDiffReport.build("purchases/api-defauts.txt" => ADDED_METHOD_PATCH)
+    changed = ApiDiffReport.build("purchases/api-defauts.txt" => ADDED_METHOD_PATCH.gsub("Pong", "Pang"))
+
+    assert_equal ApiDiffReport.fingerprint(unchanged), ApiDiffReport.fingerprint(unchanged)
+    refute_equal ApiDiffReport.fingerprint(unchanged), ApiDiffReport.fingerprint(changed)
+  end
+
+  # chat.postMessage takes a `#name`, conversations.history does not.
+  def test_announcement_state_needs_the_channel_id
+    state, reason = ApiDiffReport.announcement_state("hi", "#feed", "xoxb-1", ->(*) { raise "must not read" }, "<url|#42>")
+
+    assert_equal :unknown, state
+    assert_includes reason, "channel ID"
+  end
+
+  # Past the history window there is nothing to compare against, which is not an error.
+  def test_announcement_state_is_unknown_without_a_reason_when_the_pull_request_is_not_in_the_window
+    state, reason = ApiDiffReport.announcement_state("hi", "C1", "xoxb-1", history_getter(["unrelated"]), "<url|#42>")
+
+    assert_equal :unknown, state
+    assert_nil reason
+  end
+
+  def test_recent_messages_returns_the_texts_newest_first
+    request = ApiDiffReport.history_request("C1", bot_token: "xoxb-1")
+
+    assert_includes request[:url], "channel=C1"
+    assert_equal "Bearer xoxb-1", request[:headers]["Authorization"]
+    assert_equal ["new", "old"], ApiDiffReport.recent_messages(request, getter: history_getter(["new", "old"]))
+  end
+
+  def test_recent_messages_raises_when_the_token_cannot_read_the_channel
+    response = Struct.new(:code, :body).new("200", '{"ok":false,"error":"missing_scope"}')
+    request = ApiDiffReport.history_request("C1", bot_token: "xoxb-1")
+
+    error = assert_raises(RuntimeError) { ApiDiffReport.recent_messages(request, getter: ->(*) { response }) }
+    assert_includes error.message, "missing_scope"
   end
 
   def test_run_reports_a_skipped_announcement_without_credentials
