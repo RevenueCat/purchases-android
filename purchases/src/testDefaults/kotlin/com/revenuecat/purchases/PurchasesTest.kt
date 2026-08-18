@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.SharedConstants
+import com.revenuecat.purchases.checkpoints.CheckpointEvent
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.sha1
@@ -1518,6 +1519,21 @@ internal class PurchasesTest : BasePurchasesTest() {
     // endregion
 
     // region track events
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `resolving checkpoint tracks checkpoint hit`() = runTest {
+        val timestamp = Date(1699270688995)
+        val event = slot<CheckpointEvent>()
+        every { mockDateProvider.now } returns timestamp
+        every { mockEventsManager.track(capture(event)) } just Runs
+
+        purchases.resolveCheckpoint("onboarding_complete")
+
+        assertThat(event.captured.identifier).isEqualTo("onboarding_complete")
+        assertThat(event.captured.timestamp).isEqualTo(timestamp)
+        verify(exactly = 1) { mockEventsManager.track(event.captured) }
+    }
 
     @Test
     fun `track purchase initiated event caches it`() {
