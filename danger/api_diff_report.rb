@@ -114,8 +114,10 @@ module ApiDiffReport
     shown
   end
 
-  def fingerprint(report)
-    Digest::SHA256.hexdigest((report[:modules] + report[:added] + report[:removed]).join("\n"))[0, 12]
+  # Of the rendered summary, not the report: joining the declaration lists would hash an addition of
+  # a declaration the same as its removal.
+  def fingerprint(message)
+    Digest::SHA256.hexdigest(message.to_s)[0, 12]
   end
 
   def fingerprint_marker(fingerprint)
@@ -238,16 +240,15 @@ module ApiDiffReport
   end
 
   # Returns [:posted | :duplicate | :failed, reason_or_nil].
-  def announce(report, pull_request_link, credentials, poster, getter, announced_in_comment)
+  def announce(message, pull_request_link, credentials, poster, getter, announced_in_comment)
     return [:failed, "no Slack credentials were reachable"] if credentials.nil?
 
     bot_token, channel = credentials
-    message = slack_message(report, pull_request_link)
 
     state, history_error = announcement_state(message, channel, bot_token, getter, pull_request_link)
     return [:duplicate, nil] if state == :same
 
-    if state == :unknown && announced_in_comment&.call(fingerprint_marker(fingerprint(report)))
+    if state == :unknown && announced_in_comment&.call(fingerprint_marker(fingerprint(message)))
       return [:duplicate, nil]
     end
 
@@ -275,10 +276,11 @@ module ApiDiffReport
     report = build(signature_files.to_h { |file| [file, patch_for.call(file)] })
     return nil if empty?(report)
 
-    outcome, reason = announce(report, pull_request_link, credentials, poster, getter, announced_in_comment)
+    message = slack_message(report, pull_request_link)
+    outcome, reason = announce(message, pull_request_link, credentials, poster, getter, announced_in_comment)
 
     {
-      comment: markdown_section(report, announced_fingerprint: (fingerprint(report) unless outcome == :failed)),
+      comment: markdown_section(report, announced_fingerprint: (fingerprint(message) unless outcome == :failed)),
       warning: warning(outcome, reason)
     }
   end

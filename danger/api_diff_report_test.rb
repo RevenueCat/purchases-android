@@ -365,12 +365,28 @@ class ApiDiffReportTest < Minitest::Test
     refute_match(/<!-- api-diff:/, failed[:comment])
   end
 
-  def test_fingerprint_survives_a_rerun_and_moves_with_the_report
-    unchanged = ApiDiffReport.build("purchases/api-defauts.txt" => ADDED_METHOD_PATCH)
-    changed = ApiDiffReport.build("purchases/api-defauts.txt" => ADDED_METHOD_PATCH.gsub("Pong", "Pang"))
+  def test_fingerprint_survives_a_rerun_and_moves_with_the_summary
+    unchanged = announcement_for("<url|#42>")
+    changed = ApiDiffReport.slack_message(
+      ApiDiffReport.build("purchases/api-defauts.txt" => ADDED_METHOD_PATCH.gsub("Pong", "Pang")), "<url|#42>"
+    )
 
     assert_equal ApiDiffReport.fingerprint(unchanged), ApiDiffReport.fingerprint(unchanged)
     refute_equal ApiDiffReport.fingerprint(unchanged), ApiDiffReport.fingerprint(changed)
+  end
+
+  # Hashing the declaration lists gave an addition and its removal the same fingerprint, which let
+  # the marker path swallow a removal.
+  def test_fingerprint_separates_an_addition_from_its_removal
+    added = ApiDiffReport.build("purchases/api-defauts.txt" => ADDED_METHOD_PATCH)
+    removed = ApiDiffReport.build(
+      "purchases/api-defauts.txt" => ADDED_METHOD_PATCH.sub("+    method public void apiDiffDemoPong();",
+                                                            "-    method public void apiDiffDemoPong();")
+    )
+
+    assert_equal ["method public void apiDiffDemoPong();"], removed[:removed]
+    refute_equal ApiDiffReport.fingerprint(ApiDiffReport.slack_message(added, "<url|#42>")),
+                 ApiDiffReport.fingerprint(ApiDiffReport.slack_message(removed, "<url|#42>"))
   end
 
   # chat.postMessage takes a `#name`, conversations.history does not.
