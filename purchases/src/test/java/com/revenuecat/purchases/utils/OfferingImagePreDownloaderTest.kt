@@ -1,20 +1,27 @@
 package com.revenuecat.purchases.utils
 
+import android.content.Context
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.PaywallAssetWarmer
+import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
+import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
+import com.revenuecat.purchases.paywalls.components.PartialVideoComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
+import com.revenuecat.purchases.paywalls.components.VideoComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -24,15 +31,19 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.paywalls.components.properties.FitMode
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
-import io.mockk.Runs
+import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
-import io.mockk.verifyAll
+import kotlinx.serialization.SerializationException
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -41,7 +52,7 @@ import java.net.URL
 @RunWith(AndroidJUnit4::class)
 class OfferingImagePreDownloaderTest {
 
-    private lateinit var coilImageDownloader: CoilImageDownloader
+    private val warmer = RecordingWarmer()
 
     private lateinit var preDownloader: OfferingImagePreDownloader
 
@@ -49,11 +60,22 @@ class OfferingImagePreDownloaderTest {
 
     @Before
     fun setUp() {
-        coilImageDownloader = mockk<CoilImageDownloader>().apply {
-            every { downloadImage(any()) } just Runs
+        preDownloader = OfferingImagePreDownloader(warming(warmer))
+    }
+
+    private fun warming(warmer: PaywallAssetWarmer?) =
+        PaywallAssetWarming(context = mockk(relaxed = true), warmerProvider = { warmer })
+
+    private class RecordingWarmer : PaywallAssetWarmer {
+        val warmed = mutableListOf<Uri>()
+        var prebootCount = 0
+        override fun warmImages(context: Context, imageUris: List<Uri>) {
+            warmed.addAll(imageUris)
         }
 
-        preDownloader = OfferingImagePreDownloader(shouldPredownloadImages = true, coilImageDownloader)
+        override fun prebootWebView(context: Context) {
+            prebootCount++
+        }
     }
 
     @Test
@@ -65,19 +87,17 @@ class OfferingImagePreDownloaderTest {
             }
         )
 
-        verify(exactly = 0) {
-            coilImageDownloader.downloadImage(any())
-        }
+        assertThat(warmer.warmed).isEmpty()
     }
 
     @Test
     fun `if disabled, it does not download anything`() {
-        preDownloader = OfferingImagePreDownloader(shouldPredownloadImages = false, coilImageDownloader)
-        preDownloader.preDownloadOfferingImages(createOfferings())
+        val offering = mockk<Offering>()
 
-        verify(exactly = 0) {
-            coilImageDownloader.downloadImage(any())
-        }
+        OfferingImagePreDownloader(warming(warmer = null)).preDownloadOfferingImages(offering)
+
+        verify(exactly = 0) { offering.paywall }
+        verify(exactly = 0) { offering.paywallComponents }
     }
 
     // region Paywalls V1
@@ -86,33 +106,79 @@ class OfferingImagePreDownloaderTest {
     fun `downloads images from offering paywall data`() {
         preDownloader.preDownloadOfferingImages(createOfferings())
 
-        verifyAll {
-            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_header.png"))
-            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_background.png"))
-            coilImageDownloader.downloadImage(Uri.parse("https://www.revenuecat.com/test_icon.png"))
-        }
+        assertThat(warmer.warmed).containsExactlyInAnyOrder(
+            Uri.parse("https://www.revenuecat.com/test_header.png"),
+            Uri.parse("https://www.revenuecat.com/test_background.png"),
+            Uri.parse("https://www.revenuecat.com/test_icon.png"),
+        )
     }
 
     @Test
     fun `if no images, it does not download anything`() {
         preDownloader.preDownloadOfferingImages(createOfferings(null, null, null))
 
-        verify(exactly = 0) {
-            coilImageDownloader.downloadImage(any())
-        }
+        assertThat(warmer.warmed).isEmpty()
     }
 
     // endregion Paywalls V1
 
     // region Paywalls V2
 
+    // WebView startup is not free, so it is triggered only for paywalls that actually carry a web_view.
+    @Test
+    fun `paywalls V2 - preboots the web view when the tree has one`() {
+        preDownloader.preDownloadOfferingImages(offeringWithWebView())
+
+        assertThat(warmer.prebootCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `paywalls V2 - does not preboot the web view when the tree has none`() {
+        preDownloader.preDownloadOfferingImages(createOfferingWithV2Paywall())
+
+        assertThat(warmer.prebootCount).isEqualTo(0)
+    }
+
+    private fun offeringWithWebView(): Offering = createOfferingWithV2Paywall(
+        paywallComponentsConfig = PaywallComponentsConfig(
+            stack = StackComponent(
+                components = listOf(
+                    WebViewComponent(
+                        url = "https://example.com/index.html",
+                        id = "component-1",
+                        protocolVersion = WebViewComponent.SUPPORTED_PROTOCOL_VERSION,
+                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill),
+                    ),
+                ),
+            ),
+            background = Background.Color(ColorScheme(light = ColorInfo.Alias(ColorAlias("")))),
+        ),
+    )
+
     @Test
     fun `paywalls V2 - if no images, it does not download anything`() {
         preDownloader.preDownloadOfferingImages(createOfferingWithV2Paywall())
 
-        verify(exactly = 0) {
-            coilImageDownloader.downloadImage(any())
+        assertThat(warmer.warmed).isEmpty()
+    }
+
+    @Test
+    fun `paywalls V2 - if the component tree fails to decode, it does not throw and downloads nothing`() {
+        val offering = mockk<Offering>().apply {
+            every { paywall } returns null
+            every { paywallComponents } returns Offering.PaywallComponents(
+                uiConfig = mockk(),
+                componentsHash = "hash",
+            ) {
+                throw SerializationException("Malformed component tree")
+            }
         }
+
+        // Pre-downloading is best-effort: a lazy-decode failure must be swallowed so it can't abort the
+        // offerings success/caching path that invokes this.
+        preDownloader.preDownloadOfferingImages(offering)
+
+        assertThat(warmer.warmed).isEmpty()
     }
 
     @Test
@@ -120,14 +186,17 @@ class OfferingImagePreDownloaderTest {
         val expectedImageDownloads = listOf(
             "https://pawwalls.com/test_stack_light_low_res.webp",
             "https://pawwalls.com/test_stack_dark_low_res.webp",
-            "https://pawwalls.com/test_icon_1.webp",
+            "https://pawwalls.com/icons/test_icon_1.webp",
             "https://pawwalls.com/test_image_light_low_res.webp",
             "https://pawwalls.com/test_image_dark_low_res.webp",
             "https://pawwalls.com/test_image_override_light_low_res.webp",
             "https://pawwalls.com/test_image_override_dark_low_res.webp",
             "https://pawwalls.com/test_carousel_light_low_res.webp",
             "https://pawwalls.com/test_carousel_dark_low_res.webp",
+            "https://pawwalls.com/test_carousel_page_low_res.webp",
             "https://pawwalls.com/test_tabs_light_low_res.webp",
+            "https://pawwalls.com/test_video_fallback_low_res.webp",
+            "https://pawwalls.com/test_video_override_fallback_low_res.webp",
             "https://pawwalls.com/test_background_light_low_res.webp",
             "https://pawwalls.com/test_background_dark_low_res.webp",
             "https://pawwalls.com/test_sticky_footer_low_res.webp",
@@ -135,9 +204,11 @@ class OfferingImagePreDownloaderTest {
             "https://pawwalls.com/test_sticky_footer_override_dark_low_res.webp",
             "https://pawwalls.com/test_sticky_footer_override_2_light_low_res.webp",
             "https://pawwalls.com/test_sticky_footer_override_2_dark_low_res.webp",
-            "https://pawwalls.com/test_icon_2.webp",
-            "https://pawwalls.com/test_icon_3.webp",
-            "https://pawwalls.com/test_icon_4.webp",
+            "https://pawwalls.com/icons/test_icon_2.webp",
+            "https://pawwalls.com/test_header_low_res.webp",
+            "https://pawwalls.com/icons/test_icon_5.webp",
+            "https://pawwalls.com/icons/test_icon_3.webp",
+            "https://pawwalls.com/icons/test_icon_4.webp",
         )
 
         preDownloader.preDownloadOfferingImages(createOfferingWithV2Paywall(
@@ -158,7 +229,7 @@ class OfferingImagePreDownloaderTest {
                             color = ColorScheme(light = ColorInfo.Alias(ColorAlias(""))),
                         ),
                         IconComponent(
-                            baseUrl = "https://pawwalls.com",
+                            baseUrl = "https://pawwalls.com/icons",
                             iconName = "test_icon",
                             formats = IconComponent.Formats(
                                 webp = "test_icon_1.webp",
@@ -182,12 +253,57 @@ class OfferingImagePreDownloaderTest {
                             ),
                         ),
                         CarouselComponent(
-                            pages = emptyList(),
+                            pages = listOf(
+                                StackComponent(
+                                    components = listOf(
+                                        ImageComponent(
+                                            source = ThemeImageUrls(
+                                                light = createMockImageUrls(
+                                                    webpLowRes = "https://pawwalls.com/test_carousel_page_low_res.webp",
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
                             pageAlignment = VerticalAlignment.TOP,
                             background = Background.Image(
                                 value = ThemeImageUrls(
                                     light = createMockImageUrls(webpLowRes = "https://pawwalls.com/test_carousel_light_low_res.webp"),
                                     dark = createMockImageUrls(webpLowRes = "https://pawwalls.com/test_carousel_dark_low_res.webp"),
+                                ),
+                            ),
+                        ),
+                        VideoComponent(
+                            source = createMockVideoUrls(),
+                            fallbackSource = ThemeImageUrls(
+                                light = createMockImageUrls(
+                                    webpLowRes = "https://pawwalls.com/test_video_fallback_low_res.webp",
+                                ),
+                            ),
+                            visible = null,
+                            showControls = false,
+                            autoplay = true,
+                            loop = true,
+                            muteAudio = true,
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+                            fitMode = FitMode.FILL,
+                            maskShape = null,
+                            colorOverlay = null,
+                            padding = null,
+                            margin = null,
+                            border = null,
+                            shadow = null,
+                            overrides = listOf(
+                                ComponentOverride(
+                                    conditions = emptyList(),
+                                    properties = PartialVideoComponent(
+                                        fallbackSource = ThemeImageUrls(
+                                            light = createMockImageUrls(
+                                                webpLowRes = "https://pawwalls.com/test_video_override_fallback_low_res.webp",
+                                            ),
+                                        ),
+                                    ),
                                 ),
                             ),
                         ),
@@ -212,7 +328,7 @@ class OfferingImagePreDownloaderTest {
                                         color = ColorScheme(light = ColorInfo.Alias(ColorAlias(""))),
                                     ),
                                     icon = IconComponent(
-                                        baseUrl = "https://pawwalls.com",
+                                        baseUrl = "https://pawwalls.com/icons",
                                         iconName = "test_icon",
                                         formats = IconComponent.Formats(
                                             webp = "test_icon_3.webp",
@@ -225,7 +341,7 @@ class OfferingImagePreDownloaderTest {
                                         color = ColorScheme(light = ColorInfo.Alias(ColorAlias(""))),
                                     ),
                                     icon = IconComponent(
-                                        baseUrl = "https://pawwalls.com",
+                                        baseUrl = "https://pawwalls.com/icons",
                                         iconName = "test_icon",
                                         formats = IconComponent.Formats(
                                             webp = "test_icon_4.webp",
@@ -250,7 +366,7 @@ class OfferingImagePreDownloaderTest {
                                 color = ColorScheme(light = ColorInfo.Alias(ColorAlias("")))
                             ),
                             IconComponent(
-                                baseUrl = "https://pawwalls.com",
+                                baseUrl = "https://pawwalls.com/icons",
                                 iconName = "test_icon",
                                 formats = IconComponent.Formats(
                                     webp = "test_icon_2.webp",
@@ -289,14 +405,31 @@ class OfferingImagePreDownloaderTest {
                         ),
                     ),
                 ),
+                header = HeaderComponent(
+                    stack = StackComponent(
+                        components = listOf(
+                            IconComponent(
+                                baseUrl = "https://pawwalls.com/icons",
+                                iconName = "test_icon",
+                                formats = IconComponent.Formats(
+                                    webp = "test_icon_5.webp",
+                                ),
+                            ),
+                        ),
+                        background = Background.Image(
+                            value = ThemeImageUrls(
+                                light = createMockImageUrls(
+                                    webpLowRes = "https://pawwalls.com/test_header_low_res.webp",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
             ),
         ))
 
-        verifyAll {
-            expectedImageDownloads.forEach { url ->
-                coilImageDownloader.downloadImage(Uri.parse(url))
-            }
-        }
+        assertThat(warmer.warmed)
+            .containsExactlyInAnyOrderElementsOf(expectedImageDownloads.map { Uri.parse(it) })
     }
 
 
@@ -372,6 +505,18 @@ class OfferingImagePreDownloaderTest {
             webpLowRes = URL(webpLowRes),
             width = 200u,
             height = 200u,
+        )
+    }
+
+    private fun createMockVideoUrls(): ThemeVideoUrls {
+        return ThemeVideoUrls(
+            light = VideoUrls(
+                width = 200u,
+                height = 200u,
+                url = URL("https://www.revenuecat.com/test_video.mp4"),
+                urlLowRes = URL("https://www.revenuecat.com/test_video_low_res.mp4"),
+            ),
+            dark = null,
         )
     }
 }

@@ -46,6 +46,11 @@ class OfferingsTest {
         Store.PLAY_STORE,
     )
 
+    // Parser that skips capturing paywall_components (as under workflows with remote config still enabled).
+    private val skippingPaywallComponentsParser = OfferingParserFactory.createOfferingParser(
+        Store.PLAY_STORE,
+    ) { false }
+
     @Test
     fun `createPackage returns null if packageJson planIdentifier doesnt match any sub StoreProduct base plan ids`() {
         val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
@@ -647,6 +652,97 @@ class OfferingsTest {
     }
 
     @Test
+    fun `createOfferings yields null paywallComponents when paywall_components has an unexpected shape`() {
+        // Arrange
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
+        val uiConfigJson = getUiConfigJson(
+            colors = mapOf("primary" to "#ff00ff"),
+            fonts = mapOf("primary" to FontInfo.Name("Roboto")),
+            localizations = mapOf("en_US" to mapOf(VariableLocalizationKey.MONTHLY to "monthly")),
+            variableCompatibilityMap = mapOf("new var" to "guaranteed var"),
+            functionCompatibilityMap = mapOf("new fun" to "guaranteed fun")
+        )
+        // Missing the required "default_locale" key, so the cheap shape check fails and the components
+        // are treated as "no paywall" at parse time (as before the lazy-decode change).
+        val malformedComponents = JSONObject(
+            // language=json
+            """
+            {
+              "id": "paywall_id",
+              "template_name": "components",
+              "asset_base_url": "https://assets.pawwalls.com",
+              "components_config": { "base": { "stack": { "type": "stack", "components": [] } } },
+              "components_localizations": { "en_US": { "ZvS4Ck5hGM": "Hello" } }
+            }
+            """.trimIndent()
+        )
+        val offeringJson = getOfferingJSON(paywallComponents = malformedComponents)
+        val offeringsJson = getOfferingsJSON(offerings = JSONArray(listOf(offeringJson)), uiConfig = uiConfigJson)
+
+        // Act
+        val offerings = offeringsParser.createOfferings(offeringsJson, products)
+
+        // Assert
+        assertThat(offerings.all.size).isEqualTo(1)
+        assertThat(offerings.all.values.first().paywallComponents).isNull()
+    }
+
+    @Test
+    fun `parsed paywallComponents data is lazily decodable`() {
+        // Arrange
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
+        val uiConfigJson = getUiConfigJson(
+            colors = mapOf("primary" to "#ff00ff"),
+            fonts = mapOf("primary" to FontInfo.Name("Roboto")),
+            localizations = mapOf("en_US" to mapOf(VariableLocalizationKey.MONTHLY to "monthly")),
+            variableCompatibilityMap = mapOf("new var" to "guaranteed var"),
+            functionCompatibilityMap = mapOf("new fun" to "guaranteed fun")
+        )
+        val offeringJson = getOfferingJSON(paywallComponents = getPaywallComponentsDataJson())
+        val offeringsJson = getOfferingsJSON(offerings = JSONArray(listOf(offeringJson)), uiConfig = uiConfigJson)
+
+        // Act
+        val offerings = offeringsParser.createOfferings(offeringsJson, products)
+
+        // Assert
+        val paywallComponents = offerings.all.values.first().paywallComponents ?: fail("paywallComponents is null")
+        // Accessing `data` forces the deferred decode of the raw JSON captured at parse time.
+        assertThat(paywallComponents.data.getOrThrow().defaultLocaleIdentifier).isEqualTo(LocaleId("en_US"))
+    }
+
+    @Test
+    fun `createOfferings skips paywallComponents when shouldParsePaywallComponents is false but keeps hasPaywall`() {
+        // Arrange
+        val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
+        val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
+        val products = mapOf(productIdentifier to listOf(storeProductMonthly, storeProductAnnual))
+        val uiConfigJson = getUiConfigJson(
+            colors = mapOf("primary" to "#ff00ff"),
+            fonts = mapOf("primary" to FontInfo.Name("Roboto")),
+            localizations = mapOf("en_US" to mapOf(VariableLocalizationKey.MONTHLY to "monthly")),
+            variableCompatibilityMap = mapOf("new var" to "guaranteed var"),
+            functionCompatibilityMap = mapOf("new fun" to "guaranteed fun")
+        )
+        val offeringJson = getOfferingJSON(paywallComponents = getPaywallComponentsDataJson())
+        val offeringsJson = getOfferingsJSON(offerings = JSONArray(listOf(offeringJson)), uiConfig = uiConfigJson)
+
+        // Act
+        val offerings = skippingPaywallComponentsParser.createOfferings(offeringsJson, products)
+
+        // Assert
+        assertThat(offerings.all.size).isEqualTo(1)
+        val offering = offerings.all.values.first()
+        // The raw component JSON is not captured (memory saved)...
+        assertThat(offering.paywallComponents).isNull()
+        // ...but the offering is still reported as paywall-capable so integrators see it.
+        assertThat(offering.hasPaywall).isTrue()
+    }
+
+    @Test
     fun `hasPaywall returns true when paywall is not null`() {
         // Arrange
         val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
@@ -755,7 +851,7 @@ class OfferingsTest {
                 JSONObject("{'offerings': [], 'current_offering_id': 'offering_with_broken_product'}"),
                 emptyMap()
             )
-        assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+        assertThat(offerings.originalSource).isNull()
         assertThat(offerings.loadedFromDiskCache).isFalse
 
         val offeringsWithDifferentMetadata = offerings.copy(
@@ -792,7 +888,7 @@ class OfferingsTest {
             products
         )
 
-        assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+        assertThat(offerings.originalSource).isNull()
         assertThat(offerings.loadedFromDiskCache).isFalse
 
         val offeringsWithDifferentData = offerings.copy(

@@ -586,7 +586,7 @@ class DeviceCacheTest {
         verify(exactly = 1) {
             mockEditor.putString(
                 productEntitlementMappingCacheKey,
-                "{\"product_entitlement_mapping\":{\"com.revenuecat.foo_1:p1m\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1m\",\"entitlements\":[\"pro_1\"]},\"com.revenuecat.foo_1:p1y\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1y\",\"entitlements\":[\"pro_1\",\"pro_2\"]},\"com.revenuecat.foo_1\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1m\",\"entitlements\":[\"pro_1\"]},\"com.revenuecat.foo_2\":{\"product_identifier\":\"com.revenuecat.foo_2\",\"entitlements\":[\"pro_3\"]}},\"rc_original_source\":\"MAIN\"}"
+                "{\"product_entitlement_mapping\":{\"com.revenuecat.foo_1:p1m\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1m\",\"entitlements\":[\"pro_1\"]},\"com.revenuecat.foo_1:p1y\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1y\",\"entitlements\":[\"pro_1\",\"pro_2\"]},\"com.revenuecat.foo_1\":{\"product_identifier\":\"com.revenuecat.foo_1\",\"base_plan_id\":\"p1m\",\"entitlements\":[\"pro_1\"]},\"com.revenuecat.foo_2\":{\"product_identifier\":\"com.revenuecat.foo_2\",\"entitlements\":[\"pro_3\"]}}}"
             )
         }
         verify(exactly = 1) {
@@ -601,7 +601,7 @@ class DeviceCacheTest {
         verify(exactly = 1) {
             mockEditor.putString(
                 productEntitlementMappingCacheKey,
-                "{\"product_entitlement_mapping\":{},\"rc_original_source\":\"MAIN\"}",
+                "{\"product_entitlement_mapping\":{}}",
             )
         }
         verify(exactly = 1) {
@@ -682,7 +682,22 @@ class DeviceCacheTest {
         every {
             mockPrefs.getString(productEntitlementMappingCacheKey, null)
         } returns expectedMappings.toJson().toString()
-        assertThat(cache.getProductEntitlementMapping()).isEqualTo(expectedMappings.copy(loadedFromCache = true))
+        assertThat(cache.getProductEntitlementMapping())
+            .isEqualTo(expectedMappings.copy(originalSource = null, loadedFromCache = true))
+    }
+
+    @Test
+    fun `cacheProductEntitlementMapping does not persist originalSource`() {
+        val mappingFromFallbackURL = createProductEntitlementMapping(originalSource = HTTPResponseOriginalSource.FALLBACK)
+
+        cache.cacheProductEntitlementMapping(mappingFromFallbackURL)
+
+        val cachedJsonSlot = slot<String>()
+        verify(exactly = 1) { mockEditor.putString(productEntitlementMappingCacheKey, capture(cachedJsonSlot)) }
+        assertThat(JSONObject(cachedJsonSlot.captured).has("rc_original_source")).isFalse
+
+        every { mockPrefs.getString(productEntitlementMappingCacheKey, null) } returns cachedJsonSlot.captured
+        assertThat(cache.getProductEntitlementMapping()?.originalSource).isNull()
     }
 
     // endregion
@@ -700,8 +715,7 @@ class DeviceCacheTest {
     @Test
     fun `cache offerings response works`() {
         val jsonSample = "{\"test-key\":\"test-value\"}"
-        val offeringsResponse = JSONObject(jsonSample)
-        cache.cacheOfferingsResponse(offeringsResponse)
+        cache.cacheOfferingsResponse(jsonSample)
         verifyAll {
             mockEditor.putString(offeringsResponseCacheKey, jsonSample)
             mockEditor.apply()

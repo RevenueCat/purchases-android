@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.galaxy
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.Period
@@ -87,7 +86,6 @@ open class GalaxyStoreTest {
         }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun createGalaxySubscriptionOption(
         id: String = "productId",
         tags: List<String> = emptyList(),

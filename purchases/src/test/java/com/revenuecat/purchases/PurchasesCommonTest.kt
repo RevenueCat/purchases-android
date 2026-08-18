@@ -11,11 +11,15 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
@@ -39,14 +43,18 @@ import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
 import io.mockk.Runs
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import io.mockk.verifyAll
 import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Test
@@ -55,6 +63,7 @@ import org.robolectric.annotation.Config
 import java.util.Collections.emptyList
 import java.util.Date
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.runBlocking
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -2816,6 +2825,107 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         verifyClose()
     }
 
+    @Test
+    fun `when closing instance, the remote config manager is closed`() {
+        mockCloseActions()
+
+        purchases.close()
+
+        verify(exactly = 1) {
+            mockRemoteConfigManager.close()
+        }
+    }
+
+    // endregion
+
+    // region getWorkflow
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `getWorkflow delivers the manager success result to the caller`() {
+        val expected = mockk<PublishedWorkflow>()
+        coEvery { mockWorkflowManager.getWorkflow("wf_1") } returns expected
+
+        val result = runBlocking { purchases.purchasesOrchestrator.getWorkflow("wf_1") }
+
+        assertThat(result).isEqualTo(expected)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `getWorkflow surfaces the manager error to the caller`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.UnknownError, "boom")
+        coEvery { mockWorkflowManager.getWorkflow("wf_1") } throws PurchasesException(expectedError)
+
+        val thrown = runBlocking {
+            runCatching { purchases.purchasesOrchestrator.getWorkflow("wf_1") }.exceptionOrNull()
+        }
+
+        assertThat(thrown).isInstanceOf(PurchasesException::class.java)
+        assertThat((thrown as PurchasesException).error).isEqualTo(expectedError)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `getWorkflow returns ConfigurationError and never calls manager when uiPreviewMode is true`() {
+        buildPurchases(anonymous = true, uiPreviewMode = true)
+
+        val thrown = runBlocking {
+            runCatching { purchases.purchasesOrchestrator.getWorkflow("wf_1") }.exceptionOrNull()
+        }
+
+        assertThat(thrown).isInstanceOf(PurchasesException::class.java)
+        assertThat((thrown as PurchasesException).error.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        coVerify(exactly = 0) { mockWorkflowManager.getWorkflow(any()) }
+    }
+
+    // endregion
+
+    // region getUiConfig
+
+    @Test
+    fun `getUiConfig delivers the provider's result to the caller`() {
+        val expected = emptyUiConfig()
+        coEvery { mockUiConfigProvider.getUiConfig() } returns expected
+
+        val received = runBlocking { purchases.purchasesOrchestrator.getUiConfig() }
+
+        assertThat(received).isEqualTo(expected)
+    }
+
+    @Test
+    fun `getUiConfig throws UnknownError when the provider returns null`() {
+        coEvery { mockUiConfigProvider.getUiConfig() } returns null
+
+        assertThatExceptionOfType(PurchasesException::class.java)
+            .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getUiConfig() } }
+            .extracting { it.code }
+            .isEqualTo(PurchasesErrorCode.UnknownError)
+    }
+
+    @Test
+    fun `getUiConfig propagates a provider failure to the caller without wrapping it`() {
+        val failure = RuntimeException("boom")
+        coEvery { mockUiConfigProvider.getUiConfig() } throws failure
+
+        assertThatExceptionOfType(RuntimeException::class.java)
+            .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getUiConfig() } }
+            .isSameAs(failure)
+    }
+
+    @Test
+    fun `getUiConfig throws ConfigurationError and never calls the provider when uiPreviewMode is true`() {
+        buildPurchases(anonymous = true, uiPreviewMode = true)
+
+        assertThatExceptionOfType(PurchasesException::class.java)
+            .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getUiConfig() } }
+            .extracting { it.code }
+            .isEqualTo(PurchasesErrorCode.ConfigurationError)
+        coVerify(exactly = 0) {
+            mockUiConfigProvider.getUiConfig()
+        }
+    }
+
     // endregion
 
     // region queryPurchases
@@ -2836,6 +2946,68 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         purchases.purchasesOrchestrator.onAppForegrounded()
         verify(exactly = 1) {
             mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any(), any())
+        }
+    }
+
+    @Test
+    fun `syncAttributesAndOfferingsIfNeeded refreshes remote config`() {
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, captureLambda())
+        } answers { lambda<() -> Unit>().captured.invoke() }
+        every {
+            mockOfferingsManager.getOfferings(appUserId, false, any(), any(), fetchCurrent = true)
+        } just Runs
+
+        purchases.purchasesOrchestrator.syncAttributesAndOfferingsIfNeeded(
+            object : SyncAttributesAndOfferingsCallback {
+                override fun onSuccess(offerings: Offerings) {}
+                override fun onError(error: PurchasesError) {}
+            },
+        )
+
+        verify(exactly = 1) {
+            mockRemoteConfigManager.refreshRemoteConfig(false, appUserId, RemoteConfigFetchContext.Read)
+        }
+    }
+
+    @Test
+    fun `syncAttributesAndOfferingsIfNeeded does not refresh remote config when rate limited`() {
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, captureLambda())
+        } answers { lambda<() -> Unit>().captured.invoke() }
+        every {
+            mockOfferingsManager.getOfferings(appUserId, false, any(), any(), any())
+        } just Runs
+
+        val callback = object : SyncAttributesAndOfferingsCallback {
+            override fun onSuccess(offerings: Offerings) {}
+            override fun onError(error: PurchasesError) {}
+        }
+        // The rate limiter allows 5 calls per minute; the 6th takes the rate-limited early-return branch,
+        // which serves cached offerings and must not force a remote config refresh.
+        repeat(6) { purchases.purchasesOrchestrator.syncAttributesAndOfferingsIfNeeded(callback) }
+
+        verify(exactly = 5) {
+            mockRemoteConfigManager.refreshRemoteConfig(false, appUserId, RemoteConfigFetchContext.Read)
+        }
+    }
+
+    @Test
+    fun `remote config disable invalidates the offerings cache then refetches from network`() {
+        every { mockOfferingsManager.clearInMemoryOfferingsCache(true) } just Runs
+        every { mockOfferingsManager.fetchAndCacheOfferings(appUserId, false, any(), any()) } just Runs
+
+        // Capture the disable listener the orchestrator registered on construction.
+        val listenerSlot = slot<RemoteConfigCommitListener>()
+        verify { mockRemoteConfigManager.registerListener(capture(listenerSlot)) }
+
+        listenerSlot.captured.onRemoteConfigDisabled(generation = 1)
+
+        // The in-memory cache must be dropped BEFORE the refetch, so getOfferings callers in the window take the
+        // cache-miss -> network path (freshly decoded components) instead of the stale null-component offerings.
+        verifyOrder {
+            mockOfferingsManager.clearInMemoryOfferingsCache(true)
+            mockOfferingsManager.fetchAndCacheOfferings(appUserId, false, any(), any())
         }
     }
 
@@ -2875,6 +3047,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     private fun verifyClose() {
         verify {
             mockBackend.close()
+            mockRemoteConfigManager.close()
             mockBillingAbstract.close()
         }
         assertThat(purchases.updatedCustomerInfoListener).isNull()

@@ -8,24 +8,44 @@ import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Purchases.Companion.configure
 import com.revenuecat.purchases.Purchases.Companion.debugLogsEnabled
+import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdTracker
+import com.revenuecat.purchases.ads.events.types.AdRewardEarnedUnverifiedData
+import com.revenuecat.purchases.ads.events.types.AdRewardFailedToVerifyData
+import com.revenuecat.purchases.ads.events.types.AdRewardGrantedData
+import com.revenuecat.purchases.ads.events.types.AdRewardVerifiedData
+import com.revenuecat.purchases.ads.rewardverification.Outcome
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationPollLauncher
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken
+import com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata
+import com.revenuecat.purchases.ads.rewardverification.VerifiedReward
+import com.revenuecat.purchases.ads.rewardverification.rewardVerificationRetryDelay
+import com.revenuecat.purchases.ads.rewardverification.toResult
+import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.infoLog
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.DeepLinkParser
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
+import com.revenuecat.purchases.interfaces.PollRewardVerificationCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.ReceiveOfferingsCallback
@@ -44,11 +64,12 @@ import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import kotlinx.coroutines.CancellationException
+import org.json.JSONObject
 import java.net.URL
 import java.util.Locale
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
+import java.util.UUID
+import com.revenuecat.purchases.VerifiedReward as CoreVerifiedReward
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -58,9 +79,13 @@ import kotlin.coroutines.suspendCoroutine
  * guide to setup your RevenueCat account.
  * @warning Only one instance of Purchases should be instantiated at a time!
  */
+@Suppress("LargeClass")
 public class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
 ) : LifecycleDelegate {
+
+    private val rewardVerificationPollLauncher = RewardVerificationPollLauncher()
+
     /**
      * The current configuration parameters of the Purchases SDK.
      */
@@ -173,6 +198,40 @@ public class Purchases internal constructor(
     @set:JvmSynthetic
     @InternalRevenueCatAPI
     public var debugEventListener: DebugEventListener? by purchasesOrchestrator::debugEventListener
+
+    /**
+     * Storage for the RevenueCat UI module's checkpoints manager, which owns the checkpoints API: its
+     * listener and any in-flight checkpoint presentation. Untyped because that type lives in the UI module,
+     * which this module must not depend on. Read and written only through the UI module's
+     * `Purchases.checkpointsManager`. Living here means that state dies with this instance.
+     */
+    @get:JvmSynthetic
+    @set:JvmSynthetic
+    @InternalRevenueCatAPI
+    public var checkpointManagerSlot: Any? by purchasesOrchestrator::checkpointManagerSlot
+
+    /**
+     * The most recently started [Activity] that is still usable, tracked from the SDK's activity lifecycle
+     * callbacks so components that present UI don't have to track it themselves.
+     */
+    @get:JvmSynthetic
+    @InternalRevenueCatAPI
+    public val currentActivity: Activity?
+        get() = purchasesOrchestrator.currentActivity
+
+    /**
+     * Resolves [checkpointIdentifier] to the workflow that should be served for it, or to the reason none
+     * should be. The RevenueCat UI module owns the checkpoints API and presents what this resolves to.
+     *
+     * @throws PurchasesException when the checkpoint should be served but can't be resolved.
+     */
+    @JvmSynthetic
+    @Throws(PurchasesException::class)
+    @InternalRevenueCatAPI
+    public suspend fun resolveCheckpoint(
+        checkpointIdentifier: String,
+        customVariables: Map<String, RulesDimensionValue> = emptyMap(),
+    ): CheckpointResolution = purchasesOrchestrator.resolveCheckpoint(checkpointIdentifier, customVariables)
 
     /**
      * If the `appUserID` has been generated by RevenueCat
@@ -403,13 +462,17 @@ public class Purchases internal constructor(
     @Throws(PurchasesException::class)
     public suspend fun awaitGetWorkflow(
         workflowId: String,
-    ): WorkflowDataResult = suspendCoroutine { continuation ->
-        purchasesOrchestrator.getWorkflow(
-            workflowId = workflowId,
-            onSuccess = continuation::resume,
-            onError = { continuation.resumeWithException(PurchasesException(it)) },
-        )
-    }
+    ): PublishedWorkflow = purchasesOrchestrator.getWorkflow(workflowId)
+
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    @Throws(PurchasesException::class)
+    public suspend fun awaitGetUiConfig(): UiConfig = purchasesOrchestrator.getUiConfig()
+
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    public suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
+        purchasesOrchestrator.resolveWorkflow(offeringId)
 
     /**
      * Gets the StoreProduct(s) for the given list of product ids for all product types.
@@ -555,8 +618,14 @@ public class Purchases internal constructor(
      * Do not call `Purchases.sharedInstance` after calling this method unless you intend to re-initialize.
      */
     public fun close() {
+        notifyLifecycleClosed()
         purchasesOrchestrator.close()
+        rewardVerificationPollLauncher.close()
         backingFieldSharedInstance = null
+    }
+
+    private fun notifyLifecycleClosed() {
+        serviceDispatcher.close(this)
     }
 
     /**
@@ -677,11 +746,41 @@ public class Purchases internal constructor(
     @OptIn(InternalRevenueCatAPI::class)
     @JvmOverloads
     public fun trackCustomPaywallImpression(params: CustomPaywallImpressionParams = CustomPaywallImpressionParams()) {
+        val cachedOfferings = purchasesOrchestrator.cachedOfferings
+        val resolvedOfferingId: String?
+        val resolvedPresentedOfferingContext: PresentedOfferingContext?
+
+        when {
+            params.presentedOfferingContext != null -> {
+                resolvedOfferingId = params.offeringId
+                resolvedPresentedOfferingContext = params.presentedOfferingContext
+            }
+            params.offeringId != null -> {
+                val resolvedOffering = cachedOfferings?.get(params.offeringId)
+                resolvedOfferingId = params.offeringId
+                resolvedPresentedOfferingContext = resolvedOffering
+                    ?.availablePackages
+                    ?.firstOrNull()
+                    ?.presentedOfferingContext
+            }
+            else -> {
+                val resolvedOffering = cachedOfferings?.current
+                resolvedOfferingId = resolvedOffering?.identifier
+                resolvedPresentedOfferingContext = resolvedOffering
+                    ?.availablePackages
+                    ?.firstOrNull()
+                    ?.presentedOfferingContext
+            }
+        }
+
         purchasesOrchestrator.track(
             CustomPaywallEvent.Impression(
                 data = CustomPaywallEvent.Impression.Data(
                     paywallId = params.paywallId,
-                    offeringId = params.offeringId ?: purchasesOrchestrator.cachedCurrentOfferingIdentifier,
+                    offeringId = resolvedOfferingId,
+                    placementIdentifier = resolvedPresentedOfferingContext?.placementIdentifier,
+                    targetingRevision = resolvedPresentedOfferingContext?.targetingContext?.revision,
+                    targetingRuleId = resolvedPresentedOfferingContext?.targetingContext?.ruleId,
                 ),
             ),
         )
@@ -709,6 +808,209 @@ public class Purchases internal constructor(
         onError: (PurchasesError) -> Unit,
     ) {
         purchasesOrchestrator.createSupportTicket(email, description, onSuccess, onError)
+    }
+
+    /**
+     * Generates a reward verification token for a loaded rewarded ad.
+     *
+     * Call after the ad has loaded. Forward [RewardVerificationToken.customData] and
+     * [RewardVerificationToken.appUserID] to your ad network's server-side verification options, then keep
+     * [RewardVerificationToken.clientTransactionId] for use with [pollRewardVerification] when the reward
+     * callback fires.
+     *
+     * @param impressionId The ad network's impression identifier for the loaded ad.
+     */
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    public fun generateRewardVerificationToken(impressionId: String): RewardVerificationToken {
+        val clientTransactionId = UUID.randomUUID().toString()
+        // Keys inserted in sorted order so the serialized customData is deterministic and matches the
+        // other SDKs byte-for-byte. The backend parses by key, so order is not semantically significant.
+        val customData = JSONObject()
+            .put("api_key", purchasesOrchestrator.currentConfiguration.apiKey)
+            .put("client_transaction_id", clientTransactionId)
+            .put("impression_id", impressionId)
+            .toString()
+        return RewardVerificationToken(
+            customData = customData,
+            clientTransactionId = clientTransactionId,
+            appUserID = purchasesOrchestrator.appUserID,
+        )
+    }
+
+    /**
+     * Polls the backend until reward verification completes or the attempt budget is exhausted.
+     *
+     * [generateRewardVerificationToken]. Reflects any verified reward locally before returning. The
+     * [callback] is invoked on the main thread.
+     *
+     * Pass [trackingMetadata] to track reward-verification events (see [adTracker]) for the ad it belongs
+     * to; omit it to poll without tracking.
+     *
+     * For coroutines, use the `awaitPollRewardVerification` suspend extension instead.
+     */
+    @JvmOverloads
+    @ExperimentalPreviewRevenueCatPurchasesAPI
+    public fun pollRewardVerification(
+        clientTransactionId: String,
+        callback: PollRewardVerificationCallback,
+        trackingMetadata: RewardedAdTrackingMetadata? = null,
+    ) {
+        rewardVerificationPollLauncher.launch(
+            poll = { awaitPollRewardVerification(clientTransactionId, trackingMetadata) },
+            onCompleted = { callback.onCompleted(it) },
+        )
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    internal suspend fun pollRewardVerification(
+        clientTransactionId: String,
+        trackingMetadata: RewardedAdTrackingMetadata?,
+        captureMethod: AdCaptureMethod,
+        poll: suspend (String) -> Outcome,
+    ): RewardVerificationResult {
+        if (trackingMetadata != null) {
+            adTracker.trackAdRewardEarnedUnverified(
+                data = AdRewardEarnedUnverifiedData(
+                    networkName = trackingMetadata.networkName,
+                    mediatorName = trackingMetadata.mediatorName,
+                    adFormat = trackingMetadata.adFormat,
+                    placement = trackingMetadata.placement,
+                    adUnitId = trackingMetadata.adUnitId,
+                    impressionId = trackingMetadata.impressionId,
+                    rewardVerificationEnabled = true,
+                ),
+                captureMethod = captureMethod,
+            )
+        }
+
+        val outcome = try {
+            poll(clientTransactionId)
+        } catch (e: CancellationException) {
+            if (trackingMetadata != null) {
+                trackRewardOutcome(trackingMetadata, Outcome.Failed.Cancelled, captureMethod)
+            }
+            throw e
+        }
+        if (trackingMetadata != null) {
+            trackRewardOutcome(trackingMetadata, outcome, captureMethod)
+        }
+
+        val result = outcome.toResult()
+        val rewards = result.verifiedReward?.let { listOf(it) + result.moreRewards } ?: return result
+
+        if (rewards.any { it is VerifiedReward.VirtualCurrency }) {
+            purchasesOrchestrator.invalidateVirtualCurrenciesCache()
+        }
+        // Don't surface an entitlement reward we couldn't reflect locally; the grant persists
+        // server-side and syncs on a later fetch.
+        val entitlementReflected = rewards.none { it is VerifiedReward.Entitlement } ||
+            refreshCustomerInfoAfterEntitlementGrant(clientTransactionId)
+        return if (entitlementReflected) result else RewardVerificationResult.failed
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    private fun trackRewardOutcome(
+        trackingMetadata: RewardedAdTrackingMetadata,
+        outcome: Outcome,
+        captureMethod: AdCaptureMethod,
+    ) {
+        when (outcome) {
+            is Outcome.Verified -> {
+                adTracker.trackAdRewardVerified(
+                    data = AdRewardVerifiedData(
+                        networkName = trackingMetadata.networkName,
+                        mediatorName = trackingMetadata.mediatorName,
+                        adFormat = trackingMetadata.adFormat,
+                        placement = trackingMetadata.placement,
+                        adUnitId = trackingMetadata.adUnitId,
+                        impressionId = trackingMetadata.impressionId,
+                    ),
+                    captureMethod = captureMethod,
+                )
+                // A grant is never reported as NoReward: that value means "verified, nothing configured",
+                // and the absence of a granted event already conveys that.
+                (listOf(outcome.reward) + outcome.moreRewards)
+                    .filterNot { it is VerifiedReward.NoReward }
+                    .forEach { reward ->
+                        adTracker.trackAdRewardGranted(
+                            data = AdRewardGrantedData(
+                                networkName = trackingMetadata.networkName,
+                                mediatorName = trackingMetadata.mediatorName,
+                                adFormat = trackingMetadata.adFormat,
+                                placement = trackingMetadata.placement,
+                                adUnitId = trackingMetadata.adUnitId,
+                                impressionId = trackingMetadata.impressionId,
+                                reward = reward.toCoreVerifiedReward(),
+                            ),
+                            captureMethod = captureMethod,
+                        )
+                    }
+            }
+            is Outcome.Failed -> {
+                adTracker.trackAdRewardFailedToVerify(
+                    data = AdRewardFailedToVerifyData(
+                        networkName = trackingMetadata.networkName,
+                        mediatorName = trackingMetadata.mediatorName,
+                        adFormat = trackingMetadata.adFormat,
+                        placement = trackingMetadata.placement,
+                        adUnitId = trackingMetadata.adUnitId,
+                        impressionId = trackingMetadata.impressionId,
+                        failureReason = outcome.trackingFailureReason,
+                    ),
+                    captureMethod = captureMethod,
+                )
+            }
+        }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    private fun VerifiedReward.toCoreVerifiedReward(): CoreVerifiedReward {
+        return when (this) {
+            is VerifiedReward.VirtualCurrency -> CoreVerifiedReward.VirtualCurrency(code = code, amount = amount)
+            is VerifiedReward.Entitlement ->
+                CoreVerifiedReward.Entitlement(identifier = identifier, expiresAt = expiresAt)
+            VerifiedReward.NoReward -> CoreVerifiedReward.NoReward
+            else -> CoreVerifiedReward.UnsupportedReward
+        }
+    }
+
+    // getCustomerInfo has no built-in retry, so retry transient (network) failures (with a short delay
+    // between attempts, so a brief blip doesn't exhaust all retries at once) before giving up.
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    private suspend fun refreshCustomerInfoAfterEntitlementGrant(clientTransactionId: String): Boolean {
+        debugLog {
+            "Reward verification granted an entitlement; refreshing CustomerInfo " +
+                "(transactionId=$clientTransactionId)."
+        }
+        var attempt = 0
+        while (attempt < MAX_ENTITLEMENT_REFRESH_ATTEMPTS) {
+            try {
+                awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
+                return true
+            } catch (e: PurchasesException) {
+                // Retry only transient (network) failures; a terminal error won't improve on retry.
+                if (e.code != PurchasesErrorCode.NetworkError) break
+            }
+            attempt++
+            if (attempt < MAX_ENTITLEMENT_REFRESH_ATTEMPTS) rewardVerificationRetryDelay()
+        }
+        warnLog {
+            "Reward verification could not refresh CustomerInfo after an entitlement grant " +
+                "(transactionId=$clientTransactionId). The grant persists server-side and will sync on a " +
+                "later fetch."
+        }
+        return false
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    internal fun getRewardVerificationResult(
+        clientTransactionId: String,
+        callback: GetRewardVerificationResultCallback,
+    ) {
+        purchasesOrchestrator.getRewardVerificationResult(
+            clientTransactionId = clientTransactionId,
+            callback = callback,
+        )
     }
 
     // region Subscriber Attributes
@@ -1168,11 +1470,10 @@ public class Purchases internal constructor(
 
     // region Static
     public companion object {
+        private const val MAX_ENTITLEMENT_REFRESH_ATTEMPTS = 3
 
-        @InternalRevenueCatAPI
-        public fun getImageLoader(context: Context): Any {
-            return PurchasesOrchestrator.getImageLoader(context)
-        }
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal var serviceDispatcher: PurchasesServiceDispatcher = PurchasesServices.default()
 
         /**
          * Given an intent, parses the associated link if any and returns a [WebPurchaseRedemption], which can
@@ -1317,6 +1618,7 @@ public class Purchases internal constructor(
             ).also {
                 @SuppressLint("RestrictedApi")
                 sharedInstance = it
+                serviceDispatcher.initialize(it)
             }
         }
 

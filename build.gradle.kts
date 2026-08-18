@@ -1,6 +1,5 @@
-import org.gradle.api.GradleException
-
 plugins {
+    base
     alias(libs.plugins.mavenPublish) apply false
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
@@ -26,67 +25,22 @@ dependencies {
     detektPlugins(libs.detekt.formatting)
     detektPlugins(libs.detekt.compose)
     detektPlugins(libs.detekt.libraries)
+    detektPlugins(project(":detekt-rules"))
 }
 
-tasks.register<Delete>("clean") {
-    delete(rootProject.layout.buildDirectory)
+// Aggregate docs from every module that applies the Dokka plugin (currently done by revenuecat-public-library),
+// so new library modules are documented without having to remember to list them here.
+val dokkaPluginId = libs.plugins.dokka.get().pluginId
+subprojects {
+    plugins.withId(dokkaPluginId) {
+        rootProject.dependencies.add("dokka", project)
+    }
 }
 
-val isCiBuild = providers.environmentVariable("CI").orNull.equals("true", ignoreCase = true)
-
-if (isCiBuild) {
-    val samsungIapVersion = libs.versions.samsungIap.get()
-    val samsungIapFilename = "samsung-iap-$samsungIapVersion.aar"
-
-    val samsungIapDownload by configurations.creating {
-        isCanBeConsumed = false
-        isCanBeResolved = true
-        isTransitive = false
-    }
-
-    dependencies {
-        add(samsungIapDownload.name, "com.samsung.android:samsung-iap:$samsungIapVersion@aar")
-    }
-
-    tasks.register<Sync>("downloadSamsungIapAar") {
-        group = "build setup"
-        description = "Downloads the Samsung IAP AAR into the root libs directory when running in CI."
-
-        doFirst {
-            val missingEnvVars = listOf(
-                "SAMSUNG_IAP_MAVEN_URL" to providers.environmentVariable("SAMSUNG_IAP_MAVEN_URL").orNull,
-                "READ_GH_PACKAGES_USER" to providers.environmentVariable("READ_GH_PACKAGES_USER").orNull,
-                "READ_GH_PACKAGES_PAT" to providers.environmentVariable("READ_GH_PACKAGES_PAT").orNull,
-            ).filter { it.second.isNullOrBlank() }.map { it.first }
-            if (missingEnvVars.isNotEmpty()) {
-                throw GradleException(
-                    "Missing required environment variable(s) for Samsung IAP download: " +
-                        missingEnvVars.joinToString(", "),
-                )
-            }
-
-            val resolvedFiles = samsungIapDownload.resolve()
-            if (resolvedFiles.size != 1) {
-                throw GradleException(
-                    "Expected exactly one Samsung IAP AAR artifact, but resolved ${resolvedFiles.size}: " +
-                        resolvedFiles.joinToString { it.name },
-                )
-            }
-        }
-
-        from(samsungIapDownload)
-        into(layout.projectDirectory.dir("libs"))
-        rename { samsungIapFilename }
-
-        doLast {
-            val outputFile = layout.projectDirectory.file("libs/$samsungIapFilename").asFile
-            if (!outputFile.exists()) {
-                throw GradleException("Samsung IAP AAR was not copied to ${outputFile.path}.")
-            }
-            if (outputFile.length() <= 0L) {
-                throw GradleException("Samsung IAP AAR at ${outputFile.path} is empty.")
-            }
-        }
+dokka {
+    dokkaPublications.html {
+        outputDirectory.set(file("docs/${project.property("VERSION_NAME")}"))
+        includes.from("README.md")
     }
 }
 
@@ -128,9 +82,4 @@ tasks.register<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>("detektAllB
         "**/testDefaults/**/*.kt",
         "**/testCustomEntitlementComputation/**/*.kt",
     )
-}
-
-tasks.named<org.jetbrains.dokka.gradle.DokkaMultiModuleTask>("dokkaHtmlMultiModule") {
-    outputDirectory.set(file("docs/${project.property("VERSION_NAME")}"))
-    includes.from("README.md")
 }

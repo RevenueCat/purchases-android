@@ -8,6 +8,13 @@ internal sealed class Endpoint(
     val fallbackPath: String? = null,
 ) {
     abstract fun getPath(useFallback: Boolean = false): String
+
+    /**
+     * Whether this endpoint returns an RC Container Format response rather than JSON. When
+     * `true`, the request advertises `Accept: application/x-rc-format` and the response body is exposed
+     * as [HTTPResult.Payload.RCFormat] instead of being decoded as text.
+     */
+    open val expectsRCFormatResponse: Boolean = false
     data class GetCustomerInfo(val userId: String) : Endpoint("/v1/subscribers/%s", "get_customer") {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
@@ -28,13 +35,6 @@ internal sealed class Endpoint(
         }
     }
 
-    data class GetWorkflow(val userId: String, val workflowId: String) : Endpoint(
-        "/v1/subscribers/%s/workflows/%s",
-        "get_workflow",
-    ) {
-        override fun getPath(useFallback: Boolean) =
-            pathTemplate.format(Uri.encode(userId), Uri.encode(workflowId))
-    }
     object LogIn : Endpoint("/v1/subscribers/identify", "log_in") {
         override fun getPath(useFallback: Boolean) = pathTemplate
     }
@@ -77,6 +77,27 @@ internal sealed class Endpoint(
     ) {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
+
+    data class GetRemoteConfig(val domain: String) : Endpoint(
+        pathTemplate = "/v1/config/%s",
+        name = "remote_config",
+    ) {
+        override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(domain))
+        override val expectsRCFormatResponse: Boolean = true
+    }
+
+    /**
+     * Fallback for [GetRemoteConfig] served from a fallback base URL. Unlike the main endpoint, it is a plain
+     * `GET` returning `application/json` (no `x-rc-format`, no inlined blobs, no request body), and its response
+     * is signature-verified **without** a nonce (mirroring [GetOfferings]). The domain layer chooses this
+     * endpoint explicitly; it does not participate in the generic HTTPClient URL-fallback mechanism.
+     */
+    data class GetRemoteConfigFallback(val domain: String) : Endpoint(
+        pathTemplate = "/v1/config/%s",
+        name = "remote_config_fallback",
+    ) {
+        override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(domain))
+    }
     object PostCreateSupportTicket : Endpoint(
         "/v1/customercenter/support/create-ticket",
         "post_create_support_ticket",
@@ -95,6 +116,16 @@ internal sealed class Endpoint(
     ) {
         override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
     }
+    data class GetRewardVerification(
+        val userId: String,
+        val clientTransactionId: String,
+    ) : Endpoint(
+        pathTemplate = "/v1/subscribers/%s/ads/reward_verifications/%s",
+        name = "get_reward_verification",
+    ) {
+        override fun getPath(useFallback: Boolean) =
+            pathTemplate.format(Uri.encode(userId), Uri.encode(clientTransactionId))
+    }
     data class WebBillingGetProducts(val userId: String, val productIds: Set<String>) : Endpoint(
         pathTemplate = "/rcbilling/v1/subscribers/%s/products?id=%s",
         name = "web_billing_get_products",
@@ -110,10 +141,12 @@ internal sealed class Endpoint(
             LogIn,
             PostReceipt,
             is GetOfferings,
-            is GetWorkflow,
             GetProductEntitlementMapping,
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
+            is GetRewardVerification,
+            is GetRemoteConfig,
+            is GetRemoteConfigFallback,
             ->
                 true
             is GetAmazonReceipt,
@@ -135,11 +168,12 @@ internal sealed class Endpoint(
             PostReceipt,
             PostRedeemWebPurchase,
             is GetVirtualCurrencies,
+            is GetRewardVerification,
+            is GetRemoteConfig,
             ->
                 true
             is GetAmazonReceipt,
             is GetOfferings,
-            is GetWorkflow,
             is PostAttributes,
             PostDiagnostics,
             PostEvents,
@@ -148,10 +182,50 @@ internal sealed class Endpoint(
             PostCreateSupportTicket,
             is WebBillingGetProducts,
             is AliasUsers,
+            is GetRemoteConfigFallback,
             ->
                 false
         }
 
     val supportsFallbackBaseURLs: Boolean
         get() = fallbackPath != null
+
+    /**
+     * Whether the domain layer aims this endpoint at a fallback host instead of the main API host.
+     * Such attempts are fallback attempts from the very first try, even though [HTTPClient]'s own
+     * fallback walk never started, so they must not be treated as main-source requests.
+     */
+    val targetsFallbackHost: Boolean
+        get() = this is GetRemoteConfigFallback
+
+    /**
+     * Whether this endpoint resolves its base host from the API source provider (the main-API host
+     * list, with failover) rather than the app's static base URL. Endpoints hosted elsewhere
+     * (diagnostics, events) opt out.
+     */
+    val usesAPISources: Boolean
+        get() = when (this) {
+            is GetCustomerInfo,
+            LogIn,
+            PostReceipt,
+            is GetOfferings,
+            is AliasUsers,
+            is PostAttributes,
+            is GetAmazonReceipt,
+            GetProductEntitlementMapping,
+            is GetCustomerCenterConfig,
+            is GetRemoteConfig,
+            PostCreateSupportTicket,
+            PostRedeemWebPurchase,
+            is GetVirtualCurrencies,
+            is GetRewardVerification,
+            is WebBillingGetProducts,
+            ->
+                true
+            PostDiagnostics,
+            PostEvents,
+            is GetRemoteConfigFallback,
+            ->
+                false
+        }
 }

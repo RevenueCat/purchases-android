@@ -191,7 +191,6 @@ private class LoadingViewModel(
     override val actionInProgress: State<Boolean> = mutableStateOf(false)
     override val actionError: State<PurchasesError?> = mutableStateOf(null)
     override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
-    override val preloadedExitOffering: State<Offering?> = mutableStateOf(null)
     override val workflowState: State<WorkflowPaywallUiState?> = mutableStateOf(null)
 
     override fun trackPaywallImpressionIfNeeded() = Unit
@@ -206,6 +205,14 @@ private class LoadingViewModel(
         // no-op
     }
 
+    override fun onPaywallPresented() {
+        // no-op
+    }
+
+    override fun onPaywallDismissed() {
+        // no-op
+    }
+
     override fun closePaywall(result: PaywallResult?) {
         // no-op
     }
@@ -213,6 +220,14 @@ private class LoadingViewModel(
     override fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String? {
         // no-op
         return null
+    }
+
+    override fun notifyWebCheckoutOpened() {
+        // no-op
+    }
+
+    override fun notifyUrlOpened(url: String) {
+        // no-op
     }
 
     override fun invalidateCustomerInfoCache() {

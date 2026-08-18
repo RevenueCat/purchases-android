@@ -1,7 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.io.FileInputStream
-import java.util.Properties
 
 plugins {
     alias(libs.plugins.revenuecat.public.library)
@@ -12,24 +10,8 @@ plugins {
     alias(libs.plugins.poko)
 }
 
-val localProperties = Properties()
-val localPropertiesFile = rootProject.file("local.properties")
-if (localPropertiesFile.exists()) localProperties.load(FileInputStream(localPropertiesFile))
-
 android {
     namespace = "com.revenuecat.purchases.ui.revenuecatui"
-
-    // billingclient dimension is added for bc7/bc8 support
-    flavorDimensions += "billingclient"
-    productFlavors {
-        create("bc8") {
-            dimension = "billingclient"
-            isDefault = true
-        }
-        create("bc7") {
-            dimension = "billingclient"
-        }
-    }
 
     buildTypes {
         getByName("debug") {
@@ -48,15 +30,6 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
-
-        // Tester-only toggle: when true, ID-based paywall selections resolve via
-        // GET /workflows/{id} instead of the offerings cache. Enable with
-        // `-Prevenuecat.useWorkflowsEndpoint=true` when building the SDK locally.
-        buildConfigField(
-            type = "boolean",
-            name = "USE_WORKFLOWS_ENDPOINT",
-            value = (localProperties["revenuecat.useWorkflowsEndpoint"] == "true").toString(),
-        )
     }
 
     buildFeatures {
@@ -91,6 +64,9 @@ metalava {
         "src/androidTest",
         "src/androidTestDefaults",
         "src/androidTestCustomEntitlementComputation",
+        // AGP's generated BuildConfig is not part of the published API surface.
+        "build/generated/source/buildConfig/defaults/release",
+        "build/generated/source/buildConfig/customEntitlementComputation/release",
     )
 }
 
@@ -112,8 +88,9 @@ tasks.withType<KotlinCompile>().configureEach {
 
 dependencies {
     api(project(":purchases"))
+    api(platform(libs.compose.bom))
+    api(libs.compose.foundation.layout)
 
-    implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.util)
     implementation(libs.compose.ui.graphics)
@@ -126,6 +103,7 @@ dependencies {
     implementation(libs.compose.ui.google.fonts)
 
     implementation(libs.androidx.core)
+    implementation(libs.androidx.webkit)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -162,34 +140,21 @@ dependencies {
     baselineProfile(project(":baselineprofile"))
 }
 
-tasks.dokkaHtmlPartial.configure {
+dokka {
     dokkaSourceSets {
-        named("defaultsBc7") {
-            suppress.set(true)
-        }
-        named("defaultsBc8") {
-            dependsOn("main")
+        named("defaults") {
+            dependentSourceSets.addLater(dokkaSourceSets.named("main").flatMap { it.sourceSetId })
         }
         named("main") {
             reportUndocumented.set(true)
-            includeNonPublic.set(false)
             skipDeprecated.set(true)
 
-            externalDocumentationLink {
-                url.set(
-                    uri("https://developer.android.com/reference/package-list").toURL(),
-                )
+            externalDocumentationLinks.register("android") {
+                url("https://developer.android.com/reference/")
             }
             sourceLink {
-                localDirectory.set(
-                    file("src/main/kotlin"),
-                )
-                remoteUrl.set(
-                    uri(
-                        "https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin",
-                    ).toURL(),
-                )
-                remoteLineSuffix.set("#L")
+                localDirectory.set(file("src/main/kotlin"))
+                remoteUrl("https://github.com/revenuecat/purchases-android/blob/main/ui/revenuecatui/src/main/kotlin")
             }
         }
     }
@@ -205,7 +170,6 @@ tasks.withType<KotlinCompilationTask<*>>().configureEach {
 
 baselineProfile {
     mergeIntoMain = true
-    baselineProfileOutputDir = "."
     filter {
         include("com.revenuecat.purchases.ui.revenuecatui.**")
     }

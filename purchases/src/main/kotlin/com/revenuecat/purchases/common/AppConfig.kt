@@ -50,6 +50,7 @@ internal class AppConfig(
     val versionName: String = context.versionName ?: ""
     val packageName: String = context.packageName
     var finishTransactions: Boolean = purchasesAreCompletedBy.finishTransactions
+    val hasProxyURL: Boolean = proxyURL != null
     val baseURL: URL = proxyURL?.also {
         log(LogIntent.INFO) { ConfigureStrings.CONFIGURING_PURCHASES_PROXY_URL_SET }
     } ?: URL(baseUrlString)
@@ -64,6 +65,9 @@ internal class AppConfig(
         get() = dangerousSettings.uiPreviewMode
     val applyObfuscatedAccountIdToSubscriptionChanges: Boolean
         get() = dangerousSettings.applyObfuscatedAccountIdToSubscriptionChanges
+
+    val usesRemoteConfigAPISources: Boolean
+        get() = dangerousSettings.usesRemoteConfigAPISources
 
     val playStoreVersionName = context.playStoreVersionName
     val playServicesVersionName = context.playServicesVersionName

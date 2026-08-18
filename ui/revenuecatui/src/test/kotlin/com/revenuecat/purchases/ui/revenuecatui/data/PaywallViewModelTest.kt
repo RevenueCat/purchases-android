@@ -28,12 +28,23 @@ import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.ExitOffer
+import com.revenuecat.purchases.paywalls.components.common.ExitOffers
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
+import com.revenuecat.purchases.paywalls.components.common.StateUpdateValue
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowResolution
+import com.revenuecat.purchases.common.workflows.WorkflowScreen
+import com.revenuecat.purchases.common.workflows.WorkflowStep
+import com.revenuecat.purchases.common.workflows.WorkflowTrigger
+import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
@@ -77,6 +88,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -224,6 +236,8 @@ class PaywallViewModelTest {
         every { purchases.track(any()) } just Runs
         coEvery { purchases.awaitSyncPurchases() } returns customerInfo
         every { purchases.preferredUILocaleOverride } returns null
+        coEvery { purchases.resolveWorkflow(any()) } returns WorkflowResolution.NoWorkflow
+        coEvery { purchases.awaitGetUiConfig() } returns UiConfig()
 
         every { listener.onPurchaseStarted(any()) } just runs
         every { listener.onPurchaseCompleted(any(), any()) } just runs
@@ -720,6 +734,37 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `OfferingType with exit offer - awaitOfferings failure does not fail paywall`() {
+        val offeringWithExitOffer = Offering(
+            identifier = "offering-with-exit-offer",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(
+                UiConfig(),
+                PaywallComponentsData(
+                    templateName = emptyPaywallComponentsData.templateName,
+                    assetBaseURL = emptyPaywallComponentsData.assetBaseURL,
+                    componentsConfig = emptyPaywallComponentsData.componentsConfig,
+                    componentsLocalizations = emptyPaywallComponentsData.componentsLocalizations,
+                    defaultLocaleIdentifier = emptyPaywallComponentsData.defaultLocaleIdentifier,
+                    exitOffers = ExitOffers(dismiss = ExitOffer(offeringId = "exit-offering-id")),
+                ),
+            ),
+        )
+
+        coEvery { purchases.awaitOfferings() } throws PurchasesException(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+        )
+
+        val model = create(offering = offeringWithExitOffer)
+
+        val state = model.state.value
+        assertThat(state).isInstanceOf(PaywallState.Loaded::class.java)
+        assertThat(model.preloadedExitOffering).isNull()
+    }
+
+    @Test
     fun `Should load selected offering`() {
         val offering = TestData.template1Offering
         val model = create(offering = offering)
@@ -927,6 +972,31 @@ class PaywallViewModelTest {
         }
         assertThat(model.actionInProgress.value).isFalse
         assertThat(dismissInvoked).isTrue
+    }
+
+    @Test
+    fun `handlePackagePurchase success does not track CLOSE event`(): Unit = runBlocking {
+        // A successful purchase dismisses the paywall but must not be counted as a
+        // user-initiated close. Regression test: the dismiss path must not emit CLOSE.
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(offering = offering)
+        val state = model.state.value as PaywallState.Loaded.Components
+        state.update(TestData.Packages.monthly.identifier)
+        model.trackPaywallImpressionIfNeeded()
+        coEvery {
+            purchases.awaitPurchase(any())
+        } returns PurchaseResult(mockk<StoreTransaction>(), customerInfo)
+
+        model.handlePackagePurchase(activity, pkg = null)
+
+        assertThat(dismissInvoked).isTrue
+        verifyNoEventsOfTypeTracked(PaywallEventType.CLOSE)
     }
 
     @Test
@@ -1146,6 +1216,32 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `handleRestorePurchases dismiss does not change paywall_close behavior`(): Unit = runBlocking {
+        // The workflow wiring must not alter paywall_close. On the REVENUECAT path, a restore that
+        // dismisses the paywall did not emit a close event before workflows, and must not now.
+        val offering = Offering(
+            identifier = "offering-id",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        val model = create(
+            offering = offering,
+            shouldDisplayBlock = { false },
+        )
+        model.trackPaywallImpressionIfNeeded()
+        coEvery {
+            purchases.awaitRestore()
+        } returns customerInfo
+
+        model.handleRestorePurchases()
+
+        assertThat(dismissInvoked).isTrue
+        verifyNoEventsOfTypeTracked(PaywallEventType.CLOSE)
+    }
+
+    @Test
     fun `restorePurchases does not call onDismiss if shouldDisplayBlock condition true`() {
         val model = create {
             true
@@ -1292,6 +1388,149 @@ class PaywallViewModelTest {
 
         assertThat(model.state.value).isEqualTo(stateBefore)
         assertThat(dismissInvoked).isFalse()
+    }
+
+    @Test
+    fun `refreshStateIfColorsChanged on workflow preserves current navigation step`() {
+        val workflowScreen = WorkflowScreen(
+            templateName = "template",
+            revision = 0,
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            offeringIdentifier = defaultOffering.identifier,
+        )
+        val stepOne = WorkflowStep(
+            id = "step-1",
+            type = "screen",
+            screenId = "screen-1",
+            triggers = listOf(
+                WorkflowTrigger(
+                    name = "Next",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "action-next",
+                    componentId = "btn-next",
+                ),
+            ),
+            triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
+        )
+        val stepTwo = WorkflowStep(id = "step-2", type = "screen", screenId = "screen-1")
+        val workflow = PublishedWorkflow(
+            id = "wfl-test",
+            displayName = "Test Workflow",
+            initialStepId = "step-1",
+            steps = mapOf("step-1" to stepOne, "step-2" to stepTwo),
+            screens = mapOf("screen-1" to workflowScreen),
+        )
+        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Found("wfl-test")
+        coEvery { purchases.awaitGetWorkflow("wfl-test") } returns workflow
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithWPL)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        assertThat(model.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+
+        model.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        assertThat(model.workflowState.value?.currentStepId).isEqualTo("step-2")
+
+        model.refreshStateIfColorsChanged(
+            colorScheme = TestData.Constants.currentColorScheme.copy(primary = Color.Black),
+            isDark = true,
+        )
+
+        assertThat(model.workflowState.value?.currentStepId).isEqualTo("step-2")
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+    }
+
+    @Test
+    fun `refreshStateIfColorsChanged on workflow does not trigger updateState`() {
+        // updateState would re-fetch the workflow and reset the navigator; this test verifies
+        // that rebuildWorkflowStepStates is taken instead, leaving awaitGetWorkflow call count at 1.
+        val workflowScreen = WorkflowScreen(
+            templateName = "template",
+            revision = 0,
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            offeringIdentifier = defaultOffering.identifier,
+        )
+        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
+        val workflow = PublishedWorkflow(
+            id = "wfl-test",
+            displayName = "Test Workflow",
+            initialStepId = "step-1",
+            steps = mapOf("step-1" to stepOne),
+            screens = mapOf("screen-1" to workflowScreen),
+        )
+        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Found("wfl-test")
+        coEvery { purchases.awaitGetWorkflow("wfl-test") } returns workflow
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithWPL)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        coVerify(exactly = 1) { purchases.awaitGetWorkflow(any()) }
+
+        model.refreshStateIfColorsChanged(
+            colorScheme = TestData.Constants.currentColorScheme.copy(primary = Color.Black),
+            isDark = true,
+        )
+
+        coVerify(exactly = 1) { purchases.awaitGetWorkflow(any()) }
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+    }
+
+    @Test
+    fun `standalone state store is reused across a color-scheme refresh`() {
+        val model = create(offering = offeringWithWPL)
+        val initialState = model.state.value as PaywallState.Loaded.Components
+        initialState.stateStore.registerDeclarations(
+            mapOf("flag" to StateDeclaration(type = StateDeclaration.ValueType.BOOLEAN, defaultValue = JsonPrimitive(false))),
+        )
+        initialState.stateStore.applyUpdates(
+            listOf(StateUpdate.Set("flag", StateUpdateValue.Literal(JsonPrimitive(true)))),
+        )
+
+        model.refreshStateIfColorsChanged(
+            colorScheme = TestData.Constants.currentColorScheme.copy(primary = Color.Black),
+            isDark = true,
+        )
+
+        val refreshedState = model.state.value as PaywallState.Loaded.Components
+        assertThat(refreshedState.stateStore).isSameAs(initialState.stateStore)
+        assertThat(refreshedState.stateStore.currentValueOrDefault("flag")).isEqualTo(JsonPrimitive(true))
     }
 
     // region events
@@ -1492,10 +1731,11 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `trackPaywallImpression after close tracks again`() {
+    fun `trackPaywallImpression after re-presentation tracks again`() {
         val model = create()
         model.trackPaywallImpressionIfNeeded()
         model.closePaywall()
+        model.onPaywallPresented()
         model.trackPaywallImpressionIfNeeded()
         verifyEventTracked(PaywallEventType.IMPRESSION, 2)
     }
@@ -1531,6 +1771,7 @@ class PaywallViewModelTest {
                 },
             )
         }
+        model.onPaywallPresented()
         model.trackPaywallImpressionIfNeeded()
         model.closePaywall()
         verifyEventTracked(PaywallEventType.CLOSE, 2)
@@ -1590,7 +1831,7 @@ class PaywallViewModelTest {
             eventType = PaywallEventType.CANCEL,
             times = 1,
             offeringIdentifier = offering.identifier,
-            paywallRevision = offering.paywallComponents!!.data.revision,
+            paywallRevision = offering.paywallComponents!!.data.getOrThrow().revision,
         )
         assertThat(model.actionError.value).isNull()
         verify(exactly = 0) { listener.onPurchaseError(any()) }
@@ -2006,7 +2247,7 @@ class PaywallViewModelTest {
         val model = create(offering = offeringWithWPL)
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
+        ).isEqualTo("https://revenuecat.com?rc_package=%24rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage),
@@ -2040,12 +2281,12 @@ class PaywallViewModelTest {
         // Uses given package
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
+        ).isEqualTo("https://revenuecat.com?rc_package=%24rc_monthly")
 
         // Uses selected package when no package specified in action
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=\$rc_monthly")
+        ).isEqualTo("https://revenuecat.com?rc_package=%24rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackageParam),
@@ -2062,6 +2303,30 @@ class PaywallViewModelTest {
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithoutAppendingPackage),
         ).isEqualTo("https://test-web-billing.revenuecat.com")
+    }
+
+    @Test
+    fun `getWebCheckoutUrl encodes package parameter when package identifier has whitespace`(): Unit = runBlocking {
+        val packageWithWhitespace = Package(
+            identifier = "Annual Trial",
+            packageType = TestData.Packages.annual.packageType,
+            product = TestData.Packages.annual.product,
+            presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = "offering"),
+        )
+        val action = PaywallAction.External.LaunchWebCheckout(
+            customUrl = "https://revenuecat.com",
+            autoDismiss = true,
+            openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+            packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+                rcPackage = packageWithWhitespace,
+                packageParam = "rc_package",
+            ),
+        )
+        val model = create(offering = offeringWithWPL)
+
+        assertThat(
+            model.getWebCheckoutUrl(action),
+        ).isEqualTo("https://revenuecat.com?rc_package=Annual%20Trial")
     }
 
     @Test
@@ -2803,14 +3068,384 @@ class PaywallViewModelTest {
 
     // endregion dismissRequestWithExitOffering
 
+    @Test
+    fun `injected workflow renders locally without fetching`() {
+        val workflowScreen = WorkflowScreen(
+            templateName = "template",
+            revision = 0,
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            offeringIdentifier = defaultOffering.identifier,
+        )
+        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
+        val workflow = PublishedWorkflow(
+            id = "wfl-test",
+            displayName = "Test Workflow",
+            initialStepId = "step-1",
+            steps = mapOf("step-1" to stepOne),
+            screens = mapOf("screen-1" to workflowScreen),
+        )
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .injectedWorkflow(workflow, defaultOffering, UiConfig())
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        assertThat(model.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
+    }
+
+    @Test
+    fun `when offering has a legacy paywall, does not fetch workflow`() {
+        // defaultOffering has a legacy paywall (offering.paywall != null), so it renders through
+        // the legacy path and never hits the workflows endpoint, even with workflows enabled.
+        PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(defaultOffering)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
+    }
+
+    @Test
+    fun `when offering has a legacy paywall, renders legacy paywall`() {
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(defaultOffering)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
+    }
+
+    @Test
+    fun `when offering has no legacy paywall, fetches by workflow id from map`() {
+        // offeringWithWPL has no legacy paywall (offering.paywall == null), so it is served through
+        // the workflows endpoint. With a mapped workflow id, that id (not the offering id) is used.
+        val workflowId = "wfl-real-id"
+        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Found(workflowId)
+        val workflowScreen = WorkflowScreen(
+            templateName = "template",
+            revision = 0,
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            offeringIdentifier = defaultOffering.identifier,
+        )
+        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
+        val workflow = PublishedWorkflow(
+            id = workflowId,
+            displayName = "Real Workflow",
+            initialStepId = "step-1",
+            steps = mapOf("step-1" to stepOne),
+            screens = mapOf("screen-1" to workflowScreen),
+        )
+        coEvery { purchases.awaitGetWorkflow(workflowId) } returns workflow
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithWPL)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        coVerify(exactly = 1) { purchases.awaitGetWorkflow(workflowId) }
+        coVerify(exactly = 0) { purchases.awaitGetWorkflow(offeringWithWPL.identifier) }
+    }
+
+    @Test
+    fun `when offering has no mapped workflow, skips fetch and falls back`() {
+        // The config endpoint cannot lazily convert an offering id into a workflow. A workflowless offering
+        // should therefore fall back immediately to the components paywall already delivered by offerings.
+        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.NoWorkflow
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithWPL)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
+    }
+
+    @Test
+    fun `when the workflow fetch fails, surfaces the error`() {
+        // The workflow id resolved but its body or ui config could not be served. Reloading offerings would only
+        // yield the offering's skipped-away components, so the paywall surfaces the error instead of silently
+        // degrading to a different paywall.
+        val workflowId = "wfl-unavailable"
+        val offeringWithoutComponents = offeringWithWPL.copy(paywallComponents = null)
+        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Found(workflowId)
+        coEvery { purchases.awaitGetWorkflow(workflowId) } throws PurchasesException(
+            PurchasesError(PurchasesErrorCode.UnknownError, "Workflow is unavailable from remote config."),
+        )
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithoutComponents)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Error::class.java)
+        coVerify(exactly = 0) { purchases.awaitOfferings() }
+    }
+
+    @Test
+    fun `when the workflows topic is disabled by a 4xx, reloads its paywall from offerings`() {
+        // A 4xx disabled the config endpoint for the session. The initial offering was parsed while workflows
+        // were enabled, so it has no components. Reload it from /offerings after the disable to get its paywall.
+        val offeringWithoutComponents = offeringWithWPL.copy(paywallComponents = null)
+        val reloadedOfferings = Offerings(
+            current = offeringWithWPL,
+            all = mapOf(offeringWithWPL.identifier to offeringWithWPL),
+        )
+        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Disabled
+        coEvery { purchases.awaitOfferings() } returns reloadedOfferings
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithoutComponents)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        val reloadedOffering = (model.state.value as PaywallState.Loaded.Components).offering
+        assertThat(reloadedOffering.identifier).isEqualTo(offeringWithWPL.identifier)
+        assertThat(reloadedOffering.paywallComponents).isNotNull()
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
+        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
+    }
+
+    @Test
+    fun `when disabled by a 4xx and the offering already carries components, renders without reloading offerings`() {
+        // Once the kill switch has repopulated the offerings cache with decoded components, re-presenting the
+        // paywall renders the resolved offering directly instead of reloading offerings on every presentation.
+        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Disabled
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithWPL)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        val offering = (model.state.value as PaywallState.Loaded.Components).offering
+        assertThat(offering.identifier).isEqualTo(offeringWithWPL.identifier)
+        assertThat(offering.paywallComponents).isNotNull()
+        coVerify(exactly = 0) { purchases.awaitOfferings() }
+        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
+    }
+
+    @Test
+    fun `when disabled by a 4xx and presented by offering id, renders without a redundant offerings reload`() {
+        // The launcher path resolves the offering via awaitOfferings() up front, which after the disable already
+        // carries components. The disabled fallback must not reload offerings a second time.
+        val presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = offeringWithWPL.identifier)
+        val offerings = Offerings(
+            current = offeringWithWPL,
+            all = mapOf(offeringWithWPL.identifier to offeringWithWPL),
+        )
+        coEvery { purchases.awaitOfferings() } returns offerings
+        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Disabled
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOfferingIdAndPresentedOfferingContext(
+                    OfferingSelection.IdAndPresentedOfferingContext(
+                        offeringId = offeringWithWPL.identifier,
+                        presentedOfferingContext = presentedOfferingContext,
+                    ),
+                )
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        val offering = (model.state.value as PaywallState.Loaded.Components).offering
+        assertThat(offering.identifier).isEqualTo(offeringWithWPL.identifier)
+        assertThat(offering.paywallComponents).isNotNull()
+        coVerify(exactly = 1) { purchases.awaitOfferings() }
+        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
+    }
+
+    @Test
+    fun `when no workflow is mapped with no paywall data, renders the default paywall`() {
+        val offeringWithoutPaywallData = Offering(
+            identifier = "offering-no-paywall-data",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = null,
+            webCheckoutURL = null,
+        )
+        coEvery { purchases.resolveWorkflow(offeringWithoutPaywallData.identifier) } returns WorkflowResolution.NoWorkflow
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithoutPaywallData)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
+        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
+    }
+
+    @Test
+    fun `when a prior workflow succeeded, a later fallback clears the stale workflow state`() {
+        // A prior successful workflow leaves _workflowState non-null. When a later presentation on the
+        // same ViewModel falls back to the offerings paywall, that stale workflow state must be cleared —
+        // InternalPaywall renders the workflow UI whenever workflowState != null, so otherwise the old
+        // workflow would keep showing instead of the fallback components.
+        val workflowScreen = WorkflowScreen(
+            templateName = "template",
+            revision = 0,
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(TestData.Components.monthlyPackageComponent)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = defaultLocaleIdentifier,
+            offeringIdentifier = defaultOffering.identifier,
+        )
+        val workflow = PublishedWorkflow(
+            id = "wfl-test",
+            displayName = "Test Workflow",
+            initialStepId = "step-1",
+            steps = mapOf("step-1" to WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")),
+            screens = mapOf("screen-1" to workflowScreen),
+        )
+        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Found("wfl-test")
+        coEvery { purchases.awaitGetWorkflow("wfl-test") } returns workflow
+
+        val model = PaywallViewModelImpl(
+            MockResourceProvider(),
+            purchases,
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(offeringWithWPL)
+                .build(),
+            TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+        )
+
+        // The workflow loaded — this is the state InternalPaywall would render.
+        assertThat(model.workflowState.value).isNotNull()
+
+        // Re-present a different offering whose workflow can't be served but that carries a fallback paywall.
+        val fallbackOffering = Offering(
+            identifier = "offering-fallback",
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+            webCheckoutURL = null,
+        )
+        coEvery { purchases.resolveWorkflow(fallbackOffering.identifier) } returns WorkflowResolution.NoWorkflow
+
+        model.updateOptions(
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setOffering(fallbackOffering)
+                .build(),
+        )
+
+        // Fallback rendered as components AND the stale workflow state was cleared.
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
+        assertThat(model.workflowState.value).isNull()
+    }
+
     private fun create(
         offering: Offering? = null,
         customPurchaseLogic: PaywallPurchaseLogic? = null,
         mode: PaywallMode = PaywallMode.default,
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
+        dismissRequest: () -> Unit = { dismissInvoked = true },
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
-        val builder = PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+        val builder = PaywallOptions.Builder(dismissRequest = dismissRequest)
             .setListener(listener)
             .setOffering(offering)
             .setPurchaseLogic(customPurchaseLogic)

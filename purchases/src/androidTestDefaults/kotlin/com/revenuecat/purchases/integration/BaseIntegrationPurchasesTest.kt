@@ -140,7 +140,11 @@ abstract class BaseIntegrationPurchasesTest : BasePurchasesIntegrationTest() {
                     assertThat(offerings.current?.metadata?.get("dontdeletethis")).isEqualTo("useforintegrationtesting")
 
                     assertThat(offerings.current?.paywall).isNull()
-                    assertThat(offerings.current?.paywallComponents).isNotNull
+                    // This offering has a components paywall, but the components are served from `/v1/config`, so
+                    // they're not captured on the offering — only the cheap presence flag behind `hasPaywall` is.
+                    // Whether `paywallComponents` itself is populated depends on the remote config kill switch;
+                    // ProductionWorkflowsPaywallComponentsIntegrationTest covers both sides of that deterministically.
+                    assertThat(offerings.current?.hasPaywall).isTrue
 
                     lock.countDown()
                 },
@@ -502,6 +506,8 @@ abstract class BaseIntegrationPurchasesTest : BasePurchasesIntegrationTest() {
             every { isAppBackgrounded } returns false
             every { runningTests } returns true
             every { fallbackBaseURLs } returns emptyList()
+            every { hasProxyURL } returns false
+            every { usesRemoteConfigAPISources } returns false
         }
         return HTTPClient(
             appConfig = appConfig,
@@ -515,6 +521,7 @@ abstract class BaseIntegrationPurchasesTest : BasePurchasesIntegrationTest() {
                     return "test-storefront"
                 }
             },
+            apiSourceFailover = null,
             localeProvider = DefaultLocaleProvider(),
         )
     }

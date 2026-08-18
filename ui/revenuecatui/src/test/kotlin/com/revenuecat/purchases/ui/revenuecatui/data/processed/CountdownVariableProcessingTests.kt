@@ -273,7 +273,10 @@ class CountdownVariableProcessingTests {
         return VariableProcessorV2.processVariables(
             template = template,
             localizedVariableKeys = variableLocalizationKeysForEnUs(),
-            variableConfig = UiConfig.VariableConfig(),
+            variableConfig = UiConfig.VariableConfig(
+                variableCompatibilityMap = emptyMap(),
+                functionCompatibilityMap = emptyMap(),
+            ),
             variableDataProvider = variableDataProvider,
             packageContext = PackageContext(
                 discountRelativeToMostExpensivePerMonth = null,
@@ -295,7 +298,10 @@ class CountdownVariableProcessingTests {
     ): String {
         return VariableProcessorV2.processVariables(
             template = template,
-            variableConfig = UiConfig.VariableConfig(),
+            variableConfig = UiConfig.VariableConfig(
+                variableCompatibilityMap = emptyMap(),
+                functionCompatibilityMap = emptyMap(),
+            ),
             dateLocale = Locale.US,
             countdownTime = countdownTime,
             countFrom = countFrom,

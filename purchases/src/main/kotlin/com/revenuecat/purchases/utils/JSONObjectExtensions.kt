@@ -16,6 +16,9 @@ internal fun JSONObject.optNullableString(name: String): String? = takeIf { this
 
 internal fun JSONObject.optNullableInt(name: String): Int? = takeIf { this.has(name) }?.getNullableInt(name)
 
+internal fun JSONObject.optNullableLong(name: String): Long? =
+    takeIf { this.has(name) && !this.isNull(name) }?.getLong(name)
+
 internal fun <T> JSONObject.toMap(deep: Boolean = false): Map<String, T> {
     return this.keys().asSequence().map { jsonKey ->
         if (deep) {

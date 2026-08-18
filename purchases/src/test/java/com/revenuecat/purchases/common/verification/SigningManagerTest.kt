@@ -323,6 +323,56 @@ class SigningManagerTest {
         assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
     }
 
+    @Test
+    fun `verifyResponse verifies a binary body signed as raw bytes`() {
+        val signingManager = SigningManager(
+            SignatureVerificationMode.Informational(
+                IntermediateSignatureHelper(DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")),
+            ),
+            appConfig,
+            apiKey,
+        )
+        val salt = ByteArray(16).apply { SecureRandom().nextBytes(this) }
+        val configChecksum = ByteArray(24) { it.toByte() }
+        val signature = createFakeSignatureForBytes(bodyBytes = configChecksum, salt = salt)
+
+        val verified = signingManager.verifyResponse(
+            urlPath = "test-url-path",
+            signatureString = signature,
+            nonce = null,
+            bodyBytes = configChecksum,
+            requestTime = "1677005916012",
+            eTag = null,
+            postFieldsToSignHeader = null,
+        )
+        assertThat(verified).isEqualTo(VerificationResult.VERIFIED)
+    }
+
+    @Test
+    fun `verifyResponse fails for a binary body that does not match the signed bytes`() {
+        val signingManager = SigningManager(
+            SignatureVerificationMode.Informational(
+                IntermediateSignatureHelper(DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")),
+            ),
+            appConfig,
+            apiKey,
+        )
+        val salt = ByteArray(16).apply { SecureRandom().nextBytes(this) }
+        val configChecksum = ByteArray(24) { it.toByte() }
+        val signature = createFakeSignatureForBytes(bodyBytes = configChecksum, salt = salt)
+
+        val tampered = signingManager.verifyResponse(
+            urlPath = "test-url-path",
+            signatureString = signature,
+            nonce = null,
+            bodyBytes = ByteArray(24) { (it + 1).toByte() },
+            requestTime = "1677005916012",
+            eTag = null,
+            postFieldsToSignHeader = null,
+        )
+        assertThat(tampered).isEqualTo(VerificationResult.FAILED)
+    }
+
     // endregion
 
     // region Helpers
@@ -341,7 +391,7 @@ class SigningManagerTest {
         requestTime: String? = "1677005916012",
         eTag: String? = null,
         postParamsHeader: String? = null,
-    ) = signingManager.verifyResponse(requestPath, signature, nonce, body, requestTime, eTag, postParamsHeader)
+    ) = signingManager.verifyResponse(requestPath, signature, nonce, body?.toByteArray(), requestTime, eTag, postParamsHeader)
 
     // We can use this function to create new signatures if we need to change the test data
     @Suppress("Unused")
@@ -373,6 +423,35 @@ class SigningManagerTest {
             (eTag?.toByteArray() ?: byteArrayOf()) +
             (body?.toByteArray() ?: byteArrayOf())
         val signature =  intermediatePublicKey +
+            intermediateKeyExpirationDaysBytes +
+            intermediatePublicKeySignature +
+            salt +
+            intermediateSigner.sign(payloadToSign)
+        return Base64.encodeToString(signature, Base64.DEFAULT)
+    }
+
+    // Builds a signature over a raw-bytes body (no nonce / post params / eTag), mirroring the binary
+    // (RC Container) signing path.
+    private fun createFakeSignatureForBytes(
+        bodyBytes: ByteArray,
+        salt: ByteArray,
+        requestPath: String = "test-url-path",
+        requestTime: String = "1677005916012",
+        rootPrivateKeyEncoded: String = "YMHMQMpepBKamtSzO8KCN2M8Z3AUW5R1JXIFtxUWFUI",
+        intermediatePrivateKeyEncoded: String = "fPBoIjQ7DecE89ATW6PZsqLVQNyEs5fiX3sUyS3U4YI",
+        intermediatePublicKeyEncoded: String = "xoDYyUeHnIlSIAeOOzmvdNPOlbNSKK+xE0fE/ufS1fs=",
+        intermediateKeyExpirationDaysBytes: ByteArray = ByteBuffer.allocate(Int.SIZE_BYTES).putInt(50_000).order(ByteOrder.LITTLE_ENDIAN).array(),
+    ): String {
+        val rootSigner = Ed25519Sign(Base64.decode(rootPrivateKeyEncoded, Base64.DEFAULT))
+        val intermediatePublicKey = Base64.decode(intermediatePublicKeyEncoded, Base64.DEFAULT)
+        val intermediatePublicKeySignature = rootSigner.sign(intermediateKeyExpirationDaysBytes + intermediatePublicKey)
+        val intermediateSigner = Ed25519Sign(Base64.decode(intermediatePrivateKeyEncoded, Base64.DEFAULT))
+        val payloadToSign = salt +
+            apiKey.toByteArray() +
+            requestPath.toByteArray() +
+            requestTime.toByteArray() +
+            bodyBytes
+        val signature = intermediatePublicKey +
             intermediateKeyExpirationDaysBytes +
             intermediatePublicKeySignature +
             salt +

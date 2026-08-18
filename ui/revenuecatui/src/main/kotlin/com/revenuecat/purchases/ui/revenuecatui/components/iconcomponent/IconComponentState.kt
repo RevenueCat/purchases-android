@@ -26,6 +26,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDel
 import com.revenuecat.purchases.ui.revenuecatui.components.style.IconComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateStore
 
 @Stable
 @JvmSynthetic
@@ -39,17 +40,20 @@ internal fun rememberUpdatedIconComponentState(
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
     customVariablesProvider = { paywallState.mergedCustomVariables },
+    stateStoreProvider = { paywallState.stateStore },
 )
 
 @Stable
 @JvmSynthetic
 @Composable
+@Suppress("LongParameterList")
 private fun rememberUpdatedIconComponentState(
     style: IconComponentStyle,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
     selectedOfferEligibilityProvider: () -> OfferEligibility,
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
+    stateStoreProvider: () -> PaywallStateStore,
 ): IconComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val layoutDirection = LocalLayoutDirection.current
@@ -63,6 +67,7 @@ private fun rememberUpdatedIconComponentState(
             selectedTabIndexProvider = selectedTabIndexProvider,
             selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
             customVariablesProvider = customVariablesProvider,
+            stateStoreProvider = stateStoreProvider,
         )
     }.apply {
         update(windowSize = windowSize)
@@ -79,6 +84,7 @@ internal class IconComponentState(
     private val selectedTabIndexProvider: () -> Int,
     private val selectedOfferEligibilityProvider: () -> OfferEligibility,
     private val customVariablesProvider: () -> Map<String, CustomVariableValue> = { emptyMap() },
+    private val stateStoreProvider: () -> PaywallStateStore = { PaywallStateStore(emptyMap()) },
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
@@ -102,6 +108,7 @@ internal class IconComponentState(
             conditionContext = ConditionContext(
                 selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
                 customVariables = customVariablesProvider(),
+                stateReader = stateStoreProvider()::currentValueOrDefault,
             ),
         )
     }

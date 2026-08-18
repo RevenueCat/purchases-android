@@ -18,6 +18,17 @@ internal fun interface ForceServerErrorStrategy {
 
     fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean
 
+    fun modifyRequestURL(url: URL, endpoint: Endpoint): URL = url
+
+    /**
+     * Whether a direct [java.net.HttpURLConnection] download of [url] should fail as if the host were
+     * unreachable. Unlike the rest of this interface, this covers requests that never reach `HTTPClient`: remote
+     * config blobs are fetched straight from the config CDN, a different host from the API, so forcing API
+     * errors alone leaves them downloading normally. Default `false` keeps that (an API outage does not imply
+     * the CDN is down); return `true` to simulate having no network at all.
+     */
+    fun shouldForceConnectionFailure(url: String): Boolean = false
+
     @OptIn(InternalRevenueCatAPI::class)
     fun fakeResponseWithoutPerformingRequest(baseURL: URL, endpoint: Endpoint): HTTPResult? {
         return null

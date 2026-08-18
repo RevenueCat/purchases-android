@@ -3,13 +3,18 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 import android.content.Context
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.SemanticsNodeInteractionsProvider
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
@@ -37,6 +42,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallWarning
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,14 +62,17 @@ class PaywallActionTests {
         val localizationKeyRestore = LocalizationKey("restore")
         val localizationKeyBack = LocalizationKey("back")
         val localizationKeyPurchase = LocalizationKey("purchase")
+        val localizationKeyCloseWorkflow = LocalizationKey("close_workflow")
         val localizationDataRestore = LocalizationData.Text("restore")
         val localizationDataBack = LocalizationData.Text("back")
         val localizationDataPurchase = LocalizationData.Text("purchase")
+        val localizationDataCloseWorkflow = LocalizationData.Text("close workflow")
         val localizations = nonEmptyMapOf(
             defaultLocale to nonEmptyMapOf(
                 localizationKeyRestore to localizationDataRestore,
                 localizationKeyBack to localizationDataBack,
                 localizationKeyPurchase to localizationDataPurchase,
+                localizationKeyCloseWorkflow to localizationDataCloseWorkflow,
             )
         )
         // Bit of a convoluted way to create components, to ensure we use an an exhaustive when, forcing ourselves to
@@ -72,11 +81,13 @@ class PaywallActionTests {
             PaywallAction.External.RestorePurchases to localizationKeyRestore,
             PaywallAction.External.NavigateBack to localizationKeyBack,
             PaywallAction.External.PurchasePackage(rcPackage = null) to localizationKeyPurchase,
+            PaywallAction.External.CloseWorkflow to localizationKeyCloseWorkflow,
         ).map { (action: PaywallAction, key) ->
             when (action) {
                 is PaywallAction.External.RestorePurchases,
                 is PaywallAction.External.NavigateBack,
                 is PaywallAction.External.NavigateTo,
+                is PaywallAction.External.CloseWorkflow,
                     -> ButtonComponent(
                     action = action.toButtonAction(),
                     stack = StackComponent(components = listOf(TextComponent(text = key, color = textColor)))
@@ -101,10 +112,12 @@ class PaywallActionTests {
         clickButtonsWithText(localizationDataRestore, expectedCount = 2)
         clickButtonsWithText(localizationDataBack, expectedCount = 2)
         clickButtonsWithText(localizationDataPurchase, expectedCount = 2)
+        clickButtonsWithText(localizationDataCloseWorkflow, expectedCount = 2)
 
         // Assert
         assertEquals(2, viewModel.handleRestorePurchasesCallCount)
-        assertEquals(2, viewModel.closePaywallCallCount)
+        // 2 from NavigateBack + 2 from CloseWorkflow — both route to closePaywall()
+        assertEquals(4, viewModel.closePaywallCallCount)
         assertEquals(2, viewModel.handlePackagePurchaseCount)
     }
 
@@ -162,6 +175,7 @@ class PaywallActionTests {
             is PaywallAction.External.WorkflowTrigger -> error(
                 "Workflow is a runtime workflow navigation action, not a ButtonComponent.Action."
             )
+            is PaywallAction.External.CloseWorkflow -> ButtonComponent.Action.CloseWorkflow
         }
 
     private fun PaywallAction.External.NavigateTo.Destination.toButtonDestination(): ButtonComponent.Destination =
@@ -194,6 +208,472 @@ class PaywallActionTests {
         componentsLocalizations = localizations,
         defaultLocaleIdentifier = defaultLocale,
     )
+
+    @Test
+    fun `CloseWorkflow inside a sheet propagates to outer handler and dismisses paywall`(): Unit = with(composeTestRule) {
+        // Arrange
+        val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+        val defaultLocale = LocaleId("en_US")
+        val localizationKeyOpenSheet = LocalizationKey("open_sheet")
+        val localizationKeyCloseWorkflow = LocalizationKey("close_workflow_btn")
+        val localizationDataOpenSheet = LocalizationData.Text("Open Sheet")
+        val localizationDataCloseWorkflow = LocalizationData.Text("Close Workflow")
+
+        val localizations = nonEmptyMapOf(
+            defaultLocale to nonEmptyMapOf(
+                localizationKeyOpenSheet to localizationDataOpenSheet,
+                localizationKeyCloseWorkflow to localizationDataCloseWorkflow,
+            ),
+        )
+        val sheetStack = StackComponent(
+            components = listOf(
+                ButtonComponent(
+                    action = ButtonComponent.Action.CloseWorkflow,
+                    stack = StackComponent(
+                        components = listOf(TextComponent(text = localizationKeyCloseWorkflow, color = textColor)),
+                    ),
+                ),
+            ),
+        )
+        val components = listOf(
+            ButtonComponent(
+                action = ButtonComponent.Action.NavigateTo(
+                    ButtonComponent.Destination.Sheet(
+                        id = "test-sheet",
+                        name = null,
+                        stack = sheetStack,
+                        backgroundBlur = false,
+                        size = null,
+                    ),
+                ),
+                stack = StackComponent(
+                    components = listOf(TextComponent(text = localizationKeyOpenSheet, color = textColor)),
+                ),
+            ),
+        )
+
+        val offering = FakeOffering(components, localizations)
+        val options = PaywallOptions.Builder(dismissRequest = { }).setOffering(offering).build()
+        val viewModel = MockViewModel(offering = offering, allowsPurchases = true)
+
+        // Act — open the sheet, then click CloseWorkflow inside it
+        setContent { InternalPaywall(options, viewModel) }
+        onAllNodesWithText(localizationDataOpenSheet.value).get(0).assertIsDisplayed().performClick()
+        waitForIdle()
+        onNodeWithText(localizationDataCloseWorkflow.value).assertIsDisplayed().performClick()
+        waitForIdle()
+
+        // CloseWorkflow must propagate to the outer handler (not just hide the sheet)
+        assertEquals(1, viewModel.closePaywallCallCount)
+    }
+
+    @Test
+    fun `LaunchWebCheckout with autoDismiss notifies listener and closes paywall`(): Unit =
+        with(composeTestRule) {
+            // Arrange
+            val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+            val defaultLocale = LocaleId("en_US")
+            val localizationKey = LocalizationKey("web_checkout")
+            val localizationData = LocalizationData.Text("web checkout")
+            val localizations = nonEmptyMapOf(
+                defaultLocale to nonEmptyMapOf(localizationKey to localizationData),
+            )
+            val components = listOf(
+                PurchaseButtonComponent(
+                    stack = StackComponent(
+                        components = listOf(TextComponent(text = localizationKey, color = textColor)),
+                    ),
+                    method = PurchaseButtonComponent.Method.WebCheckout(autoDismiss = true),
+                ),
+            )
+            val offering = FakeOffering(components, localizations)
+            val viewModel = MockViewModel(
+                offering = offering,
+                allowsPurchases = true,
+                webCheckoutUrl = "https://checkout.example.com",
+            )
+            val options = PaywallOptions.Builder(dismissRequest = {}).setOffering(offering).build()
+
+            // Act
+            setContent { InternalPaywall(options, viewModel) }
+            // Buttons appear once in main content and once in sticky footer
+            onAllNodesWithText(localizationData.value)
+                .assertCountEquals(2)
+                .get(0)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+            waitForIdle()
+
+            // Assert: listener notified once, paywall dismissed generically (no new result type)
+            assertEquals(1, viewModel.notifyWebCheckoutOpenedCallCount)
+            assertEquals(1, viewModel.closePaywallCallCount)
+        }
+
+    @Test
+    fun `LaunchWebCheckout without autoDismiss notifies listener but keeps paywall open`(): Unit =
+        with(composeTestRule) {
+            // Arrange
+            val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+            val defaultLocale = LocaleId("en_US")
+            val localizationKey = LocalizationKey("web_checkout")
+            val localizationData = LocalizationData.Text("web checkout")
+            val localizations = nonEmptyMapOf(
+                defaultLocale to nonEmptyMapOf(localizationKey to localizationData),
+            )
+            val components = listOf(
+                PurchaseButtonComponent(
+                    stack = StackComponent(
+                        components = listOf(TextComponent(text = localizationKey, color = textColor)),
+                    ),
+                    method = PurchaseButtonComponent.Method.WebCheckout(autoDismiss = false),
+                ),
+            )
+            val offering = FakeOffering(components, localizations)
+            val viewModel = MockViewModel(
+                offering = offering,
+                allowsPurchases = true,
+                webCheckoutUrl = "https://checkout.example.com",
+            )
+            val options = PaywallOptions.Builder(dismissRequest = {}).setOffering(offering).build()
+
+            // Act
+            setContent { InternalPaywall(options, viewModel) }
+            // Buttons appear once in main content and once in sticky footer
+            onAllNodesWithText(localizationData.value)
+                .assertCountEquals(2)
+                .get(0)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+            waitForIdle()
+
+            // Assert: listener still notified, but the paywall is NOT dismissed
+            assertEquals(1, viewModel.notifyWebCheckoutOpenedCallCount)
+            assertEquals(0, viewModel.closePaywallCallCount)
+        }
+
+    @Test
+    fun `LaunchWebCheckout with unknown open method does not notify listener`(): Unit =
+        with(composeTestRule) {
+            // Arrange
+            val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+            val defaultLocale = LocaleId("en_US")
+            val localizationKey = LocalizationKey("web_checkout")
+            val localizationData = LocalizationData.Text("web checkout")
+            val localizations = nonEmptyMapOf(
+                defaultLocale to nonEmptyMapOf(localizationKey to localizationData),
+            )
+            val components = listOf(
+                PurchaseButtonComponent(
+                    stack = StackComponent(
+                        components = listOf(TextComponent(text = localizationKey, color = textColor)),
+                    ),
+                    method = PurchaseButtonComponent.Method.WebCheckout(
+                        autoDismiss = true,
+                        openMethod = ButtonComponent.UrlMethod.UNKNOWN,
+                    ),
+                ),
+            )
+            val offering = FakeOffering(components, localizations)
+            val viewModel = MockViewModel(
+                offering = offering,
+                allowsPurchases = true,
+                webCheckoutUrl = "https://checkout.example.com",
+            )
+            val options = PaywallOptions.Builder(dismissRequest = {}).setOffering(offering).build()
+
+            // Act
+            setContent { InternalPaywall(options, viewModel) }
+            // Buttons appear once in main content and once in sticky footer
+            onAllNodesWithText(localizationData.value)
+                .assertCountEquals(2)
+                .get(0)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+            waitForIdle()
+
+            // Assert: no URL was opened for an unrecognized method, so the listener must not be
+            // told a web checkout was launched
+            assertEquals(0, viewModel.notifyWebCheckoutOpenedCallCount)
+        }
+
+    @Test
+    fun `LaunchWebCheckout with a recognized method that fails to actually open does not notify listener`(): Unit =
+        with(composeTestRule) {
+            // Arrange
+            val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+            val defaultLocale = LocaleId("en_US")
+            val localizationKey = LocalizationKey("web_checkout")
+            val localizationData = LocalizationData.Text("web checkout")
+            val localizations = nonEmptyMapOf(
+                defaultLocale to nonEmptyMapOf(localizationKey to localizationData),
+            )
+            val components = listOf(
+                PurchaseButtonComponent(
+                    stack = StackComponent(
+                        components = listOf(TextComponent(text = localizationKey, color = textColor)),
+                    ),
+                    method = PurchaseButtonComponent.Method.WebCheckout(
+                        autoDismiss = true,
+                        openMethod = ButtonComponent.UrlMethod.DEEP_LINK,
+                    ),
+                ),
+            )
+            val offering = FakeOffering(components, localizations)
+            val viewModel = MockViewModel(
+                offering = offering,
+                allowsPurchases = true,
+                // No app on the test device/Robolectric sandbox registers this custom scheme, so the
+                // real Android URL-opening machinery genuinely fails here (unlike the other tests'
+                // https:// URLs, which resolve successfully).
+                webCheckoutUrl = "com.revenuecat.nonexistent-test-scheme://checkout",
+            )
+            val options = PaywallOptions.Builder(dismissRequest = {}).setOffering(offering).build()
+
+            // Robolectric's default shadow accepts any startActivity call as "successful" regardless of
+            // whether a real component could handle it. Enable strict validation so this custom scheme
+            // genuinely throws ActivityNotFoundException, like it would on a real device.
+            org.robolectric.Shadows.shadowOf(
+                ApplicationProvider.getApplicationContext<android.app.Application>(),
+            ).checkActivities(true)
+
+            // Act
+            setContent { InternalPaywall(options, viewModel) }
+            // Buttons appear once in main content and once in sticky footer
+            onAllNodesWithText(localizationData.value)
+                .assertCountEquals(2)
+                .get(0)
+                .assertIsDisplayed()
+                .assertHasClickAction()
+                .performClick()
+            waitForIdle()
+
+            // Assert: even though DEEP_LINK is a recognized method, the URL genuinely failed to open
+            // (no matching activity), so the listener must not be told a web checkout was launched
+            assertEquals(0, viewModel.notifyWebCheckoutOpenedCallCount)
+        }
+
+    @Test
+    fun `NavigateTo url with external browser notifies listener with the opened url`(): Unit =
+        with(composeTestRule) {
+            val url = "https://example.com/terms"
+
+            val viewModel = renderPaywallAndClickUrlButton(
+                method = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+                url = url,
+            )
+
+            assertEquals(listOf(url), viewModel.notifyUrlOpenedParams)
+        }
+
+    @Test
+    fun `NavigateTo url with in-app browser notifies listener with the opened url`(): Unit =
+        with(composeTestRule) {
+            val url = "https://example.com/privacy"
+
+            val viewModel = renderPaywallAndClickUrlButton(
+                method = ButtonComponent.UrlMethod.IN_APP_BROWSER,
+                url = url,
+            )
+
+            assertEquals(listOf(url), viewModel.notifyUrlOpenedParams)
+        }
+
+    @Test
+    fun `NavigateTo url with deep link notifies listener with the opened url`(): Unit =
+        with(composeTestRule) {
+            val url = "https://example.com/deep-link"
+
+            val viewModel = renderPaywallAndClickUrlButton(
+                method = ButtonComponent.UrlMethod.DEEP_LINK,
+                url = url,
+            )
+
+            assertEquals(listOf(url), viewModel.notifyUrlOpenedParams)
+        }
+
+    @Test
+    fun `NavigateTo url with unknown method does not notify listener`(): Unit = with(composeTestRule) {
+        // Arrange
+        val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+        val defaultLocale = LocaleId("en_US")
+        val buttonKey = LocalizationKey("open_url")
+        val buttonText = LocalizationData.Text("open url")
+        val urlKey = LocalizationKey("url_lid")
+        val localizations = nonEmptyMapOf(
+            defaultLocale to nonEmptyMapOf(
+                buttonKey to buttonText,
+                urlKey to LocalizationData.Text("https://example.com/unknown"),
+            ),
+        )
+        val components = listOf(
+            ButtonComponent(
+                action = ButtonComponent.Action.NavigateTo(
+                    ButtonComponent.Destination.Url(
+                        urlLid = urlKey,
+                        method = ButtonComponent.UrlMethod.UNKNOWN,
+                    ),
+                ),
+                stack = StackComponent(components = listOf(TextComponent(text = buttonKey, color = textColor))),
+            ),
+        )
+        val offering = FakeOffering(components, localizations)
+        val options = PaywallOptions.Builder(dismissRequest = {}).setOffering(offering).build()
+        val viewModel = MockViewModel(offering = offering, allowsPurchases = true)
+
+        // Act
+        setContent { InternalPaywall(options, viewModel) }
+        waitForIdle()
+
+        // Assert: buttons with an unknown open method are hidden, so nothing can be opened
+        onAllNodesWithText(buttonText.value).assertCountEquals(0)
+        assertEquals(emptyList<String>(), viewModel.notifyUrlOpenedParams)
+    }
+
+    @Test
+    fun `NavigateTo url that fails to actually open does not notify listener`(): Unit = with(composeTestRule) {
+        // Robolectric's default shadow accepts any startActivity call as "successful" regardless of whether a real
+        // component could handle it. Enable strict validation so this custom scheme genuinely throws
+        // ActivityNotFoundException, like it would on a real device.
+        org.robolectric.Shadows.shadowOf(
+            ApplicationProvider.getApplicationContext<android.app.Application>(),
+        ).checkActivities(true)
+
+        val viewModel = renderPaywallAndClickUrlButton(
+            method = ButtonComponent.UrlMethod.DEEP_LINK,
+            url = "com.revenuecat.nonexistent-test-scheme://terms",
+        )
+
+        assertEquals(emptyList<String>(), viewModel.notifyUrlOpenedParams)
+    }
+
+    @Test
+    fun `LaunchWebCheckout does not notify listener about an opened url`(): Unit = with(composeTestRule) {
+        // Arrange
+        val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+        val defaultLocale = LocaleId("en_US")
+        val localizationKey = LocalizationKey("web_checkout")
+        val localizationData = LocalizationData.Text("web checkout")
+        val localizations = nonEmptyMapOf(
+            defaultLocale to nonEmptyMapOf(localizationKey to localizationData),
+        )
+        val components = listOf(
+            PurchaseButtonComponent(
+                stack = StackComponent(components = listOf(TextComponent(text = localizationKey, color = textColor))),
+                method = PurchaseButtonComponent.Method.WebCheckout(autoDismiss = false),
+            ),
+        )
+        val offering = FakeOffering(components, localizations)
+        val viewModel = MockViewModel(
+            offering = offering,
+            allowsPurchases = true,
+            webCheckoutUrl = "https://checkout.example.com",
+        )
+        val options = PaywallOptions.Builder(dismissRequest = {}).setOffering(offering).build()
+
+        // Act
+        setContent { InternalPaywall(options, viewModel) }
+        clickButtonsWithText(localizationData, expectedCount = 2)
+
+        // Assert: web checkout has its own callback, so onUrlOpened must not also be notified
+        assertEquals(2, viewModel.notifyWebCheckoutOpenedCallCount)
+        assertEquals(emptyList<String>(), viewModel.notifyUrlOpenedParams)
+    }
+
+    @Test
+    fun `Markdown link click in a text component notifies listener with the opened url`(): Unit =
+        with(composeTestRule) {
+            // Arrange
+            val url = "https://example.com/markdown-terms"
+            val linkText = "our terms"
+            val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+            val defaultLocale = LocaleId("en_US")
+            val textKey = LocalizationKey("body")
+            val localizations = nonEmptyMapOf(
+                defaultLocale to nonEmptyMapOf(
+                    textKey to LocalizationData.Text("Read [$linkText]($url) for details"),
+                ),
+            )
+            val components = listOf(TextComponent(text = textKey, color = textColor))
+            val offering = FakeOffering(components, localizations)
+            val options = PaywallOptions.Builder(dismissRequest = {}).setOffering(offering).build()
+            val viewModel = MockViewModel(offering = offering, allowsPurchases = true)
+
+            // Act
+            setContent { InternalPaywall(options, viewModel) }
+            clickMarkdownLink(linkText)
+
+            // Assert
+            assertEquals(listOf(url), viewModel.notifyUrlOpenedParams)
+        }
+
+    /**
+     * Renders a paywall with a single button navigating to [url] using [method], and clicks it.
+     */
+    private fun ComposeContentTestRule.renderPaywallAndClickUrlButton(
+        method: ButtonComponent.UrlMethod,
+        url: String,
+    ): MockViewModel {
+        val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+        val defaultLocale = LocaleId("en_US")
+        val buttonKey = LocalizationKey("open_url")
+        val buttonText = LocalizationData.Text("open url")
+        val urlKey = LocalizationKey("url_lid")
+        val localizations = nonEmptyMapOf(
+            defaultLocale to nonEmptyMapOf(
+                buttonKey to buttonText,
+                urlKey to LocalizationData.Text(url),
+            ),
+        )
+        val components = listOf(
+            ButtonComponent(
+                action = ButtonComponent.Action.NavigateTo(
+                    ButtonComponent.Destination.Url(urlLid = urlKey, method = method),
+                ),
+                stack = StackComponent(components = listOf(TextComponent(text = buttonKey, color = textColor))),
+            ),
+        )
+        val offering = FakeOffering(components, localizations)
+        val options = PaywallOptions.Builder(dismissRequest = {}).setOffering(offering).build()
+        val viewModel = MockViewModel(offering = offering, allowsPurchases = true)
+
+        setContent { InternalPaywall(options, viewModel) }
+        // Buttons appear once in main content and once in the sticky footer. Only click the first one.
+        onAllNodesWithText(buttonText.value)
+            .assertCountEquals(2)
+            .get(0)
+            .assertIsDisplayed()
+            .assertHasClickAction()
+            .performClick()
+        waitForIdle()
+
+        return viewModel
+    }
+
+    /**
+     * Clicks the markdown link containing [linkSubstring] in the first text node that renders it. The link is part of
+     * an [androidx.compose.ui.text.AnnotatedString], so it can only be clicked by touching its coordinates.
+     */
+    private fun ComposeContentTestRule.clickMarkdownLink(linkSubstring: String) {
+        val textNode = onAllNodesWithText(linkSubstring, substring = true, useUnmergedTree = true).get(0)
+        val layoutResults = mutableListOf<TextLayoutResult>()
+        val action = textNode.fetchSemanticsNode().config[SemanticsActions.GetTextLayoutResult].action
+            ?: error("Missing GetTextLayoutResult action")
+        action.invoke(layoutResults)
+        val layout = layoutResults.first()
+        val startIndex = layout.layoutInput.text.text.indexOf(linkSubstring)
+        assertNotEquals(-1, startIndex)
+        val charIndex = startIndex + (linkSubstring.length / 2).coerceAtMost(linkSubstring.lastIndex)
+        val box = layout.getBoundingBox(charIndex)
+
+        textNode.performTouchInput {
+            down(box.center)
+            up()
+        }
+        waitForIdle()
+    }
 
     @Suppress("TestFunctionName")
     private fun FakeOffering(data: PaywallComponentsData): Offering =

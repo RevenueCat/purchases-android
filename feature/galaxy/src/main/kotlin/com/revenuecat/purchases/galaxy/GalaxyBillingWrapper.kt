@@ -2,7 +2,6 @@ package com.revenuecat.purchases.galaxy
 
 import android.app.Activity
 import android.content.Context
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PresentedOfferingContext
@@ -47,10 +46,8 @@ import com.revenuecat.purchases.strings.RestoreStrings
 import com.samsung.android.sdk.iap.lib.constants.HelperDefine
 import com.samsung.android.sdk.iap.lib.helper.IapHelper
 import com.samsung.android.sdk.iap.lib.vo.PurchaseVo
-import com.revenuecat.purchases.api.BuildConfig as PurchasesBuildConfig
-import com.samsung.android.sdk.iap.lib.BuildConfig as SamsungBuildConfig
 
-@OptIn(InternalRevenueCatAPI::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class GalaxyBillingWrapper(
     stateProvider: PurchasesStateProvider,
@@ -105,7 +102,6 @@ internal class GalaxyBillingWrapper(
 
     init {
         iapHelper.setOperationMode(mode = billingMode.toSamsungIAPOperationMode())
-        logWarningIfUnexpectedSamsungIAPVersionFound()
     }
 
     override fun startConnection(delayMilliseconds: Long) {
@@ -381,7 +377,7 @@ internal class GalaxyBillingWrapper(
     }
 
     @Suppress("ReturnCount", "LongMethod")
-    @OptIn(GalaxySerialOperation::class, ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(GalaxySerialOperation::class)
     override fun makePurchaseAsync(
         activity: Activity,
         appUserID: String,
@@ -464,7 +460,6 @@ internal class GalaxyBillingWrapper(
         }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private fun handleReceipt(
         receipt: PurchaseVo,
         productId: String,
@@ -573,20 +568,5 @@ internal class GalaxyBillingWrapper(
 
     private fun onPurchaseError(error: PurchasesError) {
         purchasesUpdatedListener?.onPurchasesFailedToUpdate(error)
-    }
-
-    private fun logWarningIfUnexpectedSamsungIAPVersionFound() {
-        val expectedSamsungIAPSDKVersion = PurchasesBuildConfig.SAMSUNG_IAP_SDK_VERSION
-        val actualSamsungIAPSDKVersion = SamsungBuildConfig.VERSION_NAME
-
-        if (expectedSamsungIAPSDKVersion != actualSamsungIAPSDKVersion) {
-            log(intent = LogIntent.GALAXY_WARNING) {
-                "Unexpected Samsung IAP SDK version found. Expected " +
-                    "$expectedSamsungIAPSDKVersion, but found $actualSamsungIAPSDKVersion. Unexpected behavior " +
-                    "related to the Galaxy Store in-app purchases may occur. Please obtain and" +
-                    " include version $expectedSamsungIAPSDKVersion of the Samsung IAP SDK from the Samsung's" +
-                    " developer website."
-            }
-        }
     }
 }

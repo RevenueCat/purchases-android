@@ -3,12 +3,14 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CreateSupportTicketResult
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.awaitCreateSupportTicket
 import com.revenuecat.purchases.awaitCustomerCenterConfigData
 import com.revenuecat.purchases.awaitCustomerInfo
@@ -19,7 +21,8 @@ import com.revenuecat.purchases.awaitPurchase
 import com.revenuecat.purchases.awaitRestore
 import com.revenuecat.purchases.awaitSyncPurchases
 import com.revenuecat.purchases.common.events.FeatureEvent
-import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
@@ -66,7 +69,12 @@ internal interface PurchasesType {
     suspend fun awaitCreateSupportTicket(email: String, description: String): CreateSupportTicketResult
 
     @Throws(PurchasesException::class)
-    suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult
+    suspend fun awaitGetWorkflow(workflowId: String): PublishedWorkflow
+
+    @Throws(PurchasesException::class)
+    suspend fun awaitGetUiConfig(): UiConfig
+
+    suspend fun resolveWorkflow(offeringId: String): WorkflowResolution
 }
 
 @Suppress("TooManyFunctions")
@@ -137,7 +145,14 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     }
 
     @Throws(PurchasesException::class)
-    override suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult {
+    override suspend fun awaitGetWorkflow(workflowId: String): PublishedWorkflow {
         return purchases.awaitGetWorkflow(workflowId)
     }
+
+    @Throws(PurchasesException::class)
+    override suspend fun awaitGetUiConfig(): UiConfig = purchases.awaitGetUiConfig()
+
+    @OptIn(InternalRevenueCatAPI::class)
+    override suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
+        purchases.resolveWorkflow(offeringId)
 }

@@ -30,18 +30,6 @@ android {
 
         missingDimensionStrategy("apis", "defaults")
 
-        flavorDimensions += "billingclient"
-
-        productFlavors {
-            create("bc8") {
-                dimension = "billingclient"
-                isDefault = true
-            }
-            create("bc7") {
-                dimension = "billingclient"
-            }
-        }
-
         vectorDrawables {
             useSupportLibrary = true
         }
@@ -150,6 +138,7 @@ dependencies {
     implementation(project(":feature:amazon"))
     implementation(project(":ui:debugview"))
     implementation(project(":ui:revenuecatui"))
+    implementation(libs.kotlinx.serialization.json)
 
     implementation(libs.androidx.core)
     implementation(libs.androidx.lifecycle.runtime.ktx)

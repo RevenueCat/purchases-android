@@ -4,6 +4,14 @@ import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.currentLogHandler
 import org.assertj.core.api.Assertions.assertThat
 
+object NoOpLogHandler : LogHandler {
+    override fun v(tag: String, msg: String) = Unit
+    override fun d(tag: String, msg: String) = Unit
+    override fun i(tag: String, msg: String) = Unit
+    override fun w(tag: String, msg: String) = Unit
+    override fun e(tag: String, msg: String, throwable: Throwable?) = Unit
+}
+
 data class LogMessage(val level: LogLevel, val message: String, val throwable: Throwable? = null)
 
 fun assertLogs(expectedLogMessages: List<LogMessage>, block: () -> Unit) {

@@ -4,7 +4,9 @@ import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.models.StoreProduct
 import org.json.JSONObject
 
-internal class GoogleOfferingParser : OfferingParser() {
+internal class GoogleOfferingParser(
+    shouldParsePaywallComponents: () -> Boolean = { true },
+) : OfferingParser(shouldParsePaywallComponents) {
     override fun findMatchingProduct(
         productsById: Map<String, List<StoreProduct>>,
         packageJson: JSONObject,

@@ -47,7 +47,9 @@ examples/paywall-tester/src/main/generated/baselineProfiles/
 .gradle/
 .gradletasknamecache
 build/
-.cursor/
+.cursor/*
+!.cursor/environment.json
+!.cursor/Dockerfile
 
 # Local configuration file (sdk path, etc)
 local.properties

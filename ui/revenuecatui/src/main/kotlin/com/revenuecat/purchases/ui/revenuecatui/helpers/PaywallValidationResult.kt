@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.helpers
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.PaywallData
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Components.AvailablePackages
@@ -53,6 +54,7 @@ internal sealed interface PaywallValidationResult {
         val packages: AvailablePackages,
         val initialSelectedTabIndex: Int?,
         val mainStackHasHeroImage: Boolean = false,
+        val stateDeclarations: Map<String, StateDeclaration> = emptyMap(),
     ) : PaywallValidationResult {
         // If a Components Paywall has an error, it will be reflected as a Legacy type so we can use the Legacy
         // fallback.

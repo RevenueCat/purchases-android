@@ -18,8 +18,10 @@ import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.StickyFooterComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
+import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonPrimitive
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -49,12 +51,12 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvid
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.AllLocalizationsMissing
-import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError.MissingStringLocalization
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallValidationResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
+import io.mockk.every
 import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -87,7 +89,7 @@ class PaywallComponentDataValidationTests {
                             ),
                             TestData.Components.monthlyPackageComponent,
                         ),
-                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                     ),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                 ),
@@ -187,6 +189,25 @@ class PaywallComponentDataValidationTests {
     }
 
     @Test
+    fun `Should fall back to the default paywall when the component tree fails to decode`() {
+        val failingComponents = mockk<Offering.PaywallComponents>(relaxed = true) {
+            every { data } returns Result.failure(SerializationException("decode failed"))
+        }
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = failingComponents,
+        )
+
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+        // A tree that can't decode must degrade to the default paywall, not surface as a Components result.
+        check(validated is PaywallValidationResult.Legacy)
+    }
+
+    @Test
     fun `Should use language-only localizations if available`() {
         // Arrange
         data class Args(
@@ -262,7 +283,7 @@ class PaywallComponentDataValidationTests {
     }
 
     @Test
-    fun `Should accumulate errors with Legacy fallback if some localizations are missing`() {
+    fun `Should use empty strings if some base text localizations are missing`() {
         // Arrange
         val defaultLocale = LocaleId("en_US")
         val data = PaywallComponentsData(
@@ -314,15 +335,14 @@ class PaywallComponentDataValidationTests {
         val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
 
         // Assert
-        assertTrue(validated is PaywallValidationResult.Legacy)
-        assertNotNull(validated.errors)
-        assertEquals(validated.errors!!.size, 2)
-        assertTrue(
-            validated.errors!!.contains(MissingStringLocalization(LocalizationKey("key2"), LocaleId("nl_NL")))
-        )
-        assertTrue(
-            validated.errors!!.contains(MissingStringLocalization(LocalizationKey("key1"), LocaleId("es_ES")))
-        )
+        check(validated is PaywallValidationResult.Components)
+        val stack = validated.stack as StackComponentStyle
+        val firstText = stack.children[0] as TextComponentStyle
+        val secondText = stack.children[1] as TextComponentStyle
+        assertEquals("", firstText.texts.getValue(LocaleId("es_ES")))
+        assertEquals("", secondText.texts.getValue(LocaleId("nl_NL")))
+        assertEquals("value1", firstText.texts.getValue(defaultLocale))
+        assertEquals("value2", secondText.texts.getValue(defaultLocale))
     }
 
     @Test
@@ -434,6 +454,7 @@ class PaywallComponentDataValidationTests {
         )
         val uiConfig = UiConfig(
             app = AppConfig(
+                colors = emptyMap(),
                 fonts = mapOf(
                     primaryFontAlias to FontsConfig(robotoFontRegularResourceName),
                     secondaryFontAlias to FontsConfig(openSansRegularFontAssetName),
@@ -546,6 +567,7 @@ class PaywallComponentDataValidationTests {
         )
         val uiConfig = UiConfig(
             app = AppConfig(
+                colors = emptyMap(),
                 fonts = mapOf(
                     primaryFontAlias to FontsConfig(robotoFontRegularResourceName),
                     secondaryFontAlias to FontsConfig(robotoFontBoldItalicResourceName),
@@ -628,6 +650,7 @@ class PaywallComponentDataValidationTests {
         val existingFontResourceName = FontInfo.Name("roboto")
         val uiConfig = UiConfig(
             app = AppConfig(
+                colors = emptyMap(),
                 fonts = mapOf(
                     existingFontAlias to FontsConfig(existingFontResourceName),
                 )
@@ -699,6 +722,7 @@ class PaywallComponentDataValidationTests {
         val missingBlankFontAliasOverride = FontAlias(" ")
         val uiConfig = UiConfig(
             app = AppConfig(
+                colors = emptyMap(),
                 // Our 2 font aliases are missing from the AppConfig.
                 fonts = emptyMap(),
             ),
@@ -922,6 +946,59 @@ class PaywallComponentDataValidationTests {
                                         height = 100u,
                                     ),
                                 )
+                            ),
+                            TestData.Components.monthlyPackageComponent,
+                        )
+                    ),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    header = HeaderComponent(stack = StackComponent(components = emptyList())),
+                ),
+            ),
+            componentsLocalizations = mapOf(
+                defaultLocale to mapOf(LocalizationKey("key1") to LocalizationData.Text("value1")),
+            ),
+            defaultLocaleIdentifier = defaultLocale,
+        )
+        val offering = Offering(
+            identifier = "identifier",
+            serverDescription = "serverDescription",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+
+        // Act
+        val validated = offering.validatedPaywall(TestData.Constants.currentColorScheme, MockResourceProvider())
+
+        // Assert
+        assertTrue(validated is PaywallValidationResult.Components)
+        assertNull(validated.errors)
+        val result = validated as PaywallValidationResult.Components
+        assertTrue(result.mainStackHasHeroImage)
+        assertNotNull(result.header)
+    }
+
+    @Test
+    fun `Should set mainStackHasHeroImage when header and full-width web_view coexist`() {
+        // Arrange - web_view directly in the root Vertical stack, not wrapped in a ZLayer
+        val defaultLocale = LocaleId("en_US")
+        val data = PaywallComponentsData(
+            id = "paywall_id",
+            templateName = "template",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(
+                        dimension = Dimension.Vertical(HorizontalAlignment.CENTER, START),
+                        components = listOf(
+                            WebViewComponent(
+                                url = "https://bundle-hash.components.revenuecat-static.com/index.html",
+                                id = "hero_web_view",
+                                protocolVersion = 1,
+                                size = Size(
+                                    width = SizeConstraint.Fill,
+                                    height = SizeConstraint.Fit(default = 400u),
+                                ),
                             ),
                             TestData.Components.monthlyPackageComponent,
                         )
@@ -1255,7 +1332,7 @@ class PaywallComponentDataValidationTests {
                             ),
                             TestData.Components.monthlyPackageComponent,
                         ),
-                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                     ),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                 ),
@@ -1330,7 +1407,7 @@ class PaywallComponentDataValidationTests {
                             ),
                             TestData.Components.monthlyPackageComponent,
                         ),
-                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                     ),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                 ),

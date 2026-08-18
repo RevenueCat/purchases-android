@@ -14,15 +14,15 @@ import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
-import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
-import com.revenuecat.purchases.utils.optNullableString
 import org.json.JSONObject
 import java.util.Date
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -38,12 +38,22 @@ internal class OfferingsManager(
     private val dateProvider: DateProvider = DefaultDateProvider(),
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
+    private val workflowManager: WorkflowManager? = null,
 ) {
 
     private val emptyOfferings: Offerings = Offerings(current = null, all = emptyMap())
 
+    // Bumped by an invalidating clearInMemoryOfferingsCache (the `/v1/config` kill-switch flow only). A fetch
+    // captures it when it starts and re-checks it right before writing to the cache: a fetch that began before such
+    // an invalidation (e.g. one parsed while remote config was still enabled, with paywall components skipped) must
+    // not clobber the cache the invalidation's own refetch is repopulating. See PurchasesOrchestrator.
+    private val cacheGeneration = AtomicInteger(0)
+
     val cachedCurrentOfferingIdentifier: String?
         get() = offeringsCache.cachedOfferings?.current?.identifier
+
+    val cachedOfferings: Offerings?
+        get() = offeringsCache.cachedOfferings
 
     fun getOfferings(
         appUserID: String,
@@ -152,7 +162,8 @@ internal class OfferingsManager(
             null,
             null,
         )
-        dispatch { onSuccess?.invoke(cachedOfferings) }
+        val dispatchSuccess = { dispatch { onSuccess?.invoke(cachedOfferings) } }
+        workflowManager?.onPaywallConfigReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
         if (isCacheStale) {
             log(LogIntent.DEBUG) {
                 if (appInBackground) {
@@ -165,7 +176,19 @@ internal class OfferingsManager(
         }
     }
 
-    fun clearInMemoryOfferingsCache() {
+    /**
+     * Clears the in-memory offerings cache.
+     *
+     * [invalidateInFlightFetches] is only set by the `/v1/config` kill-switch flow: it bumps the cache generation
+     * so any fetch already in flight (parsed with the now-stale, pre-disable config, with paywall components
+     * skipped) drops its cache write instead of clobbering the offerings the kill-switch refetch is repopulating.
+     * All other callers leave it false to preserve previous behavior (a late in-flight write still lands) when
+     * remote config is disabled or workflows are off.
+     */
+    fun clearInMemoryOfferingsCache(invalidateInFlightFetches: Boolean = false) {
+        if (invalidateInFlightFetches) {
+            cacheGeneration.incrementAndGet()
+        }
         offeringsCache.clearInMemoryOfferingsCache()
     }
 
@@ -188,14 +211,18 @@ internal class OfferingsManager(
             return
         }
         log(LogIntent.RC_SUCCESS) { OfferingStrings.OFFERINGS_START_UPDATE_FROM_NETWORK }
+        // Snapshot the cache generation at fetch start so a cache invalidation that races this fetch can drop its
+        // (now stale) write instead of clobbering the fresher offerings the invalidation's refetch is producing.
+        val fetchGeneration = cacheGeneration.get()
         backend.getOfferings(
             appUserID,
             appInBackground,
-            { body, originalDataSource ->
+            { body, originalDataSource, responsePayload ->
                 createAndCacheOfferings(
                     offeringsJSON = body,
                     originalDataSource = originalDataSource,
-                    loadedFromDiskCache = false,
+                    responsePayloadToCache = responsePayload,
+                    fetchGeneration = fetchGeneration,
                     onError,
                     onSuccess,
                 )
@@ -208,20 +235,14 @@ internal class OfferingsManager(
                             handleErrorFetchingOfferings(backendError, onError)
                         } else {
                             warnLog { OfferingStrings.ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE }
-                            val originalDataSource = cachedOfferingsResponse.optNullableString(
-                                OfferingsCache.ORIGINAL_SOURCE_KEY,
-                            )?.let {
-                                try {
-                                    HTTPResponseOriginalSource.valueOf(it)
-                                } catch (e: IllegalArgumentException) {
-                                    errorLog(e) { "Invalid original data source for cached offerings" }
-                                    null
-                                }
-                            } ?: HTTPResponseOriginalSource.MAIN
                             createAndCacheOfferings(
                                 offeringsJSON = cachedOfferingsResponse,
-                                originalDataSource = originalDataSource,
-                                loadedFromDiskCache = true,
+                                // Unknown: the source of the response that originally populated the
+                                // disk cache is not persisted, because persisting it is what forced the
+                                // response body to be re-serialized on every write.
+                                originalDataSource = null,
+                                responsePayloadToCache = null,
+                                fetchGeneration = fetchGeneration,
                                 onError,
                                 onSuccess,
                             )
@@ -237,11 +258,14 @@ internal class OfferingsManager(
 
     private fun createAndCacheOfferings(
         offeringsJSON: JSONObject,
-        originalDataSource: HTTPResponseOriginalSource,
-        loadedFromDiskCache: Boolean,
+        originalDataSource: HTTPResponseOriginalSource?,
+        /** Null when this parse came from the disk cache; see [OfferingsCache.cacheOfferings]. */
+        responsePayloadToCache: String?,
+        fetchGeneration: Int,
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((OfferingsResultData) -> Unit)? = null,
     ) {
+        val loadedFromDiskCache = responsePayloadToCache == null
         offeringsFactory.createOfferings(
             offeringsJSON,
             originalDataSource,
@@ -250,13 +274,32 @@ internal class OfferingsManager(
                 handleErrorFetchingOfferings(error, onError)
             },
             onSuccess = { offeringsResultData ->
-                offeringsResultData.offerings.current?.let {
-                    offeringImagePreDownloader.preDownloadOfferingImages(it)
-                }
-                offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
-                offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
-                dispatch {
-                    onSuccess?.invoke(offeringsResultData)
+                // Only handle this result if no invalidation happened since this fetch started. If the generation
+                // moved, this parse is stale: it ran while remote config was still enabled, so paywall components
+                // were skipped (hasPaywall == true but paywallComponents == null). Re-parse the same response JSON
+                // instead of delivering it. Remote config is guaranteed disabled by the time the guard fires
+                // (RemoteConfigManager flips isDisabled before bumping the generation that triggers the invalidating
+                // clear), so createOfferings now decodes the components. On the re-entry the generation matches, so
+                // the decoded result is cached and delivered to the original caller. This re-runs the store-product
+                // query; it is bounded to once per session because the kill-switch disable is one-shot.
+                if (cacheGeneration.get() == fetchGeneration) {
+                    offeringsResultData.offerings.current?.let {
+                        offeringImagePreDownloader.preDownloadOfferingImages(it)
+                    }
+                    offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
+                    offeringsCache.cacheOfferings(offeringsResultData.offerings, responsePayloadToCache)
+                    val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
+                    workflowManager?.onPaywallConfigReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
+                } else {
+                    log(LogIntent.DEBUG) { OfferingStrings.OFFERINGS_CACHE_INVALIDATED_SKIPPING_STALE_WRITE }
+                    createAndCacheOfferings(
+                        offeringsJSON = offeringsJSON,
+                        originalDataSource = originalDataSource,
+                        responsePayloadToCache = responsePayloadToCache,
+                        fetchGeneration = cacheGeneration.get(),
+                        onError = onError,
+                        onSuccess = onSuccess,
+                    )
                 }
             },
         )

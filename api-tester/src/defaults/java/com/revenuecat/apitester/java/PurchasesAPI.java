@@ -10,7 +10,9 @@ import com.revenuecat.purchases.AmazonLWAConsentStatus;
 import com.revenuecat.purchases.CacheFetchPolicy;
 import com.revenuecat.purchases.CustomerInfo;
 import com.revenuecat.purchases.EntitlementVerificationMode;
+import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Offerings;
+import com.revenuecat.purchases.PresentedOfferingContext;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesAreCompletedBy;
 import com.revenuecat.purchases.PurchasesConfiguration;
@@ -41,14 +43,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
-@SuppressWarnings({"unused"})
+@SuppressWarnings({"unused", "deprecation"})
 final class PurchasesAPI {
     @OptIn(markerClass = ExperimentalPreviewRevenueCatPurchasesAPI.class)
     static void check(
             final Purchases purchases,
             final WebPurchaseRedemption webPurchaseRedemption,
             final RedeemWebPurchaseListener redeemWebPurchaseListener,
-            final Intent intent
+            final Intent intent,
+            final Offering offering
             ) {
         final ReceiveCustomerInfoCallback receiveCustomerInfoListener = new ReceiveCustomerInfoCallback() {
             @Override
@@ -139,10 +142,15 @@ final class PurchasesAPI {
         VirtualCurrencies cachedVirtualCurrencies = purchases.getCachedVirtualCurrencies();
 
         // trackCustomPaywallImpression API
+        CustomPaywallImpressionParams paramsWithOfferingObject =
+                new CustomPaywallImpressionParams("my-paywall", offering);
+        PresentedOfferingContext presentedOfferingContext = paramsWithOfferingObject.getPresentedOfferingContext();
         purchases.trackCustomPaywallImpression();
         purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams());
         purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams("my-paywall"));
         purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams("my-paywall", "my-offering"));
+        purchases.trackCustomPaywallImpression(paramsWithOfferingObject);
+        purchases.trackCustomPaywallImpression(new CustomPaywallImpressionParams(offering));
     }
 
     static void checkSyncAmazonPurchase(final Purchases purchases,

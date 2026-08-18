@@ -1,0 +1,18 @@
+{
+  "domain": "app",
+  "manifest": "v1.1710000000.workflows:etag1",
+  "active_topics": ["workflows"],
+  "prefetch_blobs": ["defaultWorkflowBlobRefAAAAAAAAAA"],
+  "topics": {
+    "workflows": {
+      "wf1234": {
+        "offering_identifier": "default",
+        "blob_ref": "defaultWorkflowBlobRefAAAAAAAAAA"
+      },
+      "wf5678": {
+        "offering_identifier": "summerCampaign",
+        "blob_ref": "summerWorkflowBlobRefBBBBBBBBBBB"
+      }
+    }
+  }
+}

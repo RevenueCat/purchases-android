@@ -31,7 +31,7 @@ internal class SigningManager(
         val postParamsHashHeader: String?,
         val requestTime: String,
         val eTag: String?,
-        val body: String?,
+        val body: ByteArray?,
     ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
@@ -46,7 +46,12 @@ internal class SigningManager(
             if (postParamsHashHeader != other.postParamsHashHeader) return false
             if (requestTime != other.requestTime) return false
             if (eTag != other.eTag) return false
-            if (body != other.body) return false
+            if (body != null) {
+                if (other.body == null) return false
+                if (!body.contentEquals(other.body)) return false
+            } else if (other.body != null) {
+                return false
+            }
 
             return true
         }
@@ -59,7 +64,7 @@ internal class SigningManager(
             result = 31 * result + (postParamsHashHeader?.hashCode() ?: 0)
             result = 31 * result + requestTime.hashCode()
             result = 31 * result + (eTag?.hashCode() ?: 0)
-            result = 31 * result + (body?.hashCode() ?: 0)
+            result = 31 * result + (body?.contentHashCode() ?: 0)
             return result
         }
 
@@ -71,7 +76,7 @@ internal class SigningManager(
                 (postParamsHashHeader?.toByteArray() ?: byteArrayOf()) +
                 requestTime.toByteArray() +
                 (eTag?.toByteArray() ?: byteArrayOf()) +
-                (body?.toByteArray() ?: byteArrayOf())
+                (body ?: byteArrayOf())
         }
     }
 
@@ -111,12 +116,16 @@ internal class SigningManager(
         }
     }
 
+    /**
+     * Verifies a response signature. [bodyBytes] is the signed payload: the UTF-8 bytes of a textual
+     * (JSON) body, or the config element's checksum for RC Container Format responses.
+     */
     @Suppress("LongParameterList", "ReturnCount", "CyclomaticComplexMethod", "LongMethod")
     fun verifyResponse(
         urlPath: String,
         signatureString: String?,
         nonce: String?,
-        body: String?,
+        bodyBytes: ByteArray?,
         requestTime: String?,
         eTag: String?,
         postFieldsToSignHeader: String?,
@@ -136,7 +145,7 @@ internal class SigningManager(
             errorLog { NetworkStrings.VERIFICATION_MISSING_REQUEST_TIME.format(urlPath) }
             return VerificationResult.FAILED
         }
-        if (body == null && eTag == null) {
+        if (bodyBytes == null && eTag == null) {
             errorLog { NetworkStrings.VERIFICATION_MISSING_BODY_OR_ETAG.format(urlPath) }
             return VerificationResult.FAILED
         }
@@ -169,7 +178,7 @@ internal class SigningManager(
                     postFieldsToSignHeader,
                     requestTime,
                     eTag,
-                    body,
+                    bodyBytes,
                 )
                 val verificationResult = intermediateKeyVerifier.verify(
                     signature.payload,

@@ -29,18 +29,6 @@ android {
         // Applications don't need this, so we default to the "defaults" flavor.
         missingDimensionStrategy("apis", "defaults")
 
-        flavorDimensions += "billingclient"
-
-        productFlavors {
-            create("bc8") {
-                dimension = "billingclient"
-                isDefault = true
-            }
-            create("bc7") {
-                dimension = "billingclient"
-            }
-        }
-
         buildConfigField(
             "String",
             "SUPPORTED_STORES",
@@ -67,11 +55,11 @@ android {
         getByName("release") {
             isMinifyEnabled = true
             proguardFiles(
-                getDefaultProguardFile("proguard-android.txt"),
+                getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
             testProguardFiles(
-                getDefaultProguardFile("proguard-android.txt"),
+                getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-test-rules.pro",
             )
             signingConfig = signingConfigs.getByName("release")
@@ -90,18 +78,7 @@ android {
 dependencies {
     implementation(project(":purchases"))
     implementation(project(":feature:amazon"))
-    val hasSamsungIapAar = (rootProject.extra["hasSamsungIapAar"] as? Boolean) == true
-    if (hasSamsungIapAar) {
-        implementation(project(":feature:galaxy"))
-    }
-
-    val samsungIapVersion = libs.versions.samsungIap.get()
-    val samsungIapAar = file("libs/samsung-iap-$samsungIapVersion.aar")
-    val samsungIapAarRoot = rootProject.file("libs/samsung-iap-$samsungIapVersion.aar")
-    when {
-        samsungIapAar.exists() -> implementation(files(samsungIapAar))
-        samsungIapAarRoot.exists() -> implementation(files(samsungIapAarRoot))
-    }
+    implementation(project(":feature:galaxy"))
 
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)

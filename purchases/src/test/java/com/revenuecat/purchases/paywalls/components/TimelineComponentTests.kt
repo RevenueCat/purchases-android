@@ -107,7 +107,7 @@ internal class TimelineComponentTests {
                             columnGutter = 30,
                             iconAlignment = TimelineComponent.IconAlignment.TitleAndDescription,
                             visible = false,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                             padding = Padding(
                                 top = 1.0,
                                 leading = 2.0,
@@ -317,7 +317,7 @@ internal class TimelineComponentTests {
                             textSpacing = 20,
                             columnGutter = 30,
                             iconAlignment = TimelineComponent.IconAlignment.TitleAndDescription,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                             padding = Padding(
                                 top = 1.0,
                                 leading = 2.0,

@@ -227,6 +227,11 @@ class VariableProcessorTest {
     }
 
     @Test
+    fun `process variables processes sub_period for lifetime product with custom identifier`() {
+        expectVariablesResult("{{ sub_period }}", "custom_lifetime", rcPackage = TestData.Packages.customLifetime)
+    }
+
+    @Test
     fun `process variables processes sub_period unknown period`() {
         expectVariablesResult("{{ sub_period }}", "Unknown", rcPackage = TestData.Packages.unknown)
     }

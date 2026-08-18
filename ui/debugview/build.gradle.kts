@@ -7,18 +7,6 @@ plugins {
 android {
     namespace = "com.revenuecat.purchases.ui.debugview"
 
-    // billingclient dimension needed to match dependencies
-    flavorDimensions += "billingclient"
-    productFlavors {
-        create("bc8") {
-            dimension = "billingclient"
-            isDefault = true
-        }
-        create("bc7") {
-            dimension = "billingclient"
-        }
-    }
-
     defaultConfig {
         minSdk = 23
     }

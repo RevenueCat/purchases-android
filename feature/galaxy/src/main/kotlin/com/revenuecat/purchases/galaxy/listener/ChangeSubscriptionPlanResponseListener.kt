@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.galaxy.listener
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.galaxy.utils.GalaxySerialOperation
 import com.revenuecat.purchases.models.StoreReplacementMode
@@ -15,7 +14,6 @@ internal interface ChangeSubscriptionPlanResponseListener : OnChangeSubscription
         /* intentionally ignored. Use ChangeSubscriptionPlanHandler instead */
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Suppress("LongParameterList")
     @GalaxySerialOperation
     fun changeSubscriptionPlan(

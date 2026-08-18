@@ -1,6 +1,10 @@
 package com.revenuecat.purchases.ui.revenuecatui.snapshottests
 
 import app.cash.paparazzi.DeviceConfig
+import com.android.resources.Density
+import com.android.resources.ScreenOrientation
+import com.android.resources.ScreenRatio
+import com.android.resources.ScreenSize
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallComponentsTemplate_Preview
@@ -31,14 +35,29 @@ class PaywallComponentsTemplatePreviewRecorder internal constructor(
     private val paywall: PaywallResources,
 ) : BasePaparazziTest(
     testConfig = TestConfig(
-        name = "pixel6",
-        deviceConfig = DeviceConfig.PIXEL_6,
+        name = "validation",
+        deviceConfig = DeviceConfig(
+            screenWidth = 1350,
+            screenHeight = 3000,
+            xdpi = 480,
+            ydpi = 480,
+            orientation = ScreenOrientation.PORTRAIT,
+            density = Density.create(SCALE * DENSITY_BASE),
+            ratio = ScreenRatio.LONG,
+            size = ScreenSize.NORMAL,
+        ),
     ),
 ) {
 
     companion object {
+        // px = dp * (dpi / 160)
+        const val DENSITY_BASE = 160
+
+        // same scale as iOS uses
+        const val SCALE = 3
+
         @JvmStatic
-        // Placing the offering ID between triple underscores so we can easily parse it later.
+        // Placing the offering ID between triple underscores and percent-encoding it so we can easily parse it later.
         @Parameters(name = "___{0}___")
         fun data(): List<Array<Any>> {
             // The PaywallResourcesProvider uses an OfferingParser under the hood, which logs.
@@ -47,8 +66,19 @@ class PaywallComponentsTemplatePreviewRecorder internal constructor(
             Purchases.logHandler = PrintLnLogHandler
             return PaywallResourcesProvider()
                 .values
-                .map { paywall -> arrayOf(paywall.offering.identifier, paywall) }
+                .map { paywall -> arrayOf(paywall.offering.identifier.percentEncoded(), paywall) }
                 .toList()
+        }
+
+        // Percent-encodes this String, keeping only ASCII letters, digits, '.' and '-' literal (all of which Paparazzi
+        // preserves in snapshot file names).
+        private fun String.percentEncoded(): String {
+            val unreserved = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-"
+            return toByteArray(Charsets.UTF_8).joinToString(separator = "") { byte ->
+                val code = byte.toUByte().toInt()
+                val char = code.toChar()
+                if (char in unreserved) char.toString() else "%%%02X".format(code)
+            }
         }
 
         @JvmStatic

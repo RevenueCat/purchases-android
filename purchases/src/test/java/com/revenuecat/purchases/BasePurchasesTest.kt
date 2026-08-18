@@ -26,7 +26,10 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsSynchronizer
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.offerings.OfferingsManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreTransaction
@@ -91,6 +94,9 @@ internal open class BasePurchasesTest {
     internal val mockFontLoader = mockk<FontLoader>()
     internal val mockVirtualCurrencyManager = mockk<VirtualCurrencyManager>()
     internal val mockPurchaseParamsValidator = mockk<PurchaseParamsValidator>()
+    internal val mockWorkflowManager = mockk<WorkflowManager>(relaxed = true)
+    internal val mockRemoteConfigManager = mockk<RemoteConfigManager>(relaxed = true)
+    internal val mockUiConfigProvider = mockk<UiConfigProvider>(relaxed = true)
     private val mockBlockstoreHelper = mockk<BlockstoreHelper>()
     private val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
@@ -507,7 +513,9 @@ internal open class BasePurchasesTest {
             blockstoreHelper = mockBlockstoreHelper,
             backupManager = mockBackupManager,
             purchaseParamsValidator = mockPurchaseParamsValidator,
-            workflowManager = mockk(relaxed = true),
+            workflowManager = mockWorkflowManager,
+            remoteConfigManager = mockRemoteConfigManager,
+            uiConfigProvider = mockUiConfigProvider,
         )
 
         purchases = Purchases(

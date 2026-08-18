@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!--
+        Trust user-installed CA certificates in debuggable builds only, so HTTP debugging
+        proxies such as Proxyman or Charles can decrypt the app's HTTPS traffic.
+        Release builds are unaffected: they keep the default of trusting only system CAs.
+    -->
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>

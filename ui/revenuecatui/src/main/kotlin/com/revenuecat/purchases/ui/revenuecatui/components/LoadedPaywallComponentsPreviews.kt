@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -87,7 +88,7 @@ private fun LoadedPaywallComponents_Header_ZLayer_Preview() {
         stack = StackComponent(
             components = listOf(closeButtonIcon),
             dimension = Vertical(alignment = LEADING, distribution = START),
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fit(), height = Fit()),
             margin = Padding(top = 16.0, bottom = 16.0, leading = 16.0, trailing = 16.0),
         ),
     )
@@ -106,18 +107,18 @@ private fun LoadedPaywallComponents_Header_ZLayer_Preview() {
                     ),
                 ),
                 fitMode = FitMode.FIT,
-                size = Size(width = Fill, height = Fit),
+                size = Size(width = Fill, height = Fit()),
             ),
             TextComponent(
                 text = LocalizationKey("overlay-text"),
                 color = ColorScheme(light = ColorInfo.Hex(Color(0xFF62FC03).toArgb())),
                 fontSize = 14,
                 horizontalAlignment = LEADING,
-                size = Size(width = Fit, height = Fit),
+                size = Size(width = Fit(), height = Fit()),
             ),
         ),
         dimension = ZLayer(alignment = TwoDimensionalAlignment.TOP_LEADING),
-        size = Size(width = Fill, height = Fit),
+        size = Size(width = Fill, height = Fit()),
     )
 
     val data = PaywallComponentsData(
@@ -135,12 +136,12 @@ private fun LoadedPaywallComponents_Header_ZLayer_Preview() {
                             fontWeight = FontWeight.BOLD,
                             fontSize = 24,
                             horizontalAlignment = CENTER,
-                            size = Size(width = Fit, height = Fit),
+                            size = Size(width = Fit(), height = Fit()),
                             margin = Padding(top = 0.0, bottom = 0.0, leading = 50.0, trailing = 50.0),
                         ),
                     ),
                     dimension = Vertical(alignment = CENTER, distribution = START),
-                    size = Size(width = Fill, height = Fit),
+                    size = Size(width = Fill, height = Fit()),
                     spacing = 8f,
                 ),
                 background = Background.Color(whiteColor),
@@ -151,11 +152,11 @@ private fun LoadedPaywallComponents_Header_ZLayer_Preview() {
                             StackComponent(
                                 components = listOf(closeButton),
                                 dimension = ZLayer(alignment = TOP_TRAILING),
-                                size = Size(width = Fill, height = Fit),
+                                size = Size(width = Fill, height = Fit()),
                             ),
                         ),
                         dimension = Vertical(alignment = LEADING, distribution = START),
-                        size = Size(width = Fill, height = Fit),
+                        size = Size(width = Fill, height = Fit()),
                         shadow = Shadow(
                             color = ColorScheme(light = ColorInfo.Hex(Color(0x33000000).toArgb())),
                             radius = 16.0,
@@ -233,7 +234,7 @@ private fun LoadedPaywallComponents_Preview_HeaderDirectHeroImage() {
             ),
         ),
         fitMode = FitMode.FIT,
-        size = Size(width = Fill, height = Fit),
+        size = Size(width = Fill, height = Fit()),
         colorOverlay = ColorScheme(light = ColorInfo.Hex(Color(0x33000000).toArgb())),
     )
 
@@ -255,7 +256,7 @@ private fun LoadedPaywallComponents_Preview_HeaderDirectHeroImage() {
         stack = StackComponent(
             components = listOf(closeButtonIcon),
             dimension = Vertical(alignment = LEADING, distribution = START),
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fit(), height = Fit()),
             margin = Padding(top = 16.0, bottom = 16.0, leading = 16.0, trailing = 16.0),
         ),
     )
@@ -274,7 +275,7 @@ private fun LoadedPaywallComponents_Preview_HeaderDirectHeroImage() {
                             fontWeight = FontWeight.BOLD,
                             fontSize = 24,
                             horizontalAlignment = CENTER,
-                            size = Size(width = Fit, height = Fit),
+                            size = Size(width = Fit(), height = Fit()),
                             margin = Padding(top = 16.0, bottom = 0.0, leading = 50.0, trailing = 50.0),
                         ),
                         TextComponent(
@@ -282,13 +283,13 @@ private fun LoadedPaywallComponents_Preview_HeaderDirectHeroImage() {
                             color = textColor,
                             fontSize = 15,
                             horizontalAlignment = CENTER,
-                            size = Size(width = Fit, height = Fit),
+                            size = Size(width = Fit(), height = Fit()),
                             margin = Padding(top = 8.0, bottom = 0.0, leading = 24.0, trailing = 24.0),
                         ),
                         TestData.Components.monthlyPackageComponent,
                     ),
                     dimension = Vertical(alignment = CENTER, distribution = START),
-                    size = Size(width = Fill, height = Fit),
+                    size = Size(width = Fill, height = Fit()),
                     spacing = 8f,
                 ),
                 background = Background.Color(whiteColor),
@@ -299,7 +300,7 @@ private fun LoadedPaywallComponents_Preview_HeaderDirectHeroImage() {
                             closeButton,
                         ),
                         dimension = ZLayer(alignment = TOP_TRAILING),
-                        size = Size(width = Fill, height = Fit),
+                        size = Size(width = Fill, height = Fit()),
                         border = Border(
                             color = ColorScheme(light = ColorInfo.Hex(Color(0x44000000).toArgb())),
                             width = 1.0,
@@ -319,14 +320,14 @@ private fun LoadedPaywallComponents_Preview_HeaderDirectHeroImage() {
                                             color = textColor,
                                             fontSize = 14,
                                             horizontalAlignment = LEADING,
-                                            size = Size(width = Fit, height = Fit),
+                                            size = Size(width = Fit(), height = Fit()),
                                         ),
                                     ),
                                     dimension = Vertical(
                                         alignment = CENTER,
                                         distribution = START,
                                     ),
-                                    size = Size(width = Fill, height = Fit),
+                                    size = Size(width = Fill, height = Fit()),
                                     shape = Shape.Rectangle(
                                         corners = CornerRadiuses.Dp(all = 8.0),
                                     ),
@@ -343,14 +344,14 @@ private fun LoadedPaywallComponents_Preview_HeaderDirectHeroImage() {
                                             fontWeight = FontWeight.SEMI_BOLD,
                                             fontSize = 16,
                                             horizontalAlignment = CENTER,
-                                            size = Size(width = Fit, height = Fit),
+                                            size = Size(width = Fit(), height = Fit()),
                                         ),
                                     ),
                                     dimension = Vertical(
                                         alignment = CENTER,
                                         distribution = START,
                                     ),
-                                    size = Size(width = Fill, height = Fit),
+                                    size = Size(width = Fill, height = Fit()),
                                     padding = Padding(
                                         top = 12.0,
                                         bottom = 12.0,
@@ -397,14 +398,14 @@ private fun LoadedPaywallComponents_Preview_HeaderDirectHeroImage() {
                                                     fontWeight = FontWeight.SEMI_BOLD,
                                                     fontSize = 13,
                                                     horizontalAlignment = LEADING,
-                                                    size = Size(width = Fit, height = Fit),
+                                                    size = Size(width = Fit(), height = Fit()),
                                                 ),
                                             ),
                                             dimension = Vertical(
                                                 alignment = LEADING,
                                                 distribution = FlexDistribution.SPACE_BETWEEN,
                                             ),
-                                            size = Size(width = Fit, height = Fit),
+                                            size = Size(width = Fit(), height = Fit()),
                                         ),
                                     ),
                                 ),
@@ -412,13 +413,13 @@ private fun LoadedPaywallComponents_Preview_HeaderDirectHeroImage() {
                                     alignment = VerticalAlignment.TOP,
                                     distribution = FlexDistribution.CENTER,
                                 ),
-                                size = Size(width = Fill, height = Fit),
+                                size = Size(width = Fill, height = Fit()),
                                 margin = Padding(top = 12.0, bottom = 0.0, leading = 0.0, trailing = 0.0),
                                 spacing = 32f,
                             ),
                         ),
                         dimension = Vertical(alignment = LEADING, distribution = START),
-                        size = Size(width = Fill, height = Fit),
+                        size = Size(width = Fill, height = Fit()),
                         padding = Padding(top = 12.0, bottom = 0.0, leading = 16.0, trailing = 16.0),
                         backgroundColor = whiteColor,
                         shadow = Shadow(
@@ -496,7 +497,7 @@ private fun LoadedPaywallComponents_Preview_HeaderTextOnly() {
         stack = StackComponent(
             components = listOf(closeButtonIcon),
             dimension = Vertical(alignment = LEADING, distribution = START),
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fit(), height = Fit()),
             margin = Padding(top = 16.0, bottom = 16.0, leading = 16.0, trailing = 16.0),
         ),
     )
@@ -508,7 +509,7 @@ private fun LoadedPaywallComponents_Preview_HeaderTextOnly() {
             color = subtleTextColor,
             fontSize = 14,
             horizontalAlignment = LEADING,
-            size = Size(width = Fill, height = Fit),
+            size = Size(width = Fill, height = Fit()),
             padding = Padding(top = 2.0, bottom = 2.0, leading = 0.0, trailing = 0.0),
         )
     }
@@ -527,7 +528,7 @@ private fun LoadedPaywallComponents_Preview_HeaderTextOnly() {
                             fontWeight = FontWeight.BOLD,
                             fontSize = 24,
                             horizontalAlignment = CENTER,
-                            size = Size(width = Fit, height = Fit),
+                            size = Size(width = Fit(), height = Fit()),
                             margin = Padding(top = 0.0, bottom = 0.0, leading = 50.0, trailing = 50.0),
                         ),
                         // Features section
@@ -541,22 +542,22 @@ private fun LoadedPaywallComponents_Preview_HeaderTextOnly() {
                                             fontWeight = FontWeight.BOLD,
                                             fontSize = 16,
                                             horizontalAlignment = LEADING,
-                                            size = Size(width = Fit, height = Fit),
+                                            size = Size(width = Fit(), height = Fit()),
                                         ),
                                     ) + featureTexts,
                                     dimension = Vertical(alignment = LEADING, distribution = START),
-                                    size = Size(width = Fill, height = Fit),
+                                    size = Size(width = Fill, height = Fit()),
                                     spacing = 4f,
                                 ),
                             ),
                             dimension = Vertical(alignment = LEADING, distribution = START),
-                            size = Size(width = Fill, height = Fit),
+                            size = Size(width = Fill, height = Fit()),
                             padding = Padding(top = 16.0, bottom = 16.0, leading = 16.0, trailing = 16.0),
                         ),
                         TestData.Components.monthlyPackageComponent,
                     ),
                     dimension = Vertical(alignment = CENTER, distribution = START),
-                    size = Size(width = Fill, height = Fit),
+                    size = Size(width = Fill, height = Fit()),
                     spacing = 8f,
                 ),
                 background = Background.Color(whiteColor),
@@ -566,11 +567,11 @@ private fun LoadedPaywallComponents_Preview_HeaderTextOnly() {
                             StackComponent(
                                 components = listOf(closeButton),
                                 dimension = ZLayer(alignment = TOP_TRAILING),
-                                size = Size(width = Fill, height = Fit),
+                                size = Size(width = Fill, height = Fit()),
                             ),
                         ),
                         dimension = Vertical(alignment = LEADING, distribution = START),
-                        size = Size(width = Fill, height = Fit),
+                        size = Size(width = Fill, height = Fit()),
                         shadow = Shadow(
                             color = ColorScheme(light = ColorInfo.Hex(Color(0x33000000).toArgb())),
                             radius = 16.0,
@@ -593,14 +594,14 @@ private fun LoadedPaywallComponents_Preview_HeaderTextOnly() {
                                             fontWeight = FontWeight.SEMI_BOLD,
                                             fontSize = 16,
                                             horizontalAlignment = CENTER,
-                                            size = Size(width = Fit, height = Fit),
+                                            size = Size(width = Fit(), height = Fit()),
                                         ),
                                     ),
                                     dimension = Vertical(
                                         alignment = CENTER,
                                         distribution = START,
                                     ),
-                                    size = Size(width = Fill, height = Fit),
+                                    size = Size(width = Fill, height = Fit()),
                                     padding = Padding(
                                         top = 12.0,
                                         bottom = 12.0,
@@ -639,14 +640,14 @@ private fun LoadedPaywallComponents_Preview_HeaderTextOnly() {
                                                     fontWeight = FontWeight.SEMI_BOLD,
                                                     fontSize = 13,
                                                     horizontalAlignment = LEADING,
-                                                    size = Size(width = Fit, height = Fit),
+                                                    size = Size(width = Fit(), height = Fit()),
                                                 ),
                                             ),
                                             dimension = Vertical(
                                                 alignment = LEADING,
                                                 distribution = FlexDistribution.SPACE_BETWEEN,
                                             ),
-                                            size = Size(width = Fit, height = Fit),
+                                            size = Size(width = Fit(), height = Fit()),
                                         ),
                                     ),
                                 ),
@@ -654,12 +655,12 @@ private fun LoadedPaywallComponents_Preview_HeaderTextOnly() {
                                     alignment = VerticalAlignment.TOP,
                                     distribution = FlexDistribution.CENTER,
                                 ),
-                                size = Size(width = Fill, height = Fit),
+                                size = Size(width = Fill, height = Fit()),
                                 margin = Padding(top = 12.0, bottom = 0.0, leading = 0.0, trailing = 0.0),
                             ),
                         ),
                         dimension = Vertical(alignment = LEADING, distribution = START),
-                        size = Size(width = Fill, height = Fit),
+                        size = Size(width = Fill, height = Fit()),
                         padding = Padding(top = 12.0, bottom = 0.0, leading = 16.0, trailing = 16.0),
                         backgroundColor = whiteColor,
                         shadow = Shadow(
@@ -733,7 +734,7 @@ private fun LoadedPaywallComponents_Preview_HeaderNoZStackNoImage() {
         stack = StackComponent(
             components = listOf(closeButtonIcon),
             dimension = Vertical(alignment = LEADING, distribution = START),
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fit(), height = Fit()),
             margin = Padding(top = 16.0, bottom = 16.0, leading = 16.0, trailing = 16.0),
         ),
     )
@@ -752,13 +753,13 @@ private fun LoadedPaywallComponents_Preview_HeaderNoZStackNoImage() {
                             fontWeight = FontWeight.BOLD,
                             fontSize = 24,
                             horizontalAlignment = CENTER,
-                            size = Size(width = Fit, height = Fit),
+                            size = Size(width = Fit(), height = Fit()),
                             margin = Padding(top = 0.0, bottom = 0.0, leading = 50.0, trailing = 50.0),
                         ),
                         TestData.Components.monthlyPackageComponent,
                     ),
                     dimension = Vertical(alignment = CENTER, distribution = START),
-                    size = Size(width = Fill, height = Fit),
+                    size = Size(width = Fill, height = Fit()),
                     spacing = 8f,
                 ),
                 background = Background.Color(whiteColor),
@@ -768,11 +769,11 @@ private fun LoadedPaywallComponents_Preview_HeaderNoZStackNoImage() {
                             StackComponent(
                                 components = listOf(closeButton),
                                 dimension = ZLayer(alignment = TOP_TRAILING),
-                                size = Size(width = Fill, height = Fit),
+                                size = Size(width = Fill, height = Fit()),
                             ),
                         ),
                         dimension = Vertical(alignment = LEADING, distribution = START),
-                        size = Size(width = Fill, height = Fit),
+                        size = Size(width = Fill, height = Fit()),
                         shadow = Shadow(
                             color = ColorScheme(light = ColorInfo.Hex(Color(0x33000000).toArgb())),
                             radius = 16.0,
@@ -844,7 +845,7 @@ private fun LoadedPaywallComponents_Preview_DirectImageAsBackground() {
                 color = ColorScheme(light = ColorInfo.Hex(Color(0xFFF90101).toArgb())),
                 fontSize = 14,
                 horizontalAlignment = LEADING,
-                size = Size(width = Fit, height = Fit),
+                size = Size(width = Fit(), height = Fit()),
             ),
         ),
         dimension = ZLayer(alignment = TwoDimensionalAlignment.TOP_LEADING),
@@ -878,13 +879,13 @@ private fun LoadedPaywallComponents_Preview_DirectImageAsBackground() {
                             fontWeight = FontWeight.BOLD,
                             fontSize = 24,
                             horizontalAlignment = CENTER,
-                            size = Size(width = Fit, height = Fit),
+                            size = Size(width = Fit(), height = Fit()),
                             margin = Padding(top = 0.0, bottom = 0.0, leading = 50.0, trailing = 50.0),
                         ),
                         TestData.Components.monthlyPackageComponent,
                     ),
                     dimension = Vertical(alignment = CENTER, distribution = START),
-                    size = Size(width = Fill, height = Fit),
+                    size = Size(width = Fill, height = Fit()),
                     spacing = 8f,
                 ),
                 background = Background.Color(whiteColor),
@@ -962,7 +963,7 @@ private fun LoadedPaywallComponents_Preview_HeaderNestedStackWithImage() {
         stack = StackComponent(
             components = listOf(closeButtonIcon),
             dimension = Vertical(alignment = LEADING, distribution = START),
-            size = Size(width = Fit, height = Fit),
+            size = Size(width = Fit(), height = Fit()),
             margin = Padding(top = 16.0, bottom = 16.0, leading = 16.0, trailing = 16.0),
         ),
     )
@@ -983,22 +984,22 @@ private fun LoadedPaywallComponents_Preview_HeaderNestedStackWithImage() {
                             ),
                         ),
                         fitMode = FitMode.FIT,
-                        size = Size(width = Fill, height = Fit),
+                        size = Size(width = Fill, height = Fit()),
                     ),
                     TextComponent(
                         text = LocalizationKey("overlay-text"),
                         color = ColorScheme(light = ColorInfo.Hex(Color(0xFFF90101).toArgb())),
                         fontSize = 14,
                         horizontalAlignment = LEADING,
-                        size = Size(width = Fit, height = Fit),
+                        size = Size(width = Fit(), height = Fit()),
                     ),
                 ),
                 dimension = ZLayer(alignment = TwoDimensionalAlignment.TOP_LEADING),
-                size = Size(width = Fill, height = Fit),
+                size = Size(width = Fill, height = Fit()),
             ),
         ),
         dimension = Vertical(alignment = CENTER, distribution = START),
-        size = Size(width = Fill, height = Fit),
+        size = Size(width = Fill, height = Fit()),
     )
 
     val data = PaywallComponentsData(
@@ -1016,13 +1017,13 @@ private fun LoadedPaywallComponents_Preview_HeaderNestedStackWithImage() {
                             fontWeight = FontWeight.BOLD,
                             fontSize = 24,
                             horizontalAlignment = CENTER,
-                            size = Size(width = Fit, height = Fit),
+                            size = Size(width = Fit(), height = Fit()),
                             margin = Padding(top = 0.0, bottom = 0.0, leading = 50.0, trailing = 50.0),
                         ),
                         TestData.Components.monthlyPackageComponent,
                     ),
                     dimension = Vertical(alignment = CENTER, distribution = START),
-                    size = Size(width = Fill, height = Fit),
+                    size = Size(width = Fill, height = Fit()),
                     spacing = 8f,
                 ),
                 background = Background.Color(whiteColor),
@@ -1032,11 +1033,11 @@ private fun LoadedPaywallComponents_Preview_HeaderNestedStackWithImage() {
                             StackComponent(
                                 components = listOf(closeButton),
                                 dimension = ZLayer(alignment = TOP_TRAILING),
-                                size = Size(width = Fill, height = Fit),
+                                size = Size(width = Fill, height = Fit()),
                             ),
                         ),
                         dimension = Vertical(alignment = LEADING, distribution = START),
-                        size = Size(width = Fill, height = Fit),
+                        size = Size(width = Fill, height = Fit()),
                         shadow = Shadow(
                             color = ColorScheme(light = ColorInfo.Hex(Color(0x33000000).toArgb())),
                             radius = 16.0,
@@ -1090,4 +1091,341 @@ private fun LoadedPaywallComponents_Preview_HeaderNestedStackWithImage() {
             modifier = Modifier.fillMaxSize(),
         )
     }
+}
+
+/**
+ * Exercises an overlapping, semi-transparent sticky footer over a long scrollable body. The footer is
+ * pinned to the bottom and drawn on top of the content; because its background is translucent, the
+ * body (and the paywall background) show through it, and the content reserves bottom clearance equal to
+ * the footer height so the last row can scroll clear of the footer.
+ */
+@Suppress("LongMethod", "MagicNumber")
+@Preview(name = "TransparentFooter - Light", showSystemUi = true)
+@Preview(name = "TransparentFooter - Dark", showSystemUi = true, uiMode = Configuration.UI_MODE_NIGHT_YES)
+@Composable
+private fun LoadedPaywallComponents_Preview_TransparentFooter() {
+    val textColor = ColorScheme(
+        light = ColorInfo.Hex(Color(0xFF272727).toArgb()),
+        dark = ColorInfo.Hex(Color(0xFFFDFDFD).toArgb()),
+    )
+    val backgroundColor = ColorScheme(
+        light = ColorInfo.Hex(Color(0xFFFDFDFD).toArgb()),
+        dark = ColorInfo.Hex(Color(0xFF121212).toArgb()),
+    )
+    // Semi-transparent, tinted footer background so the scrolled content is clearly visible THROUGH
+    // the footer (a distinct tint over the content behind it), demonstrating the overlap.
+    val translucentFooterColor = ColorScheme(
+        light = ColorInfo.Hex(Color(0x99057C5B).toArgb()),
+        dark = ColorInfo.Hex(Color(0x99057C5B).toArgb()),
+    )
+    val ctaTextColor = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))
+    val ctaBackgroundColor = ColorScheme(light = ColorInfo.Hex(Color(0xFF057C5B).toArgb()))
+
+    val featureRows = (1..25).map { index ->
+        TextComponent(
+            text = LocalizationKey("feature-$index"),
+            color = textColor,
+            horizontalAlignment = LEADING,
+            size = Size(width = Fill, height = Fit()),
+            margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
+        )
+    }
+
+    val data = PaywallComponentsData(
+        id = "preview_transparent_footer",
+        templateName = "template",
+        assetBaseURL = URL("https://assets.pawwalls.com"),
+        componentsConfig = ComponentsConfig(
+            base = PaywallComponentsConfig(
+                stack = StackComponent(
+                    components = listOf(
+                        TextComponent(
+                            text = LocalizationKey("title"),
+                            color = textColor,
+                            fontWeight = FontWeight.BOLD,
+                            fontSize = 28,
+                            horizontalAlignment = LEADING,
+                            size = Size(width = Fill, height = Fit()),
+                            margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 0.0),
+                        ),
+                    ) + featureRows,
+                    dimension = Vertical(alignment = LEADING, distribution = START),
+                    size = Size(width = Fill, height = Fill),
+                    padding = Padding(top = 32.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
+                ),
+                background = Background.Color(backgroundColor),
+                stickyFooter = StickyFooterComponent(
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(
+                                    TextComponent(
+                                        text = LocalizationKey("cta"),
+                                        color = ctaTextColor,
+                                        fontWeight = FontWeight.BOLD,
+                                    ),
+                                ),
+                                dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
+                                size = Size(width = Fill, height = Fit()),
+                                backgroundColor = ctaBackgroundColor,
+                                padding = Padding(top = 16.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
+                                shape = Shape.Pill,
+                            ),
+                        ),
+                        dimension = Vertical(alignment = CENTER, distribution = START),
+                        size = Size(width = Fill, height = Fit()),
+                        backgroundColor = translucentFooterColor,
+                        padding = Padding(top = 16.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
+                    ),
+                ),
+            ),
+        ),
+        componentsLocalizations = mapOf(
+            LocaleId("en_US") to (
+                mapOf(
+                    LocalizationKey("title") to LocalizationData.Text("Unlock everything"),
+                    LocalizationKey("cta") to LocalizationData.Text("Continue"),
+                ) + (1..25).associate { index ->
+                    LocalizationKey("feature-$index") to LocalizationData.Text("✓ Premium feature number $index")
+                }
+                ),
+        ),
+        defaultLocaleIdentifier = LocaleId("en_US"),
+    )
+    val offering = Offering(
+        identifier = "transparent_footer",
+        serverDescription = "Transparent overlapping footer",
+        metadata = emptyMap(),
+        availablePackages = listOf(TestData.Packages.monthly),
+        paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
+    )
+    val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
+    val state = offering.toComponentsPaywallState(
+        validationResult = validated,
+        storefrontCountryCode = "US",
+        dateProvider = { Date(MILLIS_2025_01_25) },
+        purchases = MockPurchasesType(),
+    )
+
+    LoadedPaywallComponents(
+        state = state,
+        clickHandler = { },
+        modifier = Modifier.fillMaxSize(),
+    )
+}
+
+/**
+ * A small, vertically centered body with a sticky footer. The body must center within the space
+ * *above* the footer (matching the pre-overlap behavior), not the whole screen.
+ */
+@Suppress("LongMethod", "MagicNumber")
+@Preview(name = "CenteredBodyFooter", showSystemUi = true)
+@Composable
+private fun LoadedPaywallComponents_Preview_CenteredBodyFooter() {
+    val textColor = ColorScheme(light = ColorInfo.Hex(Color(0xFF272727).toArgb()))
+    val backgroundColor = ColorScheme(light = ColorInfo.Hex(Color(0xFFFDFDFD).toArgb()))
+    val footerColor = ColorScheme(light = ColorInfo.Hex(Color(0x99057C5B).toArgb()))
+    val ctaTextColor = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))
+    val ctaBackgroundColor = ColorScheme(light = ColorInfo.Hex(Color(0xFF0A3D2E).toArgb()))
+
+    val data = PaywallComponentsData(
+        id = "preview_centered_body_footer",
+        templateName = "template",
+        assetBaseURL = URL("https://assets.pawwalls.com"),
+        componentsConfig = ComponentsConfig(
+            base = PaywallComponentsConfig(
+                stack = StackComponent(
+                    components = listOf(
+                        TextComponent(
+                            text = LocalizationKey("title"),
+                            color = textColor,
+                            fontWeight = FontWeight.BOLD,
+                            fontSize = 28,
+                            horizontalAlignment = CENTER,
+                            size = Size(width = Fill, height = Fit()),
+                            margin = Padding(top = 0.0, bottom = 12.0, leading = 32.0, trailing = 32.0),
+                        ),
+                        TextComponent(
+                            text = LocalizationKey("subtitle"),
+                            color = textColor,
+                            horizontalAlignment = CENTER,
+                            size = Size(width = Fill, height = Fit()),
+                            margin = Padding(top = 0.0, bottom = 0.0, leading = 32.0, trailing = 32.0),
+                        ),
+                    ),
+                    dimension = Vertical(alignment = CENTER, distribution = FlexDistribution.CENTER),
+                    size = Size(width = Fill, height = Fill),
+                ),
+                background = Background.Color(backgroundColor),
+                stickyFooter = StickyFooterComponent(
+                    stack = StackComponent(
+                        components = listOf(
+                            StackComponent(
+                                components = listOf(
+                                    TextComponent(
+                                        text = LocalizationKey("cta"),
+                                        color = ctaTextColor,
+                                        fontWeight = FontWeight.BOLD,
+                                    ),
+                                ),
+                                dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
+                                size = Size(width = Fill, height = Fit()),
+                                backgroundColor = ctaBackgroundColor,
+                                padding = Padding(top = 16.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
+                                shape = Shape.Pill,
+                            ),
+                        ),
+                        dimension = Vertical(alignment = CENTER, distribution = START),
+                        size = Size(width = Fill, height = Fit()),
+                        backgroundColor = footerColor,
+                        padding = Padding(top = 16.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
+                    ),
+                ),
+            ),
+        ),
+        componentsLocalizations = mapOf(
+            LocaleId("en_US") to mapOf(
+                LocalizationKey("title") to LocalizationData.Text("Centered body"),
+                LocalizationKey("subtitle") to LocalizationData.Text("This should be centered above the footer"),
+                LocalizationKey("cta") to LocalizationData.Text("Continue"),
+            ),
+        ),
+        defaultLocaleIdentifier = LocaleId("en_US"),
+    )
+    val offering = Offering(
+        identifier = "centered_body_footer",
+        serverDescription = "Centered body with footer",
+        metadata = emptyMap(),
+        availablePackages = listOf(TestData.Packages.monthly),
+        paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
+    )
+    val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
+    val state = offering.toComponentsPaywallState(
+        validationResult = validated,
+        storefrontCountryCode = "US",
+        dateProvider = { Date(MILLIS_2025_01_25) },
+        purchases = MockPurchasesType(),
+    )
+
+    LoadedPaywallComponents(
+        state = state,
+        clickHandler = { },
+        modifier = Modifier.fillMaxSize(),
+    )
+}
+
+/**
+ * A sticky footer taller than half the screen. Content occupies the reduced region above it and the
+ * footer fills the rest without clipping the layout.
+ */
+@Suppress("LongMethod", "MagicNumber")
+@Preview(name = "LargeFooter", showSystemUi = true)
+@Composable
+private fun LoadedPaywallComponents_Preview_LargeFooter() {
+    val textColor = ColorScheme(light = ColorInfo.Hex(Color(0xFF272727).toArgb()))
+    val backgroundColor = ColorScheme(light = ColorInfo.Hex(Color(0xFFFDFDFD).toArgb()))
+    val footerColor = ColorScheme(light = ColorInfo.Hex(Color(0xFF057C5B).toArgb()))
+    val ctaTextColor = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))
+    val ctaBackgroundColor = ColorScheme(light = ColorInfo.Hex(Color(0xFF0A3D2E).toArgb()))
+
+    val footerRows = (1..8).map { index ->
+        TextComponent(
+            text = LocalizationKey("footer-line-$index"),
+            color = ctaTextColor,
+            horizontalAlignment = CENTER,
+            size = Size(width = Fill, height = Fit()),
+            margin = Padding(top = 6.0, bottom = 6.0, leading = 0.0, trailing = 0.0),
+        )
+    }
+
+    val data = PaywallComponentsData(
+        id = "preview_large_footer",
+        templateName = "template",
+        assetBaseURL = URL("https://assets.pawwalls.com"),
+        componentsConfig = ComponentsConfig(
+            base = PaywallComponentsConfig(
+                stack = StackComponent(
+                    components = listOf(
+                        TextComponent(
+                            text = LocalizationKey("title"),
+                            color = textColor,
+                            fontWeight = FontWeight.BOLD,
+                            fontSize = 28,
+                            horizontalAlignment = LEADING,
+                            size = Size(width = Fill, height = Fit()),
+                            margin = Padding(top = 0.0, bottom = 12.0, leading = 0.0, trailing = 0.0),
+                        ),
+                        TextComponent(
+                            text = LocalizationKey("subtitle"),
+                            color = textColor,
+                            horizontalAlignment = LEADING,
+                            size = Size(width = Fill, height = Fit()),
+                        ),
+                    ),
+                    dimension = Vertical(alignment = LEADING, distribution = START),
+                    size = Size(width = Fill, height = Fill),
+                    padding = Padding(top = 32.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
+                ),
+                background = Background.Color(backgroundColor),
+                stickyFooter = StickyFooterComponent(
+                    stack = StackComponent(
+                        components = footerRows + StackComponent(
+                            components = listOf(
+                                TextComponent(
+                                    text = LocalizationKey("cta"),
+                                    color = ctaTextColor,
+                                    fontWeight = FontWeight.BOLD,
+                                ),
+                            ),
+                            dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
+                            size = Size(width = Fill, height = Fit()),
+                            backgroundColor = ctaBackgroundColor,
+                            padding = Padding(top = 16.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
+                            margin = Padding(top = 16.0, bottom = 0.0, leading = 0.0, trailing = 0.0),
+                            shape = Shape.Pill,
+                        ),
+                        dimension = Vertical(alignment = CENTER, distribution = FlexDistribution.CENTER),
+                        // Fixed height guarantees the footer is taller than half of a phone screen.
+                        size = Size(width = Fill, height = Fixed(520u)),
+                        backgroundColor = footerColor,
+                        padding = Padding(top = 24.0, bottom = 24.0, leading = 32.0, trailing = 32.0),
+                    ),
+                ),
+            ),
+        ),
+        componentsLocalizations = mapOf(
+            LocaleId("en_US") to (
+                mapOf(
+                    LocalizationKey("title") to LocalizationData.Text("Big footer"),
+                    LocalizationKey("subtitle") to LocalizationData.Text(
+                        "The footer below is taller than half the screen.",
+                    ),
+                    LocalizationKey("cta") to LocalizationData.Text("Continue"),
+                ) + (1..8).associate { index ->
+                    LocalizationKey("footer-line-$index") to LocalizationData.Text("Footer line $index")
+                }
+                ),
+        ),
+        defaultLocaleIdentifier = LocaleId("en_US"),
+    )
+    val offering = Offering(
+        identifier = "large_footer",
+        serverDescription = "Footer taller than half the screen",
+        metadata = emptyMap(),
+        availablePackages = listOf(TestData.Packages.monthly),
+        paywallComponents = Offering.PaywallComponents(previewUiConfig(), data),
+    )
+    val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
+    val state = offering.toComponentsPaywallState(
+        validationResult = validated,
+        storefrontCountryCode = "US",
+        dateProvider = { Date(MILLIS_2025_01_25) },
+        purchases = MockPurchasesType(),
+    )
+
+    LoadedPaywallComponents(
+        state = state,
+        clickHandler = { },
+        modifier = Modifier.fillMaxSize(),
+    )
 }

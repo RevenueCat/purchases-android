@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
+import com.revenuecat.purchases.UiConfig.AppConfig
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.paywalls.fonts.toDownloadableFontInfo
@@ -17,7 +18,9 @@ internal class OfferingFontPreDownloader(
     private val fontLoader: FontLoader,
 ) {
 
-    private val assetsFontsDir = "fonts"
+    // Directories within the app's assets where embedded fonts may be bundled, searched in order.
+    // "public/assets" is a likely location for Capacitor apps that use our paywalls SDK to place their fonts.
+    private val assetsFontsDirs = listOf("fonts", "public/assets")
 
     // GenericFontFamily names as defined by Compose. Restated here because we don't include any Compose dependencies.
     private val genericFonts = setOf(
@@ -32,7 +35,11 @@ internal class OfferingFontPreDownloader(
         val fontsToCheck = offerings.all.values
             .firstNotNullOfOrNull { it.paywallComponents?.uiConfig?.app?.fonts?.values }
             ?: emptyList()
-        val fontInfosToDownload = fontsToCheck
+        preDownloadFontsIfNeeded(fontsToCheck)
+    }
+
+    fun preDownloadFontsIfNeeded(fonts: Collection<AppConfig.FontsConfig>) {
+        val fontInfosToDownload = fonts
             .map { it.android }
             .filterIsInstance<FontInfo.Name>()
             .filter {
@@ -74,8 +81,10 @@ internal class OfferingFontPreDownloader(
     private fun Context.getAssetFontPath(name: String): String? {
         val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
 
-        return resources.assets.list(assetsFontsDir)
-            ?.find { it == nameWithExtension }
-            ?.let { "$assetsFontsDir/$it" }
+        return assetsFontsDirs.firstNotNullOfOrNull { dir ->
+            resources.assets.list(dir)
+                ?.find { it == nameWithExtension }
+                ?.let { "$dir/$it" }
+        }
     }
 }

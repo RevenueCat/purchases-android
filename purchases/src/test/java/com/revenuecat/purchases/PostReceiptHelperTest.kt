@@ -16,6 +16,7 @@ import com.revenuecat.purchases.common.ago
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadata
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
+import com.revenuecat.purchases.common.caching.WorkflowMetadata
 import com.revenuecat.purchases.common.networking.PostReceiptProductInfo
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -1465,6 +1466,79 @@ class PostReceiptHelperTest {
     }
 
     @Test
+    fun `postReceipt posts workflow metadata resolved from the presented paywall event`() {
+        val workflowEvent = event.copy(
+            data = event.data.copy(workflowId = "workflow-id-xyz", stepId = "step-id-123"),
+        )
+
+        mockPostReceiptSuccess()
+
+        paywallPresentedCache.receiveEvent(workflowEvent)
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = false,
+            appUserID = appUserID,
+            initiationSource = PostReceiptInitiationSource.PURCHASE,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+        verify(exactly = 1) {
+            backend.postReceiptData(
+                purchaseToken = any(),
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
+                purchasesAreCompletedBy = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                initiationSource = any(),
+                paywallPostReceiptData = any(),
+                workflowMetadata = WorkflowMetadata(
+                    workflowId = "workflow-id-xyz",
+                    stepId = "step-id-123",
+                ),
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
+    fun `postReceipt does not post workflow metadata when presented paywall event has no workflow`() {
+        mockPostReceiptSuccess()
+
+        paywallPresentedCache.receiveEvent(event)
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = false,
+            appUserID = appUserID,
+            initiationSource = PostReceiptInitiationSource.PURCHASE,
+            onSuccess = { _, _ -> },
+            onError = { _, _ -> fail("Should succeed") }
+        )
+        verify(exactly = 1) {
+            backend.postReceiptData(
+                purchaseToken = any(),
+                appUserID = any(),
+                isRestore = any(),
+                finishTransactions = any(),
+                purchasesAreCompletedBy = any(),
+                subscriberAttributes = any(),
+                receiptInfo = any(),
+                initiationSource = any(),
+                paywallPostReceiptData = any(),
+                workflowMetadata = null,
+                onSuccess = any(),
+                onError = any()
+            )
+        }
+    }
+
+    @Test
     fun `postReceipt does not post paywall data if purchase product does not match paywall event`() {
         mockPostReceiptSuccess()
 
@@ -2381,7 +2455,7 @@ class PostReceiptHelperTest {
         assertThat(errorCallCount).isEqualTo(1)
         verify(exactly = 0) {
             backend.postReceiptData(
-                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any(), any()
             )
         }
     }
@@ -2421,6 +2495,7 @@ class PostReceiptHelperTest {
                 receiptInfo = capture(postedReceiptInfoSlot),
                 initiationSource = postReceiptInitiationSource,
                 paywallPostReceiptData = any(),
+                workflowMetadata = any(),
                 purchasesAreCompletedBy = any(),
                 onSuccess = captureLambda(),
                 onError = any()
@@ -2612,6 +2687,80 @@ class PostReceiptHelperTest {
         assertThat(successCalled).isTrue
         verify(exactly = 1) {
             localTransactionMetadataStore.clearLocalTransactionMetadata(setOf("cached-token"))
+        }
+    }
+
+    @Test
+    fun `postRemainingCachedTransactionMetadata posts cached metadata with workflowMetadata`() {
+        val workflowMetadata = WorkflowMetadata(
+            workflowId = "workflow-id-xyz",
+            stepId = "step-id-123",
+        )
+        val metadata = LocalTransactionMetadata(
+            token = "cached-token",
+            receiptInfo = testReceiptInfo,
+            paywallPostReceiptData = event.toPaywallPostReceiptData(),
+            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            workflowMetadata = workflowMetadata,
+        )
+        every { localTransactionMetadataStore.getAllLocalTransactionMetadata() } returns listOf(metadata)
+        mockUnsyncedSubscriberAttributes()
+        every { offlineEntitlementsManager.resetOfflineCustomerInfoCache() } just Runs
+        every { subscriberAttributesManager.markAsSynced(appUserID, emptyMap(), emptyList()) } just Runs
+        every { customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo) } just Runs
+        every { deviceCache.addSuccessfullyPostedToken("cached-token") } just Runs
+        every { localTransactionMetadataStore.clearLocalTransactionMetadata(setOf("cached-token")) } just Runs
+
+        every {
+            backend.postReceiptData(
+                purchaseToken = "cached-token",
+                appUserID = appUserID,
+                isRestore = true,
+                finishTransactions = defaultFinishTransactions,
+                subscriberAttributes = emptyMap(),
+                receiptInfo = testReceiptInfo,
+                initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                paywallPostReceiptData = any(),
+                workflowMetadata = workflowMetadata,
+                purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+                onSuccess = captureLambda(),
+                onError = any()
+            )
+        } answers {
+            lambda<PostReceiptDataSuccessCallback>().captured.invoke(
+                PostReceiptResponse(defaultCustomerInfo, emptyMap(), JSONObject())
+            )
+        }
+
+        var successCalled = false
+        postReceiptHelper.postRemainingCachedTransactionMetadata(
+            appUserID = appUserID,
+            allowSharingPlayStoreAccount = true,
+            pendingTransactionsTokens = emptySet(),
+            onNoTransactionsToSync = { fail("Should not call onNoTransactionsToSync") },
+            onError = { fail("Should not call onError") },
+            onSuccess = { customerInfo ->
+                assertThat(customerInfo).isEqualTo(defaultCustomerInfo)
+                successCalled = true
+            }
+        )
+
+        assertThat(successCalled).isTrue
+        verify(exactly = 1) {
+            backend.postReceiptData(
+                purchaseToken = "cached-token",
+                appUserID = appUserID,
+                isRestore = true,
+                finishTransactions = defaultFinishTransactions,
+                subscriberAttributes = emptyMap(),
+                receiptInfo = testReceiptInfo,
+                initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
+                paywallPostReceiptData = any(),
+                workflowMetadata = workflowMetadata,
+                purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+                onSuccess = any(),
+                onError = any()
+            )
         }
     }
 

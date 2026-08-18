@@ -158,8 +158,7 @@ internal fun ButtonComponentView(
                             )
                         } else {
                             val urlForEvent = paywallAction.navigationUrlForComponentInteraction()
-                            val interaction = paywallAction.workflowInteraction()
-                                ?: style.action.componentInteraction(urlForEvent)
+                            val interaction = style.action.componentInteraction(urlForEvent)
                             interaction?.let {
                                 componentInteractionTracker.track(
                                     PaywallComponentInteractionData(
@@ -288,13 +287,6 @@ private fun PaywallAction.navigationUrlForComponentInteraction(): String? =
         else -> null
     }
 
-private fun PaywallAction.workflowInteraction(): ButtonComponentInteraction? =
-    if (this is PaywallAction.External.WorkflowTrigger) {
-        ButtonComponentInteraction(value = "workflow_trigger")
-    } else {
-        null
-    }
-
 /**
  * Resolves the [Package] used for purchase / web-checkout analytics: explicit package on the button style when
  * present, otherwise the paywall's currently selected package.
@@ -345,14 +337,14 @@ private fun previewButtonComponentStyle(
             previewTextComponentStyle(
                 text = "Restore purchases",
                 backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Yellow)),
-                size = Size(width = Fit, height = Fit),
+                size = Size(width = Fit(), height = Fit()),
                 padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
                 margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0),
             ),
         ),
         dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
         visible = true,
-        size = Size(width = Fit, height = Fit),
+        size = Size(width = Fit(), height = Fit()),
         spacing = 16.dp,
         background = BackgroundStyles.Color(color = ColorStyles(light = ColorStyle.Solid(Color.Red))),
         padding = PaddingValues(all = 16.dp),

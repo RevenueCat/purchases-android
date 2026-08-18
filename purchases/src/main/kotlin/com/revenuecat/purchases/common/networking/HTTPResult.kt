@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.common.networking
 
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.isSuccessful
@@ -8,87 +7,87 @@ import org.json.JSONException
 import org.json.JSONObject
 import java.util.Date
 
-private const val SERIALIZATION_NAME_RESPONSE_CODE = "responseCode"
-private const val SERIALIZATION_NAME_PAYLOAD = "payload"
-private const val SERIALIZATION_NAME_ORIGIN = "origin"
-private const val SERIALIZATION_NAME_REQUEST_DATE = "requestDate"
-private const val SERIALIZATION_NAME_VERIFICATION_RESULT = "verificationResult"
-private const val SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE = "isLoadShedderResponse"
-private const val SERIALIZATION_NAME_IS_FALLBACK_URL = "isFallbackURL"
-
-@Suppress("ForbiddenPublicDataClass")
-@InternalRevenueCatAPI
-public data class HTTPResult(
+internal data class HTTPResult(
     val responseCode: Int,
-    val payload: String,
+    val payload: Payload,
     val origin: Origin,
     val requestDate: Date?,
     val verificationResult: VerificationResult,
     val isLoadShedderResponse: Boolean,
     val isFallbackURL: Boolean,
 ) {
+    /**
+     * Convenience constructor for textual (JSON) responses, which keeps the common call sites and the
+     * ETag cache deserialization ergonomic. Wraps [payload] in [Payload.Text].
+     */
+    constructor(
+        responseCode: Int,
+        payload: String,
+        origin: Origin,
+        requestDate: Date?,
+        verificationResult: VerificationResult,
+        isLoadShedderResponse: Boolean,
+        isFallbackURL: Boolean,
+    ) : this(
+        responseCode,
+        Payload.Text(payload),
+        origin,
+        requestDate,
+        verificationResult,
+        isLoadShedderResponse,
+        isFallbackURL,
+    )
+
+    /**
+     * The response body, which is either textual (JSON, the common case) or raw [RCFormat] bytes (e.g.
+     * the RC Container Format returned for `Accept: application/x-rc-format` requests).
+     */
+    sealed interface Payload {
+        data class Text(val value: String) : Payload
+
+        class RCFormat(val bytes: ByteArray) : Payload {
+            override fun equals(other: Any?): Boolean =
+                this === other || (other is RCFormat && bytes.contentEquals(other.bytes))
+
+            override fun hashCode(): Int = bytes.contentHashCode()
+        }
+
+        /** The textual payload, or an empty string for a [Payload.RCFormat] body. */
+        val text: String
+            get() = when (this) {
+                is Text -> value
+                is RCFormat -> ""
+            }
+    }
+
+    val payloadText: String = payload.text
+
     internal companion object {
         internal const val ETAG_HEADER_NAME = "X-RevenueCat-ETag"
         internal const val SIGNATURE_HEADER_NAME = "X-Signature"
         internal const val REQUEST_TIME_HEADER_NAME = "X-RevenueCat-Request-Time"
         internal const val LOAD_SHEDDER_HEADER_NAME = "x-revenuecat-fortress"
-
-        internal fun deserialize(serialized: String): HTTPResult {
-            val jsonObject = JSONObject(serialized)
-            val responseCode = jsonObject.getInt(SERIALIZATION_NAME_RESPONSE_CODE)
-            val payload = jsonObject.getString(SERIALIZATION_NAME_PAYLOAD)
-            val origin: Origin = if (jsonObject.has(SERIALIZATION_NAME_ORIGIN)) {
-                Origin.valueOf(jsonObject.getString(SERIALIZATION_NAME_ORIGIN))
-            } else {
-                Origin.CACHE
-            }
-            val requestDate: Date? = if (jsonObject.has(SERIALIZATION_NAME_REQUEST_DATE)) {
-                Date(jsonObject.getLong(SERIALIZATION_NAME_REQUEST_DATE))
-            } else {
-                null
-            }
-            val verificationResult: VerificationResult = if (jsonObject.has(SERIALIZATION_NAME_VERIFICATION_RESULT)) {
-                VerificationResult.valueOf(jsonObject.getString(SERIALIZATION_NAME_VERIFICATION_RESULT))
-            } else {
-                VerificationResult.NOT_REQUESTED
-            }
-            val isLoadShedderResponse = if (jsonObject.has(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE)) {
-                jsonObject.getBoolean(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE)
-            } else {
-                false
-            }
-            val isFallbackURL = if (jsonObject.has(SERIALIZATION_NAME_IS_FALLBACK_URL)) {
-                jsonObject.getBoolean(SERIALIZATION_NAME_IS_FALLBACK_URL)
-            } else {
-                false
-            }
-            return HTTPResult(
-                responseCode,
-                payload,
-                origin,
-                requestDate,
-                verificationResult,
-                isLoadShedderResponse,
-                isFallbackURL,
-            )
-        }
     }
 
-    public enum class Origin {
+    enum class Origin {
         BACKEND, CACHE
     }
 
-    val body: JSONObject = payload
-        .takeIf { it.isNotBlank() }
-        ?.let {
-            try {
-                JSONObject(it)
-            } catch (e: JSONException) {
-                errorLog(throwable = e) { "Failed to parse payload as JSON: $it" }
-                null
+    val body: JSONObject by lazy { parseBody() }
+
+    private fun parseBody(): JSONObject {
+        return payloadText
+            .takeIf { it.isNotBlank() }
+            ?.let {
+                try {
+                    JSONObject(it)
+                } catch (e: JSONException) {
+                    errorLog(throwable = e) { "Failed to parse payload as JSON: $it" }
+                    null
+                }
             }
-        }
-        ?: JSONObject()
+            ?: JSONObject()
+    }
 
     val backendErrorCode: Int? = if (!isSuccessful()) body.optInt("code").takeIf { it > 0 } else null
     val backendErrorMessage: String? = if (!isSuccessful()) {
@@ -97,18 +96,5 @@ public data class HTTPResult(
         ).takeIf { it.isNotBlank() }
     } else {
         null
-    }
-
-    internal fun serialize(): String {
-        val jsonObject = JSONObject().apply {
-            put(SERIALIZATION_NAME_RESPONSE_CODE, responseCode)
-            put(SERIALIZATION_NAME_PAYLOAD, payload)
-            put(SERIALIZATION_NAME_ORIGIN, origin.name)
-            put(SERIALIZATION_NAME_REQUEST_DATE, requestDate?.time)
-            put(SERIALIZATION_NAME_VERIFICATION_RESULT, verificationResult.name)
-            put(SERIALIZATION_NAME_IS_LOAD_SHEDDER_RESPONSE, isLoadShedderResponse)
-            put(SERIALIZATION_NAME_IS_FALLBACK_URL, isFallbackURL)
-        }
-        return jsonObject.toString()
     }
 }

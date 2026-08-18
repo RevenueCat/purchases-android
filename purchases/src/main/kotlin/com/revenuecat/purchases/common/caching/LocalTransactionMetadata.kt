@@ -23,4 +23,7 @@ internal data class LocalTransactionMetadata(
 
     @SerialName("purchases_are_completed_by")
     val purchasesAreCompletedBy: PurchasesAreCompletedBy,
+
+    @SerialName("workflow_metadata")
+    val workflowMetadata: WorkflowMetadata? = null,
 )

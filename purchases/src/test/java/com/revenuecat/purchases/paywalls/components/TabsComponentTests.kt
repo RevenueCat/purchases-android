@@ -4,6 +4,8 @@ import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
+import com.revenuecat.purchases.paywalls.components.common.StateUpdateValue
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -270,7 +272,10 @@ internal class TabsComponentTests {
                             "x": 23.6,
                             "y": 45.2
                           },
-                          "visible": false
+                          "visible": false,
+                          "state_updates": [
+                            { "set": "selectedFeatureTab", "to": "${'$'}value" }
+                          ]
                         }
                         """.trimIndent(),
                         expected = TabsComponent(
@@ -302,7 +307,7 @@ internal class TabsComponentTests {
                                 ),
                             ),
                             defaultTabId = "one",
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                             backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("secondary"))),
                             background = Background.Color(
                                 ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),
@@ -321,6 +326,9 @@ internal class TabsComponentTests {
                                 y = 45.2
                             ),
                             name = "Tabs",
+                            stateUpdates = listOf(
+                                StateUpdate.Set(key = "selectedFeatureTab", value = StateUpdateValue.PayloadReference),
+                            ),
                         )
                     ),
                 ),
@@ -524,7 +532,7 @@ internal class TabsComponentTests {
                         """.trimIndent(),
                         expected = PartialTabsComponent(
                             visible = false,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                             padding = Padding(top = 1.0, bottom = 2.0, leading = 3.0, trailing = 4.0),
                             margin = Padding(top = 4.0, bottom = 3.0, leading = 2.0, trailing = 1.0),
                             backgroundColor = ColorScheme(light = ColorInfo.Alias(ColorAlias("primary"))),

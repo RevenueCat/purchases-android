@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
+import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
 import com.revenuecat.purchases.identity.IdentityManager
@@ -85,6 +86,10 @@ internal class EventsManager(
                     subclass(
                         BackendStoredEvent.CustomPaywall::class,
                         BackendStoredEvent.CustomPaywall.serializer(),
+                    )
+                    subclass(
+                        BackendStoredEvent.Workflows::class,
+                        BackendStoredEvent.Workflows.serializer(),
                     )
                 }
             }
@@ -198,29 +203,16 @@ internal class EventsManager(
                     identityManager.currentAppUserID,
                     appSessionID.toString(),
                 )
-                is AdEvent.Displayed -> event.toBackendStoredEvent(
-                    identityManager.currentAppUserID,
-                    appSessionID.toString(),
-                )
-                is AdEvent.Open -> event.toBackendStoredEvent(
-                    identityManager.currentAppUserID,
-                    appSessionID.toString(),
-                )
-                is AdEvent.Revenue -> event.toBackendStoredEvent(
-                    identityManager.currentAppUserID,
-                    appSessionID.toString(),
-                )
-                is AdEvent.Loaded -> event.toBackendStoredEvent(
-                    identityManager.currentAppUserID,
-                    appSessionID.toString(),
-                )
-                is AdEvent.FailedToLoad -> event.toBackendStoredEvent(
+                is AdEvent -> event.toBackendStoredEvent(
                     identityManager.currentAppUserID,
                     appSessionID.toString(),
                 )
                 is CustomPaywallEvent.Impression -> event.toBackendStoredEvent(
                     identityManager.currentAppUserID,
                     appSessionID.toString(),
+                )
+                is WorkflowEvent -> event.toBackendStoredEvent(
+                    identityManager.currentAppUserID,
                 )
                 else -> null
             }

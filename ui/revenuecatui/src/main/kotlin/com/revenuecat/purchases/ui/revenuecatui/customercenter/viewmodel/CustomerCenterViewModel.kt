@@ -1580,7 +1580,7 @@ internal class CustomerCenterViewModelImpl(
             val paywallArgs = PaywallActivityArgs(
                 offeringIdAndPresentedOfferingContext = OfferingSelection.IdAndPresentedOfferingContext(
                     offeringId = offering.identifier,
-                    presentedOfferingContext = offering.availablePackages.firstOrNull()?.presentedOfferingContext,
+                    presentedOfferingContext = offering.presentedOfferingContext,
                 ),
                 shouldDisplayDismissButton = true,
             )

@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -34,6 +35,7 @@ internal class IdentityManager(
     private val subscriberAttributesCache: SubscriberAttributesCache,
     private val subscriberAttributesManager: SubscriberAttributesManager,
     private val offeringsCache: OfferingsCache,
+    private val remoteConfigManager: RemoteConfigManager?,
     private val backend: Backend,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val dispatcher: Dispatcher,
@@ -101,7 +103,7 @@ internal class IdentityManager(
                         log(LogIntent.USER) {
                             IdentityStrings.ALIAS_OLD_USER_ID_TO_CURRENT_SUCCESSFUL.format(oldAppUserID, newAppUserID)
                         }
-                        offeringsCache.clearCache()
+                        clearRemoteConfigThenOfferingsCaches(newAppUserID)
                         deviceCache.clearCustomerInfoCache(newAppUserID)
                         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     }
@@ -153,7 +155,7 @@ internal class IdentityManager(
                             IdentityStrings.LOG_IN_SUCCESSFUL.format(newAppUserID, created)
                         }
                         deviceCache.clearCachesForAppUserID(oldAppUserID)
-                        offeringsCache.clearCache()
+                        clearRemoteConfigThenOfferingsCaches(newAppUserID)
                         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
 
                         deviceCache.cacheAppUserID(newAppUserID)
@@ -219,6 +221,21 @@ internal class IdentityManager(
 
     // region Private functions
 
+    /**
+     * Clears the remote-config caches and then the offerings cache on an identity change, always in this
+     * order. The order is load-bearing: [remoteConfigManager]'s clearCache synchronously invalidates the
+     * in-memory workflow / ui_config caches, whereas clearing the offerings cache makes the current offering
+     * null. If offerings were cleared first, a concurrent getOfferings / paywall present in the gap would see
+     * no current offering (so WorkflowsConfigProvider.isWarmForCurrentOffering reports "warm") and the
+     * memory-first reads would serve the previous user's per-user config (app_user_id / enrolled_variants).
+     * Clearing remote config first drops those caches so no stale read is possible. Callers already hold the
+     * [IdentityManager] monitor.
+     */
+    private fun clearRemoteConfigThenOfferingsCaches(newAppUserID: String) {
+        remoteConfigManager?.clearCache(newAppUserID)
+        offeringsCache.clearCache()
+    }
+
     private fun copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserId: String, newAppUserId: String) {
         if (isUserIDAnonymous(oldAppUserId)) {
             subscriberAttributesManager.copyUnsyncedSubscriberAttributes(oldAppUserId, newAppUserId)
@@ -255,7 +272,7 @@ internal class IdentityManager(
     @Synchronized
     private fun resetAndSaveUserID(newUserID: String) {
         deviceCache.clearCachesForAppUserID(currentAppUserID)
-        offeringsCache.clearCache()
+        clearRemoteConfigThenOfferingsCaches(newUserID)
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
         deviceCache.cacheAppUserID(newUserID)

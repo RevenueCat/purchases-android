@@ -8,6 +8,7 @@ import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.models.PurchaseState
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import java.util.Date
@@ -39,6 +40,7 @@ internal class PurchasedProductsFetcher(
             appUserID,
             onSuccess = { activePurchasesByHashedToken ->
                 val activePurchases = activePurchasesByHashedToken.values
+                    .filter { it.purchaseState != PurchaseState.PENDING }
                 val purchasedProducts = activePurchases.flatMap {
                     createPurchasedProducts(it, productEntitlementMapping)
                 }

@@ -17,7 +17,6 @@ android {
         versionName = "1.0"
 
         missingDimensionStrategy("apis", "defaults")
-        missingDimensionStrategy("billingclient", "bc8")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

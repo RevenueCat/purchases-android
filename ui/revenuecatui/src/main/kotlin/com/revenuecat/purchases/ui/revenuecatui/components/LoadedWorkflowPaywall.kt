@@ -5,7 +5,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
@@ -13,7 +12,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLayoutDirection
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.rememberBackgroundStyle
@@ -30,7 +31,39 @@ internal data class WorkflowHeaderStepInfo(
     val hasHeader: Boolean,
 )
 
-@Suppress("LongParameterList")
+internal enum class WorkflowHeaderTransitionRole { ENTERING, LEAVING, STABLE }
+
+internal data class WorkflowHeaderPresentation(
+    val headerStepId: String,
+    val role: WorkflowHeaderTransitionRole,
+)
+
+/**
+ * Fades a header, reading the animation in the layout phase so frames cost no recomposition.
+ *
+ * Compose does not hit-test unplaced nodes, whereas an alpha 0 node stays interactive while being
+ * excluded from rendering and from the accessibility tree.
+ */
+internal fun Modifier.workflowHeaderFade(
+    role: WorkflowHeaderTransitionRole,
+    transitionState: WorkflowTransitionState,
+): Modifier = layout { measurable, constraints ->
+    val headerAlpha = headerAlpha(role, transitionState.animatable.value)
+    val placeable = measurable.measure(constraints)
+    layout(placeable.width, placeable.height) {
+        if (headerAlpha > 0f) {
+            placeable.placeWithLayer(x = 0, y = 0) { alpha = headerAlpha }
+        }
+    }
+}
+
+internal fun headerAlpha(role: WorkflowHeaderTransitionRole, progress: Float): Float = when (role) {
+    WorkflowHeaderTransitionRole.ENTERING -> progress
+    WorkflowHeaderTransitionRole.LEAVING -> 1f - progress
+    WorkflowHeaderTransitionRole.STABLE -> 1f
+}
+
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 internal fun LoadedWorkflowPaywall(
     workflowState: WorkflowPaywallUiState,
@@ -56,46 +89,74 @@ internal fun LoadedWorkflowPaywall(
         transition = transition,
     )
 
-    val headerState = workflowHeaderState(
+    val headerPresentation = workflowHeaderState(
         currentStepId = currentStepId,
-        currentState = currentState,
         stepStates = stepStates,
         transitionState = transitionState,
     )
+    val headerState = stepStates[headerPresentation.headerStepId] ?: currentState
     val onClick: suspend (PaywallAction) -> Unit = { action ->
         handleClick(action, currentState, clickHandler, componentInteractionTracker)
     }
+    val headerOnClick: suspend (PaywallAction) -> Unit = { action ->
+        handleClick(action, headerState, clickHandler, componentInteractionTracker)
+    }
+
+    // When the header is LEAVING (fading out over an incoming step that has no header), routing it
+    // through OverlayLayout would write its measured height into currentState.headerHeightPx.
+    // The incoming step would then use that height as its hero ZLayer top inset instead of the
+    // status-bar fallback. To avoid this, LEAVING headers are rendered as a Box overlay inside the
+    // mainContent lambda — outside OverlayLayout — so currentState.headerHeightPx stays 0.
+    val isLeavingHeader = headerPresentation.role == WorkflowHeaderTransitionRole.LEAVING
+    val headerComposable: (@Composable () -> Unit)? = headerState.header?.let { headerStyle ->
+        {
+            ComponentView(
+                style = headerStyle,
+                state = headerState,
+                onClick = headerOnClick,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .workflowHeaderFade(headerPresentation.role, transitionState),
+            )
+        }
+    }
+
     PaywallComponentsScaffold(
         state = currentState,
         modifier = modifier,
         background = null,
-        headerContent = headerState.header?.let { headerStyle ->
-            {
-                ComponentView(
-                    style = headerStyle,
-                    state = headerState,
-                    onClick = onClick,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        },
+        headerContent = if (!isLeavingHeader) headerComposable else null,
     ) {
-        WorkflowStepsContent(
-            currentStepId = currentStepId,
-            stepStates = stepStates,
-            transitionState = transitionState,
-            clickHandler = clickHandler,
-            componentInteractionTracker = componentInteractionTracker,
-        )
+        if (isLeavingHeader && headerComposable != null) {
+            // Box required to overlay the LEAVING header above WorkflowStepsContent.
+            // Only present during a header→no-header transition; not added in the common case.
+            Box(Modifier.fillMaxSize()) {
+                WorkflowStepsContent(
+                    currentStepId = currentStepId,
+                    stepStates = stepStates,
+                    transitionState = transitionState,
+                    clickHandler = clickHandler,
+                    componentInteractionTracker = componentInteractionTracker,
+                )
+                headerComposable()
+            }
+        } else {
+            WorkflowStepsContent(
+                currentStepId = currentStepId,
+                stepStates = stepStates,
+                transitionState = transitionState,
+                clickHandler = clickHandler,
+                componentInteractionTracker = componentInteractionTracker,
+            )
+        }
     }
 }
 
 private fun workflowHeaderState(
     currentStepId: String,
-    currentState: PaywallState.Loaded.Components,
     stepStates: Map<String, PaywallState.Loaded.Components>,
     transitionState: WorkflowTransitionState,
-): PaywallState.Loaded.Components {
+): WorkflowHeaderPresentation {
     val headerStepInfo = stepStates.mapValues { (_, stepState) ->
         WorkflowHeaderStepInfo(
             hasHeroImage = stepState.mainStackHasHeroImage,
@@ -113,13 +174,11 @@ private fun workflowHeaderState(
             }
         }
     }
-    val headerStepId = selectWorkflowHeaderStepId(
+    return selectWorkflowHeaderPresentation(
         currentStepId = currentStepId,
         stepInfoByStepId = headerStepInfo,
         pendingTransition = pendingTransition,
     )
-
-    return stepStates[headerStepId] ?: currentState
 }
 
 @Suppress("LongParameterList")
@@ -136,25 +195,27 @@ private fun WorkflowStepsContent(
     // a top clip causes the hero image (which renders behind the status bar) to get cropped
     // during the slide transition.
     Box(modifier = Modifier.fillMaxSize()) {
-        for (stepId in transitionState.visibleStepIds) {
-            val stepState = stepStates[stepId] ?: continue
-            key(stepId) {
-                WorkflowStepContent(
-                    stepId = stepId,
-                    stepState = stepState,
-                    currentStepId = currentStepId,
-                    transitionState = transitionState,
-                    clickHandler = clickHandler,
-                    componentInteractionTracker = componentInteractionTracker,
-                )
+        listOfNotNull(transitionState.animatingFromStepId, transitionState.animatingToStepId)
+            .forEach { stepId ->
+                val stepState = stepStates[stepId] ?: return@forEach
+                key(stepId) {
+                    WorkflowStepContent(
+                        stepId = stepId,
+                        stepState = stepState,
+                        currentStepId = currentStepId,
+                        transitionState = transitionState,
+                        clickHandler = clickHandler,
+                        componentInteractionTracker = componentInteractionTracker,
+                    )
+                }
             }
-        }
     }
 }
 
 /**
  * Renders one workflow step's body and footer as a self-contained sliding surface.
- * Header is rendered at scaffold level and stays fixed.
+ * The header is rendered outside this surface (either via the scaffold's OverlayLayout or,
+ * when LEAVING, as a Box overlay in the main content — see [LoadedWorkflowPaywall]).
  * Off-screen (parked) steps still receive a click handler, but it short-circuits because they are
  * translated off-screen and can't receive touches.
  */
@@ -178,11 +239,12 @@ private fun WorkflowStepContent(
     val background = rememberBackgroundStyle(stepState.background)
     val shouldWrapMainContentInVerticalScroll = shouldWrapMainContentInVerticalScroll(stepState.stack)
     val mainScrollState = rememberScrollState()
+    val layoutDirection = LocalLayoutDirection.current
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .workflowTransition(transitionState, stepId, currentStepId)
+            .workflowTransition(transitionState, stepId, layoutDirection)
             .background(background),
     ) {
         WithOptionalBackgroundOverlay(
@@ -190,20 +252,29 @@ private fun WorkflowStepContent(
             background = background,
             modifier = Modifier.fillMaxSize(),
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
+            // The header for a workflow step is rendered by the scaffold, so hasHeader is false here.
+            // A sticky footer, when present, overlays the bottom on top of the full-height content and
+            // reserves clearance via footerBottomPadding (see PaywallComponentsScaffold).
+            OverlayLayout(
+                state = stepState,
+                modifier = Modifier.fillMaxSize(),
+                hasFooter = stepState.stickyFooter != null,
+            ) {
                 ComponentView(
                     style = stepState.stack,
                     state = stepState,
                     onClick = onClick,
                     componentInteractionTracker = tracker,
                     modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
+                        .fillMaxSize()
                         .conditional(shouldWrapMainContentInVerticalScroll) {
                             verticalScroll(mainScrollState)
                         }
                         .conditional(stepState.header != null && !stepState.mainStackHasHeroImage) {
                             headerTopPadding(stepState)
+                        }
+                        .conditional(stepState.stickyFooter != null) {
+                            footerBottomPadding(stepState)
                         },
                 )
                 stepState.stickyFooter?.let { footerStyle ->
@@ -220,27 +291,40 @@ private fun WorkflowStepContent(
     }
 }
 
-internal fun selectWorkflowHeaderStepId(
+internal fun selectWorkflowHeaderPresentation(
     currentStepId: String,
     stepInfoByStepId: Map<String, WorkflowHeaderStepInfo>,
     pendingTransition: WorkflowPendingTransition?,
-): String {
+): WorkflowHeaderPresentation {
     val fromStepId = pendingTransition?.fromStepId
-    val direction = pendingTransition?.direction
-    val fromStepInfo = fromStepId?.let(stepInfoByStepId::get)
-    val toStepInfo = stepInfoByStepId[currentStepId]
-    val useOutgoingHeader = pendingTransition != null &&
-        fromStepInfo != null &&
-        toStepInfo != null &&
-        shouldUseOutgoingHeader(direction, fromStepInfo, toStepInfo)
+        ?: return WorkflowHeaderPresentation(currentStepId, WorkflowHeaderTransitionRole.STABLE)
+    val fromInfo = stepInfoByStepId[fromStepId]
+    val toInfo = stepInfoByStepId[currentStepId]
+    val fromHasHeader = fromInfo?.hasHeader == true
+    val toHasHeader = toInfo?.hasHeader == true
 
-    return if (useOutgoingHeader) fromStepId!! else currentStepId
+    return when {
+        fromHasHeader && !toHasHeader ->
+            WorkflowHeaderPresentation(fromStepId, WorkflowHeaderTransitionRole.LEAVING)
+        !fromHasHeader && toHasHeader ->
+            WorkflowHeaderPresentation(currentStepId, WorkflowHeaderTransitionRole.ENTERING)
+        fromHasHeader && toHasHeader -> {
+            // Both steps have a header, no fade
+            // !! safe: fromHasHeader/toHasHeader imply their info is non-null
+            val stepId = if (shouldUseOutgoingHeader(pendingTransition.direction, fromInfo!!, toInfo!!)) {
+                fromStepId
+            } else {
+                currentStepId
+            }
+            WorkflowHeaderPresentation(stepId, WorkflowHeaderTransitionRole.STABLE)
+        }
+        else -> WorkflowHeaderPresentation(currentStepId, WorkflowHeaderTransitionRole.STABLE)
+    }
 }
 
 private fun shouldUseOutgoingHeader(
     direction: NavigationDirection?,
     fromStepInfo: WorkflowHeaderStepInfo,
     toStepInfo: WorkflowHeaderStepInfo,
-): Boolean = fromStepInfo.hasHeader &&
-    !toStepInfo.hasHeroImage &&
+): Boolean = !toStepInfo.hasHeroImage &&
     (direction == NavigationDirection.BACKWARD || fromStepInfo.hasHeroImage)

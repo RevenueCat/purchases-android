@@ -45,6 +45,7 @@ import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.StoreReplacementMode
+import com.revenuecat.purchases.common.caching.WorkflowMetadata
 import com.revenuecat.purchases.paywalls.events.PaywallPostReceiptData
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.filterNotNullValues
@@ -101,6 +102,7 @@ class BackendTest {
         receivedWebBillingProductsResponse = null
         receivedAliasUsersCallCount = 0
         receivedOriginalDataSource = null
+        receivedOfferingsPayload = null
     }
 
     @After
@@ -174,6 +176,7 @@ class BackendTest {
     private var receivedAliasUsersCallCount: Int = 0
     private var receivedOfferingsJSON: JSONObject? = null
     private var receivedOriginalDataSource: HTTPResponseOriginalSource? = null
+    private var receivedOfferingsPayload: String? = null
     private var receivedError: PurchasesError? = null
     private var receivedPostReceiptErrorHandlingBehavior: PostReceiptErrorHandlingBehavior? = null
     private var receivedGetOfferingsErrorHandlingBehavior: GetOfferingsErrorHandlingBehavior? = null
@@ -203,10 +206,12 @@ class BackendTest {
         this@BackendTest.receivedIsServerError = isServerError
     }
 
-    private val onReceiveOfferingsResponseSuccessHandler: (JSONObject, HTTPResponseOriginalSource) -> Unit = { offeringsJSON, originalDataSource ->
-        this@BackendTest.receivedOfferingsJSON = offeringsJSON
-        this@BackendTest.receivedOriginalDataSource = originalDataSource
-    }
+    private val onReceiveOfferingsResponseSuccessHandler: (JSONObject, HTTPResponseOriginalSource, String) -> Unit =
+        { offeringsJSON, originalDataSource, responsePayload ->
+            this@BackendTest.receivedOfferingsJSON = offeringsJSON
+            this@BackendTest.receivedOriginalDataSource = originalDataSource
+            this@BackendTest.receivedOfferingsPayload = responsePayload
+        }
 
     private val onReceiveOfferingsErrorHandler: (PurchasesError, GetOfferingsErrorHandlingBehavior) -> Unit =
         { error, errorBehavior ->
@@ -326,7 +331,7 @@ class BackendTest {
         backend.getOfferings(
             appUserID = "id",
             appInBackground = false,
-            onSuccess = { _, _ -> },
+            onSuccess = { _, _, _ -> },
             onError = { _, _ -> }
         )
 
@@ -335,7 +340,7 @@ class BackendTest {
         backend.getOfferings(
             appUserID = "id",
             appInBackground = false,
-            onSuccess = { _, _ -> },
+            onSuccess = { _, _, _ -> },
             onError = { _, _ -> }
         )
     }
@@ -1459,6 +1464,80 @@ class BackendTest {
     }
 
     @Test
+    fun `postReceipt passes presented_workflow_id and presented_step_id at top level and paywall_id in the paywall object`() {
+        val receiptInfo = createReceiptInfoFromProduct(
+            productIDs = productIDs,
+            storeProduct = storeProduct,
+            storeUserID = "user-id",
+        )
+
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            finishTransactions = false,
+            receiptInfo = receiptInfo,
+            initiationSource = initiationSource,
+            paywallPostReceiptData = PaywallPostReceiptData(
+                paywallID = "paywall-id-abc",
+                sessionID = "session-123",
+                revision = 1,
+                displayMode = "full_screen",
+                darkMode = false,
+                localeIdentifier = "en_US",
+                offeringId = "offering-id",
+            ),
+            workflowMetadata = WorkflowMetadata(
+                workflowId = "workflow-id-xyz",
+                stepId = "step-id-123",
+            ),
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        // workflow_id and step_id are sent at the top level; the backend reads `presented_workflow_id`
+        // and `presented_step_id`.
+        assertThat(requestBodySlot.captured["presented_workflow_id"]).isEqualTo("workflow-id-xyz")
+        assertThat(requestBodySlot.captured["presented_step_id"]).isEqualTo("step-id-123")
+        // paywall_id is sent inside the nested `paywall` object (the backend reads it there),
+        // not as a top-level `presented_paywall_id`.
+        assertThat(requestBodySlot.captured.keys).doesNotContain("presented_paywall_id")
+        @Suppress("UNCHECKED_CAST")
+        val paywall = requestBodySlot.captured["paywall"] as Map<String, Any?>
+        assertThat(paywall["paywall_id"]).isEqualTo("paywall-id-abc")
+        // workflow_id and step_id must not leak into the nested `paywall` object.
+        assertThat(paywall.keys).doesNotContain("workflow_id")
+        assertThat(paywall.keys).doesNotContain("step_id")
+    }
+
+    @Test
+    fun `postReceipt omits presented_workflow_id and presented_step_id when no paywallPostReceiptData`() {
+        val receiptInfo = createReceiptInfoFromProduct(
+            productIDs = productIDs,
+            storeProduct = storeProduct,
+            storeUserID = "user-id",
+        )
+
+        mockPostReceiptResponseAndPost(
+            backend,
+            responseCode = 200,
+            isRestore = false,
+            clientException = null,
+            resultBody = null,
+            finishTransactions = false,
+            receiptInfo = receiptInfo,
+            initiationSource = initiationSource,
+        )
+
+        assertThat(requestBodySlot.isCaptured).isTrue
+        assertThat(requestBodySlot.captured.keys).doesNotContain("presented_paywall_id")
+        assertThat(requestBodySlot.captured.keys).doesNotContain("presented_workflow_id")
+        assertThat(requestBodySlot.captured.keys).doesNotContain("presented_step_id")
+        assertThat(requestBodySlot.captured.keys).doesNotContain("paywall")
+    }
+
+    @Test
     fun `postReceipt passes presented_placement_identifier in body`() {
         val expectedStoreUserId = "id"
 
@@ -1546,13 +1625,29 @@ class BackendTest {
     }
 
     @Test
+    fun `getOfferings passes the raw response body to the success callback`() {
+        mockResponse(Endpoint.GetOfferings(appUserID), null, 200, null, noOfferingsResponse)
+
+        backend.getOfferings(
+            appUserID,
+            appInBackground = false,
+            onSuccess = onReceiveOfferingsResponseSuccessHandler,
+            onError = { _, _ -> fail("Should be success") }
+        )
+
+        // Callers cache this verbatim, so it must be the body as received rather than a
+        // re-serialization of the parsed JSON.
+        assertThat(receivedOfferingsPayload).isEqualTo(noOfferingsResponse)
+    }
+
+    @Test
     fun `given a 5xx error, correct callback values are given`() {
         mockResponse(Endpoint.GetOfferings(appUserID), null, RCHTTPStatusCodes.ERROR, null, null)
 
         backend.getOfferings(
             appUserID,
             appInBackground = false,
-            onSuccess = { _, _ -> fail("Should be error") },
+            onSuccess = { _, _, _ -> fail("Should be error") },
             onError = onReceiveOfferingsErrorHandler
         )
 
@@ -1567,7 +1662,7 @@ class BackendTest {
         backend.getOfferings(
             appUserID,
             appInBackground = false,
-            onSuccess = { _, _ -> fail("Should be error") },
+            onSuccess = { _, _, _ -> fail("Should be error") },
             onError = onReceiveOfferingsErrorHandler
         )
 
@@ -1586,10 +1681,10 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _ ->
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _ ->
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
@@ -1616,10 +1711,10 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _ ->
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings("anotherUser", appInBackground = false, onSuccess = { _, _ ->
+        asyncBackend.getOfferings("anotherUser", appInBackground = false, onSuccess = { _, _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
@@ -1655,10 +1750,10 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _ ->
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings(appUserID, appInBackground = true, onSuccess = { _, _ ->
+        asyncBackend.getOfferings(appUserID, appInBackground = true, onSuccess = { _, _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
@@ -1679,10 +1774,10 @@ class BackendTest {
             true
         )
         val lock = CountDownLatch(2)
-        asyncBackend.getOfferings(appUserID, appInBackground = true, onSuccess = { _, _ ->
+        asyncBackend.getOfferings(appUserID, appInBackground = true, onSuccess = { _, _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
-        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _ ->
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
@@ -3074,6 +3169,7 @@ class BackendTest {
         initiationSource: PostReceiptInitiationSource,
         delayed: Boolean = false,
         paywallPostReceiptData: PaywallPostReceiptData? = null,
+        workflowMetadata: WorkflowMetadata? = null,
         purchasesAreCompletedBy: PurchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
         onSuccess: (PostReceiptResponse) -> Unit = onReceivePostReceiptSuccessHandler,
         onError: PostReceiptDataErrorCallback = postReceiptErrorCallback
@@ -3086,6 +3182,7 @@ class BackendTest {
             finishTransactions = finishTransactions,
             receiptInfo = receiptInfo,
             paywallPostReceiptData = paywallPostReceiptData,
+            workflowMetadata = workflowMetadata,
             delayed = delayed
         )
 
@@ -3099,6 +3196,7 @@ class BackendTest {
             receiptInfo = receiptInfo,
             initiationSource = initiationSource,
             paywallPostReceiptData = paywallPostReceiptData,
+            workflowMetadata = workflowMetadata,
             onSuccess = onSuccess,
             onError = onError
         )
@@ -3116,6 +3214,7 @@ class BackendTest {
         finishTransactions: Boolean,
         receiptInfo: ReceiptInfo,
         paywallPostReceiptData: PaywallPostReceiptData? = null,
+        workflowMetadata: WorkflowMetadata? = null,
     ): CustomerInfo {
         val body = mapOf(
             "fetch_token" to token,
@@ -3130,6 +3229,8 @@ class BackendTest {
             "normal_duration" to receiptInfo.duration,
             "store_user_id" to receiptInfo.storeUserID,
             "paywall" to paywallPostReceiptData?.toMap(),
+            "presented_workflow_id" to workflowMetadata?.workflowId,
+            "presented_step_id" to workflowMetadata?.stepId,
         ).filterNotNullValues()
 
         return mockResponse(

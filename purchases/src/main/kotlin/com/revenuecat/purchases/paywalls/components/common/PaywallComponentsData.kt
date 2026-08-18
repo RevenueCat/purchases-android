@@ -45,6 +45,13 @@ public class PaywallComponentsData(
     @Serializable(with = ProductChangeConfigSerializer::class)
     @SerialName("play_store_product_change_mode")
     public val productChangeConfig: ProductChangeConfig? = null,
+    @get:JvmSynthetic
+    @SerialName("automatically_scale_font_size")
+    public val automaticallyScaleFontSize: Boolean = true,
+    @get:JvmSynthetic
+    @Serializable(with = StateDeclarationMapSerializer::class)
+    @SerialName("state_declarations")
+    public val stateDeclarations: Map<String, StateDeclaration>? = null,
 )
 
 @OptIn(InternalRevenueCatAPI::class)

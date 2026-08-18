@@ -208,6 +208,37 @@ class LocalTransactionMetadataStoreTest {
         assertThat(retrieved?.paywallPostReceiptData).isEqualTo(paywallData)
     }
 
+    @Test
+    fun `cacheLocalTransactionMetadata round-trips workflow metadata`() {
+        val key = "local_transaction_metadata_${purchaseToken.sha1()}"
+        every { sharedPreferences.contains(key) } returns false
+
+        val workflowMetadata = WorkflowMetadata(
+            workflowId = "workflow_id",
+            stepId = "step_id",
+        )
+
+        val transactionMetadata = LocalTransactionMetadata(
+            token = purchaseToken,
+            receiptInfo = receiptInfo,
+            paywallPostReceiptData = null,
+            purchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
+            workflowMetadata = workflowMetadata,
+        )
+
+        val jsonSlot = slot<String>()
+        every { editor.putString(key, capture(jsonSlot)) } returns editor
+
+        localTransactionMetadataStore.cacheLocalTransactionMetadata(purchaseToken, transactionMetadata)
+
+        // Mock SharedPreferences to return what was actually written, so this exercises the real
+        // JSON encode/decode. Guards against workflowMetadata regressing to a non-persisted field.
+        every { sharedPreferences.getString(key, null) } answers { jsonSlot.captured }
+
+        val retrieved = localTransactionMetadataStore.getLocalTransactionMetadata(purchaseToken)
+        assertThat(retrieved?.workflowMetadata).isEqualTo(workflowMetadata)
+    }
+
     // endregion
 
     // region getLocalTransactionMetadata

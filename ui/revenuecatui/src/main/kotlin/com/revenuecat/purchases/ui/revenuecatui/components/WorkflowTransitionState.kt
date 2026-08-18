@@ -16,9 +16,11 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.GraphicsLayerScope
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.LayoutDirection
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowPaywallUiState
 import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
+import kotlin.math.roundToInt
 
 /**
  * Snapshot of the data needed to render and animate the two-surface workflow paywall transition.
@@ -30,14 +32,14 @@ import com.revenuecat.purchases.ui.revenuecatui.workflow.NavigationDirection
  * Each subclass carries only the properties that are meaningful for its animation type, so callers
  * pattern-match rather than interrogating nullable fields that don't apply.
  *
- * @property visibleStepIds step IDs currently held in the Compose slot table.
  * @property animatingFromStepId step ID transitioning out; null when idle.
+ * @property animatingToStepId step ID transitioning in (the current step).
  * @property animatable drives progress 0f→1f. Created fresh via [key] for each new
  *   [WorkflowPaywallUiState.pendingTransition] so it always starts at 0f.
  */
 internal sealed class WorkflowTransitionState {
-    abstract val visibleStepIds: Set<String>
     abstract val animatingFromStepId: String?
+    abstract val animatingToStepId: String
     abstract val animatable: Animatable<Float, AnimationVector1D>
 
     /**
@@ -47,8 +49,8 @@ internal sealed class WorkflowTransitionState {
      * @property animatingDirection direction of the active transition; null when idle.
      */
     class SlideInOut(
-        override val visibleStepIds: Set<String>,
         override val animatingFromStepId: String?,
+        override val animatingToStepId: String,
         val animatingDirection: NavigationDirection?,
         override val animatable: Animatable<Float, AnimationVector1D>,
     ) : WorkflowTransitionState()
@@ -103,16 +105,10 @@ internal fun rememberWorkflowTransitionState(
         }
     }
 
-    val visibleStepIds = if (pendingTransition != null) {
-        setOf(pendingTransition.fromStepId, currentStepId)
-    } else {
-        setOf(currentStepId)
-    }
-
     return when (transition) {
         is WorkflowTransitionAnimation.SlideInOut -> WorkflowTransitionState.SlideInOut(
-            visibleStepIds = visibleStepIds,
             animatingFromStepId = pendingTransition?.fromStepId,
+            animatingToStepId = currentStepId,
             animatingDirection = pendingTransition?.direction,
             animatable = animatable,
         )
@@ -123,9 +119,8 @@ internal fun rememberWorkflowTransitionState(
  * Applies the visual transform for the active [WorkflowTransitionState] to a step's content.
  *
  * For [WorkflowTransitionState.SlideInOut], translates horizontally:
- * - **Current step**: slides from `±width` to `0` as progress goes 0→1.
+ * - **Incoming step**: slides from `±width` to `0` as progress goes 0→1.
  * - **Outgoing step**: slides from `0` to `∓width` as progress goes 0→1.
- * - **Other (parked) steps**: positioned far off-screen so the GraphicsLayer skips drawing.
  *
  * State reads happen inside the layer block so animation frames invalidate the layer without
  * triggering recomposition.
@@ -133,24 +128,60 @@ internal fun rememberWorkflowTransitionState(
 internal fun Modifier.workflowTransition(
     state: WorkflowTransitionState,
     stepId: String,
-    currentStepId: String,
+    layoutDirection: LayoutDirection,
 ): Modifier = graphicsLayer {
-    applyWorkflowTransition(state, stepId, currentStepId, progress = state.animatable.value)
+    applyWorkflowTransition(
+        state = state,
+        stepId = stepId,
+        layoutDirection = layoutDirection,
+        progress = state.animatable.value,
+    )
 }
 
 private fun GraphicsLayerScope.applyWorkflowTransition(
     state: WorkflowTransitionState,
     stepId: String,
-    currentStepId: String,
+    layoutDirection: LayoutDirection,
     progress: Float,
 ): Unit = when (state) {
     is WorkflowTransitionState.SlideInOut -> {
-        val directionFactor = if (state.animatingDirection == NavigationDirection.FORWARD) 1f else -1f
-        translationX = when (stepId) {
-            currentStepId -> (1f - progress) * directionFactor * size.width
-            state.animatingFromStepId -> -progress * directionFactor * size.width
-            else -> 2f * size.width
-        }
+        val navigationDirectionFactor = if (state.animatingDirection == NavigationDirection.FORWARD) 1f else -1f
+        val layoutDirectionFactor = if (layoutDirection == LayoutDirection.Rtl) -1f else 1f
+        val directionFactor = navigationDirectionFactor * layoutDirectionFactor
+        translationX = workflowSlideTranslationX(
+            stepId = stepId,
+            animatingToStepId = state.animatingToStepId,
+            animatingFromStepId = state.animatingFromStepId,
+            progress = progress,
+            width = size.width,
+            directionFactor = directionFactor,
+        )
+    }
+}
+
+/**
+ * Horizontal offset for a workflow step's sliding surface.
+ *
+ * The incoming step's leading edge is snapped to a whole pixel, and the outgoing step's offset is
+ * derived from it (`incoming - directionFactor * width`) so the two surfaces share a byte-identical
+ * edge. Computing the two offsets from independent float expressions leaves a sub-pixel gap between
+ * the two graphics layers, which renders as a 1px seam (the background showing through) during the
+ * slide.
+ */
+@Suppress("LongParameterList")
+internal fun workflowSlideTranslationX(
+    stepId: String,
+    animatingToStepId: String,
+    animatingFromStepId: String?,
+    progress: Float,
+    width: Float,
+    directionFactor: Float,
+): Float {
+    val incomingTranslationX = ((1f - progress) * directionFactor * width).roundToInt().toFloat()
+    return when (stepId) {
+        animatingToStepId -> incomingTranslationX
+        animatingFromStepId -> incomingTranslationX - directionFactor * width
+        else -> 0f
     }
 }
 

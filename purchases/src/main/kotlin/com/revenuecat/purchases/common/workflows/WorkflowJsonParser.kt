@@ -9,7 +9,4 @@ internal object WorkflowJsonParser {
 
     fun parsePublishedWorkflow(payload: String): PublishedWorkflow =
         JsonTools.json.decodeFromString<PublishedWorkflow>(payload)
-
-    fun parseWorkflowDetailResponse(payload: String): WorkflowDetailResponse =
-        JsonTools.json.decodeFromString<WorkflowDetailResponse>(payload)
 }

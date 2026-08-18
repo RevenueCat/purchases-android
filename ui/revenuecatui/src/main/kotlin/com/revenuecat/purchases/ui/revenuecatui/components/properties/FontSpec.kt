@@ -208,15 +208,20 @@ internal fun FontSpec.resolve(
         FontSpec.Generic.Monospace -> FontFamily.Monospace
     }
 
-    is FontSpec.Downloaded -> FontFamily(
-        fonts = downloadedFontFamily.fonts.map { font ->
-            Font(
-                file = File(font.file.path),
-                weight = FontWeight(font.weight),
-                style = font.style.toComposeFontStyle(),
+    is FontSpec.Downloaded ->
+        if (downloadedFontFamily.fonts.isEmpty()) {
+            FontFamily.Default
+        } else {
+            FontFamily(
+                fonts = downloadedFontFamily.fonts.map { font ->
+                    localFileFont(
+                        file = File(font.file.path),
+                        weight = FontWeight(font.weight),
+                        style = font.style.toComposeFontStyle(),
+                    )
+                },
             )
-        },
-    )
+        }
 
     is FontSpec.System -> FontFamily(
         Font(familyName = DeviceFontFamilyName(name), weight = weight, style = style),

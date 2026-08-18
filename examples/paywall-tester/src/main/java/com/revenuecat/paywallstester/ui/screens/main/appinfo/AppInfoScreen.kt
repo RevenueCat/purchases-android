@@ -50,11 +50,12 @@ import java.io.File
 @SuppressWarnings("LongMethod")
 @Composable
 fun AppInfoScreen(
+    tappedOnCustomerCenter: () -> Unit,
+    tappedOnCheckpoints: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenViewModelImpl>(
         factory = AppInfoScreenViewModelImpl.Factory,
     ),
-    tappedOnCustomerCenter: () -> Unit,
 ) {
     var isDebugBottomSheetVisible by remember { mutableStateOf(false) }
     var showLogInDialog by remember { mutableStateOf(false) }
@@ -143,6 +144,11 @@ fun AppInfoScreen(
             activity.launchCustomerCenter()
         }) {
             Text(text = "Customer Center (Activity)")
+        }
+        Button(onClick = {
+            tappedOnCheckpoints()
+        }) {
+            Text(text = "Checkpoints")
         }
         Spacer(modifier = Modifier.weight(1f))
         Button(onClick = { viewModel.refresh() }) {
@@ -239,7 +245,7 @@ private fun ApiKeyDialog(onApiKeyClick: (String) -> Unit, onDismissed: () -> Uni
                     apiKey = Constants.GOOGLE_API_KEY_A,
                     onClick = onApiKeyClick,
                 )
-
+                Spacer(Modifier.size(8.dp))
                 ApiKeyButton(
                     label = Constants.GOOGLE_API_KEY_B_LABEL,
                     apiKey = Constants.GOOGLE_API_KEY_B,
@@ -264,8 +270,11 @@ private fun ApiKeyDialog(onApiKeyClick: (String) -> Unit, onDismissed: () -> Uni
 
 @Composable
 private fun ApiKeyButton(label: String, apiKey: String, onClick: (String) -> Unit) {
-    TextButton(onClick = { onClick(apiKey) }) {
-        Column {
+    Button(
+        onClick = { onClick(apiKey) },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.fillMaxWidth()) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
@@ -332,6 +341,7 @@ fun AppInfoScreenPreview() {
             override fun refresh() {}
         },
         tappedOnCustomerCenter = {},
+        tappedOnCheckpoints = {},
     )
 }
 

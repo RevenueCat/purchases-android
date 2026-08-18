@@ -20,6 +20,10 @@ import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
+
+@OptIn(InternalRevenueCatAPI::class)
+internal fun PaywallComponent.flatten(): List<PaywallComponent> = filter { true }
 
 /**
  * Returns all PaywallComponent that satisfy the predicate.
@@ -74,6 +78,7 @@ internal fun PaywallComponent.filter(predicate: (PaywallComponent) -> Boolean): 
             is ImageComponent,
             is IconComponent,
             is TextComponent,
+            is WebViewComponent,
             -> {
                 // These don't have child components.
             }

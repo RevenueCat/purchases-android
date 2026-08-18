@@ -1,4 +1,5 @@
 @file:OptIn(InternalRevenueCatAPI::class)
+@file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.ui.revenuecatui
 
@@ -17,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
@@ -27,7 +29,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
+import androidx.compose.ui.unit.Density
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.revenuecat.purchases.CustomerInfo
@@ -69,12 +75,59 @@ import com.revenuecat.purchases.ui.revenuecatui.templates.Template7
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
 
+@Composable
+private fun PaywallFontScaling(
+    automaticallyScaleFontSize: Boolean,
+    content: @Composable () -> Unit,
+) {
+    if (automaticallyScaleFontSize) {
+        content()
+    } else {
+        val density = LocalDensity.current
+        CompositionLocalProvider(
+            LocalDensity provides Density(density.density, fontScale = 1f),
+        ) {
+            content()
+        }
+    }
+}
+
+/**
+ * Provides a [UriHandler] that notifies the listener about URLs opened from within the paywall content, such as
+ * links in text components. URLs opened through [PaywallAction] are notified separately.
+ */
+@Composable
+private fun NotifyingUriHandler(
+    viewModel: PaywallViewModel,
+    content: @Composable () -> Unit,
+) {
+    val platformUriHandler = LocalUriHandler.current
+    val notifyingUriHandler = remember(platformUriHandler, viewModel) {
+        object : UriHandler {
+            override fun openUri(uri: String) {
+                // Throws if the URI cannot be opened, which skips the notification.
+                platformUriHandler.openUri(uri)
+                viewModel.notifyUrlOpened(uri)
+            }
+        }
+    }
+
+    CompositionLocalProvider(LocalUriHandler provides notifyingUriHandler, content = content)
+}
+
 @Suppress("LongMethod", "ViewModelForwarding")
 @Composable
 internal fun InternalPaywall(
     options: PaywallOptions,
     viewModel: PaywallViewModel = getPaywallViewModel(options),
 ) {
+    DisposableEffect(viewModel) {
+        viewModel.onPaywallPresented()
+        onDispose {
+            viewModel.onPaywallDismissed()
+        }
+    }
+
     BackHandler {
         if (!viewModel.handleBackNavigation()) {
             viewModel.closePaywall()
@@ -138,8 +191,8 @@ internal fun InternalPaywall(
             if (paywallComponents != null) {
                 LaunchedEffect(
                     state.offering.identifier,
-                    paywallComponents.data.id,
-                    paywallComponents.data.revision,
+                    paywallComponents.dataOrNull?.id,
+                    paywallComponents.dataOrNull?.revision,
                     options.mode,
                     state.locale.toString(),
                     isDark,
@@ -147,20 +200,26 @@ internal fun InternalPaywall(
                     viewModel.trackPaywallImpressionIfNeeded()
                 }
             }
-            val workflowState = viewModel.workflowState.value
-            if (workflowState != null) {
-                LoadedWorkflowPaywall(
-                    workflowState = workflowState,
-                    onTransitionComplete = viewModel::onTransitionComplete,
-                    clickHandler = rememberPaywallActionHandler(viewModel),
-                    componentInteractionTracker = componentInteractionTracker,
-                )
-            } else {
-                LoadedPaywallComponents(
-                    state = state,
-                    clickHandler = rememberPaywallActionHandler(viewModel),
-                    componentInteractionTracker = componentInteractionTracker,
-                )
+            PaywallFontScaling(
+                automaticallyScaleFontSize = paywallComponents?.dataOrNull?.automaticallyScaleFontSize ?: true,
+            ) {
+                NotifyingUriHandler(viewModel) {
+                    val workflowState = viewModel.workflowState.value
+                    if (workflowState != null) {
+                        LoadedWorkflowPaywall(
+                            workflowState = workflowState,
+                            onTransitionComplete = viewModel::onTransitionComplete,
+                            clickHandler = rememberPaywallActionHandler(viewModel),
+                            componentInteractionTracker = componentInteractionTracker,
+                        )
+                    } else {
+                        LoadedPaywallComponents(
+                            state = state,
+                            clickHandler = rememberPaywallActionHandler(viewModel),
+                            componentInteractionTracker = componentInteractionTracker,
+                        )
+                    }
+                }
             }
         } else {
             Logger.e(
@@ -209,8 +268,8 @@ private fun LoadedPaywall(
     val configuration = LocalConfiguration.current
     val localeLanguageTags = configuration.locales.toLanguageTags()
     val offering = state.offering
-    val paywallRevision = offering.paywall?.revision ?: offering.paywallComponents?.data?.revision
-    val paywallIdentifier = offering.paywall?.id ?: offering.paywallComponents?.data?.id
+    val paywallRevision = offering.paywall?.revision ?: offering.paywallComponents?.dataOrNull?.revision
+    val paywallIdentifier = offering.paywall?.id ?: offering.paywallComponents?.dataOrNull?.id
     LaunchedEffect(
         offering.identifier,
         paywallIdentifier,
@@ -365,25 +424,15 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                         )
                     }
 
-                is PaywallAction.External.LaunchWebCheckout -> {
-                    val url = viewModel.getWebCheckoutUrl(action)
-                    if (url == null) {
-                        Logger.e("Web checkout URL cannot be found, not launching web checkout.")
-                    } else {
-                        viewModel.invalidateCustomerInfoCache()
-                        context.handleUrlDestination(url, action.openMethod)
-                        if (action.autoDismiss) {
-                            Logger.d("Auto-dismissing paywall after launching web checkout.")
-                            viewModel.closePaywall()
-                        }
-                    }
-                }
+                is PaywallAction.External.LaunchWebCheckout -> handleLaunchWebCheckout(context, viewModel, action)
 
                 is PaywallAction.External.NavigateBack -> {
                     if (!viewModel.handleBackNavigation()) {
                         viewModel.closePaywall()
                     }
                 }
+
+                is PaywallAction.External.CloseWorkflow -> viewModel.closePaywall()
 
                 is PaywallAction.External.WorkflowTrigger ->
                     viewModel.handleWorkflowAction(action.componentId, action.triggerType)
@@ -392,17 +441,41 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
                     is PaywallAction.External.NavigateTo.Destination.CustomerCenter ->
                         Logger.w("Customer Center is not yet implemented on Android.")
 
-                    is PaywallAction.External.NavigateTo.Destination.Url -> context.handleUrlDestination(
-                        url = destination.url,
-                        method = destination.method,
-                    )
+                    is PaywallAction.External.NavigateTo.Destination.Url ->
+                        if (context.handleUrlDestination(url = destination.url, method = destination.method)) {
+                            viewModel.notifyUrlOpened(destination.url)
+                        }
                 }
             }
         }
     }
 }
 
-private fun Context.handleUrlDestination(url: String, method: ButtonComponent.UrlMethod) {
+private fun handleLaunchWebCheckout(
+    context: Context,
+    viewModel: PaywallViewModel,
+    action: PaywallAction.External.LaunchWebCheckout,
+) {
+    val url = viewModel.getWebCheckoutUrl(action)
+    if (url == null) {
+        Logger.e("Web checkout URL cannot be found, not launching web checkout.")
+        return
+    }
+    viewModel.invalidateCustomerInfoCache()
+    val opened = context.handleUrlDestination(url, action.openMethod)
+    if (opened) {
+        viewModel.notifyWebCheckoutOpened()
+    }
+    if (action.autoDismiss) {
+        Logger.d("Auto-dismissing paywall after launching web checkout.")
+        viewModel.closePaywall()
+    }
+}
+
+/**
+ * @return whether the URL was actually opened.
+ */
+private fun Context.handleUrlDestination(url: String, method: ButtonComponent.UrlMethod): Boolean {
     val openingMethod = when (method) {
         ButtonComponent.UrlMethod.IN_APP_BROWSER -> URLOpeningMethod.IN_APP_BROWSER
         ButtonComponent.UrlMethod.EXTERNAL_BROWSER -> URLOpeningMethod.EXTERNAL_BROWSER
@@ -410,11 +483,11 @@ private fun Context.handleUrlDestination(url: String, method: ButtonComponent.Ur
         ButtonComponent.UrlMethod.UNKNOWN -> {
             // Buttons like this should be hidden, so this log should never be shown.
             Logger.e("Ignoring button click with unknown open method for URL: '$url'. This is a bug in the SDK.")
-            return
+            return false
         }
     }
 
-    URLOpener.openURL(this, url, openingMethod)
+    return URLOpener.openURL(this, url, openingMethod)
 }
 
 private fun Modifier.screenModeBackground(isInFullScreenMode: Boolean, backgroundColor: Color): Modifier = this

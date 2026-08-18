@@ -12,6 +12,7 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
@@ -23,6 +24,7 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import io.mockk.verifyOrder
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -41,6 +43,7 @@ class IdentityManagerTests {
     private lateinit var mockSubscriberAttributesCache: SubscriberAttributesCache
     private lateinit var mockSubscriberAttributesManager: SubscriberAttributesManager
     private lateinit var mockOfferingsCache: OfferingsCache
+    private lateinit var mockRemoteConfigManager: RemoteConfigManager
     private lateinit var mockBackend: Backend
     private lateinit var mockOfflineEntitlementsManager: OfflineEntitlementsManager
     private lateinit var identityManager: IdentityManager
@@ -73,6 +76,9 @@ class IdentityManagerTests {
         mockSubscriberAttributesManager = mockk()
         mockOfferingsCache = mockk<OfferingsCache>().apply {
             every { clearCache() } just Runs
+        }
+        mockRemoteConfigManager = mockk<RemoteConfigManager>().apply {
+            every { clearCache(any()) } just Runs
         }
 
         mockBackend = mockk<Backend>().apply {
@@ -245,6 +251,13 @@ class IdentityManagerTests {
             mockSubscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
         }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
+        verify(exactly = 1) { mockRemoteConfigManager.clearCache(newAppUserID) }
+        // Remote config must be cleared before offerings so its in-memory caches can't serve the previous
+        // user's config while offerings is momentarily null.
+        verifyOrder {
+            mockRemoteConfigManager.clearCache(newAppUserID)
+            mockOfferingsCache.clearCache()
+        }
     }
 
     @Test
@@ -399,6 +412,8 @@ class IdentityManagerTests {
             )
         }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
+        // logOut resets to a freshly generated anonymous ID, so match any user.
+        verify(exactly = 1) { mockRemoteConfigManager.clearCache(any()) }
     }
 
     @Test
@@ -623,11 +638,17 @@ class IdentityManagerTests {
 
         verify(exactly = 1) { mockDeviceCache.clearCachesForAppUserID(oldAppUserID) }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
+        verify(exactly = 1) { mockRemoteConfigManager.clearCache(newAppUserID) }
         verify(exactly = 1) {
             mockSubscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
         }
         verify(exactly = 1) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
         verify(exactly = 1) { mockBackend.clearCaches() }
+        // Remote config cleared before offerings — see `login clears caches...` for the rationale.
+        verifyOrder {
+            mockRemoteConfigManager.clearCache(newAppUserID)
+            mockOfferingsCache.clearCache()
+        }
     }
     @Test
     fun `switching users saves the new user`() {
@@ -754,8 +775,14 @@ class IdentityManagerTests {
             )
         }
         verify(exactly = 1) { mockOfferingsCache.clearCache() }
+        verify(exactly = 1) { mockRemoteConfigManager.clearCache(newAppUserId) }
         verify(exactly = 1) { mockDeviceCache.clearCustomerInfoCache(newAppUserId) }
         verify(exactly = 1) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
+        // Remote config cleared before offerings — see `login clears caches...` for the rationale.
+        verifyOrder {
+            mockRemoteConfigManager.clearCache(newAppUserId)
+            mockOfferingsCache.clearCache()
+        }
     }
 
     @Test
@@ -792,6 +819,7 @@ class IdentityManagerTests {
             )
         }
         verify(exactly = 0) { mockOfferingsCache.clearCache() }
+        verify(exactly = 0) { mockRemoteConfigManager.clearCache(any()) }
         verify(exactly = 0) { mockDeviceCache.clearCustomerInfoCache(newAppUserId) }
         verify(exactly = 0) { mockOfflineEntitlementsManager.resetOfflineCustomerInfoCache() }
     }
@@ -885,6 +913,7 @@ class IdentityManagerTests {
         subscriberAttributesCache: SubscriberAttributesCache = mockSubscriberAttributesCache,
         subscriberAttributesManager: SubscriberAttributesManager = mockSubscriberAttributesManager,
         offeringsCache: OfferingsCache = mockOfferingsCache,
+        remoteConfigManager: RemoteConfigManager = mockRemoteConfigManager,
         backend: Backend = mockBackend,
         offlineEntitlementsManager: OfflineEntitlementsManager = mockOfflineEntitlementsManager,
         uiPreviewMode: Boolean = false,
@@ -894,6 +923,7 @@ class IdentityManagerTests {
             subscriberAttributesCache,
             subscriberAttributesManager,
             offeringsCache,
+            remoteConfigManager,
             backend,
             offlineEntitlementsManager,
             SyncDispatcher(),

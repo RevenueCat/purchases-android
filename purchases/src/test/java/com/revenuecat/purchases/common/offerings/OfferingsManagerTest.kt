@@ -9,17 +9,20 @@ import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.stubOfferings
+import io.mockk.CapturingSlot
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
+import io.mockk.slot
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
@@ -45,6 +48,7 @@ class OfferingsManagerTest {
     private lateinit var offeringImagePreDownloader: OfferingImagePreDownloader
     private lateinit var mockDiagnosticsTracker: DiagnosticsTracker
     private lateinit var mockOfferingFontPreDownloader: OfferingFontPreDownloader
+    private lateinit var mockWorkflowManager: WorkflowManager
 
     private lateinit var offeringsManager: OfferingsManager
 
@@ -60,6 +64,10 @@ class OfferingsManagerTest {
         mockOfferingFontPreDownloader = mockk<OfferingFontPreDownloader>().apply {
             every { preDownloadOfferingFontsIfNeeded(any()) } just Runs
         }
+        mockWorkflowManager = mockk(relaxed = true)
+        every { mockWorkflowManager.onPaywallConfigReady(onComplete = any()) } answers {
+            firstArg<() -> Unit>().invoke()
+        }
 
         mockBackendResponseSuccess()
         mockDiagnosticsTracker()
@@ -71,6 +79,7 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            workflowManager = mockWorkflowManager,
         )
     }
 
@@ -84,6 +93,99 @@ class OfferingsManagerTest {
     }
 
     // endregion clearInMemoryOfferingsCache
+
+    // region cache write invalidation guard
+
+    @Test
+    fun `in-flight fetch write is dropped after an invalidating clear (kill-switch)`() {
+        every { cache.clearInMemoryOfferingsCache() } just Runs
+        mockDeviceCache()
+        val onSuccessSlot = captureFactoryOnSuccess()
+
+        // The fetch reaches the factory but its parsed result is not delivered yet (still in flight).
+        offeringsManager.fetchAndCacheOfferings(appUserId, appInBackground = false)
+
+        // Kill switch trips: invalidate in-flight fetches, then the in-flight parse finally completes.
+        offeringsManager.clearInMemoryOfferingsCache(invalidateInFlightFetches = true)
+        onSuccessSlot.captured.invoke(OfferingsResultData(testOfferings, setOf(productId), emptySet()))
+
+        // The stale parse is dropped (a re-parse is issued instead, but its onSuccess is never fired here).
+        verify(exactly = 0) { cache.cacheOfferings(any(), any()) }
+    }
+
+    @Test
+    fun `stale in-flight parse is re-parsed and only the decoded result is delivered and cached`() {
+        every { cache.clearInMemoryOfferingsCache() } just Runs
+        mockDeviceCache()
+        val onSuccessSlot = captureFactoryOnSuccess()
+
+        // Two distinguishable results: the in-flight parse (pre-disable, paywall components skipped) and the
+        // re-parse (post-disable, components decoded). Distinct instances so we can assert which one is used.
+        val staleOfferings = testOfferings.copy(current = null)
+        val decodedOfferings = testOfferings
+
+        var delivered: OfferingsResultData? = null
+        offeringsManager.fetchAndCacheOfferings(
+            appUserId,
+            appInBackground = false,
+            onSuccess = { delivered = it },
+        )
+
+        // Kill switch trips: invalidate in-flight fetches.
+        offeringsManager.clearInMemoryOfferingsCache(invalidateInFlightFetches = true)
+
+        // The in-flight (pre-disable) parse completes -> guard is stale -> a re-parse is issued.
+        onSuccessSlot.captured.invoke(OfferingsResultData(staleOfferings, setOf(productId), emptySet()))
+        // The re-parse completes -> generation now matches -> cached and delivered.
+        onSuccessSlot.captured.invoke(OfferingsResultData(decodedOfferings, setOf(productId), emptySet()))
+
+        assertThat(delivered).isNotNull
+        assertThat(delivered!!.offerings).isEqualTo(decodedOfferings)
+        verify(exactly = 2) {
+            offeringsFactory.createOfferings(any(), any(), any(), onError = any(), onSuccess = any())
+        }
+        verify(exactly = 1) { cache.cacheOfferings(decodedOfferings, any()) }
+        verify(exactly = 0) { cache.cacheOfferings(staleOfferings, any()) }
+    }
+
+    @Test
+    fun `in-flight fetch write lands when no clear happens`() {
+        mockDeviceCache()
+        val onSuccessSlot = captureFactoryOnSuccess()
+
+        offeringsManager.fetchAndCacheOfferings(appUserId, appInBackground = false)
+        onSuccessSlot.captured.invoke(OfferingsResultData(testOfferings, setOf(productId), emptySet()))
+
+        verify(exactly = 1) { cache.cacheOfferings(any(), any()) }
+    }
+
+    @Test
+    fun `a network fetch caches the response body as received`() {
+        mockDeviceCache()
+        mockOfferingsFactory()
+        mockBackendResponseSuccess()
+
+        offeringsManager.fetchAndCacheOfferings(appUserId, appInBackground = false)
+
+        // Verbatim, not a re-serialization of the parsed JSON: that allocation is what OOMed.
+        verify(exactly = 1) { cache.cacheOfferings(testOfferings, ONE_OFFERINGS_RESPONSE) }
+    }
+
+    @Test
+    fun `in-flight fetch write lands after a non-invalidating clear (previous behavior preserved)`() {
+        every { cache.clearInMemoryOfferingsCache() } just Runs
+        mockDeviceCache()
+        val onSuccessSlot = captureFactoryOnSuccess()
+
+        offeringsManager.fetchAndCacheOfferings(appUserId, appInBackground = false)
+        // A plain clear (locale override / remote config disabled path) must not drop the late write.
+        offeringsManager.clearInMemoryOfferingsCache()
+        onSuccessSlot.captured.invoke(OfferingsResultData(testOfferings, setOf(productId), emptySet()))
+
+        verify(exactly = 1) { cache.cacheOfferings(any(), any()) }
+    }
+
+    // endregion cache write invalidation guard
 
     // region onAppForeground
 
@@ -377,11 +479,13 @@ class OfferingsManagerTest {
 
         assertThat(receivedOfferings).isEqualTo(testOfferings)
 
-        verify(exactly = 1) { cache.cacheOfferings(testOfferings, backendResponse) }
+        // Null payload: the response came from the disk cache, so it must not be re-serialized and
+        // written back on every failed fetch.
+        verify(exactly = 1) { cache.cacheOfferings(testOfferings, null) }
         verify(exactly = 1) {
             offeringsFactory.createOfferings(
                 offeringsJSON = backendResponse,
-                originalDataSource = HTTPResponseOriginalSource.MAIN,
+                originalDataSource = null,
                 loadedFromDiskCache = true,
                 onError = any(),
                 onSuccess = any(),
@@ -418,6 +522,32 @@ class OfferingsManagerTest {
 
         assertThat(receivedError).isEqualTo(expectedError)
         verify(exactly = 1) { cache.forceCacheStale() }
+    }
+
+    @Test
+    fun `getOfferings succeeds without NPE when workflowManager is null`() {
+        val managerWithNoWorkflows = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            workflowManager = null,
+        )
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+
+        var receivedOfferings: Offerings? = null
+        managerWithNoWorkflows.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("Expected success but got error: $it") },
+            onSuccess = { receivedOfferings = it },
+        )
+
+        assertThat(receivedOfferings).isEqualTo(testOfferings)
     }
 
     // This situation shouldn't happen normally since we only cache when we have loaded the offerings at least once,
@@ -871,11 +1001,33 @@ class OfferingsManagerTest {
         }
     }
 
+    /**
+     * Captures the offerings factory `onSuccess` lambda without invoking it, so a test can drive the parse
+     * completion manually (simulating a fetch still in flight while the cache is cleared).
+     */
+    private fun captureFactoryOnSuccess(): CapturingSlot<(OfferingsResultData) -> Unit> {
+        val onSuccessSlot = slot<(OfferingsResultData) -> Unit>()
+        every {
+            offeringsFactory.createOfferings(
+                offeringsJSON = any(),
+                originalDataSource = any(),
+                loadedFromDiskCache = any(),
+                onError = any(),
+                onSuccess = capture(onSuccessSlot),
+            )
+        } just Runs
+        return onSuccessSlot
+    }
+
     private fun mockBackendResponseSuccess(response: String = ONE_OFFERINGS_RESPONSE) {
         every {
             backend.getOfferings(any(), any(), captureLambda(), any())
         } answers {
-            lambda<(JSONObject, HTTPResponseOriginalSource) -> Unit>().captured.invoke(JSONObject(response), HTTPResponseOriginalSource.MAIN)
+            lambda<(JSONObject, HTTPResponseOriginalSource, String) -> Unit>().captured.invoke(
+                JSONObject(response),
+                HTTPResponseOriginalSource.MAIN,
+                response,
+            )
         }
     }
 
@@ -929,4 +1081,108 @@ class OfferingsManagerTest {
             current = current,
             all = this.all,
         )
+
+    // region workflowManager onComplete integration
+
+    @Test
+    fun `getOfferings calls onSuccess immediately when workflowManager is null`() {
+        val managerWithoutWorkflow = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            workflowManager = null,
+        )
+
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+
+        var receivedOfferings: Offerings? = null
+        managerWithoutWorkflow.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be success") },
+            onSuccess = { receivedOfferings = it },
+        )
+
+        assertThat(receivedOfferings).isNotNull()
+    }
+
+    @Test
+    fun `getOfferings does not call onSuccess until onPaywallConfigReady completes`() {
+        val mockWorkflowManager = mockk<WorkflowManager>()
+        val onCompleteSlot = slot<() -> Unit>()
+        every {
+            mockWorkflowManager.onPaywallConfigReady(onComplete = capture(onCompleteSlot))
+        } just Runs
+
+        val managerWithWorkflow = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            workflowManager = mockWorkflowManager,
+        )
+
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+
+        var receivedOfferings: Offerings? = null
+        managerWithWorkflow.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be success") },
+            onSuccess = { receivedOfferings = it },
+        )
+
+        assertThat(receivedOfferings).isNull()
+
+        onCompleteSlot.captured.invoke()
+
+        assertThat(receivedOfferings).isNotNull()
+    }
+
+    @Test
+    fun `vendCachedOfferingsAndMaybeRefresh does not call onSuccess until onPaywallConfigReady completes`() {
+        val mockWorkflowManager = mockk<WorkflowManager>()
+        val onCompleteSlot = slot<() -> Unit>()
+        every {
+            mockWorkflowManager.onPaywallConfigReady(onComplete = capture(onCompleteSlot))
+        } just Runs
+
+        val managerWithWorkflow = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            workflowManager = mockWorkflowManager,
+        )
+
+        mockCacheStale(offeringsStale = false)
+        every { cache.cachedOfferings } returns testOfferings
+
+        var receivedOfferings: Offerings? = null
+        managerWithWorkflow.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be success") },
+            onSuccess = { receivedOfferings = it },
+        )
+
+        assertThat(receivedOfferings).isNull()
+
+        onCompleteSlot.captured.invoke()
+
+        assertThat(receivedOfferings).isEqualTo(testOfferings)
+    }
+
+    // endregion workflowManager onComplete integration
 }

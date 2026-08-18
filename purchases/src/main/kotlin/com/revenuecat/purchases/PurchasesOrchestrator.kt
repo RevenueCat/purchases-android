@@ -12,14 +12,15 @@ import android.util.Pair
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import coil.ImageLoader
-import coil.disk.DiskCache
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
+import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolver
+import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolverImpl
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BillingAbstract
@@ -36,6 +37,7 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.debugLogsEnabled
@@ -44,15 +46,23 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.events.FeatureEvent
+import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
+import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
-import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
+import com.revenuecat.purchases.common.workflows.WorkflowResolution
+import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.deeplinks.WebPurchaseRedemptionHelper
 import com.revenuecat.purchases.google.isSuccessful
@@ -60,6 +70,7 @@ import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.Callback
 import com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
@@ -97,6 +108,7 @@ import com.revenuecat.purchases.strings.PurchaseStrings
 import com.revenuecat.purchases.strings.RestoreStrings
 import com.revenuecat.purchases.strings.SyncAttributesAndOfferingsStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.utils.CurrentActivityTracker
 import com.revenuecat.purchases.utils.CustomActivityLifecycleHandler
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.RateLimiter
@@ -154,13 +166,27 @@ internal class PurchasesOrchestrator(
     private val virtualCurrencyManager: VirtualCurrencyManager,
     private val purchaseParamsValidator: PurchaseParamsValidator,
 
-    private val workflowManager: WorkflowManager,
+    private val workflowManager: WorkflowManager?,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
     val fileRepository: FileRepository = DefaultFileRepository(application),
+    private val remoteConfigManager: RemoteConfigManager? = null,
+    private val uiConfigProvider: UiConfigProvider? = null,
+    private val workflowsConfigProvider: WorkflowsConfigProvider? = null,
+    private val checkpointsConfigProvider: CheckpointsConfigProvider? = null,
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
+    private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
+    private val localRulesEvaluator: LocalRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
+    @OptIn(InternalRevenueCatAPI::class)
+    private val checkpointWorkflowResolver: CheckpointWorkflowResolver = CheckpointWorkflowResolverImpl(
+        workflowManager = workflowManager,
+        uiConfigProvider = uiConfigProvider,
+        checkpointsConfigProvider = checkpointsConfigProvider,
+        localRulesEvaluator = localRulesEvaluator,
+        getOfferings = { Purchases.sharedInstance.awaitOfferings() },
+    ),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState
@@ -171,6 +197,9 @@ internal class PurchasesOrchestrator(
 
     val cachedCurrentOfferingIdentifier: String?
         get() = offeringsManager.cachedCurrentOfferingIdentifier
+
+    val cachedOfferings: Offerings?
+        get() = offeringsManager.cachedOfferings
 
     val currentConfiguration: PurchasesConfiguration
         get() = if (initialConfiguration.appUserID == null) {
@@ -207,6 +236,19 @@ internal class PurchasesOrchestrator(
     @get:Synchronized
     @set:Synchronized
     var debugEventListener: DebugEventListener? by eventsManager::debugEventListener
+
+    /**
+     * Storage for the RevenueCat UI module's checkpoints manager, which owns the checkpoint listener and any
+     * in-flight checkpoint presentation. Untyped because that type lives in the UI module, which this module
+     * must not depend on; only the UI module reads and writes it. Living here rather than in a UI-module
+     * singleton ties that state to the lifetime of this instance.
+     */
+    @get:Synchronized
+    @set:Synchronized
+    var checkpointManagerSlot: Any? = null
+
+    val currentActivity: Activity?
+        get() = currentActivityTracker.currentActivity
 
     val isAnonymous: Boolean
         get() = identityManager.currentUserIsAnonymous()
@@ -281,6 +323,21 @@ internal class PurchasesOrchestrator(
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.WARNING) { ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED }
         }
+
+        // When the `/v1/config` 4xx kill-switch trips, workflow-served paywalls are no longer available, so the
+        // cached offerings (parsed while the endpoint was live, with paywall components skipped) can no longer
+        // serve the fallback render path. Invalidate the in-memory cache first so any getOfferings caller in the
+        // window before the refetch lands takes the cache-miss -> network path and gets freshly decoded
+        // components, instead of being served the stale null-component objects. The refetch (with the endpoint
+        // now disabled) then repopulates the cache proactively.
+        remoteConfigManager?.registerListener(object : RemoteConfigCommitListener {
+            // Only the disable transition matters here; commits/invalidations are handled by the config providers.
+            override fun onConfigCommitted(generation: Int) = Unit
+            override fun onRemoteConfigDisabled(generation: Int) {
+                offeringsManager.clearInMemoryOfferingsCache(invalidateInFlightFetches = true)
+                offeringsManager.fetchAndCacheOfferings(appUserID, state.appInBackground)
+            }
+        })
     }
 
     /** @suppress */
@@ -312,6 +369,16 @@ internal class PurchasesOrchestrator(
         enqueue {
             if (appConfig.uiPreviewMode) return@enqueue
 
+            remoteConfigManager?.refreshRemoteConfigIfStale(
+                appInBackground = false,
+                appUserID = identityManager.currentAppUserID,
+                fetchContext = if (firstTimeInForeground) {
+                    RemoteConfigFetchContext.AppStart
+                } else {
+                    RemoteConfigFetchContext.Foreground
+                },
+            )
+
             if (shouldRefreshCustomerInfo(firstTimeInForeground)) {
                 log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_STALE_UPDATING_FOREGROUND }
                 customerInfoHelper.retrieveCustomerInfo(
@@ -342,9 +409,14 @@ internal class PurchasesOrchestrator(
     }
 
     override fun onActivityStarted(activity: Activity) {
+        currentActivityTracker.onActivityStarted(activity)
         if (appConfig.showInAppMessagesAutomatically) {
             showInAppMessagesIfNeeded(activity, InAppMessageType.values().toList())
         }
+    }
+
+    override fun onActivityStopped(activity: Activity) {
+        currentActivityTracker.onActivityStopped(activity)
     }
 
     override fun onActivityPaused(activity: Activity) {
@@ -359,6 +431,12 @@ internal class PurchasesOrchestrator(
     }
 
     // region Public Methods
+
+    @OptIn(InternalRevenueCatAPI::class)
+    suspend fun resolveCheckpoint(
+        checkpointIdentifier: String,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): CheckpointResolution = checkpointWorkflowResolver.resolve(checkpointIdentifier, customVariables)
 
     fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
         storefrontCountryCode?.let {
@@ -420,6 +498,11 @@ internal class PurchasesOrchestrator(
         }
 
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID) {
+            remoteConfigManager?.refreshRemoteConfig(
+                state.appInBackground,
+                appUserID,
+                RemoteConfigFetchContext.Read,
+            )
             getOfferings(receiveOfferingsCallback, fetchCurrent = true)
         }
     }
@@ -562,17 +645,44 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    fun getWorkflow(
-        workflowId: String,
-        onSuccess: (WorkflowDataResult) -> Unit,
-        onError: (PurchasesError) -> Unit,
-    ) {
-        workflowManager.getWorkflow(
-            appUserID = identityManager.currentAppUserID,
-            workflowId = workflowId,
-            appInBackground = state.appInBackground,
-            onSuccess = onSuccess,
-            onError = onError,
+    /**
+     * Resolves a workflow by workflow or offering id, or throws [PurchasesException] when it can't be served.
+     * Memory-first via [WorkflowManager.getWorkflow]: a warm cache resumes synchronously on the caller's thread
+     * with no dispatch, so a paywall render on a `Dispatchers.Main.immediate` coroutine never suspends.
+     */
+    suspend fun getWorkflow(workflowId: String): PublishedWorkflow {
+        if (appConfig.uiPreviewMode) {
+            throw PurchasesException(
+                PurchasesError(
+                    PurchasesErrorCode.ConfigurationError,
+                    "Workflows cannot be fetched in UI preview mode.",
+                ),
+            )
+        }
+        val manager = workflowManager ?: throw PurchasesException(
+            PurchasesError(PurchasesErrorCode.ConfigurationError, "Workflows are not enabled."),
+        )
+        return manager.getWorkflow(workflowId)
+    }
+
+    suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
+        workflowManager?.resolveWorkflow(offeringId) ?: WorkflowResolution.NoWorkflow
+
+    suspend fun getUiConfig(): UiConfig {
+        val provider = uiConfigProvider
+        if (appConfig.uiPreviewMode || provider == null) {
+            val message = if (appConfig.uiPreviewMode) {
+                "UI config cannot be fetched in UI preview mode."
+            } else {
+                "UI config is not enabled."
+            }
+            throw PurchasesException(PurchasesError(PurchasesErrorCode.ConfigurationError, message))
+        }
+        return provider.getUiConfig() ?: throw PurchasesException(
+            PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                "UI config is unavailable.",
+            ),
         )
     }
 
@@ -763,6 +873,11 @@ internal class PurchasesOrchestrator(
                             callback?.onReceived(customerInfo, created)
                             customerInfoUpdateHandler.notifyListeners(customerInfo)
                         }
+                        remoteConfigManager?.refreshRemoteConfig(
+                            state.appInBackground,
+                            newAppUserID,
+                            RemoteConfigFetchContext.IdentityChange,
+                        )
                         offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
                         backupManager.dataChanged()
                     },
@@ -796,7 +911,11 @@ internal class PurchasesOrchestrator(
                 synchronized(this@PurchasesOrchestrator) {
                     state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
                 }
-                updateAllCaches(identityManager.currentAppUserID, callback)
+                updateAllCaches(
+                    identityManager.currentAppUserID,
+                    RemoteConfigFetchContext.IdentityChange,
+                    callback,
+                )
                 backupManager.dataChanged()
             }
         }
@@ -807,7 +926,10 @@ internal class PurchasesOrchestrator(
             state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
         }
         this.backend.close()
-        this.workflowManager.close()
+        this.remoteConfigManager?.close()
+        this.workflowManager?.close()
+        this.uiConfigProvider?.close()
+        this.workflowsConfigProvider?.close()
 
         billing.close()
         updatedCustomerInfoListener = null // Do not call on state since the setter does more stuff
@@ -905,6 +1027,19 @@ internal class PurchasesOrchestrator(
             description,
             onSuccessHandler = onSuccess,
             onErrorHandler = onError,
+        )
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    fun getRewardVerificationResult(
+        clientTransactionId: String,
+        callback: GetRewardVerificationResultCallback,
+    ) {
+        backend.getRewardVerificationResult(
+            appUserID = identityManager.currentAppUserID,
+            clientTransactionId = clientTransactionId,
+            onSuccess = { callback.onReceived(it) },
+            onError = { callback.onError(it) },
         )
     }
 
@@ -1257,6 +1392,11 @@ internal class PurchasesOrchestrator(
         identityManager.switchUser(newAppUserID)
 
         offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
+        remoteConfigManager?.refreshRemoteConfig(
+            state.appInBackground,
+            newAppUserID,
+            RemoteConfigFetchContext.IdentityChange,
+        )
     }
     //endregion
 
@@ -1329,9 +1469,11 @@ internal class PurchasesOrchestrator(
 
     private fun updateAllCaches(
         appUserID: String,
+        fetchContext: RemoteConfigFetchContext,
         completion: ReceiveCustomerInfoCallback? = null,
     ) {
         state.appInBackground.let { appInBackground ->
+            remoteConfigManager?.refreshRemoteConfig(appInBackground, appUserID, fetchContext)
             customerInfoHelper.retrieveCustomerInfo(
                 appUserID,
                 CacheFetchPolicy.FETCH_CURRENT,
@@ -1803,33 +1945,9 @@ internal class PurchasesOrchestrator(
                 currentLogHandler = value
             }
 
-        private var cachedImageLoader: ImageLoader? = null
-
         const val frameworkVersion = Config.frameworkVersion
 
         var proxyURL: URL? = null
-
-        @Suppress("MagicNumber")
-        @Synchronized
-        fun getImageLoader(context: Context): ImageLoader {
-            val currentImageLoader = cachedImageLoader
-            return if (currentImageLoader == null) {
-                val maxCacheSizeBytes = 25 * 1024 * 1024L // 25 MB
-                val cacheFolder = "revenuecatui_cache"
-                val imageLoader = ImageLoader.Builder(context)
-                    .diskCache {
-                        DiskCache.Builder()
-                            .directory(context.cacheDir.resolve(cacheFolder))
-                            .maxSizeBytes(maxCacheSizeBytes)
-                            .build()
-                    }
-                    .build()
-                cachedImageLoader = imageLoader
-                imageLoader
-            } else {
-                currentImageLoader
-            }
-        }
 
         /**
          * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.

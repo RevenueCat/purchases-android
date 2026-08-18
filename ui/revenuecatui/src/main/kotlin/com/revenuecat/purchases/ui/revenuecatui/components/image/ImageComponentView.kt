@@ -170,25 +170,25 @@ private class PreviewParametersProvider : PreviewParameterProvider<PreviewParame
         PreviewParameters(
             imageWidth = 100u,
             imageHeight = 100u,
-            viewSize = Size(width = Fixed(72u), height = Fit),
+            viewSize = Size(width = Fixed(72u), height = Fit()),
             fitMode = FitMode.FILL,
         ),
         PreviewParameters(
             imageWidth = 100u,
             imageHeight = 100u,
-            viewSize = Size(width = Fit, height = Fixed(72u)),
+            viewSize = Size(width = Fit(), height = Fixed(72u)),
             fitMode = FitMode.FILL,
         ),
         PreviewParameters(
             imageWidth = 1909u,
             imageHeight = 1306u,
-            viewSize = Size(width = Fill, height = Fit),
+            viewSize = Size(width = Fill, height = Fit()),
             fitMode = FitMode.FIT,
         ),
         PreviewParameters(
             imageWidth = 1306u,
             imageHeight = 1909u,
-            viewSize = Size(width = Fit, height = Fill),
+            viewSize = Size(width = Fit(), height = Fill),
             fitMode = FitMode.FIT,
         ),
     )
@@ -239,7 +239,7 @@ private fun ImageComponentView_Bigger_Container_Fill_Fit_FitModeFill_Preview() {
             ImageComponentView(
                 style = previewImageComponentStyle(
                     themeImageUrls = themeImageUrls,
-                    size = Size(width = Fill, height = Fit),
+                    size = Size(width = Fill, height = Fit()),
                     fitMode = FitMode.FILL,
                     shape = MaskShape.Rectangle(),
                 ),
@@ -265,7 +265,7 @@ private fun ImageComponentView_Bigger_Container_Fit_Fill_FitModeFill_Preview() {
             ImageComponentView(
                 style = previewImageComponentStyle(
                     themeImageUrls = themeImageUrls,
-                    size = Size(width = Fit, height = Fill),
+                    size = Size(width = Fit(), height = Fill),
                     fitMode = FitMode.FILL,
                     shape = MaskShape.Rectangle(),
                 ),
@@ -350,7 +350,7 @@ private fun ImageComponentView_Preview_LinearGradient() {
             ImageComponentView(
                 style = previewImageComponentStyle(
                     themeImageUrls = themeImageUrls,
-                    size = Size(width = Fixed(400u), height = Fit),
+                    size = Size(width = Fixed(400u), height = Fit()),
                     fitMode = FitMode.FIT,
                     shape = MaskShape.Rectangle(
                         corners = CornerRadiuses.Dp(
@@ -403,7 +403,7 @@ private fun ImageComponentView_Preview_RadialGradient() {
             ImageComponentView(
                 style = previewImageComponentStyle(
                     themeImageUrls = themeImageUrls,
-                    size = Size(width = Fixed(400u), height = Fit),
+                    size = Size(width = Fixed(400u), height = Fit()),
                     fitMode = FitMode.FIT,
                     shape = MaskShape.Rectangle(
                         corners = CornerRadiuses.Dp(

@@ -9,10 +9,13 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.networking.APISourceFailover
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
+import com.revenuecat.purchases.common.networking.SourceHealthChecker
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.interfaces.StorefrontProvider
 import io.mockk.clearAllMocks
@@ -70,6 +73,9 @@ internal abstract class BaseHTTPClientTest {
         eTagManager: ETagManager = mockETagManager,
         signingManager: SigningManager? = null,
         storefrontProvider: StorefrontProvider = mockStorefrontProvider,
+        apiSourceProvider: RemoteConfigSourceProvider? = null,
+        sourceHealthChecker: SourceHealthChecker = SourceHealthChecker(),
+        deviceOffline: Boolean = false,
         localeProvider: LocaleProvider = DefaultLocaleProvider(),
         forceServerErrorStrategy: ForceServerErrorStrategy? = null,
         timeoutManager: HTTPTimeoutManager? = null,
@@ -79,6 +85,14 @@ internal abstract class BaseHTTPClientTest {
         diagnosticsTracker,
         signingManager ?: mockSigningManager,
         storefrontProvider,
+        apiSourceProvider?.let {
+            APISourceFailover(
+                appConfig,
+                it,
+                sourceHealthChecker,
+                mockk { every { isDeviceOffline() } returns deviceOffline },
+            )
+        },
         dateProvider,
         localeProvider = localeProvider,
         forceServerErrorStrategy = forceServerErrorStrategy,
@@ -95,8 +109,10 @@ internal abstract class BaseHTTPClientTest {
         isDebugBuild: Boolean = false,
         customEntitlementComputation: Boolean = false,
         uiPreviewMode: Boolean = false,
+        usesRemoteConfigAPISources: Boolean = false,
         forceSigningErrors: Boolean = false,
-        baseUrlString: String = AppConfig.baseUrlString
+        baseUrlString: String = AppConfig.baseUrlString,
+        runningTests: Boolean = true,
     ): AppConfig {
         return AppConfig(
             context = context,
@@ -110,8 +126,9 @@ internal abstract class BaseHTTPClientTest {
             dangerousSettings = DangerousSettings(
                 customEntitlementComputation = customEntitlementComputation,
                 uiPreviewMode = uiPreviewMode,
+                usesRemoteConfigAPISources = usesRemoteConfigAPISources,
             ),
-            runningTests = true,
+            runningTests = runningTests,
             forceSigningErrors = forceSigningErrors,
             baseUrlString = baseUrlString,
         )
@@ -129,7 +146,7 @@ internal abstract class BaseHTTPClientTest {
         every {
             mockETagManager.getHTTPResultFromCacheOrBackend(
                 expectedResult.responseCode,
-                expectedResult.payload,
+                expectedResult.payloadText,
                 eTagHeader = any(),
                 urlString = urlString,
                 refreshETag = false,
@@ -140,7 +157,7 @@ internal abstract class BaseHTTPClientTest {
             )
         } returns expectedResult
         val response = MockResponse()
-            .setBody(expectedResult.payload)
+            .setBody(expectedResult.payloadText)
             .setResponseCode(expectedResult.responseCode)
             .apply {
                 if (requestDateHeader != null) {

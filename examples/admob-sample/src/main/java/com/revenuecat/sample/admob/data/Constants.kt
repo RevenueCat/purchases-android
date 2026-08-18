@@ -5,96 +5,47 @@ import com.revenuecat.sample.admob.BuildConfig
 /**
  * Constants for the AdMob Integration Sample app.
  *
- * IMPORTANT: These are test ad unit IDs provided by Google AdMob for development and testing.
- * Replace these with your actual production ad unit IDs before publishing your app.
+ * Ad unit IDs default to Google's test IDs. Override any of them — plus the AdMob app ID and the
+ * RevenueCat API key — via `local.properties` (gitignored); see the app `build.gradle.kts`.
+ * Use your own production IDs before shipping a real app.
  */
 object Constants {
     /**
-     * RevenueCat API Key
-     * Get your API key from https://app.revenuecat.com/
-     *
-     * NOTE: For this sample app, you can use any valid RevenueCat API key.
-     * The sample demonstrates ad event tracking, not subscription functionality.
-     *
-     * Set your key in `local.properties` (gitignored):
-     * ```
-     * REVENUECAT_API_KEY=your_api_key_here
-     * ```
+     * RevenueCat API key. Set `REVENUECAT_API_KEY` in `local.properties`.
+     * Any valid key works — this sample exercises ad-event tracking, not subscriptions.
      */
     val REVENUECAT_API_KEY: String = BuildConfig.REVENUECAT_API_KEY
 
-    /**
-     * AdMob Test Ad Unit IDs
-     * These are official test IDs provided by Google that always serve test ads.
-     * Source: https://developers.google.com/admob/android/test-ads
-     */
     object AdMob {
         /**
-         * Banner Ad Test Unit ID
-         * Always successfully loads and displays a test banner ad.
-         */
-        const val BANNER_AD_UNIT_ID = "ca-app-pub-3940256099942544/9214589741"
-
-        /**
-         * Interstitial Ad Test Unit ID
-         * Always successfully loads and displays a test interstitial ad.
-         */
-        const val INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/1033173712"
-
-        /**
-         * App Open Ad Test Unit ID
-         * Always successfully loads and displays a test app open ad.
-         * App open ads are full-screen ads shown when users open or switch back to your app.
-         */
-        const val APP_OPEN_AD_UNIT_ID = "ca-app-pub-3940256099942544/9257395921"
-
-        /**
-         * Native Ad Test Unit ID
-         * Test ID for native ads (text + images).
-         * Official Google test ID for Native Advanced ads.
+         * Google's official test ad unit IDs.
+         * https://developers.google.com/admob/android/test-ads
          *
-         * ⚠️ IMPORTANT: This test ID does not work reliably for native ads.
-         * Google's test IDs for native ads often fail to load or behave inconsistently.
-         * For reliable testing:
-         * 1. Use a production ad unit ID from your AdMob account
-         * 2. Update the AdMob app ID in AndroidManifest.xml with your production app ID
-         * 3. Configure your device as a test device
+         * ⚠️ The native and native-video test IDs load unreliably. For native formats, use your own
+         * ad unit, set `ADMOB_APP_ID` to your app ID, and register the device as a test device.
          */
-        const val NATIVE_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110"
+        object TestAdUnits {
+            const val BANNER = "ca-app-pub-3940256099942544/9214589741"
+            const val INTERSTITIAL = "ca-app-pub-3940256099942544/1033173712"
+            const val APP_OPEN = "ca-app-pub-3940256099942544/9257395921"
+            const val NATIVE = "ca-app-pub-3940256099942544/2247696110"
+            const val NATIVE_VIDEO = "ca-app-pub-3940256099942544/1044960115"
+            const val REWARDED = "ca-app-pub-3940256099942544/5224354917"
+            const val REWARDED_INTERSTITIAL = "ca-app-pub-3940256099942544/5354046379"
+        }
+
+        val BANNER_AD_UNIT_ID = BuildConfig.ADMOB_BANNER_AD_UNIT_ID.ifEmpty { TestAdUnits.BANNER }
+        val INTERSTITIAL_AD_UNIT_ID = BuildConfig.ADMOB_INTERSTITIAL_AD_UNIT_ID.ifEmpty { TestAdUnits.INTERSTITIAL }
+        val APP_OPEN_AD_UNIT_ID = BuildConfig.ADMOB_APP_OPEN_AD_UNIT_ID.ifEmpty { TestAdUnits.APP_OPEN }
+        val NATIVE_AD_UNIT_ID = BuildConfig.ADMOB_NATIVE_AD_UNIT_ID.ifEmpty { TestAdUnits.NATIVE }
+        val NATIVE_VIDEO_AD_UNIT_ID = BuildConfig.ADMOB_NATIVE_VIDEO_AD_UNIT_ID.ifEmpty { TestAdUnits.NATIVE_VIDEO }
+        val REWARDED_AD_UNIT_ID = BuildConfig.ADMOB_REWARDED_AD_UNIT_ID.ifEmpty { TestAdUnits.REWARDED }
+        val REWARDED_INTERSTITIAL_AD_UNIT_ID =
+            BuildConfig.ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID.ifEmpty { TestAdUnits.REWARDED_INTERSTITIAL }
 
         /**
-         * Native Video Ad Test Unit ID
-         * Test ID for native ads with video content.
-         * Official Google test ID for Native Advanced Video ads.
-         *
-         * ⚠️ IMPORTANT: This test ID does not work reliably for native video ads.
-         * Google's test IDs for native ads often fail to load or behave inconsistently.
-         * For reliable testing:
-         * 1. Use a production ad unit ID from your AdMob account
-         * 2. Update the AdMob app ID in AndroidManifest.xml with your production app ID
-         * 3. Configure your device as a test device
-         */
-        const val NATIVE_VIDEO_AD_UNIT_ID = "ca-app-pub-3940256099942544/1044960115"
-
-        /**
-         * Rewarded Ad Test Unit ID
-         * Always successfully loads and displays a test rewarded ad.
-         */
-        const val REWARDED_AD_UNIT_ID = "ca-app-pub-3940256099942544/5224354917"
-
-        /**
-         * Rewarded Interstitial Ad Test Unit ID
-         * Always successfully loads and displays a test rewarded interstitial ad.
-         */
-        const val REWARDED_INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-3940256099942544/5354046379"
-
-        /**
-         * Invalid Ad Unit ID - Used for Error Testing
-         * This intentionally invalid ID triggers load failures to demonstrate
-         * how to handle and track ad load errors with RevenueCat.
-         *
-         * NOTE: AdMob does not provide an official "error test ID", so we use
-         * an invalid ID to simulate load failures for testing purposes.
+         * Intentionally invalid ID for exercising load-failure handling
+         * (AdMob has no official "error" test ID).
          */
         const val INVALID_AD_UNIT_ID = "invalid-ad-unit-id"
     }
