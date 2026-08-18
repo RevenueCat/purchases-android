@@ -69,6 +69,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCen
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.NoActiveUserManagementView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferScreen
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PurchaseHistoryDetailView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PurchaseHistoryView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.RelevantPurchasesListView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.SelectedPurchaseDetailView
@@ -200,6 +201,9 @@ internal fun InternalCustomerCenter(
                     viewModel.dismissSupportTicketSuccessSnackbar()
                 }
                 is CustomerCenterAction.ShowPurchaseHistory -> viewModel.showPurchaseHistory()
+                is CustomerCenterAction.ShowPurchaseHistoryDetail -> {
+                    viewModel.showPurchaseHistoryDetail(action.purchase)
+                }
             }
         },
     )
@@ -541,7 +545,19 @@ private fun CustomerCenterNavHost(
                     inactiveSubscriptions = purchaseHistory.inactiveSubscriptions,
                     nonSubscriptions = purchaseHistory.nonSubscriptions,
                     localization = customerCenterState.customerCenterConfigData.localization,
+                    onAction = onAction,
                 )
+            }
+
+            is CustomerCenterDestination.PurchaseHistoryDetail -> {
+                customerCenterState.purchaseHistory.all
+                    .firstOrNull { it.purchaseHistoryEntryId == destination.purchaseHistoryEntryId }
+                    ?.let { purchase ->
+                        PurchaseHistoryDetailView(
+                            purchase = purchase,
+                            localization = customerCenterState.customerCenterConfigData.localization,
+                        )
+                    }
             }
         }
     }
