@@ -14,6 +14,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.verify
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -438,6 +439,134 @@ class CustomerInfoUpdateHandlerTest {
 
         verify(exactly = 0) { listener.onReceived(mockInfo) }
         verify(exactly = 1) { listener.onReceived(newInfo) }
+    }
+
+    // endregion
+
+    // region legacy property and reference-based removal interplay
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `listener registered through both the legacy property and add is only notified once`() {
+        val listener = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listener
+        customerInfoUpdateHandler.addUpdatedCustomerInfoListener(listener)
+
+        val newInfo = mockk<CustomerInfo>()
+        customerInfoUpdateHandler.notifyListeners(newInfo)
+
+        verify(exactly = 1) { listener.onReceived(mockInfo) }
+        verify(exactly = 1) { listener.onReceived(newInfo) }
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `removing by reference also removes a listener set through the legacy property`() {
+        val listener = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listener
+
+        customerInfoUpdateHandler.removeUpdatedCustomerInfoListener(listener)
+
+        assertThat(customerInfoUpdateHandler.updatedCustomerInfoListener).isNull()
+
+        val newInfo = mockk<CustomerInfo>()
+        customerInfoUpdateHandler.notifyListeners(newInfo)
+
+        verify(exactly = 0) { listener.onReceived(newInfo) }
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `re-assigning the same legacy listener instance does not redeliver cached info`() {
+        val listener = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listener
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listener
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listener
+
+        verify(exactly = 1) { listener.onReceived(mockInfo) }
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `replacing the legacy listener stops notifying the previous one`() {
+        val firstListener = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        val secondListener = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.updatedCustomerInfoListener = firstListener
+        customerInfoUpdateHandler.updatedCustomerInfoListener = secondListener
+
+        val newInfo = mockk<CustomerInfo>()
+        customerInfoUpdateHandler.notifyListeners(newInfo)
+
+        verify(exactly = 0) { firstListener.onReceived(newInfo) }
+        verify(exactly = 1) { secondListener.onReceived(newInfo) }
+    }
+
+    // endregion
+
+    // region diagnostics deduplication
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `tracks verification result only once when cached info is later broadcast`() {
+        customerInfoUpdateHandler.updatedCustomerInfoListener =
+            mockk<UpdatedCustomerInfoListener>(relaxed = true)
+
+        // The backend returns the very same customer info the cache already held.
+        customerInfoUpdateHandler.cacheAndNotifyListeners(mockInfo)
+
+        verify(exactly = 1) { diagnosticsTracker.trackCustomerInfoVerificationResultIfNeeded(mockInfo) }
+    }
+
+    @Test
+    fun `tracks verification result only once when several listeners register for the same info`() {
+        customerInfoUpdateHandler.addUpdatedCustomerInfoListener(
+            mockk<UpdatedCustomerInfoListener>(relaxed = true),
+        )
+        customerInfoUpdateHandler.addUpdatedCustomerInfoListener(
+            mockk<UpdatedCustomerInfoListener>(relaxed = true),
+        )
+
+        verify(exactly = 1) { diagnosticsTracker.trackCustomerInfoVerificationResultIfNeeded(mockInfo) }
+    }
+
+    // endregion
+
+    // region isolation between listeners
+
+    /**
+     * Characterization test. A listener that throws aborts the broadcast for the listeners
+     * registered behind it, which is a known limitation of delivering inline on the looper thread
+     * and is deliberately not swallowed here: hiding an app's exception would be worse than the
+     * missed update. What this pins is that the failure stays confined to that one broadcast and
+     * does not corrupt the delivery bookkeeping of the listeners behind it.
+     */
+    @Test
+    fun `a listener that throws does not corrupt delivery for the listeners behind it`() {
+        // No cached info, so registration does not deliver and the test isolates broadcasting.
+        every { deviceCache.getCachedCustomerInfo(appUserId) } returns null
+
+        val throwingListener = UpdatedCustomerInfoListener { error("listener blew up") }
+        val healthyListener = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.addUpdatedCustomerInfoListener(throwingListener)
+        customerInfoUpdateHandler.addUpdatedCustomerInfoListener(healthyListener)
+
+        val firstInfo = mockk<CustomerInfo>()
+        val secondInfo = mockk<CustomerInfo>()
+
+        // The throwing listener is registered first, so it aborts this broadcast before the
+        // healthy listener behind it is reached.
+        runCatching { customerInfoUpdateHandler.notifyListeners(firstInfo) }
+        verify(exactly = 0) { healthyListener.onReceived(firstInfo) }
+
+        customerInfoUpdateHandler.removeUpdatedCustomerInfoListener(throwingListener)
+
+        // Later updates must still reach the healthy listener, including firstInfo once the
+        // shared gate has moved off it.
+        customerInfoUpdateHandler.notifyListeners(secondInfo)
+        customerInfoUpdateHandler.notifyListeners(firstInfo)
+
+        verify(exactly = 1) { healthyListener.onReceived(secondInfo) }
+        verify(exactly = 1) { healthyListener.onReceived(firstInfo) }
     }
 
     // endregion

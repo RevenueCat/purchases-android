@@ -15,6 +15,11 @@ import com.revenuecat.purchases.strings.CustomerInfoStrings
 
 /**
  * This class is responsible for updating the customer info cache and notifying the listeners.
+ *
+ * All registered listeners live in a single [listeners] list, including the one set through the
+ * deprecated [updatedCustomerInfoListener] property. That property is just a single-slot view onto
+ * the same list, tracked by [legacyListenerState], so that registering the same listener through
+ * both APIs cannot deliver twice and either API can remove it.
  */
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions")
@@ -31,12 +36,13 @@ internal class CustomerInfoUpdateHandler constructor(
      * Per-listener delivery bookkeeping.
      *
      * [lastDeliveredCustomerInfo] lets each listener dedup independently, so a listener that
-     * already received a value through its initial delivery is not notified again by a
-     * subsequent broadcast of that same value.
+     * already received a value through its initial delivery is not notified again by a subsequent
+     * broadcast of that same value. It is only ever set at delivery time, so a listener is never
+     * marked as having received a value it did not actually receive.
      *
      * [initialDeliveryPending] guards the initial cached-info delivery, which is dispatched
      * asynchronously. If a broadcast reaches this listener while that delivery is still queued,
-     * the broadcast clears the flag and the queued delivery is dropped, so a stale cached value
+     * the broadcast clears the flag and the queued delivery drops itself, so a stale cached value
      * can never land after a newer one.
      */
     private class ListenerState(
@@ -46,22 +52,45 @@ internal class CustomerInfoUpdateHandler constructor(
         var initialDeliveryPending: Boolean = false
     }
 
-    private var legacyUpdatedCustomerInfoListener: UpdatedCustomerInfoListener? = null
-
-    @Deprecated("Use addUpdatedCustomerInfoListener/removeUpdatedCustomerInfoListener instead")
-    var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
-        @Synchronized get() = legacyUpdatedCustomerInfoListener
-        set(value) {
-            synchronized(this@CustomerInfoUpdateHandler) {
-                legacyUpdatedCustomerInfoListener = value
-            }
-            afterSetLegacyListener(value)
-        }
-
     private val listeners = mutableListOf<ListenerState>()
+
+    /** The entry in [listeners] currently owned by the deprecated single-listener property. */
     private var legacyListenerState: ListenerState? = null
 
     private var lastSentCustomerInfo: CustomerInfo? = null
+
+    /**
+     * Verification diagnostics describe a customer info *value*, not a listener, so they are
+     * deduped by value here rather than piggybacking on the delivery gate.
+     */
+    private var lastTrackedCustomerInfo: CustomerInfo? = null
+
+    @Deprecated("Use addUpdatedCustomerInfoListener/removeUpdatedCustomerInfoListener instead")
+    var updatedCustomerInfoListener: UpdatedCustomerInfoListener?
+        @Synchronized get() = legacyListenerState?.listener
+        set(value) {
+            val listenerState = synchronized(this@CustomerInfoUpdateHandler) {
+                val previousLegacy = legacyListenerState
+                if (value == null) {
+                    previousLegacy?.let { listeners.remove(it) }
+                    legacyListenerState = null
+                    null
+                } else {
+                    // Reuse the existing entry when this listener is already registered, so
+                    // re-assigning the same instance stays a no-op instead of re-delivering.
+                    val existing = listeners.firstOrNull { it.listener === value }
+                    if (previousLegacy != null && previousLegacy !== existing) {
+                        listeners.remove(previousLegacy)
+                    }
+                    (existing ?: ListenerState(value).also { listeners.add(it) })
+                        .also { legacyListenerState = it }
+                }
+            }
+            if (listenerState != null) {
+                log(LogIntent.DEBUG) { ConfigureStrings.LISTENER_SET }
+                sendCachedCustomerInfoToNewListener(listenerState)
+            }
+        }
 
     fun addUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
         log(LogIntent.DEBUG) { ConfigureStrings.LISTENER_SET }
@@ -69,25 +98,29 @@ internal class CustomerInfoUpdateHandler constructor(
             listeners.firstOrNull { it.listener === listener }
                 ?: ListenerState(listener).also { listeners.add(it) }
         }
-        if (!appConfig.customEntitlementComputation) {
-            sendCachedCustomerInfoToNewListener(listenerState, trackVerification = false)
-        }
+        sendCachedCustomerInfoToNewListener(listenerState)
     }
 
+    /**
+     * Removes [listener] however it was registered, including through the deprecated property.
+     * Otherwise a listener set through the property could never be removed by reference, and
+     * would keep receiving callbacks while being strongly held.
+     */
     fun removeUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
         synchronized(this@CustomerInfoUpdateHandler) {
-            listeners.indexOfFirst { it.listener === listener }
-                .takeIf { it >= 0 }
-                ?.let { listeners.removeAt(it) }
+            listeners.firstOrNull { it.listener === listener }?.let { listenerState ->
+                listeners.remove(listenerState)
+                if (legacyListenerState === listenerState) {
+                    legacyListenerState = null
+                }
+            }
         }
     }
 
-    @Suppress("DEPRECATION")
     fun removeAllListeners() {
         synchronized(this@CustomerInfoUpdateHandler) {
             listeners.clear()
             legacyListenerState = null
-            legacyUpdatedCustomerInfoListener = null
         }
     }
 
@@ -96,56 +129,32 @@ internal class CustomerInfoUpdateHandler constructor(
         notifyListeners(customerInfo)
     }
 
-    @Suppress("DEPRECATION")
     fun notifyListeners(customerInfo: CustomerInfo) {
-        // Claim the broadcast and mark every listener under a single lock, so the shared dedup
-        // gate can never advance without the per-listener bookkeeping advancing with it.
+        // Claim the broadcast under a single lock. Listeners are selected here but only marked as
+        // delivered at delivery time, so one listener throwing cannot make the update look
+        // delivered to the listeners behind it.
         val notification = synchronized(this@CustomerInfoUpdateHandler) {
             val previouslySent = lastSentCustomerInfo
             if (previouslySent == customerInfo) {
                 null
             } else {
                 lastSentCustomerInfo = customerInfo
-                val statesToNotify = buildList {
-                    (listOfNotNull(legacyListenerState) + listeners).forEach { listenerState ->
-                        // Any broadcast supersedes a queued initial delivery.
-                        listenerState.initialDeliveryPending = false
-                        if (listenerState.lastDeliveredCustomerInfo != customerInfo) {
-                            listenerState.lastDeliveredCustomerInfo = customerInfo
-                            add(listenerState)
-                        }
-                    }
-                }
+                val statesToNotify = listeners.filter { it.lastDeliveredCustomerInfo != customerInfo }
+                // Any broadcast supersedes a queued initial delivery.
+                statesToNotify.forEach { it.initialDeliveryPending = false }
                 previouslySent to statesToNotify
             }
         } ?: return
 
         val (previouslySent, statesToNotify) = notification
-        diagnosticsTracker?.trackCustomerInfoVerificationResultIfNeeded(customerInfo)
+        trackVerificationResultIfNeeded(customerInfo)
         if (previouslySent != null) {
             log(LogIntent.DEBUG) { CustomerInfoStrings.CUSTOMERINFO_UPDATED_NOTIFYING_LISTENER }
         } else {
             log(LogIntent.DEBUG) { CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER }
         }
         statesToNotify.forEach { listenerState ->
-            dispatch { listenerState.listener.onReceived(customerInfo) }
-        }
-    }
-
-    private fun afterSetLegacyListener(listener: UpdatedCustomerInfoListener?) {
-        val listenerState = synchronized(this@CustomerInfoUpdateHandler) {
-            if (listener == null) {
-                legacyListenerState = null
-                null
-            } else {
-                ListenerState(listener).also { legacyListenerState = it }
-            }
-        }
-        if (listenerState != null) {
-            log(LogIntent.DEBUG) { ConfigureStrings.LISTENER_SET }
-            if (!appConfig.customEntitlementComputation) {
-                sendCachedCustomerInfoToNewListener(listenerState, trackVerification = true)
-            }
+            deliver(listenerState, customerInfo)
         }
     }
 
@@ -154,32 +163,38 @@ internal class CustomerInfoUpdateHandler constructor(
      * touching the shared [lastSentCustomerInfo] gate. That gate is only ever advanced by
      * [notifyListeners]; rolling it backwards here would re-broadcast to every other listener.
      */
-    private fun sendCachedCustomerInfoToNewListener(
-        listenerState: ListenerState,
-        trackVerification: Boolean,
-    ) {
+    private fun sendCachedCustomerInfoToNewListener(listenerState: ListenerState) {
+        if (appConfig.customEntitlementComputation) return
         if (!reserveInitialDelivery(listenerState)) return
 
         val cachedInfo = getCachedCustomerInfo(identityManager.currentAppUserID)
         if (cachedInfo == null) {
             clearInitialDeliveryReservation(listenerState)
-            return
+        } else {
+            trackVerificationResultIfNeeded(cachedInfo)
+            log(LogIntent.DEBUG) { CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER }
+            deliver(listenerState, cachedInfo, isInitialDelivery = true)
         }
-        if (trackVerification &&
-            synchronized(this@CustomerInfoUpdateHandler) { lastSentCustomerInfo } != cachedInfo
-        ) {
-            diagnosticsTracker?.trackCustomerInfoVerificationResultIfNeeded(cachedInfo)
-        }
-        sendToSingleListener(listenerState, cachedInfo)
     }
 
-    private fun sendToSingleListener(listenerState: ListenerState, customerInfo: CustomerInfo) {
-        log(LogIntent.DEBUG) { CustomerInfoStrings.SENDING_LATEST_CUSTOMERINFO_TO_LISTENER }
+    /**
+     * Dispatches [customerInfo] to a single listener, re-checking under the lock at delivery time:
+     * the listener may have been removed, or a broadcast may have overtaken a queued initial
+     * delivery and cleared its reservation.
+     */
+    private fun deliver(
+        listenerState: ListenerState,
+        customerInfo: CustomerInfo,
+        isInitialDelivery: Boolean = false,
+    ) {
         dispatch {
-            // Re-check under the lock at delivery time: the listener may have been removed, or a
-            // broadcast may have overtaken this queued delivery and cleared the reservation.
             val listener = synchronized(this@CustomerInfoUpdateHandler) {
-                if (!contains(listenerState) || !listenerState.initialDeliveryPending) {
+                val superseded = isInitialDelivery && !listenerState.initialDeliveryPending
+                if (
+                    !listeners.contains(listenerState) ||
+                    superseded ||
+                    listenerState.lastDeliveredCustomerInfo == customerInfo
+                ) {
                     null
                 } else {
                     listenerState.initialDeliveryPending = false
@@ -212,13 +227,23 @@ internal class CustomerInfoUpdateHandler constructor(
         }
     }
 
+    private fun trackVerificationResultIfNeeded(customerInfo: CustomerInfo) {
+        val shouldTrack = synchronized(this@CustomerInfoUpdateHandler) {
+            if (lastTrackedCustomerInfo == customerInfo) {
+                false
+            } else {
+                lastTrackedCustomerInfo = customerInfo
+                true
+            }
+        }
+        if (shouldTrack) {
+            diagnosticsTracker?.trackCustomerInfoVerificationResultIfNeeded(customerInfo)
+        }
+    }
+
     private fun getCachedCustomerInfo(appUserID: String): CustomerInfo? {
         return offlineEntitlementsManager.offlineCustomerInfo
             ?: deviceCache.getCachedCustomerInfo(appUserID)
-    }
-
-    private fun contains(listenerState: ListenerState): Boolean {
-        return legacyListenerState === listenerState || listeners.contains(listenerState)
     }
 
     private fun dispatch(action: () -> Unit) {
