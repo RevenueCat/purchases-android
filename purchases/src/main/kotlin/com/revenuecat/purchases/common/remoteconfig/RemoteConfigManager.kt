@@ -852,8 +852,7 @@ internal class RemoteConfigManager(
 
     /** The committed item for [itemKey], waiting for or triggering a sync once when it is not cached yet. */
     private suspend fun committedItem(topic: RemoteConfigTopic, itemKey: String): RemoteConfiguration.ConfigItem? {
-        val configItem = topicStore.topic(topic)?.get(itemKey)
-        configItem?.let { return it }
+        topicStore.topic(topic)?.get(itemKey)?.let { return it }
         verboseLog { "Remote config item '$itemKey' not committed yet; awaiting config." }
         awaitConfigForRead()
         return topicStore.topic(topic)?.get(itemKey).also {
@@ -882,13 +881,6 @@ internal class RemoteConfigManager(
         // carried-forward index (the server omits them); topics no longer active are pruned.
         val mergedTopics = (previousTopics + response.topics)
             .filterKeys { it in response.activeTopics }
-        debugLog {
-            val inventory = mergedTopics.entries.joinToString { (name, topic) ->
-                "$name -> items=${topic.keys}"
-            }
-            "Effective remote config topics after merge: [${inventory.ifEmpty { "none" }}]."
-        }
-
         // Blobs the current config still wants: the prefetch set plus any active-topic blob ref.
         val blobRefsToKeep = response.prefetchBlobs.toSet() + mergedTopics.toTopicBlobRefs().values.flatten()
 

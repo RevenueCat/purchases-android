@@ -83,15 +83,10 @@ internal class CheckpointWorkflowResolverImpl(
             CheckpointRulesResolution.Unavailable ->
                 return configurationUnavailable("The rules for checkpoint '$identifier' could not be read.")
         }
-        debugLog { "Resolving checkpoint '$identifier' with ${checkpoint.rules.size} audience rules." }
         val matchResult = localRulesEvaluator.match(
             rules = checkpoint.rules,
             customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables),
         ) { rule ->
-            debugLog {
-                "Evaluating audience '${rule.audienceId}' for checkpoint '$identifier' " +
-                    "and workflow '${rule.workflowId}'."
-            }
             audiencesConfigProvider.getAudience(rule.audienceId)
                 ?.let { audience -> Result.success(audience.rules) }
                 ?: Result.failure(AudienceUnavailableException(rule.audienceId))
@@ -103,10 +98,6 @@ internal class CheckpointWorkflowResolverImpl(
                 "The audiences for checkpoint '$identifier' could not be evaluated: ${error.message}",
             )
         } ?: return noMatch(identifier)
-        debugLog {
-            "Checkpoint '$identifier' matched audience '${rule.audienceId}' for workflow '${rule.workflowId}'."
-        }
-
         val uiConfig = try {
             uiConfigProvider.getUiConfig()
         } catch (e: CancellationException) {

@@ -4,15 +4,12 @@ package com.revenuecat.purchases.checkpoints
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.LogLevel
-import com.revenuecat.purchases.LogMessage
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.UiConfig
-import com.revenuecat.purchases.assertLogs
 import com.revenuecat.purchases.common.audiences.Audience
 import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.checkpoints.CheckpointResponse
@@ -216,39 +213,10 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `checkpoint audience resolution emits debug diagnostics`() {
-        configureRules(rule("wf5678"), rule("wf1234"))
-        coEvery { mockAudiencesConfigProvider.getAudience("aud_wf5678") } returns
-            Audience("aud_wf5678", "false")
-        coEvery { mockAudiencesConfigProvider.getAudience("aud_wf1234") } returns
-            Audience("aud_wf1234", "true")
-
-        assertLogs(
-            listOf(
-                LogMessage(LogLevel.DEBUG, "Resolving checkpoint 'test_checkpoint' with 2 audience rules."),
-                LogMessage(
-                    LogLevel.DEBUG,
-                    "Evaluating audience 'aud_wf5678' for checkpoint 'test_checkpoint' and workflow 'wf5678'.",
-                ),
-                LogMessage(
-                    LogLevel.DEBUG,
-                    "Evaluating audience 'aud_wf1234' for checkpoint 'test_checkpoint' and workflow 'wf1234'.",
-                ),
-                LogMessage(
-                    LogLevel.DEBUG,
-                    "Checkpoint 'test_checkpoint' matched audience 'aud_wf1234' for workflow 'wf1234'.",
-                ),
-            ),
-        ) {
-            runTest { resolve() }
-        }
-    }
-
-    @Test
     fun `audiences after the first match are not loaded`() = runTest {
         configureRules(rule("wf1234"), rule("wf5678"))
 
-        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
+        val resolution = resolve() as CheckpointResolution.Workflow
 
         assertThat(resolution.workflow).isEqualTo(mockWorkflow)
         coVerify(exactly = 0) { mockAudiencesConfigProvider.getAudience("aud_wf5678") }
