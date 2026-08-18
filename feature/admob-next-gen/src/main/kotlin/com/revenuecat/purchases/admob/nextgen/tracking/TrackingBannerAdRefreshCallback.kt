@@ -18,15 +18,14 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
  * [responseInfoProvider] is read when the callback fires rather than captured up
  * front, to report the refreshed response instead of the original one.
  *
- * [placement] is a var for the same reason. A banner refreshes for as long as it is
- * on screen, so a placement captured at construction would keep reporting the
- * load-time value after [TrackingAdEventCallback.placement] had already moved on,
- * splitting one banner's events across two placements.
+ * [placement] stays immutable, unlike [TrackingAdEventCallback.placement]. A show-time
+ * placement override only exists for the full-screen formats, which have no refresh
+ * callback, so a banner reports the one placement it was loaded with.
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingBannerAdRefreshCallback(
     internal var delegate: BannerAdRefreshCallback?,
-    internal var placement: String?,
+    private val placement: String?,
     private val adUnitId: String,
     private val responseInfoProvider: () -> ResponseInfo,
 ) : BannerAdRefreshCallback {
