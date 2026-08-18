@@ -102,6 +102,7 @@ internal class CustomerInfoDimensionProvider(
         putString(KEY_STORE, store.stringValue)
         putString(KEY_OWNERSHIP_TYPE, ownershipType.dimensionValue)
         putString(KEY_PERIOD_TYPE, periodType.dimensionValue)
+        putString(KEY_STATUS, status(date))
         putPrice(price)
         putDate(KEY_PURCHASED_AT, purchaseDate)
         putDate(KEY_ORIGINAL_PURCHASED_AT, originalPurchaseDate)
@@ -116,7 +117,7 @@ internal class CustomerInfoDimensionProvider(
         putBool(KEY_WILL_RENEW, willRenew)
         // The store keeps serving a subscription while a billing issue is being retried, and `isActive` does not
         // cover that, so `{"or": [isActive, isInGracePeriod]}` is the still-being-served test.
-        putBool(KEY_IS_IN_GRACE_PERIOD, gracePeriodExpiresDate?.after(date) == true)
+        putBool(KEY_IS_IN_GRACE_PERIOD, isInGracePeriod(date))
         putBool(KEY_IS_REFUNDED, refundedAt != null)
         // A resume date is only ever set while a Google subscription is paused, so having one *is* being paused.
         putBool(KEY_IS_PAUSED, autoResumeDate != null)
@@ -193,6 +194,7 @@ internal class CustomerInfoDimensionProvider(
         const val KEY_PURCHASED_AT = "purchasedAt"
         const val KEY_PURCHASED_PRODUCT_IDENTIFIER = "purchasedProductIdentifier"
         const val KEY_REFUNDED_AT = "refundedAt"
+        const val KEY_STATUS = "status"
         const val KEY_STORE = "store"
         const val KEY_STORE_TRANSACTION_ID = "storeTransactionId"
         const val KEY_TRANSACTION_IDENTIFIER = "transactionIdentifier"
@@ -201,6 +203,12 @@ internal class CustomerInfoDimensionProvider(
 
         const val KIND_NON_SUBSCRIPTION = "nonSubscription"
         const val KIND_SUBSCRIPTION = "subscription"
+
+        const val STATUS_ACTIVE = "active"
+        const val STATUS_EXPIRED = "expired"
+        const val STATUS_IN_GRACE_PERIOD = "in_grace_period"
+        const val STATUS_PAUSED = "paused"
+        const val STATUS_TRIALING = "trialing"
 
         /**
          * The base plan is part of what was bought on Google, and it is the form the dashboard lists a
@@ -222,6 +230,34 @@ internal class CustomerInfoDimensionProvider(
                 OwnershipType.FAMILY_SHARED -> "FAMILY_SHARED"
                 OwnershipType.UNKNOWN -> null
             }
+
+        /**
+         * Where the customer is in this subscription's lifecycle, as one value instead of a combination every
+         * predicate has to assemble for itself.
+         *
+         * Read most specific first: a paused subscription is paused whatever its dates say, a billing issue the
+         * store is still serving through outranks the trial or the renewal it interrupted, and anything not
+         * currently granting access has expired.
+         *
+         * `in_billing_retry` and `incomplete` belong to the same vocabulary but are never reported here. Once a
+         * grace period is over, whether the store is still retrying is something it tells the backend and not this
+         * device, which only sees that access lapsed; a predicate that needs the distinction reads
+         * [KEY_BILLING_ISSUE_DETECTED_AT] itself.
+         */
+        private fun SubscriptionInfo.status(date: Date): String = when {
+            autoResumeDate != null -> STATUS_PAUSED
+            isInGracePeriod(date) -> STATUS_IN_GRACE_PERIOD
+            isActive && periodType == PeriodType.TRIAL -> STATUS_TRIALING
+            isActive -> STATUS_ACTIVE
+            else -> STATUS_EXPIRED
+        }
+
+        /**
+         * The store keeps serving a subscription while a billing issue is being retried. Shared by
+         * [KEY_IS_IN_GRACE_PERIOD] and [KEY_STATUS] so the two always agree.
+         */
+        private fun SubscriptionInfo.isInGracePeriod(date: Date): Boolean =
+            gracePeriodExpiresDate?.after(date) == true
 
         private val PeriodType.dimensionValue: String
             get() = when (this) {

@@ -132,6 +132,7 @@ class RulesDimensionScopeTest {
                     "purchasedAt": 1714521600000,
                     "purchasedProductIdentifier": "premium:monthly",
                     "refundedAt": 1714867200000,
+                    "status": "paused",
                     "store": "play_store",
                     "storeTransactionId": "GPA.0000-0000-0000-00000",
                     "unsubscribeDetectedAt": 1714694400000,

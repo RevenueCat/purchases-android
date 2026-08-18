@@ -72,6 +72,7 @@ class CustomerInfoDimensionProviderTest {
                 "store" to string("play_store"),
                 "ownershipType" to string("PURCHASED"),
                 "periodType" to string("trial"),
+                "status" to string("paused"),
                 "priceAmountMicros" to RulesDimensionValue.IntValue(4_990_000),
                 "priceCurrency" to string("USD"),
                 "purchasedAt" to date("2024-05-01T00:00:00Z"),
@@ -137,6 +138,65 @@ class CustomerInfoDimensionProviderTest {
                 "evaluatedAt" to RulesDimensionValue.DateValue(date),
             ),
         )
+    }
+
+    @Test
+    fun `reports where the customer is in each subscription's lifecycle`() = runTest {
+        val cases = listOf(
+            Triple("a paid subscription", "active", statusResponse(expiresDate = FUTURE)),
+            Triple("a free trial", "trialing", statusResponse(expiresDate = FUTURE, periodType = "trial")),
+            // Still being served while the billing issue is retried, which outranks the trial it interrupted.
+            Triple(
+                "a trial in a grace period",
+                "in_grace_period",
+                statusResponse(
+                    expiresDate = FUTURE,
+                    periodType = "trial",
+                    billingIssuesDetectedAt = PAST,
+                    gracePeriodExpiresDate = FUTURE,
+                ),
+            ),
+            // Paused whatever the dates say.
+            Triple("a paused subscription", "paused", statusResponse(expiresDate = FUTURE, autoResumeDate = FUTURE)),
+            Triple("a lapsed subscription", "expired", statusResponse(expiresDate = PAST)),
+            // The device cannot tell a store still retrying from one that gave up long ago, so this does not claim
+            // `in_billing_retry`; `billingIssueDetectedAt` is on the record for a predicate that needs it.
+            Triple(
+                "a subscription that lapsed after a billing issue",
+                "expired",
+                statusResponse(expiresDate = PAST, billingIssuesDetectedAt = PAST),
+            ),
+        )
+
+        for ((label, expected, response) in cases) {
+            val purchase = provider(customerInfo(response)).dimensions(date).purchases().single()
+
+            assertThat(purchase["status"]).describedAs(label).isEqualTo(string(expected))
+        }
+    }
+
+    @Test
+    fun `a lifetime subscription is active`() = runTest {
+        val purchase = provider(customerInfo(LIFETIME_RESPONSE)).dimensions(date).purchases().single()
+
+        assertThat(purchase["status"]).isEqualTo(string("active"))
+    }
+
+    @Test
+    fun `the grace period status and the grace period flag always agree`() = runTest {
+        val purchase = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(date).purchases()
+            .single { it["purchasedProductIdentifier"] == string("legacy:annual") }
+
+        assertThat(purchase["isInGracePeriod"]).isEqualTo(bool(true))
+        assertThat(purchase["status"]).isEqualTo(string("in_grace_period"))
+    }
+
+    @Test
+    fun `a one-time purchase has no status, since only a subscription has a lifecycle`() = runTest {
+        val purchase = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(date).purchases()
+            .single { it["kind"] == string("nonSubscription") }
+
+        assertThat(purchase).doesNotContainKey("status")
     }
 
     @Test
@@ -420,6 +480,36 @@ class CustomerInfoDimensionProviderTest {
                 expiresDate = "2100-01-01T00:00:00Z",
                 ownershipType = null,
             )}
+                }
+            """,
+        )
+
+        const val FUTURE = "2100-01-01T00:00:00Z"
+
+        // Before the evaluation date, so a grace period ending here has already ended.
+        const val PAST = "2023-01-01T00:00:00Z"
+
+        /** One subscription, naming only the fields a status is derived from. */
+        private fun statusResponse(
+            expiresDate: String?,
+            periodType: String = "normal",
+            billingIssuesDetectedAt: String? = null,
+            gracePeriodExpiresDate: String? = null,
+            autoResumeDate: String? = null,
+        ) = subscriberResponse(
+            subscriptions = """
+                "premium": {
+                  ${subscription(
+            store = "play_store",
+            purchaseDate = "2024-05-01T00:00:00Z",
+            originalPurchaseDate = "2024-05-01T00:00:00Z",
+            expiresDate = expiresDate,
+            ownershipType = "PURCHASED",
+            periodType = periodType,
+            billingIssuesDetectedAt = billingIssuesDetectedAt,
+            gracePeriodExpiresDate = gracePeriodExpiresDate,
+            autoResumeDate = autoResumeDate,
+        )}
                 }
             """,
         )
