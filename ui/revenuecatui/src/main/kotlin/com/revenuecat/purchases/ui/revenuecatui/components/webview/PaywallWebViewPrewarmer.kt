@@ -14,9 +14,6 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 /**
  * Loads `web_view` component bundles offscreen so the paywall profile's http cache holds them before the
  * component renders.
- *
- * Warming views are never attached or laid out, so a bundle whose requests depend on viewport size
- * (`srcset`, `sizes`, CSS media queries) can resolve them differently than the displayed document does.
  */
 @Suppress("TooManyFunctions")
 internal class PaywallWebViewPrewarmer(
@@ -81,8 +78,7 @@ internal class PaywallWebViewPrewarmer(
     }
 
     /**
-     * Stops warming while a `web_view` component displays [resolvedUrl]: every warm runs script on the one
-     * renderer thread that component is using. Balanced by [onDisplayEnded].
+     * Stops warming while a `web_view` component displays [resolvedUrl]
      */
     @MainThread
     fun onDisplayStarted(resolvedUrl: String) {
@@ -93,10 +89,6 @@ internal class PaywallWebViewPrewarmer(
         mainHandler.post(::releaseInFlight)
     }
 
-    /**
-     * The display path's own load of [resolvedUrl] has started, so it fills the http cache itself. Unlike
-     * [onDisplayStarted] this waits until the WebView exists, so a construction failure cannot poison the url.
-     */
     @MainThread
     fun markWarmed(resolvedUrl: String) {
         warmedUrls.add(resolvedUrl)
@@ -107,7 +99,6 @@ internal class PaywallWebViewPrewarmer(
     fun onDisplayEnded() {
         if (displayedComponents == 0) return
         displayedComponents--
-        // Posted: a paywall is being dismissed on this frame, and building a WebView there is jank.
         if (displayedComponents == 0) mainHandler.post(::startAvailable)
     }
 
@@ -189,15 +180,12 @@ internal class PaywallWebViewPrewarmer(
     internal val warmingCount: Int get() = inFlight.size
 
     internal companion object {
-        /** Backstop; a warm normally ends on `onPageFinished` well before this. */
         @VisibleForTesting
         internal const val WARM_STALL_TIMEOUT_MS: Long = 3_000L
 
-        /** `destroy()` aborts what a document still fetches from script after `onPageFinished`. */
         @VisibleForTesting
         internal const val SETTLE_GRACE_MS: Long = 250L
 
-        /** WebView shares one renderer process between warms, so only their fetches overlap. */
         @VisibleForTesting
         internal const val MAX_CONCURRENT_WARMS: Int = 2
 

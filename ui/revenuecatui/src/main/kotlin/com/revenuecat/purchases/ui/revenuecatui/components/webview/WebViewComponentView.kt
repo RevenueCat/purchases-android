@@ -236,7 +236,6 @@ internal class ConfiguredPaywallWebView(
     val bridge: WebViewJavaScriptBridge,
 )
 
-/** A constructed WebView holds a renderer, and until it is returned nothing else can destroy it. */
 @Suppress("TooGenericExceptionCaught")
 private inline fun <T> PaywallWebView.destroyingOnFailure(setUp: PaywallWebView.() -> T): T {
     try {
@@ -247,19 +246,13 @@ private inline fun <T> PaywallWebView.destroyingOnFailure(setUp: PaywallWebView.
     }
 }
 
-/** The profile decides which http cache the WebView reads and writes. */
 private fun newPaywallWebView(context: Context): PaywallWebView =
     PaywallWebView(context).destroyingOnFailure {
         applyFullSizeLayoutParams()
-        // Must precede attach()/loadUrl: setProfile throws once the WebView has been used.
         applyPaywallProfile()
         this
     }
 
-/**
- * Null means the bridge cannot install secure messaging: [onLoadFailed] has already fired and everything is
- * already destroyed, so the caller must neither start a load nor tear anything down.
- */
 @Suppress("LongParameterList")
 internal fun createPaywallWebView(
     context: Context,
@@ -364,7 +357,6 @@ internal fun WebView.applyFullSizeLayoutParams() {
     )
 }
 
-/** Settings and navigation policy, shared so a warmed document requests what a displayed one will. */
 @Suppress("LongParameterList")
 private fun WebView.configure(
     expectedOrigin: String?,

@@ -9,10 +9,6 @@ import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/**
- * Instrumented because WebView's instance API does not resolve on this module's unit-test classpath. An
- * autoplaying `<video>`/`<audio>` really does play from a view that was never attached to a window.
- */
 @RunWith(AndroidJUnit4::class)
 class PaywallWebViewMediaPolicyTest {
 
@@ -60,7 +56,6 @@ class PaywallWebViewMediaPolicyTest {
             }
         }
 
-        // Null means this System WebView cannot install secure messaging, which is not what this asserts.
         assumeTrue(built)
         assertThat(requiresGesture).isFalse()
     }
