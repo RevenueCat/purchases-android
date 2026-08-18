@@ -373,6 +373,24 @@ internal class PaywallWebViewPrewarmerTest {
         assertThat(prewarmer.warmingCount).isEqualTo(2)
     }
 
+    // onPageFinished posts its settle, so a display starting in that window requeues a url that is about
+    // to be marked warmed.
+    @Test
+    fun `does not rewarm a url that settled while a component was displayed`() {
+        val prewarmer = prewarmer()
+        prewarmer.prewarmAll(URL)
+        val view = warmed.single()
+        shadowOf(view).webViewClient.onPageFinished(view, URL)
+
+        prewarmer.onDisplayStarted(DISPLAYED_URL)
+        idle()
+        prewarmer.onDisplayEnded()
+        idle()
+
+        assertWarmCount(1)
+        assertThat(prewarmer.queuedCount).isZero()
+    }
+
     @Test
     fun `abandons the in-flight load and the queue when the app is asked to trim memory`() {
         val prewarmer = prewarmer()

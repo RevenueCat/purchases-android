@@ -114,6 +114,7 @@ internal class PaywallWebViewPrewarmer(
     private fun startAvailable() {
         if (displayedComponents > 0) return
         val context = applicationContext ?: return
+        queue.removeAll { it in warmedUrls }
         while (inFlight.size < maxConcurrentWarms) {
             val url = queue.removeFirstOrNull()
             if (url == null || !begin(context, url)) break
