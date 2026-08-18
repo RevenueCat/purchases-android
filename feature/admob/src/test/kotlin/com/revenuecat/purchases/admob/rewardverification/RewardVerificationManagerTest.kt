@@ -16,6 +16,7 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesServiceDispatcher
 import com.revenuecat.purchases.admob.enableRewardVerification
 import com.revenuecat.purchases.admob.show as showWithRewardVerification
+import com.revenuecat.purchases.ads.rewardverification.Outcome
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken
 import com.revenuecat.purchases.ads.rewardverification.VerifiedReward
@@ -71,7 +72,7 @@ internal class RewardVerificationManagerTest {
         coEvery {
             mockPurchases.pollRewardVerification(
                 capture(polledClientTransactionId),
-                any<suspend (String) -> RewardVerificationResult>(),
+                any<suspend (String) -> Outcome>(),
             )
         } returns RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "gems", amount = 7))
 
@@ -131,7 +132,7 @@ internal class RewardVerificationManagerTest {
         coEvery {
             mockPurchases.pollRewardVerification(
                 capture(polledClientTransactionId),
-                any<suspend (String) -> RewardVerificationResult>(),
+                any<suspend (String) -> Outcome>(),
             )
         } returns RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 3))
 
