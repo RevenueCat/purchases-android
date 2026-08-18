@@ -196,8 +196,7 @@ module ApiDiffReport
     parsed["messages"].to_a.map { |message| message["text"].to_s }
   end
 
-  # conversations.history answers newest first, so the first match is the channel's last word about
-  # this PR. The module list is not part of the identity: it changes with what the PR touches.
+  # conversations.history answers newest first, so the first match is the channel's last word.
   def last_announcement(texts, pull_request_link)
     return nil if pull_request_link.to_s.empty?
 
@@ -205,9 +204,7 @@ module ApiDiffReport
   end
 
   # Each push starts two pipelines, and the auto-canceled one still posts before it dies, so the
-  # channel is the only store the sibling run can see in time. Comparing against the last
-  # announcement rather than the whole window keeps a PR that reverts to an earlier surface
-  # announced: the channel's newest word on it has to be the current one.
+  # channel is the only store the sibling run can see in time.
   # Returns [:same | :different | :unknown, why_unknown].
   def announcement_state(message, channel, bot_token, getter, pull_request_link)
     unless CHANNEL_ID.match?(channel.to_s)
@@ -240,8 +237,7 @@ module ApiDiffReport
     nil
   end
 
-  # The PR comment is the report and Slack only mirrors it, so a failed announcement must not cost
-  # us the comment. Returns [:posted | :duplicate | :failed, reason_or_nil].
+  # Returns [:posted | :duplicate | :failed, reason_or_nil].
   def announce(report, pull_request_link, credentials, poster, getter, announced_in_comment)
     return [:failed, "no Slack credentials were reachable"] if credentials.nil?
 
@@ -251,8 +247,6 @@ module ApiDiffReport
     state, history_error = announcement_state(message, channel, bot_token, getter, pull_request_link)
     return [:duplicate, nil] if state == :same
 
-    # Nothing the channel can tell us: the marker the last announcement left on the PR is all we
-    # have, and it records the same thing, the last summary that made it out.
     if state == :unknown && announced_in_comment&.call(fingerprint_marker(fingerprint(report)))
       return [:duplicate, nil]
     end
@@ -263,7 +257,18 @@ module ApiDiffReport
     [:failed, e.message]
   end
 
-  # Returns { comment:, slack_error:, degraded_dedupe: }, or nil when the public API did not change.
+  def warning(outcome, reason)
+    return nil if reason.to_s.empty?
+
+    case outcome
+    when :failed
+      "The public API changed, but it was not announced in the SDK API feed: #{reason}."
+    when :posted
+      "Could not read the SDK API feed channel, so this change may be announced twice: #{reason}."
+    end
+  end
+
+  # Returns { comment:, warning: }, or nil when the public API did not change.
   def run(changed_files:, patch_for:, pull_request_link:, credentials: slack_credentials, poster: nil,
           getter: nil, announced_in_comment: nil)
     signature_files = changed_files.uniq.select { |file| signature_file?(file) }
@@ -273,10 +278,8 @@ module ApiDiffReport
     outcome, reason = announce(report, pull_request_link, credentials, poster, getter, announced_in_comment)
 
     {
-      # Recording the fingerprint after a failed announcement would silence the next run too.
       comment: markdown_section(report, announced_fingerprint: (fingerprint(report) unless outcome == :failed)),
-      slack_error: (reason if outcome == :failed),
-      degraded_dedupe: (reason if outcome == :posted)
+      warning: warning(outcome, reason)
     }
   end
 end

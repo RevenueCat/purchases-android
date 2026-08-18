@@ -112,8 +112,7 @@ begin
 
   if api_diff
     markdown(api_diff[:comment])
-    warn("The public API changed, but it was not announced in the SDK API feed: #{api_diff[:slack_error]}.") if api_diff[:slack_error]
-    warn("Could not read the SDK API feed channel, so this change may be announced twice: #{api_diff[:degraded_dedupe]}.") if api_diff[:degraded_dedupe]
+    warn(api_diff[:warning]) if api_diff[:warning]
   end
 rescue StandardError => e
   # `warn` is Danger's DSL: surfaces on the PR without failing the run.

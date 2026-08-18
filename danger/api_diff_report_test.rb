@@ -240,8 +240,7 @@ class ApiDiffReportTest < Minitest::Test
     )
 
     assert_includes body[:comment], "+ method public void apiDiffDemoPong"
-    assert_nil body[:slack_error]
-    assert_nil body[:degraded_dedupe]
+    assert_nil body[:warning]
     assert_equal 1, posted.count
     assert_includes posted.first["text"], "<url|#42>"
   end
@@ -257,11 +256,9 @@ class ApiDiffReportTest < Minitest::Test
     )
 
     assert_includes body[:comment], "+ method public void apiDiffDemoPong"
-    assert_nil body[:slack_error]
+    assert_nil body[:warning]
   end
 
-  # A PR that changes the API, changes it again, then reverts to the first state: the channel's
-  # newest word on it must be the current one, so this announces again.
   def test_run_reannounces_a_surface_the_pull_request_had_already_left_behind
     posted = []
     superseded = ApiDiffReport.slack_message(
@@ -280,7 +277,15 @@ class ApiDiffReportTest < Minitest::Test
     assert_equal 1, posted.count
   end
 
-  # Only messages about this PR, from this platform, say anything about what it announced.
+  # What the PR touches changes the module list, so the modules cannot be part of the identity.
+  def test_last_announcement_matches_a_previous_announcement_of_other_modules
+    previous = ApiDiffReport.slack_message(
+      ApiDiffReport.build("ui/revenuecatui/api.txt" => SIGNATURE_CHANGE_PATCH), "<url|#42>"
+    )
+
+    assert_equal previous, ApiDiffReport.last_announcement([previous], "<url|#42>")
+  end
+
   def test_last_announcement_ignores_other_pull_requests_and_platforms
     ours = announcement_for("<url|#42>")
     texts = ["#{ours.sub(ApiDiffReport::PLATFORM_LABEL, 'iOS :ios:')}", announcement_for("<url|#41>"), ours]
@@ -288,7 +293,6 @@ class ApiDiffReportTest < Minitest::Test
     assert_equal ours, ApiDiffReport.last_announcement(texts, "<url|#42>")
   end
 
-  # The same declaration on another PR is news; the link is part of the message for that reason.
   def test_run_posts_when_the_channel_holds_another_pull_requests_summary
     posted = []
 
@@ -304,7 +308,6 @@ class ApiDiffReportTest < Minitest::Test
     assert_equal 1, posted.count
   end
 
-  # The marker written into the comment is what the next run looks for, so the helper owns its shape.
   def test_run_falls_back_to_the_marker_on_the_pull_request_when_history_is_unreadable
     markers = []
 
@@ -320,10 +323,10 @@ class ApiDiffReportTest < Minitest::Test
 
     assert_match(/\A<!-- api-diff:[0-9a-f]{12} -->\z/, markers.first)
     assert_includes body[:comment], markers.first
-    assert_nil body[:slack_error]
+    assert_nil body[:warning]
   end
 
-  def test_run_posts_and_reports_degraded_dedupe_when_neither_store_is_readable
+  def test_run_warns_about_a_possible_duplicate_when_neither_store_is_readable
     posted = []
 
     body = ApiDiffReport.run(
@@ -337,11 +340,9 @@ class ApiDiffReportTest < Minitest::Test
     )
 
     assert_equal 1, posted.count
-    assert_equal "slack is down", body[:degraded_dedupe]
-    assert_nil body[:slack_error]
+    assert_includes body[:warning], "may be announced twice: slack is down"
   end
 
-  # A recorded fingerprint would make the next run treat the failure as already announced.
   def test_run_records_the_fingerprint_only_once_announced
     announced = ApiDiffReport.run(
       changed_files: PATCHES.keys,
@@ -380,7 +381,6 @@ class ApiDiffReportTest < Minitest::Test
     assert_includes reason, "channel ID"
   end
 
-  # Past the history window there is nothing to compare against, which is not an error.
   def test_announcement_state_is_unknown_without_a_reason_when_the_pull_request_is_not_in_the_window
     state, reason = ApiDiffReport.announcement_state("hi", "C1", "xoxb-1", history_getter(["unrelated"]), "<url|#42>")
 
@@ -414,10 +414,9 @@ class ApiDiffReportTest < Minitest::Test
     )
 
     assert_includes body[:comment], "+ method public void apiDiffDemoPong"
-    assert_equal "no Slack credentials were reachable", body[:slack_error]
+    assert_includes body[:warning], "no Slack credentials were reachable"
   end
 
-  # The comment is the report; Slack only mirrors it.
   def test_run_still_returns_the_comment_when_slack_fails
     body = ApiDiffReport.run(
       changed_files: PATCHES.keys,
@@ -428,7 +427,7 @@ class ApiDiffReportTest < Minitest::Test
     )
 
     assert_includes body[:comment], "+ method public void apiDiffDemoPong"
-    assert_equal "slack is down", body[:slack_error]
+    assert_includes body[:warning], "not announced in the SDK API feed: slack is down"
   end
 
   def test_slack_credentials_accepts_the_legacy_ios_token_name
