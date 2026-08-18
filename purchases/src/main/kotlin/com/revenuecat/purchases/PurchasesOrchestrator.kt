@@ -984,7 +984,7 @@ internal class PurchasesOrchestrator(
                         ?: appConfig.store.managementUrl?.let { Uri.parse(it) }
                     if (managementURL == null) {
                         val error = PurchasesError(
-                            PurchasesErrorCode.CustomerInfoError,
+                            PurchasesErrorCode.UnsupportedError,
                             "No management URL found for current subscription",
                         )
                         log(LogIntent.RC_ERROR) { error.message }

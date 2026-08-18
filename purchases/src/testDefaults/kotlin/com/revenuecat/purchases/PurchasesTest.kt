@@ -2409,7 +2409,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         )
 
         assertThat(successCalled).isFalse()
-        assertThat(errorReceived?.code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
+        assertThat(errorReceived?.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
         verify(exactly = 0) { context.startActivity(any()) }
     }
 
