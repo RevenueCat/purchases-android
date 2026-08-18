@@ -19,15 +19,14 @@ import java.util.concurrent.RejectedExecutionException
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Moves WebView startup off the UI thread ahead of the first paywall `web_view` render, loading the
- * profile that render will use. Without it, the first render pays for startup on the UI thread.
+ * Moves WebView startup off the UI thread ahead of the first paywall `web_view` render, which would
+ * otherwise pay for it there.
  *
  * Needs no feature check: the API degrades internally on older WebViews, and below that still moves
  * provider class loading off the UI thread.
  *
- * Runs at most once per process. A failed startup is not retried, since androidx warns further WebView
- * calls on such a device are likely to throw or crash; a rejected submission is retried, because
- * startup was never attempted.
+ * A failed startup is not retried, since androidx warns further WebView calls on such a device are likely
+ * to throw or crash; a rejected submission is, because startup was never attempted.
  */
 internal object PaywallWebViewStartUp {
 
@@ -53,8 +52,7 @@ internal object PaywallWebViewStartUp {
         if (!started.compareAndSet(false, true)) return
         val applicationContext = context.applicationContext
         try {
-            // androidx.webkit calls must wait for startup, and `isFeatureSupported` loads the provider:
-            // the work this API exists to move off the caller.
+            // `isFeatureSupported` loads the provider, the very work this API exists to move off the caller.
             executor.execute { requestStartUp(applicationContext, executor) }
         } catch (error: RejectedExecutionException) {
             started.set(false)
