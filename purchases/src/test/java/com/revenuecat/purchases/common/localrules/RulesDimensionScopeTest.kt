@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.LocaleProvider
 import com.revenuecat.purchases.rules.RulesEngine
 import com.revenuecat.purchases.rules.Value
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import com.revenuecat.purchases.utils.Iso8601Utils
 import io.mockk.every
 import io.mockk.mockk
@@ -30,7 +31,7 @@ import org.robolectric.annotation.Config as RobolectricConfig
  *
  * Every other test in this package covers one source in isolation. This one wires all of them together the way
  * [com.revenuecat.purchases.PurchasesFactory] does and writes down the whole result, so the answer to "what can a
- * rule actually read?" is one file rather than a survey of five providers — for whoever authors a predicate, and
+ * rule actually read?" is one file rather than a survey of every provider — for whoever authors a predicate, and
  * for the platform that has to expose the same scope under the same names.
  *
  * The customer is deliberately not a realistic one: they are refunded *and* renewing, in a trial *and* paused, so
@@ -162,6 +163,23 @@ class RulesDimensionScopeTest {
               },
               "store": {
                 "country": "USA"
+              },
+              "subscriberAttributes": {
+                "${'$'}email": {
+                  "evaluatedAt": 1718452800000,
+                  "updatedAt": 1714521600000,
+                  "value": "jane@example.com"
+                },
+                "goal": {
+                  "evaluatedAt": 1718452800000,
+                  "updatedAt": 1718366400000,
+                  "value": "lose_weight"
+                },
+                "seats": {
+                  "evaluatedAt": 1718452800000,
+                  "updatedAt": 1714780800000,
+                  "value": "3"
+                }
               }
             }
             """.trimIndent(),
@@ -179,6 +197,9 @@ class RulesDimensionScopeTest {
             """{"==": [{"var": "customerInfo.appUserId"}, "current_user"]}""",
             """{"some": [{"var": "customerInfo.purchases"}, {"==": [{"var": "periodType"}, "trial"]}]}""",
             """{"some": [{"var": "customerInfo.entitlements"}, {"var": "isActive"}]}""",
+            """{"==": [{"var": "subscriberAttributes.${'$'}email.value"}, "jane@example.com"]}""",
+            """{"<": [{"-": [{"var": "subscriberAttributes.goal.evaluatedAt"},
+                {"var": "subscriberAttributes.goal.updatedAt"}]}, 604800000]}""",
         )
 
         for (predicate in predicates) {
@@ -210,6 +231,7 @@ class RulesDimensionScopeTest {
                     appUserId = { "current_user" },
                     customerInfo = { customerInfo },
                 ),
+                SubscriberAttributesDimensionProvider { SUBSCRIBER_ATTRIBUTES },
             ),
             dateProvider = object : DateProvider {
                 override val now: Date get() = evaluationDate
@@ -244,6 +266,25 @@ class RulesDimensionScopeTest {
     }
 
     private companion object {
+
+        /**
+         * A reserved name, custom ones, a value that looks like a number but stays the string it was set as, and
+         * two the scope leaves out: a deleted attribute, and a name a dot-path could not reach.
+         */
+        val SUBSCRIBER_ATTRIBUTES = listOf(
+            subscriberAttribute("\$email", "jane@example.com", setAt = "2024-05-01T00:00:00Z"),
+            subscriberAttribute("goal", "lose_weight", setAt = "2024-06-14T12:00:00Z"),
+            subscriberAttribute("seats", "3", setAt = "2024-05-04T00:00:00Z"),
+            subscriberAttribute("tier", null, setAt = "2024-05-04T00:00:00Z"),
+            subscriberAttribute("user.tier", "gold", setAt = "2024-05-04T00:00:00Z"),
+        ).associateBy { attribute -> attribute.key.backendKey }
+
+        private fun subscriberAttribute(key: String, value: String?, setAt: String) = SubscriberAttribute(
+            key = key,
+            value = value,
+            setTime = Iso8601Utils.parse(setAt),
+            isSynced = true,
+        )
 
         val CUSTOM_VARIABLES = mapOf(
             "plan" to RulesDimensionValue.StringValue("gold"),
