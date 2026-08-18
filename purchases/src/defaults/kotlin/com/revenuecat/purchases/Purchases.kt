@@ -45,6 +45,7 @@ import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
+import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
 import com.revenuecat.purchases.interfaces.PollRewardVerificationCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -710,6 +711,30 @@ public class Purchases internal constructor(
         inAppMessageTypes: List<InAppMessageType> = listOf(InAppMessageType.BILLING_ISSUES),
     ) {
         purchasesOrchestrator.showInAppMessagesIfNeeded(activity, inAppMessageTypes)
+    }
+
+    /**
+     * Opens the subscription management page for the current user.
+     *
+     * Uses [CustomerInfo.managementURL] if available, which covers non-Play purchases such as
+     * Stripe or web purchases. Otherwise falls back to the store's default subscription management
+     * URL for the configured store.
+     *
+     * The page is opened in a new task, so an application context is enough. Note that
+     * [CustomerInfo] may be fetched from the network first, so the page can end up being requested
+     * after your app is no longer in the foreground. In that case Android may silently drop the
+     * launch, and [ManageSubscriptionsCallback.onSuccess] is still reported.
+     *
+     * @param context Context used to start the subscription management page. An application
+     * context is sufficient.
+     * @param callback Optional [ManageSubscriptionsCallback] called on success or error.
+     */
+    @JvmOverloads
+    public fun showManageSubscriptions(
+        context: Context,
+        callback: ManageSubscriptionsCallback? = null,
+    ) {
+        purchasesOrchestrator.showManageSubscriptions(context, callback)
     }
 
     /**

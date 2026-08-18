@@ -951,6 +951,11 @@ package com.revenuecat.purchases.interfaces {
     method public void onReceived(com.revenuecat.purchases.CustomerInfo customerInfo, boolean created);
   }
 
+  public interface ManageSubscriptionsCallback {
+    method public void onError(com.revenuecat.purchases.PurchasesError error);
+    method public void onSuccess();
+  }
+
   @Deprecated public interface ProductChangeCallback extends com.revenuecat.purchases.interfaces.PurchaseErrorCallback {
     method @Deprecated public void onCompleted(com.revenuecat.purchases.models.StoreTransaction? storeTransaction, com.revenuecat.purchases.CustomerInfo customerInfo);
   }
