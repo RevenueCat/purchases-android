@@ -16,6 +16,9 @@ import java.util.Date
 internal enum class RulesDimensionNamespace(val key: String) {
     /** Values supplied by the caller for one evaluation; see [LocalRulesEvaluator.match]. */
     Custom("custom"),
+
+    /** What the customer has bought, shaped after the SDK's own `CustomerInfo`. */
+    CustomerInfo("customerInfo"),
     Device("device"),
     Store("store"),
 

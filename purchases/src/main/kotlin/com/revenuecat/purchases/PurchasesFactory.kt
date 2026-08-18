@@ -30,6 +30,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
+import com.revenuecat.purchases.common.localrules.CustomerInfoDimensionProvider
 import com.revenuecat.purchases.common.localrules.DeviceDimensionProvider
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesEngineLoggerBridge
@@ -53,6 +54,8 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDiskCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopicStore
+import com.revenuecat.purchases.common.safeResume
+import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
@@ -81,6 +84,7 @@ import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.UrlConnectionFactory
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -398,6 +402,10 @@ internal class PurchasesFactory(
                             identityManager.currentAppUserID,
                         )
                     },
+                    CustomerInfoDimensionProvider(
+                        appUserId = { identityManager.currentAppUserID },
+                        customerInfo = { Purchases.sharedInstance.purchasesOrchestrator.awaitCustomerInfo() },
+                    ),
                 ),
             )
 
@@ -693,3 +701,22 @@ internal class PurchasesFactory(
         ): Boolean = diagnosticsEnabled && !uiPreviewMode
     }
 }
+
+/**
+ * The cache when it is warm, the initial fetch otherwise, so the first checkpoint of a session can still read
+ * customer dimensions.
+ *
+ * Goes through the orchestrator rather than `Purchases.awaitCustomerInfo`, which only exists in the `defaults`
+ * source set: local rule evaluation is wired for both flavors.
+ */
+private suspend fun PurchasesOrchestrator.awaitCustomerInfo(): CustomerInfo =
+    suspendCancellableCoroutine { continuation ->
+        getCustomerInfo(
+            fetchPolicy = CacheFetchPolicy.default(),
+            trackDiagnostics = false,
+            callback = receiveCustomerInfoCallback(
+                onSuccess = { continuation.safeResume(it) },
+                onError = { continuation.safeResumeWithException(PurchasesException(it)) },
+            ),
+        )
+    }
