@@ -77,9 +77,11 @@ import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
 import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
+import com.revenuecat.purchases.utils.OfferingWebViewPrewarmer
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.UrlConnectionFactory
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
+import com.revenuecat.purchases.utils.prewarmTargetOfferingIds
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
 import java.util.concurrent.ExecutorService
@@ -339,10 +341,10 @@ internal class PurchasesFactory(
             // ones the manager warms on commit. Registered as commit listeners; a null manager means workflows
             // are off, so neither exists.
             val uiConfigProvider = remoteConfigManager?.let { UiConfigProvider(it) }
-            // Warms a workflow's assets (images + ui_config fonts) once — eagerly at load time for the current
-            // offering's workflow (transiently so the cache stays byte-only, mirroring how offerings pre-download
-            // only the current offering's assets) and on the render path. Shared with WorkflowManager so both
-            // dedup against one set of warmed workflow ids.
+            // Warms a workflow's assets (images, web_view bundles, ui_config fonts) once: eagerly at load
+            // time for the workflow behind every offering the customer could be served next (transiently, so
+            // the cache stays byte-only) and on the render path. Shared with WorkflowManager so both dedup
+            // against one set of warmed workflow ids.
             val workflowAssetPrewarmer = uiConfigProvider?.let {
                 WorkflowAssetPrewarmer(it, paywallAssetWarming, offeringFontPreDownloader)
             }
@@ -350,7 +352,10 @@ internal class PurchasesFactory(
                 WorkflowsConfigProvider(
                     it,
                     currentOfferingIdProvider = { offeringsCache.cachedOfferings?.current?.identifier },
-                    onCurrentWorkflowLoaded = workflowAssetPrewarmer?.let { it::onCurrentWorkflowLoaded },
+                    prewarmOfferingIdsProvider = {
+                        offeringsCache.cachedOfferings?.prewarmTargetOfferingIds().orEmpty()
+                    },
+                    onWorkflowLoaded = workflowAssetPrewarmer?.let { it::onWorkflowLoaded },
                 )
             }
             val checkpointsConfigProvider = remoteConfigManager?.let {
@@ -506,6 +511,7 @@ internal class PurchasesFactory(
                 OfferingImagePreDownloader(assetWarming = paywallAssetWarming),
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
+                offeringWebViewPrewarmer = OfferingWebViewPrewarmer(assetWarming = paywallAssetWarming),
                 uiPreviewMode = appConfig.uiPreviewMode,
                 workflowManager = workflowManager,
             )

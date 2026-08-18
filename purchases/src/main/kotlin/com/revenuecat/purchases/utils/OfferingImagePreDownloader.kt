@@ -33,8 +33,7 @@ internal class OfferingImagePreDownloader(
     }
 
     private fun downloadV2Images(offering: Offering) {
-        val assets = offering.baseComponentsConfig()?.collectAssets() ?: return
-        assetWarming.warmImages(assets.imageUris)
-        if (assets.webViews.isNotEmpty()) assetWarming.prebootWebView()
+        val componentsConfig = offering.baseComponentsConfig() ?: return
+        assetWarming.warmImages(componentsConfig.collectAssets().imageUris)
     }
 }

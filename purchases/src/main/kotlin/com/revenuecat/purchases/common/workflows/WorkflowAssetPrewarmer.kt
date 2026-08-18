@@ -17,9 +17,9 @@ import kotlinx.coroutines.CancellationException
  *
  * - **Render path** — [preDownloadWorkflowAssets]: `WorkflowManager.getWorkflow` already has the decoded
  *   workflow and resolved `ui_config`, so it hands them straight in.
- * - **Load path** — [onCurrentWorkflowLoaded]: wired as [WorkflowsConfigProvider]'s load callback, it runs when
- *   the config layer loads the **current offering's** workflow — mirroring the offerings path, which
- *   pre-downloads only the current offering's assets, not every offering's. It dedups by id **before** decoding,
+ * - **Load path**, [onWorkflowLoaded]: wired as [WorkflowsConfigProvider]'s load callback, it runs for each
+ *   workflow behind an offering the customer could be served next (the current one, plus each placement's).
+ *   It dedups by id **before** decoding,
  *   then decodes **transiently** (via the decoder the provider hands it, which never populates the provider's
  *   retained decode cache — the workflows cache stays raw-bytes-only). Because both paths share
  *   [warmedWorkflowIds], a workflow already warmed on render is skipped here before it is ever decoded.
@@ -45,13 +45,15 @@ internal class WorkflowAssetPrewarmer(
         if (assetWarming.isAvailable) {
             val assets = workflow.screens.values.map { it.componentsConfig.base.collectAssets() }
             assetWarming.warmImages(assets.flatMapTo(mutableSetOf()) { it.imageUris })
-            if (assets.any { it.webViews.isNotEmpty() }) assetWarming.prebootWebView()
+            assetWarming.warmWebViewUrls(
+                assets.flatMapTo(linkedSetOf<String>()) { it.webViewUrls },
+            )
         }
         offeringFontPreDownloader.preDownloadFontsIfNeeded(uiConfig.app.fonts.values)
     }
 
     /** Load-path callback for [WorkflowsConfigProvider]; see the class KDoc. */
-    suspend fun onCurrentWorkflowLoaded(
+    suspend fun onWorkflowLoaded(
         workflowId: String,
         transientDecode: suspend (String) -> PublishedWorkflow?,
     ) {

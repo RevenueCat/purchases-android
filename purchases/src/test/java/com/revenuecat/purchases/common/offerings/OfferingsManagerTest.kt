@@ -13,6 +13,8 @@ import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
+import com.revenuecat.purchases.utils.OfferingWebViewPrewarmer
+import com.revenuecat.purchases.utils.prewarmTargetOfferings
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.stubOfferings
@@ -48,6 +50,7 @@ class OfferingsManagerTest {
     private lateinit var offeringImagePreDownloader: OfferingImagePreDownloader
     private lateinit var mockDiagnosticsTracker: DiagnosticsTracker
     private lateinit var mockOfferingFontPreDownloader: OfferingFontPreDownloader
+    private lateinit var mockOfferingWebViewPrewarmer: OfferingWebViewPrewarmer
     private lateinit var mockWorkflowManager: WorkflowManager
 
     private lateinit var offeringsManager: OfferingsManager
@@ -64,6 +67,9 @@ class OfferingsManagerTest {
         mockOfferingFontPreDownloader = mockk<OfferingFontPreDownloader>().apply {
             every { preDownloadOfferingFontsIfNeeded(any()) } just Runs
         }
+        mockOfferingWebViewPrewarmer = mockk<OfferingWebViewPrewarmer>().apply {
+            every { prewarmWebViews(any()) } just Runs
+        }
         mockWorkflowManager = mockk(relaxed = true)
         every { mockWorkflowManager.onPaywallConfigReady(onComplete = any()) } answers {
             firstArg<() -> Unit>().invoke()
@@ -79,6 +85,7 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
             workflowManager = mockWorkflowManager,
         )
     }
@@ -533,6 +540,7 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
             workflowManager = null,
         )
         every { cache.cachedOfferings } returns null
@@ -649,6 +657,28 @@ class OfferingsManagerTest {
     }
 
     // endregion pre download offering images
+
+    // region prewarm web_view bundles
+
+    @Test
+    fun `getOfferings prewarms web_view bundles`() {
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = {},
+        )
+
+        verify(exactly = 1) {
+            mockOfferingWebViewPrewarmer.prewarmWebViews(testOfferings.prewarmTargetOfferings())
+        }
+    }
+
+    // endregion prewarm web_view bundles
 
     // region pre download font files
 
@@ -886,6 +916,7 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
             uiPreviewMode = true,
         )
 
@@ -915,6 +946,7 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
             uiPreviewMode = true,
         )
         mockCacheStale(offeringsStale = true)
@@ -936,6 +968,7 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
             uiPreviewMode = true,
         )
 
@@ -1093,6 +1126,7 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
             workflowManager = null,
         )
 
@@ -1126,6 +1160,7 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
             workflowManager = mockWorkflowManager,
         )
 
@@ -1163,6 +1198,7 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
             workflowManager = mockWorkflowManager,
         )
 
