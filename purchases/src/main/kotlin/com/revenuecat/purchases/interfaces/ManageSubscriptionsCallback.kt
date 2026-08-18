@@ -1,4 +1,7 @@
-package com.revenuecat.purchases
+package com.revenuecat.purchases.interfaces
+
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesError
 
 /**
  * Callback for [Purchases.showManageSubscriptions].

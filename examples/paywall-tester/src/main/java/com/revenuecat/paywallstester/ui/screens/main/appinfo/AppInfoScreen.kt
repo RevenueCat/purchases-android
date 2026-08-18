@@ -38,9 +38,9 @@ import com.revenuecat.paywallstester.Constants
 import com.revenuecat.paywallstester.MainActivity
 import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewModel.UiState
 import com.revenuecat.paywallstester.ui.screens.main.createCustomerCenterListener
-import com.revenuecat.purchases.ManageSubscriptionsCallback
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
 import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
 import com.revenuecat.purchases.ui.revenuecatui.views.CustomerCenterView
 import kotlinx.coroutines.Dispatchers

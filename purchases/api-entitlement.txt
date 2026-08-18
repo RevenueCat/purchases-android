@@ -180,11 +180,6 @@ package com.revenuecat.purchases {
   public static final class LogLevel.Companion {
   }
 
-  public interface ManageSubscriptionsCallback {
-    method public void onError(com.revenuecat.purchases.PurchasesError error);
-    method public void onSuccess();
-  }
-
   public final class NoCoreLibraryDesugaringException extends java.lang.RuntimeException {
     ctor public NoCoreLibraryDesugaringException(Throwable cause);
   }
@@ -954,6 +949,11 @@ package com.revenuecat.purchases.interfaces {
   public interface LogInCallback {
     method public void onError(com.revenuecat.purchases.PurchasesError error);
     method public void onReceived(com.revenuecat.purchases.CustomerInfo customerInfo, boolean created);
+  }
+
+  public interface ManageSubscriptionsCallback {
+    method public void onError(com.revenuecat.purchases.PurchasesError error);
+    method public void onSuccess();
   }
 
   @Deprecated public interface ProductChangeCallback extends com.revenuecat.purchases.interfaces.PurchaseErrorCallback {

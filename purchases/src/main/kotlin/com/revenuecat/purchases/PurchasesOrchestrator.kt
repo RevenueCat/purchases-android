@@ -79,6 +79,7 @@ import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
+import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
