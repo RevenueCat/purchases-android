@@ -7,20 +7,6 @@ import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import java.util.Date
 
-/**
- * The subscriber attributes this device has stored for the current customer, named the way the app set them:
- * `subscriberAttributes.$email`, `subscriberAttributes.goal`.
- *
- * Each one is a record rather than a bare value, so a predicate can read what it is and when it was set
- * independently. Every value is a string, because that is the only thing a subscriber attribute can be — the SDK
- * does not guess a type the app never declared, and the loose operators coerce anyway, so
- * `{"==": [{"var": "subscriberAttributes.seats.value"}, 3]}` matches an attribute set to `"3"`.
- *
- * Only what this device knows: an attribute set on another device reaches the backend, not this cache, so a
- * predicate about it is an ordinary non-match here. Whether an attribute has been posted yet is deliberately not
- * exposed — it describes how far along the attribute is on its way to the backend rather than anything about the
- * customer.
- */
 internal class SubscriberAttributesDimensionProvider(
     private val storedAttributes: () -> Map<String, SubscriberAttribute>,
 ) : RulesDimensionProvider {
@@ -63,8 +49,6 @@ internal class SubscriberAttributesDimensionProvider(
         return name to RulesDimensionValue.ObjectValue(
             mapOf(
                 KEY_VALUE to RulesDimensionValue.StringValue(value),
-                // When *this device* set the value. Not refreshed by setting the same value again, since the SDK
-                // has nothing new to post in that case.
                 KEY_UPDATED_AT to RulesDimensionValue.DateValue(setTime),
                 KEY_EVALUATED_AT to RulesDimensionValue.DateValue(date),
             ),

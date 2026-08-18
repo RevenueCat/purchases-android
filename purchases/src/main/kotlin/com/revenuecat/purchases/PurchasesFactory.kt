@@ -359,11 +359,7 @@ internal class PurchasesFactory(
             val localRulesEvaluator = LocalRulesEvaluator(
                 providers = listOf(
                     DeviceDimensionProvider(appConfig, localeProvider),
-                    // Only read during a checkpoint evaluation, so the instance is configured by then. Same
-                    // reasoning as CheckpointWorkflowResolverImpl's getOfferings.
                     StoreDimensionProvider { Purchases.sharedInstance.awaitStorefrontCountryCode() },
-                    // The cache is right here, but the app user ID it is keyed on is not: `identityManager` is
-                    // built further down, so the ID is read through the configured instance like the above.
                     SubscriberAttributesDimensionProvider {
                         subscriberAttributesCache.getAllStoredSubscriberAttributes(
                             Purchases.sharedInstance.purchasesOrchestrator.appUserID,
