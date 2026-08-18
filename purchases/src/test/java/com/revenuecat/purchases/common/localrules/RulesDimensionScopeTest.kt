@@ -151,8 +151,7 @@ class RulesDimensionScopeTest {
                     "storeTransactionId": "amzn.1234",
                     "transactionIdentifier": "abc123"
                   }
-                ],
-                "verification": "verified"
+                ]
               },
               "device": {
                 "appVersion": "1.2.3",
@@ -196,6 +195,8 @@ class RulesDimensionScopeTest {
         val localeProvider = object : LocaleProvider {
             override val currentLocalesLanguageTags: String get() = "en-US"
         }
+        // Verified on purpose, and deliberately absent from the scope below: entitlement verification is not
+        // something a rule is evaluated against.
         val customerInfo = CustomerInfoFactory.buildCustomerInfo(
             JSONObject(SUBSCRIBER_RESPONSE),
             null,
