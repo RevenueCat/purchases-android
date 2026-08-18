@@ -15,31 +15,6 @@ import com.revenuecat.purchases.models.Transaction
 import kotlinx.coroutines.CancellationException
 import java.util.Date
 
-/**
- * Customer dimensions: everything the SDK knows the customer has bought.
- *
- * Where a flat dimension per audience question would have to pick one purchase to describe — the latest
- * subscription, say, which cannot answer anything about the one before it — this hands the engine the whole graph:
- * [KEY_PURCHASES] and [KEY_ENTITLEMENTS] are collections the iteration operators walk. "Is in a trial that ends
- * this week" and "has ever bought this base plan" are then predicates over the same values rather than dimensions
- * the SDK has to ship one at a time.
- *
- * A record carries the facts a predicate cannot work out for itself, and no more: [KEY_PERIOD_TYPE] already answers
- * "is in a trial", so there is no boolean for it, while [KEY_IS_ACTIVE] and [KEY_WILL_RENEW] are derivations no
- * predicate could reproduce.
- *
- * Read on every evaluation because a purchase, a renewal or a cancellation lands mid-session and an audience keyed
- * on subscription state has to agree with what the customer's access actually is.
- *
- * Unlike the dashboard, which evaluates the same audience over production purchases only, sandbox purchases are
- * included here: a rule has to be testable in a debug build or against a license tester, where every purchase is a
- * sandbox one. Each record carries [KEY_IS_SANDBOX] so a predicate that wants only real money can say so.
- *
- * A value the customer has none of is omitted rather than guessed — an absent key resolves to null in the engine,
- * which is an ordinary non-match. Booleans and the two collections are the exception: a customer who has never
- * bought anything answers [KEY_PURCHASES] with an empty array, which `none` reads as a definite yes, rather than
- * leaving it unknown.
- */
 internal class CustomerInfoDimensionProvider(
     private val appUserId: () -> String?,
     private val customerInfo: suspend () -> CustomerInfo,
