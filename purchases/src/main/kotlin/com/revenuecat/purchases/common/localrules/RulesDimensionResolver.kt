@@ -116,4 +116,7 @@ private val RulesDimensionValue.asRulesEngineValue: Value
         is RulesDimensionValue.ObjectListValue -> Value.ArrayValue(
             value.map { record -> Value.ObjectValue(record.mapValues { (_, item) -> item.asRulesEngineValue }) },
         )
+        is RulesDimensionValue.ObjectValue -> Value.ObjectValue(
+            value.mapValues { (_, item) -> item.asRulesEngineValue },
+        )
     }

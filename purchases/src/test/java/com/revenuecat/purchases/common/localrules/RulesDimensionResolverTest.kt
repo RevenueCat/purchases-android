@@ -147,6 +147,9 @@ class RulesDimensionResolverTest {
                 "records" to RulesDimensionValue.ObjectListValue(
                     listOf(mapOf("id" to RulesDimensionValue.StringValue("one"))),
                 ),
+                "record" to RulesDimensionValue.ObjectValue(
+                    mapOf("id" to RulesDimensionValue.StringValue("one")),
+                ),
             ),
         )
 
@@ -163,6 +166,7 @@ class RulesDimensionResolverTest {
                     "records" to Value.ArrayValue(
                         listOf(Value.ObjectValue(mapOf("id" to Value.StringValue("one")))),
                     ),
+                    "record" to Value.ObjectValue(mapOf("id" to Value.StringValue("one"))),
                 ),
             ),
         )
@@ -237,6 +241,31 @@ class RulesDimensionResolverTest {
             RulesEngine.evaluate("""{"none": [{"var": "device.purchases"}, {"var": "isActive"}]}""", values)
                 .getOrThrow(),
         ).isTrue()
+    }
+
+    @Test
+    fun `an object dimension is read through by name rather than searched`() = runTest {
+        val resolver = resolver(
+            provider(
+                RulesDimensionNamespace.Device,
+                "goal" to RulesDimensionValue.ObjectValue(
+                    mapOf(
+                        "value" to RulesDimensionValue.StringValue("lose_weight"),
+                        "updatedAt" to RulesDimensionValue.DateValue(Date(1_700_000_000_000)),
+                    ),
+                ),
+            ),
+        )
+        val values = resolver.snapshot().getOrThrow().values
+
+        val byName = """{"==": [{"var": "device.goal.value"}, "lose_weight"]}"""
+        assertThat(RulesEngine.evaluate(byName, values).getOrThrow()).isTrue()
+
+        // Unlike a record inside an object list, a predicate reading one of these still sees the scope around it,
+        // because no iteration operator is involved.
+        val alongsideTheRestOfTheScope = """{"and": [{"==": [{"var": "device.goal.value"}, "lose_weight"]},
+            {">": [{"var": "device.goal.updatedAt"}, 1699999999999]}]}"""
+        assertThat(RulesEngine.evaluate(alongsideTheRestOfTheScope, values).getOrThrow()).isTrue()
     }
 
     @Test

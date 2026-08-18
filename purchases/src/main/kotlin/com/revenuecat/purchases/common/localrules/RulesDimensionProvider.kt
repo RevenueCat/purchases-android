@@ -18,6 +18,9 @@ internal enum class RulesDimensionNamespace(val key: String) {
     Custom("custom"),
     Device("device"),
     Store("store"),
+
+    /** What the app has told the SDK about the customer; see `Purchases.setAttributes`. */
+    SubscriberAttributes("subscriberAttributes"),
 }
 
 /**
