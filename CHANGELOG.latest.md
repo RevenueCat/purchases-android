@@ -1,34 +1,34 @@
 ## RevenueCat SDK
+### ✨ New Features
+* feat(ads): fire reward-verification tracking events from the poll (#3884) via Peter Porfy (@peterporfy)
 ### 🐞 Bugfixes
-* fix: don't share a MessageDigest across coroutines in FontLoader and DefaultFileCache (#3930) via Tarek M. Ben Lechhab (@bilqisium)
-* Fix misleading ui_config warnings for projects without paywalls (#3926) via Rick (@rickvdl)
-* fix: Declare kotlinx-coroutines-android as a dependency (#3916) via Álvaro Brey (@AlvaroBrey)
-* fix(paywalls): prewarm the current offering's workflow assets on load (#3910) via Álvaro Brey (@AlvaroBrey)
+* fix(paywalls): don't leave a hidden package selected by default (#3915) via Facundo Menzella (@facumenzella)
+### 📦 Dependency Updates
+* [RENOVATE] Update dependency revenuecat to v4.6.0 (#3973) via RevenueCat Git Bot (@RCGitBot)
 
 ## RevenueCatUI SDK
+### ✨ New Features
+* Support headless offering checkpoints (#3951) via Cesar de la Vega (@vegaro)
+### 🐞 Bugfixes
+* fix(paywalls): Expose compose-foundation-layout so PaywallFooter is callable without extra setup (#3961) via Álvaro Brey (@AlvaroBrey)
+* Fix multi-page paywall state after dismissal (#3944) via Cesar de la Vega (@vegaro)
+* fix(paywalls): Prevent an invisible leftover header from blocking taps on workflow paywalls (#3947) via Álvaro Brey (@AlvaroBrey)
 ### Paywallsv2
-#### 🐞 Bugfixes
-* Default missing text localizations to empty instead of fallback paywall (#3903) via Cesar de la Vega (@vegaro)
+#### ✨ New Features
+* feat(paywalls): Preboot the WebView engine when a paywall has a web_view component (#3904) via Álvaro Brey (@AlvaroBrey)
 
 ### 🔄 Other Changes
-* ci: install mise Ruby 3.3.0 so CI honors Gemfile.lock (#3952) via Álvaro Brey (@AlvaroBrey)
-* refactor(checkpoints): Local rule evaluation foundation (#3942) via Toni Rico (@tonidero)
-* refactor(paywalls): move image warming to `purchases-ui` and use a ServiceLoader to reach it (#3913) via Álvaro Brey (@AlvaroBrey)
-* build: fix api-tester customEntitlementComputation variant resolution after Kover bump (#3945) via Álvaro Brey (@AlvaroBrey)
-* feat(checkpoints): expose CheckpointParams customProperties as paywall custom variables (#3941) via Toni Rico (@tonidero)
-* Ingest audiences config topic (#3936) via Cesar de la Vega (@vegaro)
-* build: update Kover to 0.9.9 (#3932) via Álvaro Brey (@AlvaroBrey)
-* build: update Metalava to 0.5.0 (#3935) via Álvaro Brey (@AlvaroBrey)
-* refactor(checkpoints): Cleanup to offeringIdByWorkflowId map + custom checkpoint screen in checkpoint tester (#3919) via Toni Rico (@tonidero)
-* refactor(paywalls): collect web_view assets in the existing predownload walk (#3902) via Álvaro Brey (@AlvaroBrey)
-* Update baseline profiles (#3927) via RevenueCat Git Bot (@RCGitBot)
-* Fix flaky cached offerings integration test and cover the fully-offline case (#3920) via Álvaro Brey (@AlvaroBrey)
-* chore: stop persisting ProductEntitlementMapping.originalSource to disk (#3917) via Álvaro Brey (@AlvaroBrey)
-* refactor(checkpoints): Resolve a checkpoint's workflow from its rules (#3914) via Toni Rico (@tonidero)
-* Ingest checkpoint rules remote config (#3907) via Cesar de la Vega (@vegaro)
-* refactor(checkpoints): Implement checkpoint use cases in `CheckpointTester` (#3900) via Toni Rico (@tonidero)
-* refactor(checkpoints): Move the checkpoints API to the RevenueCatUI module (#3909) via Toni Rico (@tonidero)
-* build(deps): bump fastlane-plugin-revenuecat_internal from `b4e1e7f` to `7fbbe66` (#3908) via dependabot[bot] (@dependabot[bot])
-* refactor(checkpoints): Create empty `CheckpointTester` project (#3898) via Toni Rico (@tonidero)
-* refactor(checkpoints): Checkpoints wiring and sample usage in paywall tester - SDK-4423 (#3863) via Toni Rico (@tonidero)
-* refactor(checkpoints): Checkpoints workflow presenter UI - SDK-4423 (#3889) via Toni Rico (@tonidero)
+* refactor(ads): expose Outcome from the reward-verification poller (#3883) via Peter Porfy (@peterporfy)
+* ci(danger): fail PRs that grow a suppression baseline (#3982) via Álvaro Brey (@AlvaroBrey)
+* Report public API changes on PRs and in the SDK API feed (#3976) via Álvaro Brey (@AlvaroBrey)
+* feat(ads): expose AdTracker API for reward-verification events (#3892) via Peter Porfy (@peterporfy)
+* feat(ads): wire-encode reward-verification events (#3891) via Peter Porfy (@peterporfy)
+* feat(ads): add reward-verification event data types (#3890) via Peter Porfy (@peterporfy)
+* Update baseline profiles (#3974) via RevenueCat Git Bot (@RCGitBot)
+* feat(checkpoints): Add StoreDimensionProvider with store.country (#3969) via Toni Rico (@tonidero)
+* Deserialize audience rules for rules engine evaluation (#3970) via Cesar de la Vega (@vegaro)
+* refactor(checkpoints): Reuse CustomVariableValue for checkpoint custom variables (#3960) via Toni Rico (@tonidero)
+* feat(checkpoints): Evaluate checkpoint custom variables as custom.* dimensions (#3949) via Toni Rico (@tonidero)
+* build: apply the AGP 9 config migrations that already work on AGP 8 (#3963) via Álvaro Brey (@AlvaroBrey)
+* build: move baseline profiles to the plugin's default source dir (#3931) via Álvaro Brey (@AlvaroBrey)
+* refactor(checkpoints): Add DeviceDimensionProvider (#3943) via Toni Rico (@tonidero)
