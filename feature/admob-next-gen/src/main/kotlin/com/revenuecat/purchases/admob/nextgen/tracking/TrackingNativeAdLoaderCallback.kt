@@ -1,0 +1,49 @@
+@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+
+package com.revenuecat.purchases.admob.nextgen.tracking
+
+import com.google.android.libraries.ads.mobile.sdk.banner.BannerAd
+import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
+import com.google.android.libraries.ads.mobile.sdk.nativead.CustomNativeAd
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoaderCallback
+import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.ads.events.types.AdFormat
+
+/**
+ * A [NativeAdLoaderCallback] wrapper that tracks standard native load results and delegates every callback.
+ *
+ * [configureAd] runs after a native ad is tracked and before it is forwarded to [delegate], allowing callers to
+ * install post-load tracking without coupling this load wrapper to the event-tracking implementation. Custom native
+ * and banner results are forwarded unchanged because they are separate ad formats.
+ */
+internal class TrackingNativeAdLoaderCallback(
+    private val delegate: NativeAdLoaderCallback?,
+    private val placement: String?,
+    private val adUnitId: String,
+    private val configureAd: (NativeAd) -> Unit,
+) : NativeAdLoaderCallback {
+
+    override fun onNativeAdLoaded(nativeAd: NativeAd) {
+        trackAdLoaded(nativeAd.getResponseInfo(), AdFormat.NATIVE, placement, adUnitId)
+        configureAd(nativeAd)
+        delegate?.onNativeAdLoaded(nativeAd)
+    }
+
+    override fun onCustomNativeAdLoaded(customNativeAd: CustomNativeAd) {
+        delegate?.onCustomNativeAdLoaded(customNativeAd)
+    }
+
+    override fun onBannerAdLoaded(bannerAd: BannerAd) {
+        delegate?.onBannerAdLoaded(bannerAd)
+    }
+
+    override fun onAdFailedToLoad(adError: LoadAdError) {
+        trackAdFailedToLoad(adError, AdFormat.NATIVE, placement, adUnitId)
+        delegate?.onAdFailedToLoad(adError)
+    }
+
+    override fun onAdLoadingCompleted() {
+        delegate?.onAdLoadingCompleted()
+    }
+}
