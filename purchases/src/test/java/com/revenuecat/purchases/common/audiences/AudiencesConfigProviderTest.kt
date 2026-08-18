@@ -1,13 +1,16 @@
 package com.revenuecat.purchases.common.audiences
 
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.common.currentLogHandler
+import com.revenuecat.purchases.common.remoteconfig.ConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
-import io.mockk.MockKMatcherScope
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.jsonObject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -42,9 +45,8 @@ internal class AudiencesConfigProviderTest {
 
     @Test
     fun `getAudience decodes a typed audience and ignores unknown fields`() = runTest {
-        returnBlob(
-            "aud_123",
-            """
+        returnMetadata(
+            "aud_123" to """
             {
               "id": "aud_123",
               "created_via": "dashboard",
@@ -62,18 +64,23 @@ internal class AudiencesConfigProviderTest {
     }
 
     @Test
-    fun `getAudience returns null for malformed or non-object payloads`() = runTest {
-        returnBlob("malformed", "not-json")
-        returnBlob("array", "[1, 2, 3]")
+    fun `getAudience returns null for missing or invalid metadata`() = runTest {
+        returnMetadata(
+            "missing-id" to """{"rules":{"==":[1,1]}}""",
+            "array-rules" to """{"id":"array-rules","rules":[1,2,3]}""",
+        )
 
-        assertThat(provider.getAudience("malformed")).isNull()
-        assertThat(provider.getAudience("array")).isNull()
+        assertThat(provider.getAudience("missing-id")).isNull()
+        assertThat(provider.getAudience("array-rules")).isNull()
+        assertThat(provider.getAudience("unknown")).isNull()
     }
 
     @Test
     fun `a malformed audience does not prevent reading another audience`() = runTest {
-        returnBlob("invalid", """{"id":"invalid","rules":[]}""")
-        returnBlob("valid", """{"id":"valid","rules":{"==":[1,1]}}""")
+        returnMetadata(
+            "invalid" to """{"id":"invalid","rules":[]}""",
+            "valid" to """{"id":"valid","rules":{"==":[1,1]}}""",
+        )
 
         assertThat(provider.getAudience("invalid")).isNull()
         assertThat(provider.getAudience("valid")).isEqualTo(
@@ -81,16 +88,12 @@ internal class AudiencesConfigProviderTest {
         )
     }
 
-    private suspend fun MockKMatcherScope.blobRead(identifier: String): Audience? =
-        manager.blobData(
-            RemoteConfigTopic.Audiences,
-            identifier,
-            any<(ByteArray) -> Audience?>(),
-        )
-
-    private fun returnBlob(identifier: String, json: String) {
-        coEvery { blobRead(identifier) } answers {
-            thirdArg<(ByteArray) -> Audience?>().invoke(json.toByteArray())
+    private fun returnMetadata(vararg audiences: Pair<String, String>) {
+        val items = audiences.associate { (identifier, json) ->
+            identifier to RemoteConfiguration.ConfigItem(
+                metadata = JsonTools.json.parseToJsonElement(json).jsonObject,
+            )
         }
+        coEvery { manager.topic(RemoteConfigTopic.Audiences) } returns ConfigTopic(items)
     }
 }

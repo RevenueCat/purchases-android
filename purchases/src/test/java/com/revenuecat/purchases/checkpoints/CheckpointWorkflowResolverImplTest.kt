@@ -216,7 +216,7 @@ class CheckpointWorkflowResolverImplTest {
     fun `audiences after the first match are not loaded`() = runTest {
         configureRules(rule("wf1234"), rule("wf5678"))
 
-        val resolution = resolve() as CheckpointResolution.Workflow
+        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
 
         assertThat(resolution.workflow).isEqualTo(mockWorkflow)
         coVerify(exactly = 0) { mockAudiencesConfigProvider.getAudience("aud_wf5678") }

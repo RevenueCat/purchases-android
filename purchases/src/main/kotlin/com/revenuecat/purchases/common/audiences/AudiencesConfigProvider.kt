@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.common.audiences
 
 import com.revenuecat.purchases.JsonTools
-import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
@@ -16,9 +15,6 @@ internal class AudiencesConfigProvider(
             ?.get(identifier)
             ?.metadata
             ?: return null
-        debugLog {
-            "Raw audience remote config metadata for '$identifier' before SDK deserialization: $metadata"
-        }
         return try {
             JsonTools.json.decodeFromJsonElement<Audience>(metadata)
         } catch (e: SerializationException) {
