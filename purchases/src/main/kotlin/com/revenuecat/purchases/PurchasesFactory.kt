@@ -703,11 +703,8 @@ internal class PurchasesFactory(
 }
 
 /**
- * The cache when it is warm, the initial fetch otherwise, so the first checkpoint of a session can still read
- * customer dimensions.
- *
- * Goes through the orchestrator rather than `Purchases.awaitCustomerInfo`, which only exists in the `defaults`
- * source set: local rule evaluation is wired for both flavors.
+ * The cache when it is warm, the initial fetch otherwise. Goes through the orchestrator because
+ * `Purchases.awaitCustomerInfo` only exists in the `defaults` source set, while this is compiled for both flavors.
  */
 private suspend fun PurchasesOrchestrator.awaitCustomerInfo(): CustomerInfo =
     suspendCancellableCoroutine { continuation ->

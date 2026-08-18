@@ -6,7 +6,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import java.util.Date
 
 /**
- * The SDK-owned roots a predicate can read. Closed on purpose, like `RemoteConfigTopic`: these names are part of
+ * The SDK-owned roots a predicate can read. Closed on purpose: these names are part of
  * the contract predicates are authored against, so a provider must not be able to invent one.
  *
  * Each entry becomes a real nested object in the evaluated scope, because the engine's `var` operator walks
@@ -14,15 +14,10 @@ import java.util.Date
  * `device`, it is never a literal key.
  */
 internal enum class RulesDimensionNamespace(val key: String) {
-    /** Values supplied by the caller for one evaluation; see [LocalRulesEvaluator.match]. */
     Custom("custom"),
-
-    /** What the customer has bought, shaped after the SDK's own `CustomerInfo`. */
     CustomerInfo("customerInfo"),
     Device("device"),
     Store("store"),
-
-    /** What the app has told the SDK about the customer; see `Purchases.setAttributes`. */
     SubscriberAttributes("subscriberAttributes"),
 }
 
