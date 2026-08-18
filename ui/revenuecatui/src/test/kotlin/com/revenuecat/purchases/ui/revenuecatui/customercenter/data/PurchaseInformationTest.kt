@@ -1266,6 +1266,141 @@ class PurchaseInformationTest {
         )
     }
 
+    @Test
+    fun `subscription history fields propagate to PurchaseInformation`() {
+        val expiresDate = oneDayFromNow
+        setupDateFormatter(expiresDate, "3 Oct 2063")
+
+        val transaction = TransactionDetails.Subscription(
+            productIdentifier = "test_product",
+            productPlanIdentifier = "monthly",
+            store = Store.PLAY_STORE,
+            isActive = true,
+            willRenew = true,
+            expiresDate = expiresDate,
+            isTrial = false,
+            managementURL = Uri.parse(MANAGEMENT_URL),
+            price = null,
+            isSandbox = true,
+            purchaseHistoryEntryId = "subscription:test_product",
+            purchaseDate = oneDayAgo,
+            originalPurchaseDate = twoDaysAgo,
+            unsubscribeDetectedAt = oneDayAgo,
+            billingIssuesDetectedAt = twoDaysAgo,
+            gracePeriodExpiresDate = oneDayFromNow,
+            periodType = PeriodType.TRIAL,
+            refundedAt = oneDayAgo,
+            ownershipType = OwnershipType.FAMILY_SHARED,
+            storeTransactionId = "GPA.1234",
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = null,
+            transaction = transaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization,
+        )
+
+        assertThat(purchaseInformation.purchaseHistoryEntryId).isEqualTo("subscription:test_product")
+        assertThat(purchaseInformation.productIdentifier).isEqualTo("test_product")
+        assertThat(purchaseInformation.purchaseDate).isEqualTo(oneDayAgo)
+        assertThat(purchaseInformation.originalPurchaseDate).isEqualTo(twoDaysAgo)
+        assertThat(purchaseInformation.unsubscribeDetectedAt).isEqualTo(oneDayAgo)
+        assertThat(purchaseInformation.billingIssuesDetectedAt).isEqualTo(twoDaysAgo)
+        assertThat(purchaseInformation.gracePeriodExpiresDate).isEqualTo(oneDayFromNow)
+        assertThat(purchaseInformation.periodType).isEqualTo(PeriodType.TRIAL)
+        assertThat(purchaseInformation.refundedAt).isEqualTo(oneDayAgo)
+        assertThat(purchaseInformation.ownershipType).isEqualTo(OwnershipType.FAMILY_SHARED)
+        assertThat(purchaseInformation.storeTransactionId).isEqualTo("GPA.1234")
+        assertThat(purchaseInformation.isSandbox).isTrue()
+    }
+
+    @Test
+    fun `non-subscription history fields propagate to PurchaseInformation`() {
+        setupDateFormatter(null, "")
+
+        val transaction = TransactionDetails.NonSubscription(
+            productIdentifier = "lifetime",
+            store = Store.PLAY_STORE,
+            price = null,
+            isSandbox = false,
+            purchaseHistoryEntryId = "non_subscription:txn-1",
+            purchaseDate = oneDayAgo,
+            originalPurchaseDate = twoDaysAgo,
+            storeTransactionId = "GPA.5678",
+        )
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = null,
+            transaction = transaction,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization,
+        )
+
+        assertThat(purchaseInformation.purchaseHistoryEntryId).isEqualTo("non_subscription:txn-1")
+        assertThat(purchaseInformation.productIdentifier).isEqualTo("lifetime")
+        assertThat(purchaseInformation.purchaseDate).isEqualTo(oneDayAgo)
+        assertThat(purchaseInformation.originalPurchaseDate).isEqualTo(twoDaysAgo)
+        assertThat(purchaseInformation.storeTransactionId).isEqualTo("GPA.5678")
+        assertThat(purchaseInformation.isSandbox).isFalse()
+    }
+
+    @Test
+    fun `non-subscription history fields fall back to defaults when absent`() {
+        setupDateFormatter(null, "")
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = null,
+            transaction = TransactionDetails.NonSubscription(
+                productIdentifier = "lifetime",
+                store = Store.PLAY_STORE,
+                price = null,
+                isSandbox = false,
+            ),
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization,
+        )
+
+        assertThat(purchaseInformation.purchaseHistoryEntryId).isEmpty()
+        assertThat(purchaseInformation.purchaseDate).isNull()
+        assertThat(purchaseInformation.originalPurchaseDate).isNull()
+        assertThat(purchaseInformation.storeTransactionId).isNull()
+        assertThat(purchaseInformation.periodType).isEqualTo(PeriodType.NORMAL)
+        assertThat(purchaseInformation.ownershipType).isEqualTo(OwnershipType.UNKNOWN)
+    }
+
+    @Test
+    fun `entitlement ownership type takes precedence over transaction ownership type`() {
+        val expiresDate = oneDayFromNow
+        setupDateFormatter(expiresDate, "3 Oct 2063")
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = createEntitlementInfo(
+                isActive = true,
+                willRenew = true,
+                store = Store.PLAY_STORE,
+                productIdentifier = "test_product",
+                expirationDate = expiresDate,
+                ownershipType = OwnershipType.PURCHASED,
+            ),
+            transaction = createTransactionDetails(
+                isActive = true,
+                willRenew = true,
+                store = Store.PLAY_STORE,
+                productIdentifier = "test_product",
+                expiresDate = expiresDate,
+            ).copy(ownershipType = OwnershipType.FAMILY_SHARED),
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization,
+        )
+
+        assertThat(purchaseInformation.ownershipType).isEqualTo(OwnershipType.PURCHASED)
+    }
+
     private fun setupDateFormatter(expiresDate: Date?, expirationDateString: String) {
         if (expiresDate != null) {
             every { dateFormatter.format(expiresDate, any()) } returns expirationDateString
