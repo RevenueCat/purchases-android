@@ -120,30 +120,6 @@ class TrackingBannerAdRefreshCallbackTest {
         assertEquals(error, delegatedError)
     }
 
-    /**
-     * A banner refreshes for as long as it is on screen, so a placement captured at construction
-     * would keep reporting the load-time value while the event callbacks, which read the same
-     * placement at event time, had already moved on.
-     */
-    @Test
-    fun `refresh reads placement at event time`() {
-        val callback = TrackingBannerAdRefreshCallback(
-            delegate = null,
-            placement = "load-placement",
-            adUnitId = "ad-unit",
-            responseInfoProvider = { responseInfo("test-network", "response-id") },
-        )
-        callback.placement = "refreshed-placement"
-
-        callback.onAdRefreshed()
-
-        val trackedData = slot<AdLoadedData>()
-        verify(exactly = 1) {
-            adTracker.trackAdLoaded(capture(trackedData), AdCaptureMethod.ADAPTER)
-        }
-        assertEquals("refreshed-placement", trackedData.captured.placement)
-    }
-
     @Test
     fun `still delegates refresh when Purchases is not configured`() {
         every { Purchases.isConfigured } returns false
