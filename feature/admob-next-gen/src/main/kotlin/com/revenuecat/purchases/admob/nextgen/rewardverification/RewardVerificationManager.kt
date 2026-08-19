@@ -56,18 +56,9 @@ internal object RewardVerificationManager {
     private fun installInternal(adResponseId: String?, attachOptions: (ServerSideVerificationOptions) -> Unit) {
         val runtime = runtime
         when {
-            !Purchases.isConfigured ->
-                Logger.e("Purchases is not configured. Call Purchases.configure() before enabling reward verification.")
-            adResponseId == null ->
-                Logger.e(
-                    "Reward verification requires a loaded ad with a responseId. " +
-                        "Call enableRewardVerification() after the ad has loaded.",
-                )
-            runtime == null ->
-                Logger.e(
-                    "Reward verification setup is not ready. " +
-                        "Try enabling reward verification after Purchases is configured.",
-                )
+            !Purchases.isConfigured -> Logger.e(RewardVerificationStrings.PURCHASES_NOT_CONFIGURED)
+            adResponseId == null -> Logger.e(RewardVerificationStrings.MISSING_AD_RESPONSE_ID)
+            runtime == null -> Logger.e(RewardVerificationStrings.RUNTIME_NOT_READY)
             else -> {
                 val token = Purchases.sharedInstance.generateRewardVerificationToken(impressionId = adResponseId)
                 runtime.setClientTransactionId(
