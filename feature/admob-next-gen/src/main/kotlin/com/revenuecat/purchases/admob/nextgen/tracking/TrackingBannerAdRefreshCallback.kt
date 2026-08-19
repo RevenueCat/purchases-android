@@ -17,6 +17,10 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
  * The SDK does not pass the new [ResponseInfo] to [onAdRefreshed], so
  * [responseInfoProvider] is read when the callback fires rather than captured up
  * front, to report the refreshed response instead of the original one.
+ *
+ * [placement] stays immutable, unlike [TrackingAdEventCallback.placement]. A show-time
+ * placement override only exists for the full-screen formats, which have no refresh
+ * callback, so a banner reports the one placement it was loaded with.
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingBannerAdRefreshCallback(
