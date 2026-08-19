@@ -17,9 +17,8 @@ import kotlinx.coroutines.CancellationException
  *
  * - **Render path** — [preDownloadWorkflowAssets]: `WorkflowManager.getWorkflow` already has the decoded
  *   workflow and resolved `ui_config`, so it hands them straight in.
- * - **Load path**, [onWorkflowLoaded]: wired as [WorkflowsConfigProvider]'s load callback, it runs for each
- *   workflow behind an offering the customer could be served next (the current one, plus each placement's).
- *   It dedups by id **before** decoding,
+ * - **Load path**, [onWorkflowLoaded]: runs for every offering the customer could be served next, as the
+ *   config layer loads each one. It dedups by id **before** decoding,
  *   then decodes **transiently** (via the decoder the provider hands it, which never populates the provider's
  *   retained decode cache — the workflows cache stays raw-bytes-only). Because both paths share
  *   [warmedWorkflowIds], a workflow already warmed on render is skipped here before it is ever decoded.

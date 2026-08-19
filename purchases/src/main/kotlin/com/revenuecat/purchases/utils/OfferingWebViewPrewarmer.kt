@@ -7,8 +7,8 @@ import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 
 /**
- * A no-op unless the offerings response carries the component tree, which it does only while remote config
- * is disabled. With it enabled the tree arrives on the workflows topic, warmed by `WorkflowAssetPrewarmer`.
+ * A no-op unless the offerings response carries the component tree, which it does only while remote config is
+ * disabled; with it enabled the tree arrives on the workflows topic instead.
  */
 internal class OfferingWebViewPrewarmer(
     private val assetWarming: PaywallAssetWarming,

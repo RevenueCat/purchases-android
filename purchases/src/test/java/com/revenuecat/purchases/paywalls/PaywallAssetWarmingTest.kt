@@ -72,17 +72,7 @@ class PaywallAssetWarmingTest {
         assertThat(warmer.warmed).isEmpty()
     }
 
-    @Test
-    fun `hands the web_view urls to the registered warmer`() {
-        val warmer = RecordingWarmer()
-
-        warming(warmer).warmWebViewUrls(listOf(webViewUrl))
-        idle()
-
-        assertThat(warmer.warmedWebViewUrls).containsExactly(webViewUrl)
-    }
-
-    // The warm is posted, so preboot is requested first and nothing warms on the caller's frame.
+    // Posted, so nothing warms on the caller's frame.
     @Test
     fun `warms web_view urls after preboot, not inline with it`() {
         val warmer = RecordingWarmer()
@@ -103,31 +93,13 @@ class PaywallAssetWarmingTest {
     }
 
     @Test
-    fun `does not call the warmer with an empty url list`() {
+    fun `neither warms nor preboots for an empty url list`() {
         val warmer = RecordingWarmer()
 
         warming(warmer).warmWebViewUrls(emptyList())
+        idle()
 
         assertThat(warmer.warmedWebViewUrls).isEmpty()
-    }
-
-    // Warming a bundle constructs a WebView, so the engine starts either way; callers should not have to know
-    // to ask for it first.
-    @Test
-    fun `preboots the engine before warming web_view urls`() {
-        val warmer = RecordingWarmer()
-
-        warming(warmer).warmWebViewUrls(listOf(webViewUrl))
-
-        assertThat(warmer.prebootCount).isEqualTo(1)
-    }
-
-    @Test
-    fun `does not preboot when there are no web_view urls to warm`() {
-        val warmer = RecordingWarmer()
-
-        warming(warmer).warmWebViewUrls(emptyList())
-
         assertThat(warmer.prebootCount).isZero()
     }
 

@@ -292,8 +292,7 @@ internal class OfferingsManager(
                     offeringsCache.cacheOfferings(offeringsResultData.offerings, responsePayloadToCache)
                     val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
                     workflowManager?.onPaywallConfigReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
-                    // After delivery: each of these decodes its own component tree, and warming has no
-                    // reason to sit ahead of the caller's callback.
+                    // Each of these decodes a component tree, so none may sit ahead of the caller's callback.
                     val prewarmTargets = offeringsResultData.offerings.prewarmTargetOfferings()
                     prewarmTargets.filterNot { it.identifier == current?.identifier }
                         .forEach(offeringImagePreDownloader::preDownloadOfferingImages)

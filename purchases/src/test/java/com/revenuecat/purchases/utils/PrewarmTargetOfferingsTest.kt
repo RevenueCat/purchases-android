@@ -78,7 +78,6 @@ internal class PrewarmTargetOfferingsTest {
         assertThat(offerings.prewarmTargetOfferingIds()).containsExactlyInAnyOrder("current", "shared")
     }
 
-    // Ids, not offerings: resolving them against the response is prewarmTargetOfferings' job.
     @Test
     fun `reports an id a placement names even when the response has no such offering`() {
         val offerings = offeringsWith(
@@ -90,6 +89,23 @@ internal class PrewarmTargetOfferingsTest {
         )
 
         assertThat(offerings.prewarmTargetOfferingIds()).containsExactly("missing")
+        assertThat(offerings.prewarmTargetOfferings()).isEmpty()
+    }
+
+    @Test
+    fun `resolves ids to offerings in the same order`() {
+        val current = offering("current")
+        val onboarding = offering("onboarding")
+        val offerings = offeringsWith(
+            current = current,
+            others = listOf(onboarding),
+            placements = Offerings.Placements(
+                fallbackOfferingId = null,
+                offeringIdsByPlacement = mapOf("onboarding" to "onboarding"),
+            ),
+        )
+
+        assertThat(offerings.prewarmTargetOfferings()).containsExactly(current, onboarding)
     }
 
     private fun offering(identifier: String): Offering = mockk<Offering>().apply {

@@ -656,8 +656,7 @@ class OfferingsManagerTest {
         }
     }
 
-    // Each placement target decodes its own component tree, so the fan-out must not sit ahead of the
-    // caller's callback the way the current offering's single decode does.
+    // Each placement target decodes its own component tree, so the fan-out must stay off this path.
     @Test
     fun `getOfferings pre downloads placement target images only after delivering offerings`() {
         val other = mockk<Offering>(relaxed = true).apply { every { identifier } returns "onboarding" }

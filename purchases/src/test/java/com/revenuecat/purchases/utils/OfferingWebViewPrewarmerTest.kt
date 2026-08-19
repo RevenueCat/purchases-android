@@ -49,7 +49,7 @@ internal class OfferingWebViewPrewarmerTest {
         PaywallAssetWarming(context = mockk(relaxed = true), warmerProvider = { warmer }),
     )
 
-    // The actual warm is posted to the main thread, so tests need a pump to see it.
+    // The warm is posted to the main thread, so tests need a pump to see it.
     private fun OfferingWebViewPrewarmer.prewarmAndIdle(offerings: Offerings) {
         prewarmWebViews(offerings.prewarmTargetOfferings())
         shadowOf(Looper.getMainLooper()).idle()
@@ -71,94 +71,14 @@ internal class OfferingWebViewPrewarmerTest {
     }
 
     @Test
-    fun `warms the current offering's web_view`() {
-        prewarmer.prewarmAndIdle(offeringsWith(current = offeringWithWebViews("a", "https://a.example.com/i.html")))
-
-        assertThat(warmer.warmedWebViewUrls).containsExactly("https://a.example.com/i.html")
-    }
-
-    @Test
-    fun `warms every web_view in one offering`() {
+    fun `warms every web_view in the current offering, prebooting the engine once`() {
         val offering = offeringWithWebViews("a", "https://a.example.com/1.html", "https://a.example.com/2.html")
 
         prewarmer.prewarmAndIdle(offeringsWith(current = offering))
 
         assertThat(warmer.warmedWebViewUrls)
             .containsExactly("https://a.example.com/1.html", "https://a.example.com/2.html")
-    }
-
-    @Test
-    fun `warms the offering each placement resolves to`() {
-        val current = offeringWithWebViews("current", "https://current.example.com/i.html")
-        val onboarding = offeringWithWebViews("onboarding", "https://onboarding.example.com/i.html")
-        val settings = offeringWithWebViews("settings", "https://settings.example.com/i.html")
-
-        prewarmer.prewarmAndIdle(
-            offeringsWith(
-                current = current,
-                others = listOf(onboarding, settings),
-                placements = Offerings.Placements(
-                    fallbackOfferingId = null,
-                    offeringIdsByPlacement = mapOf("onboarding" to "onboarding", "settings" to "settings"),
-                ),
-            ),
-        )
-
-        assertThat(warmer.warmedWebViewUrls).containsExactlyInAnyOrder(
-            "https://current.example.com/i.html",
-            "https://onboarding.example.com/i.html",
-            "https://settings.example.com/i.html",
-        )
-    }
-
-    @Test
-    fun `warms the placement fallback offering`() {
-        val fallback = offeringWithWebViews("fallback", "https://fallback.example.com/i.html")
-
-        prewarmer.prewarmAndIdle(
-            offeringsWith(
-                current = null,
-                others = listOf(fallback),
-                placements = Offerings.Placements(
-                    fallbackOfferingId = "fallback",
-                    offeringIdsByPlacement = emptyMap(),
-                ),
-            ),
-        )
-
-        assertThat(warmer.warmedWebViewUrls).containsExactly("https://fallback.example.com/i.html")
-    }
-
-    // A placement mapped to null is a deliberate "show nothing here".
-    @Test
-    fun `ignores a placement mapped to no offering`() {
-        prewarmer.prewarmAndIdle(
-            offeringsWith(
-                current = null,
-                placements = Offerings.Placements(
-                    fallbackOfferingId = null,
-                    offeringIdsByPlacement = mapOf("onboarding" to null),
-                ),
-            ),
-        )
-
-        assertThat(warmer.warmedWebViewUrls).isEmpty()
-        assertThat(warmer.prebootCount).isZero()
-    }
-
-    @Test
-    fun `ignores a placement naming an offering that is not in the response`() {
-        prewarmer.prewarmAndIdle(
-            offeringsWith(
-                current = null,
-                placements = Offerings.Placements(
-                    fallbackOfferingId = null,
-                    offeringIdsByPlacement = mapOf("onboarding" to "missing"),
-                ),
-            ),
-        )
-
-        assertThat(warmer.warmedWebViewUrls).isEmpty()
+        assertThat(warmer.prebootCount).isEqualTo(1)
     }
 
     @Test
@@ -187,13 +107,6 @@ internal class OfferingWebViewPrewarmerTest {
 
         assertThat(warmer.warmedWebViewUrls).isEmpty()
         assertThat(warmer.prebootCount).isZero()
-    }
-
-    @Test
-    fun `preboots the engine when there is something to warm`() {
-        prewarmer.prewarmAndIdle(offeringsWith(current = offeringWithWebViews("a", "https://a.example.com/i.html")))
-
-        assertThat(warmer.prebootCount).isEqualTo(1)
     }
 
     @Test

@@ -46,13 +46,8 @@ import kotlinx.serialization.json.JsonPrimitive
 internal class WorkflowsConfigProvider(
     private val manager: RemoteConfigManager,
     private val currentOfferingIdProvider: () -> String? = { null },
-    // Wider than [currentOfferingIdProvider], which gates the readiness check and byte caching on the one
-    // paywall about to be shown.
     private val prewarmOfferingIdsProvider: () -> Set<String> = { setOfNotNull(currentOfferingIdProvider()) },
-    // Called after warm() loads a workflow whose offering is worth prewarming, so a collaborator can warm that
-    // workflow's assets at load time. The second argument decodes a workflow from the config layer WITHOUT
-    // populating this provider's retained decode cache, so prewarming never forces the memory-first Lazy the
-    // render path holds; the in-memory cache stays raw-bytes-only.
+    // transientDecode must not populate the retained decode cache: the workflows cache stays raw-bytes-only.
     private val onWorkflowLoaded: (
         suspend (workflowId: String, transientDecode: suspend (String) -> PublishedWorkflow?) -> Unit
     )? = null,
@@ -259,17 +254,15 @@ internal class WorkflowsConfigProvider(
         announceWorkflowsToPrewarm(offeringToWorkflowId)
     }
 
-    /** Announces against the already-warmed cache, for callers that learn the current offerings after [warm]. */
+    /** For callers that learn the current offerings after [warm]. */
     fun prewarmOfferingAssets() {
         announceWorkflowsToPrewarm(cache.cached?.offeringToWorkflowId)
     }
 
-    // resolveWorkflowBody decodes transiently: it reads bytes + parses without touching the retained Lazy, so
-    // prewarming keeps the cache raw-bytes-only.
     private fun announceWorkflowsToPrewarm(offeringToWorkflowId: Map<String, String>?) {
         val notify = onWorkflowLoaded ?: return
-        // Gated on the metadata map alone, never on the byte-warm map: a body may not have finished its
-        // LOW-priority prefetch yet, and resolveWorkflowBody fetches on demand anyway.
+        // Never gated on the byte-warm map: a body's LOW-priority prefetch may still be in flight, and
+        // resolveWorkflowBody fetches on demand anyway.
         val workflowIds = offeringToWorkflowId?.let { mapping ->
             prewarmOfferingIdsProvider().mapNotNullTo(linkedSetOf(), mapping::get)
         }

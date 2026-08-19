@@ -50,9 +50,7 @@ internal class PaywallAssetWarming(
         if (urls.isEmpty()) return
         val warmer = warmer ?: return
         debugLog { "Warming ${urls.size} Paywalls V2 web_view bundle(s): $urls" }
-        // A warm constructs a WebView and starts the engine anyway; this gets that off the thread the first
-        // load would otherwise pay it on. It returns before startup finishes, so the first warm can still
-        // overlap it.
+        // Moves WebView startup off the thread the first load would otherwise pay it on.
         prebootWebView()
         // Posted so warming never runs inline on the frame that delivered the offerings.
         mainHandler.post {

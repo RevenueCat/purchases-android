@@ -390,8 +390,7 @@ internal class WorkflowsConfigProviderTest {
 
         providerWithListener.warm(generation = 0)
 
-        // WF_PREFETCH's bytes are cached too, but a prefetch-flagged workflow behind no offering this customer
-        // could be served is not a paywall they are about to see, so its assets are not warmed.
+        // WF_PREFETCH's bytes are cached, but it sits behind no offering this customer could be served.
         assertThat(announcedId).isEqualTo(WF_CURRENT)
     }
 
