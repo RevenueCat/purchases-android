@@ -526,12 +526,132 @@ add one.
 Google Mobile Ads Next-Gen invokes load and event callbacks on a background thread. Dispatch explicitly to the main
 thread before updating views or other UI-confined state from a callback.
 
+### Rewarded interstitial ads
+
+**Google Mobile Ads Next-Gen only**
+
+```kotlin
+val adRequest = AdRequest.Builder("AD_UNIT_ID").build()
+
+RewardedInterstitialAd.load(
+    adRequest,
+    object : AdLoadCallback<RewardedInterstitialAd> {
+        override fun onAdLoaded(ad: RewardedInterstitialAd) {
+            rewardedInterstitialAd = ad
+            ad.adEventCallback = object : RewardedInterstitialAdEventCallback {
+                override fun onAdDismissedFullScreenContent() {
+                    rewardedInterstitialAd = null
+                }
+            }
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            rewardedInterstitialAd = null
+        }
+    },
+)
+
+// Later, to show and grant the reward reported by Google:
+rewardedInterstitialAd?.show(this) { rewardItem ->
+    grantReward(rewardItem)
+}
+```
+
+**With RevenueCat tracking**
+
+```kotlin
+val adRequest = AdRequest.Builder("AD_UNIT_ID").build()
+
+Purchases.sharedInstance.adTracker.loadAndTrackRewardedInterstitialAd(
+    adRequest = adRequest,
+    placement = "level_complete_reward",
+    loadCallback = object : AdLoadCallback<RewardedInterstitialAd> {
+        override fun onAdLoaded(ad: RewardedInterstitialAd) {
+            rewardedInterstitialAd = ad
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            rewardedInterstitialAd = null
+        }
+    },
+    adEventCallback = object : RewardedInterstitialAdEventCallback {
+        override fun onAdDismissedFullScreenContent() {
+            rewardedInterstitialAd = null
+        }
+
+        override fun onAdFailedToShowFullScreenContent(
+            fullScreenContentError: FullScreenContentError,
+        ) {
+            rewardedInterstitialAd = null
+        }
+    },
+)
+
+// Later, override the load-time placement while preserving Google's reward callback:
+rewardedInterstitialAd?.show(this, placement = "bonus_chest") { rewardItem ->
+    grantReward(rewardItem)
+}
+```
+
+The coroutine overload returns Google's original load result:
+
+```kotlin
+lifecycleScope.launch {
+    when (
+        val result = Purchases.sharedInstance.adTracker.loadAndTrackRewardedInterstitialAd(
+            adRequest = adRequest,
+            placement = "level_complete_reward",
+        )
+    ) {
+        is AdLoadResult.Success -> rewardedInterstitialAd = result.ad
+        is AdLoadResult.Failure -> rewardedInterstitialAd = null
+    }
+}
+```
+
+> [!IMPORTANT]
+> Do not assign `rewardedInterstitialAd.adEventCallback` directly after a tracked load. Direct assignment replaces
+> RevenueCat's tracking wrapper and prevents the placement-aware `show` extension from applying its override. Pass
+> the callback to `loadAndTrackRewardedInterstitialAd`, or replace only the forwarded callback safely:
+
+```kotlin
+rewardedInterstitialAd?.setTrackingAdEventCallback(newAdEventCallback)
+```
+
+Server-to-server rewarded interstitial responses use the callback API exposed by the pinned Google Mobile Ads SDK.
+Provide the ad unit ID explicitly so both successful and failed loads have the required attribution:
+
+```kotlin
+Purchases.sharedInstance.adTracker.loadAndTrackRewardedInterstitialAdFromResponse(
+    adResponse = serverAdResponse,
+    adUnitId = "AD_UNIT_ID",
+    placement = "level_complete_reward",
+    loadCallback = object : AdLoadCallback<RewardedInterstitialAd> {
+        override fun onAdLoaded(ad: RewardedInterstitialAd) {
+            rewardedInterstitialAd = ad
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            rewardedInterstitialAd = null
+        }
+    },
+    adEventCallback = rewardedInterstitialAdEventCallback,
+)
+```
+
+The pinned SDK does not expose a suspending rewarded interstitial response-loading API, so the adapter intentionally
+does not add one.
+
+Google Mobile Ads Next-Gen invokes load and event callbacks on a background thread. Dispatch explicitly to the main
+thread before updating views or other UI-confined state from a callback.
+
 ## Supported formats
 
-| Format       | RevenueCat tracking entry point                                                      |
-| ------------ | ------------------------------------------------------------------------------------ |
-| App open     | `AdTracker.loadAndTrackAppOpenAd()` or `AdTracker.loadAndTrackAppOpenAdFromResponse()` |
-| Interstitial | `AdTracker.loadAndTrackInterstitialAd()` or `AdTracker.loadAndTrackInterstitialAdFromResponse()` |
+| Format                | RevenueCat tracking entry point |
+| --------------------- | ------------------------------- |
+| App open              | `AdTracker.loadAndTrackAppOpenAd()` or `AdTracker.loadAndTrackAppOpenAdFromResponse()` |
+| Interstitial          | `AdTracker.loadAndTrackInterstitialAd()` or `AdTracker.loadAndTrackInterstitialAdFromResponse()` |
+| Rewarded interstitial | `AdTracker.loadAndTrackRewardedInterstitialAd()` or `AdTracker.loadAndTrackRewardedInterstitialAdFromResponse()` |
 
 ## Placement
 
