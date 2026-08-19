@@ -10,7 +10,6 @@ import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingAdLoadCallback
-import com.revenuecat.purchases.admob.nextgen.tracking.TrackingInterstitialAdEventCallback
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import kotlin.jvm.JvmSynthetic
@@ -43,11 +42,10 @@ public fun AdTracker.loadAndTrackInterstitialAd(
             placement = placement,
             adUnitId = adUnitId,
             configureAd = { ad ->
-                ad.adEventCallback = TrackingInterstitialAdEventCallback(
-                    initialDelegate = adEventCallback,
-                    initialPlacement = placement,
+                ad.installTrackingEventCallback(
+                    delegate = adEventCallback,
+                    placement = placement,
                     adUnitId = adUnitId,
-                    responseInfoProvider = ad::getResponseInfo,
                 )
             },
         ),

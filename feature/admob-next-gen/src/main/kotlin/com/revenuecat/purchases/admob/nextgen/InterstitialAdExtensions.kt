@@ -43,3 +43,16 @@ public fun InterstitialAd.setTrackingAdEventCallback(callback: InterstitialAdEve
         adEventCallback = callback
     }
 }
+
+internal fun InterstitialAd.installTrackingEventCallback(
+    delegate: InterstitialAdEventCallback?,
+    placement: String?,
+    adUnitId: String,
+) {
+    adEventCallback = TrackingInterstitialAdEventCallback(
+        initialDelegate = delegate,
+        initialPlacement = placement,
+        adUnitId = adUnitId,
+        responseInfoProvider = ::getResponseInfo,
+    )
+}
