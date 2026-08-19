@@ -14,6 +14,8 @@ import kotlin.jvm.JvmSynthetic
  * Shows this app open ad and overrides the placement used for RevenueCat analytics.
  *
  * The placement passed here takes precedence over the placement provided when the ad was loaded.
+ * Passing `null` clears the load-time placement instead of keeping it, so call the Next-Gen SDK's
+ * own `show(activity)` when there is no override to apply.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
@@ -22,7 +24,10 @@ public fun AppOpenAd.show(activity: Activity, placement: String?) {
     if (trackingCallback != null) {
         trackingCallback.placement = placement
     } else {
-        Logger.w("Placement override ignored: adEventCallback was manually reassigned")
+        Logger.w(
+            "Placement override ignored: this ad was not loaded via loadAndTrackAppOpenAd, " +
+                "or its adEventCallback was reassigned directly.",
+        )
     }
     show(activity)
 }
