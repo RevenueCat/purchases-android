@@ -33,7 +33,10 @@ internal class OfferingImagePreDownloader(
     }
 
     private fun downloadV2Images(offering: Offering) {
-        val componentsConfig = offering.baseComponentsConfig() ?: return
-        assetWarming.warmImages(componentsConfig.collectAssets().imageUris)
+        val assets = offering.baseComponentsConfig()?.collectAssets() ?: return
+        assetWarming.warmImages(assets.imageUris)
+        // Runs before offerings are delivered, so a paywall presented from that callback does not pay WebView
+        // engine startup on the UI thread. Warming the bundles themselves happens later.
+        if (assets.webViewUrls.isNotEmpty()) assetWarming.prebootWebView()
     }
 }

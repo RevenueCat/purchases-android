@@ -130,11 +130,20 @@ class OfferingImagePreDownloaderTest {
     // region Paywalls V2
 
     @Test
-    fun `paywalls V2 - a web_view in the tree is not this path's concern`() {
+    fun `paywalls V2 - does not preboot the engine when the tree has no web_view`() {
+        preDownloader.preDownloadOfferingImages(createOfferingWithV2Paywall())
+
+        assertThat(warmer.prebootCount).isZero()
+    }
+
+    // Preboot has to happen on this path because it runs before offerings are delivered; the bundle loads
+    // themselves are the offerings-prewarm path's job.
+    @Test
+    fun `paywalls V2 - preboots the engine for a web_view without warming it`() {
         preDownloader.preDownloadOfferingImages(offeringWithWebView())
 
         assertThat(warmer.warmed).isEmpty()
-        assertThat(warmer.prebootCount).isZero()
+        assertThat(warmer.prebootCount).isEqualTo(1)
         assertThat(warmer.warmedWebViewUrls).isEmpty()
     }
 
