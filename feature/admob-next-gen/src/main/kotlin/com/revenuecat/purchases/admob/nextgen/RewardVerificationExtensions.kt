@@ -31,7 +31,10 @@ private fun RewardedAd.overrideTrackingPlacement(placement: String?) {
     if (trackingCallback != null) {
         trackingCallback.placement = placement
     } else {
-        Logger.w("Placement override ignored: adEventCallback was manually reassigned")
+        Logger.w(
+            "Placement override ignored: this ad was not loaded via loadAndTrack, " +
+                "or its adEventCallback was reassigned directly.",
+        )
     }
 }
 
@@ -40,7 +43,10 @@ private fun RewardedInterstitialAd.overrideTrackingPlacement(placement: String?)
     if (trackingCallback != null) {
         trackingCallback.placement = placement
     } else {
-        Logger.w("Placement override ignored: adEventCallback was manually reassigned")
+        Logger.w(
+            "Placement override ignored: this ad was not loaded via loadAndTrack, " +
+                "or its adEventCallback was reassigned directly.",
+        )
     }
 }
 
@@ -108,7 +114,9 @@ public fun RewardedAd.show(
 /**
  * Shows a rewarded ad with reward-verification callbacks and an explicit RevenueCat analytics placement override.
  *
- * [placement] takes precedence over any placement provided at load time.
+ * [placement] takes precedence over any placement provided at load time. Passing `null` clears the
+ * load-time placement instead of keeping it, so use the overload without a placement when there is
+ * no override to apply.
  * [rewardVerificationStarted] is optional and [rewardVerificationCompleted] is required.
  * [enableRewardVerification] must be called before showing the ad with this overload.
  * Callback invocations are delivered on the main thread.
@@ -160,7 +168,9 @@ public fun RewardedInterstitialAd.show(
  * Shows a rewarded interstitial ad with reward-verification callbacks and an explicit RevenueCat analytics placement
  * override.
  *
- * [placement] takes precedence over any placement provided at load time.
+ * [placement] takes precedence over any placement provided at load time. Passing `null` clears the
+ * load-time placement instead of keeping it, so use the overload without a placement when there is
+ * no override to apply.
  * [rewardVerificationStarted] is optional and [rewardVerificationCompleted] is required.
  * [enableRewardVerification] must be called before showing the ad with this overload.
  * Callback invocations are delivered on the main thread.
