@@ -32,7 +32,7 @@ internal class TrackingAdLoadCallback<AdT : Ad>(
 ) : AdLoadCallback<AdT> {
 
     override fun onAdLoaded(ad: AdT) {
-        trackAdLoaded(ad.getResponseInfo(), adFormat, placement, adUnitId)
+        trackAdLoaded({ ad.getResponseInfo() }, adFormat, placement, adUnitId)
         configureAd(ad)
         delegate?.onAdLoaded(ad)
     }
@@ -45,12 +45,13 @@ internal class TrackingAdLoadCallback<AdT : Ad>(
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal fun trackAdLoaded(
-    responseInfo: ResponseInfo,
+    responseInfoProvider: () -> ResponseInfo,
     adFormat: AdFormat,
     placement: String?,
     adUnitId: String,
 ) {
     trackIfConfigured {
+        val responseInfo = responseInfoProvider()
         adTracker.trackFromAdapter(
             AdLoadedData(
                 networkName = responseInfo.adapterClassName,

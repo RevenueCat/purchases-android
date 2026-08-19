@@ -27,7 +27,7 @@ internal class TrackingBannerAdRefreshCallback(
 ) : BannerAdRefreshCallback {
 
     override fun onAdRefreshed() {
-        trackAdLoaded(responseInfoProvider(), AdFormat.BANNER, placement, adUnitId)
+        trackAdLoaded(responseInfoProvider, AdFormat.BANNER, placement, adUnitId)
         delegate?.onAdRefreshed()
     }
 

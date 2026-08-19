@@ -25,18 +25,18 @@ internal class TrackingNativeAdLoaderCallback(
 ) : NativeAdLoaderCallback {
 
     override fun onNativeAdLoaded(nativeAd: NativeAd) {
-        trackAdLoaded(nativeAd.getResponseInfo(), AdFormat.NATIVE, placement, adUnitId)
+        trackAdLoaded({ nativeAd.getResponseInfo() }, AdFormat.NATIVE, placement, adUnitId)
         configureAd(nativeAd)
         delegate?.onNativeAdLoaded(nativeAd)
     }
 
     override fun onCustomNativeAdLoaded(customNativeAd: CustomNativeAd) {
-        trackAdLoaded(customNativeAd.getResponseInfo(), AdFormat.NATIVE, placement, adUnitId)
+        trackAdLoaded({ customNativeAd.getResponseInfo() }, AdFormat.NATIVE, placement, adUnitId)
         delegate?.onCustomNativeAdLoaded(customNativeAd)
     }
 
     override fun onBannerAdLoaded(bannerAd: BannerAd) {
-        trackAdLoaded(bannerAd.getResponseInfo(), AdFormat.BANNER, placement, adUnitId)
+        trackAdLoaded({ bannerAd.getResponseInfo() }, AdFormat.BANNER, placement, adUnitId)
         delegate?.onBannerAdLoaded(bannerAd)
     }
 
