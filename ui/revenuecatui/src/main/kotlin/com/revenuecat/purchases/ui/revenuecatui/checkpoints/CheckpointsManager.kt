@@ -71,6 +71,14 @@ internal class CheckpointsManager {
         params: CheckpointParams?,
     ): CheckpointResult = withContext(Dispatchers.Main) {
         val checkpoint = CheckpointInfo(identifier, params ?: CheckpointParams())
+        if (!CheckpointIdentifierValidator.isValid(identifier)) {
+            Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(identifier))
+            return@withContext CheckpointResult.NoAction(
+                checkpoint,
+                CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER,
+            )
+        }
+
         checkpointListener?.onCheckpointHit(checkpoint)
         val resolution = purchases.resolveCheckpoint(
             identifier,

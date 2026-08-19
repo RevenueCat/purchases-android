@@ -14,13 +14,16 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.runs
 import io.mockk.slot
+import io.mockk.unmockkObject
 import io.mockk.verify
 import io.mockk.verifyOrder
 import kotlinx.coroutines.Dispatchers
@@ -54,6 +57,8 @@ class CheckpointsManagerTest {
     @Before
     fun setup() {
         Dispatchers.setMain(dispatcher)
+        mockkObject(Logger)
+        every { Logger.e(any()) } just runs
         startedIntents.clear()
         mockActivity = mockk(relaxed = true)
         capturesStartedIntents()
@@ -67,7 +72,40 @@ class CheckpointsManagerTest {
 
     @After
     fun tearDown() {
+        unmockkObject(Logger)
         Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `valid checkpoint identifier reaches listener and resolution`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
+
+        manager.checkpoint(mockPurchases, "A-1_b", null)
+
+        coVerify(exactly = 1) { mockPurchases.resolveCheckpoint("A-1_b", emptyMap()) }
+        verify(exactly = 1) { mockListener.onCheckpointHit(match { it.identifier == "A-1_b" }) }
+        verify(exactly = 1) {
+            mockListener.onCheckpointCompleted(
+                match { it.identifier == "A-1_b" },
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun `invalid checkpoint identifier is logged and dropped before listener or resolution`() = runTest(dispatcher) {
+        val invalidIdentifier = " checkout😀"
+
+        val result = manager.checkpoint(mockPurchases, invalidIdentifier, null) as CheckpointResult.NoAction
+
+        assertThat(result.reason).isEqualTo(CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER)
+        assertThat(result.checkpoint.identifier).isEqualTo(invalidIdentifier)
+        coVerify(exactly = 0) { mockPurchases.resolveCheckpoint(any(), any()) }
+        verify(exactly = 0) { mockListener.onCheckpointHit(any()) }
+        verify(exactly = 0) { mockListener.onCheckpointCompleted(any(), any()) }
+        verify(exactly = 1) {
+            Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(invalidIdentifier))
+        }
     }
 
     @Test

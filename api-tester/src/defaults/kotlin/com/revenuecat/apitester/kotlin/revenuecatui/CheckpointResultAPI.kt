@@ -45,5 +45,7 @@ private class CheckpointResultAPI {
             CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE
         val disabled: CheckpointResult.NoAction.Reason = CheckpointResult.NoAction.Reason.DISABLED
         val unknownCheckpoint: CheckpointResult.NoAction.Reason = CheckpointResult.NoAction.Reason.UNKNOWN_CHECKPOINT
+        val invalidCheckpointIdentifier: CheckpointResult.NoAction.Reason =
+            CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER
     }
 }
