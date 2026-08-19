@@ -33,6 +33,7 @@ import com.revenuecat.purchases.common.localrules.DeviceDimensionProvider
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesEngineLoggerBridge
 import com.revenuecat.purchases.common.localrules.StoreDimensionProvider
+import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.APISourceFailover
 import com.revenuecat.purchases.common.networking.DeviceConnectivityChecker
@@ -354,15 +355,6 @@ internal class PurchasesFactory(
             val checkpointsConfigProvider = remoteConfigManager?.let {
                 CheckpointsConfigProvider(it)
             }
-            RulesEngine.setLogger(RulesEngineLoggerBridge)
-            val localRulesEvaluator = LocalRulesEvaluator(
-                providers = listOf(
-                    DeviceDimensionProvider(appConfig, localeProvider),
-                    // Only read during a checkpoint evaluation, so the instance is configured by then. Same
-                    // reasoning as CheckpointWorkflowResolverImpl's getOfferings.
-                    StoreDimensionProvider { Purchases.sharedInstance.awaitStorefrontCountryCode() },
-                ),
-            )
             if (remoteConfigManager != null && uiConfigProvider != null && workflowsConfigProvider != null) {
                 remoteConfigManager.registerListener(uiConfigProvider)
                 remoteConfigManager.registerListener(workflowsConfigProvider)
@@ -384,6 +376,24 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager,
                 dispatcher,
                 uiPreviewMode = appConfig.uiPreviewMode,
+            )
+
+            // Built after the identity manager so a dimension source reads the app user ID from this instance
+            // rather than from whichever one is the singleton by the time a checkpoint is resolved. The evaluator
+            // is a leaf, only consumed from there, so where it is built is otherwise unconstrained.
+            RulesEngine.setLogger(RulesEngineLoggerBridge)
+            val localRulesEvaluator = LocalRulesEvaluator(
+                providers = listOf(
+                    DeviceDimensionProvider(appConfig, localeProvider),
+                    // Only read during a checkpoint evaluation, so the instance is configured by then. Same
+                    // reasoning as CheckpointWorkflowResolverImpl's getOfferings.
+                    StoreDimensionProvider { Purchases.sharedInstance.awaitStorefrontCountryCode() },
+                    SubscriberAttributesDimensionProvider {
+                        subscriberAttributesCache.getAllStoredSubscriberAttributes(
+                            identityManager.currentAppUserID,
+                        )
+                    },
+                ),
             )
 
             val customerInfoUpdateHandler = CustomerInfoUpdateHandler(
