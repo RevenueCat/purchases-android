@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.common.localrules
 
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.rules.RulesEngine
@@ -11,8 +12,13 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import java.util.Date
 
+// Robolectric because the resolver warns about a dimension it drops, and warnLog reaches android.util.Log.
+@RunWith(AndroidJUnit4::class)
+@Config(manifest = Config.NONE)
 class RulesDimensionResolverTest {
 
     private val evaluationDate = Date(1_700_000_000_000)
@@ -76,11 +82,10 @@ class RulesDimensionResolverTest {
     }
 
     @Test
-    fun `a provider that throws fails the snapshot with its identifier`() = runTest {
+    fun `a provider that throws fails the snapshot with its namespace`() = runTest {
         val resolver = resolver(
-            provider(RulesDimensionNamespace.Device, "platform" to string("android")),
+            provider(RulesDimensionNamespace.Store, "country" to string("USA")),
             object : RulesDimensionProvider {
-                override val identifier = "failing"
                 override val namespace = RulesDimensionNamespace.Device
                 override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> =
                     throw IllegalStateException("nope")
@@ -89,14 +94,14 @@ class RulesDimensionResolverTest {
 
         val error = resolver.snapshot().exceptionOrNull()
 
-        assertThat(error).isEqualTo(RulesDimensionResolutionException.ProviderFailed("failing", "nope"))
+        assertThat(error)
+            .isEqualTo(RulesDimensionResolutionException.ProviderFailed(RulesDimensionNamespace.Device, "nope"))
     }
 
     @Test
     fun `cancellation propagates instead of failing the snapshot`() = runTest {
         val resolver = resolver(
             object : RulesDimensionProvider {
-                override val identifier = "cancelling"
                 override val namespace = RulesDimensionNamespace.Device
                 override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> =
                     throw CancellationException("cancelled")
@@ -116,9 +121,8 @@ class RulesDimensionResolverTest {
     @Test
     fun `every provider sees the same evaluation date`() = runTest {
         val dates = mutableListOf<Date>()
-        val recordingProvider = { name: String ->
+        val recordingProvider = {
             object : RulesDimensionProvider {
-                override val identifier = name
                 override val namespace = RulesDimensionNamespace.Device
                 override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
                     dates += date
@@ -126,7 +130,7 @@ class RulesDimensionResolverTest {
                 }
             }
         }
-        val resolver = resolver(recordingProvider("first"), recordingProvider("second"))
+        val resolver = resolver(recordingProvider(), recordingProvider())
 
         val snapshot = resolver.snapshot().getOrThrow()
 
@@ -313,6 +317,41 @@ class RulesDimensionResolverTest {
     }
 
     @Test
+    fun `a name no predicate could read is dropped rather than exposed`() = runTest {
+        val resolver = resolver(
+            provider(
+                RulesDimensionNamespace.SubscriberAttributes,
+                // A '.' would be walked as a path through a "user" object that does not exist, and "" is not a
+                // name a predicate can be written against.
+                "user.tier" to string("gold"),
+                "" to string("anything"),
+                "tier" to string("gold"),
+            ),
+        )
+
+        val values = resolver.snapshot().getOrThrow().values
+
+        assertThat(values["subscriberAttributes"])
+            .isEqualTo(Value.ObjectValue(mapOf("tier" to Value.StringValue("gold"))))
+    }
+
+    @Test
+    fun `a provider whose every name is unreachable leaves its namespace absent`() = runTest {
+        val resolver = resolver(
+            provider(RulesDimensionNamespace.Device, "platform" to string("android")),
+            provider(RulesDimensionNamespace.SubscriberAttributes, "user.tier" to string("gold")),
+        )
+
+        val values = resolver.snapshot().getOrThrow().values
+
+        // Filtering the names inside the namespace would leave an empty object behind, which is truthy.
+        assertThat(values).containsOnlyKeys("device")
+        assertThat(
+            RulesEngine.evaluate("""{"!!": [{"var": "subscriberAttributes"}]}""", values).getOrThrow(),
+        ).isFalse()
+    }
+
+    @Test
     fun `no providers yields an empty scope`() = runTest {
         assertThat(resolver().snapshot().getOrThrow().values).isEmpty()
     }
@@ -330,7 +369,6 @@ class RulesDimensionResolverTest {
         dimensionNamespace: RulesDimensionNamespace,
         vararg values: Pair<String, RulesDimensionValue>,
     ) = object : RulesDimensionProvider {
-        override val identifier = dimensionNamespace.key
         override val namespace = dimensionNamespace
         override suspend fun dimensions(date: Date) = values.toMap()
     }

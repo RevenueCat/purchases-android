@@ -24,8 +24,6 @@ internal class DeviceDimensionProvider(
     private val localeProvider: LocaleProvider,
 ) : RulesDimensionProvider {
 
-    override val identifier: String = "device"
-
     override val namespace: RulesDimensionNamespace = RulesDimensionNamespace.Device
 
     private val fixedDimensions: Map<String, RulesDimensionValue> = mapOf(

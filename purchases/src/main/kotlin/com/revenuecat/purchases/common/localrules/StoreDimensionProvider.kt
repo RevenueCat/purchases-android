@@ -22,8 +22,6 @@ internal class StoreDimensionProvider(
     private val storefrontCountryCode: suspend () -> String?,
 ) : RulesDimensionProvider {
 
-    override val identifier: String = "store"
-
     override val namespace: RulesDimensionNamespace = RulesDimensionNamespace.Store
 
     /**
