@@ -9,6 +9,7 @@ import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingRewardedAdEventCallback
+import com.revenuecat.purchases.admob.nextgen.tracking.applyPlacementOverride
 import kotlin.jvm.JvmSynthetic
 
 /**
@@ -25,15 +26,7 @@ public fun RewardedAd.show(
     placement: String?,
     onUserEarnedRewardListener: OnUserEarnedRewardListener,
 ) {
-    val trackingCallback = adEventCallback as? TrackingRewardedAdEventCallback
-    if (trackingCallback != null) {
-        trackingCallback.placement = placement
-    } else {
-        Logger.w(
-            "Placement override ignored: this ad was not loaded via loadAndTrackRewardedAd, " +
-                "or its adEventCallback was reassigned directly.",
-        )
-    }
+    adEventCallback.applyPlacementOverride(placement)
     show(activity, onUserEarnedRewardListener)
 }
 
