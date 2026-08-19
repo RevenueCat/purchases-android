@@ -6,8 +6,7 @@ import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAd
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.rewardverification.RewardVerificationManager
-import com.revenuecat.purchases.admob.nextgen.tracking.TrackingRewardedAdEventCallback
-import com.revenuecat.purchases.admob.nextgen.tracking.TrackingRewardedInterstitialAdEventCallback
+import com.revenuecat.purchases.admob.nextgen.tracking.applyPlacementOverride
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
 import kotlin.jvm.JvmSynthetic
 
@@ -22,30 +21,6 @@ private fun rewardVerificationListener(
             ad = onAd,
             rewardVerificationStarted = rewardVerificationStarted,
             rewardVerificationCompleted = rewardVerificationCompleted,
-        )
-    }
-}
-
-private fun RewardedAd.overrideTrackingPlacement(placement: String?) {
-    val trackingCallback = adEventCallback as? TrackingRewardedAdEventCallback
-    if (trackingCallback != null) {
-        trackingCallback.placement = placement
-    } else {
-        Logger.w(
-            "Placement override ignored: this ad was not loaded via loadAndTrack, " +
-                "or its adEventCallback was reassigned directly.",
-        )
-    }
-}
-
-private fun RewardedInterstitialAd.overrideTrackingPlacement(placement: String?) {
-    val trackingCallback = adEventCallback as? TrackingRewardedInterstitialAdEventCallback
-    if (trackingCallback != null) {
-        trackingCallback.placement = placement
-    } else {
-        Logger.w(
-            "Placement override ignored: this ad was not loaded via loadAndTrack, " +
-                "or its adEventCallback was reassigned directly.",
         )
     }
 }
@@ -129,7 +104,7 @@ public fun RewardedAd.show(
     rewardVerificationStarted: (() -> Unit)? = null,
     rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
 ) {
-    overrideTrackingPlacement(placement)
+    adEventCallback.applyPlacementOverride(placement)
     show(
         activity,
         rewardVerificationListener(
@@ -183,7 +158,7 @@ public fun RewardedInterstitialAd.show(
     rewardVerificationStarted: (() -> Unit)? = null,
     rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
 ) {
-    overrideTrackingPlacement(placement)
+    adEventCallback.applyPlacementOverride(placement)
     show(
         activity,
         rewardVerificationListener(
