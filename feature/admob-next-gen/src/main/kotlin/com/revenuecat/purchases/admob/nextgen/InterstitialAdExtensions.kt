@@ -7,6 +7,7 @@ import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingInterstitialAdEventCallback
+import com.revenuecat.purchases.admob.nextgen.tracking.applyPlacementOverride
 import kotlin.jvm.JvmSynthetic
 
 /**
@@ -19,15 +20,7 @@ import kotlin.jvm.JvmSynthetic
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun InterstitialAd.show(activity: Activity, placement: String?) {
-    val trackingCallback = adEventCallback as? TrackingInterstitialAdEventCallback
-    if (trackingCallback != null) {
-        trackingCallback.placement = placement
-    } else {
-        Logger.w(
-            "Placement override ignored: this ad was not loaded via loadAndTrackInterstitialAd, " +
-                "or its adEventCallback was reassigned directly.",
-        )
-    }
+    adEventCallback.applyPlacementOverride(placement)
     show(activity)
 }
 
