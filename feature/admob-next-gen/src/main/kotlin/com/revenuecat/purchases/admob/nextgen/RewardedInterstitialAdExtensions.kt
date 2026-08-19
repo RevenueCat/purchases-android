@@ -9,6 +9,7 @@ import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.Rewarded
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAdEventCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingRewardedInterstitialAdEventCallback
+import com.revenuecat.purchases.admob.nextgen.tracking.applyPlacementOverride
 import kotlin.jvm.JvmSynthetic
 
 /**
@@ -26,15 +27,7 @@ public fun RewardedInterstitialAd.show(
     placement: String?,
     onUserEarnedRewardListener: OnUserEarnedRewardListener,
 ) {
-    val trackingCallback = adEventCallback as? TrackingRewardedInterstitialAdEventCallback
-    if (trackingCallback != null) {
-        trackingCallback.placement = placement
-    } else {
-        Logger.w(
-            "Placement override ignored: this ad was not loaded via " +
-                "loadAndTrackRewardedInterstitialAd, or its adEventCallback was reassigned directly.",
-        )
-    }
+    adEventCallback.applyPlacementOverride(placement)
     show(activity, onUserEarnedRewardListener)
 }
 
