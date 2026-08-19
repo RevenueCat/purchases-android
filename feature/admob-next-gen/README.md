@@ -98,6 +98,56 @@ If you use mediation, wait for the initialization callback before loading ads so
 Configure consent and any request-specific privacy flags before initialization because the SDK or a mediation partner
 may preload ads during initialization.
 
+## Preloading placement
+
+Preloading has two separate tracking stages. The optional placement passed to `startAndTrack` applies to preload
+success and failure events. The optional placement passed to `pollAndTrackAd` is independent and applies to the
+ad's later display, click, revenue, and banner-refresh events.
+
+## Preloading
+
+### Banner ads
+
+```kotlin
+val bannerPreloadConfiguration = PreloadConfiguration(
+    request = BannerAdRequest.Builder(
+        "AD_UNIT_ID",
+        AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, 360),
+    ).build(),
+    bufferSize = 2,
+)
+
+BannerAdPreloader.startAndTrack(
+    preloadId = "home-banner-buffer",
+    preloadConfiguration = bannerPreloadConfiguration,
+    placement = "home_banner_preload",
+    preloadCallback = object : PreloadCallback {
+        override fun onAdsExhausted(preloadId: String) {
+            // The buffer is empty. This callback is forwarded but is not a RevenueCat ad event.
+        }
+    },
+)
+
+// Later, adopt a buffered banner. This does not emit another loaded event.
+val bannerAd = BannerAdPreloader.pollAndTrackAd(
+    preloadId = "home-banner-buffer",
+    placement = "home_banner",
+    adEventCallback = bannerAdEventCallback,
+    bannerAdRefreshCallback = bannerAdRefreshCallback,
+)
+
+if (bannerAd != null) {
+    adView.registerBannerAd(bannerAd, this)
+}
+```
+
+Continue to register the returned banner with Google's normal `AdView.registerBannerAd`; the adapter intentionally
+does not combine polling and registration.
+
+If preloading was started through Google's plain `start` API, `pollAndTrackAd` still installs tracking for later
+lifecycle events. RevenueCat cannot retroactively observe the original preload completion, so it does not synthesize
+a loaded event when the ad is polled.
+
 ## Events tracked
 
 All formats — banner, interstitial, rewarded, rewarded interstitial, app open, and native — report these
