@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
@@ -81,6 +82,9 @@ internal fun LoadedWorkflowPaywall(
     }
 
     val configuration = LocalConfiguration.current
+    val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val screenCondition = ScreenCondition.from(windowSize)
+    stepStates.values.forEach { it.update(screenCondition = screenCondition) }
     currentState.update(localeList = configuration.locales)
 
     val transitionState = rememberWorkflowTransitionState(

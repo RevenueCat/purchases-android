@@ -1224,14 +1224,13 @@ internal class PaywallViewModelImpl(
         if (cached == null && newState is PaywallState.Loaded.Components) {
             workflowStepStateCache[step.id] = newState
         }
-        // Apply the workflow's default package to all steps. setDefaultPackage is idempotent
-        // so it is safe to call on every visit — it will only take effect the first time.
-        // On steps with their own packages, ownSelection takes precedence over defaultPackageInfo.
+        // Apply the workflow's package-bearing source state to all steps. setDefaultPackage is idempotent,
+        // so it is safe to call on every visit. On steps with their own packages, ownSelection takes precedence.
         if (newState is PaywallState.Loaded.Components) {
-            val defaultPackage = workflow.singleStepFallbackId
-                ?.let { workflowStepStateCache[it]?.selectedPackageInfo }
-            if (defaultPackage != null) {
-                newState.setDefaultPackage(defaultPackage)
+            val defaultPackageState = workflow.singleStepFallbackId
+                ?.let { workflowStepStateCache[it] }
+            if (defaultPackageState != null) {
+                newState.setDefaultPackage(defaultPackageState)
             }
         }
         if (!shouldApplyState) return
@@ -1338,7 +1337,7 @@ internal class PaywallViewModelImpl(
                     workflowStepStateCache[stepId] = computed
                     computed.update(localeList = _lastLocaleList.value.toFrameworkLocaleList())
                     workflow.singleStepFallbackId
-                        ?.let { workflowStepStateCache[it]?.selectedPackageInfo }
+                        ?.let { workflowStepStateCache[it] }
                         ?.let { computed.setDefaultPackage(it) }
                 }
             }

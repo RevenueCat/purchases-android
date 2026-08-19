@@ -189,18 +189,24 @@ internal sealed interface PaywallState {
                 val offerEligibility: OfferEligibility,
             )
 
-            private val initialSelectedPackageOutsideTabs = packages.packagesOutsideTabs
-                .firstOrNull { it.isSelectedByDefault && it.resolvesVisible(mergedCustomVariables) }
-                ?.uniqueId
+            private var screenCondition = ScreenCondition.COMPACT
+
+            private val selectedPackageOutsideTabs: String?
+                get() = packages.packagesOutsideTabs
+                    .firstOrNull {
+                        it.isSelectedByDefault && it.resolvesVisible(mergedCustomVariables, screenCondition)
+                    }
+                    ?.uniqueId
 
             /**
              * Only used when a default *is* declared outside the tabs but a rule hid it, which would
              * otherwise leave nothing selected. A paywall that declares no default still starts unselected.
              */
-            private val visibleFallbackForHiddenDefaultOutsideTabs = packages.packagesOutsideTabs
-                .takeIf { infos -> infos.any { it.isSelectedByDefault } }
-                ?.firstOrNull { it.resolvesVisible(mergedCustomVariables) }
-                ?.uniqueId
+            private val visibleFallbackForHiddenDefaultOutsideTabs: String?
+                get() = packages.packagesOutsideTabs
+                    .takeIf { infos -> infos.any { it.isSelectedByDefault } }
+                    ?.firstOrNull { it.resolvesVisible(mergedCustomVariables, screenCondition) }
+                    ?.uniqueId
             private val packagesOutsideTabsUniqueIds: Set<String> = packages.packagesOutsideTabs
                 .mapTo(mutableSetOf()) { it.uniqueId }
             private val tabsByUniqueId: Map<String, Set<Int>> = mutableMapOf<String, Set<Int>>().apply {
@@ -261,31 +267,39 @@ internal sealed interface PaywallState {
             private val selectedPackageByTab = mutableStateMapOf<Int, String?>().apply {
                 putAll(
                     packages.packagesByTab.mapValues { (_, packagesList) ->
-                        packagesList.defaultSelection(mergedCustomVariables)?.uniqueId
+                        packagesList.defaultSelection(mergedCustomVariables, screenCondition)?.uniqueId
                     },
                 )
             }
 
-            var selectedTabIndex by mutableIntStateOf(initialSelectedTabIndex ?: 0)
+            private val initialSelectedTab = initialSelectedTabIndex ?: 0
+
+            var selectedTabIndex by mutableIntStateOf(initialSelectedTab)
                 private set
 
-            private val initialSelectedPackageUniqueId: String? = initialSelectedPackageOutsideTabs
+            private val initialSelectedPackageUniqueId: String? = selectedPackageOutsideTabs
                 ?: selectedPackageByTab[selectedTabIndex]
-                ?: packages.packagesByTab[selectedTabIndex]?.defaultSelection(mergedCustomVariables)?.uniqueId
+                ?: packages.packagesByTab[selectedTabIndex]
+                    ?.defaultSelection(mergedCustomVariables, screenCondition)
+                    ?.uniqueId
                 // Last, so a default declared inside a tab still wins.
                 ?: visibleFallbackForHiddenDefaultOutsideTabs
 
             private var selectedPackageUniqueId by mutableStateOf(initialSelectedPackageUniqueId)
 
             private var defaultPackageInfo: SelectedPackageInfo? by mutableStateOf(null)
+            private var defaultPackageState: Components? = null
 
-            internal fun setDefaultPackage(info: SelectedPackageInfo) {
-                // Idempotency lock: default is set once and never overwritten, so back
-                // navigation always shows the same content as the initial render.
-                if (defaultPackageInfo == null) defaultPackageInfo = info
+            internal fun setDefaultPackage(state: Components) {
+                // Keep the initial context stable across navigation and user package changes. The source is retained
+                // only so a window-size change can replace this snapshot if its package becomes hidden.
+                if (defaultPackageState == null && state !== this) {
+                    defaultPackageState = state
+                    defaultPackageInfo = state.workflowDefaultPackageInfo(null, screenCondition)
+                }
             }
 
-            val selectedPackageInfo by derivedStateOf {
+            val selectedPackageInfo: SelectedPackageInfo? by derivedStateOf {
                 val ownSelection = selectedPackageUniqueId?.let { uniqueId ->
                     findPackageInfoByUniqueId(uniqueId)?.let { info ->
                         SelectedPackageInfo(
@@ -344,8 +358,17 @@ internal sealed interface PaywallState {
                 localeList: FrameworkLocaleList? = null,
                 selectedTabIndex: Int? = null,
                 actionInProgress: Boolean? = null,
+                screenCondition: ScreenCondition? = null,
             ) {
                 if (localeList != null) localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
+
+                if (screenCondition != null && screenCondition != this.screenCondition) {
+                    this.screenCondition = screenCondition
+                    reconcileSelectionForScreenCondition()
+                    defaultPackageState?.let { sourceState ->
+                        defaultPackageInfo = sourceState.workflowDefaultPackageInfo(defaultPackageInfo, screenCondition)
+                    }
+                }
 
                 if (selectedTabIndex != null) {
                     this.selectedTabIndex = selectedTabIndex
@@ -358,9 +381,9 @@ internal sealed interface PaywallState {
                     }
 
                     selectedPackageUniqueId = selectedPackageByTab[selectedTabIndex]
-                        ?: initialSelectedPackageOutsideTabs
+                        ?: selectedPackageOutsideTabs
                         ?: packages.packagesByTab[selectedTabIndex]
-                            ?.defaultSelection(mergedCustomVariables)
+                            ?.defaultSelection(mergedCustomVariables, this.screenCondition)
                             ?.also { selection ->
                                 if (!selection.isSelectedByDefault) {
                                     Logger.w(
@@ -376,6 +399,62 @@ internal sealed interface PaywallState {
 
                 if (actionInProgress != null) this.actionInProgress = actionInProgress
             }
+
+            private val reconcileSelectionForScreenCondition = {
+                packages.packagesByTab.forEach { (tabIndex, tabPackages) ->
+                    val selectedUniqueId = selectedPackageByTab[tabIndex]
+                    val selectionStillVisible = tabPackages.any { info ->
+                        info.uniqueId == selectedUniqueId &&
+                            info.resolvesVisible(mergedCustomVariables, screenCondition)
+                    }
+                    if (!selectionStillVisible) {
+                        selectedPackageByTab[tabIndex] =
+                            tabPackages.defaultSelection(mergedCustomVariables, screenCondition)?.uniqueId
+                    }
+                }
+
+                val currentSelectionStillVisible = selectedPackageUniqueId?.let { selectedUniqueId ->
+                    (packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty())
+                        .any { info ->
+                            info.uniqueId == selectedUniqueId &&
+                                info.resolvesVisible(mergedCustomVariables, screenCondition)
+                        }
+                } == true
+                if (!currentSelectionStillVisible) {
+                    selectedPackageUniqueId = peekDefaultPackageUniqueIdAfterSheetDismiss()
+                }
+            }
+
+            private val workflowDefaultPackageInfo =
+                { currentDefault: SelectedPackageInfo?, condition: ScreenCondition ->
+                    val initialTabPackages = packages.packagesByTab[initialSelectedTab]
+                    val initialContextPackages = packages.packagesOutsideTabs + initialTabPackages.orEmpty()
+                    val currentSelection = currentDefault?.let { current ->
+                        initialContextPackages.firstOrNull { info ->
+                            info.uniqueId == current.uniqueId && info.resolvesVisible(mergedCustomVariables, condition)
+                        }
+                    }
+                    val initialSelection = initialSelectedPackageUniqueId?.let { uniqueId ->
+                        initialContextPackages.firstOrNull { info ->
+                            info.uniqueId == uniqueId && info.resolvesVisible(mergedCustomVariables, condition)
+                        }
+                    }
+                    val replacement = currentSelection
+                        ?: initialSelection
+                        ?: packages.packagesOutsideTabs.authoredDefaultIfVisible(mergedCustomVariables, condition)
+                        ?: initialTabPackages?.defaultSelection(mergedCustomVariables, condition)
+                        ?: packages.packagesOutsideTabs
+                            .takeIf { infos -> infos.any { it.isSelectedByDefault } }
+                            ?.firstVisible(mergedCustomVariables, condition)
+                    replacement?.let { info ->
+                        SelectedPackageInfo(
+                            rcPackage = info.pkg,
+                            resolvedOffer = info.resolvedOffer,
+                            uniqueId = info.uniqueId,
+                            offerEligibility = calculateOfferEligibility(info.resolvedOffer, info.pkg),
+                        )
+                    }
+                }
 
             fun update(selectedPackageUniqueId: String) {
                 this.selectedPackageUniqueId = selectedPackageUniqueId
@@ -397,10 +476,10 @@ internal sealed interface PaywallState {
                 val tabPackages = packages.packagesByTab[selectedTabIndex]
                 // A default authored outside the tabs outranks a tab package that was never authored as
                 // one, so the tab's own default is consulted first and its first visible package last.
-                return tabPackages?.authoredDefaultIfVisible(mergedCustomVariables)?.uniqueId
-                    ?: initialSelectedPackageOutsideTabs
+                return tabPackages?.authoredDefaultIfVisible(mergedCustomVariables, screenCondition)?.uniqueId
+                    ?: selectedPackageOutsideTabs
                     ?: selectedPackageByTab[selectedTabIndex]
-                    ?: tabPackages?.firstVisible(mergedCustomVariables)?.uniqueId
+                    ?: tabPackages?.firstVisible(mergedCustomVariables, screenCondition)?.uniqueId
                     ?: visibleFallbackForHiddenDefaultOutsideTabs
             }
 
@@ -496,9 +575,10 @@ internal val PaywallState.Loaded.Legacy.isInFullScreenMode: Boolean
  */
 private fun PaywallState.Loaded.Components.AvailablePackages.Info.resolvesVisible(
     customVariables: Map<String, CustomVariableValue>,
+    screenCondition: ScreenCondition,
 ): Boolean =
     visibilityOverrides.buildPresentedPartial(
-        windowSize = ScreenCondition.COMPACT,
+        windowSize = screenCondition,
         offerEligibility = offerEligibility ?: OfferEligibility.Ineligible,
         state = ComponentViewState.DEFAULT,
         conditionContext = ConditionContext(selectedPackageId = null, customVariables = customVariables),
@@ -510,16 +590,19 @@ private fun PaywallState.Loaded.Components.AvailablePackages.Info.resolvesVisibl
  */
 private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.defaultSelection(
     customVariables: Map<String, CustomVariableValue>,
+    screenCondition: ScreenCondition,
 ): PaywallState.Loaded.Components.AvailablePackages.Info? =
-    authoredDefaultIfVisible(customVariables) ?: firstVisible(customVariables)
+    authoredDefaultIfVisible(customVariables, screenCondition) ?: firstVisible(customVariables, screenCondition)
 
 /** The package authored as the default, only when it renders. */
 private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.authoredDefaultIfVisible(
     customVariables: Map<String, CustomVariableValue>,
+    screenCondition: ScreenCondition,
 ): PaywallState.Loaded.Components.AvailablePackages.Info? =
-    firstOrNull { it.isSelectedByDefault && it.resolvesVisible(customVariables) }
+    firstOrNull { it.isSelectedByDefault && it.resolvesVisible(customVariables, screenCondition) }
 
 private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.firstVisible(
     customVariables: Map<String, CustomVariableValue>,
+    screenCondition: ScreenCondition,
 ): PaywallState.Loaded.Components.AvailablePackages.Info? =
-    firstOrNull { it.resolvesVisible(customVariables) }
+    firstOrNull { it.resolvesVisible(customVariables, screenCondition) }

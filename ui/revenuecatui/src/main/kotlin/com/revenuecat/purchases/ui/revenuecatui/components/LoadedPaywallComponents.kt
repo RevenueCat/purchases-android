@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
@@ -86,7 +87,8 @@ internal fun LoadedPaywallComponents(
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     val configuration = LocalConfiguration.current
-    state.update(localeList = configuration.locales)
+    val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    state.update(localeList = configuration.locales, screenCondition = ScreenCondition.from(windowSize))
 
     val onClick: suspend (PaywallAction) -> Unit = { action ->
         handleClick(action, state, clickHandler, componentInteractionTracker)

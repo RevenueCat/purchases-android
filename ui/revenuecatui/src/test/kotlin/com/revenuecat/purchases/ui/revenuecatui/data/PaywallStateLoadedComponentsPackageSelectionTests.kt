@@ -1,7 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.text.intl.LocaleList
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -10,6 +12,9 @@ import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedPackagePartial
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
+import com.revenuecat.purchases.ui.revenuecatui.components.LoadedPaywallComponents
+import com.revenuecat.purchases.ui.revenuecatui.components.LoadedWorkflowPaywall
 import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -18,7 +23,10 @@ import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvi
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptySetOf
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
+import com.revenuecat.purchases.ui.revenuecatui.helpers.windowChangingTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -33,6 +41,9 @@ import java.util.Date
  */
 @RunWith(RobolectricTestRunner::class)
 internal class PaywallStateLoadedComponentsPackageSelectionTests {
+
+    @get:Rule
+    val composeTestRule = createComposeRule()
 
     private val localeId = LocaleId("en_US")
 
@@ -197,6 +208,185 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         )
 
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Should move selection when an expanded screen hides the default package`() {
+        val state = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = mapOf(
+                0 to listOf(
+                    packageInfo(
+                        TestData.Packages.annual,
+                        isSelectedByDefault = true,
+                        visibilityOverrides = listOf(expandedVisibilityOverride(visible = false)),
+                    ),
+                    packageInfo(TestData.Packages.monthly, isSelectedByDefault = false),
+                ),
+            ),
+            initialSelectedTabIndex = null,
+        )
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+
+        state.update(screenCondition = ScreenCondition.EXPANDED)
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
+    fun `Should update a workflow fallback when screen visibility changes its source selection`() {
+        val packageState = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = mapOf(
+                0 to listOf(
+                    packageInfo(
+                        TestData.Packages.annual,
+                        isSelectedByDefault = true,
+                        visibilityOverrides = listOf(expandedVisibilityOverride(visible = false)),
+                    ),
+                    packageInfo(TestData.Packages.monthly, isSelectedByDefault = false),
+                ),
+            ),
+            initialSelectedTabIndex = null,
+        )
+        val packageLessWorkflowStep = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        packageLessWorkflowStep.setDefaultPackage(packageState)
+
+        packageState.update(screenCondition = ScreenCondition.EXPANDED)
+        packageLessWorkflowStep.update(screenCondition = ScreenCondition.EXPANDED)
+
+        assertThat(packageLessWorkflowStep.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
+    fun `Should preserve a visible workflow fallback across later screen changes`() {
+        val packageState = paywallStateWithExpandedHiddenDefault()
+        val packageLessWorkflowStep = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        packageLessWorkflowStep.setDefaultPackage(packageState)
+        packageLessWorkflowStep.update(screenCondition = ScreenCondition.EXPANDED)
+        assertThat(packageLessWorkflowStep.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+
+        packageLessWorkflowStep.update(screenCondition = ScreenCondition.COMPACT)
+
+        assertThat(packageLessWorkflowStep.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
+    fun `Should ignore a duplicate package visible outside the workflow fallback tab`() {
+        val annualInInitialTab = packageInfo(
+            TestData.Packages.annual,
+            isSelectedByDefault = true,
+            visibilityOverrides = listOf(expandedVisibilityOverride(visible = false)),
+        )
+        val packageState = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = mapOf(
+                0 to listOf(
+                    annualInInitialTab,
+                    packageInfo(TestData.Packages.monthly, isSelectedByDefault = false),
+                ),
+                1 to listOf(packageInfo(TestData.Packages.annual, isSelectedByDefault = true)),
+            ),
+            initialSelectedTabIndex = 0,
+        )
+        val packageLessWorkflowStep = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        packageLessWorkflowStep.setDefaultPackage(packageState)
+
+        packageState.update(screenCondition = ScreenCondition.EXPANDED)
+        packageLessWorkflowStep.update(screenCondition = ScreenCondition.EXPANDED)
+
+        assertThat(packageLessWorkflowStep.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
+    fun `Should keep the initial workflow fallback when attached after a user selection`() {
+        val monthlyInfo = packageInfo(TestData.Packages.monthly, isSelectedByDefault = false)
+        val packageState = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = mapOf(
+                0 to listOf(
+                    packageInfo(TestData.Packages.annual, isSelectedByDefault = true),
+                    monthlyInfo,
+                ),
+            ),
+            initialSelectedTabIndex = null,
+        )
+        val packageLessWorkflowStep = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        packageState.update(monthlyInfo.uniqueId)
+
+        packageLessWorkflowStep.setDefaultPackage(packageState)
+
+        assertThat(packageLessWorkflowStep.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Should propagate the live window size to a component paywall selection`() = with(composeTestRule) {
+        val state = paywallStateWithExpandedHiddenDefault()
+
+        windowChangingTest(
+            arrange = { state },
+            act = { LoadedPaywallComponents(state = it, clickHandler = { }) },
+            assert = { windowSizeController ->
+                windowSizeController.setWindowSizeInexact(width = 900.dp, height = 1_000.dp)
+                runOnIdle {
+                    assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+                }
+            },
+        )
+    }
+
+    @Test
+    fun `Should propagate the live window size to a workflow fallback selection`() = with(composeTestRule) {
+        val packageState = paywallStateWithExpandedHiddenDefault()
+        val packageLessWorkflowStep = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        packageLessWorkflowStep.setDefaultPackage(packageState)
+
+        windowChangingTest(
+            arrange = {
+                WorkflowPaywallUiState(
+                    currentStepId = "package-less",
+                    stepStates = mapOf(
+                        "packages" to packageState,
+                        "package-less" to packageLessWorkflowStep,
+                    ),
+                )
+            },
+            act = { workflowState ->
+                LoadedWorkflowPaywall(
+                    workflowState = workflowState,
+                    onTransitionComplete = { },
+                    clickHandler = { },
+                    componentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
+                )
+            },
+            assert = { windowSizeController ->
+                windowSizeController.setWindowSizeInexact(width = 900.dp, height = 1_000.dp)
+                runOnIdle {
+                    assertThat(packageLessWorkflowStep.selectedPackageInfo?.rcPackage)
+                        .isEqualTo(TestData.Packages.monthly)
+                }
+            },
+        )
     }
 
     @Test
@@ -411,6 +601,11 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         properties = PresentedPackagePartial(partial = PartialPackageComponent(visible = visible)),
     )
 
+    private fun expandedVisibilityOverride(visible: Boolean) = PresentedOverride(
+        conditions = listOf(ComponentOverride.Condition.Expanded),
+        properties = PresentedPackagePartial(partial = PartialPackageComponent(visible = visible)),
+    )
+
     private fun packageInfo(
         pkg: com.revenuecat.purchases.Package,
         isSelectedByDefault: Boolean,
@@ -421,6 +616,21 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         isSelectedByDefault = isSelectedByDefault,
         visible = visible,
         visibilityOverrides = visibilityOverrides,
+    )
+
+    private fun paywallStateWithExpandedHiddenDefault() = paywallState(
+        packagesOutsideTabs = emptyList(),
+        packagesByTab = mapOf(
+            0 to listOf(
+                packageInfo(
+                    TestData.Packages.annual,
+                    isSelectedByDefault = true,
+                    visibilityOverrides = listOf(expandedVisibilityOverride(visible = false)),
+                ),
+                packageInfo(TestData.Packages.monthly, isSelectedByDefault = false),
+            ),
+        ),
+        initialSelectedTabIndex = null,
     )
 
     private fun paywallState(
