@@ -803,6 +803,10 @@ Use the optional `placement` to identify the logical location of a banner in you
 Choose stable names and apply them consistently so events from the same slot can be grouped together. A banner keeps
 the placement supplied when it is loaded for its complete lifecycle, including automatic refreshes.
 
+For native ads, use a stable name such as `"home_feed"`. Native ads do not have a `show()` call: the app renders them
+directly, and Google reports the display through `onAdImpression()`. The load-time placement is therefore used for
+every event from that ad.
+
 ## Usage
 
 ### Banner ads
@@ -929,6 +933,100 @@ lifecycleScope.launch {
 }
 ```
 
+### Native ads
+
+**Google Mobile Ads Next-Gen only**
+
+```kotlin
+val adRequest = NativeAdRequest.Builder(
+    "AD_UNIT_ID",
+    listOf(NativeAd.NativeAdType.NATIVE),
+).build()
+
+NativeAdLoader.load(
+    adRequest,
+    object : NativeAdLoaderCallback {
+        override fun onNativeAdLoaded(nativeAd: NativeAd) {
+            loadedNativeAd = nativeAd
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            loadedNativeAd = null
+        }
+    },
+)
+```
+
+**With RevenueCat tracking**
+
+```kotlin
+Purchases.sharedInstance.adTracker.loadAndTrackNativeAd(
+    adRequest = adRequest,
+    placement = "home_feed",
+    nativeAdLoaderCallback = object : NativeAdLoaderCallback {
+        override fun onNativeAdLoaded(nativeAd: NativeAd) {
+            loadedNativeAd = nativeAd
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            loadedNativeAd = null
+        }
+    },
+    nativeAdEventCallback = object : NativeAdEventCallback {
+        override fun onCustomMuteThisAdReported() {
+            // The user muted this ad.
+        }
+    },
+)
+```
+
+The coroutine overload returns Google's original result unchanged:
+
+```kotlin
+when (
+    val result = Purchases.sharedInstance.adTracker.loadAndTrackNativeAd(
+        adRequest = adRequest,
+        placement = "home_feed",
+    )
+) {
+    is NativeAdLoadResult.NativeAdSuccess -> loadedNativeAd = result.ad
+    is NativeAdLoadResult.CustomNativeAdSuccess -> handleCustomNativeAd(result.ad)
+    is NativeAdLoadResult.BannerAdSuccess -> handleBannerAd(result.ad)
+    is NativeAdLoadResult.Failure -> loadedNativeAd = null
+}
+```
+
+A `NativeAdRequest` can intentionally combine standard native, custom-native, and banner inventory. RevenueCat
+tracks each result using its actual format and installs the matching event wrapper before forwarding it. Pass
+`nativeAdEventCallback` for standard and custom-native results, and `bannerAdEventCallback` for banner results.
+
+> [!IMPORTANT]
+> Do not assign `adEventCallback` directly after a tracked load. Direct assignment replaces RevenueCat's tracking
+> wrapper. Pass the callback while loading, or replace only the forwarded callback safely:
+
+```kotlin
+loadedNativeAd?.setTrackingAdEventCallback(newNativeAdEventCallback)
+loadedCustomNativeAd?.setTrackingAdEventCallback(newNativeAdEventCallback)
+loadedBannerAd?.setTrackingAdEventCallback(newBannerAdEventCallback)
+```
+
+### Server-to-server native responses
+
+Provide the ad unit ID explicitly so successful and failed loads have the required attribution:
+
+```kotlin
+Purchases.sharedInstance.adTracker.loadAndTrackNativeAdFromResponse(
+    adResponse = serverAdResponse,
+    adUnitId = "AD_UNIT_ID",
+    placement = "home_feed",
+    nativeAdLoaderCallback = nativeAdLoaderCallback,
+    nativeAdEventCallback = nativeAdEventCallback,
+)
+```
+
+The pinned SDK does not expose a suspending native response-loading API, so the adapter intentionally does not add
+one.
+
 Google Mobile Ads Next-Gen invokes load and event callbacks on a background thread. Dispatch explicitly to the main
 thread before updating views or other UI-confined state from a callback.
 
@@ -937,6 +1035,7 @@ thread before updating views or other UI-confined state from a callback.
 | Format | RevenueCat tracking entry point |
 | ------ | ------------------------------- |
 | Banner | `AdView.loadAndTrackAd()`, `AdTracker.loadAndTrackBannerAd()`, or their `FromResponse` variants |
+| Native | `AdTracker.loadAndTrackNativeAd()` or `AdTracker.loadAndTrackNativeAdFromResponse()` |
 
 ## Events tracked
 

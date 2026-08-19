@@ -15,13 +15,21 @@ import com.google.android.libraries.ads.mobile.sdk.common.AdLoadResult
 import com.google.android.libraries.ads.mobile.sdk.common.AdRequest
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoadResult
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoader
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoaderCallback
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdRequest
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAd
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAdEventCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingAdLoadCallback
+import com.revenuecat.purchases.admob.nextgen.tracking.TrackingNativeAdLoaderCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.trackAndConfigureAdLoadResult
+import com.revenuecat.purchases.admob.nextgen.tracking.trackAdFailedToLoad
+import com.revenuecat.purchases.admob.nextgen.tracking.trackAdLoaded
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import kotlin.jvm.JvmSynthetic
@@ -566,3 +574,148 @@ public suspend fun AdTracker.loadAndTrackBannerAdFromResponse(
     adEventCallback = adEventCallback,
     bannerAdRefreshCallback = bannerAdRefreshCallback,
 )
+
+/**
+ * Loads one native-ad request and automatically tracks every result it can produce.
+ *
+ * A [NativeAdRequest] can return a standard native, custom-native, or banner ad. The matching event tracking is
+ * installed before that result is forwarded to [nativeAdLoaderCallback]. Call via
+ * `Purchases.sharedInstance.adTracker`.
+ *
+ * @param adRequest The native ad request. Its ad unit ID is used for tracking.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param nativeAdLoaderCallback Callback to receive the load result.
+ * @param nativeAdEventCallback Optional lifecycle and paid-event callback for standard and custom-native results.
+ * @param bannerAdEventCallback Optional lifecycle and paid-event callback for banner results.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+@Suppress("LongParameterList")
+public fun AdTracker.loadAndTrackNativeAd(
+    adRequest: NativeAdRequest,
+    placement: String? = null,
+    nativeAdLoaderCallback: NativeAdLoaderCallback,
+    nativeAdEventCallback: NativeAdEventCallback? = null,
+    bannerAdEventCallback: BannerAdEventCallback? = null,
+) {
+    NativeAdLoader.load(
+        adRequest,
+        trackingNativeAdLoaderCallback(
+            delegate = nativeAdLoaderCallback,
+            placement = placement,
+            adUnitId = adRequest.adUnitId,
+            nativeAdEventCallback = nativeAdEventCallback,
+            bannerAdEventCallback = bannerAdEventCallback,
+        ),
+    )
+}
+
+/**
+ * Loads one native-ad request with Google's suspending API and automatically tracks its result.
+ *
+ * The original [NativeAdLoadResult] is returned unchanged. Event tracking is installed on every successful result
+ * before this function returns. Call via `Purchases.sharedInstance.adTracker`.
+ *
+ * @param adRequest The native ad request. Its ad unit ID is used for tracking.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param nativeAdEventCallback Optional lifecycle and paid-event callback for standard and custom-native results.
+ * @param bannerAdEventCallback Optional lifecycle and paid-event callback for banner results.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+public suspend fun AdTracker.loadAndTrackNativeAd(
+    adRequest: NativeAdRequest,
+    placement: String? = null,
+    nativeAdEventCallback: NativeAdEventCallback? = null,
+    bannerAdEventCallback: BannerAdEventCallback? = null,
+): NativeAdLoadResult {
+    val result = NativeAdLoader.load(adRequest)
+    trackAndConfigureNativeAdLoadResult(
+        result = result,
+        placement = placement,
+        adUnitId = adRequest.adUnitId,
+        nativeAdEventCallback = nativeAdEventCallback,
+        bannerAdEventCallback = bannerAdEventCallback,
+    )
+    return result
+}
+
+/**
+ * Loads one native ad from a server-to-server response and automatically tracks every possible result.
+ *
+ * Event tracking is installed before a successful result is forwarded to [nativeAdLoaderCallback]. [adUnitId] is
+ * required because neither the opaque response nor a failed load reliably provides it. Call via
+ * `Purchases.sharedInstance.adTracker`.
+ *
+ * @param adResponse The opaque server-to-server ad response supplied by Google Mobile Ads.
+ * @param adUnitId The ad unit ID associated with [adResponse], used for RevenueCat tracking.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param nativeAdLoaderCallback Callback to receive the load result.
+ * @param nativeAdEventCallback Optional lifecycle and paid-event callback for standard and custom-native results.
+ * @param bannerAdEventCallback Optional lifecycle and paid-event callback for banner results.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+@Suppress("LongParameterList")
+public fun AdTracker.loadAndTrackNativeAdFromResponse(
+    adResponse: String,
+    adUnitId: String,
+    placement: String? = null,
+    nativeAdLoaderCallback: NativeAdLoaderCallback,
+    nativeAdEventCallback: NativeAdEventCallback? = null,
+    bannerAdEventCallback: BannerAdEventCallback? = null,
+) {
+    NativeAdLoader.loadFromAdResponse(
+        adResponse,
+        trackingNativeAdLoaderCallback(
+            delegate = nativeAdLoaderCallback,
+            placement = placement,
+            adUnitId = adUnitId,
+            nativeAdEventCallback = nativeAdEventCallback,
+            bannerAdEventCallback = bannerAdEventCallback,
+        ),
+    )
+}
+
+private fun trackingNativeAdLoaderCallback(
+    delegate: NativeAdLoaderCallback,
+    placement: String?,
+    adUnitId: String,
+    nativeAdEventCallback: NativeAdEventCallback?,
+    bannerAdEventCallback: BannerAdEventCallback?,
+): TrackingNativeAdLoaderCallback = TrackingNativeAdLoaderCallback(
+    delegate = delegate,
+    placement = placement,
+    adUnitId = adUnitId,
+    configureAd = { ad -> ad.installTrackingEventCallback(nativeAdEventCallback, placement, adUnitId) },
+    configureCustomNativeAd = { ad ->
+        ad.installTrackingEventCallback(nativeAdEventCallback, placement, adUnitId)
+    },
+    configureBannerAd = { ad -> ad.installTrackingCallbacks(bannerAdEventCallback, null, placement, adUnitId) },
+)
+
+private fun trackAndConfigureNativeAdLoadResult(
+    result: NativeAdLoadResult,
+    placement: String?,
+    adUnitId: String,
+    nativeAdEventCallback: NativeAdEventCallback?,
+    bannerAdEventCallback: BannerAdEventCallback?,
+) {
+    when (result) {
+        is NativeAdLoadResult.NativeAdSuccess -> {
+            trackAdLoaded({ result.ad.getResponseInfo() }, AdFormat.NATIVE, placement, adUnitId)
+            result.ad.installTrackingEventCallback(nativeAdEventCallback, placement, adUnitId)
+        }
+        is NativeAdLoadResult.CustomNativeAdSuccess -> {
+            trackAdLoaded({ result.ad.getResponseInfo() }, AdFormat.NATIVE, placement, adUnitId)
+            result.ad.installTrackingEventCallback(nativeAdEventCallback, placement, adUnitId)
+        }
+        is NativeAdLoadResult.BannerAdSuccess -> {
+            trackAdLoaded({ result.ad.getResponseInfo() }, AdFormat.BANNER, placement, adUnitId)
+            result.ad.installTrackingCallbacks(bannerAdEventCallback, null, placement, adUnitId)
+        }
+        is NativeAdLoadResult.Failure -> {
+            trackAdFailedToLoad(result.error, AdFormat.NATIVE, placement, adUnitId)
+        }
+    }
+}
