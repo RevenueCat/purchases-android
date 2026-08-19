@@ -98,47 +98,6 @@ If you use mediation, wait for the initialization callback before loading ads so
 Configure consent and any request-specific privacy flags before initialization because the SDK or a mediation partner
 may preload ads during initialization.
 
-## Load multiple native ads
-
-Google Mobile Ads Next-Gen supports loading several native ads in one request. RevenueCat wraps both of Google's
-multiple-ad APIs and tracks every native, custom-native, banner, or failure result in the batch.
-
-Use the callback API when completion needs to be reported separately from the individual results:
-
-```kotlin
-Purchases.sharedInstance.adTracker.loadAndTrackNativeAds(
-    adRequest = nativeAdRequest,
-    maxNumberOfAds = 3,
-    placement = "feed",
-    nativeAdLoaderCallback = object : NativeAdLoaderCallback {
-        override fun onNativeAdLoaded(nativeAd: NativeAd) {
-            // Store or display this ad.
-        }
-
-        override fun onAdLoadingCompleted() {
-            // Every ad in this batch has finished loading.
-        }
-    },
-)
-```
-
-The suspending overload returns Google's original flow and tracks each result as it is collected:
-
-```kotlin
-val results = Purchases.sharedInstance.adTracker.loadAndTrackNativeAds(
-    adRequest = nativeAdRequest,
-    maxNumberOfAds = 3,
-    placement = "feed",
-)
-
-results.collect { result ->
-    // Handle NativeAdSuccess, CustomNativeAdSuccess, BannerAdSuccess, or Failure.
-}
-```
-
-Other ad formats do not expose multiple-ad `load` overloads. Use their Next-Gen preloader APIs when maintaining a
-buffer of non-native ads.
-
 ## Events tracked
 
 All formats — banner, interstitial, rewarded, rewarded interstitial, app open, and native — report these

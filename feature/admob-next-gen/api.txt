@@ -1,9 +1,1 @@
 // Signature format: 4.0
-package com.revenuecat.purchases.admob.nextgen {
-
-  public final class RCAdMobNextGenNativeAds {
-    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackNativeAds(com.revenuecat.purchases.ads.events.AdTracker, com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdRequest adRequest, int maxNumberOfAds, optional String? placement, com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoaderCallback nativeAdLoaderCallback);
-    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static suspend Object? loadAndTrackNativeAds(com.revenuecat.purchases.ads.events.AdTracker, com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdRequest adRequest, int maxNumberOfAds, optional String? placement, kotlin.coroutines.Continuation<? super kotlinx.coroutines.flow.Flow<com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoadResult>>);
-  }
-
-}
