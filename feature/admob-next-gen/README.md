@@ -797,6 +797,106 @@ thread before updating views or other UI-confined state from a callback.
 | -------- | ------------------------------------------------------------------------------------- |
 | Rewarded | `AdTracker.loadAndTrackRewardedAd()` or `AdTracker.loadAndTrackRewardedAdFromResponse()` |
 
+## Placement
+
+Use the optional `placement` to identify the logical location of a banner in your app, such as `"home_banner"`.
+Choose stable names and apply them consistently so events from the same slot can be grouped together. A banner keeps
+the placement supplied when it is loaded for its complete lifecycle, including automatic refreshes.
+
+## Usage
+
+### Banner ads
+
+**Google Mobile Ads Next-Gen only**
+
+```kotlin
+val adView = AdView(this)
+binding.adViewContainer.addView(adView)
+
+val adRequest = BannerAdRequest.Builder(
+    "AD_UNIT_ID",
+    AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, 360),
+).build()
+
+adView.loadAd(
+    adRequest,
+    object : AdLoadCallback<BannerAd> {
+        override fun onAdLoaded(ad: BannerAd) {
+            ad.adEventCallback = object : BannerAdEventCallback {}
+            ad.bannerAdRefreshCallback = object : BannerAdRefreshCallback {}
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            // Handle the error.
+        }
+    },
+)
+```
+
+**With RevenueCat tracking**
+
+```kotlin
+val adView = AdView(this)
+binding.adViewContainer.addView(adView)
+
+val adRequest = BannerAdRequest.Builder(
+    "AD_UNIT_ID",
+    AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, 360),
+).build()
+
+adView.loadAndTrackAd(
+    adRequest = adRequest,
+    placement = "home_banner",
+    loadCallback = object : AdLoadCallback<BannerAd> {
+        override fun onAdLoaded(ad: BannerAd) {
+            // The AdView already displays this ad.
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            // Handle the error.
+        }
+    },
+    adEventCallback = object : BannerAdEventCallback {},
+    bannerAdRefreshCallback = object : BannerAdRefreshCallback {},
+)
+```
+
+Or use the `AdTracker` extension with the same view, request, and callbacks:
+
+```kotlin
+Purchases.sharedInstance.adTracker.loadAndTrackBannerAd(
+    adView = adView,
+    adRequest = adRequest,
+    placement = "home_banner",
+    loadCallback = loadCallback,
+    adEventCallback = adEventCallback,
+    bannerAdRefreshCallback = bannerAdRefreshCallback,
+)
+```
+
+Unlike full-screen ads, a banner's `AdView` owns and displays the loaded ad, so the load callback is optional. The
+Next-Gen SDK does not offer a suspending `AdView.loadAd` API. Although `BannerAd.load` has a suspending overload, Google
+deprecates that API in favor of `AdView.loadAd` or preloading, so the adapter intentionally does not wrap it.
+
+> [!IMPORTANT]
+> Do not assign `bannerAd.adEventCallback` or `bannerAd.bannerAdRefreshCallback` directly after a tracked load.
+> Direct assignment replaces RevenueCat's tracking wrappers. Pass callbacks to a load helper, or replace only the
+> forwarded callbacks with the tracking-safe setters:
+
+```kotlin
+bannerAd?.setTrackingAdEventCallback(newAdEventCallback)
+bannerAd?.setTrackingBannerAdRefreshCallback(newBannerAdRefreshCallback)
+```
+
+Google Mobile Ads Next-Gen invokes load and event callbacks on a background thread. Dispatch explicitly to the main
+thread before updating views or other UI-confined state from a callback.
+
+## Supported formats
+
+| Format | RevenueCat tracking entry point |
+| ------ | ------------------------------- |
+| Banner | `AdView.loadAndTrackAd()` or `AdTracker.loadAndTrackBannerAd()` |
+
 ## Events tracked
 
 All formats — banner, interstitial, rewarded, rewarded interstitial, app open, and native — report these
