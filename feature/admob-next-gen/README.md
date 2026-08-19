@@ -144,6 +144,31 @@ if (bannerAd != null) {
 Continue to register the returned banner with Google's normal `AdView.registerBannerAd`; the adapter intentionally
 does not combine polling and registration.
 
+### Interstitial ads
+
+```kotlin
+val interstitialPreloadConfiguration = PreloadConfiguration(
+    request = AdRequest.Builder("AD_UNIT_ID").build(),
+    bufferSize = 2,
+)
+
+InterstitialAdPreloader.startAndTrack(
+    preloadId = "game-interstitial-buffer",
+    preloadConfiguration = interstitialPreloadConfiguration,
+    placement = "game_interstitial_preload",
+    preloadCallback = object : PreloadCallback {},
+)
+
+// Later, adopt a buffered interstitial. This does not emit another loaded event.
+interstitialAd = InterstitialAdPreloader.pollAndTrackAd(
+    preloadId = "game-interstitial-buffer",
+    placement = "game_interstitial",
+    adEventCallback = interstitialAdEventCallback,
+)
+
+interstitialAd?.show(this)
+```
+
 If preloading was started through Google's plain `start` API, `pollAndTrackAd` still installs tracking for later
 lifecycle events. RevenueCat cannot retroactively observe the original preload completion, so it does not synthesize
 a loaded event when the ad is polled.
