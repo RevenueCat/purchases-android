@@ -14,7 +14,6 @@ class CheckpointIdentifierValidatorTest {
             "checkout_123",
             "checkout-complete",
             "A-1_b",
-            "a" + "1".repeat(CheckpointIdentifierValidator.MAX_LENGTH - 1),
         )
 
         validIdentifiers.forEach { identifier ->
@@ -22,6 +21,13 @@ class CheckpointIdentifierValidatorTest {
                 .describedAs("Expected '%s' to be valid", identifier)
                 .isTrue()
         }
+    }
+
+    @Test
+    fun `checkpoint identifier longer than 255 characters passes local validation`() {
+        val identifier = "a" + "1".repeat(255)
+
+        assertThat(CheckpointIdentifierValidator.isValid(identifier)).isTrue()
     }
 
     @Test
@@ -38,7 +44,6 @@ class CheckpointIdentifierValidatorTest {
             "check.out",
             "chéckout",
             "checkout😀",
-            "a" + "1".repeat(CheckpointIdentifierValidator.MAX_LENGTH),
         )
 
         invalidIdentifiers.forEach { identifier ->
