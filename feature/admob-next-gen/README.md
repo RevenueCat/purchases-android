@@ -106,6 +106,9 @@ ad's later display, click, revenue, and banner-refresh events.
 
 ## Preloading
 
+The adapter supports Google's app-open, banner, interstitial, native, rewarded, and rewarded-interstitial
+preloaders. Swipeable interstitial ads are not yet supported by this integration.
+
 ### App-open ads
 
 ```kotlin
@@ -192,6 +195,43 @@ interstitialAd = InterstitialAdPreloader.pollAndTrackAd(
 
 interstitialAd?.show(this)
 ```
+
+### Native ads
+
+```kotlin
+val nativePreloadConfiguration = PreloadConfiguration(
+    request = NativeAdRequest.Builder(
+        "AD_UNIT_ID",
+        listOf(NativeAd.NativeAdType.NATIVE),
+    ).build(),
+    bufferSize = 2,
+)
+
+NativeAdPreloader.startAndTrack(
+    preloadId = "native-buffer",
+    preloadConfiguration = nativePreloadConfiguration,
+    placement = "native_preload",
+)
+
+// Later, adopt a buffered result. This does not emit another loaded event.
+val nativeResult = NativeAdPreloader.pollAndTrackAd(
+    preloadId = "native-buffer",
+    placement = "native",
+    nativeAdEventCallback = nativeAdEventCallback,
+    bannerAdEventCallback = bannerAdEventCallback,
+    bannerAdRefreshCallback = bannerAdRefreshCallback,
+)
+
+when (nativeResult) {
+    is NativeAdLoadResult.NativeAdSuccess -> showNativeAd(nativeResult.ad)
+    is NativeAdLoadResult.CustomNativeAdSuccess -> showCustomNativeAd(nativeResult.ad)
+    is NativeAdLoadResult.BannerAdSuccess -> adView.registerBannerAd(nativeResult.ad, this)
+    null -> Unit
+}
+```
+
+Google's native preloader can return native, custom-native, or banner results depending on the requested ad types.
+`pollAndTrackAd` installs the matching lifecycle callbacks before returning any of these result variants.
 
 ### Rewarded ads
 
