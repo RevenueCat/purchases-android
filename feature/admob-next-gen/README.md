@@ -888,6 +888,47 @@ bannerAd?.setTrackingAdEventCallback(newAdEventCallback)
 bannerAd?.setTrackingBannerAdRefreshCallback(newBannerAdRefreshCallback)
 ```
 
+### Server-to-server banner responses
+
+Provide the ad unit ID explicitly so both successful and failed loads have the required attribution:
+
+```kotlin
+adView.loadAndTrackAdFromResponse(
+    adResponse = serverAdResponse,
+    adUnitId = "AD_UNIT_ID",
+    placement = "home_banner",
+    loadCallback = object : AdLoadCallback<BannerAd> {
+        override fun onAdLoaded(ad: BannerAd) {
+            // The AdView already displays this ad.
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            // Handle the error.
+        }
+    },
+    adEventCallback = bannerAdEventCallback,
+    bannerAdRefreshCallback = bannerAdRefreshCallback,
+)
+```
+
+`AdView.loadFromAdResponse` also offers a suspending API, so both the direct `AdView` helper and its `AdTracker`
+counterpart do too. They return Google's original result unchanged:
+
+```kotlin
+lifecycleScope.launch {
+    when (
+        adView.loadAndTrackAdFromResponse(
+            adResponse = serverAdResponse,
+            adUnitId = "AD_UNIT_ID",
+            placement = "home_banner",
+        )
+    ) {
+        is AdLoadResult.Success -> Unit // The AdView already displays this ad.
+        is AdLoadResult.Failure -> Unit // Handle the error.
+    }
+}
+```
+
 Google Mobile Ads Next-Gen invokes load and event callbacks on a background thread. Dispatch explicitly to the main
 thread before updating views or other UI-confined state from a callback.
 
@@ -895,7 +936,7 @@ thread before updating views or other UI-confined state from a callback.
 
 | Format | RevenueCat tracking entry point |
 | ------ | ------------------------------- |
-| Banner | `AdView.loadAndTrackAd()` or `AdTracker.loadAndTrackBannerAd()` |
+| Banner | `AdView.loadAndTrackAd()`, `AdTracker.loadAndTrackBannerAd()`, or their `FromResponse` variants |
 
 ## Events tracked
 
