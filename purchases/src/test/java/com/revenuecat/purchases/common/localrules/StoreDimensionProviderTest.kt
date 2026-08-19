@@ -108,7 +108,6 @@ class StoreDimensionProviderTest {
         dimensionNamespace: RulesDimensionNamespace,
         vararg values: Pair<String, String>,
     ) = object : RulesDimensionProvider {
-        override val identifier = dimensionNamespace.key
         override val namespace = dimensionNamespace
         override suspend fun dimensions(date: Date) =
             values.associate { (key, value) -> key to RulesDimensionValue.StringValue(value) }

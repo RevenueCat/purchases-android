@@ -8,8 +8,8 @@ import java.util.Date
  *
  * Keeps the sources of dimensions independent from the engine's own value representation, so a source says what a
  * dimension *is* and this package decides how JSON Logic sees it. A dimension has to be something an operator can
- * compare or search, so an object is expressible only as an element of a collection — which is what the iteration
- * operators search — and never on its own.
+ * compare, read through, or search: a scalar is compared, an object is read through by name, and only a collection
+ * is searched.
  *
  * Integers and doubles are separate so a source can say which it means — an API level is a whole number, a ratio is
  * not — even though the engine collapses both into the single number JSON Logic models, comparing and rendering
@@ -43,4 +43,17 @@ public sealed class RulesDimensionValue {
      * instant it is compared against.
      */
     public data class ObjectListValue(val value: List<Map<String, RulesDimensionValue>>) : RulesDimensionValue()
+
+    /**
+     * A named group of values, for a dimension that is one thing described several ways — a subscriber attribute
+     * and when it was set.
+     *
+     * Reaches the engine as a nested object, which `var` walks by dot-path: `subscriberAttributes.goal.value`
+     * resolves *through* `goal`. Unlike a record inside [ObjectListValue], a predicate reading one of these still
+     * sees the whole scope around it, because no iteration operator is involved.
+     *
+     * An empty group is truthy in JSON Logic, so a source with nothing to say about a name leaves the name out
+     * rather than supplying one of these with no values in it.
+     */
+    public data class ObjectValue(val value: Map<String, RulesDimensionValue>) : RulesDimensionValue()
 }

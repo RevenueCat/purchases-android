@@ -114,6 +114,29 @@ internal class WorkflowModelsDeserializationTest {
     }
 
     @Test
+    fun `WorkflowScreen reads automatically_scale_font_size`() {
+        val json = """
+            {
+              "template_name": "components",
+              "asset_base_url": "https://assets.pawwalls.com",
+              "components_config": {
+                "base": {
+                  "stack": {"type": "stack", "components": []},
+                  "background": {"type": "color", "value": {"light": {"type": "hex", "value": "#ffffff"}}}
+                }
+              },
+              "components_localizations": {"en_US": {}},
+              "default_locale": "en_US",
+              "automatically_scale_font_size": false
+            }
+        """.trimIndent()
+
+        val screen = JsonTools.json.decodeFromString(WorkflowScreen.serializer(), json)
+
+        assertThat(screen.automaticallyScaleFontSize).isFalse()
+    }
+
+    @Test
     fun `WorkflowScreen reads play_store_product_change_mode`() {
         val screen = JsonTools.json.decodeFromString(
             WorkflowScreen.serializer(),

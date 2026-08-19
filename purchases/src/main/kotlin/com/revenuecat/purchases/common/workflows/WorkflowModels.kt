@@ -133,6 +133,7 @@ public data class WorkflowScreen(
     @SerialName("exit_offers") val exitOffers: ExitOffers? = null,
     @Serializable(with = ProductChangeConfigSerializer::class)
     @SerialName("play_store_product_change_mode") val productChangeConfig: ProductChangeConfig? = null,
+    @SerialName("automatically_scale_font_size") val automaticallyScaleFontSize: Boolean = true,
     @Serializable(with = StateDeclarationMapSerializer::class)
     @SerialName("state_declarations") val stateDeclarations: Map<String, StateDeclaration>? = null,
 )

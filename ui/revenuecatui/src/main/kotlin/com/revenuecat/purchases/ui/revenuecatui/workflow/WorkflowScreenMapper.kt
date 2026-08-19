@@ -21,6 +21,7 @@ internal object WorkflowScreenMapper {
             revision = screen.revision,
             exitOffers = screen.exitOffers,
             productChangeConfig = screen.productChangeConfig,
+            automaticallyScaleFontSize = screen.automaticallyScaleFontSize,
             stateDeclarations = screen.stateDeclarations,
         )
 
