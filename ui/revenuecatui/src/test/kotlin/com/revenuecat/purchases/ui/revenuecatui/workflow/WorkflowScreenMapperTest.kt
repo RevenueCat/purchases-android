@@ -75,6 +75,16 @@ class WorkflowScreenMapperTest {
     }
 
     @Test
+    fun `toPaywallComponentsData maps automaticallyScaleFontSize`() {
+        val data = WorkflowScreenMapper.toPaywallComponentsData(
+            screen = screen.copy(automaticallyScaleFontSize = false),
+            screenId = "screen_abc",
+        )
+
+        assertThat(data.automaticallyScaleFontSize).isFalse()
+    }
+
+    @Test
     fun `toPaywallComponents uses provided uiConfig`() {
         val screenId = "screen_abc"
         val uiConfig = UiConfig()
