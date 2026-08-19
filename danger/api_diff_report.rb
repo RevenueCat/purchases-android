@@ -1,5 +1,6 @@
 # Reports the public API a PR changes, from the metalava signature diffs. Loaded by the Dangerfile.
 
+require 'digest'
 require 'json'
 require 'net/http'
 require 'uri'
@@ -113,11 +114,21 @@ module ApiDiffReport
     shown
   end
 
-  def markdown_section(report)
+  # Of the rendered summary, not the report: joining the declaration lists would hash an addition of
+  # a declaration the same as its removal.
+  def fingerprint(message)
+    Digest::SHA256.hexdigest(message.to_s)[0, 12]
+  end
+
+  def fingerprint_marker(fingerprint)
+    "<!-- api-diff:#{fingerprint} -->"
+  end
+
+  def markdown_section(report, announced_fingerprint: nil)
     summary = "Public API changes in #{report[:modules].join(', ')} (#{counts(report)})"
     body = capped_lines(diff_lines(report), limit: MARKDOWN_LIMIT, width: MARKDOWN_WIDTH)
 
-    [
+    lines = [
       "<details><summary>#{summary}</summary>",
       "",
       "```diff",
@@ -125,7 +136,10 @@ module ApiDiffReport
       "```",
       "",
       "</details>"
-    ].join("\n")
+    ]
+    lines << fingerprint_marker(announced_fingerprint) if announced_fingerprint
+
+    lines.join("\n")
   end
 
   def slack_message(report, pull_request_link)
@@ -160,6 +174,54 @@ module ApiDiffReport
     }
   end
 
+  SLACK_HISTORY_LIMIT = 100
+
+  # conversations.history takes a channel ID, never a `#name`.
+  CHANNEL_ID = /\A[CGD][A-Z0-9]+\z/.freeze
+
+  def history_request(channel, bot_token:, limit: SLACK_HISTORY_LIMIT)
+    {
+      url: "https://slack.com/api/conversations.history?channel=#{channel}&limit=#{limit}",
+      headers: { "Authorization" => "Bearer #{bot_token}" }
+    }
+  end
+
+  def recent_messages(request, getter: nil)
+    getter ||= ->(url, headers) { Net::HTTP.get_response(URI.parse(url), headers) }
+
+    response = getter.call(request[:url], request[:headers])
+    raise "Slack returned #{response.code}: #{response.body}" unless (200..299).cover?(response.code.to_i)
+
+    parsed = JSON.parse(response.body.to_s)
+    raise "Slack rejected conversations.history: #{parsed['error']}" unless parsed["ok"]
+
+    parsed["messages"].to_a.map { |message| message["text"].to_s }
+  end
+
+  # conversations.history answers newest first, so the first match is the channel's last word.
+  def last_announcement(texts, pull_request_link)
+    return nil if pull_request_link.to_s.empty?
+
+    texts.find { |text| text.include?(pull_request_link) && text.include?(PLATFORM_LABEL) }
+  end
+
+  # Each push starts two pipelines, and the auto-canceled one still posts before it dies, so the
+  # channel is the only store the sibling run can see in time.
+  # Returns [:same | :different | :unknown, why_unknown].
+  def announcement_state(message, channel, bot_token, getter, pull_request_link)
+    unless CHANNEL_ID.match?(channel.to_s)
+      return [:unknown, "#{channel} is a channel name, and conversations.history needs the channel ID"]
+    end
+
+    texts = recent_messages(history_request(channel, bot_token: bot_token), getter: getter)
+    last = last_announcement(texts, pull_request_link)
+    return [:unknown, nil] if last.nil?
+
+    [last == message ? :same : :different, nil]
+  rescue StandardError => e
+    [:unknown, e.message]
+  end
+
   def post(request, poster: nil)
     poster ||= ->(url, body, headers) { Net::HTTP.post(URI.parse(url), body, headers) }
 
@@ -177,27 +239,49 @@ module ApiDiffReport
     nil
   end
 
-  # The PR comment is the report and Slack only mirrors it, so a failed announcement must not cost
-  # us the comment. Returns the reason it was not announced, or nil.
-  def announce(report, pull_request_link, credentials, poster)
-    return "no Slack credentials were reachable" if credentials.nil?
+  # Returns [:posted | :duplicate | :failed, reason_or_nil].
+  def announce(message, pull_request_link, credentials, poster, getter, announced_in_comment)
+    return [:failed, "no Slack credentials were reachable"] if credentials.nil?
 
     bot_token, channel = credentials
-    post(slack_request(slack_message(report, pull_request_link), bot_token: bot_token, channel: channel), poster: poster)
-    nil
+
+    state, history_error = announcement_state(message, channel, bot_token, getter, pull_request_link)
+    return [:duplicate, nil] if state == :same
+
+    if state == :unknown && announced_in_comment&.call(fingerprint_marker(fingerprint(message)))
+      return [:duplicate, nil]
+    end
+
+    post(slack_request(message, bot_token: bot_token, channel: channel), poster: poster)
+    [:posted, history_error]
   rescue StandardError => e
-    e.message
+    [:failed, e.message]
   end
 
-  # Returns { comment:, slack_error: }, or nil when the public API did not change.
-  def run(changed_files:, patch_for:, pull_request_link:, credentials: slack_credentials, poster: nil)
+  def warning(outcome, reason)
+    return nil if reason.to_s.empty?
+
+    case outcome
+    when :failed
+      "The public API changed, but it was not announced in the SDK API feed: #{reason}."
+    when :posted
+      "Could not read the SDK API feed channel, so this change may be announced twice: #{reason}."
+    end
+  end
+
+  # Returns { comment:, warning: }, or nil when the public API did not change.
+  def run(changed_files:, patch_for:, pull_request_link:, credentials: slack_credentials, poster: nil,
+          getter: nil, announced_in_comment: nil)
     signature_files = changed_files.uniq.select { |file| signature_file?(file) }
     report = build(signature_files.to_h { |file| [file, patch_for.call(file)] })
     return nil if empty?(report)
 
+    message = slack_message(report, pull_request_link)
+    outcome, reason = announce(message, pull_request_link, credentials, poster, getter, announced_in_comment)
+
     {
-      comment: markdown_section(report),
-      slack_error: announce(report, pull_request_link, credentials, poster)
+      comment: markdown_section(report, announced_fingerprint: (fingerprint(message) unless outcome == :failed)),
+      warning: warning(outcome, reason)
     }
   end
 end

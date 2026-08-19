@@ -102,11 +102,17 @@ begin
     changed_files: git.modified_files + git.added_files + git.deleted_files,
     patch_for: ->(file) { git.diff_for_file(file)&.patch },
     pull_request_link: "<#{github.pr_json['html_url']}|##{github.pr_json['number']}>",
+    announced_in_comment: lambda do |marker|
+      github.api.issue_comments(github.pr_json["base"]["repo"]["full_name"], github.pr_json["number"])
+            .any? { |comment| comment.body.to_s.include?(marker) }
+    rescue StandardError
+      false
+    end,
   )
 
   if api_diff
     markdown(api_diff[:comment])
-    warn("The public API changed, but it was not announced in the SDK API feed: #{api_diff[:slack_error]}.") if api_diff[:slack_error]
+    warn(api_diff[:warning]) if api_diff[:warning]
   end
 rescue StandardError => e
   # `warn` is Danger's DSL: surfaces on the PR without failing the run.
