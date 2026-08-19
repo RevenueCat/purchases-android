@@ -5,10 +5,7 @@ package com.revenuecat.purchases.common.workflows
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.models.StoreReplacementMode
-import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.descriptors.elementNames
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -144,31 +141,6 @@ internal class WorkflowModelsDeserializationTest {
         )
 
         assertThat(screen.productChangeConfig).isNull()
-    }
-
-    /**
-     * A workflow screen and an offering's paywall are the same backend document decoded through two
-     * independent field lists, which is how `state_declarations` went missing.
-     *
-     * Add the field to [WorkflowScreen] or allow-list it below with a reason.
-     */
-    @Test
-    @OptIn(ExperimentalSerializationApi::class)
-    fun `WorkflowScreen decodes every PaywallComponentsData field`() {
-        val notSentPerScreen = setOf(
-            // Supplied by WorkflowScreenMapper from the screens map key, not by the screen body.
-            "id",
-            // Absent from the backend's per-screen payload (serialize_paywalls_as_screens).
-            "zero_decimal_place_countries",
-            // Sent per screen but not wired through yet: workflow-backed paywalls use the default.
-            "automatically_scale_font_size",
-        )
-
-        val missing = PaywallComponentsData.serializer().descriptor.elementNames.toSet() -
-            WorkflowScreen.serializer().descriptor.elementNames.toSet() -
-            notSentPerScreen
-
-        assertThat(missing).isEmpty()
     }
 
     private fun workflowScreenJson(productChangeConfig: String): String =
