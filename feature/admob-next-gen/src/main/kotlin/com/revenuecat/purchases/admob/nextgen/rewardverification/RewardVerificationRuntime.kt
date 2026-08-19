@@ -96,7 +96,7 @@ internal class RewardVerificationRuntime(
     private fun warnAndAssertIfMissingClientTransactionId(clientTransactionId: String?) {
         if (clientTransactionId != null) return
 
-        Logger.w("Reward verification callback requires enableRewardVerification() before show().")
+        Logger.w(RewardVerificationStrings.ENABLE_REQUIRED_BEFORE_SHOW)
     }
 
     @Synchronized
