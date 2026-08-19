@@ -39,10 +39,17 @@ internal class PaywallWebViewPrewarmer(
 
     private val trimCallbacks = object : ComponentCallbacks2 {
         override fun onTrimMemory(level: Int) {
-            if (inFlight.isNotEmpty() || queue.isNotEmpty()) {
-                Logger.d("Paywalls V2 web_view cache warming abandoned on memory trim (level $level).")
-            }
-            releaseAll()
+            // TRIM_MEMORY_UI_HIDDEN says nothing about memory, only that the UI went away, so a warm already
+            // loading runs to completion: the customer may be back within seconds. TRIM_MEMORY_BACKGROUND
+            // follows when the process is really being parked.
+            if (level == ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) return
+            if (inFlight.isEmpty() && queue.isEmpty()) return
+            // Every other level frees the views and keeps the queue. TRIM_MEMORY_BACKGROUND asks for exactly
+            // that ("resources that can efficiently and quickly be re-built if the user returns"); the rest are
+            // only delivered below API 34. A renderer process is the cost here; the parked urls are strings.
+            Logger.d("Paywalls V2 web_view cache warming released on trim (level $level); URLs stay queued.")
+            queue.addAll(0, inFlight.keys.filterNot { it in warmedUrls })
+            releaseInFlight()
         }
 
         override fun onLowMemory() = onTrimMemory(ComponentCallbacks2.TRIM_MEMORY_COMPLETE)
@@ -51,15 +58,10 @@ internal class PaywallWebViewPrewarmer(
     }
 
     @MainThread
-    @Suppress("ReturnCount")
     fun prewarm(context: Context, url: String) {
         val resolvedUrl = WebViewUrlResolver.resolve(url)
         if (resolvedUrl == null) {
             Logger.d("Paywalls V2 web_view not prewarmed: URL must be https with no '{{' markers: '$url'")
-            return
-        }
-        if (alreadyCovered(resolvedUrl)) {
-            Logger.d("Paywalls V2 web_view already warmed or warming this URL; skipping.")
             return
         }
         val appContext = context.applicationContext
@@ -67,14 +69,13 @@ internal class PaywallWebViewPrewarmer(
             appContext.registerComponentCallbacks(trimCallbacks)
         }
         applicationContext = appContext
-        queue.addLast(resolvedUrl)
+        if (alreadyCovered(resolvedUrl)) {
+            Logger.d("Paywalls V2 web_view already warmed or warming this URL; skipping.")
+        } else {
+            queue.addLast(resolvedUrl)
+        }
+        // Unconditional: a url parked by TRIM_MEMORY_UI_HIDDEN is already queued, so it needs this to restart.
         startAvailable()
-    }
-
-    @MainThread
-    fun releaseAll() {
-        queue.clear()
-        releaseInFlight()
     }
 
     /**

@@ -190,15 +190,15 @@ internal class PaywallWebViewPrewarmerTest {
     }
 
     @Test
-    fun `releaseAll destroys every in-flight view and drops the queue`() {
+    fun `a trim destroys every in-flight view and requeues the unfinished urls`() {
         val prewarmer = prewarmer(maxConcurrent = 2)
         prewarmer.prewarmAll(URL, OTHER_URL, THIRD_URL)
 
-        prewarmer.releaseAll()
+        (context as Application).onTrimMemory(ComponentCallbacks2.TRIM_MEMORY_BACKGROUND)
 
         assertThat(warmed.map { shadowOf(it).wasDestroyCalled() }).containsExactly(true, true)
         assertThat(prewarmer.warmingCount).isZero()
-        assertThat(prewarmer.queuedCount).isZero()
+        assertThat(prewarmer.queuedCount).isEqualTo(3)
     }
 
     @Test
@@ -391,14 +391,101 @@ internal class PaywallWebViewPrewarmerTest {
         assertThat(prewarmer.queuedCount).isZero()
     }
 
+    // A warm already loading survives the UI going away; the customer may be back within seconds.
     @Test
-    fun `abandons the in-flight load and the queue when the app is asked to trim memory`() {
+    fun `a hidden UI does not interrupt warming`() {
         val prewarmer = prewarmer()
         prewarmer.prewarmAll(URL, OTHER_URL)
 
         (context as Application).onTrimMemory(ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN)
 
-        assertThat(prewarmer.warmingCount).isZero()
+        assertThat(prewarmer.warmingCount).isEqualTo(1)
+        assertThat(shadowOf(warmed.single()).wasDestroyCalled()).isFalse()
+        assertThat(prewarmer.queuedCount).isEqualTo(1)
+    }
+
+    // The warm still finishes and hands its slot to the next url while the UI is hidden.
+    @Test
+    fun `a warm started before the UI hid still completes`() {
+        val prewarmer = prewarmer()
+        prewarmer.prewarmAll(URL, OTHER_URL)
+        (context as Application).onTrimMemory(ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN)
+
+        finishMainFrameLoad(warmed.first())
+        idleFor(PaywallWebViewPrewarmer.SETTLE_GRACE_MS)
+
+        assertWarmCount(2)
+        assertThat(lastLoadedUrl()).isEqualTo(OTHER_URL)
         assertThat(prewarmer.queuedCount).isZero()
+    }
+
+    // Every level except UI_HIDDEN frees the view and keeps the urls queued, including the five delivered only
+    // below API 34, so no threshold or level list can drift from the platform.
+    @Test
+    fun `every memory-pressure level frees the view and keeps the urls queued`() {
+        val levels = listOf(
+            ComponentCallbacks2.TRIM_MEMORY_BACKGROUND,
+            ComponentCallbacks2.TRIM_MEMORY_COMPLETE,
+            ComponentCallbacks2.TRIM_MEMORY_MODERATE,
+            ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL,
+            ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW,
+            ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE,
+        )
+
+        levels.forEach { level ->
+            warmed.clear()
+            val prewarmer = prewarmer()
+            prewarmer.prewarmAll(URL, OTHER_URL)
+
+            (context as Application).onTrimMemory(level)
+
+            assertThat(prewarmer.warmingCount).describedAs("level %s warming", level).isZero()
+            assertThat(shadowOf(warmed.single()).wasDestroyCalled())
+                .describedAs("level %s destroyed", level).isTrue()
+            assertThat(prewarmer.queuedCount).describedAs("level %s queued", level).isEqualTo(2)
+        }
+    }
+
+    // onLowMemory is the pre-API-34 path and must not be the one that loses the queue.
+    @Test
+    fun `onLowMemory frees the view and keeps the urls queued`() {
+        val prewarmer = prewarmer()
+        prewarmer.prewarmAll(URL, OTHER_URL)
+
+        (context as Application).onLowMemory()
+
+        assertThat(prewarmer.warmingCount).isZero()
+        assertThat(prewarmer.queuedCount).isEqualTo(2)
+    }
+
+    // Nothing else pumps the queue when the app returns, and the parked url is alreadyCovered, so prewarm
+    // has to restart it rather than bail out.
+    @Test
+    fun `resumes the deferred queue when the same url is announced again`() {
+        val prewarmer = prewarmer()
+        prewarmer.prewarmAll(URL, OTHER_URL)
+        (context as Application).onTrimMemory(ComponentCallbacks2.TRIM_MEMORY_BACKGROUND)
+        warmed.clear()
+
+        prewarmer.prewarm(context, URL)
+
+        assertWarmCount(1)
+        assertThat(lastLoadedUrl()).isEqualTo(URL)
+        assertThat(prewarmer.queuedCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `resumes the deferred queue once a displayed component goes away`() {
+        val prewarmer = prewarmer()
+        prewarmer.prewarmAll(URL, OTHER_URL)
+        (context as Application).onTrimMemory(ComponentCallbacks2.TRIM_MEMORY_BACKGROUND)
+        warmed.clear()
+
+        prewarmer.onDisplayStarted(DISPLAYED_URL)
+        prewarmer.onDisplayEnded()
+        idle()
+
+        assertThat(prewarmer.warmingCount).isEqualTo(1)
+        assertThat(lastLoadedUrl()).isEqualTo(URL)
     }
 }
