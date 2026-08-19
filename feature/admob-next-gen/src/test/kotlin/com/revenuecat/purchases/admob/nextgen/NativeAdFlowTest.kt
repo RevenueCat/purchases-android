@@ -42,12 +42,6 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
-
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
 class NativeAdFlowTest {
     private val adTracker = mockk<AdTracker>(relaxed = true)
     private val purchases = mockk<Purchases>(relaxed = true)
@@ -193,6 +187,27 @@ class NativeAdFlowTest {
         assertSame(nativeTrackingCallback, nativeAd.adEventCallback)
         assertSame(customTrackingCallback, customNativeAd.adEventCallback)
         assertSame(bannerTrackingCallback, bannerAd.adEventCallback)
+    }
+
+    @Test
+    fun `tracking-safe setters directly assign callbacks when tracking is not installed`() {
+        val nativeAd = nativeAd("native-network", "native-response")
+        val customNativeAd = customNativeAd("custom-network", "custom-response")
+        val bannerAd = bannerAd("banner-network", "banner-response")
+        nativeAd.adEventCallback = mockk(relaxed = true)
+        customNativeAd.adEventCallback = mockk(relaxed = true)
+        bannerAd.adEventCallback = mockk(relaxed = true)
+        val nativeCallback = mockk<NativeAdEventCallback>(relaxed = true)
+        val customNativeCallback = mockk<NativeAdEventCallback>(relaxed = true)
+        val bannerCallback = mockk<BannerAdEventCallback>(relaxed = true)
+
+        nativeAd.setTrackingAdEventCallback(nativeCallback)
+        customNativeAd.setTrackingAdEventCallback(customNativeCallback)
+        bannerAd.setTrackingAdEventCallback(bannerCallback)
+
+        assertSame(nativeCallback, nativeAd.adEventCallback)
+        assertSame(customNativeCallback, customNativeAd.adEventCallback)
+        assertSame(bannerCallback, bannerAd.adEventCallback)
     }
 
     private fun adRequest(adUnitId: String): NativeAdRequest = mockk {

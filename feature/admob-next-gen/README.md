@@ -1110,4 +1110,13 @@ fun loadAppOpenAd() {
         placement = "app_start",
     )
 }
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+fun loadNativeAd() {
+    Purchases.sharedInstance.adTracker.loadAndTrackNativeAd(
+        adRequest = adRequest,
+        placement = "home_feed",
+        nativeAdLoaderCallback = nativeAdLoaderCallback,
+    )
+}
 ```
