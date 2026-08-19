@@ -52,16 +52,8 @@ internal class CustomerInfoUpdateHandler constructor(
     }
 
     /**
-     * Records [customerInfo]'s request date as the newest one written to the cache, returning whether it
-     * should be written at all.
-     *
-     * With [UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT], receipt posts run on their own thread, so a
-     * `GET /subscribers` response can land after a fresher `POST /receipts` one. Dropping the staler of
-     * the two keeps the cache from going back to a pre-purchase state. Checking and recording in one
-     * step, so two responses racing can't both consider themselves the newest.
-     *
-     * Gated on the policy so apps that didn't opt in keep their existing cache behavior. Compares
-     * against what this session wrote, which is all the race needs.
+     * Under [UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT] receipt posts run on their own thread, so a
+     * `GET /subscribers` response can land after a fresher `POST /receipts` one.
      */
     private fun claimCacheWrite(customerInfo: CustomerInfo, appUserID: String): Boolean {
         if (appConfig.unsyncedTransactionsWaitPolicy != UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT) {

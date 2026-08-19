@@ -101,9 +101,8 @@ internal class OfflineEntitlementsManager(
     }
 
     /**
-     * Computes [CustomerInfo] from the purchases on the device, without entering offline entitlements
-     * mode: nothing is cached and no diagnostics are reported, because the backend is reachable and this
-     * was the app's choice rather than a fallback.
+     * Unlike [calculateAndCacheOfflineCustomerInfo], leaves offline entitlements mode untouched: nothing
+     * is cached and no diagnostics are reported.
      */
     fun computeOfflineCustomerInfo(
         appUserId: String,

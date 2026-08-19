@@ -160,9 +160,8 @@ internal class CustomerInfoHelper(
     }
 
     /**
-     * Fetches [CustomerInfo] and posts the pending purchases in the background, as configured by
-     * [UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT]. Preferred over computing on the device when there's
-     * a cached [CustomerInfo], since the backend knows about purchases the device can't see.
+     * Preferred over computing on the device when there's a cached [CustomerInfo], since the backend
+     * knows about purchases the device can't see.
      */
     private fun fetchCustomerInfoWithoutWaitingForPendingPurchases(
         appUserID: String,
@@ -177,11 +176,6 @@ internal class CustomerInfoHelper(
         }
     }
 
-    /**
-     * Reports [CustomerInfo] computed on the device and posts the pending purchases in the background,
-     * as configured by [UnsyncedTransactionsWaitPolicy.DO_NOT_WAIT]. The up to date [CustomerInfo] is
-     * delivered to listeners once posting finishes.
-     */
     private fun computeCustomerInfoWithoutWaitingForPendingPurchases(
         appUserID: String,
         appInBackground: Boolean,
@@ -200,8 +194,7 @@ internal class CustomerInfoHelper(
                     )
                 }
                 // The device can't see purchases made outside of the store, and there may be nothing
-                // pending to post, so the backend still has to be consulted. Its result reaches the app
-                // through the listener.
+                // pending to post.
                 getCustomerInfoFetchOnly(appUserID, appInBackground)
             },
             onError = { error ->
