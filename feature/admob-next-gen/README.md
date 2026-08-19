@@ -420,6 +420,150 @@ thread before updating views or other UI-confined state from a callback.
 | ------------ | --------------------------------------------------------------- |
 | Interstitial | `AdTracker.loadAndTrackInterstitialAd()` or `AdTracker.loadAndTrackInterstitialAdFromResponse()` |
 
+## Placement
+
+Use the optional `placement` to identify the logical location of an ad in your app, such as
+`"level_complete_reward"`. Choose stable names and apply them consistently so events from the same slot can be
+grouped together. The load-time placement is attached to load success and failure events and is the default for later
+events. If the final location is only known when the ad is shown, use
+`RewardedAd.show(activity, placement, onUserEarnedRewardListener)` to override the placement for display, click, and
+revenue events. Calling the Next-Gen SDK's regular `show(activity, onUserEarnedRewardListener)` keeps the load-time
+placement.
+
+## Usage
+
+### Rewarded ads
+
+**Google Mobile Ads Next-Gen only**
+
+```kotlin
+val adRequest = AdRequest.Builder("AD_UNIT_ID").build()
+
+RewardedAd.load(
+    adRequest,
+    object : AdLoadCallback<RewardedAd> {
+        override fun onAdLoaded(ad: RewardedAd) {
+            rewardedAd = ad
+            ad.adEventCallback = object : RewardedAdEventCallback {
+                override fun onAdDismissedFullScreenContent() {
+                    rewardedAd = null
+                }
+            }
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            rewardedAd = null
+        }
+    },
+)
+
+// Later, to show and grant the reward:
+rewardedAd?.show(this, OnUserEarnedRewardListener { reward ->
+    grantReward(reward)
+})
+```
+
+**With RevenueCat tracking**
+
+```kotlin
+val adRequest = AdRequest.Builder("AD_UNIT_ID").build()
+
+Purchases.sharedInstance.adTracker.loadAndTrackRewardedAd(
+    adRequest = adRequest,
+    placement = "game_reward",
+    loadCallback = object : AdLoadCallback<RewardedAd> {
+        override fun onAdLoaded(ad: RewardedAd) {
+            rewardedAd = ad
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            rewardedAd = null
+        }
+    },
+    adEventCallback = object : RewardedAdEventCallback {
+        override fun onAdDismissedFullScreenContent() {
+            rewardedAd = null
+        }
+
+        override fun onAdFailedToShowFullScreenContent(
+            fullScreenContentError: FullScreenContentError,
+        ) {
+            rewardedAd = null
+        }
+    },
+)
+
+// Later, override the load-time placement while preserving Google's reward callback:
+rewardedAd?.show(
+    activity = this,
+    placement = "level_complete_reward",
+    onUserEarnedRewardListener = OnUserEarnedRewardListener { reward ->
+        grantReward(reward)
+    },
+)
+```
+
+The coroutine overload returns Google's original load result:
+
+```kotlin
+lifecycleScope.launch {
+    when (
+        val result = Purchases.sharedInstance.adTracker.loadAndTrackRewardedAd(
+            adRequest = adRequest,
+            placement = "game_reward",
+        )
+    ) {
+        is AdLoadResult.Success -> rewardedAd = result.ad
+        is AdLoadResult.Failure -> rewardedAd = null
+    }
+}
+```
+
+> [!IMPORTANT]
+> Do not assign `rewardedAd.adEventCallback` directly after a tracked load. Direct assignment replaces RevenueCat's
+> tracking wrapper and prevents `show(activity, placement, onUserEarnedRewardListener)` from applying its placement
+> override. Pass the callback to `loadAndTrackRewardedAd`, or replace only the forwarded callback safely:
+
+```kotlin
+rewardedAd?.setTrackingAdEventCallback(newAdEventCallback)
+```
+
+Server-to-server rewarded responses use the callback API exposed by the pinned Google Mobile Ads SDK. Provide the ad
+unit ID explicitly so both successful and failed loads have the required attribution:
+
+```kotlin
+Purchases.sharedInstance.adTracker.loadAndTrackRewardedAdFromResponse(
+    adResponse = serverAdResponse,
+    adUnitId = "AD_UNIT_ID",
+    placement = "game_reward",
+    loadCallback = object : AdLoadCallback<RewardedAd> {
+        override fun onAdLoaded(ad: RewardedAd) {
+            rewardedAd = ad
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            rewardedAd = null
+        }
+    },
+    adEventCallback = rewardedAdEventCallback,
+)
+```
+
+The pinned SDK does not expose a suspending rewarded response-loading API, so the adapter intentionally does not add
+one.
+
+Reward delivery is separate from `RewardedAdEventCallback`. Pass Google's required `OnUserEarnedRewardListener` when
+showing the ad; the placement-aware extension forwards that listener unchanged.
+
+Google Mobile Ads Next-Gen invokes load and event callbacks on a background thread. Dispatch explicitly to the main
+thread before updating views or other UI-confined state from a callback.
+
+## Supported formats
+
+| Format   | RevenueCat tracking entry point                                                       |
+| -------- | ------------------------------------------------------------------------------------- |
+| Rewarded | `AdTracker.loadAndTrackRewardedAd()` or `AdTracker.loadAndTrackRewardedAdFromResponse()` |
+
 ## Events tracked
 
 All formats — banner, interstitial, rewarded, rewarded interstitial, app open, and native — report these
@@ -473,6 +617,15 @@ fun loadInterstitial() {
     Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAd(
         adRequest = adRequest,
         placement = "game_interstitial",
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+fun loadRewardedAd() {
+    val adRequest = AdRequest.Builder("AD_UNIT_ID").build()
+    Purchases.sharedInstance.adTracker.loadAndTrackRewardedAd(
+        adRequest = adRequest,
+        placement = "game_reward",
     )
 }
 ```
