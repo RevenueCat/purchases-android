@@ -20,6 +20,7 @@ internal object WorkflowScreenMapper {
             defaultLocaleIdentifier = screen.defaultLocaleIdentifier,
             revision = screen.revision,
             exitOffers = screen.exitOffers,
+            productChangeConfig = screen.productChangeConfig,
             automaticallyScaleFontSize = screen.automaticallyScaleFontSize,
             stateDeclarations = screen.stateDeclarations,
         )

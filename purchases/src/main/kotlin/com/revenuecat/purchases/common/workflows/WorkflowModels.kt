@@ -8,6 +8,8 @@ import com.revenuecat.purchases.paywalls.components.common.ExitOffers
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
+import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfigSerializer
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.paywalls.components.common.StateDeclarationMapSerializer
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
@@ -129,6 +131,8 @@ public data class WorkflowScreen(
     @SerialName("config") val config: JsonObject = JsonObject(emptyMap()),
     @SerialName("offering_identifier") val offeringIdentifier: String? = null,
     @SerialName("exit_offers") val exitOffers: ExitOffers? = null,
+    @Serializable(with = ProductChangeConfigSerializer::class)
+    @SerialName("play_store_product_change_mode") val productChangeConfig: ProductChangeConfig? = null,
     @SerialName("automatically_scale_font_size") val automaticallyScaleFontSize: Boolean = true,
     @Serializable(with = StateDeclarationMapSerializer::class)
     @SerialName("state_declarations") val stateDeclarations: Map<String, StateDeclaration>? = null,
