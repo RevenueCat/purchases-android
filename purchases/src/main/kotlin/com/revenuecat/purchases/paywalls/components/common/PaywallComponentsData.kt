@@ -55,6 +55,6 @@ public class PaywallComponentsData(
 )
 
 @OptIn(InternalRevenueCatAPI::class)
-private object ProductChangeConfigSerializer : EmptyObjectToNullSerializer<ProductChangeConfig>(
+internal object ProductChangeConfigSerializer : EmptyObjectToNullSerializer<ProductChangeConfig>(
     ProductChangeConfig.serializer(),
 )
