@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.admob.nextgen.tracking
 
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.admob.nextgen.AdMobNextGenStrings
 import com.revenuecat.purchases.admob.nextgen.Logger
 
 /**
@@ -16,12 +17,9 @@ import com.revenuecat.purchases.admob.nextgen.Logger
  */
 internal inline fun trackIfConfigured(block: Purchases.() -> Unit) {
     if (!Purchases.isConfigured) {
-        Logger.w(
-            "Purchases is not configured. " +
-                "Call Purchases.configure() before loading ads to enable RevenueCat ad tracking.",
-        )
+        Logger.w(AdMobNextGenStrings.PURCHASES_NOT_CONFIGURED)
         return
     }
     runCatching { Purchases.sharedInstance.block() }
-        .onFailure { Logger.e("Failed to track a RevenueCat ad event.", it) }
+        .onFailure { Logger.e(AdMobNextGenStrings.TRACKING_FAILED, it) }
 }
