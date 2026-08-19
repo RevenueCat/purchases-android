@@ -15,6 +15,8 @@ import kotlin.jvm.JvmSynthetic
  * Shows this rewarded interstitial and overrides the placement used for RevenueCat analytics.
  *
  * The placement passed here takes precedence over the placement provided when the ad was loaded.
+ * Passing `null` clears the load-time placement instead of keeping it, so call the Next-Gen SDK's
+ * own `show(activity, onUserEarnedRewardListener)` when there is no override to apply.
  * The [onUserEarnedRewardListener] is forwarded unchanged to Google Mobile Ads.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -28,7 +30,10 @@ public fun RewardedInterstitialAd.show(
     if (trackingCallback != null) {
         trackingCallback.placement = placement
     } else {
-        Logger.w("Placement override ignored: adEventCallback was manually reassigned")
+        Logger.w(
+            "Placement override ignored: this ad was not loaded via " +
+                "loadAndTrackRewardedInterstitialAd, or its adEventCallback was reassigned directly.",
+        )
     }
     show(activity, onUserEarnedRewardListener)
 }
