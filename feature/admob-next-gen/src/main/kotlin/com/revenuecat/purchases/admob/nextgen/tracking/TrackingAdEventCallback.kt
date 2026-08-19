@@ -25,12 +25,17 @@ internal enum class AdDisplayedTrigger {
  * [responseInfoProvider] is read at event time rather than captured up front, so that
  * formats whose response info changes over the callback's lifetime (auto-refreshing
  * banners) report the currently displayed creative instead of the first-loaded one.
+ *
+ * [delegate] and [placement] are `@Volatile` because the app replaces them from whatever
+ * thread it calls a tracking setter, a `show` extension or `pollAd` on, while the SDK reads
+ * them on the background thread it invokes ad event callbacks from. Without it the callback
+ * thread has no guarantee it ever observes those writes.
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal abstract class TrackingAdEventCallback<CallbackT : AdEventCallback>(
-    internal var delegate: CallbackT?,
+    @Volatile internal var delegate: CallbackT?,
     private val adFormat: AdFormat,
-    internal var placement: String?,
+    @Volatile internal var placement: String?,
     private val adUnitId: String,
     private val responseInfoProvider: () -> ResponseInfo,
     private val adDisplayedTrigger: AdDisplayedTrigger,
