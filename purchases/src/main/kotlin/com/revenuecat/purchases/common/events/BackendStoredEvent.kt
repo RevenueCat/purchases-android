@@ -6,6 +6,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.VerifiedReward
 import com.revenuecat.purchases.ads.events.AdEvent
+import com.revenuecat.purchases.checkpoints.CheckpointEvent
 import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
@@ -60,6 +61,13 @@ internal sealed class BackendStoredEvent : Event {
     data class CustomPaywall(val event: BackendEvent.CustomPaywall) : BackendStoredEvent()
 
     /**
+     * Represents a stored checkpoint hit event.
+     */
+    @Serializable
+    @SerialName("checkpoint")
+    data class Checkpoint(val event: BackendEvent.Checkpoint) : BackendStoredEvent()
+
+    /**
      * Represents a stored event related to Workflows.
      */
     @Serializable
@@ -79,9 +87,29 @@ internal fun BackendStoredEvent.toBackendEvent(): BackendEvent {
         is BackendStoredEvent.CustomerCenter -> { this.event }
         is BackendStoredEvent.Ad -> { this.event }
         is BackendStoredEvent.CustomPaywall -> { this.event }
+        is BackendStoredEvent.Checkpoint -> { this.event }
         is BackendStoredEvent.Workflows -> { this.event }
     }
 }
+
+/**
+ * Converts a checkpoint hit into its persisted backend representation.
+ */
+@JvmSynthetic
+internal fun CheckpointEvent.toBackendStoredEvent(
+    appUserID: String,
+    sessionID: String,
+): BackendStoredEvent.Checkpoint = BackendStoredEvent.Checkpoint(
+    BackendEvent.Checkpoint(
+        id = id.toString(),
+        version = BackendEvent.CHECKPOINT_EVENT_SCHEMA_VERSION,
+        type = BackendEvent.CHECKPOINT_EVENT_TYPE,
+        identifier = identifier,
+        appUserID = appUserID,
+        sessionID = sessionID,
+        timestamp = timestamp.time,
+    ),
+)
 
 /**
  * Converts a `PaywallEvent` into a `BackendStoredEvent.Paywalls` instance.

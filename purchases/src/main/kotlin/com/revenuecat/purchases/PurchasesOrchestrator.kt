@@ -21,6 +21,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
+import com.revenuecat.purchases.checkpoints.CheckpointEvent
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolver
 import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolverImpl
@@ -440,7 +441,15 @@ internal class PurchasesOrchestrator(
     suspend fun resolveCheckpoint(
         checkpointIdentifier: String,
         customVariables: Map<String, RulesDimensionValue>,
-    ): CheckpointResolution = checkpointWorkflowResolver.resolve(checkpointIdentifier, customVariables)
+    ): CheckpointResolution {
+        track(
+            CheckpointEvent(
+                identifier = checkpointIdentifier,
+                timestamp = dateProvider.now,
+            ),
+        )
+        return checkpointWorkflowResolver.resolve(checkpointIdentifier, customVariables)
+    }
 
     fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
         storefrontCountryCode?.let {
