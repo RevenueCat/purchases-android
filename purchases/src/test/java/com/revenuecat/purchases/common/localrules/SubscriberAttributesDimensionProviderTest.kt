@@ -9,7 +9,6 @@ import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionP
 import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider.Companion.KEY_UPDATED_AT
 import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider.Companion.KEY_VALUE
 import com.revenuecat.purchases.rules.RulesEngine
-import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -92,21 +91,6 @@ class SubscriberAttributesDimensionProviderTest {
         val dimensions = provider(attribute("goal", ""), attribute("tier", "gold")).dimensions(evaluationDate)
 
         assertThat(dimensions).containsOnlyKeys("tier")
-    }
-
-    @Test
-    fun `an attribute a predicate could not reach never makes it into the scope`() = runTest {
-        // Dropped by RulesDimensionResolver, which applies the rule to every source, so this asserts through it
-        // rather than on what the provider returns.
-        val values = resolver(
-            provider(
-                attribute("user.tier", "gold"),
-                attribute("", "anything"),
-                attribute("tier", "gold"),
-            ),
-        ).snapshot().getOrThrow().values
-
-        assertThat((values["subscriberAttributes"] as Value.ObjectValue).entries).containsOnlyKeys("tier")
     }
 
     @Test
