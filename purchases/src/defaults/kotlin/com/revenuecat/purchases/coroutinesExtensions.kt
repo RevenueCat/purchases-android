@@ -46,6 +46,9 @@ public suspend fun Purchases.awaitCustomerInfo(
  *
  * Coroutine friendly version of [Purchases.showManageSubscriptions].
  *
+ * @param context Context used to start the subscription management page. An application
+ * context is sufficient.
+ *
  * @throws [PurchasesException] with a [PurchasesError] if the subscription management page could not be opened.
  */
 @JvmSynthetic

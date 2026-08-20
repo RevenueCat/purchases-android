@@ -103,9 +103,8 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
         val context = mockk<Context>(relaxed = true)
         every { context.startActivity(any()) } just Runs
 
-        val result = purchases.awaitShowManageSubscriptions(context)
+        purchases.awaitShowManageSubscriptions(context)
 
-        assertThat(result).isEqualTo(Unit)
         verify(exactly = 1) { context.startActivity(any()) }
     }
 
