@@ -19,6 +19,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -98,6 +99,20 @@ class RewardVerificationExtensionsTest {
         ad.showWithRewardVerification(activity = activity) { }
 
         assertEquals("load-placement", trackingCallback.placement)
+    }
+
+    @Test
+    fun `show with explicit null placement clears existing tracked placement`() {
+        val ad = mockk<RewardedAd>(relaxed = true)
+        val activity = mockk<Activity>(relaxed = true)
+        val rewardListenerSlot = slot<OnUserEarnedRewardListener>()
+        val trackingCallback = rewardedTrackingCallback(placement = "load-placement")
+        every { ad.adEventCallback } returns trackingCallback
+        every { ad.show(activity, capture(rewardListenerSlot)) } answers {}
+
+        ad.showWithRewardVerification(activity = activity, placement = null) { }
+
+        assertNull(trackingCallback.placement)
     }
 
     @Test
@@ -181,6 +196,20 @@ class RewardVerificationExtensionsTest {
         ad.showWithRewardVerification(activity = activity) { }
 
         assertEquals("load-placement", trackingCallback.placement)
+    }
+
+    @Test
+    fun `rewarded interstitial show with explicit null placement clears existing tracked placement`() {
+        val ad = mockk<RewardedInterstitialAd>(relaxed = true)
+        val activity = mockk<Activity>(relaxed = true)
+        val rewardListenerSlot = slot<OnUserEarnedRewardListener>()
+        val trackingCallback = rewardedInterstitialTrackingCallback(placement = "load-placement")
+        every { ad.adEventCallback } returns trackingCallback
+        every { ad.show(activity, capture(rewardListenerSlot)) } answers {}
+
+        ad.showWithRewardVerification(activity = activity, placement = null) { }
+
+        assertNull(trackingCallback.placement)
     }
 
     @Test
