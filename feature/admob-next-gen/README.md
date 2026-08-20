@@ -219,6 +219,32 @@ rewardedAd?.show(this) { rewardItem ->
 }
 ```
 
+### Rewarded-interstitial ads
+
+```kotlin
+val rewardedInterstitialPreloadConfiguration = PreloadConfiguration(
+    request = AdRequest.Builder("AD_UNIT_ID").build(),
+    bufferSize = 2,
+)
+
+RewardedInterstitialAdPreloader.startAndTrack(
+    preloadId = "rewarded-interstitial-buffer",
+    preloadConfiguration = rewardedInterstitialPreloadConfiguration,
+    placement = "rewarded_interstitial_preload",
+)
+
+// Later, adopt a buffered rewarded-interstitial ad. This does not emit another loaded event.
+rewardedInterstitialAd = RewardedInterstitialAdPreloader.pollAndTrackAd(
+    preloadId = "rewarded-interstitial-buffer",
+    placement = "rewarded_interstitial",
+    adEventCallback = rewardedInterstitialAdEventCallback,
+)
+
+rewardedInterstitialAd?.show(this) { rewardItem ->
+    grantReward(rewardItem)
+}
+```
+
 If preloading was started through Google's plain `start` API, `pollAndTrackAd` still installs tracking for later
 lifecycle events. RevenueCat cannot retroactively observe the original preload completion, so it does not synthesize
 a loaded event when the ad is polled.
