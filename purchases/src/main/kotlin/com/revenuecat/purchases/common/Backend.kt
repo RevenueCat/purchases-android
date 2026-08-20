@@ -295,7 +295,7 @@ internal class Backend(
             }
         }
         synchronized(this@Backend) {
-            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            val delay = Delay.jitterOnlyIfInBackground(appInBackground)
             callbacks.addBackgroundAwareCallback(call, dispatcher, cacheKey, onSuccess to onError, delay)
         }
     }
@@ -478,7 +478,7 @@ internal class Backend(
             }
         }
         synchronized(this@Backend) {
-            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            val delay = Delay.jitterOnlyIfInBackground(appInBackground)
             offeringsCallbacks.addBackgroundAwareCallback(call, dispatcher, cacheKey, onSuccess to onError, delay)
         }
     }
@@ -1019,7 +1019,7 @@ internal class Backend(
         }
 
         synchronized(this@Backend) {
-            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            val delay = Delay.jitterOnlyIfInBackground(appInBackground)
             virtualCurrenciesCallbacks.addBackgroundAwareCallback(
                 call,
                 dispatcher,
@@ -1270,7 +1270,7 @@ internal class Backend(
         }
 
         synchronized(this@Backend) {
-            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            val delay = Delay.jitterOnlyIfInBackground(appInBackground)
             remoteConfigCallbacks.addBackgroundAwareCallback(
                 call,
                 remoteConfigDispatcher,
@@ -1356,7 +1356,7 @@ internal class Backend(
         }
 
         synchronized(this@Backend) {
-            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            val delay = Delay.jitterOnlyIfInBackground(appInBackground)
             remoteConfigFallbackCallbacks.addBackgroundAwareCallback(
                 call,
                 remoteConfigDispatcher,

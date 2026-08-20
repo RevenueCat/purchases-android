@@ -256,7 +256,7 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
     @Test
     fun `sync attributes and offerings if needed - Success`() = runTest {
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), captureLambda())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), captureLambda())
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }
@@ -279,6 +279,7 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
         verify(exactly = 1) {
             mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
                 currentAppUserID = any(),
+                delay = any(),
                 completion = captureLambda(),
             )
         }
@@ -300,7 +301,7 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
     @Test
     fun `sync attributes and offerings if needed - SyncingAttributesRateLimitReached`() = runTest {
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), captureLambda())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), captureLambda())
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }
@@ -322,6 +323,7 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
         verify(exactly = 5) {
             mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
                 currentAppUserID = any(),
+                delay = any(),
                 completion = any(),
             )
         }
@@ -462,7 +464,7 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
         } just Runs
 
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), captureLambda())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), captureLambda())
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }
@@ -491,7 +493,7 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
         } just Runs
 
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), captureLambda())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), captureLambda())
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }

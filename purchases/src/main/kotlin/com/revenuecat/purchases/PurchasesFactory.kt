@@ -371,6 +371,7 @@ internal class PurchasesFactory(
             }
 
             val identityManager = IdentityManager(
+                appConfig,
                 cache,
                 subscriberAttributesCache,
                 subscriberAttributesManager,
