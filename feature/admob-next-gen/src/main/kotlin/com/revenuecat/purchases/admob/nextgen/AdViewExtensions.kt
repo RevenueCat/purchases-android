@@ -1,10 +1,8 @@
 @file:JvmName("RCAdMobNextGenAdView")
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-@file:SuppressLint("MissingPermission")
 
 package com.revenuecat.purchases.admob.nextgen
 
-import android.annotation.SuppressLint
 import com.google.android.libraries.ads.mobile.sdk.banner.AdView
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAd
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
