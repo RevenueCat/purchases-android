@@ -98,7 +98,7 @@ internal fun BackendStoredEvent.toBackendEvent(): BackendEvent {
 @JvmSynthetic
 internal fun CheckpointEvent.toBackendStoredEvent(
     appUserID: String,
-    sessionID: String,
+    appSessionID: String,
 ): BackendStoredEvent.Checkpoint = BackendStoredEvent.Checkpoint(
     BackendEvent.Checkpoint(
         id = id.toString(),
@@ -106,7 +106,7 @@ internal fun CheckpointEvent.toBackendStoredEvent(
         type = BackendEvent.CHECKPOINT_EVENT_TYPE,
         identifier = identifier,
         appUserID = appUserID,
-        sessionID = sessionID,
+        appSessionID = appSessionID,
         timestamp = timestamp.time,
     ),
 )
