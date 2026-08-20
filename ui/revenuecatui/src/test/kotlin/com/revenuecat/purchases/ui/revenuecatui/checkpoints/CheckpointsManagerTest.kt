@@ -93,7 +93,7 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `invalid checkpoint identifier is logged and dropped before listener or resolution`() = runTest(dispatcher) {
+    fun `invalid checkpoint identifier is logged and reported to listener without resolution`() = runTest(dispatcher) {
         val invalidIdentifier = " checkout😀"
 
         val result = manager.checkpoint(mockPurchases, invalidIdentifier, null) as CheckpointResult.NoAction
@@ -101,8 +101,10 @@ class CheckpointsManagerTest {
         assertThat(result.reason).isEqualTo(CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER)
         assertThat(result.checkpoint.identifier).isEqualTo(invalidIdentifier)
         coVerify(exactly = 0) { mockPurchases.resolveCheckpoint(any(), any()) }
-        verify(exactly = 0) { mockListener.onCheckpointHit(any()) }
-        verify(exactly = 0) { mockListener.onCheckpointCompleted(any(), any()) }
+        verifyOrder {
+            mockListener.onCheckpointHit(result.checkpoint)
+            mockListener.onCheckpointCompleted(result.checkpoint, result)
+        }
         verify(exactly = 1) {
             Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(invalidIdentifier))
         }
