@@ -5,13 +5,10 @@ package com.revenuecat.purchases.common.workflows
 import com.revenuecat.purchases.InternalRevenueCatAPI
 
 /**
- * Screens in the order a customer reaches them. Warming stops when a paywall opens or memory is trimmed, so
- * this order decides which are warm by then.
- *
+ * Screens in the order a user reaches them.
  * Unreachable screens come last, not dropped: [WorkflowTriggerAction] has an `Unknown` variant and
  * [WorkflowStep.type] is an open string, so a navigation this version cannot read must not stop a real page
- * from warming. [PublishedWorkflow.singleStepFallbackId] is an entry step because
- * [PublishedWorkflow.dismissExitOffer] reads it.
+ * from warming.
  */
 internal fun PublishedWorkflow.screensInVisitOrder(): List<WorkflowScreen> {
     val roots = setOfNotNull(initialStepId, singleStepFallbackId)

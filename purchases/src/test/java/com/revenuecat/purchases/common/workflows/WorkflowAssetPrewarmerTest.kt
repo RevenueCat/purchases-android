@@ -120,7 +120,6 @@ class WorkflowAssetPrewarmerTest {
     fun `preDownloadWorkflowAssets warms the first page's bundle ahead of later pages`() {
         val workflow = createWorkflow(
             "wf_1",
-            // Response order is reversed, so map order alone cannot produce the expected result.
             screens = linkedMapOf(
                 "screen_second" to createScreen(webViewComponentsConfig("https://second.example.com/i.html")),
                 "screen_first" to createScreen(webViewComponentsConfig("https://first.example.com/i.html")),
