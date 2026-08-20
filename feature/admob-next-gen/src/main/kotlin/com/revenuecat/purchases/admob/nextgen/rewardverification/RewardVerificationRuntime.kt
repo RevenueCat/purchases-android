@@ -3,10 +3,13 @@ package com.revenuecat.purchases.admob.nextgen.rewardverification
 import android.os.Handler
 import android.os.Looper
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.Logger
 import com.revenuecat.purchases.admob.nextgen.threading.runOnMainIfPresent
+import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
+import com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata
 import com.revenuecat.purchases.awaitPollRewardVerification
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -20,15 +23,20 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Holds the per-configuration reward verification state. A fresh instance is created when [Purchases] is
  * configured and discarded with [close] when it closes, so no verification state outlives a configuration.
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 internal class RewardVerificationRuntime(
     private val mainHandler: Handler = Handler(Looper.getMainLooper()),
     createVerificationScope: () -> CoroutineScope = {
         CoroutineScope(SupervisorJob() + Dispatchers.IO)
     },
-    private val poll: suspend (String) -> RewardVerificationResult = { clientTransactionId ->
-        Purchases.sharedInstance.awaitPollRewardVerification(clientTransactionId)
-    },
+    private val poll: suspend (String, RewardedAdTrackingMetadata?) -> RewardVerificationResult =
+        { clientTransactionId, trackingMetadata ->
+            Purchases.sharedInstance.awaitPollRewardVerification(
+                clientTransactionId,
+                trackingMetadata,
+                AdCaptureMethod.ADAPTER,
+            )
+        },
 ) {
     private val clientTransactionIdByAdResponseId = mutableMapOf<String, String>()
     private val verificationScope: CoroutineScope = createVerificationScope()
@@ -40,6 +48,7 @@ internal class RewardVerificationRuntime(
 
     fun handleRewardEarned(
         adResponseId: String?,
+        trackingMetadata: RewardedAdTrackingMetadata?,
         rewardVerificationStarted: (() -> Unit)?,
         rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
     ) {
@@ -63,7 +72,7 @@ internal class RewardVerificationRuntime(
         notifyStarted(rewardVerificationStarted)
 
         val verificationTask = verificationScope.launch {
-            val result = poll(clientTransactionId)
+            val result = poll(clientTransactionId, trackingMetadata)
             deliverOnce(result)
         }
 

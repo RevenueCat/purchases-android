@@ -10,8 +10,11 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.Logger
 import com.revenuecat.purchases.admob.nextgen.threading.runOnMainIfPresent
+import com.revenuecat.purchases.admob.nextgen.tracking.TrackingRewardedAdEventCallback
+import com.revenuecat.purchases.admob.nextgen.tracking.TrackingRewardedInterstitialAdEventCallback
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken
+import com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 internal object RewardVerificationManager {
@@ -39,6 +42,7 @@ internal object RewardVerificationManager {
         rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
     ) = handleRewardEarnedInternal(
         ad.getResponseInfo().responseId,
+        ad.rewardTrackingMetadata(),
         rewardVerificationStarted,
         rewardVerificationCompleted,
     )
@@ -49,9 +53,17 @@ internal object RewardVerificationManager {
         rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
     ) = handleRewardEarnedInternal(
         ad.getResponseInfo().responseId,
+        ad.rewardTrackingMetadata(),
         rewardVerificationStarted,
         rewardVerificationCompleted,
     )
+
+    // Null when the ad wasn't loaded through RevenueCat's tracking APIs, because no tracking callback is installed.
+    private fun RewardedAd.rewardTrackingMetadata(): RewardedAdTrackingMetadata? =
+        (adEventCallback as? TrackingRewardedAdEventCallback)?.rewardTrackingMetadata()
+
+    private fun RewardedInterstitialAd.rewardTrackingMetadata(): RewardedAdTrackingMetadata? =
+        (adEventCallback as? TrackingRewardedInterstitialAdEventCallback)?.rewardTrackingMetadata()
 
     private fun installInternal(adResponseId: String?, attachOptions: (ServerSideVerificationOptions) -> Unit) {
         val runtime = runtime
@@ -80,6 +92,7 @@ internal object RewardVerificationManager {
 
     private fun handleRewardEarnedInternal(
         adResponseId: String?,
+        trackingMetadata: RewardedAdTrackingMetadata?,
         rewardVerificationStarted: (() -> Unit)?,
         rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
     ) {
@@ -91,6 +104,7 @@ internal object RewardVerificationManager {
         }
         runtime.handleRewardEarned(
             adResponseId = adResponseId,
+            trackingMetadata = trackingMetadata,
             rewardVerificationStarted = rewardVerificationStarted,
             rewardVerificationCompleted = rewardVerificationCompleted,
         )

@@ -11,6 +11,7 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdOpenedData
 import com.revenuecat.purchases.ads.events.types.AdRevenueData
+import com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata
 
 /** The single SDK callback that represents a displayed ad for a given format. */
 internal enum class AdDisplayedTrigger {
@@ -111,6 +112,24 @@ internal abstract class TrackingAdEventCallback<CallbackT : AdEventCallback>(
                 ),
             )
         }
+    }
+
+    /**
+     * Reward-verification metadata for the ad this callback is attached to.
+     *
+     * [placement] and response info are read at reward time so show-time placement overrides and the currently
+     * displayed creative are reflected in the reward events.
+     */
+    internal fun rewardTrackingMetadata(): RewardedAdTrackingMetadata {
+        val responseInfo = responseInfoProvider()
+        return RewardedAdTrackingMetadata(
+            networkName = responseInfo.adapterClassName,
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = adFormat,
+            placement = placement,
+            adUnitId = adUnitId,
+            impressionId = responseInfo.responseId.orEmpty(),
+        )
     }
 
     /**
