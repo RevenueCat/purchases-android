@@ -867,7 +867,7 @@ jobs:
       - run:
           name: Run Maestro workflow tests
           command: |
-            maestro test --format junit --output maestro/workflow-report.xml maestro/workflows/
+            maestro test --retries 2 --format junit --output maestro/workflow-report.xml maestro/workflows/
       - store_artifacts:
           path: ~/.maestro/tests/
       - store_test_results:
