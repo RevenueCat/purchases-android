@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.CapturingLoggerRule
+import com.revenuecat.purchases.rules.Scope
 import com.revenuecat.purchases.rules.Value
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -28,25 +29,25 @@ class AccessorOperatorsTest {
 
     @Test
     fun `var empty path returns entire data`() {
-        val vars = obj("x" to Value.IntValue(1))
-        val out = AccessorOperators.opVar(s(""), vars)
-        assertThat(out).isEqualTo(vars)
+        val data = obj("x" to Value.IntValue(1))
+        val out = AccessorOperators.opVar(s(""), Scope(root = data))
+        assertThat(out).isEqualTo(data)
     }
 
     @Test
     fun `var null path returns entire data`() {
         // json-logic-js treats `undefined`, null, and "" as “return the
         // whole data object”.
-        val vars = obj("x" to Value.IntValue(1))
-        val out = AccessorOperators.opVar(Value.Null, vars)
-        assertThat(out).isEqualTo(vars)
+        val data = obj("x" to Value.IntValue(1))
+        val out = AccessorOperators.opVar(Value.Null, Scope(root = data))
+        assertThat(out).isEqualTo(data)
     }
 
     @Test
     fun `var with numeric path arg is coerced to string`() {
         // {"var": 0} on array data
-        val vars = Value.ArrayValue(listOf(s("zero"), s("one")))
-        val out = AccessorOperators.opVar(Value.IntValue(0), vars)
+        val data = Value.ArrayValue(listOf(s("zero"), s("one")))
+        val out = AccessorOperators.opVar(Value.IntValue(0), Scope(root = data))
         assertThat(out).isEqualTo(s("zero"))
     }
 
@@ -54,8 +55,8 @@ class AccessorOperatorsTest {
     fun `var with integer-valued float path looks up integer index`() {
         // {"var": 1.0} on array data must render as "1" (not "1.0") so the
         // path resolves to array index 1 — same lookup as `{"var": 1}`.
-        val vars = Value.ArrayValue(listOf(s("zero"), s("one"), s("two")))
-        val out = AccessorOperators.opVar(Value.FloatValue(1.0), vars)
+        val data = Value.ArrayValue(listOf(s("zero"), s("one"), s("two")))
+        val out = AccessorOperators.opVar(Value.FloatValue(1.0), Scope(root = data))
         assertThat(out).isEqualTo(s("one"))
         assertThat(warnings).isEmpty()
     }
@@ -66,8 +67,8 @@ class AccessorOperatorsTest {
         // rendered path is "1.5", which doesn't resolve, so the lookup
         // misses and warns. Guards against an over-eager rounding fix to
         // `formatNumber`.
-        val vars = Value.ArrayValue(listOf(s("zero"), s("one"), s("two")))
-        val out = AccessorOperators.opVar(Value.FloatValue(1.5), vars)
+        val data = Value.ArrayValue(listOf(s("zero"), s("one"), s("two")))
+        val out = AccessorOperators.opVar(Value.FloatValue(1.5), Scope(root = data))
         assertThat(out).isEqualTo(Value.Null)
         assertThat(warnings).hasSize(1)
         assertThat(warnings[0]).contains("1.5")

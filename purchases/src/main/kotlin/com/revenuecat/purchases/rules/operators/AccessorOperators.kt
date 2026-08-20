@@ -3,6 +3,7 @@ package com.revenuecat.purchases.rules.operators
 import com.revenuecat.purchases.rules.Evaluator
 import com.revenuecat.purchases.rules.RulesEngine
 import com.revenuecat.purchases.rules.RulesEngine.EvaluationException
+import com.revenuecat.purchases.rules.Scope
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.rules.jsString
 import com.revenuecat.purchases.rules.jsToNumber
@@ -30,11 +31,15 @@ internal object AccessorOperators {
      * Variable lookup uses **strict JSON Logic dot-path semantics on
      * nested objects**. There is no flat-key fallback (i.e. we do not also
      * try the literal dotted string as a single key in the top-level map).
+     *
+     * @param vars The JSON Logic evaluation scope — [Scope.current] is the
+     *  data `var` reads from; path/default args evaluate against
+     *  [Scope.current] as well.
      */
     @Suppress("ReturnCount")
-    fun opVar(args: Value, vars: Value): Value {
+    fun opVar(args: Value, vars: Scope): Value {
         val (path, default) = resolveVarArgs(args, vars)
-        val found = lookupVar(vars, path)
+        val found = lookupVar(vars.current, path)
         if (found != null) return found
         // json-logic-js coerces an `undefined` default to `null`.
         if (default is Value.Undefined) return Value.Null
@@ -61,7 +66,7 @@ internal object AccessorOperators {
      *   are unpacked as the key list — this is how
      *   `{"missing": {"merge": [["a"], ["b"]]}}` is meant to behave.
      */
-    fun opMissing(args: Value, vars: Value): Value {
+    fun opMissing(args: Value, vars: Scope): Value {
         val evaluatedArgs: List<Value> = when (args) {
             is Value.ArrayValue -> args.items.map { Evaluator.evaluateValue(it, vars) }
             // Singleton shorthand: `{"missing": "a"}` ≡ `{"missing": ["a"]}`.
@@ -74,7 +79,7 @@ internal object AccessorOperators {
         val missing = mutableListOf<Value>()
         for (key in keys) {
             val path = keyAsPath(key) ?: continue
-            if (isMissing(varLookup(vars, path))) {
+            if (isMissing(varLookup(vars.current, path))) {
                 missing += Value.StringValue(path)
             }
         }
@@ -89,7 +94,7 @@ internal object AccessorOperators {
      * Used to express "any 2 of these 5 fields must be present" style
      * requirements.
      */
-    fun opMissingSome(args: Value, vars: Value): Value {
+    fun opMissingSome(args: Value, vars: Scope): Value {
         val evaluated = Operators.evalArgs(args, vars)
         if (evaluated.size != 2) {
             throw EvaluationException.TypeMismatch(
@@ -168,7 +173,7 @@ internal object AccessorOperators {
      * resolve to a dynamic path string.
      *
      */
-    private fun resolveVarArgs(args: Value, vars: Value): Pair<String, Value?> {
+    private fun resolveVarArgs(args: Value, vars: Scope): Pair<String, Value?> {
         if (args is Value.ArrayValue) {
             val evaluated = args.items.map { Evaluator.evaluateValue(it, vars) }
             return parseVarArrayArgs(evaluated)
