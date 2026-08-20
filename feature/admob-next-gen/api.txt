@@ -13,6 +13,11 @@ package com.revenuecat.purchases.admob.nextgen {
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackRewardedAdFromResponse(com.revenuecat.purchases.ads.events.AdTracker, String adResponse, String adUnitId, optional String? placement, com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback<com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd> loadCallback, optional com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback? adEventCallback);
   }
 
+  public final class AppOpenAdExtensionsKt {
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingAdEventCallback(com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAd, com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdEventCallback? callback);
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAd, android.app.Activity activity, String? placement);
+  }
+
   public final class AppOpenAdPreloaderExtensionsKt {
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAd? pollAndTrackAd(com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdPreloader.Companion, String preloadId, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdEventCallback? adEventCallback);
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static boolean startAndTrack(com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdPreloader.Companion, String preloadId, com.google.android.libraries.ads.mobile.sdk.common.PreloadConfiguration preloadConfiguration, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.common.PreloadCallback? preloadCallback);
