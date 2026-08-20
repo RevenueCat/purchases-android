@@ -17,6 +17,10 @@ package com.revenuecat.purchases.admob.nextgen {
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackRewardedInterstitialAdFromResponse(com.revenuecat.purchases.ads.events.AdTracker, String adResponse, String adUnitId, optional String? placement, com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback<com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAd> loadCallback, optional com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAdEventCallback? adEventCallback);
   }
 
+  public final class AdViewExtensionsKt {
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackAd(com.google.android.libraries.ads.mobile.sdk.banner.AdView, com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRequest adRequest, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback<com.google.android.libraries.ads.mobile.sdk.banner.BannerAd>? loadCallback, optional com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback? adEventCallback, optional com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback? bannerAdRefreshCallback);
+  }
+
   public final class AppOpenAdExtensionsKt {
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingAdEventCallback(com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAd, com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdEventCallback? callback);
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAd, android.app.Activity activity, String? placement);
@@ -25,6 +29,11 @@ package com.revenuecat.purchases.admob.nextgen {
   public final class AppOpenAdPreloaderExtensionsKt {
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAd? pollAndTrackAd(com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdPreloader.Companion, String preloadId, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdEventCallback? adEventCallback);
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static boolean startAndTrack(com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdPreloader.Companion, String preloadId, com.google.android.libraries.ads.mobile.sdk.common.PreloadConfiguration preloadConfiguration, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.common.PreloadCallback? preloadCallback);
+  }
+
+  public final class BannerAdExtensionsKt {
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingAdEventCallback(com.google.android.libraries.ads.mobile.sdk.banner.BannerAd, com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback? callback);
+    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingBannerAdRefreshCallback(com.google.android.libraries.ads.mobile.sdk.banner.BannerAd, com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback? callback);
   }
 
   public final class BannerAdPreloaderExtensionsKt {
@@ -45,15 +54,6 @@ package com.revenuecat.purchases.admob.nextgen {
   public final class NativeAdPreloaderExtensionsKt {
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoadResult.NativeAdLoadSuccessResult? pollAndTrackAd(com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdPreloader.Companion, String preloadId, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback? nativeAdEventCallback, optional com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback? bannerAdEventCallback, optional com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback? bannerAdRefreshCallback);
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static boolean startAndTrack(com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdPreloader.Companion, String preloadId, com.google.android.libraries.ads.mobile.sdk.common.PreloadConfiguration preloadConfiguration, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.common.PreloadCallback? preloadCallback);
-  }
-
-  public final class RCAdMobNextGenAdView {
-    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void loadAndTrackAd(com.google.android.libraries.ads.mobile.sdk.banner.AdView, com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRequest adRequest, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback<com.google.android.libraries.ads.mobile.sdk.banner.BannerAd>? loadCallback, optional com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback? adEventCallback, optional com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback? bannerAdRefreshCallback);
-  }
-
-  public final class RCAdMobNextGenBannerAd {
-    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingAdEventCallback(com.google.android.libraries.ads.mobile.sdk.banner.BannerAd, com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback? callback);
-    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingBannerAdRefreshCallback(com.google.android.libraries.ads.mobile.sdk.banner.BannerAd, com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback? callback);
   }
 
   public final class RewardVerificationExtensionsKt {
