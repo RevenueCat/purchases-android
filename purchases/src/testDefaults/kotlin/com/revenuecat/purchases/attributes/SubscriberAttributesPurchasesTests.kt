@@ -224,7 +224,7 @@ class SubscriberAttributesPurchasesTests {
     }
 
     @Test
-    fun `on app foregrounded attributes are synced`() {
+    fun `on app foregrounded attributes are synced with delay`() {
         every {
             eventsManagerMock.flushEvents()
         } just Runs
@@ -253,7 +253,7 @@ class SubscriberAttributesPurchasesTests {
     }
 
     @Test
-    fun `on app backgrounded attributes are synced`() {
+    fun `on app backgrounded attributes are synced without delay`() {
         every {
             eventsManagerMock.flushEvents(Delay.NONE)
         } just Runs
@@ -261,14 +261,14 @@ class SubscriberAttributesPurchasesTests {
             adEventsManagerMock.flushEvents(Delay.NONE)
         } just Runs
         every {
-            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, Delay.DEFAULT, any())
+            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, Delay.NONE, any())
         } just Runs
         every {
             eventsManagerMock.debugEventListener
         } returns null
         underTest.purchasesOrchestrator.onAppBackgrounded()
         verify(exactly = 1) {
-            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, Delay.DEFAULT, any())
+            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, Delay.NONE, any())
         }
     }
 

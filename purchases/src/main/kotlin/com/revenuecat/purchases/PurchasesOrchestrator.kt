@@ -360,7 +360,7 @@ internal class PurchasesOrchestrator(
         )
         appConfig.isAppBackgrounded = true
         if (!appConfig.uiPreviewMode) {
-            synchronizeSubscriberAttributesIfNeeded()
+            synchronizeSubscriberAttributesIfNeeded(Delay.NONE)
             flushEvents(Delay.NONE)
         }
     }
@@ -408,7 +408,7 @@ internal class PurchasesOrchestrator(
             }
             offeringsManager.onAppForeground(identityManager.currentAppUserID)
             postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
-            synchronizeSubscriberAttributesIfNeeded()
+            synchronizeSubscriberAttributesIfNeeded(Delay.DEFAULT)
             offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
             flushEvents(Delay.DEFAULT)
             if (firstTimeInForeground && isAndroidNOrNewer()) {
@@ -1884,9 +1884,9 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    private fun synchronizeSubscriberAttributesIfNeeded() {
+    private fun synchronizeSubscriberAttributesIfNeeded(delay: Delay) {
         if (appConfig.uiPreviewMode) return
-        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID, Delay.DEFAULT)
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID, delay)
     }
 
     private fun flushEvents(delay: Delay) {
