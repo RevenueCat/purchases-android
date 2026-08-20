@@ -5,8 +5,9 @@ package com.revenuecat.purchases.rules
  */
 internal interface RulesEngineLogger {
     /**
-     * Carries engine diagnostics (missing variables, unsupported
-     * operators, type mismatches).
+     * Carries engine diagnostics for conditions the evaluator recovers from,
+     * such as ignored extra operator arguments. Conditions that make a rule
+     * unanswerable surface as [RulesEngine.EvaluationException] instead.
      */
     fun warn(message: String)
 

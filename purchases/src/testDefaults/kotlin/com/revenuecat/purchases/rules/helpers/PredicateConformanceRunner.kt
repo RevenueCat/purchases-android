@@ -65,11 +65,15 @@ internal object PredicateConformanceRunner {
         "typeMismatch" -> error is EvaluationException.TypeMismatch
         "unsupportedOperator" -> error is EvaluationException.UnsupportedOperator &&
             (expected.operator == null || error.name == expected.operator)
+        "unresolvedVariable" -> error is EvaluationException.UnresolvedVariable &&
+            (expected.path == null || error.path == expected.path)
         else -> false
     }
 
     private fun describe(expected: ExpectedError): String =
-        expected.operator?.let { "${expected.kind}($it)" } ?: expected.kind
+        expected.operator?.let { "${expected.kind}($it)" }
+            ?: expected.path?.let { "${expected.kind}($it)" }
+            ?: expected.kind
 
     private fun assertWarnings(warnings: List<String>, expected: ExpectedWarnings, id: String) {
         if (expected.contains.isEmpty()) {

@@ -32,6 +32,11 @@ import java.io.File
 internal data class ExpectedError(
     @SerialName("error") val kind: String,
     val operator: String? = null,
+    /**
+     * Expected dot-path for `unresolvedVariable`. Optional: omit to assert
+     * only that the variable failed to resolve.
+     */
+    val path: String? = null,
 )
 
 /** A fixture's expected result: either a truthiness boolean or an error. */

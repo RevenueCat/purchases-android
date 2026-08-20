@@ -341,8 +341,17 @@ class CheckpointWorkflowResolverImplTest {
 
         assertThat(noActionReason(resolver.resolve(checkpointId, mapOf("source" to RulesDimensionValue.StringValue("onboarding")))))
             .isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
+    }
+
+    @Test
+    fun `a custom variable the audience requires but the app omitted is not a NO_MATCH`() = runTest {
+        // The audience asks about a variable the call never supplied, so the SDK cannot place this
+        // customer inside or outside it. Saying NO_MATCH would claim an answer it does not have.
+        coEvery { mockAudiencesConfigProvider.getAudience("aud_wf1234") } returns
+            Audience("aud_wf1234", """{"==": [{"var": "custom.source"}, "settings"]}""")
+
         assertThat(noActionReason(resolver.resolve(checkpointId, emptyMap())))
-            .isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
     }
 
     @Test

@@ -1,8 +1,10 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.CapturingLoggerRule
+import com.revenuecat.purchases.rules.RulesEngine
 import com.revenuecat.purchases.rules.Value
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.Rule
 import org.junit.Test
 
@@ -63,14 +65,11 @@ class AccessorOperatorsTest {
     @Test
     fun `var with fractional float path does not match adjacent indices`() {
         // {"var": 1.5} must not silently collapse to "1" or "2" — its
-        // rendered path is "1.5", which doesn't resolve, so the lookup
-        // misses and warns. Guards against an over-eager rounding fix to
-        // `formatNumber`.
+        // rendered path is "1.5", which doesn't resolve. Guards against an
+        // over-eager rounding fix to `formatNumber`.
         val vars = Value.ArrayValue(listOf(s("zero"), s("one"), s("two")))
-        val out = AccessorOperators.opVar(Value.FloatValue(1.5), vars)
-        assertThat(out).isEqualTo(Value.Null)
-        assertThat(warnings).hasSize(1)
-        assertThat(warnings[0]).contains("1.5")
+        assertThatThrownBy { AccessorOperators.opVar(Value.FloatValue(1.5), vars) }
+            .isEqualTo(RulesEngine.EvaluationException.UnresolvedVariable("1.5"))
     }
 
     // ---- helpers ----
