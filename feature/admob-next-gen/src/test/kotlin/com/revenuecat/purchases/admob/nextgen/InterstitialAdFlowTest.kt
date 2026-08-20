@@ -35,6 +35,7 @@ import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -119,6 +120,25 @@ class InterstitialAdFlowTest {
 
         interstitialAd.show(activity, "show-placement")
         assertEquals("show-placement", trackingCallback.placement)
+        verify(exactly = 1) { interstitialAd.show(activity) }
+    }
+
+    @Test
+    fun `show with null placement clears load-time placement`() {
+        val activity = mockk<Activity>()
+        val trackingCallback = TrackingInterstitialAdEventCallback(
+            initialDelegate = null,
+            initialPlacement = "load-placement",
+            adUnitId = "interstitial-unit",
+            responseInfoProvider = { mockk(relaxed = true) },
+        )
+        val interstitialAd = mockk<InterstitialAd>(relaxed = true) {
+            every { adEventCallback } returns trackingCallback
+        }
+
+        interstitialAd.show(activity, placement = null)
+
+        assertNull(trackingCallback.placement)
         verify(exactly = 1) { interstitialAd.show(activity) }
     }
 
