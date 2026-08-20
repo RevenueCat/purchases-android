@@ -1,9 +1,7 @@
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-@file:SuppressLint("MissingPermission")
 
 package com.revenuecat.purchases.admob.nextgen
 
-import android.annotation.SuppressLint
 import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdLoadResult
 import com.google.android.libraries.ads.mobile.sdk.common.AdRequest
