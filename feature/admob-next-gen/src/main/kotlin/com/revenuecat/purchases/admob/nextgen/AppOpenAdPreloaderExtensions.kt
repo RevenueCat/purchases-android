@@ -1,5 +1,3 @@
-@file:JvmName("RCAdMobNextGenPreloaders")
-@file:JvmMultifileClass
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
 package com.revenuecat.purchases.admob.nextgen
