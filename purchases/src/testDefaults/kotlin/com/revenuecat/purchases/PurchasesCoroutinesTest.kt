@@ -1,5 +1,7 @@
 package com.revenuecat.purchases
 
+import android.content.Context
+import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.models.StoreTransaction
@@ -89,6 +91,36 @@ internal class PurchasesCoroutinesTest : BasePurchasesTest() {
         assertThat(exception).isNotNull
         assertThat(exception).isInstanceOf(PurchasesException::class.java)
         assertThat((exception as PurchasesException).code).isEqualTo(PurchasesErrorCode.CustomerInfoError)
+    }
+
+    // endregion
+
+    // region awaitShowManageSubscriptions
+
+    @Test
+    fun `show manage subscriptions - Success`() = runTest {
+        every { mockInfo.managementURL } returns Uri.parse("https://app.revenuecat.com/manage")
+        val context = mockk<Context>(relaxed = true)
+        every { context.startActivity(any()) } just Runs
+
+        val result = purchases.awaitShowManageSubscriptions(context)
+
+        assertThat(result).isEqualTo(Unit)
+        verify(exactly = 1) { context.startActivity(any()) }
+    }
+
+    @Test
+    fun `show manage subscriptions - Error`() = runTest {
+        val expectedError = PurchasesError(PurchasesErrorCode.NetworkError, "Network error")
+        mockCustomerInfoHelper(errorGettingCustomerInfo = expectedError)
+        val context = mockk<Context>(relaxed = true)
+
+        val exception = runCatching {
+            purchases.awaitShowManageSubscriptions(context)
+        }.exceptionOrNull()
+
+        assertThat(exception).isInstanceOf(PurchasesException::class.java)
+        assertThat((exception as PurchasesException).code).isEqualTo(expectedError.code)
     }
 
     // endregion
