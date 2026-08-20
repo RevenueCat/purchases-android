@@ -36,10 +36,12 @@ import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+
 class RewardedInterstitialAdFlowTest {
 
     private val adTracker = mockk<AdTracker>(relaxed = true)
@@ -121,6 +123,38 @@ class RewardedInterstitialAdFlowTest {
 
         rewardedInterstitialAd.show(activity, "show-placement", rewardListener)
         assertEquals("show-placement", trackingCallback.placement)
+        verify(exactly = 1) { rewardedInterstitialAd.show(activity, rewardListener) }
+    }
+
+    @Test
+    fun `show with null placement clears the load-time placement`() {
+        val adRequest = mockk<AdRequest> {
+            every { adUnitId } returns "rewarded-interstitial-unit"
+        }
+        var installedCallback: RewardedInterstitialAdEventCallback? = null
+        val rewardedInterstitialAd = mockk<RewardedInterstitialAd>(relaxed = true) {
+            every { adEventCallback } answers { installedCallback }
+            every { adEventCallback = any() } answers { installedCallback = firstArg() }
+        }
+        val activity = mockk<Activity>()
+        val rewardListener = mockk<OnUserEarnedRewardListener>()
+        val trackingLoadCallback = slot<AdLoadCallback<RewardedInterstitialAd>>()
+
+        every { RewardedInterstitialAd.load(adRequest, capture(trackingLoadCallback)) } just runs
+
+        adTracker.loadAndTrackRewardedInterstitialAd(
+            adRequest = adRequest,
+            placement = "load-placement",
+            loadCallback = RecordingRewardedInterstitialLoadCallback(),
+        )
+        trackingLoadCallback.captured.onAdLoaded(rewardedInterstitialAd)
+
+        val trackingCallback = installedCallback as TrackingRewardedInterstitialAdEventCallback
+        assertEquals("load-placement", trackingCallback.placement)
+
+        rewardedInterstitialAd.show(activity, placement = null, rewardListener)
+
+        assertNull(trackingCallback.placement)
         verify(exactly = 1) { rewardedInterstitialAd.show(activity, rewardListener) }
     }
 
