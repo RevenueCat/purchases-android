@@ -113,6 +113,38 @@ internal class RewardVerificationRuntimeTest {
     }
 
     @Test
+    fun `missing ad response id skips started callback and delivers failed`() {
+        val runtime = RewardVerificationRuntime(
+            mainHandler = Handler(Looper.getMainLooper()),
+            createVerificationScope = {
+                CoroutineScope(SupervisorJob() + Dispatchers.Default)
+            },
+            poll = { error("poll should not run when ad response id is missing") },
+        )
+        var startedCount = 0
+        var completedResult: RewardVerificationResult? = null
+        val completed = CountDownLatch(1)
+
+        runtime.handleRewardEarned(
+            adResponseId = null,
+            rewardVerificationStarted = { startedCount++ },
+            rewardVerificationCompleted = {
+                completedResult = it
+                completed.countDown()
+            },
+        )
+        val completionDelivered = (1..10).any {
+            shadowOf(Looper.getMainLooper()).idle()
+            completed.await(100, TimeUnit.MILLISECONDS)
+        }
+
+        assertTrue(completionDelivered)
+        assertEquals(0, startedCount)
+        assertNotNull(completedResult)
+        assertTrue(completedResult!!.failed)
+    }
+
+    @Test
     fun `missing client transaction id skips started callback and delivers failed`() {
         val runtime = RewardVerificationRuntime(
             mainHandler = Handler(Looper.getMainLooper()),
