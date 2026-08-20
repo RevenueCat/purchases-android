@@ -508,6 +508,7 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
                 offeringWebViewPrewarmer = OfferingWebViewPrewarmer(assetWarming = paywallAssetWarming),
+                dispatcher = dispatcher,
                 uiPreviewMode = appConfig.uiPreviewMode,
                 workflowManager = workflowManager,
             )

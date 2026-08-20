@@ -6,12 +6,16 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.Delay
+import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
+import com.revenuecat.purchases.utils.MockHandlerFactory
+import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
 import com.revenuecat.purchases.utils.OfferingWebViewPrewarmer
 import com.revenuecat.purchases.utils.prewarmTargetOfferings
@@ -86,6 +90,7 @@ class OfferingsManagerTest {
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
             offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             workflowManager = mockWorkflowManager,
         )
     }
@@ -541,6 +546,7 @@ class OfferingsManagerTest {
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
             offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             workflowManager = null,
         )
         every { cache.cachedOfferings } returns null
@@ -654,6 +660,53 @@ class OfferingsManagerTest {
         verify(exactly = 1) {
             offeringImagePreDownloader.preDownloadOfferingImages(testOfferings.current!!)
         }
+    }
+
+    // A SyncDispatcher runs the block inline, so this holds the command instead: without the enqueue the
+    // fan-out would decode on the backend response thread.
+    @Test
+    fun `getOfferings enqueues placement target warming rather than running it on the response thread`() {
+        val commands = mutableListOf<Runnable>()
+        val holdingDispatcher = object : Dispatcher(mockk(), MockHandlerFactory.createMockHandler()) {
+            override fun enqueue(command: Runnable, delay: Delay) {
+                commands += command
+            }
+        }
+        val other = mockk<Offering>(relaxed = true).apply { every { identifier } returns "onboarding" }
+        val offerings = testOfferings.copy(
+            all = testOfferings.all + ("onboarding" to other),
+            placements = Offerings.Placements(
+                fallbackOfferingId = null,
+                offeringIdsByPlacement = mapOf("onboarding" to "onboarding"),
+            ),
+        )
+        val manager = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = holdingDispatcher,
+            workflowManager = null,
+        )
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory(offerings)
+        mockDeviceCache()
+        val warmed = mutableListOf<String>()
+        every { offeringImagePreDownloader.preDownloadOfferingImages(any()) } answers {
+            warmed += firstArg<Offering>().identifier
+        }
+
+        manager.getOfferings(appUserId, appInBackground = false, onError = { fail("should be a success") })
+
+        assertThat(warmed).containsExactly(offerings.current!!.identifier)
+        assertThat(commands).hasSize(1)
+
+        commands.forEach { it.run() }
+
+        assertThat(warmed).containsExactly(offerings.current!!.identifier, "onboarding")
     }
 
     // Each placement target decodes its own component tree, so the fan-out must stay off this path.
@@ -948,6 +1001,7 @@ class OfferingsManagerTest {
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
             offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             uiPreviewMode = true,
         )
 
@@ -978,6 +1032,7 @@ class OfferingsManagerTest {
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
             offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             uiPreviewMode = true,
         )
         mockCacheStale(offeringsStale = true)
@@ -1000,6 +1055,7 @@ class OfferingsManagerTest {
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
             offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             uiPreviewMode = true,
         )
 
@@ -1158,6 +1214,7 @@ class OfferingsManagerTest {
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
             offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             workflowManager = null,
         )
 
@@ -1192,6 +1249,7 @@ class OfferingsManagerTest {
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
             offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             workflowManager = mockWorkflowManager,
         )
 
@@ -1230,6 +1288,7 @@ class OfferingsManagerTest {
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
             offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             workflowManager = mockWorkflowManager,
         )
 

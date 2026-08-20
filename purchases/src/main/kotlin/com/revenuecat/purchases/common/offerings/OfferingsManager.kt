@@ -9,6 +9,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.LogIntent
@@ -37,6 +38,7 @@ internal class OfferingsManager(
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val offeringFontPreDownloader: OfferingFontPreDownloader,
     private val offeringWebViewPrewarmer: OfferingWebViewPrewarmer,
+    private val dispatcher: Dispatcher,
     private val uiPreviewMode: Boolean = false,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
@@ -292,11 +294,14 @@ internal class OfferingsManager(
                     offeringsCache.cacheOfferings(offeringsResultData.offerings, responsePayloadToCache)
                     val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
                     workflowManager?.onPaywallConfigReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
-                    // Each of these decodes a component tree, so none may sit ahead of the caller's callback.
-                    val prewarmTargets = offeringsResultData.offerings.prewarmTargetOfferings()
-                    prewarmTargets.filterNot { it.identifier == current?.identifier }
-                        .forEach(offeringImagePreDownloader::preDownloadOfferingImages)
-                    offeringWebViewPrewarmer.prewarmWebViews(prewarmTargets)
+                    // Enqueued, not just written last: dispatch() only posts the callback, so running this
+                    // inline would hold the backend response thread for a component-tree decode per target.
+                    dispatcher.enqueue({
+                        val prewarmTargets = offeringsResultData.offerings.prewarmTargetOfferings()
+                        prewarmTargets.filterNot { it.identifier == current?.identifier }
+                            .forEach(offeringImagePreDownloader::preDownloadOfferingImages)
+                        offeringWebViewPrewarmer.prewarmWebViews(prewarmTargets)
+                    })
                 } else {
                     log(LogIntent.DEBUG) { OfferingStrings.OFFERINGS_CACHE_INVALIDATED_SKIPPING_STALE_WRITE }
                     createAndCacheOfferings(
