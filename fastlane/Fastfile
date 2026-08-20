@@ -170,12 +170,7 @@ platform :android do
 
   desc "Runs all the tests"
   lane :test do
-    gradle(
-      tasks: [
-        "test",
-        ":feature:admob-next-gen:testDefaultsDebugUnitTest",
-      ],
-    )
+    gradle(task: "test")
   end
 
   desc "Setup development environment"

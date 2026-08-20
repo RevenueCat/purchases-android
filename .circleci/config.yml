@@ -1014,13 +1014,6 @@ workflows:
           requires:
             - prepare-tests
       - test:
-          name: test_admob_next_gen_defaults_debug
-          flavor: "defaults"
-          build_type: "debug"
-          module_prefix: ":feature:admob-next-gen:"
-          requires:
-            - prepare-tests
-      - test:
           name: test_cec_<< matrix.build_type >>
           flavor: "customEntitlementComputation"
           module_prefix: ":purchases:"
@@ -1109,7 +1102,6 @@ workflows:
           type: approval
           requires:
             - test_defaults_debug
-            - test_admob_next_gen_defaults_debug
             - test_defaults_release
             - test_cec_debug
             - test_cec_release
