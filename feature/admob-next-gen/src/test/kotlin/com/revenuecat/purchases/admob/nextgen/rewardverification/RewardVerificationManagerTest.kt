@@ -13,6 +13,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesServiceDispatcher
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingRewardedAdEventCallback
+import com.revenuecat.purchases.admob.nextgen.tracking.TrackingRewardedInterstitialAdEventCallback
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
@@ -280,6 +281,69 @@ internal class RewardVerificationManagerTest {
 
         verify(exactly = 0) { ad.setServerSideVerificationOptions(any()) }
         assertTrue(ShadowLog.getLogs().any { it.msg == RewardVerificationStrings.RUNTIME_NOT_READY })
+    }
+
+    @Test
+    fun `tracked interstitial forwards reward metadata with its format and latest placement to the poll`() {
+        val token = RewardVerificationToken(
+            customData = "custom-data",
+            clientTransactionId = "client-transaction-id",
+            appUserID = "app-user-id",
+        )
+        val mockPurchases = mockk<Purchases>(relaxed = true)
+        every { mockPurchases.generateRewardVerificationToken("interstitial-response-id") } returns token
+        val polledTrackingMetadata = slot<RewardedAdTrackingMetadata?>()
+        coEvery {
+            mockPurchases.pollRewardVerification(
+                any(),
+                captureNullable(polledTrackingMetadata),
+                AdCaptureMethod.ADAPTER,
+                any<suspend (String) -> Outcome>(),
+            )
+        } returns RewardVerificationResult.verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 3))
+
+        Purchases.backingFieldSharedInstance = mockPurchases
+        originalServiceDispatcher.initialize(mockPurchases)
+
+        val responseInfo = mockk<ResponseInfo>()
+        every { responseInfo.responseId } returns "interstitial-response-id"
+        every { responseInfo.adapterClassName } returns "com.example.InterstitialAdapter"
+        val trackingCallback = TrackingRewardedInterstitialAdEventCallback(
+            initialDelegate = null,
+            initialPlacement = "load-time-placement",
+            adUnitId = "interstitial-ad-unit-id",
+            responseInfoProvider = { responseInfo },
+        )
+        val ad = mockk<RewardedInterstitialAd>(relaxed = true)
+        every { ad.getResponseInfo() } returns responseInfo
+        every { ad.adEventCallback } returns trackingCallback
+
+        RewardVerificationManager.install(ad)
+        trackingCallback.placement = "show-time-placement"
+
+        val completed = CountDownLatch(1)
+        RewardVerificationManager.handleRewardEarned(
+            ad = ad,
+            rewardVerificationStarted = null,
+            rewardVerificationCompleted = { completed.countDown() },
+        )
+        val delivered = (1..10).any {
+            shadowOf(Looper.getMainLooper()).idle()
+            completed.await(100, TimeUnit.MILLISECONDS)
+        }
+
+        assertTrue(delivered)
+        assertEquals(
+            RewardedAdTrackingMetadata(
+                networkName = "com.example.InterstitialAdapter",
+                mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.REWARDED_INTERSTITIAL,
+                placement = "show-time-placement",
+                adUnitId = "interstitial-ad-unit-id",
+                impressionId = "interstitial-response-id",
+            ),
+            polledTrackingMetadata.captured,
+        )
     }
 
     @Test
