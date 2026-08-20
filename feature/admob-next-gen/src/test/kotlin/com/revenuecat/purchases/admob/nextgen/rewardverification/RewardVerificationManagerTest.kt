@@ -33,6 +33,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.shadows.ShadowLog
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
@@ -172,6 +173,36 @@ internal class RewardVerificationManagerTest {
         assertNotNull(completedResult)
         assertFalse(completedResult!!.failed)
         assertEquals("client-transaction-id", polledClientTransactionId.captured)
+    }
+
+    @Test
+    fun `install with configured Purchases and missing ad response id does not attach options`() {
+        val mockPurchases = mockk<Purchases>(relaxed = true)
+        Purchases.backingFieldSharedInstance = mockPurchases
+        originalServiceDispatcher.initialize(mockPurchases)
+
+        val ad = mockk<RewardedAd>(relaxed = true)
+        every { ad.getResponseInfo().responseId } returns null
+
+        RewardVerificationManager.install(ad)
+
+        verify(exactly = 0) { ad.setServerSideVerificationOptions(any()) }
+        assertTrue(ShadowLog.getLogs().any { it.msg == RewardVerificationStrings.MISSING_AD_RESPONSE_ID })
+    }
+
+    @Test
+    fun `install with configured Purchases and unavailable runtime does not attach options`() {
+        val mockPurchases = mockk<Purchases>(relaxed = true)
+        Purchases.backingFieldSharedInstance = mockPurchases
+        // Intentionally skip dispatcher.initialize() so there is no runtime for this configuration.
+
+        val ad = mockk<RewardedAd>(relaxed = true)
+        every { ad.getResponseInfo().responseId } returns "ad-response-id"
+
+        RewardVerificationManager.install(ad)
+
+        verify(exactly = 0) { ad.setServerSideVerificationOptions(any()) }
+        assertTrue(ShadowLog.getLogs().any { it.msg == RewardVerificationStrings.RUNTIME_NOT_READY })
     }
 
     @Test
