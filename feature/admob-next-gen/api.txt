@@ -35,7 +35,7 @@ package com.revenuecat.purchases.admob.nextgen {
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static boolean startAndTrack(com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdPreloader.Companion, String preloadId, com.google.android.libraries.ads.mobile.sdk.common.PreloadConfiguration preloadConfiguration, optional String? placement, optional com.google.android.libraries.ads.mobile.sdk.common.PreloadCallback? preloadCallback);
   }
 
-  public final class RCAdMobNextGenRewardedAd {
+  public final class RewardedAdExtensionsKt {
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void setTrackingAdEventCallback(com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd, com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback? callback);
     method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static void show(com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd, android.app.Activity activity, String? placement, com.google.android.libraries.ads.mobile.sdk.rewarded.OnUserEarnedRewardListener onUserEarnedRewardListener);
   }
