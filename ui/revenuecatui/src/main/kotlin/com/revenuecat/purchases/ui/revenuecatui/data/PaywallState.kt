@@ -192,6 +192,11 @@ internal sealed interface PaywallState {
 
             private var localeId by mutableStateOf(initialLocaleList.toLocaleId())
 
+            // We find all available device locales with the same country as the storefront country.
+            private val availableStorefrontCountryLocalesByLanguage: Map<String, Locale> by lazy {
+                getAvailableStorefrontCountryLocalesByLanguage(storefrontCountryCode)
+            }
+
             /**
              * The locale to use for the paywall's localized content, such as text.
              */
@@ -202,10 +207,22 @@ internal sealed interface PaywallState {
              * avoid discrepancies between calculated prices (per period) and the price coming directly from the store.
              */
             val currencyLocale by derivedStateOf {
-                currencyLocaleForStorefront(
-                    storefrontCountryCode = storefrontCountryCode,
-                    locale = locale.toJavaLocale(),
-                ).toComposeLocale()
+                if (storefrontCountryCode.isNullOrBlank()) {
+                    locale
+                } else {
+                    val deviceLanguageCode = locale.language.lowercase()
+
+                    // We pick the one with the same language as the device if available. If not, we just pick the
+                    // first. If the list is empty, we use the device locale with the storefront country.
+                    val javaLocale = availableStorefrontCountryLocalesByLanguage[deviceLanguageCode]
+                        ?: availableStorefrontCountryLocalesByLanguage.values.firstOrNull()
+                        ?: Locale.Builder()
+                            .setLocale(locale.toJavaLocale())
+                            .setRegion(storefrontCountryCode.uppercase())
+                            .build()
+
+                    javaLocale.toComposeLocale()
+                }
             }
 
             private val selectedPackageByTab = mutableStateMapOf<Int, String?>().apply {
@@ -401,40 +418,29 @@ internal sealed interface PaywallState {
 }
 
 /**
- * Returns a locale suitable for formatting currencies in the storefront country.
- *
- * Multiple available locales can have the same language and country but different scripts or variants. Prefer the
- * canonical locale because variants such as `en-US-POSIX` can use different currency spacing than `en-US`.
+ * Returns the available locales for the storefront country keyed by language.
+ * POSIX locales are excluded because their currency format can contain spacing that differs from the store format.
  */
-internal fun currencyLocaleForStorefront(
+internal fun getAvailableStorefrontCountryLocalesByLanguage(
     storefrontCountryCode: String?,
-    locale: Locale,
     availableLocales: Array<Locale> = Locale.getAvailableLocales(),
-): Locale {
-    if (storefrontCountryCode.isNullOrBlank()) return locale
-
-    val countryLocales = availableLocales.filter {
-        it.country.equals(storefrontCountryCode, ignoreCase = true)
+): Map<String, Locale> =
+    if (storefrontCountryCode.isNullOrBlank()) {
+        emptyMap()
+    } else {
+        buildMap {
+            availableLocales.forEach { availableLocale ->
+                val isStorefrontCountry = availableLocale.country.equals(
+                    storefrontCountryCode,
+                    ignoreCase = true,
+                )
+                val isPosix = availableLocale.variant.equals("POSIX", ignoreCase = true)
+                if (isStorefrontCountry && !isPosix) {
+                    put(availableLocale.language.lowercase(), availableLocale)
+                }
+            }
+        }
     }
-    val language = locale.language.lowercase()
-    val matchingLanguageLocale = countryLocales
-        .filter { it.language.lowercase() == language }
-        .minWithOrNull(
-            compareBy<Locale>(
-                { it.variant.isNotBlank() },
-                { it.script.isNotBlank() },
-                { it.extensionKeys.isNotEmpty() },
-                { it.toLanguageTag() },
-            ),
-        )
-
-    return matchingLanguageLocale
-        ?: countryLocales.firstOrNull()
-        ?: Locale.Builder()
-            .setLocale(locale)
-            .setRegion(storefrontCountryCode.uppercase())
-            .build()
-}
 
 internal fun PaywallState.loadedLegacy(): PaywallState.Loaded.Legacy? {
     return when (val state = this) {
