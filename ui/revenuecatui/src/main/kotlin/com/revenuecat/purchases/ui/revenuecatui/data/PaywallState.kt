@@ -17,6 +17,12 @@ import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
+import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedPackagePartial
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
+import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toComposeLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
@@ -141,6 +147,14 @@ internal sealed interface PaywallState {
                     val pkg: Package,
                     val isSelectedByDefault: Boolean,
                     val resolvedOffer: ResolvedOffer? = null,
+                    /**
+                     * The package component's static visibility and the overrides that can change it.
+                     * Selection has to evaluate these: a package hidden by a rule must not be chosen as
+                     * the default, or nothing ends up selected on screen.
+                     */
+                    val visible: Boolean = true,
+                    val visibilityOverrides: List<PresentedOverride<PresentedPackagePartial>> = emptyList(),
+                    val offerEligibility: OfferEligibility? = null,
                 ) {
                     /**
                      * Unique identifier combining package ID and offer ID.
@@ -176,7 +190,16 @@ internal sealed interface PaywallState {
             )
 
             private val initialSelectedPackageOutsideTabs = packages.packagesOutsideTabs
-                .firstOrNull { it.isSelectedByDefault }
+                .firstOrNull { it.isSelectedByDefault && it.resolvesVisible(mergedCustomVariables) }
+                ?.uniqueId
+
+            /**
+             * Only used when a default *is* declared outside the tabs but a rule hid it, which would
+             * otherwise leave nothing selected. A paywall that declares no default still starts unselected.
+             */
+            private val visibleFallbackForHiddenDefaultOutsideTabs = packages.packagesOutsideTabs
+                .takeIf { infos -> infos.any { it.isSelectedByDefault } }
+                ?.firstOrNull { it.resolvesVisible(mergedCustomVariables) }
                 ?.uniqueId
             private val packagesOutsideTabsUniqueIds: Set<String> = packages.packagesOutsideTabs
                 .mapTo(mutableSetOf()) { it.uniqueId }
@@ -228,7 +251,7 @@ internal sealed interface PaywallState {
             private val selectedPackageByTab = mutableStateMapOf<Int, String?>().apply {
                 putAll(
                     packages.packagesByTab.mapValues { (_, packagesList) ->
-                        packagesList.firstOrNull { it.isSelectedByDefault }?.uniqueId
+                        packagesList.defaultSelection(mergedCustomVariables)?.uniqueId
                     },
                 )
             }
@@ -238,7 +261,9 @@ internal sealed interface PaywallState {
 
             private val initialSelectedPackageUniqueId: String? = initialSelectedPackageOutsideTabs
                 ?: selectedPackageByTab[selectedTabIndex]
-                ?: packages.packagesByTab[selectedTabIndex]?.firstOrNull()?.uniqueId
+                ?: packages.packagesByTab[selectedTabIndex]?.defaultSelection(mergedCustomVariables)?.uniqueId
+                // Last, so a default declared inside a tab still wins.
+                ?: visibleFallbackForHiddenDefaultOutsideTabs
 
             private var selectedPackageUniqueId by mutableStateOf(initialSelectedPackageUniqueId)
 
@@ -324,13 +349,19 @@ internal sealed interface PaywallState {
 
                     selectedPackageUniqueId = selectedPackageByTab[selectedTabIndex]
                         ?: initialSelectedPackageOutsideTabs
-                        ?: packages.packagesByTab[selectedTabIndex]?.firstOrNull()?.uniqueId?.also {
-                            Logger.w(
-                                "Could not find default package for tab $selectedTabIndex. " +
-                                    "Using first package instead. " +
-                                    "This could be caused by not having any package marked as selected by default.",
-                            )
-                        }
+                        ?: packages.packagesByTab[selectedTabIndex]
+                            ?.defaultSelection(mergedCustomVariables)
+                            ?.also { selection ->
+                                if (!selection.isSelectedByDefault) {
+                                    Logger.w(
+                                        "Could not find a visible default package for tab $selectedTabIndex. " +
+                                            "Using the first visible package instead.",
+                                    )
+                                }
+                            }
+                            ?.uniqueId
+                        // Nothing in the tab renders, so fall back outside it rather than clearing.
+                        ?: visibleFallbackForHiddenDefaultOutsideTabs
                 }
 
                 if (actionInProgress != null) this.actionInProgress = actionInProgress
@@ -348,16 +379,20 @@ internal sealed interface PaywallState {
             }
 
             fun resetToDefaultPackage() {
-                selectedPackageUniqueId =
-                    packages.packagesByTab[selectedTabIndex]?.firstOrNull { it.isSelectedByDefault }?.uniqueId
-                        ?: initialSelectedPackageOutsideTabs
-                        ?: selectedPackageByTab[selectedTabIndex]
+                selectedPackageUniqueId = peekDefaultPackageUniqueIdAfterSheetDismiss()
             }
 
-            fun peekDefaultPackageUniqueIdAfterSheetDismiss(): String? =
-                packages.packagesByTab[selectedTabIndex]?.firstOrNull { it.isSelectedByDefault }?.uniqueId
+            /** The package the current tab should fall back to, which is also what a reset restores. */
+            fun peekDefaultPackageUniqueIdAfterSheetDismiss(): String? {
+                val tabPackages = packages.packagesByTab[selectedTabIndex]
+                // A default authored outside the tabs outranks a tab package that was never authored as
+                // one, so the tab's own default is consulted first and its first visible package last.
+                return tabPackages?.authoredDefaultIfVisible(mergedCustomVariables)?.uniqueId
                     ?: initialSelectedPackageOutsideTabs
                     ?: selectedPackageByTab[selectedTabIndex]
+                    ?: tabPackages?.firstVisible(mergedCustomVariables)?.uniqueId
+                    ?: visibleFallbackForHiddenDefaultOutsideTabs
+            }
 
             fun peekSelectedPackageInfoAfterSheetDismiss(): SelectedPackageInfo? {
                 val uid = peekDefaultPackageUniqueIdAfterSheetDismiss()
@@ -463,3 +498,43 @@ internal val PaywallState.Loaded.Legacy.currentColors: TemplateConfiguration.Col
 
 internal val PaywallState.Loaded.Legacy.isInFullScreenMode: Boolean
     get() = templateConfiguration.mode.isFullScreen
+
+/**
+ * Whether this package renders, evaluating the same overrides the renderer does.
+ *
+ * Resolved as unselected with no selected package, because selection is what's being decided: pinning
+ * those keeps resolution independent of its own result, so a paywall with `selected` or
+ * `selected_package` visibility rules can't oscillate.
+ *
+ * Note this only covers the package component's own rules. A package hidden solely by an enclosing
+ * stack's rule still resolves visible here.
+ */
+private fun PaywallState.Loaded.Components.AvailablePackages.Info.resolvesVisible(
+    customVariables: Map<String, CustomVariableValue>,
+): Boolean =
+    visibilityOverrides.buildPresentedPartial(
+        windowSize = ScreenCondition.COMPACT,
+        offerEligibility = offerEligibility ?: OfferEligibility.Ineligible,
+        state = ComponentViewState.DEFAULT,
+        conditionContext = ConditionContext(selectedPackageId = null, customVariables = customVariables),
+    )?.partial?.visible ?: visible
+
+/**
+ * The package that should start selected, in document order: the authored default if it renders,
+ * otherwise the first package that does.
+ */
+private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.defaultSelection(
+    customVariables: Map<String, CustomVariableValue>,
+): PaywallState.Loaded.Components.AvailablePackages.Info? =
+    authoredDefaultIfVisible(customVariables) ?: firstVisible(customVariables)
+
+/** The package authored as the default, only when it renders. */
+private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.authoredDefaultIfVisible(
+    customVariables: Map<String, CustomVariableValue>,
+): PaywallState.Loaded.Components.AvailablePackages.Info? =
+    firstOrNull { it.isSelectedByDefault && it.resolvesVisible(customVariables) }
+
+private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.firstVisible(
+    customVariables: Map<String, CustomVariableValue>,
+): PaywallState.Loaded.Components.AvailablePackages.Info? =
+    firstOrNull { it.resolvesVisible(customVariables) }

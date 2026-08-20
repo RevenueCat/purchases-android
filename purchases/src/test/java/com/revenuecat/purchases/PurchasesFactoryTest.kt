@@ -5,11 +5,15 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.PlatformInfo
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.spyk
 import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
@@ -163,6 +167,51 @@ class PurchasesFactoryTest {
 
         // Assert
         verify(exactly = 0) { applicationMock.startActivity(any()) }
+    }
+
+    @Test
+    fun `creating purchases with remote config enabled provides audiences config to the orchestrator`() {
+        val application = spyk(ApplicationProvider.getApplicationContext<Application>())
+        every { application.applicationContext } returns application
+        every { application.checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns
+            PackageManager.PERMISSION_GRANTED
+        val configuration = PurchasesConfiguration.Builder(application, "fakeApiKey")
+            .appUserID("appUserID")
+            .store(Store.PLAY_STORE)
+            .build()
+
+        val purchases = purchasesFactory.createPurchases(
+            configuration = configuration,
+            platformInfo = PlatformInfo(flavor = "test", version = null),
+            proxyURL = null,
+            overrideBillingAbstract = mockk<BillingAbstract>(relaxed = true),
+        )
+
+        assertThat(purchases.purchasesOrchestrator.audiencesConfigProvider).isNotNull()
+        purchases.close()
+    }
+
+    @Test
+    fun `creating purchases with custom entitlement computation does not provide audiences config to the orchestrator`() {
+        val application = spyk(ApplicationProvider.getApplicationContext<Application>())
+        every { application.applicationContext } returns application
+        every { application.checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns
+            PackageManager.PERMISSION_GRANTED
+        val configuration = PurchasesConfiguration.Builder(application, "fakeApiKey")
+            .appUserID("appUserID")
+            .store(Store.PLAY_STORE)
+            .dangerousSettings(DangerousSettings(customEntitlementComputation = true))
+            .build()
+
+        val purchases = purchasesFactory.createPurchases(
+            configuration = configuration,
+            platformInfo = PlatformInfo(flavor = "test", version = null),
+            proxyURL = null,
+            overrideBillingAbstract = mockk<BillingAbstract>(relaxed = true),
+        )
+
+        assertThat(purchases.purchasesOrchestrator.audiencesConfigProvider).isNull()
+        purchases.close()
     }
 
     // region shouldInitializeDiagnostics

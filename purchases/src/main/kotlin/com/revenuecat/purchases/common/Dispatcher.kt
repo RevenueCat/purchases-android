@@ -24,6 +24,13 @@ internal enum class Delay(val minDelay: Duration, val maxDelay: Duration) {
     NONE(0.milliseconds, 0.milliseconds),
     DEFAULT(0.milliseconds, DispatcherConstants.jitterDelay),
     LONG(DispatcherConstants.jitterDelay, DispatcherConstants.jitterLongDelay),
+    ;
+
+    companion object {
+        // Backgrounded apps tend to wake up together, so we spread their requests out. A foregrounded app is
+        // reacting to something the user or the developer just did, so it should not be held back.
+        fun jitterOnlyIfInBackground(appInBackground: Boolean): Delay = if (appInBackground) DEFAULT else NONE
+    }
 }
 
 internal open class Dispatcher(

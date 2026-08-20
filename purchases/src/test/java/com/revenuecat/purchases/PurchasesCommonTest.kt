@@ -2952,7 +2952,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     @Test
     fun `syncAttributesAndOfferingsIfNeeded refreshes remote config`() {
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, captureLambda())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), captureLambda())
         } answers { lambda<() -> Unit>().captured.invoke() }
         every {
             mockOfferingsManager.getOfferings(appUserId, false, any(), any(), fetchCurrent = true)
@@ -2973,7 +2973,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     @Test
     fun `syncAttributesAndOfferingsIfNeeded does not refresh remote config when rate limited`() {
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, captureLambda())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), captureLambda())
         } answers { lambda<() -> Unit>().captured.invoke() }
         every {
             mockOfferingsManager.getOfferings(appUserId, false, any(), any(), any())
@@ -3025,7 +3025,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     // region Private Methods
     private fun mockSynchronizeSubscriberAttributesForAllUsers() {
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId)
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), any())
         } just Runs
     }
 

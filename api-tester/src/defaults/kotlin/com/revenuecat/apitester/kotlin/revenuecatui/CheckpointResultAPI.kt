@@ -4,6 +4,7 @@ package com.revenuecat.apitester.kotlin.revenuecatui
 
 import com.revenuecat.apitester.kotlin.exhaustive
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointInfo
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
@@ -15,6 +16,9 @@ private class CheckpointResultAPI {
         val checkpoint: CheckpointInfo = result.checkpoint
 
         when (result) {
+            is CheckpointResult.ReceivedOffering -> {
+                val offering: Offering = result.offering
+            }
             is CheckpointResult.PaywallPresented -> {
                 val paywallOutcome: CheckpointPaywallOutcome = result.paywallOutcome
             }
@@ -41,5 +45,7 @@ private class CheckpointResultAPI {
             CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE
         val disabled: CheckpointResult.NoAction.Reason = CheckpointResult.NoAction.Reason.DISABLED
         val unknownCheckpoint: CheckpointResult.NoAction.Reason = CheckpointResult.NoAction.Reason.UNKNOWN_CHECKPOINT
+        val invalidCheckpointIdentifier: CheckpointResult.NoAction.Reason =
+            CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER
     }
 }

@@ -45,7 +45,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.1.0
-  revenuecat: revenuecat/sdks-common-config@4.5.1
+  revenuecat: revenuecat/sdks-common-config@4.6.0
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -59,12 +59,6 @@ parameters:
     default: alpha
 
 commands:
-  install-mise-tools:
-    description: Install mise tools from mise.toml (Java, etc.)
-    steps:
-      - revenuecat/install-mise-tools:
-          tools: java
-
   android-dependencies:
     steps:
       - android/restore_gradle_cache
@@ -128,28 +122,6 @@ commands:
       - android/save_gradle_cache
       - android/save_build_cache
 
-  install-ruby:
-    description: "Installs the provided version of Ruby using RVM."
-    parameters:
-      version:
-        type: string
-    steps:
-      - run:
-          name: Install RVM and Ruby << parameters.version >>
-          command: |
-            # Import GPG keys first
-            command curl -sSL https://rvm.io/mpapis.asc | gpg --import -
-            command curl -sSL https://rvm.io/pkuczynski.asc | gpg --import -
-            # Install RVM and Ruby
-            \curl -sSL https://get.rvm.io | bash -s stable
-            source ~/.rvm/scripts/rvm
-            rvm install << parameters.version >>
-            rvm use << parameters.version >>
-            echo 'source ~/.rvm/scripts/rvm' >> $BASH_ENV
-            echo 'rvm use << parameters.version >>' >> $BASH_ENV
-            source $BASH_ENV
-            ruby -v
-
   checkout-submodule:
     description: "Checks out a git submodule."
     parameters:
@@ -170,7 +142,8 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/accept_licenses
@@ -186,7 +159,8 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/accept_licenses
@@ -202,7 +176,8 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/accept_licenses
@@ -222,7 +197,8 @@ jobs:
       - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java
       - android/accept_licenses
       - android/restore_gradle_cache
       - run:
@@ -256,7 +232,8 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java
       - android/restore_gradle_cache
       - run:
           name: Run << parameters.flavor >> << parameters.build_type >> Tests
@@ -293,7 +270,8 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java
       - android/restore_gradle_cache
       - run:
           name: Run dokka-hide-internal Tests
@@ -309,7 +287,8 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java
       - android/restore_gradle_cache
       - run:
           name: Run detekt-rules Tests
@@ -324,7 +303,8 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java
       - android/restore_gradle_cache
       - run:
           name: Detekt
@@ -336,7 +316,8 @@ jobs:
     shell: /bin/bash --login -o pipefail
     steps:
       - checkout
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java
       - android/restore_gradle_cache
       - run:
           name: Validate binary compatibility
@@ -347,7 +328,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
@@ -363,7 +345,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.17.0-SNAPSHOT s3://purchases-docs/android/10.17.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/10.19.0-SNAPSHOT s3://purchases-docs/android/10.19.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -375,7 +357,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/setup-git-credentials
       - revenuecat/trust-github-key
       - revenuecat/install-gem-unix-dependencies:
@@ -394,7 +377,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - revenuecat/setup-git-credentials
@@ -407,7 +391,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_gradle_cache:
@@ -454,7 +439,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/accept_licenses
@@ -481,7 +467,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - build-paywall-tester
@@ -493,7 +480,8 @@ jobs:
         type: string
     steps:
       - checkout
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - build-paywall-tester
@@ -506,7 +494,8 @@ jobs:
     <<: *android-executor
     steps:
       - checkout
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - build-rct-tester
@@ -518,7 +507,8 @@ jobs:
         type: string
     steps:
       - checkout
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - build-rct-tester
@@ -541,7 +531,8 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/create_avd:
@@ -567,7 +558,8 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/create_avd:
@@ -595,13 +587,15 @@ jobs:
       - revenuecat/trust-github-key
       - checkout-submodule:
           path: upstream/paywall-preview-resources
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_build_cache
       - attach_workspace:
           at: .
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_gradle_cache
@@ -618,7 +612,8 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - prepare-signing-key
@@ -636,7 +631,8 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java
       - run:
           name: Prepare Keystore
           working_directory: integration-tests
@@ -673,7 +669,8 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_gradle_cache
@@ -696,13 +693,15 @@ jobs:
           path: upstream/paywall-preview-resources
       - attach_workspace:
           at: .
-      - install-mise-tools
-      # Required by Emerge CLI
-      - install-ruby:
-          version: 3.2.0
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - run:
           name: Install Emerge CLI
-          command: gem install emerge
+          # mise only shims binaries present at install time, so a gem executable
+          # needs a reshim to land on PATH.
+          command: |
+            gem install emerge
+            mise reshim
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_gradle_cache
@@ -755,7 +754,8 @@ jobs:
       - run:
           name: Clone paywall-rendering-validation repository
           command: git clone git@github.com:RevenueCat/paywall-rendering-validation.git ../paywall-rendering-validation
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/restore_build_cache
@@ -776,7 +776,8 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java
       - android/create_avd:
           avd_name: test-revenuecat-ui
           system_image: system-images;android-32;google_apis;x86_64
@@ -808,7 +809,8 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java
       - run:
           name: Replace API_KEY (Using Test store API key from Production Integration Tests Android project)
           working_directory: test-apps/e2etests/src/main/java/com/revenuecat/e2etests/
@@ -843,7 +845,8 @@ jobs:
       - checkout
       - attach_workspace:
           at: .
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java
       - android/create_avd:
           avd_name: test-e2e-workflow-tester
           system_image: system-images;android-32;google_apis;x86_64
@@ -875,7 +878,8 @@ jobs:
     <<: *android-machine-emulator
     steps:
       - checkout
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
       - revenuecat/setup-git-credentials
       - revenuecat/trust-github-key
       - revenuecat/install-gem-unix-dependencies:
@@ -889,9 +893,9 @@ jobs:
       - android/save_build_cache
       - android/save_gradle_cache
       - store_artifacts:
-          path: purchases/src/main/baseline-prof.txt
+          path: purchases/src/main/generated/baselineProfiles/baseline-prof.txt
       - store_artifacts:
-          path: ui/revenuecatui/src/main/baseline-prof.txt
+          path: ui/revenuecatui/src/main/generated/baselineProfiles/baseline-prof.txt
 
   update-paywall-preview-resources-submodule:
     docker:
@@ -914,7 +918,8 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java
       - android/restore_gradle_cache
       - run:
           name: Run Android Lint
@@ -928,7 +933,8 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java
       - android/restore_gradle_cache
       - run:
           name: Verify purchases-android target SDK (33)
@@ -943,7 +949,8 @@ jobs:
     steps:
       - attach_workspace:
           at: .
-      - install-mise-tools
+      - revenuecat/install-mise-tools:
+          tools: java
       - android/restore_gradle_cache
       - run:
           name: Assemble checkpoint tester
@@ -960,6 +967,12 @@ workflows:
     jobs:
       - revenuecat/danger:
           ruby_version: "3.2.0"
+          context:
+            - slack-secrets
+          post-steps:
+            - run:
+                name: Run api diff report unit tests
+                command: ruby danger/api_diff_report_test.rb
 
   snapshot-deploy-manual:
     when:
@@ -1235,7 +1248,8 @@ workflows:
                 command: |
                   echo 'export JVM_OPTS=-Xmx6g' >> "$BASH_ENV"
                   echo 'export GRADLE_OPTS=-Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2' >> "$BASH_ENV"
-            - install-mise-tools
+            - revenuecat/install-mise-tools:
+                tools: java,ruby
             - revenuecat/install-gem-unix-dependencies:
                 cache-version: v1
             - android/restore_gradle_cache

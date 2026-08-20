@@ -47,9 +47,18 @@ private val NAVIGATED_USE_CASES = listOf(
         screen = Screen.EntitlementGate,
         description = "Checks CustomerInfo first and only hits the checkpoint when nothing is active.",
     ),
+    NavigatedUseCase(
+        screen = Screen.CustomCheckpoint,
+        description = "Runs any identifier you type and shows the raw result, without gating anything on it.",
+    ),
 )
 
 private val INLINE_USE_CASES = listOf(
+    InlineUseCase(
+        identifier = "offering_checkpoint",
+        title = "App-owned offering",
+        description = "A terminal offering workflow returns offering data without presenting RevenueCat UI.",
+    ),
     InlineUseCase(
         identifier = "unknown_checkpoint",
         title = "No action",

@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SharedPreferencesManager
+import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
@@ -29,6 +30,11 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
+import com.revenuecat.purchases.common.localrules.DeviceDimensionProvider
+import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
+import com.revenuecat.purchases.common.localrules.RulesEngineLoggerBridge
+import com.revenuecat.purchases.common.localrules.StoreDimensionProvider
+import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.APISourceFailover
 import com.revenuecat.purchases.common.networking.DeviceConnectivityChecker
@@ -57,20 +63,20 @@ import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
+import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
+import com.revenuecat.purchases.rules.RulesEngine
 import com.revenuecat.purchases.storage.DefaultFileRepository
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.Emojis
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
-import com.revenuecat.purchases.utils.CoilImageDownloader
 import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
 import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
-import com.revenuecat.purchases.utils.PaywallComponentsImagePreDownloader
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.UrlConnectionFactory
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
@@ -247,11 +253,8 @@ internal class PurchasesFactory(
                 backendHelper,
                 remoteConfigDispatcher,
             )
-            val coilImageDownloader = CoilImageDownloader(application)
             val fileRepository = DefaultFileRepository(application)
-            val paywallComponentsImagePreDownloader = PaywallComponentsImagePreDownloader(
-                coilImageDownloader = coilImageDownloader,
-            )
+            val paywallAssetWarming = PaywallAssetWarming(application)
 
             val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
@@ -341,7 +344,7 @@ internal class PurchasesFactory(
             // only the current offering's assets) and on the render path. Shared with WorkflowManager so both
             // dedup against one set of warmed workflow ids.
             val workflowAssetPrewarmer = uiConfigProvider?.let {
-                WorkflowAssetPrewarmer(it, paywallComponentsImagePreDownloader, offeringFontPreDownloader)
+                WorkflowAssetPrewarmer(it, paywallAssetWarming, offeringFontPreDownloader)
             }
             val workflowsConfigProvider = remoteConfigManager?.let {
                 WorkflowsConfigProvider(
@@ -352,6 +355,9 @@ internal class PurchasesFactory(
             }
             val checkpointsConfigProvider = remoteConfigManager?.let {
                 CheckpointsConfigProvider(it)
+            }
+            val audiencesConfigProvider = remoteConfigManager?.let {
+                AudiencesConfigProvider(it)
             }
             if (remoteConfigManager != null && uiConfigProvider != null && workflowsConfigProvider != null) {
                 remoteConfigManager.registerListener(uiConfigProvider)
@@ -365,6 +371,7 @@ internal class PurchasesFactory(
             }
 
             val identityManager = IdentityManager(
+                appConfig,
                 cache,
                 subscriberAttributesCache,
                 subscriberAttributesManager,
@@ -374,6 +381,24 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager,
                 dispatcher,
                 uiPreviewMode = appConfig.uiPreviewMode,
+            )
+
+            // Built after the identity manager so a dimension source reads the app user ID from this instance
+            // rather than from whichever one is the singleton by the time a checkpoint is resolved. The evaluator
+            // is a leaf, only consumed from there, so where it is built is otherwise unconstrained.
+            RulesEngine.setLogger(RulesEngineLoggerBridge)
+            val localRulesEvaluator = LocalRulesEvaluator(
+                providers = listOf(
+                    DeviceDimensionProvider(appConfig, localeProvider),
+                    // Only read during a checkpoint evaluation, so the instance is configured by then. Same
+                    // reasoning as CheckpointWorkflowResolverImpl's getOfferings.
+                    StoreDimensionProvider { Purchases.sharedInstance.awaitStorefrontCountryCode() },
+                    SubscriberAttributesDimensionProvider {
+                        subscriberAttributesCache.getAllStoredSubscriberAttributes(
+                            identityManager.currentAppUserID,
+                        )
+                    },
+                ),
             )
 
             val customerInfoUpdateHandler = CustomerInfoUpdateHandler(
@@ -478,10 +503,7 @@ internal class PurchasesFactory(
                 offeringsCache,
                 backend,
                 OfferingsFactory(billing, offeringParser, dispatcher, appConfig),
-                OfferingImagePreDownloader(
-                    coilImageDownloader = coilImageDownloader,
-                    paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
-                ),
+                OfferingImagePreDownloader(assetWarming = paywallAssetWarming),
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
                 uiPreviewMode = appConfig.uiPreviewMode,
@@ -558,6 +580,8 @@ internal class PurchasesFactory(
                 uiConfigProvider = uiConfigProvider,
                 workflowsConfigProvider = workflowsConfigProvider,
                 checkpointsConfigProvider = checkpointsConfigProvider,
+                audiencesConfigProvider = audiencesConfigProvider,
+                localRulesEvaluator = localRulesEvaluator,
             )
 
             return Purchases(purchasesOrchestrator)

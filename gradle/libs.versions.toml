@@ -47,12 +47,12 @@ kotlinLanguage = "1.8"
 # Can't update until we use more recent kotlin. 1.6.0 uses Kotlin 1.9.0
 kotlinxSerializationJSON = "1.5.1"
 samsungIap = "6.5.2"
-kover = "0.7.0"
+kover = "0.9.9"
 legacyCoreUi = "1.0.0"
 lifecycle = "2.5.0"
 material = "1.6.0"
 mavenPublish = "0.33.0"
-metalava = "0.4.0-alpha03"
+metalava = "0.5.0"
 mockk = "1.13.11"
 mockwebserver = "4.2.0"
 multidex = "2.0.1"
@@ -65,7 +65,7 @@ testLibraries = "1.6.1"
 tink = "1.8.0"
 viewmodelCompose = "2.4.0"
 window = "1.1.0"
-webkit = "1.12.1"
+webkit = "1.16.0"
 junit = "1.2.1"
 uiautomator = "2.3.0"
 benchmarkMacroJunit4 = "1.3.4"
@@ -126,6 +126,7 @@ commonmark-strikethrough = { module = "org.commonmark:commonmark-ext-gfm-striket
 
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-constraintlayout = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraintlayout" }
+compose-foundation-layout = { module = "androidx.compose.foundation:foundation-layout" }
 compose-material = { module = "androidx.compose.material:material" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-material3Adaptive = { module = "androidx.compose.material3.adaptive:adaptive" }

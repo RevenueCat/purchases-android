@@ -15,11 +15,14 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.VerifiedReward
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdEvent
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
+import com.revenuecat.purchases.ads.events.types.AdRewardFailureReason
+import com.revenuecat.purchases.checkpoints.CheckpointEvent
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
@@ -93,6 +96,11 @@ class EventsManagerTest {
         placement = "banner_home",
         adUnitId = "ca-app-pub-123456",
         impressionId = "impression-id"
+    )
+    private val checkpointEvent = CheckpointEvent(
+        identifier = "onboarding_complete",
+        id = UUID.fromString("498207f4-87af-4b57-a581-eb27bcc6e009"),
+        timestamp = Date(1699270688995),
     )
     private val paywallStoredEvent = PaywallStoredEvent(paywallEvent, userID)
     private val disabledRateLimiter = mockk<RateLimiter>().apply {
@@ -172,6 +180,16 @@ class EventsManagerTest {
                 + "\n"
                 + """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_cancel","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES","presented_offering_context":{"paywall_id":"paywallID"}}}""".trimIndent()
                 + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking checkpoint event adds it to file`() {
+        eventsManager.track(checkpointEvent)
+
+        checkFileContents(
+            """{"type":"checkpoint","event":{"id":"498207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"checkpoint_hit","identifier":"onboarding_complete","app_user_id":"testAppUserId","app_session_id":"$appSessionID","timestamp":1699270688995}}""" +
+                "\n",
         )
     }
 
@@ -636,6 +654,92 @@ class EventsManagerTest {
         )
     }
 
+    @Test
+    fun `tracking ad reward earned unverified events adds them to file`() {
+        val adEvent = AdEvent.RewardEarnedUnverified(
+            captureMethod = AdCaptureMethod.MANUAL,
+            id = "ad-event-id-789",
+            timestamp = 1699270688886,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            impressionId = "impression-789",
+            rewardVerificationEnabled = true,
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_reward_sdk_earned","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"rewarded","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","capture_method":"manual","reward_verification_enabled":true}}""".trimIndent() + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking ad reward verified events adds them to file`() {
+        val adEvent = AdEvent.RewardVerified(
+            captureMethod = AdCaptureMethod.MANUAL,
+            id = "ad-event-id-789",
+            timestamp = 1699270688886,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            impressionId = "impression-789",
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_reward_sdk_verified","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"rewarded","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","capture_method":"manual"}}""".trimIndent() + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking ad reward granted events adds them to file`() {
+        val adEvent = AdEvent.RewardGranted(
+            captureMethod = AdCaptureMethod.MANUAL,
+            id = "ad-event-id-789",
+            timestamp = 1699270688886,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            impressionId = "impression-789",
+            reward = VerifiedReward.VirtualCurrency(code = "GLD", amount = 100),
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_reward_sdk_granted","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"rewarded","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","capture_method":"manual","reward_type":"virtual_currency","reward_virtual_currency_code":"GLD","reward_virtual_currency_amount":100}}""".trimIndent() + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking ad reward failed to verify events adds them to file`() {
+        val adEvent = AdEvent.RewardFailedToVerify(
+            captureMethod = AdCaptureMethod.MANUAL,
+            id = "ad-event-id-789",
+            timestamp = 1699270688886,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            impressionId = "impression-789",
+            failureReason = AdRewardFailureReason.Timeout,
+        )
+
+        eventsManager.track(adEvent)
+
+        checkFileContents(
+            """{"type":"ad","event":{"id":"ad-event-id-789","version":1,"type":"rc_ads_ad_reward_sdk_failed_to_verify","timestamp_ms":1699270688886,"network_name":"Google AdMob","mediator_name":"AdMob","ad_format":"rewarded","placement":"rewarded_video","ad_unit_id":"ad-unit-999","impression_id":"impression-789","app_user_id":"testAppUserId","app_session_id":"${appSessionID}","capture_method":"manual","reward_failure_reason":"timeout"}}""".trimIndent() + "\n"
+        )
+    }
 
     @Test
     fun `tracking mixed events with ad events adds them to file`() {

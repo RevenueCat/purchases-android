@@ -2,6 +2,7 @@ package com.revenuecat.purchases.subscriberattributes
 
 import android.app.Application
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.infoLog
@@ -59,6 +60,7 @@ internal class SubscriberAttributesManager(
 
     fun synchronizeSubscriberAttributesForAllUsers(
         currentAppUserID: AppUserID,
+        delay: Delay,
         completion: (() -> Unit)? = null,
     ) {
         obtainingDeviceIdentifiersObservable.waitUntilIdle {
@@ -82,6 +84,7 @@ internal class SubscriberAttributesManager(
                 backend.postSubscriberAttributes(
                     unsyncedAttributesForUser.toBackendMap(),
                     syncingAppUserID,
+                    delay,
                     {
                         markAsSynced(syncingAppUserID, unsyncedAttributesForUser, emptyList())
                         log(LogIntent.RC_SUCCESS) {

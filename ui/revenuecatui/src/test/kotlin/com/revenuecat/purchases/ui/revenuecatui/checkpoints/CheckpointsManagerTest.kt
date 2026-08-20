@@ -6,18 +6,24 @@ import android.app.Activity
 import android.content.Intent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.runs
 import io.mockk.slot
+import io.mockk.unmockkObject
 import io.mockk.verify
 import io.mockk.verifyOrder
 import kotlinx.coroutines.Dispatchers
@@ -51,6 +57,8 @@ class CheckpointsManagerTest {
     @Before
     fun setup() {
         Dispatchers.setMain(dispatcher)
+        mockkObject(Logger)
+        every { Logger.e(any()) } just runs
         startedIntents.clear()
         mockActivity = mockk(relaxed = true)
         capturesStartedIntents()
@@ -64,7 +72,42 @@ class CheckpointsManagerTest {
 
     @After
     fun tearDown() {
+        unmockkObject(Logger)
         Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `valid checkpoint identifier reaches listener and resolution`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
+
+        manager.checkpoint(mockPurchases, "A-1_b", null)
+
+        coVerify(exactly = 1) { mockPurchases.resolveCheckpoint("A-1_b", emptyMap()) }
+        verify(exactly = 1) { mockListener.onCheckpointHit(match { it.identifier == "A-1_b" }) }
+        verify(exactly = 1) {
+            mockListener.onCheckpointCompleted(
+                match { it.identifier == "A-1_b" },
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun `invalid checkpoint identifier is logged and reported to listener without resolution`() = runTest(dispatcher) {
+        val invalidIdentifier = " checkout😀"
+
+        val result = manager.checkpoint(mockPurchases, invalidIdentifier, null) as CheckpointResult.NoAction
+
+        assertThat(result.reason).isEqualTo(CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER)
+        assertThat(result.checkpoint.identifier).isEqualTo(invalidIdentifier)
+        coVerify(exactly = 0) { mockPurchases.resolveCheckpoint(any(), any()) }
+        verifyOrder {
+            mockListener.onCheckpointHit(result.checkpoint)
+            mockListener.onCheckpointCompleted(result.checkpoint, result)
+        }
+        verify(exactly = 1) {
+            Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(invalidIdentifier))
+        }
     }
 
     @Test
@@ -79,6 +122,39 @@ class CheckpointsManagerTest {
             mockListener.onCheckpointHit(result.checkpoint)
             mockListener.onCheckpointCompleted(result.checkpoint, result)
         }
+    }
+
+    @Test
+    fun `offering checkpoint returns without an activity or presentation`() = runTest(dispatcher) {
+        val offering = mockk<Offering>()
+        every { mockPurchases.currentActivity } returns null
+        resolvesTo(CheckpointResolution.MatchedOffering(offering))
+
+        val result = checkpoint() as CheckpointResult.ReceivedOffering
+
+        assertThat(result.offering).isEqualTo(offering)
+        assertThat(result.checkpoint.identifier).isEqualTo(checkpointId)
+        verify(exactly = 0) { mockActivity.startActivity(any()) }
+        verifyOrder {
+            mockListener.onCheckpointHit(result.checkpoint)
+            mockListener.onCheckpointCompleted(result.checkpoint, result)
+        }
+    }
+
+    @Test
+    fun `offering checkpoint completes while a UI checkpoint is being presented`() = runTest(dispatcher) {
+        val offering = mockk<Offering>()
+        coEvery { mockPurchases.resolveCheckpoint(any(), any()) } returnsMany listOf(
+            CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk()),
+            CheckpointResolution.MatchedOffering(offering),
+        )
+        val presentedCall = launch { checkpoint() }
+
+        val offeringResult = checkpoint() as CheckpointResult.ReceivedOffering
+
+        assertThat(offeringResult.offering).isEqualTo(offering)
+        verify(exactly = 1) { mockActivity.startActivity(any()) }
+        presentedCall.cancel()
     }
 
     @Test
@@ -114,7 +190,9 @@ class CheckpointsManagerTest {
         resolvesToWorkflow()
 
         var result: CheckpointResult? = null
-        val call = launch { result = checkpoint(CheckpointParams("goal" to "test")) }
+        val call = launch {
+            result = checkpoint(CheckpointParams("goal" to CustomVariableValue.String("test")))
+        }
 
         assertThat(result).isNull()
 
@@ -124,7 +202,8 @@ class CheckpointsManagerTest {
         val presented = result as CheckpointResult.PaywallPresented
         assertThat(presented.paywallOutcome).isEqualTo(CheckpointPaywallOutcome.Dismissed)
         assertThat(presented.checkpoint.identifier).isEqualTo(checkpointId)
-        assertThat(presented.checkpoint.params.customProperties).isEqualTo(mapOf("goal" to "test"))
+        assertThat(presented.checkpoint.params.customVariables)
+            .isEqualTo(mapOf("goal" to CustomVariableValue.String("test")))
         verifyOrder {
             mockListener.onCheckpointHit(any())
             mockListener.onCheckpointCompleted(presented.checkpoint, presented)
@@ -132,14 +211,53 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `only valid custom properties are forwarded to the resolver`() = runTest(dispatcher) {
+    fun `custom variables reach the resolver as rule dimensions`() = runTest(dispatcher) {
         resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
 
-        checkpoint(CheckpointParams("goal" to "test", "invalid" to Any()))
+        checkpoint(
+            CheckpointParams(
+                "goal" to CustomVariableValue.String("test"),
+                "attempt" to CustomVariableValue.Number(2),
+                "flag" to CustomVariableValue.Boolean(true),
+            ),
+        )
 
-        val customProperties = slot<Map<String, Any>>()
-        coVerify { mockPurchases.resolveCheckpoint(checkpointId, capture(customProperties)) }
-        assertThat(customProperties.captured).isEqualTo(mapOf("goal" to "test"))
+        val customVariables = slot<Map<String, RulesDimensionValue>>()
+        coVerify { mockPurchases.resolveCheckpoint(checkpointId, capture(customVariables)) }
+        assertThat(customVariables.captured).isEqualTo(
+            mapOf(
+                "goal" to RulesDimensionValue.StringValue("test"),
+                "attempt" to RulesDimensionValue.DoubleValue(2.0),
+                "flag" to RulesDimensionValue.BoolValue(true),
+            ),
+        )
+    }
+
+    @Test
+    fun `custom variables are exposed to the presented paywall`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val call = launch {
+            checkpoint(
+                CheckpointParams(
+                    "gate" to CustomVariableValue.String("hard"),
+                    "attempt" to CustomVariableValue.Number(2),
+                    "ratio" to CustomVariableValue.Number(0.5),
+                    "flag" to CustomVariableValue.Boolean(true),
+                ),
+            )
+        }
+
+        assertThat(manager.presentation(currentCallId())!!.customVariables).isEqualTo(
+            mapOf(
+                "gate" to CustomVariableValue.String("hard"),
+                "attempt" to CustomVariableValue.Number(2),
+                "ratio" to CustomVariableValue.Number(0.5),
+                "flag" to CustomVariableValue.Boolean(true),
+            ),
+        )
+
+        finishPaywall(CheckpointPaywallOutcome.Dismissed)
+        call.join()
     }
 
     @Test
@@ -253,7 +371,7 @@ class CheckpointsManagerTest {
         manager.onActivityDestroyed("unknown-call-id", isChangingConfigurations = false)
         manager.recordOutcome("unknown-call-id", CheckpointPaywallOutcome.Dismissed)
 
-        assertThat(manager.resolution("unknown-call-id")).isNull()
+        assertThat(manager.presentation("unknown-call-id")).isNull()
     }
 
     @Test
@@ -266,7 +384,7 @@ class CheckpointsManagerTest {
         manager.onActivityDestroyed(callId, isChangingConfigurations = true)
 
         assertThat(result).isNull()
-        assertThat(manager.resolution(callId)).isNotNull
+        assertThat(manager.presentation(callId)).isNotNull
 
         finishPaywall(CheckpointPaywallOutcome.Dismissed)
         call.join()
@@ -288,7 +406,7 @@ class CheckpointsManagerTest {
 
         assertThat((result as CheckpointResult.PaywallPresented).paywallOutcome)
             .isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo))
-        assertThat(manager.resolution(callId)).isNull()
+        assertThat(manager.presentation(callId)).isNull()
     }
 
     @Test
@@ -304,7 +422,7 @@ class CheckpointsManagerTest {
     }
 
     private fun resolvesToWorkflow() {
-        resolvesTo(CheckpointResolution.Workflow(mockk(), mockk(), mockk()))
+        resolvesTo(CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk()))
     }
 
     private fun capturesStartedIntents() {
@@ -318,7 +436,7 @@ class CheckpointsManagerTest {
     // record the outcome, then report the paywall as finished.
     private fun finishPaywall(outcome: CheckpointPaywallOutcome) {
         val callId = currentCallId()
-        assertThat(manager.resolution(callId)).isNotNull
+        assertThat(manager.presentation(callId)).isNotNull
         manager.recordOutcome(callId, outcome)
         manager.onActivityDestroyed(callId, isChangingConfigurations = false)
     }

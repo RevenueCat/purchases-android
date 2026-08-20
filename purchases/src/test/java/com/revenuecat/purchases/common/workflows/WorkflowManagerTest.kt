@@ -90,6 +90,29 @@ class WorkflowManagerTest {
     }
 
     @Test
+    fun `getWorkflowBody loads directly by workflow id without preparing UI`() = runTest {
+        val expectedResult = mockk<PublishedWorkflow>(relaxed = true)
+        coEvery { mockProvider.getWorkflow("wf_1") } returns expectedResult
+
+        val result = workflowManager.getWorkflowBody("wf_1")
+
+        assertThat(result).isEqualTo(expectedResult)
+        coVerify(exactly = 0) { mockProvider.workflowIdForOfferingId(any()) }
+        coVerify(exactly = 0) { mockUiConfigProvider.getUiConfig() }
+        verify(exactly = 0) { mockAssetPreDownloader.preDownloadWorkflowAssets(any(), any()) }
+    }
+
+    @Test
+    fun `getWorkflowBody throws when the provider cannot resolve the workflow`() = runTest {
+        coEvery { mockProvider.getWorkflow("wf_missing") } returns null
+
+        val thrown = runCatching { workflowManager.getWorkflowBody("wf_missing") }.exceptionOrNull()
+
+        assertThat(thrown).isInstanceOf(PurchasesException::class.java)
+        assertThat((thrown as PurchasesException).error.code).isEqualTo(PurchasesErrorCode.UnknownError)
+    }
+
+    @Test
     fun `getWorkflow resolves an offering id to its workflow id before fetching`() = runTest {
         val offeringId = "my-offering"
         val workflowId = "wfl-real-id"

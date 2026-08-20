@@ -30,7 +30,7 @@ object CheckpointEventLog : CheckpointListener {
     val events: StateFlow<List<String>> = _events.asStateFlow()
 
     override fun onCheckpointHit(checkpoint: CheckpointInfo) {
-        track("Hit · ${checkpoint.identifier} · params=${checkpoint.params.customProperties}")
+        track("Hit · ${checkpoint.identifier} · params=${checkpoint.params.customVariables}")
     }
 
     override fun onCheckpointCompleted(checkpoint: CheckpointInfo, result: CheckpointResult) {
@@ -42,6 +42,7 @@ object CheckpointEventLog : CheckpointListener {
     }
 
     private fun describe(result: CheckpointResult): String = when (result) {
+        is CheckpointResult.ReceivedOffering -> "Offering (${result.offering.identifier})"
         is CheckpointResult.PaywallPresented -> when (val outcome = result.paywallOutcome) {
             is CheckpointPaywallOutcome.Purchased -> "Purchased"
             is CheckpointPaywallOutcome.Restored -> "Restored"

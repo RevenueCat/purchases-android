@@ -31,10 +31,6 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 
-/**
- * Everything in a paywall's component tree that can be warmed before it is displayed, gathered in a
- * single pass so each warming path picks what it needs instead of walking the tree again.
- */
 internal data class PaywallComponentAssets(
     val imageUris: Set<Uri>,
     val webViews: Set<WebViewAsset>,
@@ -64,8 +60,7 @@ internal fun PaywallComponentsConfig.collectAssets(): PaywallComponentAssets {
 private fun WebViewComponent.toWebViewAsset(): WebViewAsset = WebViewAsset(
     url = url,
     componentId = id,
-    // Overrides can only change `visible`, so size is always the base component's. Matches how
-    // WebViewComponentView derives the same two axes at render time.
+    // The schema lets an override change only `visible`, so size is always the base component's.
     sizeToContentWidth = size.width is SizeConstraint.Fit,
     sizeToContentHeight = size.height is SizeConstraint.Fit,
 )
@@ -78,10 +73,8 @@ private fun PaywallComponent.findImageUris(): Set<Uri> =
             background.findImageUris() + overrides.imageUris { it.background.findImageUris() }
         }
         is IconComponent -> {
-            // appendEncodedPath, not path() (which replaces the base URL's path, dropping e.g.
-            // /icons) nor appendPath (which percent-encodes the segment). The result must match
-            // the URL IconComponentState builds at render time by raw concatenation, since the
-            // image cache is keyed by the exact URL string.
+            // Not path() (replaces the base path) nor appendPath (percent-encodes): the result must match
+            // IconComponentState's raw concatenation, since the image cache keys on the exact URL string.
             setOf(
                 Uri.parse(baseUrl)
                     .buildUpon()
@@ -114,7 +107,6 @@ private fun PaywallComponent.findImageUris(): Set<Uri> =
         is TabControlToggleComponent,
         is TextComponent,
         is TimelineComponent,
-        // Its bundle is warmed through PaywallComponentAssets.webViews instead.
         is WebViewComponent,
         -> emptySet()
     }

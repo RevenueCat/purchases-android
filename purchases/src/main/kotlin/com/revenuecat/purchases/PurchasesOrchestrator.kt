@@ -5,21 +5,23 @@ package com.revenuecat.purchases
 import android.app.Activity
 import android.app.Application
 import android.app.backup.BackupManager
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.util.Pair
 import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import coil.ImageLoader
-import coil.disk.DiskCache
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
+import com.revenuecat.purchases.checkpoints.CheckpointEvent
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolver
 import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolverImpl
@@ -37,6 +39,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
@@ -48,6 +51,8 @@ import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.events.FeatureEvent
+import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -76,6 +81,7 @@ import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
+import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
@@ -175,14 +181,19 @@ internal class PurchasesOrchestrator(
     private val uiConfigProvider: UiConfigProvider? = null,
     private val workflowsConfigProvider: WorkflowsConfigProvider? = null,
     private val checkpointsConfigProvider: CheckpointsConfigProvider? = null,
+    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val audiencesConfigProvider: AudiencesConfigProvider? = null,
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
     private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
+    private val localRulesEvaluator: LocalRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
     @OptIn(InternalRevenueCatAPI::class)
     private val checkpointWorkflowResolver: CheckpointWorkflowResolver = CheckpointWorkflowResolverImpl(
         workflowManager = workflowManager,
         uiConfigProvider = uiConfigProvider,
         checkpointsConfigProvider = checkpointsConfigProvider,
+        audiencesConfigProvider = audiencesConfigProvider,
+        localRulesEvaluator = localRulesEvaluator,
         getOfferings = { Purchases.sharedInstance.awaitOfferings() },
     ),
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
@@ -349,7 +360,7 @@ internal class PurchasesOrchestrator(
         )
         appConfig.isAppBackgrounded = true
         if (!appConfig.uiPreviewMode) {
-            synchronizeSubscriberAttributesIfNeeded()
+            synchronizeSubscriberAttributesIfNeeded(Delay.NONE)
             flushEvents(Delay.NONE)
         }
     }
@@ -397,7 +408,7 @@ internal class PurchasesOrchestrator(
             }
             offeringsManager.onAppForeground(identityManager.currentAppUserID)
             postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
-            synchronizeSubscriberAttributesIfNeeded()
+            synchronizeSubscriberAttributesIfNeeded(Delay.DEFAULT)
             offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
             flushEvents(Delay.DEFAULT)
             if (firstTimeInForeground && isAndroidNOrNewer()) {
@@ -433,8 +444,16 @@ internal class PurchasesOrchestrator(
     @OptIn(InternalRevenueCatAPI::class)
     suspend fun resolveCheckpoint(
         checkpointIdentifier: String,
-        customProperties: Map<String, Any>,
-    ): CheckpointResolution = checkpointWorkflowResolver.resolve(checkpointIdentifier, customProperties)
+        customVariables: Map<String, RulesDimensionValue>,
+    ): CheckpointResolution {
+        track(
+            CheckpointEvent(
+                identifier = checkpointIdentifier,
+                timestamp = dateProvider.now,
+            ),
+        )
+        return checkpointWorkflowResolver.resolve(checkpointIdentifier, customVariables)
+    }
 
     fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
         storefrontCountryCode?.let {
@@ -495,7 +514,10 @@ internal class PurchasesOrchestrator(
             return
         }
 
-        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID) {
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+            appUserID,
+            Delay.jitterOnlyIfInBackground(state.appInBackground),
+        ) {
             remoteConfigManager?.refreshRemoteConfig(
                 state.appInBackground,
                 appUserID,
@@ -967,6 +989,46 @@ internal class PurchasesOrchestrator(
         billing.showInAppMessagesIfNeeded(activity, inAppMessageTypes) {
             syncPurchases()
         }
+    }
+
+    fun showManageSubscriptions(context: Context, callback: ManageSubscriptionsCallback?) {
+        getCustomerInfo(
+            CacheFetchPolicy.CACHED_OR_FETCHED,
+            trackDiagnostics = false,
+            object : ReceiveCustomerInfoCallback {
+                override fun onReceived(customerInfo: CustomerInfo) {
+                    val managementURL = customerInfo.managementURL
+                        ?: appConfig.store.managementUrl?.let { Uri.parse(it) }
+                    if (managementURL == null) {
+                        val error = PurchasesError(
+                            PurchasesErrorCode.UnsupportedError,
+                            "No management URL found for current subscription",
+                        )
+                        errorLog(error)
+                        callback?.onError(error)
+                        return
+                    }
+                    try {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, managementURL)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                        callback?.onSuccess()
+                    } catch (e: ActivityNotFoundException) {
+                        val error = PurchasesError(
+                            PurchasesErrorCode.UnknownError,
+                            "Cannot open subscription management URL: ${e.message}",
+                        )
+                        errorLog(error)
+                        callback?.onError(error)
+                    }
+                }
+
+                override fun onError(error: PurchasesError) {
+                    callback?.onError(error)
+                }
+            },
+        )
     }
 
     fun invalidateCustomerInfoCache() {
@@ -1822,9 +1884,9 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    private fun synchronizeSubscriberAttributesIfNeeded() {
+    private fun synchronizeSubscriberAttributesIfNeeded(delay: Delay) {
         if (appConfig.uiPreviewMode) return
-        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID)
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID, delay)
     }
 
     private fun flushEvents(delay: Delay) {
@@ -1943,33 +2005,9 @@ internal class PurchasesOrchestrator(
                 currentLogHandler = value
             }
 
-        private var cachedImageLoader: ImageLoader? = null
-
         const val frameworkVersion = Config.frameworkVersion
 
         var proxyURL: URL? = null
-
-        @Suppress("MagicNumber")
-        @Synchronized
-        fun getImageLoader(context: Context): ImageLoader {
-            val currentImageLoader = cachedImageLoader
-            return if (currentImageLoader == null) {
-                val maxCacheSizeBytes = 25 * 1024 * 1024L // 25 MB
-                val cacheFolder = "revenuecatui_cache"
-                val imageLoader = ImageLoader.Builder(context)
-                    .diskCache {
-                        DiskCache.Builder()
-                            .directory(context.cacheDir.resolve(cacheFolder))
-                            .maxSizeBytes(maxCacheSizeBytes)
-                            .build()
-                    }
-                    .build()
-                cachedImageLoader = imageLoader
-                imageLoader
-            } else {
-                currentImageLoader
-            }
-        }
 
         /**
          * Note: This method only works for the Google Play Store. There is no Amazon equivalent at this time.

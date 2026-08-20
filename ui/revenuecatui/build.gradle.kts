@@ -64,6 +64,9 @@ metalava {
         "src/androidTest",
         "src/androidTestDefaults",
         "src/androidTestCustomEntitlementComputation",
+        // AGP's generated BuildConfig is not part of the published API surface.
+        "build/generated/source/buildConfig/defaults/release",
+        "build/generated/source/buildConfig/customEntitlementComputation/release",
     )
 }
 
@@ -85,8 +88,9 @@ tasks.withType<KotlinCompile>().configureEach {
 
 dependencies {
     api(project(":purchases"))
+    api(platform(libs.compose.bom))
+    api(libs.compose.foundation.layout)
 
-    implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.ui.util)
     implementation(libs.compose.ui.graphics)
@@ -166,7 +170,6 @@ tasks.withType<KotlinCompilationTask<*>>().configureEach {
 
 baselineProfile {
     mergeIntoMain = true
-    baselineProfileOutputDir = "."
     filter {
         include("com.revenuecat.purchases.ui.revenuecatui.**")
     }

@@ -60,4 +60,61 @@ if total_changed > PROD_LINES_LIMIT
   end
 end
 
+# detektAllBaseline rewrites the whole file, so count <ID> entries rather than diff lines.
+# Match by basename: three files share this name and only one is live.
+BASELINE_FILENAME = "detekt-baseline.xml"
+SKIP_BASELINE_LABEL = "skip-baseline-growth-check"
+
+grown_baselines = (git.modified_files + git.added_files).uniq.select do |file|
+  next false unless File.basename(file) == BASELINE_FILENAME
+  diff = git.diff_for_file(file)
+  next true unless diff # unreadable diff: fail closed rather than wave the file through
+
+  added, removed = diff.patch.each_line.reduce([0, 0]) do |(a, r), line|
+    next [a, r] unless line.include?("<ID>")
+    next [a + 1, r] if line.start_with?("+") && !line.start_with?("+++")
+    next [a, r + 1] if line.start_with?("-") && !line.start_with?("---")
+    [a, r]
+  end
+  added > removed
+end
+
+if grown_baselines.any?
+  if github.pr_labels.include?(SKIP_BASELINE_LABEL)
+    message("This PR adds entries to #{grown_baselines.join(', ')}; " \
+            "skipped via `#{SKIP_BASELINE_LABEL}` label.")
+  else
+    fail("This PR adds entries to #{grown_baselines.join(', ')}. Baselines should only shrink: " \
+         "fix the finding, or `@Suppress(\"RuleName\")` it at the smallest possible scope. " \
+         "For a bulk change such as a detekt upgrade or a newly added rule, add the " \
+         "`#{SKIP_BASELINE_LABEL}` label and re-run this job.")
+  end
+end
+
 fail_on_generated_edits(["purchases/src/main/kotlin/generated/"])
+
+# Report the public API this PR changes, and mirror it into the SDK API feed channel.
+# Best effort: a raise here would take every other rule in this file down with it.
+begin
+  require_relative "danger/api_diff_report"
+
+  api_diff = ApiDiffReport.run(
+    changed_files: git.modified_files + git.added_files + git.deleted_files,
+    patch_for: ->(file) { git.diff_for_file(file)&.patch },
+    pull_request_link: "<#{github.pr_json['html_url']}|##{github.pr_json['number']}>",
+    announced_in_comment: lambda do |marker|
+      github.api.issue_comments(github.pr_json["base"]["repo"]["full_name"], github.pr_json["number"])
+            .any? { |comment| comment.body.to_s.include?(marker) }
+    rescue StandardError
+      false
+    end,
+  )
+
+  if api_diff
+    markdown(api_diff[:comment])
+    warn(api_diff[:warning]) if api_diff[:warning]
+  end
+rescue StandardError => e
+  # `warn` is Danger's DSL: surfaces on the PR without failing the run.
+  warn("Could not report the public API changes: #{e.message}")
+end
