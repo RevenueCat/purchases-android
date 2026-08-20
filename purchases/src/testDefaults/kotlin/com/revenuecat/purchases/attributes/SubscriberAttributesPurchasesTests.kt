@@ -232,7 +232,7 @@ class SubscriberAttributesPurchasesTests {
             adEventsManagerMock.flushEvents()
         } just Runs
         every {
-            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
+            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, Delay.DEFAULT, any())
         } just Runs
         every {
             customerInfoHelperMock.retrieveCustomerInfo(
@@ -248,7 +248,7 @@ class SubscriberAttributesPurchasesTests {
         } just Runs
         underTest.purchasesOrchestrator.onAppForegrounded()
         verify(exactly = 1) {
-            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
+            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, Delay.DEFAULT, any())
         }
     }
 
@@ -261,14 +261,14 @@ class SubscriberAttributesPurchasesTests {
             adEventsManagerMock.flushEvents(Delay.NONE)
         } just Runs
         every {
-            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
+            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, Delay.DEFAULT, any())
         } just Runs
         every {
             eventsManagerMock.debugEventListener
         } returns null
         underTest.purchasesOrchestrator.onAppBackgrounded()
         verify(exactly = 1) {
-            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId)
+            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, Delay.DEFAULT, any())
         }
     }
 
@@ -467,13 +467,13 @@ class SubscriberAttributesPurchasesTests {
             subscriberAttributesManagerMock.setAppstackAttributionParams(appUserId, data, any())
         } just Runs
         every {
-            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, any())
+            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), any())
         } just Runs
 
         underTest.setAppstackAttributionParams(data, mockk(relaxed = true))
 
         verify { subscriberAttributesManagerMock.setAppstackAttributionParams(appUserId, data, any()) }
-        verify { subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, any()) }
+        verify { subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), any()) }
     }
 
     // endregion

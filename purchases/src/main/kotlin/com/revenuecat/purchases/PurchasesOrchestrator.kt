@@ -514,7 +514,10 @@ internal class PurchasesOrchestrator(
             return
         }
 
-        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID) {
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+            appUserID,
+            Delay.jitterOnlyIfInBackground(state.appInBackground),
+        ) {
             remoteConfigManager?.refreshRemoteConfig(
                 state.appInBackground,
                 appUserID,
@@ -1883,7 +1886,7 @@ internal class PurchasesOrchestrator(
 
     private fun synchronizeSubscriberAttributesIfNeeded() {
         if (appConfig.uiPreviewMode) return
-        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID)
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID, Delay.DEFAULT)
     }
 
     private fun flushEvents(delay: Delay) {
