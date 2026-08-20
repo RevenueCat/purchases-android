@@ -10,7 +10,8 @@ import com.revenuecat.purchases.PurchasesException
  * auto-present an experience (the call resolves when it finishes) or do nothing.
  *
  * @param checkpointIdentifier The checkpoint identifier, as configured in the RevenueCat dashboard. It must start
- * with an ASCII letter and contain only ASCII letters, numbers, underscores, and hyphens.
+ * with an ASCII letter, contain only ASCII letters, numbers, underscores, and hyphens, and be no more than 255
+ * characters.
  * @param params Optional per-call parameters, like custom properties usable in targeting rules.
  * @throws [PurchasesException] with a [PurchasesError] if the checkpoint could not be handled.
  * @return The [CheckpointResult] for this checkpoint.

@@ -24,10 +24,17 @@ class CheckpointIdentifierValidatorTest {
     }
 
     @Test
-    fun `checkpoint identifier longer than 255 characters passes local validation`() {
-        val identifier = "a" + "1".repeat(255)
+    fun `checkpoint identifier with 255 characters passes validation`() {
+        val identifier = "a" + "1".repeat(254)
 
         assertThat(CheckpointIdentifierValidator.isValid(identifier)).isTrue()
+    }
+
+    @Test
+    fun `checkpoint identifier longer than 255 characters fails validation`() {
+        val identifier = "a" + "1".repeat(255)
+
+        assertThat(CheckpointIdentifierValidator.isValid(identifier)).isFalse()
     }
 
     @Test
