@@ -106,6 +106,30 @@ ad's later display, click, revenue, and banner-refresh events.
 
 ## Preloading
 
+### App-open ads
+
+```kotlin
+val appOpenPreloadConfiguration = PreloadConfiguration(
+    request = AppOpenAdRequest.Builder("AD_UNIT_ID").build(),
+    bufferSize = 2,
+)
+
+AppOpenAdPreloader.startAndTrack(
+    preloadId = "app-open-buffer",
+    preloadConfiguration = appOpenPreloadConfiguration,
+    placement = "app_open_preload",
+)
+
+// Later, adopt a buffered app-open ad. This does not emit another loaded event.
+appOpenAd = AppOpenAdPreloader.pollAndTrackAd(
+    preloadId = "app-open-buffer",
+    placement = "app_open",
+    adEventCallback = appOpenAdEventCallback,
+)
+
+appOpenAd?.show(this)
+```
+
 ### Banner ads
 
 ```kotlin
