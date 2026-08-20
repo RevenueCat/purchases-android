@@ -188,7 +188,7 @@ class EventsManagerTest {
         eventsManager.track(checkpointEvent)
 
         checkFileContents(
-            """{"type":"checkpoint","event":{"id":"498207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"checkpoint_hit","identifier":"onboarding_complete","app_user_id":"testAppUserId","session_id":"$appSessionID","timestamp":1699270688995}}""" +
+            """{"type":"checkpoint","event":{"id":"498207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"checkpoint_hit","identifier":"onboarding_complete","app_user_id":"testAppUserId","app_session_id":"$appSessionID","timestamp":1699270688995}}""" +
                 "\n",
         )
     }
