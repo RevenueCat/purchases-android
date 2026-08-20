@@ -36,6 +36,7 @@ import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -121,6 +122,30 @@ class RewardedAdFlowTest {
 
         rewardedAd.show(activity, "show-placement", rewardListener)
         assertEquals("show-placement", trackingCallback.placement)
+        verify(exactly = 1) { rewardedAd.show(activity, rewardListener) }
+    }
+
+    @Test
+    fun `show with null placement clears load-time placement`() {
+        val trackingCallback = TrackingRewardedAdEventCallback(
+            initialDelegate = null,
+            initialPlacement = "load-placement",
+            adUnitId = "rewarded-unit",
+            responseInfoProvider = { mockk(relaxed = true) },
+        )
+        val rewardedAd = mockk<RewardedAd>(relaxed = true) {
+            every { adEventCallback } returns trackingCallback
+        }
+        val activity = mockk<Activity>()
+        val rewardListener = mockk<OnUserEarnedRewardListener>()
+
+        rewardedAd.show(
+            activity = activity,
+            placement = null,
+            onUserEarnedRewardListener = rewardListener,
+        )
+
+        assertNull(trackingCallback.placement)
         verify(exactly = 1) { rewardedAd.show(activity, rewardListener) }
     }
 
