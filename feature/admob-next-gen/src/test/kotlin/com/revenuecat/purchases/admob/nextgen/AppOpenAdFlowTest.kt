@@ -35,6 +35,7 @@ import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -119,6 +120,25 @@ class AppOpenAdFlowTest {
 
         appOpenAd.show(activity, "show-placement")
         assertEquals("show-placement", trackingCallback.placement)
+        verify(exactly = 1) { appOpenAd.show(activity) }
+    }
+
+    @Test
+    fun `show with null placement clears load-time placement`() {
+        val activity = mockk<Activity>()
+        val trackingCallback = TrackingAppOpenAdEventCallback(
+            initialDelegate = null,
+            initialPlacement = "load-placement",
+            adUnitId = "app-open-unit",
+            responseInfoProvider = { mockk(relaxed = true) },
+        )
+        val appOpenAd = mockk<AppOpenAd>(relaxed = true) {
+            every { adEventCallback } returns trackingCallback
+        }
+
+        appOpenAd.show(activity, placement = null)
+
+        assertNull(trackingCallback.placement)
         verify(exactly = 1) { appOpenAd.show(activity) }
     }
 
