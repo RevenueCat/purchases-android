@@ -456,7 +456,6 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     private object FailingDimensionProvider : RulesDimensionProvider {
-        override val identifier = "failing"
         override val namespace = RulesDimensionNamespace.Device
         override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> =
             throw IllegalStateException("no dimensions")

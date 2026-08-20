@@ -8,12 +8,20 @@ import android.net.Uri
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.Purchases.Companion.configure
 import com.revenuecat.purchases.Purchases.Companion.debugLogsEnabled
+import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdTracker
+import com.revenuecat.purchases.ads.events.types.AdRewardEarnedUnverifiedData
+import com.revenuecat.purchases.ads.events.types.AdRewardFailedToVerifyData
+import com.revenuecat.purchases.ads.events.types.AdRewardGrantedData
+import com.revenuecat.purchases.ads.events.types.AdRewardVerifiedData
+import com.revenuecat.purchases.ads.rewardverification.Outcome
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationPollLauncher
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken
+import com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata
 import com.revenuecat.purchases.ads.rewardverification.VerifiedReward
 import com.revenuecat.purchases.ads.rewardverification.rewardVerificationRetryDelay
+import com.revenuecat.purchases.ads.rewardverification.toResult
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
@@ -37,6 +45,7 @@ import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
+import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
 import com.revenuecat.purchases.interfaces.PollRewardVerificationCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -56,10 +65,12 @@ import com.revenuecat.purchases.strings.BillingStrings
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
+import kotlinx.coroutines.CancellationException
 import org.json.JSONObject
 import java.net.URL
 import java.util.Locale
 import java.util.UUID
+import com.revenuecat.purchases.VerifiedReward as CoreVerifiedReward
 
 /**
  * Entry point for Purchases. It should be instantiated as soon as your app has a unique user id
@@ -69,6 +80,7 @@ import java.util.UUID
  * guide to setup your RevenueCat account.
  * @warning Only one instance of Purchases should be instantiated at a time!
  */
+@Suppress("LargeClass")
 public class Purchases internal constructor(
     @get:JvmSynthetic internal val purchasesOrchestrator: PurchasesOrchestrator,
 ) : LifecycleDelegate {
@@ -702,6 +714,30 @@ public class Purchases internal constructor(
     }
 
     /**
+     * Opens the subscription management page for the current user.
+     *
+     * Uses [CustomerInfo.managementURL] if available, which covers non-Play purchases such as
+     * Stripe or web purchases. Otherwise falls back to the store's default subscription management
+     * URL for the configured store.
+     *
+     * The page is opened in a new task, so an application context is enough. Note that
+     * [CustomerInfo] may be fetched from the network first, so the page can end up being requested
+     * after your app is no longer in the foreground. In that case Android may silently drop the
+     * launch, and [ManageSubscriptionsCallback.onSuccess] is still reported.
+     *
+     * @param context Context used to start the subscription management page. An application
+     * context is sufficient.
+     * @param callback Optional [ManageSubscriptionsCallback] called on success or error.
+     */
+    @JvmOverloads
+    public fun showManageSubscriptions(
+        context: Context,
+        callback: ManageSubscriptionsCallback? = null,
+    ) {
+        purchasesOrchestrator.showManageSubscriptions(context, callback)
+    }
+
+    /**
      * Invalidates the cache for customer information.
      *
      * Most apps will not need to use this method; invalidating the cache can leave your app in an invalid state.
@@ -832,25 +868,59 @@ public class Purchases internal constructor(
      * [generateRewardVerificationToken]. Reflects any verified reward locally before returning. The
      * [callback] is invoked on the main thread.
      *
+     * Pass [trackingMetadata] to track reward-verification events (see [adTracker]) for the ad it belongs
+     * to; omit it to poll without tracking.
+     *
      * For coroutines, use the `awaitPollRewardVerification` suspend extension instead.
      */
+    @JvmOverloads
     @ExperimentalPreviewRevenueCatPurchasesAPI
     public fun pollRewardVerification(
         clientTransactionId: String,
         callback: PollRewardVerificationCallback,
+        trackingMetadata: RewardedAdTrackingMetadata? = null,
     ) {
         rewardVerificationPollLauncher.launch(
-            poll = { awaitPollRewardVerification(clientTransactionId) },
+            poll = { awaitPollRewardVerification(clientTransactionId, trackingMetadata) },
             onCompleted = { callback.onCompleted(it) },
         )
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
     internal suspend fun pollRewardVerification(
         clientTransactionId: String,
-        poll: suspend (String) -> RewardVerificationResult,
+        trackingMetadata: RewardedAdTrackingMetadata?,
+        captureMethod: AdCaptureMethod,
+        poll: suspend (String) -> Outcome,
     ): RewardVerificationResult {
-        val result = poll(clientTransactionId)
+        if (trackingMetadata != null) {
+            adTracker.trackAdRewardEarnedUnverified(
+                data = AdRewardEarnedUnverifiedData(
+                    networkName = trackingMetadata.networkName,
+                    mediatorName = trackingMetadata.mediatorName,
+                    adFormat = trackingMetadata.adFormat,
+                    placement = trackingMetadata.placement,
+                    adUnitId = trackingMetadata.adUnitId,
+                    impressionId = trackingMetadata.impressionId,
+                    rewardVerificationEnabled = true,
+                ),
+                captureMethod = captureMethod,
+            )
+        }
+
+        val outcome = try {
+            poll(clientTransactionId)
+        } catch (e: CancellationException) {
+            if (trackingMetadata != null) {
+                trackRewardOutcome(trackingMetadata, Outcome.Failed.Cancelled, captureMethod)
+            }
+            throw e
+        }
+        if (trackingMetadata != null) {
+            trackRewardOutcome(trackingMetadata, outcome, captureMethod)
+        }
+
+        val result = outcome.toResult()
         val rewards = result.verifiedReward?.let { listOf(it) + result.moreRewards } ?: return result
 
         if (rewards.any { it is VerifiedReward.VirtualCurrency }) {
@@ -861,6 +931,72 @@ public class Purchases internal constructor(
         val entitlementReflected = rewards.none { it is VerifiedReward.Entitlement } ||
             refreshCustomerInfoAfterEntitlementGrant(clientTransactionId)
         return if (entitlementReflected) result else RewardVerificationResult.failed
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    private fun trackRewardOutcome(
+        trackingMetadata: RewardedAdTrackingMetadata,
+        outcome: Outcome,
+        captureMethod: AdCaptureMethod,
+    ) {
+        when (outcome) {
+            is Outcome.Verified -> {
+                adTracker.trackAdRewardVerified(
+                    data = AdRewardVerifiedData(
+                        networkName = trackingMetadata.networkName,
+                        mediatorName = trackingMetadata.mediatorName,
+                        adFormat = trackingMetadata.adFormat,
+                        placement = trackingMetadata.placement,
+                        adUnitId = trackingMetadata.adUnitId,
+                        impressionId = trackingMetadata.impressionId,
+                    ),
+                    captureMethod = captureMethod,
+                )
+                // A grant is never reported as NoReward: that value means "verified, nothing configured",
+                // and the absence of a granted event already conveys that.
+                (listOf(outcome.reward) + outcome.moreRewards)
+                    .filterNot { it is VerifiedReward.NoReward }
+                    .forEach { reward ->
+                        adTracker.trackAdRewardGranted(
+                            data = AdRewardGrantedData(
+                                networkName = trackingMetadata.networkName,
+                                mediatorName = trackingMetadata.mediatorName,
+                                adFormat = trackingMetadata.adFormat,
+                                placement = trackingMetadata.placement,
+                                adUnitId = trackingMetadata.adUnitId,
+                                impressionId = trackingMetadata.impressionId,
+                                reward = reward.toCoreVerifiedReward(),
+                            ),
+                            captureMethod = captureMethod,
+                        )
+                    }
+            }
+            is Outcome.Failed -> {
+                adTracker.trackAdRewardFailedToVerify(
+                    data = AdRewardFailedToVerifyData(
+                        networkName = trackingMetadata.networkName,
+                        mediatorName = trackingMetadata.mediatorName,
+                        adFormat = trackingMetadata.adFormat,
+                        placement = trackingMetadata.placement,
+                        adUnitId = trackingMetadata.adUnitId,
+                        impressionId = trackingMetadata.impressionId,
+                        failureReason = outcome.trackingFailureReason,
+                    ),
+                    captureMethod = captureMethod,
+                )
+            }
+        }
+    }
+
+    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    private fun VerifiedReward.toCoreVerifiedReward(): CoreVerifiedReward {
+        return when (this) {
+            is VerifiedReward.VirtualCurrency -> CoreVerifiedReward.VirtualCurrency(code = code, amount = amount)
+            is VerifiedReward.Entitlement ->
+                CoreVerifiedReward.Entitlement(identifier = identifier, expiresAt = expiresAt)
+            VerifiedReward.NoReward -> CoreVerifiedReward.NoReward
+            else -> CoreVerifiedReward.UnsupportedReward
+        }
     }
 
     // getCustomerInfo has no built-in retry, so retry transient (network) failures (with a short delay

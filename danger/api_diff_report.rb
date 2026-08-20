@@ -1,0 +1,287 @@
+# Reports the public API a PR changes, from the metalava signature diffs. Loaded by the Dangerfile.
+
+require 'digest'
+require 'json'
+require 'net/http'
+require 'uri'
+
+module ApiDiffReport
+  PLATFORM_LABEL = "Android :android:".freeze
+
+  # The same two patterns scripts/api-check.sh gates on.
+  SIGNATURE_GLOBS = ["api.txt", "api-*.txt"].freeze
+
+  # A metalava 4.0 file holds nothing but the banner, `package … {`, `}`, types and members.
+  NOISE = %r{\A(\}|package\s|//)}.freeze
+
+  SLACK_LIMIT = 10
+
+  # Slack stops wrapping code blocks past this; the full list is in the PR comment.
+  SLACK_WIDTH = 160
+
+  # GitHub answers 422 over 65536 characters, and Danger shares one comment across every rule.
+  MARKDOWN_LIMIT = 200
+  MARKDOWN_WIDTH = 200
+
+  module_function
+
+  def signature_file?(path)
+    basename = File.basename(path.to_s)
+
+    SIGNATURE_GLOBS.any? { |glob| File.fnmatch?(glob, basename) }
+  end
+
+  def module_name(path)
+    File.dirname(path.to_s).tr("/", ":")
+  end
+
+  def declarations(patch)
+    added = []
+    removed = []
+
+    patch.to_s.each_line do |raw_line|
+      sign = raw_line[0]
+      next unless sign == "+" || sign == "-"
+      next if raw_line.start_with?("+++", "---")
+
+      line = raw_line[1..].to_s.strip
+      next if line.empty? || NOISE.match?(line)
+
+      # Members end in `;`; only a type header carries the opening brace of its body.
+      (sign == "+" ? added : removed) << line.sub(/\s*\{\z/, "")
+    end
+
+    [added, removed]
+  end
+
+  # A member line omits its owning type, so two types in one file can add the same text. Identity is
+  # therefore the text plus how many times it has already appeared in that file.
+  def occurrences(declarations)
+    seen = Hash.new(0)
+
+    declarations.map do |declaration|
+      seen[declaration] += 1
+      [declaration, seen[declaration]]
+    end
+  end
+
+  def build(patches_by_path)
+    by_module = {}
+
+    patches_by_path.each do |path, patch|
+      path_added, path_removed = declarations(patch)
+      next if path_added.empty? && path_removed.empty?
+
+      # :purchases keeps two flavour files of largely the same surface, so a shared declaration
+      # lands in both. Union per module, which keeps repeats inside one file.
+      bucket = (by_module[module_name(path)] ||= { added: [], removed: [] })
+      bucket[:added] |= occurrences(path_added)
+      bucket[:removed] |= occurrences(path_removed)
+    end
+
+    modules = by_module.keys.sort
+
+    {
+      added: modules.flat_map { |name| by_module[name][:added].map(&:first) },
+      removed: modules.flat_map { |name| by_module[name][:removed].map(&:first) },
+      modules: modules
+    }
+  end
+
+  def empty?(report)
+    report[:added].empty? && report[:removed].empty?
+  end
+
+  def counts(report)
+    parts = []
+    parts << "#{report[:added].count} new declaration#{'s' if report[:added].count != 1}" if report[:added].any?
+    parts << "#{report[:removed].count} removed" if report[:removed].any?
+    parts.join(", ")
+  end
+
+  def diff_lines(report)
+    report[:removed].map { |declaration| "- #{declaration}" } +
+      report[:added].map { |declaration| "+ #{declaration}" }
+  end
+
+  def capped_lines(lines, limit:, width:)
+    shown = lines.first(limit).map do |line|
+      line.length > width ? "#{line[0, width - 1]}…" : line
+    end
+    remaining = lines.count - shown.count
+    shown << "…and #{remaining} more" if remaining.positive?
+
+    shown
+  end
+
+  # Of the rendered summary, not the report: joining the declaration lists would hash an addition of
+  # a declaration the same as its removal.
+  def fingerprint(message)
+    Digest::SHA256.hexdigest(message.to_s)[0, 12]
+  end
+
+  def fingerprint_marker(fingerprint)
+    "<!-- api-diff:#{fingerprint} -->"
+  end
+
+  def markdown_section(report, announced_fingerprint: nil)
+    summary = "Public API changes in #{report[:modules].join(', ')} (#{counts(report)})"
+    body = capped_lines(diff_lines(report), limit: MARKDOWN_LIMIT, width: MARKDOWN_WIDTH)
+
+    lines = [
+      "<details><summary>#{summary}</summary>",
+      "",
+      "```diff",
+      body.join("\n"),
+      "```",
+      "",
+      "</details>"
+    ]
+    lines << fingerprint_marker(announced_fingerprint) if announced_fingerprint
+
+    lines.join("\n")
+  end
+
+  def slack_message(report, pull_request_link)
+    # Metalava renders a changed signature as a removal plus an addition.
+    headline = report[:removed].any? ? ":warning: *Public API removed or changed*" : ":sparkles: *New public API*"
+    body = capped_lines(diff_lines(report), limit: SLACK_LIMIT, width: SLACK_WIDTH)
+
+    lines = [[headline, PLATFORM_LABEL, *report[:modules].map { |name| "`#{name}`" }].join(" · ")]
+    lines << pull_request_link unless pull_request_link.to_s.empty?
+    lines << counts(report)
+    lines << "```\n#{body.join("\n")}\n```"
+
+    lines.join("\n")
+  end
+
+  # The shared slack-secrets context still carries this token under its original iOS-only name.
+  TOKEN_VARIABLES = ["SLACK_ACCESS_TOKEN_CIRCLE_CI_NOTIFY_ORB", "SLACK_ACCESS_TOKEN_CIRCLE_CI_NOTIFY_ORB_IOS"].freeze
+
+  def slack_credentials
+    token = TOKEN_VARIABLES.map { |name| ENV[name].to_s }.find { |value| !value.empty? }
+    channel = ENV["SLACK_CHANNEL_SDK_NEW_API"].to_s
+    return nil if token.nil? || channel.empty?
+
+    [token, channel]
+  end
+
+  def slack_request(message, bot_token:, channel:)
+    {
+      url: "https://slack.com/api/chat.postMessage",
+      headers: { "Content-Type" => "application/json", "Authorization" => "Bearer #{bot_token}" },
+      body: { channel: channel, text: message }
+    }
+  end
+
+  SLACK_HISTORY_LIMIT = 100
+
+  # conversations.history takes a channel ID, never a `#name`.
+  CHANNEL_ID = /\A[CGD][A-Z0-9]+\z/.freeze
+
+  def history_request(channel, bot_token:, limit: SLACK_HISTORY_LIMIT)
+    {
+      url: "https://slack.com/api/conversations.history?channel=#{channel}&limit=#{limit}",
+      headers: { "Authorization" => "Bearer #{bot_token}" }
+    }
+  end
+
+  def recent_messages(request, getter: nil)
+    getter ||= ->(url, headers) { Net::HTTP.get_response(URI.parse(url), headers) }
+
+    response = getter.call(request[:url], request[:headers])
+    raise "Slack returned #{response.code}: #{response.body}" unless (200..299).cover?(response.code.to_i)
+
+    parsed = JSON.parse(response.body.to_s)
+    raise "Slack rejected conversations.history: #{parsed['error']}" unless parsed["ok"]
+
+    parsed["messages"].to_a.map { |message| message["text"].to_s }
+  end
+
+  # conversations.history answers newest first, so the first match is the channel's last word.
+  def last_announcement(texts, pull_request_link)
+    return nil if pull_request_link.to_s.empty?
+
+    texts.find { |text| text.include?(pull_request_link) && text.include?(PLATFORM_LABEL) }
+  end
+
+  # Each push starts two pipelines, and the auto-canceled one still posts before it dies, so the
+  # channel is the only store the sibling run can see in time.
+  # Returns [:same | :different | :unknown, why_unknown].
+  def announcement_state(message, channel, bot_token, getter, pull_request_link)
+    unless CHANNEL_ID.match?(channel.to_s)
+      return [:unknown, "#{channel} is a channel name, and conversations.history needs the channel ID"]
+    end
+
+    texts = recent_messages(history_request(channel, bot_token: bot_token), getter: getter)
+    last = last_announcement(texts, pull_request_link)
+    return [:unknown, nil] if last.nil?
+
+    [last == message ? :same : :different, nil]
+  rescue StandardError => e
+    [:unknown, e.message]
+  end
+
+  def post(request, poster: nil)
+    poster ||= ->(url, body, headers) { Net::HTTP.post(URI.parse(url), body, headers) }
+
+    response = poster.call(request[:url], request[:body].to_json, request[:headers])
+    raise "Slack returned #{response.code}: #{response.body}" unless (200..299).cover?(response.code.to_i)
+
+    # chat.postMessage answers 200 with ok:false.
+    parsed = begin
+      JSON.parse(response.body.to_s)
+    rescue JSON::ParserError
+      nil
+    end
+    raise "Slack rejected the message: #{parsed['error']}" if parsed.is_a?(Hash) && parsed["ok"] == false
+
+    nil
+  end
+
+  # Returns [:posted | :duplicate | :failed, reason_or_nil].
+  def announce(message, pull_request_link, credentials, poster, getter, announced_in_comment)
+    return [:failed, "no Slack credentials were reachable"] if credentials.nil?
+
+    bot_token, channel = credentials
+
+    state, history_error = announcement_state(message, channel, bot_token, getter, pull_request_link)
+    return [:duplicate, nil] if state == :same
+
+    if state == :unknown && announced_in_comment&.call(fingerprint_marker(fingerprint(message)))
+      return [:duplicate, nil]
+    end
+
+    post(slack_request(message, bot_token: bot_token, channel: channel), poster: poster)
+    [:posted, history_error]
+  rescue StandardError => e
+    [:failed, e.message]
+  end
+
+  def warning(outcome, reason)
+    return nil if reason.to_s.empty?
+
+    case outcome
+    when :failed
+      "The public API changed, but it was not announced in the SDK API feed: #{reason}."
+    when :posted
+      "Could not read the SDK API feed channel, so this change may be announced twice: #{reason}."
+    end
+  end
+
+  # Returns { comment:, warning: }, or nil when the public API did not change.
+  def run(changed_files:, patch_for:, pull_request_link:, credentials: slack_credentials, poster: nil,
+          getter: nil, announced_in_comment: nil)
+    signature_files = changed_files.uniq.select { |file| signature_file?(file) }
+    report = build(signature_files.to_h { |file| [file, patch_for.call(file)] })
+    return nil if empty?(report)
+
+    message = slack_message(report, pull_request_link)
+    outcome, reason = announce(message, pull_request_link, credentials, poster, getter, announced_in_comment)
+
+    {
+      comment: markdown_section(report, announced_fingerprint: (fingerprint(message) unless outcome == :failed)),
+      warning: warning(outcome, reason)
+    }
+  end
+end

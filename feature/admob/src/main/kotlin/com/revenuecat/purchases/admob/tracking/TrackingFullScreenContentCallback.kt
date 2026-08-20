@@ -10,6 +10,7 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdOpenedData
 import com.revenuecat.purchases.ads.events.types.AdRevenueData
+import com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata
 
 /**
  * A [FullScreenContentCallback] wrapper that injects RevenueCat ad-event tracking
@@ -75,6 +76,22 @@ internal class TrackingFullScreenContentCallback(
 
     override fun onAdImpression() {
         delegate?.onAdImpression()
+    }
+
+    /**
+     * Reward-verification tracking metadata for the ad this callback is attached to, reading
+     * [placement] at call time so a show-time override is reflected.
+     */
+    fun rewardTrackingMetadata(): RewardedAdTrackingMetadata {
+        val responseInfo = responseInfoProvider()
+        return RewardedAdTrackingMetadata(
+            networkName = responseInfo.mediationAdapterClassName,
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = adFormat,
+            placement = placement,
+            adUnitId = adUnitId,
+            impressionId = responseInfo.responseId.orEmpty(),
+        )
     }
 }
 

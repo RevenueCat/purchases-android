@@ -5,7 +5,10 @@ package com.revenuecat.purchases
 import android.app.Activity
 import android.app.Application
 import android.app.backup.BackupManager
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.util.Pair
@@ -18,6 +21,7 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
+import com.revenuecat.purchases.checkpoints.CheckpointEvent
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolver
 import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolverImpl
@@ -76,6 +80,7 @@ import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
+import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
 import com.revenuecat.purchases.interfaces.ProductChangeCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.PurchaseErrorCallback
@@ -436,7 +441,15 @@ internal class PurchasesOrchestrator(
     suspend fun resolveCheckpoint(
         checkpointIdentifier: String,
         customVariables: Map<String, RulesDimensionValue>,
-    ): CheckpointResolution = checkpointWorkflowResolver.resolve(checkpointIdentifier, customVariables)
+    ): CheckpointResolution {
+        track(
+            CheckpointEvent(
+                identifier = checkpointIdentifier,
+                timestamp = dateProvider.now,
+            ),
+        )
+        return checkpointWorkflowResolver.resolve(checkpointIdentifier, customVariables)
+    }
 
     fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
         storefrontCountryCode?.let {
@@ -969,6 +982,46 @@ internal class PurchasesOrchestrator(
         billing.showInAppMessagesIfNeeded(activity, inAppMessageTypes) {
             syncPurchases()
         }
+    }
+
+    fun showManageSubscriptions(context: Context, callback: ManageSubscriptionsCallback?) {
+        getCustomerInfo(
+            CacheFetchPolicy.CACHED_OR_FETCHED,
+            trackDiagnostics = false,
+            object : ReceiveCustomerInfoCallback {
+                override fun onReceived(customerInfo: CustomerInfo) {
+                    val managementURL = customerInfo.managementURL
+                        ?: appConfig.store.managementUrl?.let { Uri.parse(it) }
+                    if (managementURL == null) {
+                        val error = PurchasesError(
+                            PurchasesErrorCode.UnsupportedError,
+                            "No management URL found for current subscription",
+                        )
+                        errorLog(error)
+                        callback?.onError(error)
+                        return
+                    }
+                    try {
+                        context.startActivity(
+                            Intent(Intent.ACTION_VIEW, managementURL)
+                                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                        )
+                        callback?.onSuccess()
+                    } catch (e: ActivityNotFoundException) {
+                        val error = PurchasesError(
+                            PurchasesErrorCode.UnknownError,
+                            "Cannot open subscription management URL: ${e.message}",
+                        )
+                        errorLog(error)
+                        callback?.onError(error)
+                    }
+                }
+
+                override fun onError(error: PurchasesError) {
+                    callback?.onError(error)
+                }
+            },
+        )
     }
 
     fun invalidateCustomerInfoCache() {
