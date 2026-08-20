@@ -42,12 +42,19 @@ internal class LocalRulesEvaluator(
      * failed to ask". A predicate that reads a dimension this SDK version does not supply is not a failure at all
      * — the engine resolves it to null, which is an ordinary non-match.
      *
+     * When a predicate must be resolved before it can be evaluated, a resolution failure fails the call immediately.
      * [customVariables] are the caller's own values for this evaluation, readable under `custom.*`.
      */
-    @Suppress("ReturnCount")
     suspend fun <Rule : LocalRule> match(
         rules: List<Rule>,
         customVariables: Map<String, RulesDimensionValue> = emptyMap(),
+    ): Result<Rule?> = match(rules, customVariables) { rule -> Result.success(rule.predicate) }
+
+    @Suppress("ReturnCount")
+    suspend fun <Rule> match(
+        rules: List<Rule>,
+        customVariables: Map<String, RulesDimensionValue> = emptyMap(),
+        predicateFor: suspend (Rule) -> Result<String>,
     ): Result<Rule?> {
         if (rules.isEmpty()) return Result.success(null)
 
@@ -60,7 +67,8 @@ internal class LocalRulesEvaluator(
 
         var firstFailure: LocalRulesEvaluationException.PredicateEvaluation? = null
         for ((index, rule) in rules.withIndex()) {
-            val result = RulesEngine.evaluate(rule.predicate, snapshot.values)
+            val predicate = predicateFor(rule).getOrElse { error -> return Result.failure(error) }
+            val result = RulesEngine.evaluate(predicate, snapshot.values)
             val matches = result.getOrElse { error ->
                 if (firstFailure == null) {
                     firstFailure = LocalRulesEvaluationException.PredicateEvaluation(index, error)

@@ -39,6 +39,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
@@ -180,6 +181,8 @@ internal class PurchasesOrchestrator(
     private val uiConfigProvider: UiConfigProvider? = null,
     private val workflowsConfigProvider: WorkflowsConfigProvider? = null,
     private val checkpointsConfigProvider: CheckpointsConfigProvider? = null,
+    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val audiencesConfigProvider: AudiencesConfigProvider? = null,
     @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
     private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
@@ -189,6 +192,7 @@ internal class PurchasesOrchestrator(
         workflowManager = workflowManager,
         uiConfigProvider = uiConfigProvider,
         checkpointsConfigProvider = checkpointsConfigProvider,
+        audiencesConfigProvider = audiencesConfigProvider,
         localRulesEvaluator = localRulesEvaluator,
         getOfferings = { Purchases.sharedInstance.awaitOfferings() },
     ),
