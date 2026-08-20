@@ -12,7 +12,7 @@ import com.revenuecat.purchases.rules.Value
  */
 internal object CustomOperators {
 
-    @Suppress("UnusedParameter", "UNUSED_PARAMETER", "UNUSED_EXPRESSION")
+    @Suppress("UnusedParameter")
     fun dispatch(
         op: String,
         args: Value,
