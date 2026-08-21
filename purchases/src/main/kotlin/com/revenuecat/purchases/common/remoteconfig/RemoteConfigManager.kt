@@ -249,7 +249,9 @@ internal class RemoteConfigManager(
     ) {
         val persisted = diskCache.read()
         val storedBlobs = blobStore.cachedRefs()
-        val domain = persisted?.domain ?: DEFAULT_DOMAIN
+        val domain = persisted?.rootDomain ?: DEFAULT_DOMAIN
+        // Request bookkeeping is domain-scoped: each domain replays its own manifest/refresh time/prefetch set.
+        val domainState = persisted?.domains?.get(domain)
         logRefreshStart(persisted, appInBackground)
         backend.getRemoteConfig(
             appInBackground = appInBackground,
@@ -257,10 +259,10 @@ internal class RemoteConfigManager(
             fetchContext = requestFetchContext,
             domain = domain,
             // Opaque manifest replayed verbatim; null on the first run when nothing is persisted yet.
-            manifest = persisted?.manifest,
-            lastRefreshTime = persisted?.lastRefreshTime?.let(::Date),
+            manifest = domainState?.manifest,
+            lastRefreshTime = domainState?.lastRefreshTime?.let(::Date),
             // Report only the prefetch blobs we actually hold, so the server stops re-inlining them.
-            prefetchedBlobs = persisted?.prefetchBlobs?.filter { storedBlobs.contains(it) } ?: emptyList(),
+            prefetchedBlobs = domainState?.prefetchBlobs?.filter { storedBlobs.contains(it) } ?: emptyList(),
             onSuccess = { container, requestDate, _ ->
                 handleMainRefreshSuccess(requestEpoch, persisted, container, requestDate)
             },
@@ -269,7 +271,7 @@ internal class RemoteConfigManager(
                     requestEpoch,
                     appInBackground,
                     domain,
-                    hasCachedConfig = persisted != null,
+                    hasCachedConfig = domainState != null,
                     error,
                     behavior,
                 )
@@ -431,7 +433,12 @@ internal class RemoteConfigManager(
                     // the previous value carries forward. Re-read instead of reusing the request's snapshot, and
                     // skip when nothing is persisted: a 204 must never resurrect a cache that was wiped meanwhile.
                     if (requestDate != null) {
-                        diskCache.read()?.let { diskCache.write(it.copy(lastRefreshTime = requestDate.time)) }
+                        diskCache.read()?.let { state ->
+                            state.rootState?.let { root ->
+                                val refreshed = root.copy(lastRefreshTime = requestDate.time)
+                                diskCache.write(state.copy(domains = state.domains + (state.rootDomain to refreshed)))
+                            }
+                        }
                     }
                 }
             } finally {
@@ -442,8 +449,8 @@ internal class RemoteConfigManager(
 
     private fun logRefreshStart(persisted: PersistedRemoteConfigurationState?, appInBackground: Boolean) {
         verboseLog {
-            "Refreshing remote config (domain=${persisted?.domain ?: DEFAULT_DOMAIN}, " +
-                "manifest present=${persisted?.manifest != null}, appInBackground=$appInBackground)."
+            "Refreshing remote config (domain=${persisted?.rootDomain ?: DEFAULT_DOMAIN}, " +
+                "manifest present=${persisted?.rootState?.manifest != null}, appInBackground=$appInBackground)."
         }
     }
 
@@ -876,30 +883,37 @@ internal class RemoteConfigManager(
             "Received remote config: active topics=${response.activeTopics}; changed topics: " +
                 "[${changed.ifEmpty { "none" }}]."
         }
-        val previousTopics = previous?.topics ?: emptyMap()
+        val previousDomainState = previous?.domains?.get(response.domain)
+        val previousTopics = previousDomainState?.topics ?: emptyMap()
         // Changed topics (present in the response) overwrite their item index; unchanged active topics keep their
         // carried-forward index (the server omits them); topics no longer active are pruned.
         val mergedTopics = (previousTopics + response.topics)
             .filterKeys { it in response.activeTopics }
-        // Blobs the current config still wants: the prefetch set plus any active-topic blob ref.
-        val blobRefsToKeep = response.prefetchBlobs.toSet() + mergedTopics.toTopicBlobRefs().values.flatten()
+        // Blobs this domain's config still wants: the prefetch set plus any active-topic blob ref.
+        val domainBlobRefs = response.prefetchBlobs.toSet() + mergedTopics.toTopicBlobRefs().values.flatten()
 
         // Persist the configuration first: the full topic index (incl. each item's inline content) plus the
         // manifest the server diffs against is the source of truth, and persisting it IS the entire commit (the
         // manifest advances unconditionally). Inline blobs are recoverable over the network, so only touch the
         // blob store once the state is durably committed — a failed persist never orphans or evicts blobs.
-        val persisted = diskCache.write(
-            PersistedRemoteConfigurationState(
-                domain = response.domain,
-                manifest = response.manifest,
-                activeTopics = response.activeTopics,
-                prefetchBlobs = response.prefetchBlobs,
-                topics = mergedTopics,
-                // Server time only: a response without it carries the last server-supplied value forward rather
-                // than substituting a device-clock reading the server cannot compare against its own.
-                lastRefreshTime = requestDate?.time ?: previous?.lastRefreshTime,
-            ),
+        // A root rename replaces the whole tree (old entries would be unreachable stale state, not history).
+        val carriedDomains = previous?.domains?.takeIf { previous.rootDomain == response.domain } ?: emptyMap()
+        val newState = PersistedRemoteConfigurationState(
+            rootDomain = response.domain,
+            domains = carriedDomains + (
+                response.domain to PersistedDomainState(
+                    manifest = response.manifest,
+                    subdomains = response.subdomains,
+                    activeTopics = response.activeTopics,
+                    prefetchBlobs = response.prefetchBlobs,
+                    topics = mergedTopics,
+                    // Server time only: a response without it carries the last server-supplied value forward
+                    // rather than substituting a device-clock reading the server cannot compare against its own.
+                    lastRefreshTime = requestDate?.time ?: previousDomainState?.lastRefreshTime,
+                )
+                ),
         )
+        val persisted = diskCache.write(newState)
 
         if (persisted) {
             // The staleness gate measures elapsed *local* time (isCacheStale subtracts from dateProvider.now), so
@@ -909,10 +923,12 @@ internal class RemoteConfigManager(
             hasCommittedInitialConfig = true
             debugLog {
                 "Persisted remote config (domain=${response.domain}, ${response.activeTopics.size} active topics, " +
-                    "${blobRefsToKeep.size} blobs wanted)."
+                    "${domainBlobRefs.size} blobs wanted)."
             }
-            container?.let { extractInlineBlobs(it, blobRefsToKeep) }
-            blobStore.retainOnly(blobRefsToKeep)
+            container?.let { extractInlineBlobs(it, domainBlobRefs) }
+            // Retention spans every persisted domain, never just the one that synced: another domain's blobs
+            // must survive this domain's cleanup.
+            blobStore.retainOnly(newState.liveBlobRefs)
             prefetchBlobs(response, mergedTopics)
             // A new version is committed: advance the generation and let listeners re-warm their in-memory
             // caches. Runs under cacheLock (both persist callers hold it), so the bump+notify is serialized

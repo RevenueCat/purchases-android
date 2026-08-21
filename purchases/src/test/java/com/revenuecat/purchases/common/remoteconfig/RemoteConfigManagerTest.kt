@@ -91,7 +91,7 @@ class RemoteConfigManagerTest {
         backend = mockk()
         diskCache = mockk(relaxed = true)
         blobStore = mockk(relaxed = true)
-        topicStore = RemoteConfigTopicStore { diskCache.read()?.topics?.get(it.wireName) }
+        topicStore = RemoteConfigTopicStore { diskCache.read()?.mergedTopics?.get(it.wireName) }
         sourceProvider = mockk(relaxed = true)
         blobFetcher = mockk(relaxed = true)
         manager = RemoteConfigManager(
@@ -528,11 +528,11 @@ class RemoteConfigManagerTest {
 
         val written = slot<PersistedRemoteConfigurationState>()
         verify(exactly = 1) { diskCache.write(capture(written)) }
-        assertThat(written.captured.manifest).isEqualTo("v1.200.sources:etag2")
-        assertThat(written.captured.activeTopics).containsExactly("sources")
-        assertThat(written.captured.prefetchBlobs).containsExactly("newBlob")
-        assertThat(written.captured.topics).containsOnlyKeys("sources")
-        assertThat(written.captured.topics["sources"]!!["default"]!!.blobRef).isEqualTo("newBlob")
+        assertThat(written.captured.root.manifest).isEqualTo("v1.200.sources:etag2")
+        assertThat(written.captured.root.activeTopics).containsExactly("sources")
+        assertThat(written.captured.root.prefetchBlobs).containsExactly("newBlob")
+        assertThat(written.captured.root.topics).containsOnlyKeys("sources")
+        assertThat(written.captured.root.topics["sources"]!!["default"]!!.blobRef).isEqualTo("newBlob")
     }
 
     @Test
@@ -562,11 +562,11 @@ class RemoteConfigManagerTest {
 
         val written = slot<PersistedRemoteConfigurationState>()
         verify(exactly = 1) { diskCache.write(capture(written)) }
-        assertThat(written.captured.topics).containsOnlyKeys("sources", "workflows")
+        assertThat(written.captured.root.topics).containsOnlyKeys("sources", "workflows")
         // Changed topic overwritten with the new index.
-        assertThat(written.captured.topics["sources"]!!["default"]!!.blobRef).isEqualTo("newSources")
+        assertThat(written.captured.root.topics["sources"]!!["default"]!!.blobRef).isEqualTo("newSources")
         // Unchanged-but-active topic carried forward verbatim (the server omitted its body).
-        assertThat(written.captured.topics["workflows"]!!["wf1"]!!.blobRef).isEqualTo("wfBlob")
+        assertThat(written.captured.root.topics["workflows"]!!["wf1"]!!.blobRef).isEqualTo("wfBlob")
     }
 
     @Test
@@ -676,6 +676,60 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `a root sync retains blobs referenced by other persisted domains`() {
+        val cached = persisted(manifest = "v1.1.sources:etag1").withDomain(
+            "app_workflows",
+            PersistedDomainState(
+                manifest = "v1.1.workflows:etagW",
+                activeTopics = listOf("workflows"),
+                prefetchBlobs = listOf("subPrefetchBlob"),
+                topics = mapOf(
+                    "workflows" to ConfigTopic(
+                        mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = "subTopicBlob")),
+                    ),
+                ),
+            ),
+        )
+        every { diskCache.read() } returns cached
+        val response = """
+            {
+              "domain": "app",
+              "manifest": "v1.200.sources:etag2",
+              "active_topics": ["sources"],
+              "prefetch_blobs": ["rootBlob"],
+              "topics": { "sources": { "default": { "blob_ref": "rootBlob" } } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccess(containerWithConfig(response))
+
+        val retained = slot<Set<String>>()
+        verify(exactly = 1) { blobStore.retainOnly(capture(retained)) }
+        // Retention spans every persisted domain: a root sync must never evict another domain's blobs.
+        assertThat(retained.captured)
+            .containsExactlyInAnyOrder("rootBlob", "subPrefetchBlob", "subTopicBlob")
+    }
+
+    @Test
+    fun `the request reports only the root domain's held prefetch blobs`() {
+        val cached = persisted(
+            manifest = "v1.1.sources:etag1",
+            prefetchBlobs = listOf(REF_VALID),
+        ).withDomain(
+            "app_workflows",
+            PersistedDomainState(manifest = "v1.1.workflows:etagW", prefetchBlobs = listOf(REF_TAMPERED)),
+        )
+        every { diskCache.read() } returns cached
+        every { blobStore.cachedRefs() } returns setOf(REF_VALID, REF_TAMPERED)
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+
+        // prefetched_blobs is domain-scoped bookkeeping: another domain's held blobs are not this request's.
+        assertThat(capturedPrefetchedBlobs).containsExactly(REF_VALID)
+    }
+
+    @Test
     fun `a 200 response records no blob refs for an inline-only topic and does no blob work`() {
         every { diskCache.read() } returns null
         val response = """
@@ -697,8 +751,8 @@ class RemoteConfigManagerTest {
         val written = slot<PersistedRemoteConfigurationState>()
         verify(exactly = 1) { diskCache.write(capture(written)) }
         // An inline-only topic is persisted with its inline content and no blob_ref, and triggers no blob write.
-        assertThat(written.captured.topics).containsOnlyKeys("sources")
-        assertThat(written.captured.topics["sources"]!!["api"]!!.blobRef).isNull()
+        assertThat(written.captured.root.topics).containsOnlyKeys("sources")
+        assertThat(written.captured.root.topics["sources"]!!["api"]!!.blobRef).isNull()
         verify(exactly = 0) { blobStore.write(any(), any()) }
     }
 
@@ -827,7 +881,7 @@ class RemoteConfigManagerTest {
         deliverSuccess(null)
 
         // The only thing a 204 rewrites is the refresh time; the configuration itself carries forward verbatim.
-        verify(exactly = 1) { diskCache.write(cached.copy(lastRefreshTime = SERVER_MILLIS)) }
+        verify(exactly = 1) { diskCache.write(cached.withRootRefreshTime(SERVER_MILLIS)) }
         verify(exactly = 0) { blobStore.write(any(), any()) }
         verify(exactly = 0) { blobStore.retainOnly(any()) }
     }
@@ -841,7 +895,7 @@ class RemoteConfigManagerTest {
         deliverSuccess(null)
 
         // SERVER_MILLIS, not the FIXED_MILLIS device clock: the server's own time is what gets replayed.
-        verify(exactly = 1) { diskCache.write(cached.copy(lastRefreshTime = SERVER_MILLIS)) }
+        verify(exactly = 1) { diskCache.write(cached.withRootRefreshTime(SERVER_MILLIS)) }
     }
 
     @Test
@@ -891,7 +945,7 @@ class RemoteConfigManagerTest {
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
         deliverSuccess(containerWithConfig("""{"domain":"app","manifest":"v1.2."}"""))
 
-        assertThat(slot.captured.lastRefreshTime).isEqualTo(SERVER_MILLIS)
+        assertThat(slot.captured.root.lastRefreshTime).isEqualTo(SERVER_MILLIS)
     }
 
     @Test
@@ -904,8 +958,8 @@ class RemoteConfigManagerTest {
         deliverSuccess(containerWithConfig("""{"domain":"app","manifest":"v1.2."}"""), requestDate = null)
 
         // The manifest advances, but the refresh time holds at the last value the server actually supplied.
-        assertThat(slot.captured.manifest).isEqualTo("v1.2.")
-        assertThat(slot.captured.lastRefreshTime).isEqualTo(SERVER_MILLIS - 10_000L)
+        assertThat(slot.captured.root.manifest).isEqualTo("v1.2.")
+        assertThat(slot.captured.root.lastRefreshTime).isEqualTo(SERVER_MILLIS - 10_000L)
     }
 
     @Test
@@ -917,7 +971,7 @@ class RemoteConfigManagerTest {
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
         deliverSuccess(containerWithConfig("""{"domain":"app","manifest":"v1.2."}"""), requestDate = null)
 
-        assertThat(slot.captured.lastRefreshTime).isNull()
+        assertThat(slot.captured.root.lastRefreshTime).isNull()
     }
 
     @Test
@@ -1360,11 +1414,11 @@ class RemoteConfigManagerTest {
 
         val written = slot<PersistedRemoteConfigurationState>()
         verify(exactly = 1) { diskCache.write(capture(written)) }
-        assertThat(written.captured.manifest).isEqualTo("v1.fallback.sources:etag")
-        assertThat(written.captured.activeTopics).containsExactly("sources")
-        assertThat(written.captured.topics["sources"]!!["default"]!!.blobRef).isEqualTo("newBlob")
+        assertThat(written.captured.root.manifest).isEqualTo("v1.fallback.sources:etag")
+        assertThat(written.captured.root.activeTopics).containsExactly("sources")
+        assertThat(written.captured.root.topics["sources"]!!["default"]!!.blobRef).isEqualTo("newBlob")
         // The fallback host is not the main API, so its clock is never borrowed as the refresh time.
-        assertThat(written.captured.lastRefreshTime).isNull()
+        assertThat(written.captured.root.lastRefreshTime).isNull()
     }
 
     @Test
@@ -2729,13 +2783,28 @@ class RemoteConfigManagerTest {
         topics: Map<String, ConfigTopic> = emptyMap(),
         lastRefreshTime: Long? = null,
     ) = PersistedRemoteConfigurationState(
-        domain = domain,
-        manifest = manifest,
-        activeTopics = activeTopics,
-        prefetchBlobs = prefetchBlobs,
-        topics = topics,
-        lastRefreshTime = lastRefreshTime,
+        rootDomain = domain,
+        domains = mapOf(
+            domain to PersistedDomainState(
+                manifest = manifest,
+                activeTopics = activeTopics,
+                prefetchBlobs = prefetchBlobs,
+                topics = topics,
+                lastRefreshTime = lastRefreshTime,
+            ),
+        ),
     )
+
+    /** The root domain's persisted entry — where a single-domain sync's bookkeeping lands. */
+    private val PersistedRemoteConfigurationState.root: PersistedDomainState
+        get() = domains.getValue(rootDomain)
+
+    /** The state a 204 writes: the same tree with only the root domain's refresh time advanced. */
+    private fun PersistedRemoteConfigurationState.withRootRefreshTime(time: Long) =
+        copy(domains = domains + (rootDomain to root.copy(lastRefreshTime = time)))
+
+    private fun PersistedRemoteConfigurationState.withDomain(name: String, state: PersistedDomainState) =
+        copy(domains = domains + (name to state))
 
     /**
      * A fake inline blob element for a container mock: [ref] is what the manager reads to decide whether it

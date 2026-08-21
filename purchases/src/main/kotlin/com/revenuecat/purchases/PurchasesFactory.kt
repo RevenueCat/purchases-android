@@ -222,7 +222,7 @@ internal class PurchasesFactory(
             val remoteConfigEnabled = !appConfig.customEntitlementComputation
             val remoteConfigDiskCache = if (remoteConfigEnabled) RemoteConfigDiskCache(contextForStorage) else null
             val remoteConfigTopicStore = RemoteConfigTopicStore {
-                remoteConfigDiskCache?.read()?.topics?.get(it.wireName)
+                remoteConfigDiskCache?.read()?.mergedTopics?.get(it.wireName)
             }
             val apiSourceProvider = DefaultRemoteConfigSourceProvider(remoteConfigTopicStore)
             val apiSourceFailover = APISourceFailover(

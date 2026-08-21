@@ -112,7 +112,7 @@ class WorkflowsConfigIntegrationTest {
             blobFetcher = fetcher,
             scope = testScope,
             ioDispatcher = testDispatcher,
-            topicStore = RemoteConfigTopicStore { diskCache.read()?.topics?.get(it.wireName) },
+            topicStore = RemoteConfigTopicStore { diskCache.read()?.mergedTopics?.get(it.wireName) },
             sourceProvider = FakeBlobSourceProvider,
             appUserIDProvider = { appUserID },
         )
