@@ -63,7 +63,7 @@ class StoreDimensionProviderTest {
             assertThat(snapshot.isSuccess).describedAs("%s", failure).isTrue()
             assertThat(snapshot.getOrThrow().values)
                 .describedAs("%s", failure)
-                .containsOnlyKeys("device")
+                .containsOnlyKeys(RULES_NOW_KEY, "device")
         }
     }
 

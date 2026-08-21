@@ -35,6 +35,8 @@ internal sealed class RulesDimensionResolutionException(message: String) : Excep
  * under the provider's namespace.
  *
  * All providers see the same reference instant, so every dimension in one snapshot is consistent with the others.
+ * That instant is also exposed at the root as [RULES_NOW_KEY] (Unix epoch milliseconds). The clock is read once,
+ * before providers run, so every predicate in the evaluation sees the same value.
  *
  * Both failure modes are configuration bugs rather than runtime conditions — a provider that cannot produce its
  * values, and two providers claiming the same path — so they fail the whole snapshot instead of silently
@@ -81,7 +83,10 @@ internal class RulesDimensionResolver(
 
         return Result.success(
             RulesDimensionSnapshot(
-                values = values.mapValues { (_, dimensions) -> Value.ObjectValue(dimensions) },
+                values = buildMap {
+                    put(RULES_NOW_KEY, Value.IntValue(date.time))
+                    putAll(values.mapValues { (_, dimensions) -> Value.ObjectValue(dimensions) })
+                },
                 evaluationDate = date,
             ),
         )
@@ -131,6 +136,8 @@ private fun Map<String, RulesDimensionValue>.filterReachable(
         }
     }
 }
+
+internal const val RULES_NOW_KEY = "now"
 
 private const val DIMENSION_PATH_SEPARATOR = '.'
 

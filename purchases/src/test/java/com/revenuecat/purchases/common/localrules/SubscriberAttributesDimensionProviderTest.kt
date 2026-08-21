@@ -117,7 +117,9 @@ class SubscriberAttributesDimensionProviderTest {
             ).snapshot()
 
             assertThat(snapshot.isSuccess).describedAs("%s", failure).isTrue()
-            assertThat(snapshot.getOrThrow().values).describedAs("%s", failure).containsOnlyKeys("device")
+            assertThat(snapshot.getOrThrow().values)
+                .describedAs("%s", failure)
+                .containsOnlyKeys(RULES_NOW_KEY, "device")
         }
     }
 

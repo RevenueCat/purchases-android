@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.common.localrules
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.rules.RulesEngine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -173,6 +174,26 @@ class LocalRulesEvaluatorTest {
         }
 
         assertThat(snapshotsTaken).isEqualTo(1)
+    }
+
+    @Test
+    fun `every rule in a match sees the same now`() = runTest {
+        val first = Date(100_000)
+        val later = Date(200_000)
+        val clock = object : DateProvider {
+            private var reads = 0
+            override val now: Date
+                get() = if (reads++ == 0) first else later
+        }
+
+        val result = LocalRulesEvaluator(providers = emptyList(), dateProvider = clock).match(
+            listOf(
+                TestRule("later-clock", """{"==": [{"var": "now"}, ${later.time}]}"""),
+                TestRule("gathering-clock", """{"==": [{"var": "now"}, ${first.time}]}"""),
+            ),
+        )
+
+        assertThat(result.getOrThrow()?.name).isEqualTo("gathering-clock")
     }
 
     private fun evaluator() = LocalRulesEvaluator(providers = listOf(deviceProvider))

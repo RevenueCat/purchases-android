@@ -32,7 +32,10 @@ class RulesDimensionResolverTest {
         val values = resolver.snapshot().getOrThrow().values
 
         assertThat(values).isEqualTo(
-            mapOf("device" to Value.ObjectValue(mapOf("appVersion" to Value.StringValue("1.2.3")))),
+            mapOf(
+                RULES_NOW_KEY to Value.IntValue(evaluationDate.time),
+                "device" to Value.ObjectValue(mapOf("appVersion" to Value.StringValue("1.2.3"))),
+            ),
         )
     }
 
@@ -59,6 +62,7 @@ class RulesDimensionResolverTest {
 
         assertThat(values).isEqualTo(
             mapOf(
+                RULES_NOW_KEY to Value.IntValue(evaluationDate.time),
                 "device" to Value.ObjectValue(
                     mapOf(
                         "platform" to Value.StringValue("android"),
@@ -136,6 +140,43 @@ class RulesDimensionResolverTest {
 
         assertThat(dates).containsExactly(evaluationDate, evaluationDate)
         assertThat(snapshot.evaluationDate).isEqualTo(evaluationDate)
+        assertThat(snapshot.values[RULES_NOW_KEY]).isEqualTo(Value.IntValue(evaluationDate.time))
+    }
+
+    @Test
+    fun `now is the gathering instant, not a later clock read`() = runTest {
+        val later = Date(evaluationDate.time + 60_000)
+        val clock = CountingDateProvider(evaluationDate, later)
+        val resolver = RulesDimensionResolver(
+            providers = listOf(provider(RulesDimensionNamespace.Device, "platform" to string("android"))),
+            dateProvider = clock,
+        )
+
+        val values = resolver.snapshot().getOrThrow().values
+
+        assertThat(clock.reads).isEqualTo(1)
+        assertThat(values[RULES_NOW_KEY]).isEqualTo(Value.IntValue(evaluationDate.time))
+        assertThat(
+            RulesEngine.evaluate("""{"==": [{"var": "now"}, ${evaluationDate.time}]}""", values).getOrThrow(),
+        ).isTrue()
+    }
+
+    @Test
+    fun `now is readable by every predicate against the snapshot`() = runTest {
+        val resolver = resolver(
+            provider(RulesDimensionNamespace.Device, "platform" to string("android")),
+        )
+        val values = resolver.snapshot().getOrThrow().values
+
+        assertThat(
+            RulesEngine.evaluate(
+                """{"and": [
+                    {"==": [{"var": "device.platform"}, "android"]},
+                    {">": [{"var": "now"}, ${evaluationDate.time - 1}]}
+                ]}""",
+                values,
+            ).getOrThrow(),
+        ).isTrue()
     }
 
     @Test
@@ -288,7 +329,7 @@ class RulesDimensionResolverTest {
 
         val values = resolver.snapshot().getOrThrow().values
 
-        assertThat(values).containsOnlyKeys("device")
+        assertThat(values).containsOnlyKeys(RULES_NOW_KEY, "device")
         // An empty object would be truthy, so an absent namespace is what makes this a non-match.
         assertThat(RulesEngine.evaluate("""{"!!": [{"var": "custom"}]}""", values).getOrThrow()).isFalse()
     }
@@ -311,7 +352,7 @@ class RulesDimensionResolverTest {
 
         val values = resolver.snapshot().getOrThrow().values
 
-        assertThat(values).containsOnlyKeys("device")
+        assertThat(values).containsOnlyKeys(RULES_NOW_KEY, "device")
         // An empty object would be truthy, which is what makes the absence matter.
         assertThat(RulesEngine.evaluate("""{"!!": [{"var": "store"}]}""", values).getOrThrow()).isFalse()
     }
@@ -345,15 +386,16 @@ class RulesDimensionResolverTest {
         val values = resolver.snapshot().getOrThrow().values
 
         // Filtering the names inside the namespace would leave an empty object behind, which is truthy.
-        assertThat(values).containsOnlyKeys("device")
+        assertThat(values).containsOnlyKeys(RULES_NOW_KEY, "device")
         assertThat(
             RulesEngine.evaluate("""{"!!": [{"var": "subscriberAttributes"}]}""", values).getOrThrow(),
         ).isFalse()
     }
 
     @Test
-    fun `no providers yields an empty scope`() = runTest {
-        assertThat(resolver().snapshot().getOrThrow().values).isEmpty()
+    fun `no providers still exposes now`() = runTest {
+        assertThat(resolver().snapshot().getOrThrow().values)
+            .isEqualTo(mapOf(RULES_NOW_KEY to Value.IntValue(evaluationDate.time)))
     }
 
     private fun resolver(vararg providers: RulesDimensionProvider) = RulesDimensionResolver(
@@ -362,6 +404,18 @@ class RulesDimensionResolverTest {
             override val now: Date = evaluationDate
         },
     )
+
+    private class CountingDateProvider(vararg instants: Date) : DateProvider {
+        private val instants = instants.toList()
+        var reads = 0
+            private set
+        override val now: Date
+            get() {
+                val date = instants[reads.coerceAtMost(instants.lastIndex)]
+                reads++
+                return date
+            }
+    }
 
     private fun string(value: String) = RulesDimensionValue.StringValue(value)
 
