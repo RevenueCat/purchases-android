@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicReference
 import kotlin.concurrent.thread
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(InternalRevenueCatAPI::class, ExperimentalCoroutinesApi::class)
@@ -82,6 +83,16 @@ class RemoteConfigManagerTest {
     private var capturedPrefetchedBlobs: List<String>? = null
     private lateinit var onSuccess: (RCContainer?, Date?, VerificationResult) -> Unit
     private lateinit var onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit
+
+    // Per-domain views of the same captures, for tree-sync tests that answer more than one domain's request.
+    private val requestedDomains = mutableListOf<String>()
+    private val capturedManifestByDomain = mutableMapOf<String, String?>()
+    private val capturedPrefetchedBlobsByDomain = mutableMapOf<String, List<String>>()
+    private val onSuccessByDomain = mutableMapOf<String, (RCContainer?, Date?, VerificationResult) -> Unit>()
+    private val onErrorByDomain = mutableMapOf<String, (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit>()
+
+    // Every state handed to diskCache.write(), in order, for tests asserting per-domain commit ordering.
+    private val writtenStates = mutableListOf<PersistedRemoteConfigurationState>()
 
     private lateinit var onFallbackSuccess: (RemoteConfiguration, VerificationResult) -> Unit
     private lateinit var onFallbackError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit
@@ -120,6 +131,12 @@ class RemoteConfigManagerTest {
             capturedPrefetchedBlobs = arg(6)
             onSuccess = arg(7)
             onError = arg(8)
+            val domain = arg<String>(3)
+            requestedDomains += domain
+            capturedManifestByDomain[domain] = arg(4)
+            capturedPrefetchedBlobsByDomain[domain] = arg(6)
+            onSuccessByDomain[domain] = arg(7)
+            onErrorByDomain[domain] = arg(8)
         }
 
         every {
@@ -2767,12 +2784,302 @@ class RemoteConfigManagerTest {
 
     // endregion
 
+    // region Subdomain tree sync
+
+    @Test
+    fun `a root response with subdomains syncs each subdomain with its own request bookkeeping`() {
+        statefulDiskCache(
+            persisted(manifest = "v1.root.old", domain = "app").withDomain(
+                "app_workflows",
+                PersistedDomainState(manifest = "v1.child.old", prefetchBlobs = listOf(REF_VALID)),
+            ),
+        )
+        every { blobStore.cachedRefs() } returns setOf(REF_VALID)
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        assertThat(capturedManifestByDomain["app"]).isEqualTo("v1.root.old")
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("app_workflows"))))
+
+        // The child request replays the child's own manifest and held prefetch blobs, not the root's.
+        assertThat(requestedDomains).containsExactly("app", "app_workflows")
+        assertThat(capturedManifestByDomain["app_workflows"]).isEqualTo("v1.child.old")
+        assertThat(capturedPrefetchedBlobsByDomain["app_workflows"]).containsExactly(REF_VALID)
+    }
+
+    @Test
+    fun `a brand-new subdomain is synced without a manifest`() {
+        statefulDiskCache(persisted(manifest = "v1.root.old", domain = "app"))
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("app_workflows"))))
+
+        assertThat(capturedManifestByDomain["app_workflows"]).isNull()
+    }
+
+    @Test
+    fun `subdomains commit before their parent so a migrating topic never leaves the merged view`() {
+        // The root currently serves "workflows"; this pass moves it to the app_workflows subdomain.
+        statefulDiskCache(
+            persisted(
+                manifest = "v1.root.old",
+                activeTopics = listOf("workflows"),
+                topics = mapOf(
+                    "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = "rootCopy"))),
+                ),
+            ),
+        )
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("app_workflows"))))
+        deliverSuccessFor(
+            "app_workflows",
+            containerWithConfig(
+                configJson(
+                    "app_workflows",
+                    "v1.child.new",
+                    activeTopics = listOf("workflows"),
+                    topics = """{ "workflows": { "wf1": { "blob_ref": "childCopy" } } }""",
+                ),
+            ),
+        )
+
+        // Child first, root second — and the intermediate state (child committed, root not yet) still resolves
+        // the topic to the root's copy via parent-wins, so no read interleaving ever sees the topic vanish.
+        assertThat(writtenStates).hasSize(2)
+        val intermediate = writtenStates.first()
+        assertThat(intermediate.domains).containsOnlyKeys("app", "app_workflows")
+        assertThat(intermediate.mergedTopics.getValue("workflows").getValue("wf1").blobRef).isEqualTo("rootCopy")
+        val final = writtenStates.last()
+        assertThat(final.domains.getValue("app").manifest).isEqualTo("v1.root.new")
+        assertThat(final.mergedTopics.getValue("workflows").getValue("wf1").blobRef).isEqualTo("childCopy")
+    }
+
+    @Test
+    fun `a failed subdomain sync defers the parent's commit and keeps the pass retryable`() {
+        statefulDiskCache(
+            persisted(
+                manifest = "v1.root.old",
+                activeTopics = listOf("workflows"),
+                topics = mapOf("workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem()))),
+            ),
+        )
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("app_workflows"))))
+        deliverErrorFor("app_workflows")
+
+        // The root's deletions are deferred: nothing was written, its manifest did not advance, and the merged
+        // view still serves the topic the root response dropped.
+        assertThat(writtenStates).isEmpty()
+        assertThat(diskCache.read()!!.mergedTopics).containsKey("workflows")
+        verify(exactly = 0) { blobStore.retainOnly(any()) }
+
+        // The pass settled (guard released) and stayed stale, so the next stale-gated refresh fires again.
+        currentTimeMillis += 6.minutes.inWholeMilliseconds
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        assertThat(requestedDomains).containsExactly("app", "app_workflows", "app")
+    }
+
+    @Test
+    fun `a failed subdomain does not block its committed siblings`() {
+        statefulDiskCache(persisted(manifest = "v1.root.old"))
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor(
+            "app",
+            containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("child_a", "child_b"))),
+        )
+        deliverSuccessFor("child_a", containerWithConfig(configJson("child_a", "v1.a.new")))
+        deliverErrorFor("child_b")
+
+        // child_a's commit is additive and safe; only the root (whose response's deletions need the full
+        // subtree) is deferred.
+        assertThat(writtenStates).hasSize(1)
+        assertThat(writtenStates.single().domains).containsOnlyKeys("app", "child_a")
+        assertThat(writtenStates.single().domains.getValue("app").manifest).isEqualTo("v1.root.old")
+    }
+
+    @Test
+    fun `a subdomain 4xx does not disable remote config but defers the parent's commit`() {
+        statefulDiskCache(persisted(manifest = "v1.root.old"))
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("app_workflows"))))
+        deliverErrorFor("app_workflows", GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE)
+
+        assertThat(manager.isDisabled).isFalse
+        assertThat(writtenStates).isEmpty()
+    }
+
+    @Test
+    fun `a root 204 still syncs the persisted subdomains`() {
+        statefulDiskCache(
+            persisted(manifest = "v1.root.old", lastRefreshTime = SERVER_MILLIS - 10_000L)
+                .withRootSubdomains("app_workflows")
+                .withDomain("app_workflows", PersistedDomainState(manifest = "v1.child.old")),
+        )
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", null)
+        deliverSuccessFor("app_workflows", containerWithConfig(configJson("app_workflows", "v1.child.new")))
+
+        // The child commits, then the pass-end batch write lands the root's 204-confirmed refresh time.
+        assertThat(writtenStates).hasSize(2)
+        assertThat(writtenStates.first().domains.getValue("app_workflows").manifest).isEqualTo("v1.child.new")
+        assertThat(writtenStates.last().domains.getValue("app").lastRefreshTime).isEqualTo(SERVER_MILLIS)
+        assertThat(writtenStates.last().domains.getValue("app").manifest).isEqualTo("v1.root.old")
+    }
+
+    @Test
+    fun `an all-204 tree pass batches the refresh times into a single write`() {
+        statefulDiskCache(
+            persisted(manifest = "v1.root.old")
+                .withRootSubdomains("app_workflows")
+                .withDomain("app_workflows", PersistedDomainState(manifest = "v1.child.old")),
+        )
+        val listener = RecordingCommitListener()
+        manager.registerListener(listener)
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", null)
+        deliverSuccessFor("app_workflows", null)
+
+        assertThat(writtenStates).hasSize(1)
+        assertThat(writtenStates.single().domains.getValue("app").lastRefreshTime).isEqualTo(SERVER_MILLIS)
+        assertThat(writtenStates.single().domains.getValue("app_workflows").lastRefreshTime).isEqualTo(SERVER_MILLIS)
+        // Nothing committed: no blob work, no re-warm — but the pass counts as a successful refresh.
+        verify(exactly = 0) { blobStore.retainOnly(any()) }
+        assertThat(listener.committed).isEmpty()
+        manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        assertThat(requestedDomains).containsExactly("app", "app_workflows")
+    }
+
+    @Test
+    fun `sub-subdomains commit deepest-first`() {
+        statefulDiskCache(persisted(manifest = "v1.root.old"))
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("child"))))
+        deliverSuccessFor(
+            "child",
+            containerWithConfig(configJson("child", "v1.child.new", subdomains = listOf("grandchild"))),
+        )
+        deliverSuccessFor("grandchild", containerWithConfig(configJson("grandchild", "v1.grandchild.new")))
+
+        assertThat(writtenStates).hasSize(3)
+        assertThat(writtenStates[0].domains).containsOnlyKeys("app", "grandchild")
+        assertThat(writtenStates[1].domains).containsOnlyKeys("app", "grandchild", "child")
+        assertThat(writtenStates[2].domains.getValue("app").manifest).isEqualTo("v1.root.new")
+    }
+
+    @Test
+    fun `a cycle back to an ancestor is skipped and the pass still commits`() {
+        statefulDiskCache(persisted(manifest = "v1.root.old"))
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("child"))))
+        deliverSuccessFor("child", containerWithConfig(configJson("child", "v1.child.new", subdomains = listOf("app"))))
+
+        // One fetch per domain per pass; the bogus edge back to the root is ignored rather than deadlocking.
+        assertThat(requestedDomains).containsExactly("app", "child")
+        assertThat(writtenStates.last().domains.getValue("app").manifest).isEqualTo("v1.root.new")
+    }
+
+    @Test
+    fun `domains beyond the depth cap are not fetched and their parent still commits`() {
+        statefulDiskCache(persisted(manifest = "v1.root.old"))
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("d1"))))
+        deliverSuccessFor("d1", containerWithConfig(configJson("d1", "v1.d1", subdomains = listOf("d2"))))
+        deliverSuccessFor("d2", containerWithConfig(configJson("d2", "v1.d2", subdomains = listOf("d3"))))
+        deliverSuccessFor("d3", containerWithConfig(configJson("d3", "v1.d3", subdomains = listOf("d4"))))
+
+        assertThat(requestedDomains).containsExactly("app", "d1", "d2", "d3")
+        assertThat(writtenStates.last().domains.getValue("app").manifest).isEqualTo("v1.root.new")
+    }
+
+    @Test
+    fun `a multi-commit pass bumps the generation once and prunes blobs once with the cross-domain union`() {
+        statefulDiskCache(persisted(manifest = "v1.root.old"))
+        val listener = RecordingCommitListener()
+        manager.registerListener(listener)
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor(
+            "app",
+            containerWithConfig(
+                configJson("app", "v1.root.new", subdomains = listOf("app_workflows"), prefetchBlobs = listOf("rootBlob")),
+            ),
+        )
+        deliverSuccessFor(
+            "app_workflows",
+            containerWithConfig(configJson("app_workflows", "v1.child.new", prefetchBlobs = listOf("childBlob"))),
+        )
+
+        assertThat(listener.committed).hasSize(1)
+        val retained = slot<Set<String>>()
+        verify(exactly = 1) { blobStore.retainOnly(capture(retained)) }
+        assertThat(retained.captured).containsExactlyInAnyOrder("rootBlob", "childBlob")
+    }
+
+    // endregion
+
     /**
      * Delivers a successful config response. [requestDate] defaults to the server's request time, deliberately a
      * different instant from the [dateProvider] clock so an assertion on the persisted value proves which one won.
      */
     private fun deliverSuccess(container: RCContainer?, requestDate: Date? = Date(SERVER_MILLIS)) {
         onSuccess.invoke(container, requestDate, VerificationResult.VERIFIED)
+    }
+
+    /** Delivers a successful config response to the request issued for [domain] during a tree pass. */
+    private fun deliverSuccessFor(domain: String, container: RCContainer?, requestDate: Date? = Date(SERVER_MILLIS)) {
+        onSuccessByDomain.getValue(domain).invoke(container, requestDate, VerificationResult.VERIFIED)
+    }
+
+    private fun deliverErrorFor(
+        domain: String,
+        behavior: GetRemoteConfigErrorHandlingBehavior = GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+    ) {
+        onErrorByDomain.getValue(domain)
+            .invoke(PurchasesError(PurchasesErrorCode.UnknownBackendError, "request failed"), behavior)
+    }
+
+    /**
+     * Makes the mocked disk cache behave like the real one across a multi-commit pass: a write becomes visible
+     * to subsequent reads, and every written state is recorded in [writtenStates] for ordering assertions.
+     */
+    private fun statefulDiskCache(initial: PersistedRemoteConfigurationState?) {
+        var state = initial
+        every { diskCache.read() } answers { state }
+        every { diskCache.write(any()) } answers {
+            val written = firstArg<PersistedRemoteConfigurationState>()
+            state = written
+            writtenStates += written
+            true
+        }
+    }
+
+    private fun configJson(
+        domain: String,
+        manifest: String,
+        subdomains: List<String> = emptyList(),
+        activeTopics: List<String> = emptyList(),
+        prefetchBlobs: List<String> = emptyList(),
+        topics: String = "{}",
+    ): String {
+        fun jsonArray(values: List<String>) = values.joinToString(prefix = "[", postfix = "]") { "\"$it\"" }
+        return """
+            {
+              "domain": "$domain",
+              "manifest": "$manifest",
+              "subdomains": ${jsonArray(subdomains)},
+              "active_topics": ${jsonArray(activeTopics)},
+              "prefetch_blobs": ${jsonArray(prefetchBlobs)},
+              "topics": $topics
+            }
+        """.trimIndent()
     }
 
     private fun persisted(
@@ -2805,6 +3112,9 @@ class RemoteConfigManagerTest {
 
     private fun PersistedRemoteConfigurationState.withDomain(name: String, state: PersistedDomainState) =
         copy(domains = domains + (name to state))
+
+    private fun PersistedRemoteConfigurationState.withRootSubdomains(vararg subdomains: String) =
+        copy(domains = domains + (rootDomain to root.copy(subdomains = subdomains.toList())))
 
     /**
      * A fake inline blob element for a container mock: [ref] is what the manager reads to decide whether it
