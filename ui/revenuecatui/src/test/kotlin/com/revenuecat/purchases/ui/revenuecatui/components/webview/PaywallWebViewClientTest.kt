@@ -24,6 +24,7 @@ internal class PaywallWebViewClientTest {
     private val expectedOrigin = "https://assets.example.com"
     private var navigationStartedCount = 0
     private var failureCount = 0
+    private var loadFinishedCount = 0
 
     private lateinit var client: PaywallWebViewClient
 
@@ -42,10 +43,12 @@ internal class PaywallWebViewClientTest {
         webView = TrackingWebView(ApplicationProvider.getApplicationContext())
         navigationStartedCount = 0
         failureCount = 0
+        loadFinishedCount = 0
         client = PaywallWebViewClient(
             expectedOrigin = expectedOrigin,
             onMainFrameNavigationStarted = { navigationStartedCount += 1 },
             onMainFrameLoadFailed = { failureCount += 1 },
+            onMainFrameLoadFinished = { loadFinishedCount += 1 },
         )
     }
 
@@ -74,6 +77,29 @@ internal class PaywallWebViewClientTest {
         assertThat(navigationStartedCount).isEqualTo(0)
         assertThat(webView.stopLoadingCount).isEqualTo(1)
         assertThat(failureCount).isEqualTo(1)
+    }
+
+    // WebView delivers onPageFinished more than once per navigation.
+    @Test
+    fun `onPageFinished notifies main-frame document finish once, ignoring about blank`() {
+        client.onPageFinished(webView, "about:blank")
+
+        assertThat(loadFinishedCount).isZero()
+
+        client.onPageFinished(webView, "https://assets.example.com/promo/index.html")
+        client.onPageFinished(webView, "https://assets.example.com/promo/index.html")
+        client.onPageFinished(webView, "https://assets.example.com/promo/page-2.html")
+
+        assertThat(loadFinishedCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `onPageFinished stays silent once the load has failed terminally`() {
+        client.onPageStarted(webView, "https://evil.example.org/phish.html", null)
+
+        client.onPageFinished(webView, "https://assets.example.com/promo/index.html")
+
+        assertThat(loadFinishedCount).isZero()
     }
 
     @Test
