@@ -17,6 +17,9 @@ internal object CustomOperators {
         args: Value,
         vars: Scope,
     ): Value = when (op) {
+        "rc.entries" -> EntriesOperators.opEntries(args, vars)
+        "rc.fromEntries" -> EntriesOperators.opFromEntries(args, vars)
+
         "rc.rootVar" -> RootVarOperator.opRootVar(args, vars)
 
         else -> throw EvaluationException.UnsupportedOperator(op)
