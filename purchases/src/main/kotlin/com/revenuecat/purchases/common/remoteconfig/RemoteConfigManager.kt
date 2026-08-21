@@ -105,6 +105,13 @@ internal class RemoteConfigManager(
     // 4xx disables the session even when the requesting pass was cancelled meanwhile.
     private val domainFetcher = RemoteConfigDomainFetcher(backend, diskCache, blobStore, ::disableForSession)
 
+    // Session kill-switches for individual subdomains that answered 4xx: their fetch is skipped (last-good
+    // persisted data keeps serving) until app restart, an identity change, or the domain dropping out of the
+    // tree. Unlike the root [disabled] flag, [clearCache] DOES clear these: subdomain trees are config- and
+    // user-derived, and a stale disable would outlive the last-good state the wipe destroys, turning into a
+    // session-long block of the parent's commits for the new user. Guarded by [cacheLock].
+    private val disabledDomains = mutableSetOf<String>()
+
     // Bumped by clearCache() on every identity change. A request captures the epoch when it starts; once it
     // changes, the in-flight request's callbacks drop their result (the /v1/config request itself cannot be
     // socket-cancelled), so an old user's response can never persist over the wiped cache.
@@ -295,8 +302,9 @@ internal class RemoteConfigManager(
         return try {
             val fetch = domainFetcher.fetch(domain, isRoot, ctx.appInBackground, ctx.appUserID, ctx.fetchContext)
             val outcome = when (fetch.outcome) {
-                // The 4xx side effects (the root's session kill-switch) already ran at callback time.
-                FetchOutcome.ClientError -> DomainSyncOutcome.Failed
+                // The root's 4xx side effect (the session kill-switch) already ran at callback time.
+                FetchOutcome.ClientError ->
+                    if (isRoot) DomainSyncOutcome.Failed else subdomainClientErrorOutcome(domain)
                 FetchOutcome.FailedRetryable ->
                     if (isRoot) rootRetryableFailureOutcome(ctx, domain) else DomainSyncOutcome.Failed
                 FetchOutcome.Success -> syncFetchedDomain(ctx, domain, depth, isRoot, fetch)
@@ -308,7 +316,10 @@ internal class RemoteConfigManager(
         }
     }
 
-    /** The outcomes that resolve without a fetch: already synced this pass, a cycle, or beyond the depth cap. */
+    /**
+     * The outcomes that resolve without a fetch: already synced this pass, a cycle, beyond the depth cap, or
+     * disabled for the session after an earlier 4xx.
+     */
     private fun shortCircuitOutcome(ctx: TreePassContext, domain: String, depth: Int): DomainSyncOutcome? = when {
         domain in ctx.outcomes -> ctx.outcomes.getValue(domain)
         domain in ctx.inProgress -> {
@@ -322,8 +333,42 @@ internal class RemoteConfigManager(
             }
             DomainSyncOutcome.Skipped
         }
+        isSessionDisabled(domain) -> {
+            verboseLog { "Remote config domain '$domain' is disabled for this session (4xx); skipping its fetch." }
+            disabledSubdomainOutcome(domain)
+        }
         else -> null
     }
+
+    private fun isSessionDisabled(domain: String): Boolean = synchronized(cacheLock) { domain in disabledDomains }
+
+    /**
+     * A subdomain answered 4xx: disable it for the session and keep serving its last-good persisted data —
+     * fresh for the commit rule, so the rest of the tree keeps updating. The disable clears on app restart, on
+     * an identity change ([clearCache]), or when the domain drops out of the tree (prune), so a later re-add
+     * starts over.
+     */
+    private fun subdomainClientErrorOutcome(domain: String): DomainSyncOutcome {
+        synchronized(cacheLock) { disabledDomains += domain }
+        return disabledSubdomainOutcome(domain)
+    }
+
+    /**
+     * Without last-good data a refused subdomain fails instead of being skipped, deferring its parent's commit:
+     * committing would vanish any topic that migrated into the refused domain. The block self-heals — the
+     * commit rule evaluates each pass's fresh parent response, so it ends as soon as the server stops listing
+     * the refused domain.
+     */
+    private fun disabledSubdomainOutcome(domain: String): DomainSyncOutcome =
+        if (diskCache.read()?.domains?.get(domain) != null) {
+            DomainSyncOutcome.DisabledLastGood
+        } else {
+            log(LogIntent.RC_ERROR) {
+                "Remote config subdomain '$domain' is refused (4xx) and has no cached data; deferring its " +
+                    "parent's updates until the server stops listing it."
+            }
+            DomainSyncOutcome.Failed
+        }
 
     private suspend fun syncFetchedDomain(
         ctx: TreePassContext,
@@ -464,7 +509,9 @@ internal class RemoteConfigManager(
             lastRefreshAttemptAt = null
             completeRefresh()
             // Intentionally NOT resetting `disabled`: a 4xx is an endpoint/app-level fact that outlives an
-            // identity change. It clears only on app restart.
+            // identity change. It clears only on app restart. The per-subdomain disables DO clear (see
+            // [disabledDomains]): they are config/user-derived and their last-good data is being wiped.
+            disabledDomains.clear()
             diskCache.clear()
             blobStore.clear()
             sourceProvider.clear()
@@ -879,7 +926,16 @@ internal class RemoteConfigManager(
             .filterKeys { it in response.activeTopics }
         // Blobs this domain's config still wants: the prefetch set plus any active-topic blob ref.
         val domainBlobRefs = response.prefetchBlobs.toSet() + mergedTopics.toTopicBlobRefs().values.flatten()
-        val newState = committedState(ctx, domainKey, isRoot, response, previousState, mergedTopics, requestDate)
+        val newState = previousState.withCommittedDomain(
+            domainKey = domainKey,
+            isRoot = isRoot,
+            fallbackRootDomain = ctx.rootDomainName,
+            response = response,
+            mergedTopics = mergedTopics,
+            // Server time only: a response without it carries the last server-supplied value forward rather
+            // than substituting a device-clock reading the server cannot compare against its own.
+            lastRefreshTime = requestDate?.time ?: previousDomainState?.lastRefreshTime,
+        )
         val persisted = diskCache.write(newState)
 
         if (persisted) {
@@ -895,39 +951,6 @@ internal class RemoteConfigManager(
             errorLog { "Skipping remote config blob sync: failed to persist the configuration." }
         }
         persisted
-    }
-
-    private fun committedState(
-        ctx: TreePassContext,
-        domainKey: String,
-        isRoot: Boolean,
-        response: RemoteConfiguration,
-        previousState: PersistedRemoteConfigurationState?,
-        mergedTopics: Map<String, ConfigTopic>,
-        requestDate: Date?,
-    ): PersistedRemoteConfigurationState {
-        // A root rename replaces the whole tree (old entries would be unreachable stale state, not history).
-        val carriedDomains = when {
-            !isRoot -> previousState?.domains ?: emptyMap()
-            previousState?.rootDomain == response.domain -> previousState.domains
-            else -> emptyMap()
-        }
-        return PersistedRemoteConfigurationState(
-            rootDomain = if (isRoot) response.domain else previousState?.rootDomain ?: ctx.rootDomainName,
-            domains = carriedDomains + (
-                domainKey to PersistedDomainState(
-                    manifest = response.manifest,
-                    subdomains = response.subdomains,
-                    activeTopics = response.activeTopics,
-                    prefetchBlobs = response.prefetchBlobs,
-                    topics = mergedTopics,
-                    // Server time only: a response without it carries the last server-supplied value forward
-                    // rather than substituting a device-clock reading the server cannot compare against its own.
-                    lastRefreshTime = requestDate?.time
-                        ?: previousState?.domains?.get(domainKey)?.lastRefreshTime,
-                )
-                ),
-        )
     }
 
     /**
@@ -956,56 +979,43 @@ internal class RemoteConfigManager(
                 )
                 if (diskCache.write(updated)) state = updated
             }
-            if (ctx.committedCount > 0) {
-                state?.let { blobStore.retainOnly(it.liveBlobRefs) }
-                val committedGeneration = generation.incrementAndGet()
-                listeners.forEach { it.onConfigCommitted(committedGeneration) }
-            }
             if (ctx.allFresh) {
+                state = state?.let { pruneUnreachableDomains(it) }
                 // The staleness gate measures elapsed *local* time (isCacheStale subtracts from
                 // dateProvider.now), so it stays on the device clock, unlike the persisted server refresh times.
                 lastRefreshedAt = dateProvider.now
                 lastRefreshAttemptAt = null
                 hasCommittedInitialConfig = true
             }
+            if (ctx.committedCount > 0) {
+                state?.let { blobStore.retainOnly(it.liveBlobRefs) }
+                val committedGeneration = generation.incrementAndGet()
+                listeners.forEach { it.onConfigCommitted(committedGeneration) }
+            }
         }
     }
 
-    /** The mutable state of one tree pass; touched only by the pass coroutine (domains sync sequentially). */
-    private class TreePassContext(
-        val requestEpoch: Int,
-        val appInBackground: Boolean,
-        val appUserID: String,
-        val fetchContext: RemoteConfigFetchContext,
-        /** The root name this pass synced, for a child commit landing before any root state exists. */
-        val rootDomainName: String,
-    ) {
-        /** Terminal outcome per synced domain; doubles as the "already synced this pass" dedupe. */
-        val outcomes = mutableMapOf<String, DomainSyncOutcome>()
-
-        /** Domains whose sync is on the recursion stack; a re-listing inside its own subtree is a cycle. */
-        val inProgress = mutableSetOf<String>()
-
-        /** Server refresh times confirmed by per-domain 204s, written in one batch at pass end. */
-        val pending204RefreshTimes = mutableMapOf<String, Long>()
-
-        var committedCount = 0
-
-        /** The tree as of this pass's most recent successful commit; null when nothing committed yet. */
-        var lastPersistedState: PersistedRemoteConfigurationState? = null
-
-        val allFresh: Boolean get() = outcomes.values.all { it.isFresh }
-    }
-
-    private enum class DomainSyncOutcome {
-        Committed,
-        Unchanged,
-        Skipped,
-        Failed,
-        ;
-
-        /** Whether the domain's subtree is safe to apply a parent's deletions against. */
-        val isFresh: Boolean get() = this != Failed
+    /**
+     * Drops domain entries no longer reachable from the root, clearing any session disable with them so a
+     * later re-add starts over. Runs only after a fully-fresh pass: after a partial pass a freshly-committed
+     * child can be unreachable merely because the parent that links it deferred its commit, and after a crashed
+     * first pass children can be persisted before any root state exists — pruning in either state would discard
+     * fresh data the next pass reuses. Called within [cacheLock]; falls back to the unpruned state on a failed
+     * write (the entries stay inert for reads and merely pin their blobs until a later pass prunes them).
+     */
+    private fun pruneUnreachableDomains(
+        state: PersistedRemoteConfigurationState,
+    ): PersistedRemoteConfigurationState {
+        val unreachable = if (state.rootState == null) {
+            emptySet()
+        } else {
+            state.domains.keys - state.domainsInPrecedenceOrder.toSet()
+        }
+        if (unreachable.isEmpty()) return state
+        debugLog { "Pruning remote config domain(s) no longer part of the tree: $unreachable." }
+        disabledDomains -= unreachable
+        val pruned = state.copy(domains = state.domains - unreachable)
+        return if (diskCache.write(pruned)) pruned else state
     }
 
     /**

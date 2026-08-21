@@ -694,32 +694,35 @@ class RemoteConfigManagerTest {
 
     @Test
     fun `a root sync retains blobs referenced by other persisted domains`() {
-        val cached = persisted(manifest = "v1.1.sources:etag1").withDomain(
-            "app_workflows",
-            PersistedDomainState(
-                manifest = "v1.1.workflows:etagW",
-                activeTopics = listOf("workflows"),
-                prefetchBlobs = listOf("subPrefetchBlob"),
-                topics = mapOf(
-                    "workflows" to ConfigTopic(
-                        mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = "subTopicBlob")),
+        statefulDiskCache(
+            persisted(manifest = "v1.1.sources:etag1")
+                .withRootSubdomains("app_workflows")
+                .withDomain(
+                    "app_workflows",
+                    PersistedDomainState(
+                        manifest = "v1.1.workflows:etagW",
+                        activeTopics = listOf("workflows"),
+                        prefetchBlobs = listOf("subPrefetchBlob"),
+                        topics = mapOf(
+                            "workflows" to ConfigTopic(
+                                mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = "subTopicBlob")),
+                            ),
+                        ),
                     ),
                 ),
-            ),
         )
-        every { diskCache.read() } returns cached
-        val response = """
-            {
-              "domain": "app",
-              "manifest": "v1.200.sources:etag2",
-              "active_topics": ["sources"],
-              "prefetch_blobs": ["rootBlob"],
-              "topics": { "sources": { "default": { "blob_ref": "rootBlob" } } }
-            }
-        """.trimIndent()
+        val response = configJson(
+            "app",
+            "v1.200.sources:etag2",
+            subdomains = listOf("app_workflows"),
+            activeTopics = listOf("sources"),
+            prefetchBlobs = listOf("rootBlob"),
+            topics = """{ "sources": { "default": { "blob_ref": "rootBlob" } } }""",
+        )
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        deliverSuccess(containerWithConfig(response))
+        deliverSuccessFor("app", containerWithConfig(response))
+        deliverSuccessFor("app_workflows", null)
 
         val retained = slot<Set<String>>()
         verify(exactly = 1) { blobStore.retainOnly(capture(retained)) }
@@ -3000,6 +3003,151 @@ class RemoteConfigManagerTest {
     }
 
     @Test
+    fun `a subdomain 4xx with last-good data is skipped for the session and lets the parent commit`() {
+        statefulDiskCache(
+            persisted(manifest = "v1.root.old")
+                .withRootSubdomains("app_workflows")
+                .withDomain(
+                    "app_workflows",
+                    PersistedDomainState(
+                        manifest = "v1.child.old",
+                        activeTopics = listOf("workflows"),
+                        topics = mapOf(
+                            "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem())),
+                        ),
+                    ),
+                ),
+        )
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("app_workflows"))))
+        deliverErrorFor("app_workflows", GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE)
+
+        // The refused child keeps serving its last-good data and the root still commits.
+        assertThat(manager.isDisabled).isFalse
+        assertThat(writtenStates.last().domains.getValue("app").manifest).isEqualTo("v1.root.new")
+        assertThat(diskCache.read()!!.mergedTopics).containsKey("workflows")
+
+        // The next pass skips the disabled child without a request; the root keeps updating.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.newer", subdomains = listOf("app_workflows"))))
+
+        assertThat(requestedDomains.count { it == "app_workflows" }).isEqualTo(1)
+        assertThat(writtenStates.last().domains.getValue("app").manifest).isEqualTo("v1.root.newer")
+    }
+
+    @Test
+    fun `a subdomain 4xx without cached data defers the parent's commit for the session`() {
+        statefulDiskCache(persisted(manifest = "v1.root.old"))
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("app_workflows"))))
+        deliverErrorFor("app_workflows", GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE)
+
+        assertThat(manager.isDisabled).isFalse
+        assertThat(writtenStates).isEmpty()
+
+        // The next pass skips the refused child without a request; the root still cannot apply its deletions.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("app_workflows"))))
+        assertThat(requestedDomains.count { it == "app_workflows" }).isEqualTo(1)
+        assertThat(writtenStates).isEmpty()
+
+        // The block self-heals once the server stops listing the refused child.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.final")))
+        assertThat(writtenStates.last().domains.getValue("app").manifest).isEqualTo("v1.root.final")
+    }
+
+    @Test
+    fun `an identity change clears the per-subdomain session disables`() {
+        statefulDiskCache(persisted(manifest = "v1.root.old"))
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("app_workflows"))))
+        deliverErrorFor("app_workflows", GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE)
+
+        manager.clearCache("new-user")
+
+        // The new user's pass fetches the previously disabled subdomain again.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("app_workflows"))))
+        assertThat(requestedDomains.count { it == "app_workflows" }).isEqualTo(2)
+    }
+
+    @Test
+    fun `a domain dropped from its parent's list is pruned and its blobs evicted`() {
+        statefulDiskCache(
+            persisted(manifest = "v1.root.old", prefetchBlobs = listOf("rootBlob"))
+                .withRootSubdomains("app_workflows")
+                .withDomain(
+                    "app_workflows",
+                    PersistedDomainState(manifest = "v1.child.old", prefetchBlobs = listOf("childBlob")),
+                ),
+        )
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", prefetchBlobs = listOf("rootBlob"))))
+
+        assertThat(diskCache.read()!!.domains).containsOnlyKeys("app")
+        val retained = slot<Set<String>>()
+        verify(exactly = 1) { blobStore.retainOnly(capture(retained)) }
+        assertThat(retained.captured).containsExactly("rootBlob")
+    }
+
+    @Test
+    fun `pruning a dropped domain clears its session disable so a re-add starts over`() {
+        statefulDiskCache(
+            persisted(manifest = "v1.root.old")
+                .withRootSubdomains("app_workflows")
+                .withDomain("app_workflows", PersistedDomainState(manifest = "v1.child.old")),
+        )
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.a", subdomains = listOf("app_workflows"))))
+        deliverErrorFor("app_workflows", GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE)
+
+        // The server drops the disabled child: the pass prunes it (state and disable together)...
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.b")))
+        assertThat(diskCache.read()!!.domains).containsOnlyKeys("app")
+
+        // ...so a later re-add fetches it again instead of trusting the stale disable.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.c", subdomains = listOf("app_workflows"))))
+        assertThat(requestedDomains.count { it == "app_workflows" }).isEqualTo(2)
+    }
+
+    @Test
+    fun `a freshly committed child survives when its parent's commit is deferred`() {
+        statefulDiskCache(persisted(manifest = "v1.root.old"))
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("child_a", "child_b"))))
+        deliverSuccessFor("child_a", containerWithConfig(configJson("child_a", "v1.a.new")))
+        deliverErrorFor("child_b")
+
+        // child_a is unreachable from the persisted (old) root list, but a partial pass never prunes: the next
+        // pass re-fetches the root and child_a answers with a cheap 204.
+        assertThat(diskCache.read()!!.domains).containsOnlyKeys("app", "child_a")
+    }
+
+    @Test
+    fun `children persisted without root state are not pruned`() {
+        // A crash between a child's commit and the root's first commit leaves child-only state on disk.
+        statefulDiskCache(
+            PersistedRemoteConfigurationState(
+                rootDomain = "app",
+                domains = mapOf("app_workflows" to PersistedDomainState(manifest = "v1.child.old")),
+            ),
+        )
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        deliverSuccessFor("app", null)
+
+        assertThat(diskCache.read()!!.domains).containsOnlyKeys("app_workflows")
+        verify(exactly = 0) { blobStore.retainOnly(any()) }
+    }
+
+    @Test
     fun `a multi-commit pass bumps the generation once and prunes blobs once with the cross-domain union`() {
         statefulDiskCache(persisted(manifest = "v1.root.old"))
         val listener = RecordingCommitListener()
@@ -3059,6 +3207,7 @@ class RemoteConfigManagerTest {
             writtenStates += written
             true
         }
+        every { diskCache.clear() } answers { state = null }
     }
 
     private fun configJson(
