@@ -974,8 +974,12 @@ internal class PurchasesOrchestrator(
     }
 
     /**
-     * For a caller that has already read the app user ID and needs the answer to describe that same customer even
-     * if the app logs in or out while the request is in flight.
+     * For a caller that has already read the app user ID: the cache lookup and the backend request both use the
+     * given ID instead of re-reading the current one.
+     *
+     * Not a guarantee that the answer describes that customer. On a cold cache the pending-purchase sync runs
+     * first and reads the current app user for itself, so a caller that needs the guarantee checks the ID again
+     * once the answer is in.
      */
     fun getCustomerInfo(
         appUserID: String,

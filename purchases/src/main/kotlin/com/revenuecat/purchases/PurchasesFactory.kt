@@ -403,7 +403,7 @@ internal class PurchasesFactory(
                         )
                     },
                     CustomerInfoDimensionProvider(
-                        appUserId = { identityManager.currentAppUserID },
+                        currentAppUserId = { identityManager.currentAppUserID },
                         customerInfo = { appUserID ->
                             Purchases.sharedInstance.purchasesOrchestrator.awaitCustomerInfo(appUserID)
                         },

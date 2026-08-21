@@ -16,7 +16,7 @@ import kotlinx.coroutines.CancellationException
 import java.util.Date
 
 internal class CustomerInfoDimensionProvider(
-    private val appUserId: () -> String,
+    private val currentAppUserId: () -> String,
     private val customerInfo: suspend (appUserId: String) -> CustomerInfo,
 ) : RulesDimensionProvider {
 
@@ -31,7 +31,7 @@ internal class CustomerInfoDimensionProvider(
      * depend on the network: the ID is known as soon as the SDK is configured.
      */
     override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
-        val appUserId = appUserId()
+        val appUserId = currentAppUserId()
         return customerInfoDimensions(appUserId, date) + buildMap { putString(KEY_APP_USER_ID, appUserId) }
     }
 
@@ -44,18 +44,32 @@ internal class CustomerInfoDimensionProvider(
      * The records are built inside the same guard as the read, because a [CustomerInfo]'s purchases are parsed out
      * of its raw payload on first access rather than when it is constructed, so that is where a malformed payload
      * surfaces.
+     *
+     * Asking for one app user is not enough to be answered about them: on a cold cache the SDK syncs pending
+     * purchases first, and that sync reads the current app user for itself. So the ID is checked again once the
+     * answer is in, and an answer that arrived across a user change is dropped rather than reported under the ID
+     * this evaluation started with.
      */
+    @Suppress("ReturnCount")
     private suspend fun customerInfoDimensions(appUserId: String, date: Date): Map<String, RulesDimensionValue> {
         // Nobody to ask about: the SDK has no cached user, so there is no request to make on their behalf.
         if (appUserId.isEmpty()) return emptyMap()
-        return try {
+        val dimensions = try {
             customerInfo(appUserId).dimensions(date)
         } catch (e: CancellationException) {
             throw e
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             warnLog { "The customer info is unavailable, so customer dimensions can't be evaluated: $e" }
-            emptyMap()
+            return emptyMap()
         }
+        if (currentAppUserId() != appUserId) {
+            warnLog {
+                "The app user changed while the customer info was being read, so it can't be evaluated: it may " +
+                    "describe a different customer than the one this evaluation is about."
+            }
+            return emptyMap()
+        }
+        return dimensions
     }
 
     private fun CustomerInfo.dimensions(date: Date): Map<String, RulesDimensionValue> = buildMap {

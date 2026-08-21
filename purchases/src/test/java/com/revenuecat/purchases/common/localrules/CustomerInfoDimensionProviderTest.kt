@@ -248,7 +248,7 @@ class CustomerInfoDimensionProviderTest {
                 providers = listOf(
                     deviceProvider(),
                     CustomerInfoDimensionProvider(
-                        appUserId = { "current_user" },
+                        currentAppUserId = { "current_user" },
                         customerInfo = { throw failure },
                     ),
                 ),
@@ -264,13 +264,30 @@ class CustomerInfoDimensionProviderTest {
 
     @Test
     fun `the customer info is requested for the app user the snapshot reports`() = runTest {
-        var currentAppUserId = "before_login"
         var requestedAppUserId: String? = null
         val provider = CustomerInfoDimensionProvider(
-            appUserId = { currentAppUserId },
+            currentAppUserId = { "current_user" },
             customerInfo = { appUserId ->
                 requestedAppUserId = appUserId
-                // The app logs in while the request is in flight.
+                customerInfo(SUBSCRIBED_RESPONSE)
+            },
+        )
+
+        val dimensions = provider.dimensions(date)
+
+        assertThat(requestedAppUserId).isEqualTo("current_user")
+        assertThat(dimensions["appUserId"]).isEqualTo(string("current_user"))
+        assertThat(dimensions.purchases()).isNotEmpty()
+    }
+
+    @Test
+    fun `a customer info that arrived across a user change is not reported`() = runTest {
+        // Asking for one app user is not enough to be answered about them: on a cold cache the SDK syncs pending
+        // purchases first, and that sync reads the current app user for itself.
+        var currentAppUserId = "before_login"
+        val provider = CustomerInfoDimensionProvider(
+            currentAppUserId = { currentAppUserId },
+            customerInfo = {
                 currentAppUserId = "after_login"
                 customerInfo(SUBSCRIBED_RESPONSE)
             },
@@ -278,16 +295,16 @@ class CustomerInfoDimensionProviderTest {
 
         val dimensions = provider.dimensions(date)
 
-        // Reading the ID again after the request came back would file one customer's purchases under another's.
-        assertThat(requestedAppUserId).isEqualTo("before_login")
-        assertThat(dimensions["appUserId"]).isEqualTo(string("before_login"))
+        // Filing these purchases under either ID would describe a customer who does not exist, so the evaluation
+        // sees a customer it knows nothing about but the ID it started with.
+        assertThat(dimensions).isEqualTo(mapOf("appUserId" to string("before_login")))
     }
 
     @Test
     fun `a customer the SDK has no ID for is not asked about`() = runTest {
         var asked = false
         val provider = CustomerInfoDimensionProvider(
-            appUserId = { "" },
+            currentAppUserId = { "" },
             customerInfo = {
                 asked = true
                 customerInfo(SUBSCRIBED_RESPONSE)
@@ -303,7 +320,7 @@ class CustomerInfoDimensionProviderTest {
     @Test
     fun `cancellation while reading the customer info propagates`() = runTest {
         val cancelling = CustomerInfoDimensionProvider(
-            appUserId = { "current_user" },
+            currentAppUserId = { "current_user" },
             customerInfo = { throw CancellationException("cancelled") },
         )
 
@@ -321,7 +338,7 @@ class CustomerInfoDimensionProviderTest {
     fun `the customer info is read on every evaluation`() = runTest {
         var response = Responses.validEmptyPurchaserResponse
         val provider = CustomerInfoDimensionProvider(
-            appUserId = { "current_user" },
+            currentAppUserId = { "current_user" },
             customerInfo = { customerInfo(response) },
         )
 
@@ -369,7 +386,7 @@ class CustomerInfoDimensionProviderTest {
     }
 
     private fun provider(customerInfo: CustomerInfo) = CustomerInfoDimensionProvider(
-        appUserId = { "current_user" },
+        currentAppUserId = { "current_user" },
         customerInfo = { customerInfo },
     )
 

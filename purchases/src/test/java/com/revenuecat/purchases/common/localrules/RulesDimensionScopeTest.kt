@@ -225,7 +225,7 @@ class RulesDimensionScopeTest {
                 DeviceDimensionProvider(appConfig, localeProvider),
                 StoreDimensionProvider { "US" },
                 CustomerInfoDimensionProvider(
-                    appUserId = { "current_user" },
+                    currentAppUserId = { "current_user" },
                     customerInfo = { customerInfo },
                 ),
                 SubscriberAttributesDimensionProvider { SUBSCRIBER_ATTRIBUTES },
