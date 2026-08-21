@@ -66,13 +66,13 @@ internal object PredicateConformanceRunner {
         "unsupportedOperator" -> error is EvaluationException.UnsupportedOperator &&
             (expected.operator == null || error.name == expected.operator)
         "unresolvedVariable" -> error is EvaluationException.UnresolvedVariable &&
-            (expected.path == null || error.path == expected.path)
+            (expected.unresolvedPath == null || error.path == expected.unresolvedPath)
         else -> false
     }
 
     private fun describe(expected: ExpectedError): String =
         expected.operator?.let { "${expected.kind}($it)" }
-            ?: expected.path?.let { "${expected.kind}($it)" }
+            ?: expected.unresolvedPath?.let { "${expected.kind}($it)" }
             ?: expected.kind
 
     private fun assertWarnings(warnings: List<String>, expected: ExpectedWarnings, id: String) {
