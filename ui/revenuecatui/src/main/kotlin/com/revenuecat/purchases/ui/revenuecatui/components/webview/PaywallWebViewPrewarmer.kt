@@ -43,7 +43,6 @@ internal class PaywallWebViewPrewarmer(
             val ignoredTrimLevels = listOf(
                 ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN,
                 ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE,
-                ComponentCallbacks2.TRIM_MEMORY_MODERATE
             )
             if (level in ignoredTrimLevels) return
             if (inFlight.isEmpty() && queue.isEmpty()) return

@@ -393,15 +393,24 @@ internal class PaywallWebViewPrewarmerTest {
 
     // A warm already loading survives the UI going away; the customer may be back within seconds.
     @Test
-    fun `a hidden UI does not interrupt warming`() {
-        val prewarmer = prewarmer()
-        prewarmer.prewarmAll(URL, OTHER_URL)
+    fun `a hidden UI or a mild foreground trim does not interrupt warming`() {
+        val ignored = listOf(
+            ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN,
+            ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE,
+        )
 
-        (context as Application).onTrimMemory(ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN)
+        ignored.forEach { level ->
+            warmed.clear()
+            val prewarmer = prewarmer()
+            prewarmer.prewarmAll(URL, OTHER_URL)
 
-        assertThat(prewarmer.warmingCount).isEqualTo(1)
-        assertThat(shadowOf(warmed.single()).wasDestroyCalled()).isFalse()
-        assertThat(prewarmer.queuedCount).isEqualTo(1)
+            (context as Application).onTrimMemory(level)
+
+            assertThat(prewarmer.warmingCount).describedAs("level %s warming", level).isEqualTo(1)
+            assertThat(shadowOf(warmed.single()).wasDestroyCalled())
+                .describedAs("level %s destroyed", level).isFalse()
+            assertThat(prewarmer.queuedCount).describedAs("level %s queued", level).isEqualTo(1)
+        }
     }
 
     // The warm still finishes and hands its slot to the next url while the UI is hidden.
@@ -419,8 +428,8 @@ internal class PaywallWebViewPrewarmerTest {
         assertThat(prewarmer.queuedCount).isZero()
     }
 
-    // Every level except UI_HIDDEN frees the view and keeps the urls queued, including the five delivered only
-    // below API 34, so no threshold or level list can drift from the platform.
+    // Every level except the ignored two frees the view and keeps the urls queued, including those delivered
+    // only below API 34, so no threshold or level list can drift from the platform.
     @Test
     fun `every memory-pressure level frees the view and keeps the urls queued`() {
         val levels = listOf(
@@ -429,7 +438,6 @@ internal class PaywallWebViewPrewarmerTest {
             ComponentCallbacks2.TRIM_MEMORY_MODERATE,
             ComponentCallbacks2.TRIM_MEMORY_RUNNING_CRITICAL,
             ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW,
-            ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE,
         )
 
         levels.forEach { level ->
@@ -446,16 +454,15 @@ internal class PaywallWebViewPrewarmerTest {
         }
     }
 
-    // onLowMemory is the pre-API-34 path and must not be the one that loses the queue.
     @Test
-    fun `onLowMemory frees the view and keeps the urls queued`() {
+    fun `onLowMemory does not interrupt warming`() {
         val prewarmer = prewarmer()
         prewarmer.prewarmAll(URL, OTHER_URL)
 
         (context as Application).onLowMemory()
 
-        assertThat(prewarmer.warmingCount).isZero()
-        assertThat(prewarmer.queuedCount).isEqualTo(2)
+        assertThat(prewarmer.warmingCount).isEqualTo(1)
+        assertThat(prewarmer.queuedCount).isEqualTo(1)
     }
 
     // Nothing else pumps the queue when the app returns, and the parked url is alreadyCovered, so prewarm
