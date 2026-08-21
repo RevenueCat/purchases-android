@@ -75,7 +75,7 @@ class RemoteConfigManagerIntegrationTest {
         coEvery { blobFetcher.ensureDownloaded(any<String>()) } answers { blobStore.contains(firstArg()) }
         // This suite exercises the real disk/blob-store path; network prefetch is unit-tested separately, so the
         // fetcher is mocked here to keep the test hermetic (no real CDN calls from the background worker pool).
-        val topicStore = RemoteConfigTopicStore { diskCache.read()?.topics?.get(it.wireName) }
+        val topicStore = RemoteConfigTopicStore { diskCache.read()?.mergedTopics?.get(it.wireName) }
         manager = RemoteConfigManager(
             backend,
             diskCache,
@@ -115,13 +115,13 @@ class RemoteConfigManagerIntegrationTest {
         sync(container(config, blob))
 
         val persisted = diskCache.read()!!
-        assertThat(persisted.manifest).isEqualTo("v1.1.workflows:etag1")
-        assertThat(persisted.activeTopics).containsExactly("workflows")
-        assertThat(persisted.prefetchBlobs).containsExactly(ref)
-        assertThat(persisted.topics).containsOnlyKeys("workflows")
-        assertThat(persisted.topics["workflows"]!!.values.mapNotNull { it.blobRef }).containsExactly(ref)
+        assertThat(persisted.root.manifest).isEqualTo("v1.1.workflows:etag1")
+        assertThat(persisted.root.activeTopics).containsExactly("workflows")
+        assertThat(persisted.root.prefetchBlobs).containsExactly(ref)
+        assertThat(persisted.root.topics).containsOnlyKeys("workflows")
+        assertThat(persisted.root.topics["workflows"]!!.values.mapNotNull { it.blobRef }).containsExactly(ref)
         // The full config is the source of truth: the item's inline metadata is persisted too, not just its ref.
-        assertThat(persisted.topics["workflows"]!!["wf1234"]!!.metadata).containsKey("offering_identifier")
+        assertThat(persisted.root.topics["workflows"]!!["wf1234"]!!.metadata).containsKey("offering_identifier")
         assertThat(blobStore.contains(ref)).isTrue
         assertThat(blobStore.read(ref)).isEqualTo(blob)
     }
@@ -134,7 +134,7 @@ class RemoteConfigManagerIntegrationTest {
 
         // The fixture inlines WORKFLOW_BLOB and references it from the workflows topic, so it lands in the store.
         assertThat(blobStore.read(ref)).isEqualTo(RCContainerTestData.WORKFLOW_BLOB)
-        assertThat(diskCache.read()!!.activeTopics).containsExactly("workflows")
+        assertThat(diskCache.read()!!.root.activeTopics).containsExactly("workflows")
     }
 
     @Test
@@ -169,7 +169,7 @@ class RemoteConfigManagerIntegrationTest {
 
         assertThat(blobStore.contains(refA)).isFalse
         assertThat(blobStore.contains(refB)).isTrue
-        assertThat(diskCache.read()!!.topics["workflows"]!!.values.mapNotNull { it.blobRef }).containsExactly(refB)
+        assertThat(diskCache.read()!!.root.topics["workflows"]!!.values.mapNotNull { it.blobRef }).containsExactly(refB)
     }
 
     @Test
@@ -206,7 +206,7 @@ class RemoteConfigManagerIntegrationTest {
         assertThat(blobStore.contains(tamperedRef)).isFalse
         assertThat(blobStore.cachedRefs()).isEmpty()
         // The configuration itself is the source of truth and persists regardless of the blob failing validation.
-        assertThat(diskCache.read()!!.topics["workflows"]!!.values.mapNotNull { it.blobRef }).containsExactly(tamperedRef)
+        assertThat(diskCache.read()!!.root.topics["workflows"]!!.values.mapNotNull { it.blobRef }).containsExactly(tamperedRef)
     }
 
     @Test
@@ -247,7 +247,7 @@ class RemoteConfigManagerIntegrationTest {
 
         assertThat(blobStore.contains(ref)).isFalse
         assertThat(blobStore.cachedRefs()).isEmpty()
-        assertThat(diskCache.read()!!.topics.toTopicBlobRefs())
+        assertThat(diskCache.read()!!.root.topics.toTopicBlobRefs())
             .containsExactlyEntriesOf(mapOf("workflows" to listOf(ref)))
     }
 
@@ -260,7 +260,7 @@ class RemoteConfigManagerIntegrationTest {
         // A 204 surfaces as a null container: nothing changed server-side.
         sync(null)
 
-        assertThat(diskCache.read()!!.manifest).isEqualTo("v1.1.workflows:etag1")
+        assertThat(diskCache.read()!!.root.manifest).isEqualTo("v1.1.workflows:etag1")
         assertThat(blobStore.read(ref)).isEqualTo(blob)
     }
 
@@ -271,7 +271,7 @@ class RemoteConfigManagerIntegrationTest {
 
         sync(container(config))
 
-        val topics = diskCache.read()!!.topics
+        val topics = diskCache.read()!!.root.topics
         assertThat(topics).containsOnlyKeys("workflows")
         assertThat(topics["workflows"]!!["wf1234"]!!.blobRef).isNull()
         assertThat(topics["workflows"]!!.values.mapNotNull { it.blobRef }).isEmpty()
@@ -397,3 +397,7 @@ class RemoteConfigManagerIntegrationTest {
         }
     }
 }
+
+/** The root domain's persisted entry — where this suite's single-domain syncs land their bookkeeping. */
+private val PersistedRemoteConfigurationState.root: PersistedDomainState
+    get() = domains.getValue(rootDomain)

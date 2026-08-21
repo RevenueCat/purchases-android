@@ -170,7 +170,7 @@ internal class ProductionRemoteConfigFallbackIntegrationTest : BaseBackendIntegr
         val blobFetcher = mockk<RemoteConfigBlobFetcher>(relaxed = true)
         coEvery { blobFetcher.ensureDownloaded(any<String>()) } answers { remoteConfigBlobStore.contains(firstArg()) }
         val diskCache = RemoteConfigDiskCache(context)
-        val topicStore = RemoteConfigTopicStore { diskCache.read()?.topics?.get(it.wireName) }
+        val topicStore = RemoteConfigTopicStore { diskCache.read()?.mergedTopics?.get(it.wireName) }
         return RemoteConfigManager(
             backend = backend,
             diskCache = diskCache,
