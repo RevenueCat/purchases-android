@@ -5,7 +5,6 @@
 
 package com.revenuecat.purchases.admob.nextgen
 
-import com.google.android.libraries.ads.mobile.sdk.common.PreloadCallback
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdPreloader
@@ -16,15 +15,14 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.slot
 import io.mockk.unmockkObject
 import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+
 internal class RewardedAdPreloaderTest : PreloaderTest() {
 
     @Before
@@ -38,36 +36,21 @@ internal class RewardedAdPreloaderTest : PreloaderTest() {
     }
 
     @Test
-    fun `start installs preload tracking`() {
-        val configuration = preloadConfiguration(AD_UNIT_ID)
-        val delegate = RecordingPreloadCallback()
-        val trackingCallback = slot<PreloadCallback>()
-        every { RewardedAdPreloader.start(PRELOAD_ID, configuration, capture(trackingCallback)) } returns true
-
-        val started = RewardedAdPreloader.startAndTrack(
-            preloadId = PRELOAD_ID,
-            preloadConfiguration = configuration,
-            placement = START_PLACEMENT,
-            preloadCallback = delegate,
-        )
-
-        assertTrue(started)
-        assertSuccessfulPreload(
-            preloadId = PRELOAD_ID,
-            trackingCallback = trackingCallback.captured,
-            delegate = delegate,
-            expectedFormat = AdFormat.REWARDED,
-            expectedAdUnitId = AD_UNIT_ID,
-            expectedPlacement = START_PLACEMENT,
-        )
-    }
+    fun `start installs preload tracking`() = assertStartInstallsPreloadTracking(
+        expectedAdFormat = AdFormat.REWARDED,
+        stubStart = { preloadId, configuration, callback ->
+            every { RewardedAdPreloader.start(preloadId, configuration, capture(callback)) } returns true
+        },
+        startAndTrack = { preloadId, configuration, placement, callback ->
+            RewardedAdPreloader.startAndTrack(preloadId, configuration, placement, callback)
+        },
+    )
 
     @Test
-    fun `null poll is returned unchanged`() {
-        every { RewardedAdPreloader.pollAd(PRELOAD_ID) } returns null
-
-        assertNullPoll(RewardedAdPreloader.pollAndTrackAd(PRELOAD_ID))
-    }
+    fun `null poll is returned unchanged`() = assertNullPollContract(
+        stubNullPoll = { every { RewardedAdPreloader.pollAd(it) } returns null },
+        pollAndTrackAd = { RewardedAdPreloader.pollAndTrackAd(it) },
+    )
 
     @Test
     fun `poll installs lifecycle tracking and returns the same ad`() {
@@ -92,7 +75,6 @@ internal class RewardedAdPreloaderTest : PreloaderTest() {
     companion object {
         private const val PRELOAD_ID = "rewarded-buffer"
         private const val AD_UNIT_ID = "rewarded-unit"
-        private const val START_PLACEMENT = "rewarded-start-placement"
         private const val POLL_PLACEMENT = "rewarded-poll-placement"
     }
 }

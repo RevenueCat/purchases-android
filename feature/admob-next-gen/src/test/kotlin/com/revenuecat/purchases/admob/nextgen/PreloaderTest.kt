@@ -18,6 +18,7 @@ import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
+import io.mockk.CapturingSlot
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -27,6 +28,7 @@ import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 
 internal abstract class PreloaderTest {
@@ -45,6 +47,39 @@ internal abstract class PreloaderTest {
     @After
     fun tearDownPurchases() {
         unmockkObject(Purchases)
+    }
+
+    protected fun assertStartInstallsPreloadTracking(
+        expectedAdFormat: AdFormat,
+        stubStart: (String, PreloadConfiguration, CapturingSlot<PreloadCallback>) -> Unit,
+        startAndTrack: (String, PreloadConfiguration, String?, PreloadCallback) -> Boolean,
+    ) {
+        val configuration = preloadConfiguration(AD_UNIT_ID)
+        val delegate = RecordingPreloadCallback()
+        val trackingCallback = slot<PreloadCallback>()
+        stubStart(PRELOAD_ID, configuration, trackingCallback)
+
+        val started = startAndTrack(PRELOAD_ID, configuration, START_PLACEMENT, delegate)
+
+        assertTrue(started)
+        assertSuccessfulPreload(
+            preloadId = PRELOAD_ID,
+            trackingCallback = trackingCallback.captured,
+            delegate = delegate,
+            expectedFormat = expectedAdFormat,
+            expectedAdUnitId = AD_UNIT_ID,
+            expectedPlacement = START_PLACEMENT,
+        )
+    }
+
+    protected fun assertNullPollContract(
+        stubNullPoll: (String) -> Unit,
+        pollAndTrackAd: (String) -> Any?,
+    ) {
+        stubNullPoll(PRELOAD_ID)
+
+        assertNull(pollAndTrackAd(PRELOAD_ID))
+        verify(exactly = 0) { adTracker.trackAdLoaded(any(), any()) }
     }
 
     protected fun responseInfo(networkName: String, responseId: String): ResponseInfo = mockk(relaxed = true) {
@@ -102,11 +137,6 @@ internal abstract class PreloaderTest {
         assertEquals(LoadAdError.ErrorCode.NO_FILL.value, failedData.captured.mediatorErrorCode)
     }
 
-    protected fun assertNullPoll(result: Any?) {
-        assertNull(result)
-        verify(exactly = 0) { adTracker.trackAdLoaded(any(), any()) }
-    }
-
     protected class RecordingPreloadCallback(
         private val onPreloaded: (String) -> Unit = {},
         private val onFailedToPreload: (String) -> Unit = {},
@@ -130,5 +160,11 @@ internal abstract class PreloaderTest {
             exhaustedIds += preloadId
             onExhausted(preloadId)
         }
+    }
+
+    private companion object {
+        const val PRELOAD_ID = "preload-buffer"
+        const val AD_UNIT_ID = "preload-unit"
+        const val START_PLACEMENT = "preload-start-placement"
     }
 }

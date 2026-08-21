@@ -10,7 +10,6 @@ import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdPreloader
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
-import com.google.android.libraries.ads.mobile.sdk.common.PreloadCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdEventCallback
@@ -45,36 +44,21 @@ internal class BannerAdPreloaderTest : PreloaderTest() {
     }
 
     @Test
-    fun `start installs preload tracking`() {
-        val configuration = preloadConfiguration("banner-unit")
-        val delegate = RecordingPreloadCallback()
-        val trackingCallback = slot<PreloadCallback>()
-        every { BannerAdPreloader.start("banner-buffer", configuration, capture(trackingCallback)) } returns true
-
-        val started = BannerAdPreloader.startAndTrack(
-            preloadId = "banner-buffer",
-            preloadConfiguration = configuration,
-            placement = "banner-start-placement",
-            preloadCallback = delegate,
-        )
-
-        assertTrue(started)
-        assertSuccessfulPreload(
-            preloadId = "banner-buffer",
-            trackingCallback = trackingCallback.captured,
-            delegate = delegate,
-            expectedFormat = AdFormat.BANNER,
-            expectedAdUnitId = "banner-unit",
-            expectedPlacement = "banner-start-placement",
-        )
-    }
+    fun `start installs preload tracking`() = assertStartInstallsPreloadTracking(
+        expectedAdFormat = AdFormat.BANNER,
+        stubStart = { preloadId, configuration, callback ->
+            every { BannerAdPreloader.start(preloadId, configuration, capture(callback)) } returns true
+        },
+        startAndTrack = { preloadId, configuration, placement, callback ->
+            BannerAdPreloader.startAndTrack(preloadId, configuration, placement, callback)
+        },
+    )
 
     @Test
-    fun `null poll is returned unchanged`() {
-        every { BannerAdPreloader.pollAd("banner-buffer") } returns null
-
-        assertNullPoll(BannerAdPreloader.pollAndTrackAd("banner-buffer"))
-    }
+    fun `null poll is returned unchanged`() = assertNullPollContract(
+        stubNullPoll = { every { BannerAdPreloader.pollAd(it) } returns null },
+        pollAndTrackAd = { BannerAdPreloader.pollAndTrackAd(it) },
+    )
 
     @Test
     fun `poll installs lifecycle and refresh tracking with independent placement and no load event`() {

@@ -8,7 +8,6 @@ package com.revenuecat.purchases.admob.nextgen
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAd
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback
-import com.google.android.libraries.ads.mobile.sdk.common.PreloadCallback
 import com.google.android.libraries.ads.mobile.sdk.nativead.CustomNativeAd
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback
@@ -29,7 +28,6 @@ import io.mockk.verify
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 internal class NativeAdPreloaderTest : PreloaderTest() {
@@ -45,36 +43,21 @@ internal class NativeAdPreloaderTest : PreloaderTest() {
     }
 
     @Test
-    fun `start installs preload tracking`() {
-        val configuration = preloadConfiguration("native-unit")
-        val delegate = RecordingPreloadCallback()
-        val trackingCallback = slot<PreloadCallback>()
-        every { NativeAdPreloader.start("native-buffer", configuration, capture(trackingCallback)) } returns true
-
-        val started = NativeAdPreloader.startAndTrack(
-            preloadId = "native-buffer",
-            preloadConfiguration = configuration,
-            placement = "native-start-placement",
-            preloadCallback = delegate,
-        )
-
-        assertTrue(started)
-        assertSuccessfulPreload(
-            preloadId = "native-buffer",
-            trackingCallback = trackingCallback.captured,
-            delegate = delegate,
-            expectedFormat = AdFormat.NATIVE,
-            expectedAdUnitId = "native-unit",
-            expectedPlacement = "native-start-placement",
-        )
-    }
+    fun `start installs preload tracking`() = assertStartInstallsPreloadTracking(
+        expectedAdFormat = AdFormat.NATIVE,
+        stubStart = { preloadId, configuration, callback ->
+            every { NativeAdPreloader.start(preloadId, configuration, capture(callback)) } returns true
+        },
+        startAndTrack = { preloadId, configuration, placement, callback ->
+            NativeAdPreloader.startAndTrack(preloadId, configuration, placement, callback)
+        },
+    )
 
     @Test
-    fun `null poll is returned unchanged`() {
-        every { NativeAdPreloader.pollAd("native-buffer") } returns null
-
-        assertNullPoll(NativeAdPreloader.pollAndTrackAd("native-buffer"))
-    }
+    fun `null poll is returned unchanged`() = assertNullPollContract(
+        stubNullPoll = { every { NativeAdPreloader.pollAd(it) } returns null },
+        pollAndTrackAd = { NativeAdPreloader.pollAndTrackAd(it) },
+    )
 
     @Test
     fun `poll installs callbacks for every success result without tracking load`() {
