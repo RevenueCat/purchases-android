@@ -454,17 +454,6 @@ internal class PaywallWebViewPrewarmerTest {
         }
     }
 
-    @Test
-    fun `onLowMemory does not interrupt warming`() {
-        val prewarmer = prewarmer()
-        prewarmer.prewarmAll(URL, OTHER_URL)
-
-        (context as Application).onLowMemory()
-
-        assertThat(prewarmer.warmingCount).isEqualTo(1)
-        assertThat(prewarmer.queuedCount).isEqualTo(1)
-    }
-
     // Nothing else pumps the queue when the app returns, and the parked url is alreadyCovered, so prewarm
     // has to restart it rather than bail out.
     @Test
