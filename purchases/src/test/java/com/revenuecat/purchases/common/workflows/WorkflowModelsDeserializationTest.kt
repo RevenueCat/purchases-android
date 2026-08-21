@@ -141,8 +141,8 @@ internal class WorkflowModelsDeserializationTest {
         val screen = JsonTools.json.decodeFromString(
             WorkflowScreen.serializer(),
             workflowScreenJson(
-                productChangeConfig = """
-                    {
+                extraFields = """
+                    "play_store_product_change_mode": {
                       "upgrade_replacement_mode": "charge_full_price",
                       "downgrade_replacement_mode": "deferred"
                     }
@@ -160,13 +160,36 @@ internal class WorkflowModelsDeserializationTest {
     fun `WorkflowScreen treats empty play_store_product_change_mode as absent`() {
         val screen = JsonTools.json.decodeFromString(
             WorkflowScreen.serializer(),
-            workflowScreenJson(productChangeConfig = "{}"),
+            workflowScreenJson(extraFields = """"play_store_product_change_mode": {}"""),
         )
 
         assertThat(screen.productChangeConfig).isNull()
     }
 
-    private fun workflowScreenJson(productChangeConfig: String): String =
+    @Test
+    fun `WorkflowScreen reads zero_decimal_place_countries`() {
+        // The backend posts the field keyed by store; only the Google list applies here.
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            workflowScreenJson(
+                extraFields = """"zero_decimal_place_countries": {"apple": ["TWN", "MEX"], "google": ["TW", "MX"]}""",
+            ),
+        )
+
+        assertThat(screen.zeroDecimalPlaceCountries).containsExactly("TW", "MX")
+    }
+
+    @Test
+    fun `WorkflowScreen defaults zero_decimal_place_countries to empty when absent`() {
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            workflowScreenJson(),
+        )
+
+        assertThat(screen.zeroDecimalPlaceCountries).isEmpty()
+    }
+
+    private fun workflowScreenJson(extraFields: String = ""): String =
         """
             {
               "template_name": "components",
@@ -178,8 +201,8 @@ internal class WorkflowModelsDeserializationTest {
                 }
               },
               "components_localizations": {"en_US": {}},
-              "default_locale": "en_US",
-              "play_store_product_change_mode": $productChangeConfig
+              "default_locale": "en_US"
+              ${if (extraFields.isEmpty()) "" else ",$extraFields"}
             }
         """.trimIndent()
 }
