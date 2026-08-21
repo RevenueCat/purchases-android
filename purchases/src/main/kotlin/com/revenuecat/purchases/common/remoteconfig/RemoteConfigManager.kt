@@ -6,7 +6,6 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
-import com.revenuecat.purchases.common.GetRemoteConfigErrorHandlingBehavior
 import com.revenuecat.purchases.common.JsonProvider
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.between
@@ -15,9 +14,10 @@ import com.revenuecat.purchases.common.caching.isCacheStale
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
-import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerFormatException
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDomainFetcher.DomainFetchResult
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDomainFetcher.FetchOutcome
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
 import kotlinx.coroutines.CompletableDeferred
@@ -43,21 +43,28 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
 /**
- * Orchestrates a single `/v1/config` sync: replays the persisted opaque manifest, then on `204` keeps the cache
- * untouched and on `200` persists the fresh server manifest plus the full per-topic item index — the
- * configuration (incl. each item's inline content) is the source of truth, and persisting it is the **entire**
- * sync commit, advancing the manifest unconditionally. Only then, gated on a successful persist, it writes the
- * inlined blobs the resolved config still wants, prunes the rest, and best-effort prefetches the remaining
- * wanted blobs over the network ([RemoteConfigBlobFetcher], resolving blob source URLs through
- * [RemoteConfigSourceProvider]); a missing or un-parseable blob is recoverable later (re-fetched next sync / on
- * demand) and never blocks the commit. It reports which prefetch blobs are now cached locally on the next
- * request. (Live API base-URL rerouting from the `sources` topic is out of scope — a future phase.)
+ * Orchestrates `/v1/config` syncs over the domain tree: a sync pass fetches the root domain, unfolds the
+ * subdomains each response declares ([RemoteConfiguration.subdomains]), and syncs every domain the same way —
+ * a `204` keeps that domain's cached entry untouched, a `200` persists its fresh server manifest plus its full
+ * per-topic item index. The persisted configuration (incl. each item's inline content) is the source of truth,
+ * and persisting it is a domain's **entire** commit, advancing that domain's manifest unconditionally. Commits
+ * run post-order — children before their parent, the root last — so a parent's topic/subdomain deletions never
+ * land before the subdomains that may have absorbed the moved data; consumers read the parent-wins merged view
+ * across the tree ([PersistedRemoteConfigurationState.mergedTopics]), so a topic can move between domains
+ * without consumers noticing. Each commit writes the inlined blobs its config still wants; once per pass, gated
+ * on at least one successful commit, the blob store is pruned against every persisted domain's live refs and
+ * the remaining wanted blobs are best-effort prefetched over the network ([RemoteConfigBlobFetcher], resolving
+ * blob source URLs through [RemoteConfigSourceProvider]); a missing or un-parseable blob is recoverable later
+ * (re-fetched next sync / on demand) and never blocks a commit. Each domain's request reports which of its
+ * prefetch blobs are now cached locally. (Live API base-URL rerouting from the `sources` topic is out of scope
+ * — a future phase.)
  *
- * The manifest is opaque (stored and replayed verbatim); the active-topic set and removed-topic detection come
- * from the response's [RemoteConfiguration.activeTopics]. The manager is topic-agnostic: it never interprets item
- * shapes or branches on topic name — consumer topics are read lazily by providers through the manager.
+ * Manifests are opaque (stored and replayed verbatim) and domain-scoped; the active-topic set and removed-topic
+ * detection come from each response's [RemoteConfiguration.activeTopics]. The manager is topic-agnostic: it
+ * never interprets item shapes or branches on topic name — consumer topics are read lazily by providers through
+ * the manager.
  *
- * The `200` path runs on [scope]: persistence is synchronous, but the launch lets [clearCache] cancel the
+ * The pass runs on [scope]: persistence is synchronous, but the launch lets [clearCache] cancel the
  * in-flight parse/persist. Blob prefetch runs on the fetcher's own worker pool (not [scope]). Identity changes
  * call [clearCache], which bumps an epoch so a late `/v1/config` response (its HTTP request cannot be
  * socket-cancelled) is dropped instead of persisting over the freshly wiped cache. [clearCache] also rebinds
@@ -94,14 +101,19 @@ internal class RemoteConfigManager(
 ) {
     private val isRefreshing = AtomicBoolean(false)
 
+    // The suspend bridge to the callback-based backend endpoints. The 4xx hook runs at callback time so a root
+    // 4xx disables the session even when the requesting pass was cancelled meanwhile.
+    private val domainFetcher = RemoteConfigDomainFetcher(backend, diskCache, blobStore, ::disableForSession)
+
     // Bumped by clearCache() on every identity change. A request captures the epoch when it starts; once it
     // changes, the in-flight request's callbacks drop their result (the /v1/config request itself cannot be
     // socket-cancelled), so an old user's response can never persist over the wiped cache.
     private val epoch = AtomicInteger(0)
 
-    // Serializes a sync's "re-check epoch + persist" against clearCache()'s "bump epoch + wipe". persist() is
-    // synchronous, so cancellation can't interrupt it; this lock makes the two critical sections atomic so a
-    // late persist either runs fully before the wipe or sees the bumped epoch and skips — never writes after it.
+    // Serializes a sync's "re-check epoch + persist" against clearCache()'s "bump epoch + wipe". commitDomain()
+    // and finalizePass() are synchronous, so cancellation can't interrupt them; this lock makes the critical
+    // sections atomic so a late commit either runs fully before the wipe or sees the bumped epoch and skips —
+    // never writes after it.
     private val cacheLock = Any()
 
     @Volatile
@@ -233,50 +245,194 @@ internal class RemoteConfigManager(
         if (!shouldRefresh) {
             return
         }
-        issueConfigRequest(appInBackground, requestEpoch, requestAppUserID, requestFetchContext)
+        // The whole tree pass runs on [scope] so clearCache() can cancel it, and the guard is released at the
+        // pass's single terminal point — reads waiting on [refreshCompletion] wake when the full tree settles.
+        scope.launch {
+            try {
+                runTreePass(appInBackground, requestEpoch, requestAppUserID, requestFetchContext)
+            } finally {
+                releaseGuardIfOwned(requestEpoch)
+            }
+        }
     }
 
     /**
-     * Issues the `/v1/config` request for a sync that already owns the in-flight guard, replaying the persisted
-     * sync bookkeeping the server diffs against: the opaque manifest, the last successful refresh time, and the
-     * prefetch blobs actually held.
+     * One sync pass over the domain tree for a refresh that already owns the in-flight guard: fetch the root,
+     * unfold and sync the subdomains each response declares, and commit post-order (children before their
+     * parent) so a parent's topic/subdomain deletions never land before the domains that may have absorbed the
+     * moved data. Per-domain commits are individually atomic writes of the one persisted tree; the pass-wide
+     * work (batched 204 refresh times, blob retention, the generation bump, and the staleness bookkeeping) runs
+     * once in [finalizePass].
      */
-    private fun issueConfigRequest(
+    private suspend fun runTreePass(
         appInBackground: Boolean,
         requestEpoch: Int,
         requestAppUserID: String,
         requestFetchContext: RemoteConfigFetchContext,
     ) {
-        val persisted = diskCache.read()
-        val storedBlobs = blobStore.cachedRefs()
-        val domain = persisted?.rootDomain ?: DEFAULT_DOMAIN
-        // Request bookkeeping is domain-scoped: each domain replays its own manifest/refresh time/prefetch set.
-        val domainState = persisted?.domains?.get(domain)
-        logRefreshStart(persisted, appInBackground)
-        backend.getRemoteConfig(
-            appInBackground = appInBackground,
-            appUserID = requestAppUserID,
-            fetchContext = requestFetchContext,
-            domain = domain,
-            // Opaque manifest replayed verbatim; null on the first run when nothing is persisted yet.
-            manifest = domainState?.manifest,
-            lastRefreshTime = domainState?.lastRefreshTime?.let(::Date),
-            // Report only the prefetch blobs we actually hold, so the server stops re-inlining them.
-            prefetchedBlobs = domainState?.prefetchBlobs?.filter { storedBlobs.contains(it) } ?: emptyList(),
-            onSuccess = { container, requestDate, _ ->
-                handleMainRefreshSuccess(requestEpoch, persisted, container, requestDate)
-            },
-            onError = { error, behavior ->
-                handleMainRefreshError(
-                    requestEpoch,
-                    appInBackground,
-                    domain,
-                    hasCachedConfig = domainState != null,
-                    error,
-                    behavior,
-                )
-            },
-        )
+        val rootDomain = diskCache.read()?.rootDomain ?: DEFAULT_DOMAIN
+        val ctx = TreePassContext(requestEpoch, appInBackground, requestAppUserID, requestFetchContext, rootDomain)
+        syncDomainTree(ctx, rootDomain, depth = 0, isRoot = true)
+        finalizePass(ctx)
+    }
+
+    /**
+     * Syncs [domain] and, recursively, the subdomains its response declares, committing the children before the
+     * domain itself. Returns the domain's terminal outcome for this pass. A domain already synced this pass
+     * returns its recorded outcome without a second fetch; a cycle (a domain re-listed inside its own subtree)
+     * and a domain beyond [PersistedRemoteConfigurationState.MAX_SUBDOMAIN_DEPTH] are skipped, which counts as
+     * fresh — stalling commits on a malformed server tree would freeze configuration updates indefinitely.
+     */
+    private suspend fun syncDomainTree(
+        ctx: TreePassContext,
+        domain: String,
+        depth: Int,
+        isRoot: Boolean,
+    ): DomainSyncOutcome {
+        val shortCircuit = shortCircuitOutcome(ctx, domain, depth)
+        if (shortCircuit != null) return shortCircuit
+        ctx.inProgress += domain
+        return try {
+            val fetch = domainFetcher.fetch(domain, isRoot, ctx.appInBackground, ctx.appUserID, ctx.fetchContext)
+            val outcome = when (fetch.outcome) {
+                // The 4xx side effects (the root's session kill-switch) already ran at callback time.
+                FetchOutcome.ClientError -> DomainSyncOutcome.Failed
+                FetchOutcome.FailedRetryable ->
+                    if (isRoot) rootRetryableFailureOutcome(ctx, domain) else DomainSyncOutcome.Failed
+                FetchOutcome.Success -> syncFetchedDomain(ctx, domain, depth, isRoot, fetch)
+            }
+            ctx.outcomes[domain] = outcome
+            outcome
+        } finally {
+            ctx.inProgress -= domain
+        }
+    }
+
+    /** The outcomes that resolve without a fetch: already synced this pass, a cycle, or beyond the depth cap. */
+    private fun shortCircuitOutcome(ctx: TreePassContext, domain: String, depth: Int): DomainSyncOutcome? = when {
+        domain in ctx.outcomes -> ctx.outcomes.getValue(domain)
+        domain in ctx.inProgress -> {
+            warnLog { "Remote config domain '$domain' is re-listed inside its own subtree; ignoring the cycle." }
+            DomainSyncOutcome.Skipped
+        }
+        depth > PersistedRemoteConfigurationState.MAX_SUBDOMAIN_DEPTH -> {
+            warnLog {
+                "Remote config domain '$domain' is deeper than the supported subdomain depth " +
+                    "(${PersistedRemoteConfigurationState.MAX_SUBDOMAIN_DEPTH}); skipping it."
+            }
+            DomainSyncOutcome.Skipped
+        }
+        else -> null
+    }
+
+    private suspend fun syncFetchedDomain(
+        ctx: TreePassContext,
+        domain: String,
+        depth: Int,
+        isRoot: Boolean,
+        fetch: DomainFetchResult,
+    ): DomainSyncOutcome {
+        val container = fetch.container
+            ?: return domainNotModifiedOutcome(ctx, domain, depth, isRoot, fetch.requestDate)
+        val response = parseConfigResponse(container)
+        return when {
+            response == null -> DomainSyncOutcome.Failed
+            !syncSubdomains(ctx, response.subdomains, depth) -> {
+                warnLog { "Not committing remote config domain '$domain': part of its subtree failed to sync." }
+                DomainSyncOutcome.Failed
+            }
+            commitDomain(ctx, domain, isRoot, response, container, fetch.requestDate) -> DomainSyncOutcome.Committed
+            else -> DomainSyncOutcome.Failed
+        }
+    }
+
+    private fun parseConfigResponse(container: RCContainer): RemoteConfiguration? = try {
+        RemoteConfiguration.parse(container.config)
+    } catch (e: SerializationException) {
+        errorLog(e) { "Failed to parse remote config response. Keeping the cached configuration." }
+        null
+    } catch (e: RCContainerFormatException) {
+        errorLog(e) { "Failed to decode remote config response. Keeping the cached configuration." }
+        null
+    }
+
+    /**
+     * Syncs a domain's listed subdomains before its own commit: the commit applies its response's
+     * topic/subdomain deletions, which must not land before the subdomains that may now carry the moved data
+     * have synced. Every child is synced even when a sibling fails (a successful child's commit is additive and
+     * safe); a failure only defers the parent's commit — old state and manifest are kept, so the next pass
+     * re-diffs cheaply. Returns whether every child ended the pass fresh.
+     */
+    private suspend fun syncSubdomains(ctx: TreePassContext, subdomains: List<String>, depth: Int): Boolean =
+        subdomains
+            .map { child -> syncDomainTree(ctx, child, depth + 1, isRoot = false) }
+            .all { it.isFresh }
+
+    /**
+     * Handles a domain's `204 Not Modified`: its cached entry is confirmed current, so record the confirmed
+     * refresh time for the pass-end batch write — but still recurse, because a domain's 204 says nothing about
+     * its subtree's freshness. Without a persisted entry there is nothing the 204 can confirm or update (a 204
+     * must never resurrect state that was wiped meanwhile): the root still counts as unchanged — the pass
+     * bookkeeping advances like any confirmed-current sync — but a child fails, because a missing child entry
+     * is exactly the gap its parent's commit must not paper over.
+     */
+    private suspend fun domainNotModifiedOutcome(
+        ctx: TreePassContext,
+        domain: String,
+        depth: Int,
+        isRoot: Boolean,
+        requestDate: Date?,
+    ): DomainSyncOutcome {
+        debugLog { "Remote config unchanged (204 Not Modified)." }
+        val persistedDomain = diskCache.read()?.domains?.get(domain)
+        if (persistedDomain == null) {
+            warnLog { "Remote config domain '$domain' returned 204 but nothing is persisted for it." }
+            return if (isRoot) DomainSyncOutcome.Unchanged else DomainSyncOutcome.Failed
+        }
+        // Only the server's own time is worth recording; a response without it carries the old value forward.
+        requestDate?.let { ctx.pending204RefreshTimes[domain] = it.time }
+        val childrenFresh = syncSubdomains(ctx, persistedDomain.subdomains, depth)
+        return if (childrenFresh) DomainSyncOutcome.Unchanged else DomainSyncOutcome.Failed
+    }
+
+    /**
+     * A retryable root failure prefers cached data over the fallback: only a cold start (nothing persisted for
+     * the root) tries the fallback endpoint, and only for the root — the fallback host is the emergency,
+     * least-capable endpoint, so its load is not multiplied by a tree of cold requests. A fallback-committed
+     * root still persists its subdomains list, so the next regular pass completes the tree once the main API
+     * recovers.
+     */
+    private suspend fun rootRetryableFailureOutcome(ctx: TreePassContext, domain: String): DomainSyncOutcome {
+        if (diskCache.read()?.domains?.get(domain) != null) return DomainSyncOutcome.Failed
+        verboseLog { "Main remote config request failed with no cached config; trying the fallback endpoint." }
+        val response = domainFetcher.fetchFallback(ctx.appInBackground, domain)
+        // No persisted state exists on this path, and the fallback host's request time is not borrowed as the
+        // refresh time: the value is only meaningful to the endpoint that issued it.
+        return when {
+            response == null -> DomainSyncOutcome.Failed
+            commitDomain(ctx, domain, isRoot = true, response, container = null, requestDate = null) ->
+                DomainSyncOutcome.Committed
+            else -> DomainSyncOutcome.Failed
+        }
+    }
+
+    /**
+     * The root's 4xx session kill-switch. Applied regardless of epoch ownership (a late response for an old
+     * identity is still a valid signal that the endpoint refuses this app's requests). Reads now return null,
+     * so in-memory caches are dropped too.
+     */
+    private fun disableForSession(error: PurchasesError) {
+        if (!disabled) {
+            disabled = true
+            val invalidatedGeneration = generation.incrementAndGet()
+            listeners.forEach { it.onConfigInvalidated(invalidatedGeneration) }
+            // Distinct one-shot signal (guarded by !disabled): lets consumers refetch offerings so paywall
+            // components — skipped while the endpoint was live — get decoded for the fallback render path.
+            listeners.forEach { it.onRemoteConfigDisabled(invalidatedGeneration) }
+        }
+        log(LogIntent.RC_ERROR) {
+            "Disabling remote config for this session after receiving a 4xx response. Error: $error"
+        }
     }
 
     private fun isRefreshAttemptCooldownElapsed(now: Date): Boolean {
@@ -288,198 +444,6 @@ internal class RemoteConfigManager(
     // [cacheLock].
     private fun fetchContextForRequest(requested: RemoteConfigFetchContext): RemoteConfigFetchContext {
         return if (hasCommittedInitialConfig) requested else RemoteConfigFetchContext.AppStart
-    }
-
-    /**
-     * Handles a successful **main** `/v1/config` response: a `204` keeps the cache (bookkeeping only), a `200`
-     * parses the config element and commits it (on [scope] so [clearCache] can cancel the parse/persist). Drops
-     * the result if the epoch changed meanwhile (an identity change already reset the guard via [clearCache]).
-     *
-     * [requestDate] is the server's own request time, which is what gets persisted and replayed as the refresh
-     * time — never a device-clock value the server cannot interpret. Null when the response carried no such header.
-     */
-    private fun handleMainRefreshSuccess(
-        requestEpoch: Int,
-        persisted: PersistedRemoteConfigurationState?,
-        container: RCContainer?,
-        requestDate: Date?,
-    ) {
-        if (epoch.get() != requestEpoch) {
-            // The cache was cleared (identity change) after this request started. Drop the stale
-            // response and leave isRefreshing alone: clearCache() reset it, or a newer refresh owns it.
-            return
-        }
-        if (requestDate == null) {
-            // Not fatal — the previous value carries forward — but it means the server stopped telling us its own
-            // time, so the refresh time replayed on later requests is frozen. Surfaced here rather than swallowed
-            // because nothing else makes this observable in the field.
-            warnLog {
-                "Remote config response carried no ${HTTPResult.REQUEST_TIME_HEADER_NAME} header. Keeping the " +
-                    "previous refresh time; the server cannot see how fresh this client's configuration is."
-            }
-        }
-        if (container == null) {
-            handleNotModified(requestEpoch, requestDate)
-            return
-        }
-        scope.launch {
-            try {
-                val response = RemoteConfiguration.parse(container.config)
-                synchronized(cacheLock) {
-                    if (epoch.get() != requestEpoch) return@launch
-                    persist(
-                        previous = persisted,
-                        response = response,
-                        container = container,
-                        requestDate = requestDate,
-                    )
-                }
-            } catch (e: SerializationException) {
-                errorLog(e) {
-                    "Failed to parse remote config response. Keeping the cached configuration."
-                }
-            } catch (e: RCContainerFormatException) {
-                errorLog(e) {
-                    "Failed to decode remote config response. Keeping the cached configuration."
-                }
-            } finally {
-                releaseGuardIfOwned(requestEpoch)
-            }
-        }
-    }
-
-    /**
-     * Handles a failure of the **main** `/v1/config` request. Prefers cached data over the fallback: only when
-     * the request fails with a retryable error AND nothing is cached yet (cold start) is the fallback endpoint
-     * tried, using the same [domain] the main request used. Any cached config wins (keep it), and a 4xx
-     * (`SHOULD_DISABLE`) still disables the endpoint without a fallback.
-     */
-    private fun handleMainRefreshError(
-        requestEpoch: Int,
-        appInBackground: Boolean,
-        domain: String,
-        hasCachedConfig: Boolean,
-        error: PurchasesError,
-        behavior: GetRemoteConfigErrorHandlingBehavior,
-    ) {
-        if (behavior == GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY && !hasCachedConfig) {
-            fetchFromFallback(requestEpoch, appInBackground, domain)
-        } else {
-            handleRefreshError(requestEpoch, error, behavior)
-        }
-    }
-
-    /**
-     * The cold-start fallback: the main `/v1/config` request failed with a retryable error and no config is
-     * cached, so fetch the plain-JSON [RemoteConfiguration] from the fallback endpoint (for the same [domain] the
-     * main request used) and commit it. There is never persisted state on this path, so the commit passes
-     * `previous = null`. The in-flight guard captured by the originating [refreshRemoteConfig] is **kept held**
-     * across this call — the fallback continues that same sync/epoch and releases the guard at its own terminal
-     * points (success `finally` / `onError`). Does nothing if the epoch changed meanwhile (an identity change
-     * already reset the guard via [clearCache]).
-     */
-    private fun fetchFromFallback(
-        requestEpoch: Int,
-        appInBackground: Boolean,
-        domain: String,
-    ) {
-        if (epoch.get() != requestEpoch) return
-        verboseLog { "Main remote config request failed with no cached config; trying the fallback endpoint." }
-        backend.getRemoteConfigFallback(
-            appInBackground = appInBackground,
-            domain = domain,
-            onSuccess = { response, _ ->
-                if (epoch.get() != requestEpoch) {
-                    // Identity changed after the fallback started; clearCache() reset the guard. Drop the result.
-                    return@getRemoteConfigFallback
-                }
-                scope.launch {
-                    try {
-                        synchronized(cacheLock) {
-                            if (epoch.get() != requestEpoch) return@launch
-                            // No persisted state exists on the fallback path (it only runs on a cold start). The
-                            // fallback host is not the main API, so its request time is not borrowed as the refresh
-                            // time: the value is only meaningful to the endpoint that issued it.
-                            persist(previous = null, response = response, container = null, requestDate = null)
-                        }
-                    } finally {
-                        releaseGuardIfOwned(requestEpoch)
-                    }
-                }
-            },
-            onError = { error, behavior -> handleRefreshError(requestEpoch, error, behavior) },
-        )
-    }
-
-    /**
-     * Handles a `204 Not Modified`: the cached configuration is confirmed current, so keep it and advance the refresh
-     * bookkeeping — including the persisted refresh time, since a 204 is as much a successful refresh as a 200. Runs
-     * on [scope] (like the 200 path) because that persist must not happen on the backend callback thread.
-     *
-     * The in-memory bookkeeping is unconditional: the configuration is already durably committed from an earlier
-     * request, so a failed timestamp write must not hold back [hasCommittedInitialConfig], nor [lastRefreshedAt]
-     * (which would re-arm the staleness gate immediately). It only costs the next request a staler header value.
-     */
-    private fun handleNotModified(requestEpoch: Int, requestDate: Date?) {
-        debugLog { "Remote config unchanged (204 Not Modified)." }
-        scope.launch {
-            try {
-                synchronized(cacheLock) {
-                    if (epoch.get() != requestEpoch) return@launch
-                    lastRefreshedAt = dateProvider.now
-                    lastRefreshAttemptAt = null
-                    hasCommittedInitialConfig = true
-                    // Only the server's own time is worth persisting, so a response without it writes nothing and
-                    // the previous value carries forward. Re-read instead of reusing the request's snapshot, and
-                    // skip when nothing is persisted: a 204 must never resurrect a cache that was wiped meanwhile.
-                    if (requestDate != null) {
-                        diskCache.read()?.let { state ->
-                            state.rootState?.let { root ->
-                                val refreshed = root.copy(lastRefreshTime = requestDate.time)
-                                diskCache.write(state.copy(domains = state.domains + (state.rootDomain to refreshed)))
-                            }
-                        }
-                    }
-                }
-            } finally {
-                releaseGuardIfOwned(requestEpoch)
-            }
-        }
-    }
-
-    private fun logRefreshStart(persisted: PersistedRemoteConfigurationState?, appInBackground: Boolean) {
-        verboseLog {
-            "Refreshing remote config (domain=${persisted?.rootDomain ?: DEFAULT_DOMAIN}, " +
-                "manifest present=${persisted?.rootState?.manifest != null}, appInBackground=$appInBackground)."
-        }
-    }
-
-    private fun handleRefreshError(
-        requestEpoch: Int,
-        error: PurchasesError,
-        behavior: GetRemoteConfigErrorHandlingBehavior,
-    ) {
-        if (behavior == GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE && !disabled) {
-            // A 4xx: disable the endpoint for the rest of the session. This is an endpoint-level fact, so set it
-            // regardless of epoch ownership (a late response for an old identity is still a valid signal that the
-            // endpoint refuses this app's requests). Reads now return null, so drop any in-memory caches too.
-            disabled = true
-            val invalidatedGeneration = generation.incrementAndGet()
-            listeners.forEach { it.onConfigInvalidated(invalidatedGeneration) }
-            // Distinct one-shot signal (this branch runs once, guarded by !disabled): lets consumers refetch
-            // offerings so paywall components — skipped while the endpoint was live — get decoded for the
-            // fallback render path.
-            listeners.forEach { it.onRemoteConfigDisabled(invalidatedGeneration) }
-        }
-        if (releaseGuardIfOwned(requestEpoch)) {
-            if (behavior == GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE) {
-                log(LogIntent.RC_ERROR) {
-                    "Disabling remote config for this session after receiving a 4xx response. Error: $error"
-                }
-            } else {
-                errorLog(error)
-            }
-        }
     }
 
     /**
@@ -867,15 +831,39 @@ internal class RemoteConfigManager(
         }
     }
 
-    private fun persist(
-        previous: PersistedRemoteConfigurationState?,
+    /**
+     * Commits one domain's `200` response into its entry of the persisted tree. Persisting the updated tree IS
+     * this domain's commit — the full topic index plus the manifest the server diffs against is the source of
+     * truth, and the manifest advances unconditionally with the write. Inline blobs are recoverable over the
+     * network, so the blob store is only touched once the state is durably committed (a failed persist never
+     * orphans blobs); blob retention and the generation bump are pass-wide and deferred to [finalizePass].
+     *
+     * Runs under [cacheLock] with an epoch re-check, so a commit racing [clearCache] either lands fully before
+     * the wipe or sees the bumped epoch and skips. Returns whether the state was durably persisted.
+     *
+     * [container] is null on the fallback path (plain-JSON response with no inlined blob elements to extract);
+     * the wanted blobs are then fetched over the network by [prefetchBlobs] instead. [requestDate] is the
+     * server's own request time — never a device-clock value — and is null when the response carried no such
+     * header (the previous value carries forward), or on the fallback path.
+     */
+    private fun commitDomain(
+        ctx: TreePassContext,
+        requestedDomain: String,
+        isRoot: Boolean,
         response: RemoteConfiguration,
-        // Null on the fallback path (plain-JSON response with no inlined blob elements to extract); the wanted
-        // blobs are then fetched over the network by prefetchBlobs instead.
         container: RCContainer?,
-        // The server's own request time. Null when the response carried no such header, or on the fallback path.
         requestDate: Date?,
-    ) {
+    ): Boolean = synchronized(cacheLock) {
+        if (epoch.get() != ctx.requestEpoch) return false
+        // Children stay keyed by the name their parent listed — the linkage the parent's subdomains list is
+        // resolved against. Only the root follows the response's echoed domain.
+        if (!isRoot && response.domain != requestedDomain) {
+            warnLog {
+                "Remote config response for domain '$requestedDomain' echoed domain '${response.domain}'; " +
+                    "keeping the requested name."
+            }
+        }
+        val domainKey = if (isRoot) response.domain else requestedDomain
         debugLog {
             val changed = response.topics.entries.joinToString { (name, topic) ->
                 "$name -> items=${topic.keys}"
@@ -883,25 +871,51 @@ internal class RemoteConfigManager(
             "Received remote config: active topics=${response.activeTopics}; changed topics: " +
                 "[${changed.ifEmpty { "none" }}]."
         }
-        val previousDomainState = previous?.domains?.get(response.domain)
-        val previousTopics = previousDomainState?.topics ?: emptyMap()
+        val previousState = diskCache.read()
+        val previousDomainState = previousState?.domains?.get(domainKey)
         // Changed topics (present in the response) overwrite their item index; unchanged active topics keep their
         // carried-forward index (the server omits them); topics no longer active are pruned.
-        val mergedTopics = (previousTopics + response.topics)
+        val mergedTopics = ((previousDomainState?.topics ?: emptyMap()) + response.topics)
             .filterKeys { it in response.activeTopics }
         // Blobs this domain's config still wants: the prefetch set plus any active-topic blob ref.
         val domainBlobRefs = response.prefetchBlobs.toSet() + mergedTopics.toTopicBlobRefs().values.flatten()
+        val newState = committedState(ctx, domainKey, isRoot, response, previousState, mergedTopics, requestDate)
+        val persisted = diskCache.write(newState)
 
-        // Persist the configuration first: the full topic index (incl. each item's inline content) plus the
-        // manifest the server diffs against is the source of truth, and persisting it IS the entire commit (the
-        // manifest advances unconditionally). Inline blobs are recoverable over the network, so only touch the
-        // blob store once the state is durably committed — a failed persist never orphans or evicts blobs.
+        if (persisted) {
+            ctx.committedCount++
+            ctx.lastPersistedState = newState
+            debugLog {
+                "Persisted remote config (domain=$domainKey, ${response.activeTopics.size} active topics, " +
+                    "${domainBlobRefs.size} blobs wanted)."
+            }
+            container?.let { extractInlineBlobs(it, domainBlobRefs) }
+            prefetchBlobs(response, mergedTopics)
+        } else {
+            errorLog { "Skipping remote config blob sync: failed to persist the configuration." }
+        }
+        persisted
+    }
+
+    private fun committedState(
+        ctx: TreePassContext,
+        domainKey: String,
+        isRoot: Boolean,
+        response: RemoteConfiguration,
+        previousState: PersistedRemoteConfigurationState?,
+        mergedTopics: Map<String, ConfigTopic>,
+        requestDate: Date?,
+    ): PersistedRemoteConfigurationState {
         // A root rename replaces the whole tree (old entries would be unreachable stale state, not history).
-        val carriedDomains = previous?.domains?.takeIf { previous.rootDomain == response.domain } ?: emptyMap()
-        val newState = PersistedRemoteConfigurationState(
-            rootDomain = response.domain,
+        val carriedDomains = when {
+            !isRoot -> previousState?.domains ?: emptyMap()
+            previousState?.rootDomain == response.domain -> previousState.domains
+            else -> emptyMap()
+        }
+        return PersistedRemoteConfigurationState(
+            rootDomain = if (isRoot) response.domain else previousState?.rootDomain ?: ctx.rootDomainName,
             domains = carriedDomains + (
-                response.domain to PersistedDomainState(
+                domainKey to PersistedDomainState(
                     manifest = response.manifest,
                     subdomains = response.subdomains,
                     activeTopics = response.activeTopics,
@@ -909,35 +923,89 @@ internal class RemoteConfigManager(
                     topics = mergedTopics,
                     // Server time only: a response without it carries the last server-supplied value forward
                     // rather than substituting a device-clock reading the server cannot compare against its own.
-                    lastRefreshTime = requestDate?.time ?: previousDomainState?.lastRefreshTime,
+                    lastRefreshTime = requestDate?.time
+                        ?: previousState?.domains?.get(domainKey)?.lastRefreshTime,
                 )
                 ),
         )
-        val persisted = diskCache.write(newState)
+    }
 
-        if (persisted) {
-            // The staleness gate measures elapsed *local* time (isCacheStale subtracts from dateProvider.now), so
-            // it stays on the device clock and is deliberately not the value persisted above.
-            lastRefreshedAt = dateProvider.now
-            lastRefreshAttemptAt = null
-            hasCommittedInitialConfig = true
-            debugLog {
-                "Persisted remote config (domain=${response.domain}, ${response.activeTopics.size} active topics, " +
-                    "${domainBlobRefs.size} blobs wanted)."
+    /**
+     * The pass-wide epilogue, run once after the tree settles, under [cacheLock] with an epoch re-check:
+     * 1. Writes the 204-confirmed refresh times in one batch (skipped when nothing was confirmed).
+     * 2. Prunes the blob store against [PersistedRemoteConfigurationState.liveBlobRefs] — the union across
+     *    every persisted domain, never a single domain's set — and advances the generation once for the whole
+     *    pass, so listeners re-warm from a tree-consistent state. Both only when this pass committed something,
+     *    mirroring the "blob work only after a successful persist" gating.
+     * 3. Advances the staleness bookkeeping only when every synced domain ended fresh: a partial pass leaves the
+     *    cache stale so the next trigger retries the tree (already-committed domains answer with cheap 204s,
+     *    and the attempt cooldown keeps retries from hammering).
+     */
+    private fun finalizePass(ctx: TreePassContext) {
+        synchronized(cacheLock) {
+            if (epoch.get() != ctx.requestEpoch) return
+            // The last commit's write is the current tree; falling back to a read covers all-204 passes.
+            var state = ctx.lastPersistedState ?: diskCache.read()
+            if (state != null && ctx.pending204RefreshTimes.isNotEmpty()) {
+                val updated = state.copy(
+                    domains = state.domains.mapValues { (name, domainState) ->
+                        ctx.pending204RefreshTimes[name]
+                            ?.let { domainState.copy(lastRefreshTime = it) }
+                            ?: domainState
+                    },
+                )
+                if (diskCache.write(updated)) state = updated
             }
-            container?.let { extractInlineBlobs(it, domainBlobRefs) }
-            // Retention spans every persisted domain, never just the one that synced: another domain's blobs
-            // must survive this domain's cleanup.
-            blobStore.retainOnly(newState.liveBlobRefs)
-            prefetchBlobs(response, mergedTopics)
-            // A new version is committed: advance the generation and let listeners re-warm their in-memory
-            // caches. Runs under cacheLock (both persist callers hold it), so the bump+notify is serialized
-            // against clearCache()'s bump+notify.
-            val committedGeneration = generation.incrementAndGet()
-            listeners.forEach { it.onConfigCommitted(committedGeneration) }
-        } else {
-            errorLog { "Skipping remote config blob sync: failed to persist the configuration." }
+            if (ctx.committedCount > 0) {
+                state?.let { blobStore.retainOnly(it.liveBlobRefs) }
+                val committedGeneration = generation.incrementAndGet()
+                listeners.forEach { it.onConfigCommitted(committedGeneration) }
+            }
+            if (ctx.allFresh) {
+                // The staleness gate measures elapsed *local* time (isCacheStale subtracts from
+                // dateProvider.now), so it stays on the device clock, unlike the persisted server refresh times.
+                lastRefreshedAt = dateProvider.now
+                lastRefreshAttemptAt = null
+                hasCommittedInitialConfig = true
+            }
         }
+    }
+
+    /** The mutable state of one tree pass; touched only by the pass coroutine (domains sync sequentially). */
+    private class TreePassContext(
+        val requestEpoch: Int,
+        val appInBackground: Boolean,
+        val appUserID: String,
+        val fetchContext: RemoteConfigFetchContext,
+        /** The root name this pass synced, for a child commit landing before any root state exists. */
+        val rootDomainName: String,
+    ) {
+        /** Terminal outcome per synced domain; doubles as the "already synced this pass" dedupe. */
+        val outcomes = mutableMapOf<String, DomainSyncOutcome>()
+
+        /** Domains whose sync is on the recursion stack; a re-listing inside its own subtree is a cycle. */
+        val inProgress = mutableSetOf<String>()
+
+        /** Server refresh times confirmed by per-domain 204s, written in one batch at pass end. */
+        val pending204RefreshTimes = mutableMapOf<String, Long>()
+
+        var committedCount = 0
+
+        /** The tree as of this pass's most recent successful commit; null when nothing committed yet. */
+        var lastPersistedState: PersistedRemoteConfigurationState? = null
+
+        val allFresh: Boolean get() = outcomes.values.all { it.isFresh }
+    }
+
+    private enum class DomainSyncOutcome {
+        Committed,
+        Unchanged,
+        Skipped,
+        Failed,
+        ;
+
+        /** Whether the domain's subtree is safe to apply a parent's deletions against. */
+        val isFresh: Boolean get() = this != Failed
     }
 
     /**
@@ -945,7 +1013,7 @@ internal class RemoteConfigManager(
      * [RemoteConfiguration.prefetchBlobs] plus any item flagged `prefetch`. Re-arms the blob source provider
      * first **only if a prior cycle exhausted its sources** (otherwise failover progress is kept, so a
      * known-bad higher-priority source isn't re-tried every sync), then hands the not-yet-cached refs to the
-     * fetcher's LOW-priority queue. Runs on the manager's IO scope (inside [persist]), so it never blocks the
+     * fetcher's LOW-priority queue. Runs on the manager's IO scope (inside [commitDomain]), so it never blocks the
      * main thread; a failed download is tolerated (re-fetched next sync / on demand).
      */
     private fun prefetchBlobs(response: RemoteConfiguration, mergedTopics: Map<String, ConfigTopic>) {
