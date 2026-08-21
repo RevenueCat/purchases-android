@@ -2,20 +2,14 @@
 
 package com.revenuecat.purchases.admob.nextgen
 
-import com.google.android.libraries.ads.mobile.sdk.banner.BannerAd
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback
 import com.google.android.libraries.ads.mobile.sdk.common.PreloadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.PreloadConfiguration
-import com.google.android.libraries.ads.mobile.sdk.nativead.CustomNativeAd
-import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoadResult
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdPreloader
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdEventCallback
-import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdRefreshCallback
-import com.revenuecat.purchases.admob.nextgen.tracking.TrackingNativeAdEventCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingPreloadCallback
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import kotlin.jvm.JvmSynthetic
@@ -89,63 +83,23 @@ private fun NativeAdLoadResult.NativeAdLoadSuccessResult.installPreloaderTrackin
     placement: String?,
 ) {
     when (this) {
-        is NativeAdLoadResult.NativeAdSuccess -> ad.installPreloaderTrackingCallbacks(
-            adEventCallback = nativeAdEventCallback,
+        is NativeAdLoadResult.NativeAdSuccess -> ad.installTrackingEventCallback(
+            delegate = nativeAdEventCallback,
             placement = placement,
+            adUnitId = ad.adUnitId,
         )
 
-        is NativeAdLoadResult.CustomNativeAdSuccess -> ad.installPreloaderTrackingCallbacks(
-            adEventCallback = nativeAdEventCallback,
+        is NativeAdLoadResult.CustomNativeAdSuccess -> ad.installTrackingEventCallback(
+            delegate = nativeAdEventCallback,
             placement = placement,
+            adUnitId = ad.adUnitId,
         )
 
-        is NativeAdLoadResult.BannerAdSuccess -> ad.installPreloaderTrackingCallbacks(
+        is NativeAdLoadResult.BannerAdSuccess -> ad.installTrackingCallbacks(
             adEventCallback = bannerAdEventCallback,
             bannerAdRefreshCallback = bannerAdRefreshCallback,
             placement = placement,
+            adUnitId = ad.adUnitId,
         )
     }
-}
-
-private fun NativeAd.installPreloaderTrackingCallbacks(
-    adEventCallback: NativeAdEventCallback?,
-    placement: String?,
-) {
-    this.adEventCallback = TrackingNativeAdEventCallback(
-        initialDelegate = adEventCallback,
-        initialPlacement = placement,
-        adUnitId = adUnitId,
-        responseInfoProvider = ::getResponseInfo,
-    )
-}
-
-private fun CustomNativeAd.installPreloaderTrackingCallbacks(
-    adEventCallback: NativeAdEventCallback?,
-    placement: String?,
-) {
-    this.adEventCallback = TrackingNativeAdEventCallback(
-        initialDelegate = adEventCallback,
-        initialPlacement = placement,
-        adUnitId = adUnitId,
-        responseInfoProvider = ::getResponseInfo,
-    )
-}
-
-private fun BannerAd.installPreloaderTrackingCallbacks(
-    adEventCallback: BannerAdEventCallback?,
-    bannerAdRefreshCallback: BannerAdRefreshCallback?,
-    placement: String?,
-) {
-    this.adEventCallback = TrackingBannerAdEventCallback(
-        initialDelegate = adEventCallback,
-        initialPlacement = placement,
-        adUnitId = adUnitId,
-        responseInfoProvider = ::getResponseInfo,
-    )
-    this.bannerAdRefreshCallback = TrackingBannerAdRefreshCallback(
-        delegate = bannerAdRefreshCallback,
-        placement = placement,
-        adUnitId = adUnitId,
-        responseInfoProvider = ::getResponseInfo,
-    )
 }

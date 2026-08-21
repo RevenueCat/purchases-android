@@ -7,6 +7,7 @@ package com.revenuecat.purchases.admob.nextgen
 
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAd
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
+import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
 import com.google.android.libraries.ads.mobile.sdk.nativead.CustomNativeAd
@@ -20,6 +21,7 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdEventCallback
+import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdRefreshCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingNativeAdEventCallback
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdTracker
@@ -38,6 +40,7 @@ import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -88,9 +91,14 @@ class NativeAdFlowTest {
         assertEquals(listOf(nativeAd), delegate.nativeAds)
         assertEquals(listOf(customNativeAd), delegate.customNativeAds)
         assertEquals(listOf(bannerAd), delegate.bannerAds)
-        assertTrue(nativeAd.adEventCallback is TrackingNativeAdEventCallback)
-        assertTrue(customNativeAd.adEventCallback is TrackingNativeAdEventCallback)
-        assertTrue(bannerAd.adEventCallback is TrackingBannerAdEventCallback)
+        val nativeTrackingCallback = nativeAd.adEventCallback as TrackingNativeAdEventCallback
+        val customNativeTrackingCallback = customNativeAd.adEventCallback as TrackingNativeAdEventCallback
+        val bannerTrackingCallback = bannerAd.adEventCallback as TrackingBannerAdEventCallback
+        val bannerRefreshTrackingCallback = bannerAd.bannerAdRefreshCallback as TrackingBannerAdRefreshCallback
+        assertSame(nativeEventCallback, nativeTrackingCallback.delegate)
+        assertSame(nativeEventCallback, customNativeTrackingCallback.delegate)
+        assertSame(bannerEventCallback, bannerTrackingCallback.delegate)
+        assertNull(bannerRefreshTrackingCallback.delegate)
 
         val trackedLoads = mutableListOf<AdLoadedData>()
         verify(exactly = 3) {
@@ -162,6 +170,7 @@ class NativeAdFlowTest {
         results.zip(returnedResults).forEach { (expected, actual) -> assertSame(expected, actual) }
         assertTrue(customNativeAd.adEventCallback is TrackingNativeAdEventCallback)
         assertTrue(bannerAd.adEventCallback is TrackingBannerAdEventCallback)
+        assertTrue(bannerAd.bannerAdRefreshCallback is TrackingBannerAdRefreshCallback)
         val trackedLoads = mutableListOf<AdLoadedData>()
         verify(exactly = 2) { adTracker.trackAdLoaded(capture(trackedLoads), AdCaptureMethod.ADAPTER) }
         assertEquals(listOf(AdFormat.NATIVE, AdFormat.BANNER), trackedLoads.map { it.adFormat })
@@ -175,7 +184,7 @@ class NativeAdFlowTest {
         val bannerAd = bannerAd("banner-network", "banner-response")
         nativeAd.installTrackingEventCallback(null, "feed", "native-unit")
         customNativeAd.installTrackingEventCallback(null, "feed", "native-unit")
-        bannerAd.installTrackingEventCallback(null, "feed", "native-unit")
+        bannerAd.installTrackingCallbacks(null, null, "feed", "native-unit")
         val nativeTrackingCallback = nativeAd.adEventCallback
         val customTrackingCallback = customNativeAd.adEventCallback
         val bannerTrackingCallback = bannerAd.adEventCallback
@@ -234,10 +243,13 @@ class NativeAdFlowTest {
 
     private fun bannerAd(network: String, responseId: String): BannerAd {
         var callback: BannerAdEventCallback? = null
+        var refreshCallback: BannerAdRefreshCallback? = null
         return mockk(relaxed = true) {
             every { getResponseInfo() } returns responseInfo(network, responseId)
             every { adEventCallback } answers { callback }
             every { adEventCallback = any() } answers { callback = firstArg() }
+            every { bannerAdRefreshCallback } answers { refreshCallback }
+            every { bannerAdRefreshCallback = any() } answers { refreshCallback = firstArg() }
         }
     }
 
