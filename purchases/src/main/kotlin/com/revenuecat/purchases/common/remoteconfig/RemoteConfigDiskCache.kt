@@ -90,7 +90,9 @@ internal data class PersistedRemoteConfigurationState(
     val mergedTopics: Map<String, ConfigTopic> by lazy {
         buildMap {
             domainsInPrecedenceOrder.forEach { domain ->
-                domains[domain]?.topics?.forEach { (name, topic) -> putIfAbsent(name, topic) }
+                domains[domain]?.topics?.forEach { (name, topic) ->
+                    if (name !in this) put(name, topic)
+                }
             }
         }
     }
