@@ -41,7 +41,6 @@ class CustomerInfoDimensionProviderTest {
                 "firstSeenAt" to date("2022-01-01T00:00:00Z"),
                 "lastSeenAt" to date("2024-06-01T00:00:00Z"),
                 "originalPurchasedAt" to date("2021-01-01T00:00:00Z"),
-                "evaluatedAt" to RulesDimensionValue.DateValue(date),
             ),
         )
     }
@@ -89,7 +88,6 @@ class CustomerInfoDimensionProviderTest {
                 "isInGracePeriod" to bool(true),
                 "isRefunded" to bool(true),
                 "isPaused" to bool(true),
-                "evaluatedAt" to RulesDimensionValue.DateValue(date),
             ),
         )
     }
@@ -109,7 +107,6 @@ class CustomerInfoDimensionProviderTest {
                 "purchasedAt" to date("2023-03-03T00:00:00Z"),
                 "originalPurchasedAt" to date("2023-03-03T00:00:00Z"),
                 "isSandbox" to bool(true),
-                "evaluatedAt" to RulesDimensionValue.DateValue(date),
             ),
         )
     }
@@ -135,7 +132,6 @@ class CustomerInfoDimensionProviderTest {
                 "isSandbox" to bool(true),
                 "isActive" to bool(false),
                 "willRenew" to bool(true),
-                "evaluatedAt" to RulesDimensionValue.DateValue(date),
             ),
         )
     }
@@ -253,7 +249,7 @@ class CustomerInfoDimensionProviderTest {
                     deviceProvider(),
                     CustomerInfoDimensionProvider(
                         appUserId = { "current_user" },
-                                    customerInfo = { throw failure },
+                        customerInfo = { throw failure },
                     ),
                 ),
             ).snapshot()
@@ -267,16 +263,41 @@ class CustomerInfoDimensionProviderTest {
     }
 
     @Test
-    fun `an unknown app user ID leaves the rest of the dimensions usable`() = runTest {
+    fun `the customer info is requested for the app user the snapshot reports`() = runTest {
+        var currentAppUserId = "before_login"
+        var requestedAppUserId: String? = null
         val provider = CustomerInfoDimensionProvider(
-            appUserId = { throw UninitializedPropertyAccessException("There is no singleton instance.") },
-            customerInfo = { customerInfo(SUBSCRIBED_RESPONSE) },
+            appUserId = { currentAppUserId },
+            customerInfo = { appUserId ->
+                requestedAppUserId = appUserId
+                // The app logs in while the request is in flight.
+                currentAppUserId = "after_login"
+                customerInfo(SUBSCRIBED_RESPONSE)
+            },
         )
 
         val dimensions = provider.dimensions(date)
 
-        assertThat(dimensions).doesNotContainKey("appUserId")
-        assertThat(dimensions["originalAppUserId"]).isEqualTo(string("original_user"))
+        // Reading the ID again after the request came back would file one customer's purchases under another's.
+        assertThat(requestedAppUserId).isEqualTo("before_login")
+        assertThat(dimensions["appUserId"]).isEqualTo(string("before_login"))
+    }
+
+    @Test
+    fun `a customer the SDK has no ID for is not asked about`() = runTest {
+        var asked = false
+        val provider = CustomerInfoDimensionProvider(
+            appUserId = { "" },
+            customerInfo = {
+                asked = true
+                customerInfo(SUBSCRIBED_RESPONSE)
+            },
+        )
+
+        val dimensions = provider.dimensions(date)
+
+        assertThat(asked).isFalse()
+        assertThat(dimensions).isEmpty()
     }
 
     @Test
@@ -326,9 +347,9 @@ class CustomerInfoDimensionProviderTest {
                  {"==": [{"var": "purchasedProductIdentifier"}, "legacy:annual"]}]}""",
             // The latest purchase of any kind, with no iteration at all.
             """{"==": [{"var": "customerInfo.purchases.0.productIdentifier"}, "premium"]}""",
-            // Ends more than a day from the evaluation instant, which only the per-record instant can answer.
-            """{"some": [{"var": "customerInfo.purchases"},
-                 {">": [{"-": [{"var": "expiresAt"}, {"var": "evaluatedAt"}]}, 86400000]}]}""",
+            // Ends more than a day from the evaluation instant. Read by index, since the root instant is not
+            // in scope inside an iteration operator.
+            """{">": [{"-": [{"var": "customerInfo.purchases.0.expiresAt"}, {"var": "evaluatedAt"}]}, 86400000]}""",
             """{"none": [{"var": "customerInfo.purchases"}, {"var": "isRefunded"}]}""",
         )
         val notMatching = listOf(

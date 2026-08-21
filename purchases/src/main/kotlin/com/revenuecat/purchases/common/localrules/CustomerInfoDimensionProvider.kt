@@ -16,27 +16,23 @@ import kotlinx.coroutines.CancellationException
 import java.util.Date
 
 internal class CustomerInfoDimensionProvider(
-    private val appUserId: () -> String?,
-    private val customerInfo: suspend () -> CustomerInfo,
+    private val appUserId: () -> String,
+    private val customerInfo: suspend (appUserId: String) -> CustomerInfo,
 ) : RulesDimensionProvider {
 
     override val namespace: RulesDimensionNamespace = RulesDimensionNamespace.CustomerInfo
 
-    override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> =
-        appUserIdDimension() + customerInfoDimensions(date)
-
     /**
-     * Read separately from the rest so a rule targeting the app user ID does not depend on the network: the ID is
-     * known as soon as the SDK is configured, while [CustomerInfo] may still be in flight.
+     * The app user ID is read once and used both to request the customer info and as the reported ID. Reading it
+     * again after the request came back would describe a different customer than the purchases alongside it
+     * whenever the app logs in, logs out, or switches user while that request is in flight.
+     *
+     * It is also reported on its own, without waiting for the request, so a rule targeting only the ID does not
+     * depend on the network: the ID is known as soon as the SDK is configured.
      */
-    private fun appUserIdDimension(): Map<String, RulesDimensionValue> {
-        val appUserId = try {
-            appUserId()
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            warnLog { "The app user ID is unavailable, so it can't be evaluated: $e" }
-            null
-        }
-        return buildMap { putString(KEY_APP_USER_ID, appUserId) }
+    override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
+        val appUserId = appUserId()
+        return customerInfoDimensions(appUserId, date) + buildMap { putString(KEY_APP_USER_ID, appUserId) }
     }
 
     /**
@@ -49,15 +45,18 @@ internal class CustomerInfoDimensionProvider(
      * of its raw payload on first access rather than when it is constructed, so that is where a malformed payload
      * surfaces.
      */
-    private suspend fun customerInfoDimensions(date: Date): Map<String, RulesDimensionValue> =
-        try {
-            customerInfo().dimensions(date)
+    private suspend fun customerInfoDimensions(appUserId: String, date: Date): Map<String, RulesDimensionValue> {
+        // Nobody to ask about: the SDK has no cached user, so there is no request to make on their behalf.
+        if (appUserId.isEmpty()) return emptyMap()
+        return try {
+            customerInfo(appUserId).dimensions(date)
         } catch (e: CancellationException) {
             throw e
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             warnLog { "The customer info is unavailable, so customer dimensions can't be evaluated: $e" }
             emptyMap()
         }
+    }
 
     private fun CustomerInfo.dimensions(date: Date): Map<String, RulesDimensionValue> = buildMap {
         putString(KEY_ORIGINAL_APP_USER_ID, originalAppUserId)
@@ -65,9 +64,8 @@ internal class CustomerInfoDimensionProvider(
         // The date the backend last answered us, which is when it last saw this customer through this device.
         putDate(KEY_LAST_SEEN_AT, requestDate)
         putDate(KEY_ORIGINAL_PURCHASED_AT, originalPurchaseDate)
-        putDate(KEY_EVALUATED_AT, date)
         putObjectList(KEY_PURCHASES, purchaseRecords(date))
-        putObjectList(KEY_ENTITLEMENTS, entitlementRecords(date))
+        putObjectList(KEY_ENTITLEMENTS, entitlementRecords())
     }
 
     /**
@@ -80,14 +78,14 @@ internal class CustomerInfoDimensionProvider(
             .sortedBy { subscription -> subscription.productIdentifier }
             .map { subscription -> subscription.record(date) }
         // Already sorted by purchase date by `CustomerInfo`.
-        val transactions = nonSubscriptionTransactions.map { transaction -> transaction.record(date) }
+        val transactions = nonSubscriptionTransactions.map { transaction -> transaction.record() }
         return (subscriptions + transactions).sortedByDescending { record -> record.dateOrNull(KEY_PURCHASED_AT) }
     }
 
-    private fun CustomerInfo.entitlementRecords(date: Date): List<Map<String, RulesDimensionValue>> =
+    private fun CustomerInfo.entitlementRecords(): List<Map<String, RulesDimensionValue>> =
         entitlements.all.values
             .sortedBy { entitlement -> entitlement.identifier }
-            .map { entitlement -> entitlement.record(date) }
+            .map { entitlement -> entitlement.record() }
 
     private fun SubscriptionInfo.record(date: Date): Map<String, RulesDimensionValue> = buildMap {
         putString(KEY_KIND, KIND_SUBSCRIPTION)
@@ -121,10 +119,9 @@ internal class CustomerInfoDimensionProvider(
         putBool(KEY_IS_REFUNDED, refundedAt != null)
         // A resume date is only ever set while a Google subscription is paused, so having one *is* being paused.
         putBool(KEY_IS_PAUSED, autoResumeDate != null)
-        putDate(KEY_EVALUATED_AT, date)
     }
 
-    private fun Transaction.record(date: Date): Map<String, RulesDimensionValue> = buildMap {
+    private fun Transaction.record(): Map<String, RulesDimensionValue> = buildMap {
         putString(KEY_KIND, KIND_NON_SUBSCRIPTION)
         putString(KEY_PRODUCT_IDENTIFIER, productIdentifier)
         // A one-time purchase has no base plan, so the two forms of the identifier are the same one.
@@ -137,10 +134,9 @@ internal class CustomerInfoDimensionProvider(
         putDate(KEY_PURCHASED_AT, purchaseDate)
         putDate(KEY_ORIGINAL_PURCHASED_AT, originalPurchaseDate)
         putBool(KEY_IS_SANDBOX, isSandbox)
-        putDate(KEY_EVALUATED_AT, date)
     }
 
-    private fun EntitlementInfo.record(date: Date): Map<String, RulesDimensionValue> = buildMap {
+    private fun EntitlementInfo.record(): Map<String, RulesDimensionValue> = buildMap {
         putString(KEY_IDENTIFIER, identifier)
         putString(KEY_PRODUCT_IDENTIFIER, productIdentifier)
         putString(KEY_PRODUCT_PLAN_IDENTIFIER, productPlanIdentifier)
@@ -159,13 +155,11 @@ internal class CustomerInfoDimensionProvider(
         putBool(KEY_IS_SANDBOX, isSandbox)
         putBool(KEY_IS_ACTIVE, isActive)
         putBool(KEY_WILL_RENEW, willRenew)
-        putDate(KEY_EVALUATED_AT, date)
     }
 
     internal companion object {
         const val KEY_APP_USER_ID = "appUserId"
         const val KEY_ENTITLEMENTS = "entitlements"
-        const val KEY_EVALUATED_AT = "evaluatedAt"
         const val KEY_FIRST_SEEN_AT = "firstSeenAt"
         const val KEY_LAST_SEEN_AT = "lastSeenAt"
         const val KEY_ORIGINAL_APP_USER_ID = "originalAppUserId"

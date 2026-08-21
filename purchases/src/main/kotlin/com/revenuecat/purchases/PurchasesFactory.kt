@@ -404,7 +404,9 @@ internal class PurchasesFactory(
                     },
                     CustomerInfoDimensionProvider(
                         appUserId = { identityManager.currentAppUserID },
-                        customerInfo = { Purchases.sharedInstance.purchasesOrchestrator.awaitCustomerInfo() },
+                        customerInfo = { appUserID ->
+                            Purchases.sharedInstance.purchasesOrchestrator.awaitCustomerInfo(appUserID)
+                        },
                     ),
                 ),
             )
@@ -706,9 +708,10 @@ internal class PurchasesFactory(
  * The cache when it is warm, the initial fetch otherwise. Goes through the orchestrator because
  * `Purchases.awaitCustomerInfo` only exists in the `defaults` source set, while this is compiled for both flavors.
  */
-private suspend fun PurchasesOrchestrator.awaitCustomerInfo(): CustomerInfo =
+private suspend fun PurchasesOrchestrator.awaitCustomerInfo(appUserID: String): CustomerInfo =
     suspendCancellableCoroutine { continuation ->
         getCustomerInfo(
+            appUserID = appUserID,
             fetchPolicy = CacheFetchPolicy.default(),
             trackDiagnostics = false,
             callback = receiveCustomerInfoCallback(

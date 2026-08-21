@@ -970,8 +970,21 @@ internal class PurchasesOrchestrator(
         trackDiagnostics: Boolean,
         callback: ReceiveCustomerInfoCallback,
     ) {
+        getCustomerInfo(identityManager.currentAppUserID, fetchPolicy, trackDiagnostics, callback)
+    }
+
+    /**
+     * For a caller that has already read the app user ID and needs the answer to describe that same customer even
+     * if the app logs in or out while the request is in flight.
+     */
+    fun getCustomerInfo(
+        appUserID: String,
+        fetchPolicy: CacheFetchPolicy,
+        trackDiagnostics: Boolean,
+        callback: ReceiveCustomerInfoCallback,
+    ) {
         customerInfoHelper.retrieveCustomerInfo(
-            identityManager.currentAppUserID,
+            appUserID,
             fetchPolicy,
             state.appInBackground,
             allowSharingPlayStoreAccount,

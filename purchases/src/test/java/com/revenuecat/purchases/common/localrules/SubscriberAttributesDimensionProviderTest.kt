@@ -5,7 +5,6 @@ package com.revenuecat.purchases.common.localrules
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.DateProvider
-import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider.Companion.KEY_EVALUATED_AT
 import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider.Companion.KEY_UPDATED_AT
 import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider.Companion.KEY_VALUE
 import com.revenuecat.purchases.rules.RulesEngine
@@ -41,7 +40,7 @@ class SubscriberAttributesDimensionProviderTest {
     }
 
     @Test
-    fun `an attribute is a record of its value, when it was set, and when it was read`() = runTest {
+    fun `an attribute is a record of its value and when it was set`() = runTest {
         val dimensions = provider(attribute("goal", "lose_weight")).dimensions(evaluationDate)
 
         assertThat(dimensions).isEqualTo(
@@ -50,7 +49,6 @@ class SubscriberAttributesDimensionProviderTest {
                     mapOf(
                         KEY_VALUE to RulesDimensionValue.StringValue("lose_weight"),
                         KEY_UPDATED_AT to RulesDimensionValue.DateValue(setDate),
-                        KEY_EVALUATED_AT to RulesDimensionValue.DateValue(evaluationDate),
                     ),
                 ),
             ),
@@ -117,7 +115,9 @@ class SubscriberAttributesDimensionProviderTest {
             ).snapshot()
 
             assertThat(snapshot.isSuccess).describedAs("%s", failure).isTrue()
-            assertThat(snapshot.getOrThrow().values).describedAs("%s", failure).containsOnlyKeys("device")
+            assertThat(snapshot.getOrThrow().values)
+                .describedAs("%s", failure)
+                .containsOnlyKeys("device", "evaluatedAt")
         }
     }
 
@@ -151,8 +151,8 @@ class SubscriberAttributesDimensionProviderTest {
             // The loose operators coerce, so a value the app set as a string is still comparable to a number.
             """{"==": [{"var": "subscriberAttributes.seats.value"}, 3]}""",
             """{">": [{"var": "subscriberAttributes.seats.value"}, 2]}""",
-            // Each record carries the evaluation instant, so "set in the last 7 days" needs nothing else in scope.
-            """{"<": [{"-": [{"var": "subscriberAttributes.tier.evaluatedAt"},
+            // The scope carries the evaluation instant at its root, so "set in the last 7 days" is expressible.
+            """{"<": [{"-": [{"var": "evaluatedAt"},
                 {"var": "subscriberAttributes.tier.updatedAt"}]}, 604800000]}""",
         )
         val notMatching = listOf(
@@ -161,7 +161,7 @@ class SubscriberAttributesDimensionProviderTest {
             """{"!!": {"var": "subscriberAttributes.favoriteColor.value"}}""",
             """{"!!": {"var": "subscriberAttributes.goal.isSynced"}}""",
             // The same window, for an attribute set six weeks ago.
-            """{"<": [{"-": [{"var": "subscriberAttributes.goal.evaluatedAt"},
+            """{"<": [{"-": [{"var": "evaluatedAt"},
                 {"var": "subscriberAttributes.goal.updatedAt"}]}, 604800000]}""",
         )
 

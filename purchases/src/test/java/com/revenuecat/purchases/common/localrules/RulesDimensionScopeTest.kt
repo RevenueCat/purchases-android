@@ -68,7 +68,6 @@ class RulesDimensionScopeTest {
                 "entitlements": [
                   {
                     "billingIssueDetectedAt": 1714780800000,
-                    "evaluatedAt": 1718452800000,
                     "expiresAt": 4102444800000,
                     "identifier": "extra",
                     "isActive": true,
@@ -86,7 +85,6 @@ class RulesDimensionScopeTest {
                   },
                   {
                     "billingIssueDetectedAt": 1714780800000,
-                    "evaluatedAt": 1718452800000,
                     "expiresAt": 4102444800000,
                     "identifier": "premium",
                     "isActive": true,
@@ -103,7 +101,6 @@ class RulesDimensionScopeTest {
                     "willRenew": false
                   }
                 ],
-                "evaluatedAt": 1718452800000,
                 "firstSeenAt": 1640995200000,
                 "lastSeenAt": 1717200000000,
                 "originalAppUserId": "original_user",
@@ -113,7 +110,6 @@ class RulesDimensionScopeTest {
                     "autoResumeAt": 1717200000000,
                     "billingIssueDetectedAt": 1714780800000,
                     "displayName": "Premium Monthly",
-                    "evaluatedAt": 1718452800000,
                     "expiresAt": 4102444800000,
                     "gracePeriodExpiresAt": 1715299200000,
                     "isActive": true,
@@ -140,7 +136,6 @@ class RulesDimensionScopeTest {
                   },
                   {
                     "displayName": "100 Coins",
-                    "evaluatedAt": 1718452800000,
                     "isSandbox": false,
                     "kind": "nonSubscription",
                     "originalPurchasedAt": 1677801600000,
@@ -162,22 +157,20 @@ class RulesDimensionScopeTest {
                 "platformVersion": 34,
                 "sdkVersion": "${Config.frameworkVersion}"
               },
+              "evaluatedAt": 1718452800000,
               "store": {
                 "country": "USA"
               },
               "subscriberAttributes": {
                 "${'$'}email": {
-                  "evaluatedAt": 1718452800000,
                   "updatedAt": 1714521600000,
                   "value": "jane@example.com"
                 },
                 "goal": {
-                  "evaluatedAt": 1718452800000,
                   "updatedAt": 1718366400000,
                   "value": "lose_weight"
                 },
                 "seats": {
-                  "evaluatedAt": 1718452800000,
                   "updatedAt": 1714780800000,
                   "value": "3"
                 }
@@ -199,8 +192,11 @@ class RulesDimensionScopeTest {
             """{"some": [{"var": "customerInfo.purchases"}, {"==": [{"var": "periodType"}, "trial"]}]}""",
             """{"some": [{"var": "customerInfo.entitlements"}, {"var": "isActive"}]}""",
             """{"==": [{"var": "subscriberAttributes.${'$'}email.value"}, "jane@example.com"]}""",
-            """{"<": [{"-": [{"var": "subscriberAttributes.goal.evaluatedAt"},
+            """{"<": [{"-": [{"var": "evaluatedAt"},
                 {"var": "subscriberAttributes.goal.updatedAt"}]}, 604800000]}""",
+            // The root instant is not in scope inside an iteration operator, so a purchase compared against it is
+            // read by index.
+            """{">": [{"var": "customerInfo.purchases.0.expiresAt"}, {"var": "evaluatedAt"}]}""",
         )
 
         for (predicate in predicates) {

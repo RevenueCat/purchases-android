@@ -34,7 +34,8 @@ internal sealed class RulesDimensionResolutionException(message: String) : Excep
  * Builds the scope local rule evaluation runs against by collecting every provider once and nesting its values
  * under the provider's namespace.
  *
- * All providers see the same reference instant, so every dimension in one snapshot is consistent with the others.
+ * All providers see the same reference instant, so every dimension in one snapshot is consistent with the
+ * others. That instant is in the scope itself, as [RulesDimensionResolver.KEY_EVALUATED_AT].
  *
  * Both failure modes are configuration bugs rather than runtime conditions — a provider that cannot produce its
  * values, and two providers claiming the same path — so they fail the whole snapshot instead of silently
@@ -81,10 +82,23 @@ internal class RulesDimensionResolver(
 
         return Result.success(
             RulesDimensionSnapshot(
-                values = values.mapValues { (_, dimensions) -> Value.ObjectValue(dimensions) },
+                values = values.mapValuesTo(
+                    mutableMapOf<String, Value>(KEY_EVALUATED_AT to Value.IntValue(date.time)),
+                ) { (_, dimensions) -> Value.ObjectValue(dimensions) },
                 evaluationDate = date,
             ),
         )
+    }
+
+    internal companion object {
+        /**
+         * The instant the snapshot was taken, at the root of the scope rather than repeated on every record.
+         *
+         * Not readable from inside an iteration operator: `some` and its siblings rebind `var` to the current item
+         * with no parent scope, so a predicate comparing a purchase against it reads that purchase by index, as
+         * `customerInfo.purchases.0.expiresAt`.
+         */
+        const val KEY_EVALUATED_AT = "evaluatedAt"
     }
 }
 

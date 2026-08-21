@@ -28,10 +28,10 @@ internal class SubscriberAttributesDimensionProvider(
             warnLog { "The subscriber attributes are unavailable, so they can't be evaluated: $e" }
             return emptyMap()
         }
-        return attributes.values.mapNotNull { attribute -> attribute.dimension(date) }.toMap()
+        return attributes.values.mapNotNull { attribute -> attribute.dimension() }.toMap()
     }
 
-    private fun SubscriberAttribute.dimension(date: Date): Pair<String, RulesDimensionValue>? {
+    private fun SubscriberAttribute.dimension(): Pair<String, RulesDimensionValue>? {
         // A deleted attribute is kept as a tombstone with no value until it has been posted, and an empty value is
         // the SDK's other spelling of a deletion, so both mean the customer no longer has the attribute.
         val value = value?.takeIf { it.isNotEmpty() } ?: return null
@@ -41,13 +41,11 @@ internal class SubscriberAttributesDimensionProvider(
             mapOf(
                 KEY_VALUE to RulesDimensionValue.StringValue(value),
                 KEY_UPDATED_AT to RulesDimensionValue.DateValue(setTime),
-                KEY_EVALUATED_AT to RulesDimensionValue.DateValue(date),
             ),
         )
     }
 
     internal companion object {
-        const val KEY_EVALUATED_AT = "evaluatedAt"
         const val KEY_UPDATED_AT = "updatedAt"
         const val KEY_VALUE = "value"
     }

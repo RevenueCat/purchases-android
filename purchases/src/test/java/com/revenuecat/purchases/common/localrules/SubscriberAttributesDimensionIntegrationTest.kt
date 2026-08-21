@@ -9,7 +9,6 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
-import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider.Companion.KEY_EVALUATED_AT
 import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider.Companion.KEY_UPDATED_AT
 import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider.Companion.KEY_VALUE
 import com.revenuecat.purchases.rules.RulesEngine
@@ -89,7 +88,7 @@ class SubscriberAttributesDimensionIntegrationTest {
 
         val goal = values.recordFor("goal")
         assertThat(goal[KEY_VALUE]).isEqualTo(Value.StringValue("lose_weight"))
-        assertThat(goal[KEY_EVALUATED_AT]).isEqualTo(Value.IntValue(evaluationDate.time))
+        assertThat(values[RulesDimensionResolver.KEY_EVALUATED_AT]).isEqualTo(Value.IntValue(evaluationDate.time))
         // Set by this device just now, so it survived the round-trip through JSON with the value.
         assertThat((goal[KEY_UPDATED_AT] as Value.IntValue).value).isBetween(before.time, Date().time)
 

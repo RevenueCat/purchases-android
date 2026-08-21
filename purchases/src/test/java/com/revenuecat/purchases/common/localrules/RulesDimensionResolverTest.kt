@@ -32,7 +32,10 @@ class RulesDimensionResolverTest {
         val values = resolver.snapshot().getOrThrow().values
 
         assertThat(values).isEqualTo(
-            mapOf("device" to Value.ObjectValue(mapOf("appVersion" to Value.StringValue("1.2.3")))),
+            mapOf(
+                "device" to Value.ObjectValue(mapOf("appVersion" to Value.StringValue("1.2.3"))),
+                "evaluatedAt" to Value.IntValue(evaluationDate.time),
+            ),
         )
     }
 
@@ -65,6 +68,7 @@ class RulesDimensionResolverTest {
                         "locale" to Value.StringValue("en-US"),
                     ),
                 ),
+                "evaluatedAt" to Value.IntValue(evaluationDate.time),
             ),
         )
     }
@@ -119,7 +123,7 @@ class RulesDimensionResolverTest {
     }
 
     @Test
-    fun `every provider sees the same evaluation date`() = runTest {
+    fun `every provider sees the same evaluation date, and so does a predicate`() = runTest {
         val dates = mutableListOf<Date>()
         val recordingProvider = {
             object : RulesDimensionProvider {
@@ -136,6 +140,7 @@ class RulesDimensionResolverTest {
 
         assertThat(dates).containsExactly(evaluationDate, evaluationDate)
         assertThat(snapshot.evaluationDate).isEqualTo(evaluationDate)
+        assertThat(snapshot.values["evaluatedAt"]).isEqualTo(Value.IntValue(evaluationDate.time))
     }
 
     @Test
@@ -288,7 +293,7 @@ class RulesDimensionResolverTest {
 
         val values = resolver.snapshot().getOrThrow().values
 
-        assertThat(values).containsOnlyKeys("device")
+        assertThat(values).containsOnlyKeys("device", "evaluatedAt")
         // An empty object would be truthy, so an absent namespace is what makes this a non-match.
         assertThat(RulesEngine.evaluate("""{"!!": [{"var": "custom"}]}""", values).getOrThrow()).isFalse()
     }
@@ -311,7 +316,7 @@ class RulesDimensionResolverTest {
 
         val values = resolver.snapshot().getOrThrow().values
 
-        assertThat(values).containsOnlyKeys("device")
+        assertThat(values).containsOnlyKeys("device", "evaluatedAt")
         // An empty object would be truthy, which is what makes the absence matter.
         assertThat(RulesEngine.evaluate("""{"!!": [{"var": "store"}]}""", values).getOrThrow()).isFalse()
     }
@@ -345,15 +350,28 @@ class RulesDimensionResolverTest {
         val values = resolver.snapshot().getOrThrow().values
 
         // Filtering the names inside the namespace would leave an empty object behind, which is truthy.
-        assertThat(values).containsOnlyKeys("device")
+        assertThat(values).containsOnlyKeys("device", "evaluatedAt")
         assertThat(
             RulesEngine.evaluate("""{"!!": [{"var": "subscriberAttributes"}]}""", values).getOrThrow(),
         ).isFalse()
     }
 
     @Test
-    fun `no providers yields an empty scope`() = runTest {
-        assertThat(resolver().snapshot().getOrThrow().values).isEmpty()
+    fun `no providers yields a scope of nothing but the evaluation instant`() = runTest {
+        assertThat(resolver().snapshot().getOrThrow().values)
+            .isEqualTo(mapOf("evaluatedAt" to Value.IntValue(evaluationDate.time)))
+    }
+
+    @Test
+    fun `the evaluation instant is readable by a predicate at the root of the scope`() = runTest {
+        val values = resolver(provider(RulesDimensionNamespace.Device, "platform" to string("android")))
+            .snapshot()
+            .getOrThrow()
+            .values
+
+        val matches = RulesEngine.evaluate("""{"==": [{"var": "evaluatedAt"}, ${evaluationDate.time}]}""", values)
+
+        assertThat(matches.getOrThrow()).isTrue()
     }
 
     private fun resolver(vararg providers: RulesDimensionProvider) = RulesDimensionResolver(
