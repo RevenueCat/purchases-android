@@ -39,20 +39,21 @@ internal class PaywallWebViewPrewarmer(
 
     private val trimCallbacks = object : ComponentCallbacks2 {
         override fun onTrimMemory(level: Int) {
-            // TRIM_MEMORY_UI_HIDDEN says nothing about memory, only that the UI went away, so a warm already
-            // loading runs to completion: the customer may be back within seconds. TRIM_MEMORY_BACKGROUND
-            // follows when the process is really being parked.
-            if (level == ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) return
+            // low severity trim levels where we want to keep preloading
+            val ignoredTrimLevels = listOf(
+                ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN,
+                ComponentCallbacks2.TRIM_MEMORY_RUNNING_MODERATE,
+                ComponentCallbacks2.TRIM_MEMORY_MODERATE
+            )
+            if (level in ignoredTrimLevels) return
             if (inFlight.isEmpty() && queue.isEmpty()) return
-            // Every other level frees the views and keeps the queue. TRIM_MEMORY_BACKGROUND asks for exactly
-            // that ("resources that can efficiently and quickly be re-built if the user returns"); the rest are
-            // only delivered below API 34. A renderer process is the cost here; the parked urls are strings.
-            Logger.d("Paywalls V2 web_view cache warming released on trim (level $level); URLs stay queued.")
+            Logger.d("Paywalls V2 web_view cache warming released on trim (level $level).")
             queue.addAll(0, inFlight.keys.filterNot { it in warmedUrls })
             releaseInFlight()
         }
 
-        override fun onLowMemory() = onTrimMemory(ComponentCallbacks2.TRIM_MEMORY_COMPLETE)
+        @Deprecated("deprecated on interface but mandatory implementation")
+        override fun onLowMemory() = Unit
 
         override fun onConfigurationChanged(newConfig: Configuration) = Unit
     }
@@ -74,7 +75,6 @@ internal class PaywallWebViewPrewarmer(
         } else {
             queue.addLast(resolvedUrl)
         }
-        // Unconditional: a url parked by TRIM_MEMORY_UI_HIDDEN is already queued, so it needs this to restart.
         startAvailable()
     }
 
