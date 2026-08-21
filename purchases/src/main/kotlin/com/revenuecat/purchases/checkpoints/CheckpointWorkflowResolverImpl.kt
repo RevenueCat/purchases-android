@@ -75,8 +75,8 @@ internal class CheckpointWorkflowResolverImpl(
         ) {
             return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.DISABLED)
         }
-        val checkpoint = when (val resolution = checkpointsConfigProvider.resolveCheckpoint(identifier)) {
-            is CheckpointRulesResolution.Found -> resolution.checkpoint
+        val rulesResolution = when (val resolution = checkpointsConfigProvider.resolveCheckpoint(identifier)) {
+            is CheckpointRulesResolution.Found -> resolution
             CheckpointRulesResolution.NotConfigured -> return unknownCheckpoint(identifier)
             CheckpointRulesResolution.Disabled ->
                 return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.DISABLED)
@@ -84,7 +84,7 @@ internal class CheckpointWorkflowResolverImpl(
                 return configurationUnavailable("The rules for checkpoint '$identifier' could not be read.")
         }
         val matchResult = localRulesEvaluator.match(
-            rules = checkpoint.rules,
+            rules = rulesResolution.checkpoint.rules,
             customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables),
         ) { rule ->
             audiencesConfigProvider.getAudience(rule.audienceId)
@@ -97,7 +97,11 @@ internal class CheckpointWorkflowResolverImpl(
             return configurationUnavailable(
                 "The audiences for checkpoint '$identifier' could not be evaluated: ${error.message}",
             )
-        } ?: return noMatch(identifier)
+        }
+        if (!checkpointsConfigProvider.isCurrent(rulesResolution)) {
+            return configurationUnavailable("Remote config changed while resolving checkpoint '$identifier'.")
+        }
+        if (rule == null) return noMatch(identifier)
         val uiConfig = try {
             uiConfigProvider.getUiConfig()
         } catch (e: CancellationException) {
@@ -106,7 +110,12 @@ internal class CheckpointWorkflowResolverImpl(
             errorLog(e) { "UI config could not be fetched for checkpoint '$identifier'." }
             null
         } ?: return configurationUnavailable("UI config is unavailable for checkpoint '$identifier'.")
-        return resolveRule(identifier, workflowManager, rule, uiConfig)
+        val result = resolveRule(identifier, workflowManager, rule, uiConfig)
+        return if (checkpointsConfigProvider.isCurrent(rulesResolution)) {
+            result
+        } else {
+            configurationUnavailable("Remote config changed while resolving checkpoint '$identifier'.")
+        }
     }
 
     @Suppress("ReturnCount")

@@ -24,16 +24,21 @@ internal class CheckpointsConfigProvider(
      * state rather than to discard. Bounded to a single retry so a burst of commits can't spin here.
      */
     suspend fun resolveCheckpoint(identifier: String): CheckpointRulesResolution {
-        val generation = manager.configGeneration
-        val resolution = readCheckpoint(identifier)
-        if (manager.configGeneration == generation) return resolution
-        verboseLog { "Remote config changed while resolving checkpoint '$identifier'; reading it again." }
-        return readCheckpoint(identifier)
+        repeat(MAX_READ_ATTEMPTS) {
+            val generation = manager.configGeneration
+            val resolution = readCheckpoint(identifier, generation)
+            if (manager.configGeneration == generation) return resolution
+            verboseLog { "Remote config changed while resolving checkpoint '$identifier'; reading it again." }
+        }
+        return CheckpointRulesResolution.Unavailable
     }
 
-    private suspend fun readCheckpoint(identifier: String): CheckpointRulesResolution =
+    fun isCurrent(resolution: CheckpointRulesResolution.Found): Boolean =
+        manager.configGeneration == resolution.configGeneration
+
+    private suspend fun readCheckpoint(identifier: String, generation: Int): CheckpointRulesResolution =
         manager.blobData<CheckpointResponse>(RemoteConfigTopic.CheckpointRules, identifier)
-            ?.let { CheckpointRulesResolution.Found(it) }
+            ?.let { CheckpointRulesResolution.Found(it, generation) }
             ?: classifyUnresolved(identifier)
 
     /**
@@ -68,5 +73,9 @@ internal class CheckpointsConfigProvider(
                 CheckpointRulesResolution.NotConfigured
             }
         }
+    }
+
+    private companion object {
+        const val MAX_READ_ATTEMPTS = 2
     }
 }

@@ -15,7 +15,10 @@ package com.revenuecat.purchases.common.checkpoints
  *   sync), or the checkpoint is published but its rules could not be resolved or did not parse.
  */
 internal sealed class CheckpointRulesResolution {
-    data class Found(val checkpoint: CheckpointResponse) : CheckpointRulesResolution()
+    data class Found(
+        val checkpoint: CheckpointResponse,
+        val configGeneration: Int,
+    ) : CheckpointRulesResolution()
 
     object NotConfigured : CheckpointRulesResolution()
 

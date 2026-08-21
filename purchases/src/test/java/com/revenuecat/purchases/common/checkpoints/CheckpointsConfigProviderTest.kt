@@ -234,6 +234,15 @@ internal class CheckpointsConfigProviderTest {
         coVerify(exactly = 2) { blobRead("missing") }
     }
 
+    @Test
+    fun `resolveCheckpoint reports Unavailable when the config changes during both reads`() = runTest {
+        every { manager.configGeneration } returnsMany listOf(0, 1, 1, 2)
+        returnBlob("app_open", """{ "rules": [] }""")
+
+        assertThat(provider.resolveCheckpoint("app_open")).isEqualTo(CheckpointRulesResolution.Unavailable)
+        coVerify(exactly = 2) { blobRead("app_open") }
+    }
+
     private suspend fun checkpoint(identifier: String): CheckpointResponse =
         (provider.resolveCheckpoint(identifier) as CheckpointRulesResolution.Found).checkpoint
 
