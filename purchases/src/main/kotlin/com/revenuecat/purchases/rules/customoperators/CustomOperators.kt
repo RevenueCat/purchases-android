@@ -12,12 +12,14 @@ import com.revenuecat.purchases.rules.Value
  */
 internal object CustomOperators {
 
-    @Suppress("UnusedParameter")
     fun dispatch(
         op: String,
         args: Value,
         vars: Scope,
     ): Value = when (op) {
+        "rc.lower" -> CaseOperators.opLower(args, vars)
+        "rc.upper" -> CaseOperators.opUpper(args, vars)
+
         else -> throw EvaluationException.UnsupportedOperator(op)
     }
 }
