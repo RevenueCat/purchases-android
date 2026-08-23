@@ -3,6 +3,9 @@ package com.revenuecat.purchases.ui.revenuecatui.views
 import android.content.Context
 import android.util.AttributeSet
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
@@ -95,9 +98,17 @@ public class CustomerCenterView : CompatComposeView {
             customerCenterListener?.onPromotionalOfferSucceeded(customerInfo, transaction)
         }
     }
-    private val customerCenterOptions = CustomerCenterOptions.Builder()
-        .setListener(internalListener)
-        .build()
+    private val customerCenterOptionsState = mutableStateOf(
+        CustomerCenterOptions.Builder()
+            .setListener(internalListener)
+            .build(),
+    )
+
+    private var customerCenterOptions: CustomerCenterOptions
+        get() = customerCenterOptionsState.value
+        set(value) {
+            customerCenterOptionsState.value = value
+        }
 
     /**
      * Sets a dismiss handler for when the customer center is closed.
@@ -112,6 +123,20 @@ public class CustomerCenterView : CompatComposeView {
      */
     public fun setCustomerCenterListener(customerCenterListener: CustomerCenterListener?) {
         this.customerCenterListener = customerCenterListener
+    }
+
+    /**
+     * Sets whether the close button is shown in the Customer Center top bar. Defaults to `true`.
+     *
+     * Set this to `false` when the Customer Center is pushed onto an existing navigation stack that already
+     * provides a way to navigate back. The back button used to navigate between Customer Center screens is
+     * always displayed.
+     */
+    public fun setShouldShowCloseButton(shouldShowCloseButton: Boolean) {
+        customerCenterOptions = CustomerCenterOptions(
+            listener = customerCenterOptions.listener,
+            shouldShowCloseButton = shouldShowCloseButton,
+        )
     }
 
     override fun onBackPressed() {
@@ -129,6 +154,7 @@ public class CustomerCenterView : CompatComposeView {
 
     @Composable
     override fun Content() {
+        val customerCenterOptions by remember { customerCenterOptionsState }
         RevenueCatTheme {
             CustomerCenter(options = customerCenterOptions) {
                 dismiss()

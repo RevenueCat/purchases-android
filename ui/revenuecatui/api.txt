@@ -317,6 +317,7 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter {
     ctor public CustomerCenterOptions.Builder();
     method public com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions build();
     method public com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions.Builder setListener(com.revenuecat.purchases.customercenter.CustomerCenterListener? listener);
+    method public com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions.Builder setShouldShowCloseButton(boolean shouldShowCloseButton);
   }
 
   public final class ShowCustomerCenter extends androidx.activity.result.contract.ActivityResultContract<kotlin.Unit,kotlin.Unit> {
@@ -456,6 +457,7 @@ package com.revenuecat.purchases.ui.revenuecatui.views {
     method public void onBackPressed();
     method public void setCustomerCenterListener(com.revenuecat.purchases.customercenter.CustomerCenterListener? customerCenterListener);
     method public void setDismissHandler(kotlin.jvm.functions.Function0<kotlin.Unit>? dismissHandler);
+    method public void setShouldShowCloseButton(boolean shouldShowCloseButton);
   }
 
   public class OriginalTemplatePaywallFooterView extends android.widget.FrameLayout {

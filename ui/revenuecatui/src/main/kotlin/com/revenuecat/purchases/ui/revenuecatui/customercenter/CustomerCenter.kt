@@ -31,6 +31,7 @@ public fun CustomerCenter(
         InternalCustomerCenter(
             modifier = modifier,
             listener = options.listener,
+            shouldShowCloseButton = options.shouldShowCloseButton,
             onDismiss = onDismiss,
         )
     }

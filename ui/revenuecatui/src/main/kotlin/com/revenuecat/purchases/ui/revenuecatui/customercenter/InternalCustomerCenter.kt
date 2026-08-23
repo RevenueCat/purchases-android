@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -86,6 +87,7 @@ import kotlinx.coroutines.launch
 internal fun InternalCustomerCenter(
     modifier: Modifier = Modifier,
     listener: CustomerCenterListener? = null,
+    shouldShowCloseButton: Boolean = true,
     viewModel: CustomerCenterViewModel = getCustomerCenterViewModel(
         isDarkMode = isSystemInDarkTheme(),
         listener = listener,
@@ -156,6 +158,7 @@ internal fun InternalCustomerCenter(
     InternalCustomerCenter(
         state,
         modifier,
+        shouldShowCloseButton = shouldShowCloseButton,
         onAction = { action ->
             when (action) {
                 is CustomerCenterAction.PathButtonPressed -> {
@@ -207,6 +210,7 @@ internal fun InternalCustomerCenter(
 private fun InternalCustomerCenter(
     state: CustomerCenterState,
     modifier: Modifier = Modifier,
+    shouldShowCloseButton: Boolean = true,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     val colorScheme = createColorScheme(state)
@@ -222,6 +226,7 @@ private fun InternalCustomerCenter(
                 title = title,
                 shouldUseLargeTopBar = shouldUseLargeTopBar,
                 navigationButtonType = navigationButtonType,
+                shouldShowCloseButton = shouldShowCloseButton,
             ),
             onAction = onAction,
         ) {
@@ -305,7 +310,12 @@ private data class CustomerCenterScaffoldConfig(
     val title: String?,
     val shouldUseLargeTopBar: Boolean,
     val navigationButtonType: CustomerCenterState.NavigationButtonType,
-)
+    val shouldShowCloseButton: Boolean = true,
+) {
+    val shouldShowNavigationButton: Boolean
+        get() = shouldShowCloseButton ||
+            navigationButtonType != CustomerCenterState.NavigationButtonType.CLOSE
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -362,10 +372,12 @@ private fun CustomerCenterTopBar(
                 scaffoldConfig.title?.let { Text(text = it) }
             },
             navigationIcon = {
-                CustomerCenterNavigationIcon(
-                    navigationButtonType = scaffoldConfig.navigationButtonType,
-                    onAction = onAction,
-                )
+                if (scaffoldConfig.shouldShowNavigationButton) {
+                    CustomerCenterNavigationIcon(
+                        navigationButtonType = scaffoldConfig.navigationButtonType,
+                        onAction = onAction,
+                    )
+                }
             },
             colors = colors,
             scrollBehavior = scrollBehavior,
@@ -376,10 +388,12 @@ private fun CustomerCenterTopBar(
                 scaffoldConfig.title?.let { Text(text = it) }
             },
             navigationIcon = {
-                CustomerCenterNavigationIcon(
-                    navigationButtonType = scaffoldConfig.navigationButtonType,
-                    onAction = onAction,
-                )
+                if (scaffoldConfig.shouldShowNavigationButton) {
+                    CustomerCenterNavigationIcon(
+                        navigationButtonType = scaffoldConfig.navigationButtonType,
+                        onAction = onAction,
+                    )
+                }
             },
             colors = colors,
         )
@@ -391,9 +405,12 @@ private fun CustomerCenterNavigationIcon(
     navigationButtonType: CustomerCenterState.NavigationButtonType,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    IconButton(onClick = {
-        onAction(CustomerCenterAction.NavigationButtonPressed)
-    }) {
+    IconButton(
+        modifier = Modifier.testTag("customer_center_navigation_button"),
+        onClick = {
+            onAction(CustomerCenterAction.NavigationButtonPressed)
+        },
+    ) {
         Icon(
             imageVector = when (navigationButtonType) {
                 CustomerCenterState.NavigationButtonType.BACK -> ArrowBack
@@ -738,6 +755,47 @@ internal fun CustomerCenterMultiplePurchasesPreview() {
         modifier = Modifier
             .fillMaxSize()
             .padding(10.dp),
+        onAction = {},
+    )
+}
+
+@Preview
+@Composable
+internal fun CustomerCenterLoadedNoCloseButtonPreview() {
+    InternalCustomerCenter(
+        state = CustomerCenterState.Success(
+            customerCenterConfigData = previewConfigData,
+            purchases = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
+            mainScreenPaths = previewConfigData.getManagementScreen()?.paths ?: emptyList(),
+            detailScreenPaths = previewConfigData.getManagementScreen()?.paths?.filter {
+                it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL
+            } ?: emptyList(),
+        ),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp),
+        shouldShowCloseButton = false,
+        onAction = {},
+    )
+}
+
+@Preview
+@Composable
+internal fun CustomerCenterBackButtonNoCloseButtonPreview() {
+    InternalCustomerCenter(
+        state = CustomerCenterState.Success(
+            customerCenterConfigData = previewConfigData,
+            purchases = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
+            mainScreenPaths = previewConfigData.getManagementScreen()?.paths ?: emptyList(),
+            detailScreenPaths = previewConfigData.getManagementScreen()?.paths?.filter {
+                it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL
+            } ?: emptyList(),
+            navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
+        ),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp),
+        shouldShowCloseButton = false,
         onAction = {},
     )
 }
