@@ -37,16 +37,15 @@ class PersistedRemoteConfigurationStateTest {
     }
 
     @Test
-    fun `on a topic collision a shallower domain wins over a deeper one`() {
+    fun `a subdomain's own subdomains never extend the merged view`() {
         val state = tree(
-            "app" to domain(subdomains = listOf("child", "uncle")),
-            "child" to domain(subdomains = listOf("grandchild")),
-            "grandchild" to domain(topics = mapOf("workflows" to topic("fromGrandchild"))),
-            "uncle" to domain(topics = mapOf("workflows" to topic("fromUncle"))),
+            "app" to domain(subdomains = listOf("child")),
+            "child" to domain(subdomains = listOf("grandchild"), topics = mapOf("workflows" to topic("fromChild"))),
+            "grandchild" to domain(topics = mapOf("beyondOneLevel" to topic("x"))),
         )
 
-        assertThat(state.domainsInPrecedenceOrder).containsExactly("app", "child", "uncle", "grandchild")
-        assertThat(state.mergedTopics.getValue("workflows")).containsOnlyKeys("fromUncle")
+        assertThat(state.domainsInPrecedenceOrder).containsExactly("app", "child")
+        assertThat(state.mergedTopics).containsOnlyKeys("workflows")
     }
 
     @Test
@@ -71,29 +70,14 @@ class PersistedRemoteConfigurationStateTest {
     }
 
     @Test
-    fun `cycles and re-listed domains terminate and contribute once`() {
+    fun `duplicates and a self-reference in the root's list contribute once`() {
         val state = tree(
             "app" to domain(subdomains = listOf("child", "child", "app")),
-            "child" to domain(subdomains = listOf("app"), topics = mapOf("workflows" to topic("wf1"))),
+            "child" to domain(topics = mapOf("workflows" to topic("wf1"))),
         )
 
         assertThat(state.domainsInPrecedenceOrder).containsExactly("app", "child")
         assertThat(state.mergedTopics).containsOnlyKeys("workflows")
-    }
-
-    @Test
-    fun `domains deeper than the depth cap are excluded`() {
-        // Root at depth 0; d1..d3 within the cap, d4 beyond it.
-        val state = tree(
-            "app" to domain(subdomains = listOf("d1")),
-            "d1" to domain(subdomains = listOf("d2")),
-            "d2" to domain(subdomains = listOf("d3")),
-            "d3" to domain(subdomains = listOf("d4"), topics = mapOf("inCap" to topic("a"))),
-            "d4" to domain(topics = mapOf("beyondCap" to topic("b"))),
-        )
-
-        assertThat(state.domainsInPrecedenceOrder).containsExactly("app", "d1", "d2", "d3")
-        assertThat(state.mergedTopics).containsOnlyKeys("inCap")
     }
 
     @Test

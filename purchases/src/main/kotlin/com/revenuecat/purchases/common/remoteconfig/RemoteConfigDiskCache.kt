@@ -61,24 +61,15 @@ internal data class PersistedRemoteConfigurationState(
         get() = domains[rootDomain]
 
     /**
-     * Every persisted domain reachable from [rootDomain] through the persisted `subdomains` lists, root-first
-     * BFS (shallower domains before deeper ones, siblings in declaration order), guarded by a visited set
-     * (cycles/duplicates contribute once) and [MAX_SUBDOMAIN_DEPTH]. Domains present in [domains] but not
-     * reachable from the root are excluded: they are stale entries awaiting pruning, never part of the merged
-     * configuration.
+     * The root domain followed by its persisted `subdomains` in declaration order (duplicates and a
+     * self-reference contribute once). Only one level of subdomains is supported: a subdomain's own
+     * `subdomains` list never extends the merged configuration. Domains present in [domains] but not in the
+     * root's list are excluded: they are stale entries, never part of the merged configuration; when the root
+     * itself has no entry, nothing is.
      */
     val domainsInPrecedenceOrder: List<String> by lazy {
-        buildList {
-            val visited = mutableSetOf<String>()
-            var frontier = listOf(rootDomain)
-            var depth = 0
-            while (frontier.isNotEmpty() && depth <= MAX_SUBDOMAIN_DEPTH) {
-                val level = frontier.filter { visited.add(it) }.filter { it in domains }
-                addAll(level)
-                frontier = level.flatMap { domains.getValue(it).subdomains }
-                depth++
-            }
-        }
+        val root = rootState ?: return@lazy emptyList()
+        listOf(rootDomain) + root.subdomains.distinct().filter { it != rootDomain && it in domains }
     }
 
     /**
@@ -112,10 +103,6 @@ internal data class PersistedRemoteConfigurationState(
         }
     }
 
-    companion object {
-        /** Root sits at depth 0; subdomain lists deeper than this are ignored (logged at sync time). */
-        const val MAX_SUBDOMAIN_DEPTH = 3
-    }
 }
 
 /**
