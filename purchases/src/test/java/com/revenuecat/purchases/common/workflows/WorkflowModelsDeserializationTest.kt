@@ -141,8 +141,8 @@ internal class WorkflowModelsDeserializationTest {
         val screen = JsonTools.json.decodeFromString(
             WorkflowScreen.serializer(),
             workflowScreenJson(
-                extraFields = """
-                    "play_store_product_change_mode": {
+                productChangeConfig = """
+                    {
                       "upgrade_replacement_mode": "charge_full_price",
                       "downgrade_replacement_mode": "deferred"
                     }
@@ -160,7 +160,7 @@ internal class WorkflowModelsDeserializationTest {
     fun `WorkflowScreen treats empty play_store_product_change_mode as absent`() {
         val screen = JsonTools.json.decodeFromString(
             WorkflowScreen.serializer(),
-            workflowScreenJson(extraFields = """"play_store_product_change_mode": {}"""),
+            workflowScreenJson(productChangeConfig = "{}"),
         )
 
         assertThat(screen.productChangeConfig).isNull()
@@ -172,7 +172,7 @@ internal class WorkflowModelsDeserializationTest {
         val screen = JsonTools.json.decodeFromString(
             WorkflowScreen.serializer(),
             workflowScreenJson(
-                extraFields = """"zero_decimal_place_countries": {"apple": ["TWN", "MEX"], "google": ["TW", "MX"]}""",
+                zeroDecimalPlaceCountries = "{\"apple\": [\"TWN\", \"MEX\"], \"google\": [\"TW\", \"MX\"]}",
             ),
         )
 
@@ -189,8 +189,16 @@ internal class WorkflowModelsDeserializationTest {
         assertThat(screen.zeroDecimalPlaceCountries).isEmpty()
     }
 
-    private fun workflowScreenJson(extraFields: String = ""): String =
-        """
+    private fun workflowScreenJson(
+        productChangeConfig: String? = null,
+        zeroDecimalPlaceCountries: String? = null,
+    ): String {
+        val optionalFields = listOfNotNull(
+            productChangeConfig?.let { "\"play_store_product_change_mode\": $it" },
+            zeroDecimalPlaceCountries?.let { "\"zero_decimal_place_countries\": $it" },
+        ).joinToString(",\n")
+
+        return """
             {
               "template_name": "components",
               "asset_base_url": "https://assets.pawwalls.com",
@@ -201,8 +209,8 @@ internal class WorkflowModelsDeserializationTest {
                 }
               },
               "components_localizations": {"en_US": {}},
-              "default_locale": "en_US"
-              ${if (extraFields.isEmpty()) "" else ",$extraFields"}
+              "default_locale": "en_US"${if (optionalFields.isEmpty()) "" else ",\n$optionalFields"}
             }
         """.trimIndent()
+    }
 }
