@@ -8,6 +8,7 @@ internal object CustomerInfoResponseJsonKeys {
     const val ORIGINAL_APPLICATION_VERSION = "original_application_version"
     const val ENTITLEMENTS = "entitlements"
     const val FIRST_SEEN = "first_seen"
+    const val LAST_SEEN = "last_seen"
     const val ORIGINAL_PURCHASE_DATE = "original_purchase_date"
     const val NON_SUBSCRIPTIONS = "non_subscriptions"
     const val SUBSCRIPTIONS = "subscriptions"

@@ -40,10 +40,30 @@ class CustomerInfoDimensionProviderTest {
                 "appUserId" to string(APP_USER_ID),
                 "originalAppUserId" to string("original_user"),
                 "firstSeenAt" to date("2022-01-01T00:00:00Z"),
-                "lastSeenAt" to date("2024-06-01T00:00:00Z"),
+                "lastSeenAt" to date("2024-05-20T00:00:00Z"),
                 "originalPurchasedAt" to date("2021-01-01T00:00:00Z"),
             ),
         )
+    }
+
+    @Test
+    fun `the last seen date is the backend's, not the date it last answered this device`() = runTest {
+        val dimensions = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(context)
+
+        // `requestDate` is 2024-06-01 and the SDK refreshes on every foreground, so mapping it would read as
+        // "seen just now" for the whole session and "hasn't opened the app in a while" could never match.
+        assertThat(dimensions["lastSeenAt"]).isEqualTo(date("2024-05-20T00:00:00Z"))
+        assertThat(dimensions["lastSeenAt"]).isNotEqualTo(date("2024-06-01T00:00:00Z"))
+    }
+
+    @Test
+    fun `a payload with no last seen date reports none`() = runTest {
+        // A customer info cached by a version that did not read the key.
+        val response = subscriberResponse(lastSeen = null)
+
+        val dimensions = provider(customerInfo(response)).dimensions(context)
+
+        assertThat(dimensions).doesNotContainKey("lastSeenAt")
     }
 
     @Test
@@ -554,6 +574,7 @@ class CustomerInfoDimensionProviderTest {
             subscriptions: String = "",
             nonSubscriptions: String = "",
             entitlements: String = "",
+            lastSeen: String? = "2024-05-20T00:00:00Z",
         ) = """
             {
               "request_date": "2024-06-01T00:00:00Z",
@@ -561,6 +582,7 @@ class CustomerInfoDimensionProviderTest {
                 "original_app_user_id": "original_user",
                 "original_application_version": "1.0",
                 "first_seen": "2022-01-01T00:00:00Z",
+                "last_seen": ${lastSeen.asJsonString()},
                 "original_purchase_date": "2021-01-01T00:00:00Z",
                 "management_url": null,
                 "subscriptions": { $subscriptions },

@@ -51,8 +51,10 @@ internal class CustomerInfoDimensionProvider(
     private fun CustomerInfo.dimensions(date: Date): Map<String, RulesDimensionValue> = buildMap {
         putString(KEY_ORIGINAL_APP_USER_ID, originalAppUserId)
         putDate(KEY_FIRST_SEEN_AT, firstSeen)
-        // The date the backend last answered us, which is when it last saw this customer through this device.
-        putDate(KEY_LAST_SEEN_AT, requestDate)
+        // When the backend last saw this customer on any device, which is what "how long since they last opened
+        // the app" needs. Deliberately not `requestDate`: that is when the backend last answered *us*, and the
+        // SDK refreshes on every foreground, so it would read as "just now" for the whole session.
+        putDate(KEY_LAST_SEEN_AT, lastSeen)
         putDate(KEY_ORIGINAL_PURCHASED_AT, originalPurchaseDate)
         putObjectList(KEY_PURCHASES, purchaseRecords(date))
         putObjectList(KEY_ENTITLEMENTS, entitlementRecords())

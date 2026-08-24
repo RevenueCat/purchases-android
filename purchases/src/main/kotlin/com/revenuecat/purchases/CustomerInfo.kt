@@ -83,6 +83,12 @@ public class CustomerInfo internal constructor(
     private val jsonObject: JSONObject,
     internal val originalSource: CustomerInfoOriginalSource = CustomerInfoOriginalSource.DEFAULT,
     internal val loadedFromCache: Boolean = false,
+    /**
+     * When the backend last saw this customer, on any device. Absent from a payload cached by a version that did
+     * not read it. Deliberately not part of equality, like [requestDate]: it moves with every response, and
+     * `CustomerInfoUpdateHandler` would then notify its listeners on every refresh.
+     */
+    internal val lastSeen: Date? = null,
 ) : Parcelable, RawDataContainer<JSONObject> {
 
     public constructor(

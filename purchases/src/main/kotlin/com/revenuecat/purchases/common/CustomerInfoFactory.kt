@@ -79,6 +79,11 @@ internal object CustomerInfoFactory {
 
         val firstSeen = Iso8601Utils.parse(subscriber.getString(CustomerInfoResponseJsonKeys.FIRST_SEEN))
 
+        // Optional: a payload cached by a version that did not read it has none.
+        val lastSeen = subscriber.optNullableString(CustomerInfoResponseJsonKeys.LAST_SEEN)?.let {
+            Iso8601Utils.parse(it)
+        }
+
         val entitlementInfos = entitlements?.buildEntitlementInfos(
             subscriptions,
             nonSubscriptionsLatestPurchases,
@@ -108,6 +113,7 @@ internal object CustomerInfoFactory {
             originalPurchaseDate = originalPurchaseDate,
             originalSource = originalSource,
             loadedFromCache = loadedFromCache,
+            lastSeen = lastSeen,
         )
     }
 

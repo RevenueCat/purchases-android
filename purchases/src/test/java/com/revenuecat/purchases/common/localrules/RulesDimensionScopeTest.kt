@@ -102,7 +102,7 @@ class RulesDimensionScopeTest {
                   }
                 ],
                 "firstSeenAt": 1640995200000,
-                "lastSeenAt": 1717200000000,
+                "lastSeenAt": 1716163200000,
                 "originalAppUserId": "original_user",
                 "originalPurchasedAt": 1609459200000,
                 "purchases": [
@@ -302,6 +302,7 @@ class RulesDimensionScopeTest {
               "subscriber": {
                 "original_app_user_id": "original_user",
                 "first_seen": "2022-01-01T00:00:00Z",
+                "last_seen": "2024-05-20T00:00:00Z",
                 "original_purchase_date": "2021-01-01T00:00:00Z",
                 "management_url": "https://play.google.com/store/account/subscriptions",
                 "subscriptions": {

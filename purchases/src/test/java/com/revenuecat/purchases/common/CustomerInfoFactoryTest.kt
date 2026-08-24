@@ -49,6 +49,42 @@ class CustomerInfoFactoryTest {
     }
 
     @Test
+    fun `parses the last seen date`() {
+        val response = JSONObject(Responses.validFullPurchaserResponse).apply {
+            getJSONObject("subscriber").put("last_seen", "2024-05-20T00:00:00Z")
+        }
+
+        val customerInfo = CustomerInfoFactory.buildCustomerInfo(
+            response,
+            overrideRequestDate = null,
+            verificationResult = VerificationResult.NOT_REQUESTED,
+        )
+
+        assertThat(customerInfo.lastSeen).isEqualTo(Iso8601Utils.parse("2024-05-20T00:00:00Z"))
+    }
+
+    @Test
+    fun `a payload with no last seen date parses to none`() {
+        // What a customer info cached by a version that did not read the key looks like.
+        assertThat(defaultCustomerInfo.lastSeen).isNull()
+    }
+
+    @Test
+    fun `two customer infos differing only in the last seen date are equal`() {
+        val laterSeen = CustomerInfoFactory.buildCustomerInfo(
+            JSONObject(Responses.validFullPurchaserResponse).apply {
+                getJSONObject("subscriber").put("last_seen", "2024-05-20T00:00:00Z")
+            },
+            overrideRequestDate = null,
+            verificationResult = VerificationResult.NOT_REQUESTED,
+        )
+
+        // The backend moves this on every response, so counting it would make CustomerInfoUpdateHandler notify
+        // its listeners on every refresh. Same reason requestDate is excluded.
+        assertThat(laterSeen).isEqualTo(defaultCustomerInfo)
+    }
+
+    @Test
     fun `assigns default schema version correctly`() {
         assertThat(defaultCustomerInfo.schemaVersion).isEqualTo(3)
     }
