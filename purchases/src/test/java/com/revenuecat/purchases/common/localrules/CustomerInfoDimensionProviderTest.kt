@@ -280,25 +280,6 @@ class CustomerInfoDimensionProviderTest {
         assertThat(dimensions.purchases()).isNotEmpty()
     }
 
-    @Test
-    fun `a customer info that arrived across a user change is not reported`() = runTest {
-        // Asking for one app user is not enough to be answered about them: on a cold cache the SDK syncs pending
-        // purchases first, and that sync reads the current app user for itself.
-        var currentAppUserId = "before_login"
-        val provider = CustomerInfoDimensionProvider(
-            currentAppUserId = { currentAppUserId },
-            customerInfo = {
-                currentAppUserId = "after_login"
-                customerInfo(SUBSCRIBED_RESPONSE)
-            },
-        )
-
-        val dimensions = provider.dimensions(date)
-
-        // Filing these purchases under either ID would describe a customer who does not exist, so the evaluation
-        // sees a customer it knows nothing about but the ID it started with.
-        assertThat(dimensions).isEqualTo(mapOf("appUserId" to string("before_login")))
-    }
 
     @Test
     fun `a customer the SDK has no ID for is not asked about`() = runTest {

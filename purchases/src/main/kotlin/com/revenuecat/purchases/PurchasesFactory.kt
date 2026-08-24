@@ -409,6 +409,7 @@ internal class PurchasesFactory(
                         },
                     ),
                 ),
+                currentAppUserId = { identityManager.currentAppUserID },
             )
 
             val customerInfoUpdateHandler = CustomerInfoUpdateHandler(

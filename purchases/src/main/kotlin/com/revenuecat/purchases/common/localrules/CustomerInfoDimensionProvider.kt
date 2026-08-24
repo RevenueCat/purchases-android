@@ -46,30 +46,21 @@ internal class CustomerInfoDimensionProvider(
      * surfaces.
      *
      * Asking for one app user is not enough to be answered about them: on a cold cache the SDK syncs pending
-     * purchases first, and that sync reads the current app user for itself. So the ID is checked again once the
-     * answer is in, and an answer that arrived across a user change is dropped rather than reported under the ID
-     * this evaluation started with.
+     * purchases first, and that sync reads the current app user for itself. Catching that is
+     * [RulesDimensionResolver]'s job, since it watches the whole collection rather than this read alone, and it
+     * can take the snapshot again instead of leaving a customer half-described.
      */
-    @Suppress("ReturnCount")
     private suspend fun customerInfoDimensions(appUserId: String, date: Date): Map<String, RulesDimensionValue> {
         // Nobody to ask about: the SDK has no cached user, so there is no request to make on their behalf.
         if (appUserId.isEmpty()) return emptyMap()
-        val dimensions = try {
+        return try {
             customerInfo(appUserId).dimensions(date)
         } catch (e: CancellationException) {
             throw e
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             warnLog { "The customer info is unavailable, so customer dimensions can't be evaluated: $e" }
-            return emptyMap()
+            emptyMap()
         }
-        if (currentAppUserId() != appUserId) {
-            warnLog {
-                "The app user changed while the customer info was being read, so it can't be evaluated: it may " +
-                    "describe a different customer than the one this evaluation is about."
-            }
-            return emptyMap()
-        }
-        return dimensions
     }
 
     private fun CustomerInfo.dimensions(date: Date): Map<String, RulesDimensionValue> = buildMap {
