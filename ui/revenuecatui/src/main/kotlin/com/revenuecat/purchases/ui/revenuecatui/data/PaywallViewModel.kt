@@ -1611,15 +1611,9 @@ internal class PaywallViewModelImpl(
     /**
      * Runs [block] as the paywall's single in-flight action, releasing the gate when it finishes.
      *
-     * The work runs on [viewModelScope] and is only joined by the caller, because callers are
-     * composition-scoped (see ButtonComponentView): a paywall that leaves composition while the
-     * billing flow is in front cancels them, and awaitPurchase/awaitRestore do not forward that
-     * cancellation to the store. Running on the caller's scope would abandon a live purchase with
-     * nobody left to handle its result, and would strand the gate, silently rejecting every later
-     * purchase and restore on this retained ViewModel. A cancelled caller loses only the join.
-     *
-     * The gate is taken before the launch so a second tap cannot slip in, and released in the job's
-     * finally so it always outlives the store operation rather than the caller.
+     * Runs on [viewModelScope] and is only joined by the caller: callers are composition-scoped, and
+     * awaitPurchase does not forward their cancellation to the store, so running it on the caller's
+     * scope would abandon a live purchase and strand the gate.
      */
     private suspend fun runExclusiveAction(block: suspend () -> Unit) {
         if (verifyNoActionInProgressOrStartAction()) {

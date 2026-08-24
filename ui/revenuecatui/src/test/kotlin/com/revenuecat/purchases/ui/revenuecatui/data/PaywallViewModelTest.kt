@@ -1851,8 +1851,7 @@ class PaywallViewModelTest {
     fun `handlePackagePurchase cancelled mid-flight does not block later purchases`(): Unit = runBlocking {
         // Arrange
         val model = createComponentsModel()
-        // The billing flow is up. It resolves as user-cancelled only once the store says so, which is
-        // after the caller has already been cancelled.
+        // The store resolves as cancelled only after the caller is already gone.
         val purchaseStarted = CompletableDeferred<Unit>()
         val storeResolved = CompletableDeferred<Unit>()
         coEvery { purchases.awaitPurchase(any()) } coAnswers {
@@ -1861,14 +1860,13 @@ class PaywallViewModelTest {
             throw PurchasesException(PurchasesError(PurchasesErrorCode.PurchaseCancelledError))
         }
 
-        // Act: a purchase launched from the button's composition scope, which is then cancelled
-        // because the paywall subtree left composition while the billing flow was in front.
+        // Act: the button's composition scope dies while the billing flow is in front.
         val buttonScope = CoroutineScope(coroutineContext + Job())
         val click = buttonScope.launch { model.handlePackagePurchase(activity, pkg = null) }
         withTimeout(TEST_WAIT_MS) { purchaseStarted.await() }
         click.cancelAndJoin()
 
-        // The store resolves the abandoned flow, so the action is genuinely over.
+        // The abandoned flow resolves, so the action is genuinely over.
         storeResolved.complete(Unit)
         ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
 
@@ -1902,9 +1900,8 @@ class PaywallViewModelTest {
         withTimeout(TEST_WAIT_MS) { purchaseStarted.await() }
         click.cancelAndJoin()
 
-        // A second tap while that flow is still live must not start an overlapping purchase. Launched
-        // rather than called, so a regression that lets it through fails this assertion instead of
-        // deadlocking on the unresolved store flow.
+        // Must not start an overlapping purchase. Launched rather than called, so a regression fails
+        // this assertion instead of deadlocking on the unresolved flow.
         val secondTap = launch { model.handlePackagePurchase(activity, pkg = null) }
         ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
         coVerify(exactly = 1) { purchases.awaitPurchase(any()) }
@@ -3564,7 +3561,7 @@ class PaywallViewModelTest {
         assertThat(model.workflowState.value).isNull()
     }
 
-    /** A loaded components paywall with the monthly package selected, as a V2 paywall presents it. */
+    /** A loaded components paywall with the monthly package selected. */
     private fun createComponentsModel(): PaywallViewModelImpl {
         val offeringId = "offering-id"
         val offering = Offering(

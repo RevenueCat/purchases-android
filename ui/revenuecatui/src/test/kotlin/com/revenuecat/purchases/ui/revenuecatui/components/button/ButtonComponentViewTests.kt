@@ -153,11 +153,11 @@ class ButtonComponentViewTests {
         assertThat(clickStarted.isCompleted).isTrue
         assertThat(state.actionInProgress).isTrue
 
-        // The paywall subtree leaves composition, cancelling the click's composition-scoped coroutine.
+        // The paywall leaves composition, cancelling the click's coroutine.
         buttonRendered = false
         composeTestRule.waitForIdle()
 
-        // Without the cleanup this stays true, and every button on the paywall is disabled from then on.
+        // Without the cleanup this stays true and every button on the paywall stays disabled.
         assertThat(state.actionInProgress).isFalse
     }
 

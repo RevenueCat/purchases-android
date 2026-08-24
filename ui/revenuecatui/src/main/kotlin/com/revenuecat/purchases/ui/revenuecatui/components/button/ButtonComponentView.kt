@@ -171,10 +171,8 @@ internal fun ButtonComponentView(
                             }
                         }
                         coroutineScope.launch {
-                            // Reset in a finally: this scope dies with the composition, and `state` is
-                            // retained on the ViewModel, so skipping the reset on cancellation leaves every
-                            // button on the paywall permanently disabled. The ViewModel keeps its own gate
-                            // for the action itself, which outlives this scope (see runExclusiveAction).
+                            // `state` outlives this composition-scoped coroutine, so skipping the reset
+                            // on cancellation leaves every button on the paywall disabled.
                             try {
                                 onClick(paywallAction)
                             } finally {
