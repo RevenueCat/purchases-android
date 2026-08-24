@@ -53,6 +53,19 @@ internal class RulesEngineTest {
     }
 
     @Test
+    fun `transform fails when a condition reads an absent variable`() {
+        // The obvious way to write an optional scope is to use the variable as its own condition.
+        // An absent name is not a falsy one, so this is unanswerable rather than a fallback.
+        val result = RulesEngine.transform(
+            """{"if":[{"var":"optionalScope"},{"var":"optionalScope"},{"var":""}]}""",
+            emptyMap(),
+        )
+
+        assertThat(result.exceptionOrNull())
+            .isInstanceOf(RulesEngine.EvaluationException.UnresolvedVariable::class.java)
+    }
+
+    @Test
     fun `transform and evaluate use independent predicates`() {
         val raw = mapOf("x" to Value.IntValue(1))
         val transformed = RulesEngine.transform("""{"var":""}""", raw).getOrThrow()
