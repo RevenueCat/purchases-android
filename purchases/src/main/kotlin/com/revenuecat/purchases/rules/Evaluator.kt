@@ -26,15 +26,15 @@ internal object Evaluator {
      * @param variables The resolved variable map — typically a nested
      *  object mirroring the namespace hierarchy (`subscriber.*`,
      *  `session.*`, etc.).
-     * @return `true` when the predicate evaluates to a truthy value per
-     *  JSON Logic rules.
+     * @return The value the predicate evaluates to. Callers that need a
+     *  boolean apply JSON Logic truthiness via [Value.isTruthy].
      */
     fun evaluate(
         predicate: Value,
         variables: Map<String, Value>,
-    ): Boolean {
+    ): Value {
         val scope = Scope(root = Value.ObjectValue(variables))
-        return evaluateValue(predicate, scope).isTruthy
+        return evaluateValue(predicate, scope)
     }
 
     /**

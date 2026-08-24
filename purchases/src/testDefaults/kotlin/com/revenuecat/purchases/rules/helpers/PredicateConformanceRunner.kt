@@ -42,7 +42,7 @@ internal object PredicateConformanceRunner {
     private fun assertExpectedOutcome(fixture: PredicateConformanceFixtureCase) {
         when (val expected = fixture.expected) {
             is ExpectedOutcome.BooleanOutcome -> {
-                val result = Evaluator.evaluate(fixture.predicate, scope(fixture))
+                val result = Evaluator.evaluate(fixture.predicate, scope(fixture)).isTruthy
                 assertThat(result)
                     .withFailMessage("Fixture %s: expected %s but got %s", fixture.id, expected.value, result)
                     .isEqualTo(expected.value)

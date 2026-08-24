@@ -46,10 +46,32 @@ internal object RulesEngine {
     }
 
     /**
+     * Applies a JSON Logic transformation predicate to a variable scope.
+     *
+     * The predicate is evaluated against [variables] and must produce an
+     * object, which becomes the new scope.
+     *
+     * @param predicate The transformation predicate as a JSON string.
+     * @param variables The raw variable scope.
+     * @return [Result.success] with the transformed scope, or [Result.failure]
+     *  carrying an [EvaluationException] when parsing or evaluation fails, or
+     *  when the predicate evaluates to anything other than an object.
+     */
+    fun transform(
+        predicate: String,
+        variables: Map<String, Value>,
+    ): Result<Map<String, Value>> = evaluated(predicate, variables).mapCatching { result ->
+        (result as? Value.ObjectValue)?.entries
+            ?: throw EvaluationException.TypeMismatch(
+                "transformation predicate expected to produce an object, got $result",
+            )
+    }
+
+    /**
      * Evaluates a JSON Logic predicate against a native variable scope.
      *
-     * @param predicate The rule predicate as a JSON string.
-     * @param variables The resolved variable scope.
+     * @param predicate The evaluation predicate as a JSON string.
+     * @param variables The variable scope.
      * @return [Result.success] with `true` when the predicate is truthy,
      *  `false` otherwise, or [Result.failure] carrying an [EvaluationException]
      *  when parsing or evaluation fails.
@@ -57,7 +79,16 @@ internal object RulesEngine {
     fun evaluate(
         predicate: String,
         variables: Map<String, Value>,
-    ): Result<Boolean> = try {
+    ): Result<Boolean> = evaluated(predicate, variables).map { it.isTruthy }
+
+    /**
+     * Parses [predicate] and evaluates it against [variables], mapping any
+     * thrown error into a [Result.failure].
+     */
+    private fun evaluated(
+        predicate: String,
+        variables: Map<String, Value>,
+    ): Result<Value> = try {
         Result.success(Evaluator.evaluate(ValueJson.parse(predicate), variables))
     } catch (error: EvaluationException) {
         Result.failure(error)
