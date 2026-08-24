@@ -102,7 +102,6 @@ internal data class PersistedRemoteConfigurationState(
             }
         }
     }
-
 }
 
 /**
