@@ -17,6 +17,8 @@ internal object CustomOperators {
         args: Value,
         vars: Scope,
     ): Value = when (op) {
+        "rc.length" -> LengthOperator.opLength(args, vars)
+
         "rc.lower" -> CaseOperators.opLower(args, vars)
         "rc.upper" -> CaseOperators.opUpper(args, vars)
 
