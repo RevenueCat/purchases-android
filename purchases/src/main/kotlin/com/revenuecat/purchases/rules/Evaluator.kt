@@ -33,7 +33,7 @@ internal object Evaluator {
         predicate: Value,
         variables: Map<String, Value>,
     ): Boolean {
-        val scope = Value.ObjectValue(variables)
+        val scope = Scope(root = Value.ObjectValue(variables))
         return evaluateValue(predicate, scope).isTruthy
     }
 
@@ -43,7 +43,7 @@ internal object Evaluator {
      */
     internal fun evaluateValue(
         predicate: Value,
-        vars: Value,
+        vars: Scope,
     ): Value = when (predicate) {
         Value.Null,
         Value.Undefined,

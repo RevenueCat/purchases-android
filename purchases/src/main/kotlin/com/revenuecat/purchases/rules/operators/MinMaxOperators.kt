@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.rules.operators
 
+import com.revenuecat.purchases.rules.Scope
 import com.revenuecat.purchases.rules.Value
 import kotlin.math.max
 import kotlin.math.min
@@ -16,17 +17,17 @@ import kotlin.math.min
  */
 internal object MinMaxOperators {
 
-    fun opMax(args: Value, vars: Value): Value {
+    fun opMax(args: Value, vars: Scope): Value {
         return reduceExtremum(args, vars, empty = Double.NEGATIVE_INFINITY) { a, b -> max(a, b) }
     }
 
-    fun opMin(args: Value, vars: Value): Value {
+    fun opMin(args: Value, vars: Scope): Value {
         return reduceExtremum(args, vars, empty = Double.POSITIVE_INFINITY) { a, b -> min(a, b) }
     }
 
     private fun reduceExtremum(
         args: Value,
-        vars: Value,
+        vars: Scope,
         empty: Double,
         combine: (Double, Double) -> Double,
     ): Value {

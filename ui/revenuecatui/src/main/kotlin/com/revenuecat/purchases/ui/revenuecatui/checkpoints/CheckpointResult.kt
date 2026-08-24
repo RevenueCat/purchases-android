@@ -58,6 +58,10 @@ public abstract class CheckpointResult internal constructor() {
 
                 @JvmField
                 public val UNKNOWN_CHECKPOINT: Reason = Reason("UNKNOWN_CHECKPOINT")
+
+                /** The checkpoint identifier is invalid. */
+                @JvmField
+                public val INVALID_CHECKPOINT_IDENTIFIER: Reason = Reason("INVALID_CHECKPOINT_IDENTIFIER")
             }
         }
     }

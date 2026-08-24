@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.RulesEngine.EvaluationException
+import com.revenuecat.purchases.rules.Scope
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.rules.jsParseFloat
 
@@ -29,7 +30,7 @@ internal object ArithmeticOperators {
      * `{"+": [a, b, ...]}` — variadic sum, seeded with `0`. 0 arguments
      * returns `0`. Each operand is coerced via JS `parseFloat`.
      */
-    fun opAdd(args: Value, vars: Value): Value {
+    fun opAdd(args: Value, vars: Scope): Value {
         val evaluated = Operators.evalArgs(args, vars)
         val sum = evaluated.fold(0.0) { acc, value -> acc + jsParseFloat(value) }
         return Value.FloatValue(sum)
@@ -42,7 +43,7 @@ internal object ArithmeticOperators {
      * arguments is a [EvaluationException.TypeMismatch] to mirror `[].reduce(fn)`
      * throwing.
      */
-    fun opMul(args: Value, vars: Value): Value {
+    fun opMul(args: Value, vars: Scope): Value {
         val evaluated = Operators.evalArgs(args, vars)
         val head = evaluated.firstOrNull()
             ?: throw EvaluationException.TypeMismatch("operator '*' requires at least 1 argument")
@@ -59,7 +60,7 @@ internal object ArithmeticOperators {
      * `NaN` (mirroring JS `-undefined`). Operands are coerced via JS
      * `Number()` ([Value.toNumberOrNull]).
      */
-    fun opSub(args: Value, vars: Value): Value {
+    fun opSub(args: Value, vars: Scope): Value {
         val evaluated = Operators.evalArgs(args, vars)
         val lhs = evaluated.firstOrNull()?.asDouble() ?: Double.NaN
         return if (evaluated.size >= 2) {
@@ -74,7 +75,7 @@ internal object ArithmeticOperators {
      * operands resolve to `NaN` (mirroring JS `undefined / x`). Division
      * by zero follows IEEE 754: `n / 0` is `±Infinity`, `0 / 0` is `NaN`.
      */
-    fun opDiv(args: Value, vars: Value): Value {
+    fun opDiv(args: Value, vars: Scope): Value {
         val (lhs, rhs) = evalDivisorPair(args, vars)
         return Value.FloatValue(lhs / rhs)
     }
@@ -83,7 +84,7 @@ internal object ArithmeticOperators {
      * `{"%": [a, b]}` — modulo. Same arity / coercion rules as `/`;
      * `n % 0` follows IEEE 754 and is `NaN`.
      */
-    fun opMod(args: Value, vars: Value): Value {
+    fun opMod(args: Value, vars: Scope): Value {
         val (lhs, rhs) = evalDivisorPair(args, vars)
         return Value.FloatValue(lhs % rhs)
     }
@@ -93,7 +94,7 @@ internal object ArithmeticOperators {
      * to [Double.NaN] (mirroring JS `undefined`). Extra operands are
      * ignored.
      */
-    private fun evalDivisorPair(args: Value, vars: Value): Pair<Double, Double> {
+    private fun evalDivisorPair(args: Value, vars: Scope): Pair<Double, Double> {
         val evaluated = Operators.evalArgs(args, vars)
         val lhs = evaluated.firstOrNull()?.asDouble() ?: Double.NaN
         val rhs = if (evaluated.size >= 2) evaluated[1].asDouble() else Double.NaN

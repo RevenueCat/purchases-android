@@ -4,6 +4,8 @@ package com.revenuecat.purchases.utils
 
 import android.net.Uri
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
@@ -42,6 +44,16 @@ internal data class WebViewAsset(
     val sizeToContentWidth: Boolean,
     val sizeToContentHeight: Boolean,
 )
+
+/**
+ * Null if this offering has no Paywalls V2 config or it cannot be decoded. `data` decodes lazily, so this is
+ * where that cost lands; every caller is best-effort asset warming, so a failure must not propagate.
+ */
+internal fun Offering.baseComponentsConfig(): PaywallComponentsConfig? =
+    paywallComponents?.data?.getOrElse { error ->
+        errorLog(error) { "Error deserializing paywall components data for '$identifier'. Skipping its assets." }
+        null
+    }?.componentsConfig?.base
 
 internal fun PaywallComponentsConfig.collectAssets(): PaywallComponentAssets {
     val imageUris = background.findImageUris().toMutableSet()
