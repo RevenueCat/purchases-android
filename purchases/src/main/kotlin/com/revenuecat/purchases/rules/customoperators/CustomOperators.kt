@@ -20,6 +20,8 @@ internal object CustomOperators {
         "rc.lower" -> CaseOperators.opLower(args, vars)
         "rc.upper" -> CaseOperators.opUpper(args, vars)
 
+        "rc.rootVar" -> RootVarOperator.opRootVar(args, vars)
+
         else -> throw EvaluationException.UnsupportedOperator(op)
     }
 }
