@@ -341,8 +341,31 @@ class CheckpointWorkflowResolverImplTest {
 
         assertThat(noActionReason(resolver.resolve(checkpointId, mapOf("source" to RulesDimensionValue.StringValue("onboarding")))))
             .isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
+    }
+
+    @Test
+    fun `a custom variable the audience requires but the app omitted is not a NO_MATCH`() = runTest {
+        // The audience asks about a variable the call never supplied, so the SDK cannot place this
+        // customer inside or outside it. Saying NO_MATCH would claim an answer it does not have.
+        coEvery { mockAudiencesConfigProvider.getAudience("aud_wf1234") } returns
+            Audience("aud_wf1234", """{"==": [{"var": "custom.source"}, "settings"]}""")
+
         assertThat(noActionReason(resolver.resolve(checkpointId, emptyMap())))
-            .isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+    }
+
+    @Test
+    fun `negating an audience on an omitted variable does not manufacture a match`() = runTest {
+        // Negation is where an unanswerable comparison does the most damage: a false inner result
+        // becomes a match, admitting exactly the customers the audience was written to exclude.
+        coEvery { mockAudiencesConfigProvider.getAudience("aud_wf1234") } returns
+            Audience("aud_wf1234", """{"!": [{"==": [{"var": "custom.source"}, "settings"]}]}""")
+
+        val resolution = resolver.resolve(checkpointId, emptyMap())
+
+        assertThat(resolution).isNotInstanceOf(CheckpointResolution.MatchedWorkflow::class.java)
+        assertThat(noActionReason(resolution))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
     }
 
     @Test

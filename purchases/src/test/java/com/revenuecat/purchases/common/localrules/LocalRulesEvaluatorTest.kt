@@ -54,12 +54,18 @@ class LocalRulesEvaluatorTest {
     }
 
     @Test
-    fun `a predicate reading an unsupplied dimension is an ordinary non-match`() = runTest {
+    fun `a predicate reading an unsupplied dimension surfaces as an error`() = runTest {
+        // A dimension this SDK version cannot resolve makes the rule
+        // unanswerable. Reporting that is what lets the caller tell it apart
+        // from a rule that was evaluated and did not match.
         val result = evaluator().match(
             listOf(TestRule("only", """{"==": [{"var": "device.unknown_dimension"}, true]}""")),
         )
 
-        assertThat(result.getOrThrow()).isNull()
+        val error = result.exceptionOrNull() as LocalRulesEvaluationException.PredicateEvaluation
+        assertThat(error.ruleIndex).isZero()
+        assertThat(error.error)
+            .isEqualTo(RulesEngine.EvaluationException.UnresolvedVariable("device.unknown_dimension"))
     }
 
     @Test
@@ -145,7 +151,10 @@ class LocalRulesEvaluatorTest {
             evaluator().match(rules, mapOf("source" to RulesDimensionValue.StringValue("other")))
                 .getOrThrow(),
         ).isNull()
-        assertThat(evaluator().match(rules).getOrThrow()).isNull()
+        // Supplying no custom variables at all leaves `custom.source` unresolved,
+        // which is unanswerable rather than a non-match.
+        assertThat(evaluator().match(rules).exceptionOrNull())
+            .isInstanceOf(LocalRulesEvaluationException.PredicateEvaluation::class.java)
     }
 
     @Test
