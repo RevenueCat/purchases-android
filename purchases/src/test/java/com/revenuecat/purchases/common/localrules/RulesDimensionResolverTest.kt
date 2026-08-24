@@ -290,7 +290,7 @@ class RulesDimensionResolverTest {
 
         assertThat(values).containsOnlyKeys("device")
         // An empty object would be truthy, so an absent namespace is what makes this a non-match.
-        // The default keeps the read legal now that an unresolved name is an error.
+        // The default keeps the read legal, because an unresolved name is an error.
         assertThat(
             RulesEngine.evaluate("""{"!!": [{"var": ["custom", false]}]}""", values).getOrThrow(),
         ).isFalse()
