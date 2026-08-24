@@ -2955,47 +2955,19 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `sub-subdomains commit deepest-first`() {
+    fun `a subdomain's declared subdomains are ignored and the pass still commits`() {
         statefulDiskCache(persisted(manifest = "v1.root.old"))
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("child"))))
+        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("child", "child", "app"))))
         deliverSuccessFor(
             "child",
-            containerWithConfig(configJson("child", "v1.child.new", subdomains = listOf("grandchild"))),
+            containerWithConfig(configJson("child", "v1.child.new", subdomains = listOf("grandchild", "app"))),
         )
-        deliverSuccessFor("grandchild", containerWithConfig(configJson("grandchild", "v1.grandchild.new")))
 
-        assertThat(writtenStates).hasSize(3)
-        assertThat(writtenStates[0].domains).containsOnlyKeys("app", "grandchild")
-        assertThat(writtenStates[1].domains).containsOnlyKeys("app", "grandchild", "child")
-        assertThat(writtenStates[2].domains.getValue("app").manifest).isEqualTo("v1.root.new")
-    }
-
-    @Test
-    fun `a cycle back to an ancestor is skipped and the pass still commits`() {
-        statefulDiskCache(persisted(manifest = "v1.root.old"))
-
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("child"))))
-        deliverSuccessFor("child", containerWithConfig(configJson("child", "v1.child.new", subdomains = listOf("app"))))
-
-        // One fetch per domain per pass; the bogus edge back to the root is ignored rather than deadlocking.
+        // One level only: duplicates and a self-reference in the root's list are dropped, and the child's own
+        // list (nesting, even a cycle back to the root) is never followed.
         assertThat(requestedDomains).containsExactly("app", "child")
-        assertThat(writtenStates.last().domains.getValue("app").manifest).isEqualTo("v1.root.new")
-    }
-
-    @Test
-    fun `domains beyond the depth cap are not fetched and their parent still commits`() {
-        statefulDiskCache(persisted(manifest = "v1.root.old"))
-
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        deliverSuccessFor("app", containerWithConfig(configJson("app", "v1.root.new", subdomains = listOf("d1"))))
-        deliverSuccessFor("d1", containerWithConfig(configJson("d1", "v1.d1", subdomains = listOf("d2"))))
-        deliverSuccessFor("d2", containerWithConfig(configJson("d2", "v1.d2", subdomains = listOf("d3"))))
-        deliverSuccessFor("d3", containerWithConfig(configJson("d3", "v1.d3", subdomains = listOf("d4"))))
-
-        assertThat(requestedDomains).containsExactly("app", "d1", "d2", "d3")
         assertThat(writtenStates.last().domains.getValue("app").manifest).isEqualTo("v1.root.new")
     }
 

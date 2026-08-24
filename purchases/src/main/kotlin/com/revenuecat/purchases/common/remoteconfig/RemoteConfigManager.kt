@@ -43,13 +43,14 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
 /**
- * Orchestrates `/v1/config` syncs over the domain tree: a sync pass fetches the root domain, unfolds the
- * subdomains each response declares ([RemoteConfiguration.subdomains]), and syncs every domain the same way —
- * a `204` keeps that domain's cached entry untouched, a `200` persists its fresh server manifest plus its full
- * per-topic item index. The persisted configuration (incl. each item's inline content) is the source of truth,
- * and persisting it is a domain's **entire** commit, advancing that domain's manifest unconditionally. Commits
- * run post-order — children before their parent, the root last — so a parent's topic/subdomain deletions never
- * land before the subdomains that may have absorbed the moved data; consumers read the parent-wins merged view
+ * Orchestrates `/v1/config` syncs over the domain tree: a sync pass fetches the root domain, then syncs the
+ * subdomains it declares ([RemoteConfiguration.subdomains]) the same way — a `204` keeps that domain's cached
+ * entry untouched, a `200` persists its fresh server manifest plus its full per-topic item index. Only one
+ * level of subdomains is supported: a subdomain's own list is ignored. The persisted configuration (incl. each
+ * item's inline content) is the source of truth, and persisting it is a domain's **entire** commit, advancing
+ * that domain's manifest unconditionally. The subdomains commit before the root, and a failed subdomain defers
+ * the root's commit — so the root's topic/subdomain deletions never land before the subdomains that may have
+ * absorbed the moved data; consumers read the parent-wins merged view
  * across the tree ([PersistedRemoteConfigurationState.mergedTopics]), so a topic can move between domains
  * without consumers noticing. Each commit writes the inlined blobs its config still wants; once per pass, gated
  * on at least one successful commit, the blob store is pruned against every persisted domain's live refs and
@@ -258,11 +259,11 @@ internal class RemoteConfigManager(
 
     /**
      * One sync pass over the domain tree for a refresh that already owns the in-flight guard: fetch the root,
-     * unfold and sync the subdomains each response declares, and commit post-order (children before their
-     * parent) so a parent's topic/subdomain deletions never land before the domains that may have absorbed the
-     * moved data. Per-domain commits are individually atomic writes of the one persisted tree; the pass-wide
-     * work (batched 204 refresh times, blob retention, the generation bump, and the staleness bookkeeping) runs
-     * once in [finalizePass].
+     * sync the subdomains it declares (one level — a subdomain's own list is ignored), and commit the children
+     * before the root so the root's topic/subdomain deletions never land before the domains that may have
+     * absorbed the moved data. Per-domain commits are individually atomic writes of the one persisted tree; the
+     * pass-wide work (batched 204 refresh times, blob retention, the generation bump, and the staleness
+     * bookkeeping) runs once in [finalizePass].
      */
     private suspend fun runTreePass(
         appInBackground: Boolean,
@@ -272,73 +273,43 @@ internal class RemoteConfigManager(
     ) {
         val rootDomain = diskCache.read()?.rootDomain ?: DEFAULT_DOMAIN
         val ctx = TreePassContext(requestEpoch, appInBackground, requestAppUserID, requestFetchContext, rootDomain)
-        syncDomainTree(ctx, rootDomain, depth = 0, isRoot = true)
-        finalizePass(ctx)
+        val rootOutcome = syncDomain(ctx, rootDomain, isRoot = true)
+        // The root's outcome already reflects its subdomains (a failed child fails the root), so it is the
+        // whole pass's freshness.
+        finalizePass(ctx, passFresh = rootOutcome.isFresh)
     }
 
-    /**
-     * Syncs [domain] and, recursively, the subdomains its response declares, committing the children before the
-     * domain itself. Returns the domain's terminal outcome for this pass. A domain already synced this pass
-     * returns its recorded outcome without a second fetch; a cycle (a domain re-listed inside its own subtree)
-     * and a domain beyond [PersistedRemoteConfigurationState.MAX_SUBDOMAIN_DEPTH] are skipped, which counts as
-     * fresh — stalling commits on a malformed server tree would freeze configuration updates indefinitely.
-     */
-    private suspend fun syncDomainTree(
-        ctx: TreePassContext,
-        domain: String,
-        depth: Int,
-        isRoot: Boolean,
-    ): DomainSyncOutcome {
-        val shortCircuit = shortCircuitOutcome(ctx, domain, depth)
-        if (shortCircuit != null) return shortCircuit
-        ctx.inProgress += domain
-        return try {
-            val fetch = domainFetcher.fetch(domain, isRoot, ctx.appInBackground, ctx.appUserID, ctx.fetchContext)
-            val outcome = when (fetch.outcome) {
-                // The 4xx side effects (the root's session kill-switch) already ran at callback time.
-                FetchOutcome.ClientError -> DomainSyncOutcome.Failed
-                FetchOutcome.FailedRetryable ->
-                    if (isRoot) rootRetryableFailureOutcome(ctx, domain) else DomainSyncOutcome.Failed
-                FetchOutcome.Success -> syncFetchedDomain(ctx, domain, depth, isRoot, fetch)
-            }
-            ctx.outcomes[domain] = outcome
-            outcome
-        } finally {
-            ctx.inProgress -= domain
+    /** Syncs one domain; for the root this includes its subdomains, whose outcomes gate the root's commit. */
+    private suspend fun syncDomain(ctx: TreePassContext, domain: String, isRoot: Boolean): DomainSyncOutcome {
+        val fetch = domainFetcher.fetch(domain, isRoot, ctx.appInBackground, ctx.appUserID, ctx.fetchContext)
+        return when (fetch.outcome) {
+            // The 4xx side effects (the root's session kill-switch) already ran at callback time.
+            FetchOutcome.ClientError -> DomainSyncOutcome.Failed
+            FetchOutcome.FailedRetryable ->
+                if (isRoot) rootRetryableFailureOutcome(ctx, domain) else DomainSyncOutcome.Failed
+            FetchOutcome.Success -> syncFetchedDomain(ctx, domain, isRoot, fetch)
         }
-    }
-
-    /** The outcomes that resolve without a fetch: already synced this pass, a cycle, or beyond the depth cap. */
-    private fun shortCircuitOutcome(ctx: TreePassContext, domain: String, depth: Int): DomainSyncOutcome? = when {
-        domain in ctx.outcomes -> ctx.outcomes.getValue(domain)
-        domain in ctx.inProgress -> {
-            warnLog { "Remote config domain '$domain' is re-listed inside its own subtree; ignoring the cycle." }
-            DomainSyncOutcome.Skipped
-        }
-        depth > PersistedRemoteConfigurationState.MAX_SUBDOMAIN_DEPTH -> {
-            warnLog {
-                "Remote config domain '$domain' is deeper than the supported subdomain depth " +
-                    "(${PersistedRemoteConfigurationState.MAX_SUBDOMAIN_DEPTH}); skipping it."
-            }
-            DomainSyncOutcome.Skipped
-        }
-        else -> null
     }
 
     private suspend fun syncFetchedDomain(
         ctx: TreePassContext,
         domain: String,
-        depth: Int,
         isRoot: Boolean,
         fetch: DomainFetchResult,
     ): DomainSyncOutcome {
         val container = fetch.container
-            ?: return domainNotModifiedOutcome(ctx, domain, depth, isRoot, fetch.requestDate)
+            ?: return domainNotModifiedOutcome(ctx, domain, isRoot, fetch.requestDate)
         val response = parseConfigResponse(container)
+        if (!isRoot && response?.subdomains?.isNotEmpty() == true) {
+            verboseLog {
+                "Remote config domain '$domain' declares subdomains of its own; only one level is supported, " +
+                    "so they are ignored."
+            }
+        }
         return when {
             response == null -> DomainSyncOutcome.Failed
-            !syncSubdomains(ctx, response.subdomains, depth) -> {
-                warnLog { "Not committing remote config domain '$domain': part of its subtree failed to sync." }
+            isRoot && !syncSubdomains(ctx, response.subdomains) -> {
+                warnLog { "Not committing the remote config root domain: part of its tree failed to sync." }
                 DomainSyncOutcome.Failed
             }
             commitDomain(ctx, domain, isRoot, response, container, fetch.requestDate) -> DomainSyncOutcome.Committed
@@ -357,29 +328,31 @@ internal class RemoteConfigManager(
     }
 
     /**
-     * Syncs a domain's listed subdomains before its own commit: the commit applies its response's
+     * Syncs the root's listed subdomains before its commit: the root's commit applies its response's
      * topic/subdomain deletions, which must not land before the subdomains that may now carry the moved data
-     * have synced. Every child is synced even when a sibling fails (a successful child's commit is additive and
-     * safe); a failure only defers the parent's commit — old state and manifest are kept, so the next pass
-     * re-diffs cheaply. Returns whether every child ended the pass fresh.
+     * have synced. Only one level is supported, so duplicates and a self-reference are dropped here and a
+     * subdomain's own list is never followed. Every child is synced even when a sibling fails (a successful
+     * child's commit is additive and safe); a failure only defers the root's commit — old state and manifest
+     * are kept, so the next pass re-diffs cheaply. Returns whether every child ended the pass fresh.
      */
-    private suspend fun syncSubdomains(ctx: TreePassContext, subdomains: List<String>, depth: Int): Boolean =
+    private suspend fun syncSubdomains(ctx: TreePassContext, subdomains: List<String>): Boolean =
         subdomains
-            .map { child -> syncDomainTree(ctx, child, depth + 1, isRoot = false) }
+            .distinct()
+            .filter { it != ctx.rootDomainName }
+            .map { child -> syncDomain(ctx, child, isRoot = false) }
             .all { it.isFresh }
 
     /**
      * Handles a domain's `204 Not Modified`: its cached entry is confirmed current, so record the confirmed
-     * refresh time for the pass-end batch write — but still recurse, because a domain's 204 says nothing about
-     * its subtree's freshness. Without a persisted entry there is nothing the 204 can confirm or update (a 204
-     * must never resurrect state that was wiped meanwhile): the root still counts as unchanged — the pass
-     * bookkeeping advances like any confirmed-current sync — but a child fails, because a missing child entry
-     * is exactly the gap its parent's commit must not paper over.
+     * refresh time for the pass-end batch write — and for the root, still sync its subdomains, because its 204
+     * says nothing about their freshness. Without a persisted entry there is nothing the 204 can confirm or
+     * update (a 204 must never resurrect state that was wiped meanwhile): the root still counts as unchanged —
+     * the pass bookkeeping advances like any confirmed-current sync — but a child fails, because a missing
+     * child entry is exactly the gap the root's commit must not paper over.
      */
     private suspend fun domainNotModifiedOutcome(
         ctx: TreePassContext,
         domain: String,
-        depth: Int,
         isRoot: Boolean,
         requestDate: Date?,
     ): DomainSyncOutcome {
@@ -391,7 +364,7 @@ internal class RemoteConfigManager(
         }
         // Only the server's own time is worth recording; a response without it carries the old value forward.
         requestDate?.let { ctx.pending204RefreshTimes[domain] = it.time }
-        val childrenFresh = syncSubdomains(ctx, persistedDomain.subdomains, depth)
+        val childrenFresh = !isRoot || syncSubdomains(ctx, persistedDomain.subdomains)
         return if (childrenFresh) DomainSyncOutcome.Unchanged else DomainSyncOutcome.Failed
     }
 
@@ -937,11 +910,12 @@ internal class RemoteConfigManager(
      *    every persisted domain, never a single domain's set — and advances the generation once for the whole
      *    pass, so listeners re-warm from a tree-consistent state. Both only when this pass committed something,
      *    mirroring the "blob work only after a successful persist" gating.
-     * 3. Advances the staleness bookkeeping only when every synced domain ended fresh: a partial pass leaves the
-     *    cache stale so the next trigger retries the tree (already-committed domains answer with cheap 204s,
-     *    and the attempt cooldown keeps retries from hammering).
+     * 3. Advances the staleness bookkeeping only when the pass ended fresh ([passFresh] — the root's outcome,
+     *    which its subdomains cascade into): a partial pass leaves the cache stale so the next trigger retries
+     *    the tree (already-committed domains answer with cheap 204s, and the attempt cooldown keeps retries
+     *    from hammering).
      */
-    private fun finalizePass(ctx: TreePassContext) {
+    private fun finalizePass(ctx: TreePassContext, passFresh: Boolean) {
         synchronized(cacheLock) {
             if (epoch.get() != ctx.requestEpoch) return
             // The last commit's write is the current tree; falling back to a read covers all-204 passes.
@@ -961,7 +935,7 @@ internal class RemoteConfigManager(
                 val committedGeneration = generation.incrementAndGet()
                 listeners.forEach { it.onConfigCommitted(committedGeneration) }
             }
-            if (ctx.allFresh) {
+            if (passFresh) {
                 // The staleness gate measures elapsed *local* time (isCacheStale subtracts from
                 // dateProvider.now), so it stays on the device clock, unlike the persisted server refresh times.
                 lastRefreshedAt = dateProvider.now
@@ -980,12 +954,6 @@ internal class RemoteConfigManager(
         /** The root name this pass synced, for a child commit landing before any root state exists. */
         val rootDomainName: String,
     ) {
-        /** Terminal outcome per synced domain; doubles as the "already synced this pass" dedupe. */
-        val outcomes = mutableMapOf<String, DomainSyncOutcome>()
-
-        /** Domains whose sync is on the recursion stack; a re-listing inside its own subtree is a cycle. */
-        val inProgress = mutableSetOf<String>()
-
         /** Server refresh times confirmed by per-domain 204s, written in one batch at pass end. */
         val pending204RefreshTimes = mutableMapOf<String, Long>()
 
@@ -993,18 +961,15 @@ internal class RemoteConfigManager(
 
         /** The tree as of this pass's most recent successful commit; null when nothing committed yet. */
         var lastPersistedState: PersistedRemoteConfigurationState? = null
-
-        val allFresh: Boolean get() = outcomes.values.all { it.isFresh }
     }
 
     private enum class DomainSyncOutcome {
         Committed,
         Unchanged,
-        Skipped,
         Failed,
         ;
 
-        /** Whether the domain's subtree is safe to apply a parent's deletions against. */
+        /** Whether the domain is safe to apply the root's deletions against. */
         val isFresh: Boolean get() = this != Failed
     }
 

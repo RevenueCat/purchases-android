@@ -56,6 +56,7 @@ class RemoteConfigManagerIntegrationTest {
     private var capturedLastRefreshTime: Date? = null
     private var capturedPrefetchedBlobs: List<String>? = null
     private lateinit var onSuccess: (RCContainer?, Date?, VerificationResult) -> Unit
+    private val onSuccessByDomain = mutableMapOf<String, (RCContainer?, Date?, VerificationResult) -> Unit>()
 
     @Before
     fun setup() {
@@ -94,6 +95,7 @@ class RemoteConfigManagerIntegrationTest {
             capturedLastRefreshTime = arg(5)
             capturedPrefetchedBlobs = arg(6)
             onSuccess = arg(7)
+            onSuccessByDomain[arg(3)] = arg(7)
         }
     }
 
@@ -326,6 +328,71 @@ class RemoteConfigManagerIntegrationTest {
         assertThat(missing).isNull()
     }
 
+    @Test
+    fun `a subdomain tree pass persists both domains and merges their topics for reads`() {
+        val rootBlob = """{"workflow":"wfRoot"}""".toByteArray()
+        val rootRef = RCContainerTestData.refOf(rootBlob)
+        val childBlob = """{"ui":"config"}""".toByteArray()
+        val childRef = RCContainerTestData.refOf(childBlob)
+        // language=json
+        val rootConfig = """
+            {
+              "domain": "app",
+              "manifest": "v1.1.workflows:etag1",
+              "subdomains": ["app_ui"],
+              "active_topics": ["workflows"],
+              "prefetch_blobs": ["$rootRef"],
+              "topics": { "workflows": { "wf1": { "blob_ref": "$rootRef" } } }
+            }
+        """.trimIndent()
+        // language=json
+        val childConfig = """
+            {
+              "domain": "app_ui",
+              "manifest": "v1.1.ui_config:etagU",
+              "active_topics": ["ui_config"],
+              "prefetch_blobs": ["$childRef"],
+              "topics": { "ui_config": { "app": { "blob_ref": "$childRef" } } }
+            }
+        """.trimIndent()
+
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = RemoteConfigFetchContext.AppStart)
+        settleFor("app", container(rootConfig, rootBlob))
+        settleFor("app_ui", container(childConfig, childBlob))
+
+        // Both domains persisted with their own manifests; the merged view unions their topics; both inline
+        // blobs landed in the shared store and the subdomain's topic reads transparently through the facade.
+        val state = diskCache.read()!!
+        assertThat(state.domains).containsOnlyKeys("app", "app_ui")
+        assertThat(state.domains.getValue("app_ui").manifest).isEqualTo("v1.1.ui_config:etagU")
+        assertThat(state.mergedTopics).containsOnlyKeys("workflows", "ui_config")
+        assertThat(blobStore.read(rootRef)).isEqualTo(rootBlob)
+        assertThat(blobStore.read(childRef)).isEqualTo(childBlob)
+        val uiTopic = runBlocking { manager.topic(RemoteConfigTopic.UiConfig) }
+        assertThat(uiTopic!!["app"]!!.blobRef).isEqualTo(childRef)
+
+        // Next pass: the root drops the subdomain. The entry lingers (nothing prunes it) but leaves the merged
+        // view, so its topic reads null; its blob stays pinned by the lingering entry.
+        // language=json
+        val rootConfig2 = """
+            {
+              "domain": "app",
+              "manifest": "v1.2.workflows:etag1",
+              "active_topics": ["workflows"],
+              "prefetch_blobs": ["$rootRef"],
+              "topics": {}
+            }
+        """.trimIndent()
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = RemoteConfigFetchContext.Foreground)
+        settleFor("app", container(rootConfig2))
+
+        assertThat(diskCache.read()!!.domains).containsOnlyKeys("app", "app_ui")
+        assertThat(diskCache.read()!!.mergedTopics).containsOnlyKeys("workflows")
+        assertThat(runBlocking { manager.topic(RemoteConfigTopic.UiConfig) }).isNull()
+        assertThat(blobStore.contains(rootRef)).isTrue
+        assertThat(blobStore.contains(childRef)).isTrue
+    }
+
     /** Builds a workflows-topic config. Each item maps an item key to its `blob_ref`, or `null` for inline-only. */
     private fun workflowsConfig(
         manifest: String = "v1.1.workflows:etag1",
@@ -387,6 +454,11 @@ class RemoteConfigManagerIntegrationTest {
 
     private fun settle(container: RCContainer?) {
         onSuccess.invoke(container, Date(), VerificationResult.VERIFIED)
+    }
+
+    /** Settles the request issued for [domain] during a tree pass (null = a 204). */
+    private fun settleFor(domain: String, container: RCContainer?) {
+        onSuccessByDomain.getValue(domain).invoke(container, Date(), VerificationResult.VERIFIED)
     }
 
     private companion object {
