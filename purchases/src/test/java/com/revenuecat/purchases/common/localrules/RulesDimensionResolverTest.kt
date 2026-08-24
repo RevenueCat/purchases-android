@@ -375,114 +375,59 @@ class RulesDimensionResolverTest {
     }
 
     @Test
-    fun `a collection the app user changed underneath is taken again`() = runTest {
+    fun `a collection the app user changed underneath fails the snapshot`() = runTest {
         var appUserId = "before_login"
-        var collections = 0
-        val resolver = retryingResolver({ appUserId }) {
-            collections++
-            val collectedFor = appUserId
-            // The app logs in during the first collection only.
-            if (collections == 1) appUserId = "after_login"
-            mapOf("platform" to string(collectedFor))
-        }
-
-        val values = resolver.snapshot().getOrThrow().values
-
-        assertThat(collections).isEqualTo(2)
-        // Reporting the first pass would describe a customer nobody is: these are the second pass's values,
-        // collected for an app user that then stayed put.
-        assertThat(values["device"])
-            .isEqualTo(Value.ObjectValue(mapOf("platform" to Value.StringValue("after_login"))))
-    }
-
-    @Test
-    fun `an app user that will not stay still fails the snapshot`() = runTest {
-        var collections = 0
-        // A different user on every read, so the retry cannot settle either.
-        val resolver = retryingResolver({ "user_$collections" }) {
-            collections++
+        val resolver = identifiedResolver({ appUserId }) {
+            // The app logs in while the dimensions are being collected.
+            appUserId = "after_login"
             mapOf("platform" to string("android"))
         }
 
         val error = resolver.snapshot().exceptionOrNull()
 
-        // Nothing here is worth reporting: an absence rule would match a customer whose purchases were simply
-        // never read, which is indistinguishable from one who has none.
+        // Reporting what survived would let an absence rule match a customer whose purchases were simply never
+        // read, which is indistinguishable from one who has none.
         assertThat(error).isEqualTo(RulesDimensionResolutionException.AppUserChanged)
-        assertThat(collections).isEqualTo(2)
     }
 
     @Test
-    fun `an app user that stays put is collected once`() = runTest {
-        var collections = 0
-        val resolver = retryingResolver({ "user_a" }) {
-            collections++
-            mapOf("platform" to string("android"))
-        }
+    fun `an app user that stays put is reported`() = runTest {
+        val resolver = identifiedResolver({ "user_a" }) { mapOf("platform" to string("android")) }
 
-        assertThat(resolver.snapshot().isSuccess).isTrue()
-        assertThat(collections).isEqualTo(1)
+        val values = resolver.snapshot().getOrThrow().values
+
+        assertThat(values["device"])
+            .isEqualTo(Value.ObjectValue(mapOf("platform" to Value.StringValue("android"))))
     }
 
     @Test
-    fun `a provider that failed is not asked again`() = runTest {
-        var collections = 0
+    fun `a provider that could not answer says more than the user change on top of it`() = runTest {
         var appUserId = "before_login"
-        val resolver = retryingResolver({ appUserId }) {
-            collections++
-            // Changing on top of the failure, so a retry would be visible if one happened.
+        val resolver = identifiedResolver({ appUserId }) {
             appUserId = "after_login"
             throw IllegalStateException("Nope.")
         }
 
         val error = resolver.snapshot().exceptionOrNull()
 
-        // A provider that cannot produce its values is a configuration bug, and asking again does not fix it.
         assertThat(error).isInstanceOf(RulesDimensionResolutionException.ProviderFailed::class.java)
-        assertThat(collections).isEqualTo(1)
     }
 
-    @Test
-    fun `the retry is taken against its own reference instant`() = runTest {
-        val retryDate = Date(evaluationDate.time + 1_000)
-        var appUserId = "before_login"
-        var collections = 0
-        val resolver = RulesDimensionResolver(
-            providers = listOf(
-                countingProvider {
-                    collections++
-                    if (collections == 1) appUserId = "after_login"
-                    mapOf("platform" to string("android"))
-                },
-            ),
-            dateProvider = object : DateProvider {
-                override val now: Date get() = if (collections == 0) evaluationDate else retryDate
-            },
-            currentAppUserId = { appUserId },
-        )
-
-        val values = resolver.snapshot().getOrThrow().values
-
-        // The instant describes the pass that actually produced these values, not the one that was discarded.
-        assertThat(values["evaluatedAt"]).isEqualTo(Value.IntValue(retryDate.time))
-    }
-
-    private fun retryingResolver(
+    private fun identifiedResolver(
         currentAppUserId: () -> String,
         values: () -> Map<String, RulesDimensionValue>,
     ) = RulesDimensionResolver(
-        providers = listOf(countingProvider(values)),
+        providers = listOf(
+            object : RulesDimensionProvider {
+                override val namespace = RulesDimensionNamespace.Device
+                override suspend fun dimensions(date: Date) = values()
+            },
+        ),
         dateProvider = object : DateProvider {
             override val now: Date = evaluationDate
         },
         currentAppUserId = currentAppUserId,
     )
-
-    private fun countingProvider(values: () -> Map<String, RulesDimensionValue>) =
-        object : RulesDimensionProvider {
-            override val namespace = RulesDimensionNamespace.Device
-            override suspend fun dimensions(date: Date) = values()
-        }
 
     private fun resolver(vararg providers: RulesDimensionProvider) = RulesDimensionResolver(
         providers = providers.toList(),

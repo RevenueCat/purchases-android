@@ -30,7 +30,7 @@ internal sealed class RulesDimensionResolutionException(message: String) : Excep
     ) : RulesDimensionResolutionException("two dimension providers supplied '$path'")
 
     internal object AppUserChanged : RulesDimensionResolutionException(
-        "the app user kept changing while the dimensions were being collected",
+        "the app user changed while the dimensions were being collected",
     )
 }
 
@@ -40,12 +40,12 @@ internal sealed class RulesDimensionResolutionException(message: String) : Excep
  *
  * Every dimension in one snapshot describes the same customer at the same instant: all providers see the same
  * reference instant, which is in the scope itself as [RulesDimensionResolver.KEY_EVALUATED_AT], and a collection
- * the app user changed underneath is thrown away and taken again.
+ * the app user changed underneath is not reported at all.
  *
  * The three failure modes fail the whole snapshot instead of silently degrading a rule to a non-match, which
  * would be indistinguishable from a customer who genuinely does not match: a provider that cannot produce its
- * values, two providers claiming the same path, and an app user that would not stay still. Cancellation is none
- * of them, and propagates.
+ * values, two providers claiming the same path, and an app user that changed part-way through. Cancellation is
+ * none of them, and propagates.
  */
 internal class RulesDimensionResolver(
     private val providers: List<RulesDimensionProvider>,
@@ -58,31 +58,15 @@ internal class RulesDimensionResolver(
      * [customVariables] are the caller's own values for this one evaluation, exposed under
      * [RulesDimensionNamespace.Custom].
      *
-     * A login, logout or user switch part-way through leaves the collected values describing two different
-     * customers, so the whole collection is thrown away and taken again rather than reported: reporting the part
-     * that survives would let an absence rule match a customer whose purchases simply were not read.
+     * A login, logout or user switch part-way through leaves the providers describing two different customers,
+     * since each reads the app user for itself. Reporting the part that survives would let an absence rule match
+     * a customer whose purchases simply were not read, so nothing is reported.
      */
     @Suppress("ReturnCount")
     suspend fun snapshot(
         customVariables: Map<String, RulesDimensionValue> = emptyMap(),
     ): Result<RulesDimensionSnapshot> {
-        repeat(ATTEMPTS) {
-            val appUserId = currentAppUserId()
-            val result = collect(customVariables)
-            // A provider that cannot produce its values and two providers claiming the same path are both
-            // configuration bugs. Asking again does not fix either.
-            if (result.isFailure) return result
-            if (currentAppUserId() == appUserId) return result
-            warnLog { "The app user changed while the dimensions were being collected, so they were discarded." }
-        }
-        return Result.failure(RulesDimensionResolutionException.AppUserChanged)
-    }
-
-    /** One pass over every provider, against one reference instant of its own. */
-    @Suppress("ReturnCount")
-    private suspend fun collect(
-        customVariables: Map<String, RulesDimensionValue>,
-    ): Result<RulesDimensionSnapshot> {
+        val appUserId = currentAppUserId()
         val date = dateProvider.now
         val values = mutableMapOf<String, MutableMap<String, Value>>()
 
@@ -108,6 +92,11 @@ internal class RulesDimensionResolver(
             return Result.failure(conflict)
         }
 
+        if (currentAppUserId() != appUserId) {
+            warnLog { "The app user changed while the dimensions were being collected, so they were discarded." }
+            return Result.failure(RulesDimensionResolutionException.AppUserChanged)
+        }
+
         return Result.success(
             RulesDimensionSnapshot(
                 values = values.mapValuesTo(
@@ -119,11 +108,6 @@ internal class RulesDimensionResolver(
     }
 
     internal companion object {
-        /**
-         * One collection and one retry.
-         */
-        private const val ATTEMPTS = 2
-
         /**
          * The instant the snapshot was taken, at the root of the scope rather than repeated on every record.
          *
