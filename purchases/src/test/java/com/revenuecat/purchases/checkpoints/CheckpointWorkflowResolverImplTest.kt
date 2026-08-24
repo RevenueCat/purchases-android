@@ -355,6 +355,20 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
+    fun `negating an audience on an omitted variable does not manufacture a match`() = runTest {
+        // This used to match everyone: the omitted variable made the inner comparison false, and `!`
+        // turned that into a match, admitting the customers the audience was written to exclude.
+        coEvery { mockAudiencesConfigProvider.getAudience("aud_wf1234") } returns
+            Audience("aud_wf1234", """{"!": [{"==": [{"var": "custom.source"}, "settings"]}]}""")
+
+        val resolution = resolver.resolve(checkpointId, emptyMap())
+
+        assertThat(resolution).isNotInstanceOf(CheckpointResolution.MatchedWorkflow::class.java)
+        assertThat(noActionReason(resolution))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+    }
+
+    @Test
     fun `offerings and ui config are resolved once`() = runTest {
         configureRules(rule("wf1234"), rule("wf5678"))
         coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns
