@@ -21,16 +21,22 @@ internal class CheckpointsConfigProvider(
      * change under it: an identity change wipes the cache (the rules just read may belong to the previous user)
      * and an ordinary commit can publish fresher rules. Either advances [RemoteConfigManager.configGeneration],
      * and since there is no in-memory cache to fall back on the answer is to read once more against the new
-     * state rather than to discard. Bounded to a single retry so a burst of commits can't spin here.
+     * state rather than to discard. Only once, so a burst of commits can't spin here.
      */
     suspend fun resolveCheckpoint(identifier: String): CheckpointRulesResolution {
-        repeat(MAX_READ_ATTEMPTS) {
-            val generation = manager.configGeneration
-            val resolution = readCheckpoint(identifier, generation)
-            if (manager.configGeneration == generation) return resolution
-            verboseLog { "Remote config changed while resolving checkpoint '$identifier'; reading it again." }
-        }
-        return CheckpointRulesResolution.Unavailable
+        attemptRead(identifier)?.let { return it }
+        verboseLog { "Remote config changed while resolving checkpoint '$identifier'; reading it again." }
+        return attemptRead(identifier) ?: CheckpointRulesResolution.Unavailable
+    }
+
+    /**
+     * One read, or `null` if the committed state moved under it and the answer can no longer be trusted.
+     * [resolveCheckpoint] retries such a read exactly once, so it never reads more than twice.
+     */
+    private suspend fun attemptRead(identifier: String): CheckpointRulesResolution? {
+        val generation = manager.configGeneration
+        val resolution = readCheckpoint(identifier, generation)
+        return resolution.takeIf { manager.configGeneration == generation }
     }
 
     fun isCurrent(resolution: CheckpointRulesResolution.Found): Boolean =
@@ -73,9 +79,5 @@ internal class CheckpointsConfigProvider(
                 CheckpointRulesResolution.NotConfigured
             }
         }
-    }
-
-    private companion object {
-        const val MAX_READ_ATTEMPTS = 2
     }
 }
