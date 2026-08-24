@@ -166,8 +166,39 @@ internal class WorkflowModelsDeserializationTest {
         assertThat(screen.productChangeConfig).isNull()
     }
 
-    private fun workflowScreenJson(productChangeConfig: String): String =
-        """
+    @Test
+    fun `WorkflowScreen reads zero_decimal_place_countries`() {
+        // The backend posts the field keyed by store; only the Google list applies here.
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            workflowScreenJson(
+                zeroDecimalPlaceCountries = "{\"apple\": [\"TWN\", \"MEX\"], \"google\": [\"TW\", \"MX\"]}",
+            ),
+        )
+
+        assertThat(screen.zeroDecimalPlaceCountries).containsExactly("TW", "MX")
+    }
+
+    @Test
+    fun `WorkflowScreen defaults zero_decimal_place_countries to empty when absent`() {
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            workflowScreenJson(),
+        )
+
+        assertThat(screen.zeroDecimalPlaceCountries).isEmpty()
+    }
+
+    private fun workflowScreenJson(
+        productChangeConfig: String? = null,
+        zeroDecimalPlaceCountries: String? = null,
+    ): String {
+        val optionalFields = listOfNotNull(
+            productChangeConfig?.let { "\"play_store_product_change_mode\": $it" },
+            zeroDecimalPlaceCountries?.let { "\"zero_decimal_place_countries\": $it" },
+        ).joinToString(",\n")
+
+        return """
             {
               "template_name": "components",
               "asset_base_url": "https://assets.pawwalls.com",
@@ -178,8 +209,8 @@ internal class WorkflowModelsDeserializationTest {
                 }
               },
               "components_localizations": {"en_US": {}},
-              "default_locale": "en_US",
-              "play_store_product_change_mode": $productChangeConfig
+              "default_locale": "en_US"${if (optionalFields.isEmpty()) "" else ",\n$optionalFields"}
             }
         """.trimIndent()
+    }
 }
