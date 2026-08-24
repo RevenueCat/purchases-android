@@ -421,18 +421,3 @@ All formats automatically report these RevenueCat ad events:
 - **Ad Revenue** — revenue reported via AdMob's `OnPaidEventListener`
 - **Ad Failed to Load** — load error
 
-## Experimental API
-
-This library uses `@ExperimentalPreviewRevenueCatPurchasesAPI`.
-Prefer opting in at the narrowest scope where you call the API:
-
-```kotlin
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-fun loadBanner(adView: AdView) {
-    adView.loadAndTrackAd(
-        adRequest = AdRequest.Builder().build(),
-        placement = "home_banner",
-    )
-}
-```
-

@@ -8,13 +8,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import com.google.android.gms.ads.AdRequest
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.loadAndTrackInterstitialAd
 import com.revenuecat.sample.admob.data.Constants
 
 @Suppress("MultipleEmitters")
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun ErrorTestingContent() {
     val context = LocalContext.current

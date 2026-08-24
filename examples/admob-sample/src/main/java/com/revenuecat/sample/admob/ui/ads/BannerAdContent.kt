@@ -9,12 +9,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.loadAndTrackAd
 import com.revenuecat.sample.admob.data.Constants
 
 @Suppress("MultipleEmitters")
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun BannerAdContent() {
     Text(

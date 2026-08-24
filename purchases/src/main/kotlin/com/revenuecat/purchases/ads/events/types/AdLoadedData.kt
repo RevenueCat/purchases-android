@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ads.events.types
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import dev.drewhamilton.poko.Poko
 
 /**
@@ -13,7 +12,6 @@ import dev.drewhamilton.poko.Poko
  * @property adUnitId The ad unit ID.
  * @property impressionId The impression ID.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @Poko
 public class AdLoadedData(
     public val networkName: String?,

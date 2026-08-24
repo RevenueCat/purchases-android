@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ads.events.types
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import dev.drewhamilton.poko.Poko
 
@@ -16,7 +15,6 @@ import dev.drewhamilton.poko.Poko
  * @property rewardVerificationEnabled Whether server-side reward verification is enabled for this ad.
  */
 @InternalRevenueCatAPI
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Poko
 public class AdRewardEarnedUnverifiedData(
     public val networkName: String?,

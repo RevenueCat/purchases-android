@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ads.events.types
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import dev.drewhamilton.poko.Poko
 
@@ -15,7 +14,6 @@ import dev.drewhamilton.poko.Poko
  * @property impressionId The impression ID.
  */
 @InternalRevenueCatAPI
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Poko
 public class AdRewardVerifiedData(
     public val networkName: String?,

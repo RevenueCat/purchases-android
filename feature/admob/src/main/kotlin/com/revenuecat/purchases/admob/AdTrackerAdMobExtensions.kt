@@ -1,5 +1,4 @@
 @file:JvmName("AdTrackerAdMob")
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @file:SuppressLint("MissingPermission")
 
 package com.revenuecat.purchases.admob
@@ -19,7 +18,6 @@ import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAdLoadCallback
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.tracking.TrackingFullScreenContentCallback
 import com.revenuecat.purchases.admob.tracking.setUpPaidEventTracking
 import com.revenuecat.purchases.admob.tracking.trackFromAdapter
@@ -48,7 +46,6 @@ import kotlin.jvm.JvmSynthetic
  * @param onPaidEventListener Optional paid-event callback. RevenueCat tracking runs first.
  */
 @Suppress("LongParameterList")
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun AdTracker.loadAndTrackInterstitialAd(
     context: Context,
@@ -129,7 +126,6 @@ public fun AdTracker.loadAndTrackInterstitialAd(
  * @param onPaidEventListener Optional paid-event callback. RevenueCat tracking runs first.
  */
 @Suppress("LongParameterList")
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun AdTracker.loadAndTrackAppOpenAd(
     context: Context,
@@ -210,7 +206,6 @@ public fun AdTracker.loadAndTrackAppOpenAd(
  * @param onPaidEventListener Optional paid-event callback. RevenueCat tracking runs first.
  */
 @Suppress("LongParameterList")
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun AdTracker.loadAndTrackRewardedAd(
     context: Context,
@@ -291,7 +286,6 @@ public fun AdTracker.loadAndTrackRewardedAd(
  * @param onPaidEventListener Optional paid-event callback. RevenueCat tracking runs first.
  */
 @Suppress("LongParameterList")
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun AdTracker.loadAndTrackRewardedInterstitialAd(
     context: Context,
@@ -371,7 +365,6 @@ public fun AdTracker.loadAndTrackRewardedInterstitialAd(
  * @param adListener Optional [AdListener] delegate for ad lifecycle callbacks.
  * @param onPaidEventListener Optional paid-event callback. RevenueCat tracking runs first.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun AdTracker.loadAndTrackBannerAd(
     adView: AdView,

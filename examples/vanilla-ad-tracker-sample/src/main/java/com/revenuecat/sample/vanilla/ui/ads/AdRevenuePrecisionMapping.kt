@@ -1,10 +1,8 @@
 package com.revenuecat.sample.vanilla.ui.ads
 
 import com.google.android.gms.ads.AdValue
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal fun Int.toAdRevenuePrecision(): AdRevenuePrecision = when (this) {
     AdValue.PrecisionType.PRECISE -> AdRevenuePrecision.EXACT
     AdValue.PrecisionType.ESTIMATED -> AdRevenuePrecision.ESTIMATED

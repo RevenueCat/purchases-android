@@ -25,7 +25,6 @@ RevenueCat uses an `impressionId` to correlate all events for a single ad impres
 ### Example: Interstitial Ad
 
 ```kotlin
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 InterstitialAd.load(context, adUnitId, AdRequest.Builder().build(),
     object : InterstitialAdLoadCallback() {
         override fun onAdLoaded(ad: InterstitialAd) {
@@ -144,22 +143,6 @@ InterstitialAd.load(context, adUnitId, AdRequest.Builder().build(),
 
 ---
 
-## Experimental API Notice
-
-This sample uses RevenueCat's `@ExperimentalPreviewRevenueCatPurchasesAPI` for ad tracking. This API may change without warning and no compatibility guarantees are provided.
-
-To use it, opt-in at the call site with `@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)` or at the module level in `build.gradle.kts`:
-
-```kotlin
-kotlinOptions {
-    freeCompilerArgs += listOf(
-        "-opt-in=com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI"
-    )
-}
-```
-
----
-
 ## Setup & Run
 
 ### 1. Prerequisites
@@ -249,10 +232,6 @@ Real devices might not be registered as test devices yet. Either wait up to 24 h
 ### Not seeing revenue events
 
 AdMob test ads may not always trigger `OnPaidEventListener` events. Revenue tracking works reliably in production with real ads.
-
-### Build errors about `@ExperimentalPreviewRevenueCatPurchasesAPI`
-
-Make sure you have the latest RevenueCat SDK (9.19.4 or later) and add `@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)` at each call site or configure the module-level opt-in in `build.gradle.kts`.
 
 ---
 

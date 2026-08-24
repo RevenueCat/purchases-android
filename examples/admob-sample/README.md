@@ -32,22 +32,6 @@ The adapter library automatically tracks these RevenueCat ad events for all ad f
 
 ---
 
-## Experimental API Notice
-
-This sample uses RevenueCat's `@ExperimentalPreviewRevenueCatPurchasesAPI` for ad tracking. This API may change without warning and no compatibility guarantees are provided.
-
-To use it, opt-in at the module level in `build.gradle.kts`:
-
-```kotlin
-kotlinOptions {
-    freeCompilerArgs += listOf(
-        "-opt-in=com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI"
-    )
-}
-```
-
----
-
 ## Setup & Run
 
 ### 1. Prerequisites
@@ -203,10 +187,6 @@ Real devices might not be registered as test devices yet. Either wait up to 24 h
 ### Not seeing revenue events
 
 AdMob test ads may not always trigger `OnPaidEventListener` events. Revenue tracking works reliably in production with real ads.
-
-### Build errors about `@ExperimentalPreviewRevenueCatPurchasesAPI`
-
-Make sure you have the latest RevenueCat SDK and the module-level opt-in configured in `build.gradle.kts`. See the [Experimental API Notice](#experimental-api-notice) section.
 
 ---
 

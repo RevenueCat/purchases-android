@@ -4,7 +4,6 @@ import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.ResponseInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
@@ -23,7 +22,6 @@ import com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadat
  * Revenue is tracked separately via [OnPaidEventListener] which must be wired
  * on the ad object by the caller (see [setUpPaidEventTracking]).
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingFullScreenContentCallback(
     internal var delegate: FullScreenContentCallback?,
     private val adFormat: AdFormat,
@@ -101,7 +99,6 @@ internal class TrackingFullScreenContentCallback(
  * Placement is read from [placementProvider] at event time so that any show-time override is reflected.
  */
 @Suppress("LongParameterList")
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal fun setUpPaidEventTracking(
     setListener: (OnPaidEventListener) -> Unit,
     adFormat: AdFormat,

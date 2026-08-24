@@ -6,7 +6,6 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.DebugEvent
 import com.revenuecat.purchases.DebugEventListener
 import com.revenuecat.purchases.DebugEventName
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.ads.events.AdEvent
@@ -190,7 +189,6 @@ internal class EventsManager(
      *
      * @param event The event to be tracked.
      */
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Synchronized
     fun track(event: FeatureEvent) {
         enqueue {

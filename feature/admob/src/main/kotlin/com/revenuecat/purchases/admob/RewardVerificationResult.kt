@@ -1,7 +1,5 @@
 package com.revenuecat.purchases.admob
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-
 /**
  * Moved to [com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult].
  */
@@ -12,6 +10,5 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
         "com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult",
     ),
 )
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 public typealias RewardVerificationResult =
     com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult

@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.admob.tracking
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.Logger
 
@@ -11,7 +10,6 @@ import com.revenuecat.purchases.admob.Logger
  * This prevents crashes in ad callbacks when the developer has not yet called
  * [Purchases.configure].
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal inline fun trackIfConfigured(block: Purchases.() -> Unit) {
     if (!Purchases.isConfigured) {
         Logger.w(

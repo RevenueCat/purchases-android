@@ -1,12 +1,10 @@
 package com.revenuecat.purchases.ads.rewardverification
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 
 /**
  * Result delivered to the app after reward verification polling for a rewarded or rewarded interstitial ad.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 public class RewardVerificationResult private constructor(
     private val storage: Storage,
 ) {

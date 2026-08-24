@@ -2,7 +2,6 @@ package com.revenuecat.purchases.admob.rewardverification
 
 import android.os.Handler
 import android.os.Looper
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
@@ -27,7 +26,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.shadows.ShadowLog
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @RunWith(RobolectricTestRunner::class)
 internal class RewardVerificationRuntimeTest {
 
