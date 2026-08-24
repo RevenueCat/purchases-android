@@ -2,6 +2,9 @@ package com.revenuecat.purchases.ui.revenuecatui.components.button
 
 import android.os.LocaleList
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.assertHasClickAction
@@ -55,6 +58,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -67,70 +71,104 @@ class ButtonComponentViewTests {
     @get:Rule
     val composeTestRule = createComposeRule()
 
+    private val purchaseButtonStyle = ButtonComponentStyle(
+        stackComponentStyle = StackComponentStyle(
+            children = listOf(
+                TextComponentStyle(
+                    texts = nonEmptyMapOf(LocaleId("en_US") to "Purchase"),
+                    color = ColorStyles(
+                        light = ColorStyle.Solid(Color.Black),
+                    ),
+                    fontSize = 15,
+                    fontWeight = FontWeight.REGULAR.toFontWeight(),
+                    fontSpec = null,
+                    textAlign = CENTER.toTextAlign(),
+                    horizontalAlignment = CENTER.toAlignment(),
+                    backgroundColor = ColorStyles(
+                        light = ColorStyle.Solid(Color.Yellow),
+                    ),
+                    visible = true,
+                    size = Size(width = Fill, height = Fill),
+                    padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
+                    margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0)
+                        .toPaddingValues(),
+                    rcPackage = null,
+                    tabIndex = null,
+                    variableLocalizations = nonEmptyMapOf(
+                        LocaleId("en_US") to variableLocalizationKeysForEnUs()
+                    ),
+                    countdownDate = null,
+                    countFrom = CountdownComponent.CountFrom.DAYS,
+                    overrides = emptyList(),
+                ),
+            ),
+            dimension = Dimension.Vertical(alignment = CENTER, distribution = START),
+            visible = true,
+            size = Size(width = Fill, height = Fill),
+            spacing = 16.dp,
+            background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.Red))),
+            padding = PaddingValues(all = 16.dp),
+            margin = PaddingValues(all = 16.dp),
+            shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
+            border = BorderStyles(width = 2.dp, colors = ColorStyles(ColorStyle.Solid(Color.Blue))),
+            shadow = ShadowStyles(
+                colors = ColorStyles(ColorStyle.Solid(Color.Black)),
+                radius = 10.dp,
+                x = 0.dp,
+                y = 3.dp,
+            ),
+            badge = null,
+            scrollOrientation = null,
+            rcPackage = null,
+            tabIndex = null,
+            countdownDate = null,
+            countFrom = CountdownComponent.CountFrom.DAYS,
+            overrides = emptyList(),
+        ),
+        action = ButtonComponentStyle.Action.PurchasePackage(rcPackage = null),
+    )
+
+    @Test
+    fun `a click cut short by the button leaving composition releases the paywall action`() {
+        val state = FakePaywallState(TestData.Packages.annual)
+        val clickStarted = CompletableDeferred<Unit>()
+        var buttonRendered by mutableStateOf(true)
+
+        composeTestRule.setContent {
+            if (buttonRendered) {
+                ButtonComponentView(
+                    style = purchaseButtonStyle,
+                    state = state,
+                    onClick = {
+                        clickStarted.complete(Unit)
+                        // A billing flow still in front when the paywall goes away.
+                        awaitCancellation()
+                    },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Purchase").performClick()
+        composeTestRule.waitForIdle()
+        assertThat(clickStarted.isCompleted).isTrue
+        assertThat(state.actionInProgress).isTrue
+
+        // The paywall subtree leaves composition, cancelling the click's composition-scoped coroutine.
+        buttonRendered = false
+        composeTestRule.waitForIdle()
+
+        // Without the cleanup this stays true, and every button on the paywall is disabled from then on.
+        assertThat(state.actionInProgress).isFalse
+    }
+
     @Test
     fun `onClick ignores further clicks until processing current click is done`() {
         var actionHandleCalledCount = 0
         val completable = CompletableDeferred<Unit>()
 
         composeTestRule.setContent {
-            val style = ButtonComponentStyle(
-                stackComponentStyle = StackComponentStyle(
-                    children = listOf(
-                        TextComponentStyle(
-                            texts = nonEmptyMapOf(LocaleId("en_US") to "Purchase"),
-                            color = ColorStyles(
-                                light = ColorStyle.Solid(Color.Black),
-                            ),
-                            fontSize = 15,
-                            fontWeight = FontWeight.REGULAR.toFontWeight(),
-                            fontSpec = null,
-                            textAlign = CENTER.toTextAlign(),
-                            horizontalAlignment = CENTER.toAlignment(),
-                            backgroundColor = ColorStyles(
-                                light = ColorStyle.Solid(Color.Yellow),
-                            ),
-                            visible = true,
-                            size = Size(width = Fill, height = Fill),
-                            padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
-                            margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0)
-                                .toPaddingValues(),
-                            rcPackage = null,
-                            tabIndex = null,
-                            variableLocalizations = nonEmptyMapOf(
-                                LocaleId("en_US") to variableLocalizationKeysForEnUs()
-                            ),
-                            countdownDate = null,
-                            countFrom = CountdownComponent.CountFrom.DAYS,
-                            overrides = emptyList(),
-                        ),
-                    ),
-                    dimension = Dimension.Vertical(alignment = CENTER, distribution = START),
-                    visible = true,
-                    size = Size(width = Fill, height = Fill),
-                    spacing = 16.dp,
-                    background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.Red))),
-                    padding = PaddingValues(all = 16.dp),
-                    margin = PaddingValues(all = 16.dp),
-                    shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
-                    border = BorderStyles(width = 2.dp, colors = ColorStyles(ColorStyle.Solid(Color.Blue))),
-                    shadow = ShadowStyles(
-                        colors = ColorStyles(ColorStyle.Solid(Color.Black)),
-                        radius = 10.dp,
-                        x = 0.dp,
-                        y = 3.dp,
-                    ),
-                    badge = null,
-                    scrollOrientation = null,
-                    rcPackage = null,
-                    tabIndex = null,
-                    countdownDate = null,
-                    countFrom = CountdownComponent.CountFrom.DAYS,
-                    overrides = emptyList(),
-                ),
-                action = ButtonComponentStyle.Action.PurchasePackage(rcPackage = null),
-            )
             ButtonComponentView(
-                style = style,
+                style = purchaseButtonStyle,
                 state = FakePaywallState(TestData.Packages.annual),
                 onClick = {
                     actionHandleCalledCount++
