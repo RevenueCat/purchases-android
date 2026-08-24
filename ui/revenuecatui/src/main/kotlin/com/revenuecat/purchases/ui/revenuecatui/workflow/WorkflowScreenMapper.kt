@@ -19,6 +19,7 @@ internal object WorkflowScreenMapper {
             componentsLocalizations = screen.componentsLocalizations,
             defaultLocaleIdentifier = screen.defaultLocaleIdentifier,
             revision = screen.revision,
+            zeroDecimalPlaceCountries = screen.zeroDecimalPlaceCountries,
             exitOffers = screen.exitOffers,
             productChangeConfig = screen.productChangeConfig,
             automaticallyScaleFontSize = screen.automaticallyScaleFontSize,

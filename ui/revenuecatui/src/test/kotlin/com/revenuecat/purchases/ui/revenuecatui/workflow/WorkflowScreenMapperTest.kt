@@ -49,6 +49,8 @@ class WorkflowScreenMapperTest {
         ),
     )
 
+    private val zeroDecimalPlaceCountries = listOf("TW", "MX")
+
     private val productChangeConfig = ProductChangeConfig(
         upgradeReplacementMode = StoreReplacementMode.CHARGE_FULL_PRICE,
         downgradeReplacementMode = StoreReplacementMode.DEFERRED,
@@ -63,6 +65,7 @@ class WorkflowScreenMapperTest {
         componentsLocalizations = localizations,
         defaultLocaleIdentifier = defaultLocaleId,
         offeringIdentifier = "offering_id",
+        zeroDecimalPlaceCountries = zeroDecimalPlaceCountries,
         productChangeConfig = productChangeConfig,
         stateDeclarations = stateDeclarations,
     )
@@ -79,6 +82,7 @@ class WorkflowScreenMapperTest {
         assertThat(data.componentsLocalizations).isEqualTo(screen.componentsLocalizations)
         assertThat(data.defaultLocaleIdentifier).isEqualTo(screen.defaultLocaleIdentifier)
         assertThat(data.revision).isEqualTo(screen.revision)
+        assertThat(data.zeroDecimalPlaceCountries).isEqualTo(zeroDecimalPlaceCountries)
         assertThat(data.productChangeConfig).isEqualTo(productChangeConfig)
         assertThat(data.stateDeclarations).isEqualTo(stateDeclarations)
     }

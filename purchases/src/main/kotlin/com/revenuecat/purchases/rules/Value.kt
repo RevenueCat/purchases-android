@@ -248,11 +248,17 @@ internal fun jsArrayElementString(value: Value): String {
  * `NaN` / `±Infinity` keep their JS spellings, fractional doubles use
  * Kotlin's default rendering (matches JS for non-pathological values).
  *
- * Known divergence from JS: for values beyond exact integer round-trip range,
- * we fall through to Kotlin's `Double.toString()`, which may use scientific
- * notation earlier than JS (`1e19` → `"1.0E19"` vs `"10000000000000000000"`).
- * This only surfaces through `var` path coercion or `looseEq`'s compound-vs-
- * primitive arm with pathological magnitudes.
+ * Known divergence from JS: values that the `Long` round-trip rejects — either
+ * non-integral or beyond `Long`'s range — fall through to Kotlin's
+ * `Double.toString()`. That agrees with JS for ordinary magnitudes, but it
+ * switches to scientific notation at different thresholds than ECMAScript
+ * `Number::toString` (at `1e7` and below `1e-3`) and spells it differently:
+ * `1e19` → `"1.0E19"` vs `"10000000000000000000"`, `1e-4` → `"1.0E-4"` vs
+ * `"0.0001"`, `12300000.5` → `"1.23000005E7"` vs `"12300000.5"`.
+ *
+ * Reachable from any operator that stringifies a number: `cat`, `substr`,
+ * `in`, `var` path coercion, and `looseEq` / relational comparison against
+ * a compound value.
  */
 @Suppress("ReturnCount")
 private fun jsNumberString(value: Double): String {
