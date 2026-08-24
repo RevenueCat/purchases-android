@@ -42,7 +42,7 @@ internal class WorkflowAssetPrewarmer(
             if (!warmedWorkflowIds.add(workflow.id)) return
         }
         if (assetWarming.isAvailable) {
-            val assets = workflow.screens.values.map { it.componentsConfig.base.collectAssets() }
+            val assets = workflow.screensInVisitOrder().map { it.componentsConfig.base.collectAssets() }
             assetWarming.warmImages(assets.flatMapTo(mutableSetOf()) { it.imageUris })
             assetWarming.warmWebViewUrls(
                 assets.flatMapTo(linkedSetOf<String>()) { it.webViewUrls },

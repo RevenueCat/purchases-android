@@ -117,6 +117,41 @@ class WorkflowAssetPrewarmerTest {
     }
 
     @Test
+    fun `preDownloadWorkflowAssets warms the first page's bundle ahead of later pages`() {
+        val workflow = createWorkflow(
+            "wf_1",
+            screens = linkedMapOf(
+                "screen_second" to createScreen(webViewComponentsConfig("https://second.example.com/i.html")),
+                "screen_first" to createScreen(webViewComponentsConfig("https://first.example.com/i.html")),
+            ),
+            steps = mapOf(
+                "step_1" to WorkflowStep(
+                    id = "step_1",
+                    type = "screen",
+                    screenId = "screen_first",
+                    triggers = listOf(
+                        WorkflowTrigger(
+                            name = "next",
+                            type = WorkflowTriggerType.ON_PRESS,
+                            actionId = "action_1",
+                            componentId = "component-1",
+                        ),
+                    ),
+                    triggerActions = mapOf("action_1" to WorkflowTriggerAction.Step("step_2")),
+                ),
+                "step_2" to WorkflowStep(id = "step_2", type = "screen", screenId = "screen_second"),
+            ),
+        )
+        val urls = slot<Collection<String>>()
+
+        prewarmer.preDownloadWorkflowAssets(workflow, emptyUiConfig())
+
+        verify { assetWarming.warmWebViewUrls(capture(urls)) }
+        assertThat(urls.captured)
+            .containsExactly("https://first.example.com/i.html", "https://second.example.com/i.html")
+    }
+
+    @Test
     fun `preDownloadWorkflowAssets finds no web_view bundles when no screen has one`() {
         val workflow = createWorkflow("wf_1", screens = mapOf("screen_1" to createScreen(emptyComponentsConfig())))
         val urls = slot<Collection<String>>()
@@ -221,12 +256,16 @@ class WorkflowAssetPrewarmerTest {
         assertThat(decodeCount).isEqualTo(0)
     }
 
-    private fun createWorkflow(id: String, screens: Map<String, WorkflowScreen> = emptyMap()): PublishedWorkflow =
+    private fun createWorkflow(
+        id: String,
+        screens: Map<String, WorkflowScreen> = emptyMap(),
+        steps: Map<String, WorkflowStep> = emptyMap(),
+    ): PublishedWorkflow =
         PublishedWorkflow(
             id = id,
             displayName = "Workflow $id",
             initialStepId = "step_1",
-            steps = emptyMap(),
+            steps = steps,
             screens = screens,
         )
 
