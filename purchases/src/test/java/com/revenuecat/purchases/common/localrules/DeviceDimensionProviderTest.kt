@@ -22,6 +22,7 @@ import java.util.Date
 class DeviceDimensionProviderTest {
 
     private val date = Date(1_700_000_000_000)
+    private val context = RulesDimensionContext(date, "current_user")
     private var languageTags = "en-US"
 
     private val localeProvider = object : LocaleProvider {
@@ -31,7 +32,7 @@ class DeviceDimensionProviderTest {
 
     @Test
     fun `provides the device dimensions`() = runTest {
-        val dimensions = provider().dimensions(date)
+        val dimensions = provider().dimensions(context)
 
         assertThat(dimensions).isEqualTo(
             mapOf(
@@ -46,7 +47,7 @@ class DeviceDimensionProviderTest {
 
     @Test
     fun `platform reflects the store`() = runTest {
-        val dimensions = provider(store = Store.AMAZON).dimensions(date)
+        val dimensions = provider(store = Store.AMAZON).dimensions(context)
 
         assertThat(dimensions["platform"]).isEqualTo(RulesDimensionValue.StringValue("amazon"))
     }
@@ -55,7 +56,7 @@ class DeviceDimensionProviderTest {
     fun `only the preferred locale of the preference list is exposed`() = runTest {
         languageTags = "es-ES,en-US"
 
-        val dimensions = provider().dimensions(date)
+        val dimensions = provider().dimensions(context)
 
         assertThat(dimensions["locale"]).isEqualTo(RulesDimensionValue.StringValue("es_es"))
     }
@@ -63,18 +64,18 @@ class DeviceDimensionProviderTest {
     @Test
     fun `locale is re-read on every evaluation`() = runTest {
         val provider = provider()
-        assertThat(provider.dimensions(date)["locale"]).isEqualTo(RulesDimensionValue.StringValue("en_us"))
+        assertThat(provider.dimensions(context)["locale"]).isEqualTo(RulesDimensionValue.StringValue("en_us"))
 
         languageTags = "fr-FR"
 
-        assertThat(provider.dimensions(date)["locale"]).isEqualTo(RulesDimensionValue.StringValue("fr_fr"))
+        assertThat(provider.dimensions(context)["locale"]).isEqualTo(RulesDimensionValue.StringValue("fr_fr"))
     }
 
     @Test
     fun `locale falls back to the configured language tag when no locale is preferred`() = runTest {
         languageTags = ""
 
-        val dimensions = provider(languageTag = "de-DE").dimensions(date)
+        val dimensions = provider(languageTag = "de-DE").dimensions(context)
 
         assertThat(dimensions["locale"]).isEqualTo(RulesDimensionValue.StringValue("de_de"))
     }
@@ -83,7 +84,7 @@ class DeviceDimensionProviderTest {
     fun `dimensions the device has no value for are omitted`() = runTest {
         languageTags = ""
 
-        val dimensions = provider(languageTag = "", versionName = "").dimensions(date)
+        val dimensions = provider(languageTag = "", versionName = "").dimensions(context)
 
         assertThat(dimensions).containsOnlyKeys("platform", "platformVersion", "sdkVersion")
     }

@@ -29,14 +29,15 @@ import java.util.Date
 class CustomerInfoDimensionProviderTest {
 
     private val date = Date(1_700_000_000_000)
+    private val context = RulesDimensionContext(date, APP_USER_ID)
 
     @Test
     fun `provides the customer's identity and lifecycle dimensions`() = runTest {
-        val dimensions = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(date)
+        val dimensions = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(context)
 
         assertThat(dimensions.filterValues { it !is RulesDimensionValue.ObjectListValue }).isEqualTo(
             mapOf(
-                "appUserId" to string("current_user"),
+                "appUserId" to string(APP_USER_ID),
                 "originalAppUserId" to string("original_user"),
                 "firstSeenAt" to date("2022-01-01T00:00:00Z"),
                 "lastSeenAt" to date("2024-06-01T00:00:00Z"),
@@ -47,7 +48,7 @@ class CustomerInfoDimensionProviderTest {
 
     @Test
     fun `describes every purchase of either kind, newest first`() = runTest {
-        val purchases = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(date).purchases()
+        val purchases = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(context).purchases()
 
         assertThat(purchases.map { it["kind"] to it["purchasedProductIdentifier"] }).containsExactly(
             string("subscription") to string("premium:monthly"),
@@ -58,7 +59,7 @@ class CustomerInfoDimensionProviderTest {
 
     @Test
     fun `describes a subscription with everything the SDK knows about it`() = runTest {
-        val purchases = provider(customerInfo(FULLY_POPULATED_RESPONSE)).dimensions(date).purchases()
+        val purchases = provider(customerInfo(FULLY_POPULATED_RESPONSE)).dimensions(context).purchases()
 
         assertThat(purchases.single()).isEqualTo(
             mapOf(
@@ -94,7 +95,7 @@ class CustomerInfoDimensionProviderTest {
 
     @Test
     fun `describes a one-time purchase without the fields only a subscription has`() = runTest {
-        val purchase = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(date).purchases()
+        val purchase = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(context).purchases()
             .single { it["kind"] == string("nonSubscription") }
 
         assertThat(purchase).isEqualTo(
@@ -113,7 +114,7 @@ class CustomerInfoDimensionProviderTest {
 
     @Test
     fun `describes every entitlement, ordered by identifier`() = runTest {
-        val entitlements = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(date).entitlements()
+        val entitlements = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(context).entitlements()
 
         assertThat(entitlements.map { it["identifier"] })
             .containsExactly(string("extra"), string("old"), string("premium"))
@@ -165,7 +166,7 @@ class CustomerInfoDimensionProviderTest {
         )
 
         for ((label, expected, response) in cases) {
-            val purchase = provider(customerInfo(response)).dimensions(date).purchases().single()
+            val purchase = provider(customerInfo(response)).dimensions(context).purchases().single()
 
             assertThat(purchase["status"]).describedAs(label).isEqualTo(string(expected))
         }
@@ -173,14 +174,14 @@ class CustomerInfoDimensionProviderTest {
 
     @Test
     fun `a lifetime subscription is active`() = runTest {
-        val purchase = provider(customerInfo(LIFETIME_RESPONSE)).dimensions(date).purchases().single()
+        val purchase = provider(customerInfo(LIFETIME_RESPONSE)).dimensions(context).purchases().single()
 
         assertThat(purchase["status"]).isEqualTo(string("active"))
     }
 
     @Test
     fun `the grace period status and the grace period flag always agree`() = runTest {
-        val purchase = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(date).purchases()
+        val purchase = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(context).purchases()
             .single { it["purchasedProductIdentifier"] == string("legacy:annual") }
 
         assertThat(purchase["isInGracePeriod"]).isEqualTo(bool(true))
@@ -189,7 +190,7 @@ class CustomerInfoDimensionProviderTest {
 
     @Test
     fun `a one-time purchase has no status, since only a subscription has a lifecycle`() = runTest {
-        val purchase = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(date).purchases()
+        val purchase = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(context).purchases()
             .single { it["kind"] == string("nonSubscription") }
 
         assertThat(purchase).doesNotContainKey("status")
@@ -197,7 +198,7 @@ class CustomerInfoDimensionProviderTest {
 
     @Test
     fun `a customer who has never bought anything reports empty collections rather than none`() = runTest {
-        val dimensions = provider(customerInfo(Responses.validEmptyPurchaserResponse)).dimensions(date)
+        val dimensions = provider(customerInfo(Responses.validEmptyPurchaserResponse)).dimensions(context)
 
         // An empty array is what makes `none` a definite yes and `some` a definite no; an absent key would leave
         // both unknown.
@@ -207,7 +208,7 @@ class CustomerInfoDimensionProviderTest {
 
     @Test
     fun `a lifetime purchase reports no expiry and stays active`() = runTest {
-        val purchase = provider(customerInfo(LIFETIME_RESPONSE)).dimensions(date).purchases().single()
+        val purchase = provider(customerInfo(LIFETIME_RESPONSE)).dimensions(context).purchases().single()
 
         assertThat(purchase).doesNotContainKey("expiresAt")
         assertThat(purchase["isActive"]).isEqualTo(bool(true))
@@ -217,7 +218,7 @@ class CustomerInfoDimensionProviderTest {
 
     @Test
     fun `an unknown ownership type is reported as no ownership type at all`() = runTest {
-        val purchase = provider(customerInfo(PROMO_RESPONSE)).dimensions(date).purchases().single()
+        val purchase = provider(customerInfo(PROMO_RESPONSE)).dimensions(context).purchases().single()
 
         assertThat(purchase).doesNotContainKey("ownershipType")
         assertThat(purchase["store"]).isEqualTo(string("promotional"))
@@ -225,7 +226,7 @@ class CustomerInfoDimensionProviderTest {
 
     @Test
     fun `a subscription being served through a grace period says so`() = runTest {
-        val purchase = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(date).purchases()
+        val purchase = provider(customerInfo(SUBSCRIBED_RESPONSE)).dimensions(context).purchases()
             .single { it["purchasedProductIdentifier"] == string("legacy:annual") }
 
         // Expired in 2023, but the store keeps serving it until 2100.
@@ -244,20 +245,12 @@ class CustomerInfoDimensionProviderTest {
         )
 
         for (failure in failures) {
-            val snapshot = RulesDimensionResolver(
-                providers = listOf(
-                    deviceProvider(),
-                    CustomerInfoDimensionProvider(
-                        currentAppUserId = { "current_user" },
-                        customerInfo = { throw failure },
-                    ),
-                ),
-            ).snapshot()
+            val snapshot = resolver(CustomerInfoDimensionProvider { throw failure }).snapshot()
 
             assertThat(snapshot.isSuccess).describedAs("%s", failure).isTrue()
             // The app user ID is known without asking the backend, so a rule on it survives the failure.
             assertThat(snapshot.getOrThrow().values["customerInfo"]).describedAs("%s", failure).isEqualTo(
-                Value.ObjectValue(mapOf("appUserId" to Value.StringValue("current_user"))),
+                Value.ObjectValue(mapOf("appUserId" to Value.StringValue(APP_USER_ID))),
             )
         }
     }
@@ -265,18 +258,16 @@ class CustomerInfoDimensionProviderTest {
     @Test
     fun `the customer info is requested for the app user the snapshot reports`() = runTest {
         var requestedAppUserId: String? = null
-        val provider = CustomerInfoDimensionProvider(
-            currentAppUserId = { "current_user" },
-            customerInfo = { appUserId ->
-                requestedAppUserId = appUserId
-                customerInfo(SUBSCRIBED_RESPONSE)
-            },
-        )
+        val provider = CustomerInfoDimensionProvider { appUserId ->
+            requestedAppUserId = appUserId
+            customerInfo(SUBSCRIBED_RESPONSE)
+        }
 
-        val dimensions = provider.dimensions(date)
+        val dimensions = provider.dimensions(context)
 
-        assertThat(requestedAppUserId).isEqualTo("current_user")
-        assertThat(dimensions["appUserId"]).isEqualTo(string("current_user"))
+        // Both come from the same pinned id, so they cannot describe two different customers.
+        assertThat(requestedAppUserId).isEqualTo(APP_USER_ID)
+        assertThat(dimensions["appUserId"]).isEqualTo(string(APP_USER_ID))
         assertThat(dimensions.purchases()).isNotEmpty()
     }
 
@@ -284,15 +275,12 @@ class CustomerInfoDimensionProviderTest {
     @Test
     fun `a customer the SDK has no ID for is not asked about`() = runTest {
         var asked = false
-        val provider = CustomerInfoDimensionProvider(
-            currentAppUserId = { "" },
-            customerInfo = {
-                asked = true
-                customerInfo(SUBSCRIBED_RESPONSE)
-            },
-        )
+        val provider = CustomerInfoDimensionProvider {
+            asked = true
+            customerInfo(SUBSCRIBED_RESPONSE)
+        }
 
-        val dimensions = provider.dimensions(date)
+        val dimensions = provider.dimensions(RulesDimensionContext(date, appUserId = ""))
 
         assertThat(asked).isFalse()
         assertThat(dimensions).isEmpty()
@@ -300,13 +288,10 @@ class CustomerInfoDimensionProviderTest {
 
     @Test
     fun `cancellation while reading the customer info propagates`() = runTest {
-        val cancelling = CustomerInfoDimensionProvider(
-            currentAppUserId = { "current_user" },
-            customerInfo = { throw CancellationException("cancelled") },
-        )
+        val cancelling = CustomerInfoDimensionProvider { throw CancellationException("cancelled") }
 
         val thrown = try {
-            cancelling.dimensions(date)
+            cancelling.dimensions(context)
             null
         } catch (e: CancellationException) {
             e
@@ -318,27 +303,21 @@ class CustomerInfoDimensionProviderTest {
     @Test
     fun `the customer info is read on every evaluation`() = runTest {
         var response = Responses.validEmptyPurchaserResponse
-        val provider = CustomerInfoDimensionProvider(
-            currentAppUserId = { "current_user" },
-            customerInfo = { customerInfo(response) },
-        )
+        val provider = CustomerInfoDimensionProvider { customerInfo(response) }
 
-        assertThat(provider.dimensions(date).purchases()).isEmpty()
+        assertThat(provider.dimensions(context).purchases()).isEmpty()
 
         response = SUBSCRIBED_RESPONSE
 
-        assertThat(provider.dimensions(date).purchases()).hasSize(3)
+        assertThat(provider.dimensions(context).purchases()).hasSize(3)
     }
 
     @Test
     fun `the records are searchable by a predicate`() = runTest {
-        val values = RulesDimensionResolver(providers = listOf(provider(customerInfo(SUBSCRIBED_RESPONSE))))
-            .snapshot()
-            .getOrThrow()
-            .values
+        val values = resolver(provider(customerInfo(SUBSCRIBED_RESPONSE))).snapshot().getOrThrow().values
 
         val matching = listOf(
-            """{"==": [{"var": "customerInfo.appUserId"}, "current_user"]}""",
+            """{"==": [{"var": "customerInfo.appUserId"}, "$APP_USER_ID"]}""",
             """{"some": [{"var": "customerInfo.entitlements"},
                  {"and": [{"==": [{"var": "identifier"}, "premium"]}, {"var": "isActive"}]}]}""",
             """{"some": [{"var": "customerInfo.purchases"},
@@ -366,14 +345,16 @@ class CustomerInfoDimensionProviderTest {
         }
     }
 
-    private fun provider(customerInfo: CustomerInfo) = CustomerInfoDimensionProvider(
-        currentAppUserId = { "current_user" },
-        customerInfo = { customerInfo },
+    private fun provider(customerInfo: CustomerInfo) = CustomerInfoDimensionProvider { customerInfo }
+
+    private fun resolver(customerInfoProvider: RulesDimensionProvider) = RulesDimensionResolver(
+        providers = listOf(deviceProvider(), customerInfoProvider),
+        currentAppUserId = { APP_USER_ID },
     )
 
     private fun deviceProvider() = object : RulesDimensionProvider {
         override val namespace = RulesDimensionNamespace.Device
-        override suspend fun dimensions(date: Date) = mapOf("platform" to string("android"))
+        override suspend fun dimensions(context: RulesDimensionContext) = mapOf("platform" to string("android"))
     }
 
     private fun customerInfo(response: String): CustomerInfo =
@@ -390,6 +371,8 @@ class CustomerInfoDimensionProviderTest {
     private fun date(iso8601: String) = RulesDimensionValue.DateValue(Iso8601Utils.parse(iso8601))
 
     private companion object {
+
+        const val APP_USER_ID = "current_user"
 
         /**
          * A Google subscription bought most recently, an Amazon one that expired but is in a grace period, and a

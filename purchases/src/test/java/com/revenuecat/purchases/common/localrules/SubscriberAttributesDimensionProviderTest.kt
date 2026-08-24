@@ -22,6 +22,11 @@ import java.util.Date
 class SubscriberAttributesDimensionProviderTest {
 
     private val evaluationDate = Date(1_718_452_800_000)
+    private val context = RulesDimensionContext(evaluationDate, APP_USER_ID)
+
+    private companion object {
+        const val APP_USER_ID = "current_user"
+    }
 
     // Six weeks before the evaluation.
     private val setDate = Date(1_714_780_800_000)
@@ -32,7 +37,7 @@ class SubscriberAttributesDimensionProviderTest {
         val dimensions = provider(
             attribute("\$email", "jane@example.com"),
             attribute("goal", "lose_weight"),
-        ).dimensions(evaluationDate)
+        ).dimensions(context)
 
         // Reserved names keep their '$': it is what the app set, what the dashboard shows, and what keeps a custom
         // "email" from colliding with the reserved one. Only '.' means anything to the engine.
@@ -41,7 +46,7 @@ class SubscriberAttributesDimensionProviderTest {
 
     @Test
     fun `an attribute is a record of its value and when it was set`() = runTest {
-        val dimensions = provider(attribute("goal", "lose_weight")).dimensions(evaluationDate)
+        val dimensions = provider(attribute("goal", "lose_weight")).dimensions(context)
 
         assertThat(dimensions).isEqualTo(
             mapOf(
@@ -61,7 +66,7 @@ class SubscriberAttributesDimensionProviderTest {
             attribute("seats", "3"),
             attribute("betaOptIn", "true"),
             attribute("sku", "0123"),
-        ).dimensions(evaluationDate)
+        ).dimensions(context)
 
         assertThat(dimensions.valueOf("seats")).isEqualTo(RulesDimensionValue.StringValue("3"))
         assertThat(dimensions.valueOf("betaOptIn")).isEqualTo(RulesDimensionValue.StringValue("true"))
@@ -77,7 +82,7 @@ class SubscriberAttributesDimensionProviderTest {
             attribute("pending", null, isSynced = false),
             attribute("posted", null, isSynced = true),
             attribute("goal", "lose_weight"),
-        ).dimensions(evaluationDate)
+        ).dimensions(context)
 
         assertThat(dimensions).containsOnlyKeys("goal")
     }
@@ -86,7 +91,7 @@ class SubscriberAttributesDimensionProviderTest {
     fun `an attribute set to an empty value is left out`() = runTest {
         // The SDK's other spelling of a deletion, and an empty string would compare equal to an absent value
         // anyway.
-        val dimensions = provider(attribute("goal", ""), attribute("tier", "gold")).dimensions(evaluationDate)
+        val dimensions = provider(attribute("goal", ""), attribute("tier", "gold")).dimensions(context)
 
         assertThat(dimensions).containsOnlyKeys("tier")
     }
@@ -126,12 +131,12 @@ class SubscriberAttributesDimensionProviderTest {
         var attributes = mapOf("goal" to attribute("goal", "lose_weight"))
         val provider = SubscriberAttributesDimensionProvider { attributes }
 
-        assertThat(provider.dimensions(evaluationDate).valueOf("goal"))
+        assertThat(provider.dimensions(context).valueOf("goal"))
             .isEqualTo(RulesDimensionValue.StringValue("lose_weight"))
 
         attributes = mapOf("goal" to attribute("goal", "gain_muscle"))
 
-        assertThat(provider.dimensions(evaluationDate).valueOf("goal"))
+        assertThat(provider.dimensions(context).valueOf("goal"))
             .isEqualTo(RulesDimensionValue.StringValue("gain_muscle"))
     }
 
@@ -180,20 +185,23 @@ class SubscriberAttributesDimensionProviderTest {
         setTime: Date = setDate,
     ) = SubscriberAttribute(key = key, value = value, setTime = setTime, isSynced = isSynced)
 
-    private fun provider(vararg attributes: SubscriberAttribute) = SubscriberAttributesDimensionProvider {
-        attributes.associateBy { attribute -> attribute.key.backendKey }
-    }
+    private fun provider(vararg attributes: SubscriberAttribute) =
+        SubscriberAttributesDimensionProvider { appUserId ->
+            // The real cache is keyed by app user, so anyone else's attributes are not this customer's.
+            if (appUserId == APP_USER_ID) attributes.associateBy { it.key.backendKey } else emptyMap()
+        }
 
     private fun resolver(vararg providers: RulesDimensionProvider) = RulesDimensionResolver(
         providers = providers.toList(),
         dateProvider = object : DateProvider {
             override val now: Date = evaluationDate
         },
+        currentAppUserId = { APP_USER_ID },
     )
 
     private fun deviceProvider(vararg values: Pair<String, String>) = object : RulesDimensionProvider {
         override val namespace = RulesDimensionNamespace.Device
-        override suspend fun dimensions(date: Date) =
+        override suspend fun dimensions(context: RulesDimensionContext) =
             values.associate { (key, value) -> key to RulesDimensionValue.StringValue(value) }
     }
 

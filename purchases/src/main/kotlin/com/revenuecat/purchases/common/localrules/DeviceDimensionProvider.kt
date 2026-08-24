@@ -8,7 +8,6 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.LocaleProvider
 import com.revenuecat.purchases.common.platformName
-import java.util.Date
 
 /**
  * Device and environment dimensions.
@@ -37,7 +36,7 @@ internal class DeviceDimensionProvider(
     // empty.
     private val fallbackLanguageTag: String = appConfig.languageTag
 
-    override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> =
+    override suspend fun dimensions(context: RulesDimensionContext): Map<String, RulesDimensionValue> =
         (fixedDimensions + (KEY_LOCALE to RulesDimensionValue.StringValue(currentLocale())))
             .filterValues { value -> value.hasValue }
 

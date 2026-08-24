@@ -397,17 +397,12 @@ internal class PurchasesFactory(
                     // Only read during a checkpoint evaluation, so the instance is configured by then. Same
                     // reasoning as CheckpointWorkflowResolverImpl's getOfferings.
                     StoreDimensionProvider { Purchases.sharedInstance.awaitStorefrontCountryCode() },
-                    SubscriberAttributesDimensionProvider {
-                        subscriberAttributesCache.getAllStoredSubscriberAttributes(
-                            identityManager.currentAppUserID,
-                        )
+                    SubscriberAttributesDimensionProvider { appUserID ->
+                        subscriberAttributesCache.getAllStoredSubscriberAttributes(appUserID)
                     },
-                    CustomerInfoDimensionProvider(
-                        currentAppUserId = { identityManager.currentAppUserID },
-                        customerInfo = { appUserID ->
-                            Purchases.sharedInstance.purchasesOrchestrator.awaitCustomerInfo(appUserID)
-                        },
-                    ),
+                    CustomerInfoDimensionProvider { appUserID ->
+                        Purchases.sharedInstance.purchasesOrchestrator.awaitCustomerInfo(appUserID)
+                    },
                 ),
                 currentAppUserId = { identityManager.currentAppUserID },
             )

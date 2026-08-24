@@ -224,15 +224,16 @@ class RulesDimensionScopeTest {
             providers = listOf(
                 DeviceDimensionProvider(appConfig, localeProvider),
                 StoreDimensionProvider { "US" },
-                CustomerInfoDimensionProvider(
-                    currentAppUserId = { "current_user" },
-                    customerInfo = { customerInfo },
-                ),
-                SubscriberAttributesDimensionProvider { SUBSCRIBER_ATTRIBUTES },
+                CustomerInfoDimensionProvider { customerInfo },
+                // Keyed by app user in the real cache, so the id the snapshot is about is the one it reads for.
+                SubscriberAttributesDimensionProvider { appUserId ->
+                    SUBSCRIBER_ATTRIBUTES.takeIf { appUserId == APP_USER_ID }.orEmpty()
+                },
             ),
             dateProvider = object : DateProvider {
                 override val now: Date get() = evaluationDate
             },
+            currentAppUserId = { APP_USER_ID },
         )
     }
 
@@ -263,6 +264,8 @@ class RulesDimensionScopeTest {
     }
 
     private companion object {
+
+        const val APP_USER_ID = "current_user"
 
         /**
          * A reserved name, custom ones, a value that looks like a number but stays the string it was set as, and

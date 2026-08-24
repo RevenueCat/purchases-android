@@ -5,25 +5,25 @@ package com.revenuecat.purchases.common.localrules
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
-import java.util.Date
 
 internal class SubscriberAttributesDimensionProvider(
-    private val storedAttributes: () -> Map<String, SubscriberAttribute>,
+    private val storedAttributes: (appUserId: String) -> Map<String, SubscriberAttribute>,
 ) : RulesDimensionProvider {
 
     override val namespace: RulesDimensionNamespace = RulesDimensionNamespace.SubscriberAttributes
 
     /**
      * Read per evaluation rather than snapshotted: an app can set an attribute at any time, and an audience keyed
-     * on one has to agree with what the app has said by the time the checkpoint is resolved.
+     * on one has to agree with what the app has said by the time the checkpoint is resolved. Read for the
+     * snapshot's app user, so they describe the same customer as everything alongside them.
      *
      * Attributes that cannot be read contribute no dimensions instead of failing the snapshot: they are parsed out
      * of whatever is on disk, so a payload an older version wrote differently surfaces here, and that should not
      * take an otherwise resolvable checkpoint down with it.
      */
-    override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
+    override suspend fun dimensions(context: RulesDimensionContext): Map<String, RulesDimensionValue> {
         val attributes = try {
-            storedAttributes()
+            storedAttributes(context.appUserId)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             warnLog { "The subscriber attributes are unavailable, so they can't be evaluated: $e" }
             return emptyMap()

@@ -19,7 +19,7 @@ class LocalRulesEvaluatorTest {
     private var snapshotsTaken = 0
     private val deviceProvider = object : RulesDimensionProvider {
         override val namespace = RulesDimensionNamespace.Device
-        override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
+        override suspend fun dimensions(context: RulesDimensionContext): Map<String, RulesDimensionValue> {
             snapshotsTaken++
             return mapOf("platform" to RulesDimensionValue.StringValue("android"))
         }
@@ -93,7 +93,7 @@ class LocalRulesEvaluatorTest {
     fun `a failed dimension snapshot fails the evaluation`() = runTest {
         val failing = object : RulesDimensionProvider {
             override val namespace = RulesDimensionNamespace.Device
-            override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> =
+            override suspend fun dimensions(context: RulesDimensionContext): Map<String, RulesDimensionValue> =
                 throw IllegalStateException("nope")
         }
 

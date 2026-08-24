@@ -66,15 +66,16 @@ class SubscriberAttributesDimensionIntegrationTest {
         )
         resolver = RulesDimensionResolver(
             providers = listOf(
-                // The same expression PurchasesFactory builds, with the app user ID read from the cache the
-                // identity manager reads it from.
-                SubscriberAttributesDimensionProvider {
-                    attributesCache.getAllStoredSubscriberAttributes(cache.getCachedAppUserID() ?: "")
+                // The same expression PurchasesFactory builds: the provider reads for whichever app user the
+                // resolver pinned, which is the one the identity manager reads from this cache.
+                SubscriberAttributesDimensionProvider { appUserId ->
+                    attributesCache.getAllStoredSubscriberAttributes(appUserId)
                 },
             ),
             dateProvider = object : DateProvider {
                 override val now: Date get() = evaluationDate
             },
+            currentAppUserId = { cache.getCachedAppUserID() ?: "" },
         )
     }
 

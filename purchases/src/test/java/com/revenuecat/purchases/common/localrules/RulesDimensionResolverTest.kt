@@ -91,7 +91,7 @@ class RulesDimensionResolverTest {
             provider(RulesDimensionNamespace.Store, "country" to string("USA")),
             object : RulesDimensionProvider {
                 override val namespace = RulesDimensionNamespace.Device
-                override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> =
+                override suspend fun dimensions(context: RulesDimensionContext): Map<String, RulesDimensionValue> =
                     throw IllegalStateException("nope")
             },
         )
@@ -107,7 +107,7 @@ class RulesDimensionResolverTest {
         val resolver = resolver(
             object : RulesDimensionProvider {
                 override val namespace = RulesDimensionNamespace.Device
-                override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> =
+                override suspend fun dimensions(context: RulesDimensionContext): Map<String, RulesDimensionValue> =
                     throw CancellationException("cancelled")
             },
         )
@@ -128,8 +128,8 @@ class RulesDimensionResolverTest {
         val recordingProvider = {
             object : RulesDimensionProvider {
                 override val namespace = RulesDimensionNamespace.Device
-                override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
-                    dates += date
+                override suspend fun dimensions(context: RulesDimensionContext): Map<String, RulesDimensionValue> {
+                    dates += context.date
                     return emptyMap()
                 }
             }
@@ -420,7 +420,7 @@ class RulesDimensionResolverTest {
         providers = listOf(
             object : RulesDimensionProvider {
                 override val namespace = RulesDimensionNamespace.Device
-                override suspend fun dimensions(date: Date) = values()
+                override suspend fun dimensions(context: RulesDimensionContext) = values()
             },
         ),
         dateProvider = object : DateProvider {
@@ -443,6 +443,6 @@ class RulesDimensionResolverTest {
         vararg values: Pair<String, RulesDimensionValue>,
     ) = object : RulesDimensionProvider {
         override val namespace = dimensionNamespace
-        override suspend fun dimensions(date: Date) = values.toMap()
+        override suspend fun dimensions(context: RulesDimensionContext) = values.toMap()
     }
 }

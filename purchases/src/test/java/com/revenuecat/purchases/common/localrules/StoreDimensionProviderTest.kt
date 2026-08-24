@@ -22,12 +22,13 @@ import java.util.Date
 class StoreDimensionProviderTest {
 
     private val date = Date(1_700_000_000_000)
+    private val context = RulesDimensionContext(date, "current_user")
 
     @Test
     fun `the store country is exposed as a three-letter code`() = runTest {
-        assertThat(provider("US").dimensions(date))
+        assertThat(provider("US").dimensions(context))
             .isEqualTo(mapOf("country" to RulesDimensionValue.StringValue("USA")))
-        assertThat(provider("ES").dimensions(date))
+        assertThat(provider("ES").dimensions(context))
             .isEqualTo(mapOf("country" to RulesDimensionValue.StringValue("ESP")))
     }
 
@@ -36,7 +37,7 @@ class StoreDimensionProviderTest {
         // "UK" is what the Amazon Appstore reports for the United Kingdom, and it is not an ISO region. Region
         // subtags are two letters, so a store already reporting an alpha-3 code would be dropped too.
         for (countryCode in listOf(null, "", "UK", "ZZ", "abc", "1", "USA")) {
-            assertThat(provider(countryCode).dimensions(date))
+            assertThat(provider(countryCode).dimensions(context))
                 .describedAs("country code '%s'", countryCode)
                 .isEmpty()
         }
@@ -72,7 +73,7 @@ class StoreDimensionProviderTest {
         val cancelling = StoreDimensionProvider { throw CancellationException("cancelled") }
 
         val thrown = try {
-            cancelling.dimensions(date)
+            cancelling.dimensions(context)
             null
         } catch (e: CancellationException) {
             e
@@ -86,11 +87,11 @@ class StoreDimensionProviderTest {
         var countryCode: String? = "US"
         val provider = StoreDimensionProvider { countryCode }
 
-        assertThat(provider.dimensions(date)["country"]).isEqualTo(RulesDimensionValue.StringValue("USA"))
+        assertThat(provider.dimensions(context)["country"]).isEqualTo(RulesDimensionValue.StringValue("USA"))
 
         countryCode = "ES"
 
-        assertThat(provider.dimensions(date)["country"]).isEqualTo(RulesDimensionValue.StringValue("ESP"))
+        assertThat(provider.dimensions(context)["country"]).isEqualTo(RulesDimensionValue.StringValue("ESP"))
     }
 
     @Test
@@ -109,7 +110,7 @@ class StoreDimensionProviderTest {
         vararg values: Pair<String, String>,
     ) = object : RulesDimensionProvider {
         override val namespace = dimensionNamespace
-        override suspend fun dimensions(date: Date) =
+        override suspend fun dimensions(context: RulesDimensionContext) =
             values.associate { (key, value) -> key to RulesDimensionValue.StringValue(value) }
     }
 }

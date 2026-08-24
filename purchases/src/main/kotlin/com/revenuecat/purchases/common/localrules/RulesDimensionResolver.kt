@@ -58,21 +58,20 @@ internal class RulesDimensionResolver(
      * [customVariables] are the caller's own values for this one evaluation, exposed under
      * [RulesDimensionNamespace.Custom].
      *
-     * A login, logout or user switch part-way through leaves the providers describing two different customers,
-     * since each reads the app user for itself. Reporting the part that survives would let an absence rule match
-     * a customer whose purchases simply were not read, so nothing is reported.
+     * A login, logout or user switch part-way through leaves the collected values describing two different
+     * customers. Reporting the part that survives would let an absence rule match a customer whose purchases
+     * simply were not read, so nothing is reported.
      */
     @Suppress("ReturnCount")
     suspend fun snapshot(
         customVariables: Map<String, RulesDimensionValue> = emptyMap(),
     ): Result<RulesDimensionSnapshot> {
-        val appUserId = currentAppUserId()
-        val date = dateProvider.now
+        val context = RulesDimensionContext(date = dateProvider.now, appUserId = currentAppUserId())
         val values = mutableMapOf<String, MutableMap<String, Value>>()
 
         for (provider in providers) {
             val dimensions = try {
-                provider.dimensions(date)
+                provider.dimensions(context)
             } catch (error: CancellationException) {
                 throw error
             } catch (@Suppress("TooGenericExceptionCaught") error: Exception) {
@@ -92,7 +91,10 @@ internal class RulesDimensionResolver(
             return Result.failure(conflict)
         }
 
-        if (currentAppUserId() != appUserId) {
+        // Still worth checking with the id pinned in the context: a customer info read for one app user can
+        // still be answered about another, since on a cold cache the SDK syncs pending purchases first and that
+        // sync reads the current app user for itself.
+        if (currentAppUserId() != context.appUserId) {
             warnLog { "The app user changed while the dimensions were being collected, so they were discarded." }
             return Result.failure(RulesDimensionResolutionException.AppUserChanged)
         }
@@ -100,9 +102,9 @@ internal class RulesDimensionResolver(
         return Result.success(
             RulesDimensionSnapshot(
                 values = values.mapValuesTo(
-                    mutableMapOf<String, Value>(KEY_EVALUATED_AT to Value.IntValue(date.time)),
+                    mutableMapOf<String, Value>(KEY_EVALUATED_AT to Value.IntValue(context.date.time)),
                 ) { (_, dimensions) -> Value.ObjectValue(dimensions) },
-                evaluationDate = date,
+                evaluationDate = context.date,
             ),
         )
     }

@@ -22,6 +22,19 @@ internal enum class RulesDimensionNamespace(val key: String) {
 }
 
 /**
+ * What every provider in one snapshot is answering about.
+ *
+ * @property date the common reference instant for the evaluation. It does not indicate when a provider's
+ * underlying values were observed.
+ * @property appUserId the customer the whole snapshot describes, read once by [RulesDimensionResolver] so that
+ * providers reading it for themselves cannot end up describing two different customers.
+ */
+internal data class RulesDimensionContext(
+    val date: Date,
+    val appUserId: String,
+)
+
+/**
  * Supplies one subtree of on-device dimensions.
  *
  * Implementations may observe or persist state internally, but values are pulled only when an evaluation asks for
@@ -40,9 +53,6 @@ internal interface RulesDimensionProvider {
      * which is a non-match rather than an error. A name no predicate could read is dropped by
      * [RulesDimensionResolver], which applies that rule to every provider. Throwing is reserved for a systemic
      * failure to produce this provider's values.
-     *
-     * [date] is the common reference instant for the evaluation. It does not indicate when the underlying values
-     * were observed.
      */
-    suspend fun dimensions(date: Date): Map<String, RulesDimensionValue>
+    suspend fun dimensions(context: RulesDimensionContext): Map<String, RulesDimensionValue>
 }

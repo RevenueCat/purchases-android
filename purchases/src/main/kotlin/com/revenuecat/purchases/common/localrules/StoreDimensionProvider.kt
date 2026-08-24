@@ -5,7 +5,6 @@ package com.revenuecat.purchases.common.localrules
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.warnLog
 import kotlinx.coroutines.CancellationException
-import java.util.Date
 import java.util.IllformedLocaleException
 import java.util.Locale
 import java.util.MissingResourceException
@@ -35,7 +34,7 @@ internal class StoreDimensionProvider(
      * failure and propagates.
      */
     @Suppress("ReturnCount")
-    override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
+    override suspend fun dimensions(context: RulesDimensionContext): Map<String, RulesDimensionValue> {
         val countryCode = try {
             storefrontCountryCode()
         } catch (e: CancellationException) {

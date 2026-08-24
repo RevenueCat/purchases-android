@@ -16,45 +16,30 @@ import kotlinx.coroutines.CancellationException
 import java.util.Date
 
 internal class CustomerInfoDimensionProvider(
-    private val currentAppUserId: () -> String,
     private val customerInfo: suspend (appUserId: String) -> CustomerInfo,
 ) : RulesDimensionProvider {
 
     override val namespace: RulesDimensionNamespace = RulesDimensionNamespace.CustomerInfo
 
     /**
-     * The app user ID is read once and used both to request the customer info and as the reported ID. Reading it
-     * again after the request came back would describe a different customer than the purchases alongside it
-     * whenever the app logs in, logs out, or switches user while that request is in flight.
-     *
-     * It is also reported on its own, without waiting for the request, so a rule targeting only the ID does not
-     * depend on the network: the ID is known as soon as the SDK is configured.
+     * The app user ID is reported without waiting for the customer info, so a rule targeting only the ID does not
+     * depend on the network: it is known as soon as the SDK is configured.
      */
-    override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
-        val appUserId = currentAppUserId()
-        return customerInfoDimensions(appUserId, date) + buildMap { putString(KEY_APP_USER_ID, appUserId) }
-    }
+    override suspend fun dimensions(context: RulesDimensionContext): Map<String, RulesDimensionValue> =
+        customerInfoDimensions(context) + buildMap { putString(KEY_APP_USER_ID, context.appUserId) }
 
     /**
-     * A customer info that cannot be read contributes no dimensions instead of failing the snapshot: the read
-     * reaches out through the configured instance, which an app can tear down mid-evaluation, and it can fall back
-     * to the network, which can fail. Neither should abort the snapshot and take an otherwise resolvable
-     * checkpoint down with it. Cancellation is not a failure and propagates.
+     * A customer info that cannot be read contributes no dimensions rather than failing the snapshot, which would
+     * take an otherwise resolvable checkpoint down with it. Cancellation is not a failure and propagates.
      *
-     * The records are built inside the same guard as the read, because a [CustomerInfo]'s purchases are parsed out
-     * of its raw payload on first access rather than when it is constructed, so that is where a malformed payload
-     * surfaces.
-     *
-     * Asking for one app user is not enough to be answered about them: on a cold cache the SDK syncs pending
-     * purchases first, and that sync reads the current app user for itself. Catching that is
-     * [RulesDimensionResolver]'s job, since it watches the whole collection rather than this read alone, and it
-     * can take the snapshot again instead of leaving a customer half-described.
+     * The records are built inside the same guard, because a [CustomerInfo] parses its purchases out of its raw
+     * payload on first access rather than at construction, so a malformed payload surfaces here.
      */
-    private suspend fun customerInfoDimensions(appUserId: String, date: Date): Map<String, RulesDimensionValue> {
+    private suspend fun customerInfoDimensions(context: RulesDimensionContext): Map<String, RulesDimensionValue> {
         // Nobody to ask about: the SDK has no cached user, so there is no request to make on their behalf.
-        if (appUserId.isEmpty()) return emptyMap()
+        if (context.appUserId.isEmpty()) return emptyMap()
         return try {
-            customerInfo(appUserId).dimensions(date)
+            customerInfo(context.appUserId).dimensions(context.date)
         } catch (e: CancellationException) {
             throw e
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {

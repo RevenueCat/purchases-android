@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.checkpoints.CheckpointRule
 import com.revenuecat.purchases.common.checkpoints.CheckpointRulesResolution
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
+import com.revenuecat.purchases.common.localrules.RulesDimensionContext
 import com.revenuecat.purchases.common.localrules.RulesDimensionNamespace
 import com.revenuecat.purchases.common.localrules.RulesDimensionProvider
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
@@ -520,7 +521,7 @@ class CheckpointWorkflowResolverImplTest {
 
     private object FailingDimensionProvider : RulesDimensionProvider {
         override val namespace = RulesDimensionNamespace.Device
-        override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> =
+        override suspend fun dimensions(context: RulesDimensionContext): Map<String, RulesDimensionValue> =
             throw IllegalStateException("no dimensions")
     }
 
