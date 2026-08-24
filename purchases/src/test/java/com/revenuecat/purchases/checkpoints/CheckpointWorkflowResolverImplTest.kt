@@ -356,8 +356,8 @@ class CheckpointWorkflowResolverImplTest {
 
     @Test
     fun `negating an audience on an omitted variable does not manufacture a match`() = runTest {
-        // This used to match everyone: the omitted variable made the inner comparison false, and `!`
-        // turned that into a match, admitting the customers the audience was written to exclude.
+        // Negation is where an unanswerable comparison does the most damage: a false inner result
+        // becomes a match, admitting exactly the customers the audience was written to exclude.
         coEvery { mockAudiencesConfigProvider.getAudience("aud_wf1234") } returns
             Audience("aud_wf1234", """{"!": [{"==": [{"var": "custom.source"}, "settings"]}]}""")
 
