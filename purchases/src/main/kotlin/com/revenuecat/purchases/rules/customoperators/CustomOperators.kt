@@ -19,6 +19,8 @@ internal object CustomOperators {
     ): Value = when (op) {
         "rc.length" -> LengthOperator.opLength(args, vars)
 
+        "rc.rootVar" -> RootVarOperator.opRootVar(args, vars)
+
         else -> throw EvaluationException.UnsupportedOperator(op)
     }
 }

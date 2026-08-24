@@ -36,10 +36,22 @@ internal object AccessorOperators {
      *  data `var` reads from; path/default args evaluate against
      *  [Scope.current] as well.
      */
+    fun opVar(args: Value, vars: Scope): Value =
+        resolveVar(args = args, target = vars.current, vars = vars, operatorName = "var")
+
+    /**
+     * Shared lookup for `var` and `rc.rootVar`. Path and default args
+     * evaluate against [Scope.current]; the final lookup walks [target].
+     */
     @Suppress("ReturnCount")
-    fun opVar(args: Value, vars: Scope): Value {
-        val (path, default) = resolveVarArgs(args, vars)
-        val found = lookupVar(vars.current, path)
+    fun resolveVar(
+        args: Value,
+        target: Value,
+        vars: Scope,
+        operatorName: String,
+    ): Value {
+        val (path, default) = resolveVarArgs(args, vars, operatorName)
+        val found = lookupVar(target, path)
         if (found != null) return found
         // json-logic-js coerces an `undefined` default to `null`.
         if (default is Value.Undefined) return Value.Null
@@ -173,21 +185,21 @@ internal object AccessorOperators {
      * resolve to a dynamic path string.
      *
      */
-    private fun resolveVarArgs(args: Value, vars: Scope): Pair<String, Value?> {
+    private fun resolveVarArgs(args: Value, vars: Scope, operatorName: String): Pair<String, Value?> {
         if (args is Value.ArrayValue) {
             val evaluated = args.items.map { Evaluator.evaluateValue(it, vars) }
-            return parseVarArrayArgs(evaluated)
+            return parseVarArrayArgs(evaluated, operatorName)
         }
         val evaluated = Evaluator.evaluateValue(args, vars)
         return pathSegment(evaluated) to null
     }
 
-    private fun parseVarArrayArgs(items: List<Value>): Pair<String, Value?> {
+    private fun parseVarArrayArgs(items: List<Value>, operatorName: String): Pair<String, Value?> {
         val path = pathSegment(items.firstOrNull())
         val default = if (items.size >= 2) items[1] else null
         if (items.size > 2) {
             RulesEngine.logger.warn(
-                "var: ignoring ${items.size - 2} extra arg(s); expected [path] or [path, default]",
+                "$operatorName: ignoring ${items.size - 2} extra arg(s); expected [path] or [path, default]",
             )
         }
         return path to default

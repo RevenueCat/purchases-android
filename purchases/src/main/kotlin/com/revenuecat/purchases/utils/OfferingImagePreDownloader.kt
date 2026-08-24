@@ -6,7 +6,6 @@ import android.net.Uri
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.common.debugLog
-import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 
@@ -34,13 +33,7 @@ internal class OfferingImagePreDownloader(
     }
 
     private fun downloadV2Images(offering: Offering) {
-        val paywallComponents = offering.paywallComponents ?: return
-        // `data` decodes lazily here, and best-effort warming must not abort the offerings success/caching path.
-        val componentsConfig = paywallComponents.data.getOrElse { error ->
-            errorLog(error) { "Error deserializing paywall components data. Skipping V2 image pre-download." }
-            return
-        }.componentsConfig.base
-        val assets = componentsConfig.collectAssets()
+        val assets = offering.baseComponentsConfig()?.collectAssets() ?: return
         assetWarming.warmImages(assets.imageUris)
         if (assets.webViews.isNotEmpty()) assetWarming.prebootWebView()
     }
