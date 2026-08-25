@@ -17,18 +17,6 @@ internal object SplitOperator {
      * ones, as strings. Numeric-looking fields are not coerced, so `"1,2"`
      * splits into `["1", "2"]`.
      *
-     * A `var` path cannot index the result of an expression, so a field is
-     * read by wrapping the array in a one-element list and letting an
-     * iteration operator rebind the scope to it:
-     *
-     * ```json
-     * {"some": [[{"rc.split": [{"var": "locale"}, "-"]}],
-     *           {"===": [{"var": "0"}, "es"]}]}
-     * ```
-     *
-     * The array is also usable directly by `in` and by the iteration
-     * operators, which is enough for most membership and any/all tests.
-     *
      * Both operands must be strings and the separator must be non-empty,
      * otherwise [EvaluationException.TypeMismatch] is thrown.
      */
