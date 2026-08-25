@@ -1281,6 +1281,16 @@ public class Purchases internal constructor(
     }
 
     /**
+     * Subscriber attribute associated with the Singular Device ID (SDID) for the user
+     * Required for the RevenueCat Singular integration when using Singular's Event Endpoint V2
+     *
+     * @param singularDeviceID null or an empty string will delete the subscriber attribute.
+     */
+    public fun setSingularDeviceID(singularDeviceID: String?) {
+        purchasesOrchestrator.setSingularDeviceID(singularDeviceID)
+    }
+
+    /**
      * Sets attribution data from AppsFlyer's conversion data.
      *
      * Pass the map received from AppsFlyer's `onConversionDataSuccess` callback directly to this method.
