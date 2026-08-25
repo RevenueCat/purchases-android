@@ -54,6 +54,17 @@ module ApiDiffReport
     [added, removed]
   end
 
+  # `@kotlin.jvm.Throws(exceptionClasses=...)` puts a parameter list in front of the member's own,
+  # so annotations go before anything is read positionally.
+  ANNOTATION = /@[\w.]+(?:\((?:[^()]|\([^()]*\))*\))?\s*/.freeze
+
+  # `method public void foo(int);`, `field public static final int BAR = 3;` and
+  # `public final class Baz` all carry the member name as the last token before the parameter list
+  # or the initializer.
+  def member_name(declaration)
+    declaration.to_s.gsub(ANNOTATION, "").split(/[(=]/).first.to_s.sub(/;\s*\z/, "").split.last.to_s
+  end
+
   # A member line omits its owning type, so two types in one file can add the same text. Identity is
   # therefore the text plus how many times it has already appeared in that file.
   def occurrences(declarations)
@@ -84,8 +95,20 @@ module ApiDiffReport
     {
       added: modules.flat_map { |name| by_module[name][:added].map(&:first) },
       removed: modules.flat_map { |name| by_module[name][:removed].map(&:first) },
+      new_api: modules.flat_map { |name| new_declarations(by_module[name]) },
       modules: modules
     }
+  end
+
+  # Metalava has no notion of a changed member: it renders one as a removal plus an addition of the
+  # same name. Each removal answers one addition, so an overload added beside a changed one survives.
+  def new_declarations(bucket)
+    unanswered = bucket[:removed].map { |declaration, _occurrence| member_name(declaration) }
+
+    bucket[:added].map(&:first).reject do |declaration|
+      index = unanswered.index(member_name(declaration))
+      unanswered.delete_at(index) if index
+    end
   end
 
   def empty?(report)
@@ -97,25 +120,6 @@ module ApiDiffReport
     parts << "#{report[:added].count} new declaration#{'s' if report[:added].count != 1}" if report[:added].any?
     parts << "#{report[:removed].count} removed" if report[:removed].any?
     parts.join(", ")
-  end
-
-  # `@kotlin.jvm.Throws(exceptionClasses=...)` puts a parameter list in front of the member's own,
-  # so annotations go before anything is read positionally.
-  ANNOTATION = /@[\w.]+(?:\((?:[^()]|\([^()]*\))*\))?\s*/.freeze
-
-  # `method public void foo(int);`, `field public static final int BAR = 3;` and
-  # `public final class Baz` all carry the member name as the last token before the parameter list
-  # or the initializer.
-  def member_name(declaration)
-    declaration.to_s.gsub(ANNOTATION, "").split(/[(=]/).first.to_s.sub(/;\s*\z/, "").split.last.to_s
-  end
-
-  # Metalava has no notion of a changed member: it renders one as a removal plus an addition of the
-  # same name. Only what has no removal answering it is new API.
-  def new_api(report)
-    changed = report[:removed].map { |declaration| member_name(declaration) }
-
-    report[:added].reject { |declaration| changed.include?(member_name(declaration)) }
   end
 
   def diff_lines(report)
@@ -133,8 +137,6 @@ module ApiDiffReport
     shown
   end
 
-  # Of the rendered summary, not the report: joining the declaration lists would hash an addition of
-  # a declaration the same as its removal.
   def fingerprint(message)
     Digest::SHA256.hexdigest(message.to_s)[0, 12]
   end
@@ -162,12 +164,12 @@ module ApiDiffReport
   end
 
   def slack_message(report, pull_request_link)
-    additions = new_api(report)
+    additions = report[:new_api]
     body = capped_lines(additions.map { |declaration| "+ #{declaration}" }, limit: SLACK_LIMIT, width: SLACK_WIDTH)
 
     lines = [[":sparkles: *New public API*", PLATFORM_LABEL, *report[:modules].map { |name| "`#{name}`" }].join(" · ")]
     lines << pull_request_link unless pull_request_link.to_s.empty?
-    lines << counts(added: additions, removed: [])
+    lines << "#{additions.count} new declaration#{'s' if additions.count != 1}"
     lines << "```\n#{body.join("\n")}\n```"
 
     lines.join("\n")
@@ -293,9 +295,7 @@ module ApiDiffReport
     signature_files = changed_files.uniq.select { |file| signature_file?(file) }
     report = build(signature_files.to_h { |file| [file, patch_for.call(file)] })
     return nil if empty?(report)
-    # The feed announces new API; a PR that only takes API away or reshapes it is reported on the
-    # PR alone.
-    return { comment: markdown_section(report), warning: nil } if new_api(report).empty?
+    return { comment: markdown_section(report), warning: nil } if report[:new_api].empty?
 
     message = slack_message(report, pull_request_link)
     outcome, reason = announce(message, pull_request_link, credentials, poster, getter, announced_in_comment)

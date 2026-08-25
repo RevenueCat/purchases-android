@@ -43,28 +43,25 @@ class ApiDiffReportTest < Minitest::Test
        }
   PATCH
 
-  ANNOTATED_SWAP_PATCH = <<~PATCH.freeze
+  ANNOTATED_SWAP_PATCH = ANNOTATED_SIGNATURE_CHANGE_PATCH
+                         .sub("Purchases, optional int retries, kotlin", "Purchases, kotlin")
+                         .sub("+    method @KotlinOnly @kotlin.jvm.Throws(exceptionClasses={com.revenuecat.purchases.PurchasesException.class}) public static suspend Object? awaitShowManageSubscriptions",
+                              "+    method @KotlinOnly @kotlin.jvm.Throws(exceptionClasses={com.revenuecat.purchases.PurchasesException.class}) public static suspend Object? awaitSomethingBrandNew").freeze
+
+  RENAMED_METHOD_PATCH = ADDED_METHOD_PATCH.sub("     method public void apiDiffDemoPing();",
+                                                "-    method public void apiDiffDemoPing();").freeze
+
+  # Adding an overload beside a changed one is the shape most new API lands in.
+  OVERLOAD_PATCH = <<~PATCH.freeze
     --- a/purchases/api-defauts.txt
     +++ b/purchases/api-defauts.txt
-    @@ -38,6 +38,6 @@ package com.revenuecat.purchases {
+    @@ -10,6 +10,7 @@ package com.revenuecat.purchases {
 
-       public final class CoroutinesExtensionsCommonKt {
-    -    method @KotlinOnly @kotlin.jvm.Throws(exceptionClasses={com.revenuecat.purchases.PurchasesException.class}) public static suspend Object? awaitShowManageSubscriptions(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super java.lang.Void>);
-    +    method @KotlinOnly @kotlin.jvm.Throws(exceptionClasses={com.revenuecat.purchases.PurchasesException.class}) public static suspend Object? awaitSomethingBrandNew(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super java.lang.Void>);
+       public final class Purchases {
+    -    method public void configure(android.content.Context);
+    +    method public void configure(android.content.Context, String);
+    +    method public void configure(com.revenuecat.purchases.PurchasesConfiguration);
        }
-  PATCH
-
-  RENAMED_METHOD_PATCH = <<~PATCH.freeze
-    --- a/purchases/api-defauts.txt
-    +++ b/purchases/api-defauts.txt
-    @@ -10,6 +10,6 @@ package com.revenuecat.purchases {
-
-       public final class ApiDiffDemo {
-    -    method public void apiDiffDemoPing();
-    +    method public void apiDiffDemoPong();
-       }
-
-     }
   PATCH
 
   NEW_TYPE_PATCH = <<~PATCH.freeze
@@ -182,13 +179,11 @@ class ApiDiffReportTest < Minitest::Test
     assert_includes message, "+ method public void apiDiffDemoPong"
   end
 
-  # A changed signature is an addition of a member that was removed in the same breath, and the
-  # feed announces new API, not a reshaped one.
   def test_new_api_drops_the_addition_half_of_a_signature_change
     report = ApiDiffReport.build("ui/revenuecatui/api.txt" => SIGNATURE_CHANGE_PATCH)
 
     assert_equal 1, report[:added].count
-    assert_empty ApiDiffReport.new_api(report)
+    assert_empty report[:new_api]
   end
 
   # Reading the member name at the first `(` found the annotation's parameter list, which made every
@@ -197,20 +192,36 @@ class ApiDiffReportTest < Minitest::Test
     report = ApiDiffReport.build("purchases/api-defauts.txt" => ANNOTATED_SIGNATURE_CHANGE_PATCH)
 
     assert_equal 1, report[:added].count
-    assert_empty ApiDiffReport.new_api(report)
+    assert_empty report[:new_api]
   end
 
   def test_new_api_keeps_an_annotated_addition_a_removal_does_not_answer
     report = ApiDiffReport.build("purchases/api-defauts.txt" => ANNOTATED_SWAP_PATCH)
 
-    assert_equal 1, ApiDiffReport.new_api(report).count
-    assert_includes ApiDiffReport.new_api(report).first, "awaitSomethingBrandNew"
+    assert_equal 1, report[:new_api].count
+    assert_includes report[:new_api].first, "awaitSomethingBrandNew"
   end
 
   def test_new_api_keeps_an_addition_no_removal_answers
     report = ApiDiffReport.build("purchases/api-defauts.txt" => RENAMED_METHOD_PATCH)
 
-    assert_equal ["method public void apiDiffDemoPong();"], ApiDiffReport.new_api(report)
+    assert_equal ["method public void apiDiffDemoPong();"], report[:new_api]
+  end
+
+  def test_new_api_keeps_an_overload_added_beside_a_changed_one
+    report = ApiDiffReport.build("purchases/api-defauts.txt" => OVERLOAD_PATCH)
+
+    assert_equal ["method public void configure(com.revenuecat.purchases.PurchasesConfiguration);"], report[:new_api]
+  end
+
+  # A declaration line omits its owning type, so pairing across modules cancels unrelated members.
+  def test_new_api_does_not_answer_an_addition_with_another_modules_removal
+    report = ApiDiffReport.build(
+      "purchases/api-defauts.txt" => REMOVED_METHOD_PATCH,
+      "ui/revenuecatui/api.txt" => ADDED_METHOD_PATCH
+    )
+
+    assert_equal ["method public void apiDiffDemoPong();"], report[:new_api]
   end
 
   def test_slack_message_lists_only_what_was_added
@@ -448,7 +459,6 @@ class ApiDiffReportTest < Minitest::Test
     refute_equal ApiDiffReport.fingerprint(unchanged), ApiDiffReport.fingerprint(changed)
   end
 
-  # A removal reaches the PR comment and the api-check gate, never the feed.
   def test_run_reports_a_removal_on_the_pull_request_without_announcing_it
     body = run_without_slack(REMOVED_METHOD_PATCH)
 
