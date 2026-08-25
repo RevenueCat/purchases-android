@@ -16,6 +16,7 @@ import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.utils.SyncDispatcher
@@ -49,6 +50,7 @@ class IdentityManagerTests {
     private lateinit var mockRemoteConfigManager: RemoteConfigManager
     private lateinit var mockBackend: Backend
     private lateinit var mockOfflineEntitlementsManager: OfflineEntitlementsManager
+    private lateinit var mockPaywallAssetWarming: PaywallAssetWarming
     private lateinit var identityManager: IdentityManager
     private lateinit var mockEditor: Editor
     private val stubAnonymousID = "\$RCAnonymousID:ff68f26e432648369a713849a9f93b58"
@@ -92,6 +94,9 @@ class IdentityManagerTests {
         }
         mockOfflineEntitlementsManager = mockk<OfflineEntitlementsManager>().apply {
             every { resetOfflineCustomerInfoCache() } just Runs
+        }
+        mockPaywallAssetWarming = mockk<PaywallAssetWarming>().apply {
+            every { clearWebViewStorage() } just Runs
         }
         identityManager = createIdentityManager()
     }
@@ -859,6 +864,55 @@ class IdentityManagerTests {
 
     // endregion aliasCurrentUserIdTo
 
+    // region paywall web view storage
+
+    @Test
+    fun `logOut clears the paywall web view storage`() {
+        val identifiedUserID = "Waldo"
+        every { mockDeviceCache.cleanupOldAttributionData() } just Runs
+        mockIdentifiedUser(identifiedUserID)
+        mockSubscriberAttributesManagerSynchronize(identifiedUserID)
+
+        identityManager.logOut { }
+
+        verify(exactly = 1) { mockPaywallAssetWarming.clearWebViewStorage() }
+    }
+
+    @Test
+    fun `switching users clears the paywall web view storage`() {
+        val newAppUserID = "new"
+        mockIdentifiedUser("cesar")
+        every { mockDeviceCache.cacheCustomerInfo(any(), any()) } just Runs
+        mockSubscriberAttributesManagerSynchronize(newAppUserID)
+
+        identityManager.switchUser(newAppUserID)
+
+        verify(exactly = 1) { mockPaywallAssetWarming.clearWebViewStorage() }
+    }
+
+    @Test
+    fun `login from an identified user clears the paywall web view storage`() {
+        val oldAppUserID = "cesar"
+        val newAppUserID = "new"
+        mockLogInSuccess(oldAppUserID, newAppUserID)
+
+        identityManager.logIn(newAppUserID, { _, _ -> }, { })
+
+        verify(exactly = 1) { mockPaywallAssetWarming.clearWebViewStorage() }
+    }
+
+    @Test
+    fun `login from an anonymous user keeps the paywall web view storage`() {
+        val newAppUserID = "new"
+        mockLogInSuccess(stubAnonymousID, newAppUserID, anonymous = true)
+
+        identityManager.logIn(newAppUserID, { _, _ -> }, { })
+
+        verify(exactly = 0) { mockPaywallAssetWarming.clearWebViewStorage() }
+    }
+
+    // endregion paywall web view storage
+
     // region helper functions
 
     private fun setupCustomerInfoCacheInvalidationTest(
@@ -879,6 +933,18 @@ class IdentityManagerTests {
         }
         every { mockBackend.verificationMode } returns verificationMode
         identityManager = createIdentityManager()
+    }
+
+    private fun mockLogInSuccess(oldAppUserID: String, newAppUserID: String, anonymous: Boolean = false) {
+        if (anonymous) mockCachedAnonymousUser() else mockIdentifiedUser(oldAppUserID)
+        every {
+            mockBackend.logIn(oldAppUserID, newAppUserID, captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockk(), false)
+        }
+        every { mockDeviceCache.cacheCustomerInfo(any(), any()) } just Runs
+        mockSubscriberAttributesManagerSynchronize(newAppUserID)
+        mockSubscriberAttributesManagerCopyAttributes(oldAppUserID, newAppUserID)
     }
 
     private fun mockIdentifiedUser(identifiedUserID: String) {
@@ -950,6 +1016,7 @@ class IdentityManagerTests {
         remoteConfigManager: RemoteConfigManager = mockRemoteConfigManager,
         backend: Backend = mockBackend,
         offlineEntitlementsManager: OfflineEntitlementsManager = mockOfflineEntitlementsManager,
+        paywallAssetWarming: PaywallAssetWarming = mockPaywallAssetWarming,
         uiPreviewMode: Boolean = false,
     ): IdentityManager {
         return IdentityManager(
@@ -962,6 +1029,7 @@ class IdentityManagerTests {
             backend,
             offlineEntitlementsManager,
             SyncDispatcher(),
+            paywallAssetWarming,
             uiPreviewMode = uiPreviewMode,
         )
     }
