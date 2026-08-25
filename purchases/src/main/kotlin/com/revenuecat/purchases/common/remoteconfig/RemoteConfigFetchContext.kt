@@ -11,4 +11,5 @@ internal enum class RemoteConfigFetchContext(val wireName: String) {
     Foreground("foreground"),
     IdentityChange("identity_change"),
     Read("read"),
+    PostReceipt("post_receipt"),
 }

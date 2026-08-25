@@ -1587,6 +1587,78 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `purchase completion is held until the post-receipt remote config refresh completes`() {
+        val productId = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+
+        mockQueryingProductDetails(productId, ProductType.SUBS)
+
+        val refreshCompletion = slot<() -> Unit>()
+        every {
+            mockRemoteConfigManager.awaitPostReceiptRefresh(any(), any(), capture(refreshCompletion))
+        } just Runs
+
+        val storeProduct = stubStoreProduct(productId)
+        val purchaseParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
+        var callCount = 0
+        purchases.purchaseWith(
+            purchaseParams,
+            onSuccess = { _, _ ->
+                callCount++
+            }, onError = { _, _ -> fail("should be successful") })
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(productId, purchaseToken, ProductType.SUBS)
+        )
+
+        assertThat(callCount).isEqualTo(0)
+        refreshCompletion.captured.invoke()
+        assertThat(callCount).isEqualTo(1)
+        verify(exactly = 1) { mockRemoteConfigManager.awaitPostReceiptRefresh(any(), appUserId, any()) }
+    }
+
+    @Test
+    fun `a failed purchase post does not touch the post-receipt remote config refresh`() {
+        val productId = "onemonth_freetrial"
+        val purchaseToken = "crazy_purchase_token"
+
+        mockQueryingProductDetails(productId, ProductType.SUBS)
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = any(),
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
+                isRestore = any(),
+                appUserID = any(),
+                initiationSource = any(),
+                sdkOriginated = any(),
+                onSuccess = any(),
+                onError = captureLambda(),
+            )
+        } answers {
+            lambda<ErrorPurchaseCallback>().captured.invoke(
+                firstArg(),
+                PurchasesError(PurchasesErrorCode.UnknownBackendError),
+            )
+        }
+
+        val storeProduct = stubStoreProduct(productId)
+        val purchaseParams = getPurchaseParams(storeProduct.subscriptionOptions!!.first())
+        var errorCallCount = 0
+        purchases.purchaseWith(
+            purchaseParams,
+            onSuccess = { _, _ -> fail("should error") },
+            onError = { _, _ -> errorCallCount++ })
+
+        capturedPurchasesUpdatedListener.captured.onPurchasesUpdated(
+            getMockedPurchaseList(productId, purchaseToken, ProductType.SUBS)
+        )
+
+        assertThat(errorCallCount).isEqualTo(1)
+        verify(exactly = 0) { mockRemoteConfigManager.awaitPostReceiptRefresh(any(), any(), any()) }
+    }
+
+    @Test
     fun `when making purchase, completion block not called for different products`() {
         val productId = "onemonth_freetrial"
         val productId1 = "onemonth_freetrial_1"

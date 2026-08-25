@@ -67,7 +67,8 @@ import kotlin.time.Duration.Companion.minutes
  *
  * Overlapping refreshes are deduped: only one [refreshRemoteConfig] runs at a time. A call made while one is
  * already in flight is skipped (the backend collapses concurrent requests but still fires every callback, which
- * would otherwise parse and persist the same response more than once).
+ * would otherwise parse and persist the same response more than once). The one exception is
+ * [awaitPostReceiptRefresh], which is never skipped: it waits for the in-flight sync and then issues its own.
  *
  * Consumers read through the facade: [topic] for a topic's committed item index (metadata only) and [blobData]
  * for a resolved item's blob payload (fetched on demand). Both run on [ioDispatcher] so callers never touch disk
@@ -78,7 +79,7 @@ import kotlin.time.Duration.Companion.minutes
  * user is known yet.
  */
 @OptIn(InternalRevenueCatAPI::class)
-@Suppress("LongParameterList", "TooManyFunctions")
+@Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
 internal class RemoteConfigManager(
     private val backend: Backend,
     private val diskCache: RemoteConfigDiskCache,
@@ -129,6 +130,10 @@ internal class RemoteConfigManager(
     // refresh is in flight. isRefreshing keeps its skip semantics; this only adds an awaitable handle.
     @Volatile
     private var refreshCompletion: CompletableDeferred<Unit>? = null
+
+    // Set on a successful receipt post; cleared only when a PostReceipt-context refresh starts, or by
+    // clearCache(). Guarded by [cacheLock].
+    private var postReceiptRefreshPending = false
 
     // Session-scoped kill-switch. Set when `/v1/config` returns a 4xx (the endpoint intentionally refused the
     // request). While set, no config request is issued and — since blob prefetch only runs after a successful
@@ -275,6 +280,90 @@ internal class RemoteConfigManager(
                 )
             },
         )
+    }
+
+    /** Marks that a receipt was posted, so the next [awaitPostReceiptRefresh] issues a PostReceipt sync. */
+    fun onReceiptPosted() {
+        synchronized(cacheLock) { postReceiptRefreshPending = true }
+    }
+
+    /**
+     * Runs [onComplete] once the committed configuration reflects the receipts posted before this call: a no-op
+     * when nothing was posted, otherwise it waits for any refresh in progress and then issues a
+     * [RemoteConfigFetchContext.PostReceipt] sync — never skipped, unlike [refreshRemoteConfig]. [onComplete] is
+     * guaranteed to fire exactly once, at any refresh outcome (failure included) and even when
+     * [clearCache]/[close] cancels the manager scope mid-wait; it may run synchronously on the calling thread or
+     * later on a background thread.
+     */
+    fun awaitPostReceiptRefresh(appInBackground: Boolean, appUserID: String, onComplete: () -> Unit) {
+        val completeImmediately = synchronized(cacheLock) {
+            disabled || (!postReceiptRefreshPending && refreshCompletion == null)
+        }
+        if (completeImmediately) {
+            onComplete()
+            return
+        }
+        scope.launch { ensurePostReceiptRefresh(appInBackground, appUserID) }
+            .invokeOnCompletion { onComplete() }
+    }
+
+    private class PostReceiptRefreshRequest(
+        val epoch: Int,
+        val appUserID: String,
+        val fetchContext: RemoteConfigFetchContext,
+        val completion: CompletableDeferred<Unit>,
+    )
+
+    /**
+     * Takes one decision per loop iteration under [cacheLock], never suspending while holding it: with no
+     * pending flag it just joins any in-flight refresh; otherwise it waits for the in-flight refresh and
+     * re-checks until it can acquire the guard itself (mirroring [refreshRemoteConfig]'s critical section),
+     * consuming the flag atomically with the acquire. From then on the request behaves like any other sync.
+     */
+    private suspend fun ensurePostReceiptRefresh(appInBackground: Boolean, appUserID: String) {
+        while (true) {
+            var inFlight: CompletableDeferred<Unit>? = null
+            var retryAfterInFlight = false
+            var request: PostReceiptRefreshRequest? = null
+            synchronized(cacheLock) {
+                when {
+                    disabled -> Unit
+                    !postReceiptRefreshPending -> inFlight = refreshCompletion
+                    isRefreshing.get() -> {
+                        inFlight = refreshCompletion
+                        retryAfterInFlight = true
+                    }
+                    else -> {
+                        postReceiptRefreshPending = false
+                        isRefreshing.set(true)
+                        val completion = CompletableDeferred<Unit>()
+                        refreshCompletion = completion
+                        request = PostReceiptRefreshRequest(
+                            epoch = epoch.get(),
+                            appUserID = currentAppUserID ?: appUserID,
+                            fetchContext = fetchContextForRequest(RemoteConfigFetchContext.PostReceipt),
+                            completion = completion,
+                        )
+                    }
+                }
+            }
+            val acquired = request
+            val awaitedInFlight = inFlight
+            when {
+                acquired != null -> {
+                    verboseLog { "Refreshing remote config after a receipt post." }
+                    issueConfigRequest(appInBackground, acquired.epoch, acquired.appUserID, acquired.fetchContext)
+                    acquired.completion.await()
+                    return
+                }
+                // The completion is non-null whenever the guard is held; bail rather than spin if not.
+                retryAfterInFlight && awaitedInFlight != null -> awaitedInFlight.await()
+                else -> {
+                    awaitedInFlight?.await()
+                    return
+                }
+            }
+        }
     }
 
     private fun isRefreshAttemptCooldownElapsed(now: Date): Boolean {
@@ -491,6 +580,7 @@ internal class RemoteConfigManager(
             isRefreshing.set(false)
             lastRefreshedAt = null
             lastRefreshAttemptAt = null
+            postReceiptRefreshPending = false
             completeRefresh()
             // Intentionally NOT resetting `disabled`: a 4xx is an endpoint/app-level fact that outlives an
             // identity change. It clears only on app restart.

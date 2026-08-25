@@ -546,8 +546,8 @@ internal class PurchasesOrchestrator(
         syncPurchasesHelper.syncPurchases(
             isRestore = this.allowSharingPlayStoreAccount,
             appInBackground = this.state.appInBackground,
-            onSuccess = { listener?.onSuccess(it) },
-            onError = { listener?.onError(it) },
+            onSuccess = { afterPostReceiptRemoteConfigRefresh { listener?.onSuccess(it) } },
+            onError = { afterPostReceiptRemoteConfigRefresh { listener?.onError(it) } },
         )
     }
 
@@ -591,6 +591,7 @@ internal class PurchasesOrchestrator(
                         log(LogIntent.PURCHASE) {
                             PurchaseStrings.PURCHASE_SYNCED_USER_ID.format(receiptID, amazonUserID)
                         }
+                        afterPostReceiptRemoteConfigRefresh { }
                     },
                     { error ->
                         log(LogIntent.RC_ERROR) {
@@ -857,15 +858,20 @@ internal class PurchasesOrchestrator(
                                     onSuccess = { _, info ->
                                         log(LogIntent.DEBUG) { RestoreStrings.PURCHASE_RESTORED.format(purchase) }
                                         if (sortedByTime.last() == purchase) {
-                                            dispatch { callbackWithTracking.onReceived(info) }
+                                            afterPostReceiptRemoteConfigRefresh {
+                                                dispatch { callbackWithTracking.onReceived(info) }
+                                            }
                                         }
                                     },
                                     onError = { _, error ->
                                         log(LogIntent.RC_ERROR) {
                                             RestoreStrings.RESTORING_PURCHASE_ERROR.format(purchase, error)
                                         }
+                                        // Earlier restores in this loop may have posted successfully.
                                         if (sortedByTime.last() == purchase) {
-                                            dispatch { callbackWithTracking.onError(error) }
+                                            afterPostReceiptRemoteConfigRefresh {
+                                                dispatch { callbackWithTracking.onError(error) }
+                                            }
                                         }
                                     },
                                 )
@@ -1478,6 +1484,12 @@ internal class PurchasesOrchestrator(
         dispatcher.enqueue({ command() }, Delay.NONE)
     }
 
+    /** Runs [onComplete] once remote config reflects any receipts this operation posted (see the manager). */
+    private fun afterPostReceiptRemoteConfigRefresh(onComplete: () -> Unit) {
+        val manager = remoteConfigManager ?: return onComplete()
+        manager.awaitPostReceiptRefresh(state.appInBackground, identityManager.currentAppUserID, onComplete)
+    }
+
     private fun shouldRefreshCustomerInfo(firstTimeInForeground: Boolean): Boolean {
         return !appConfig.customEntitlementComputation &&
             (firstTimeInForeground || deviceCache.isCustomerInfoCacheStale(appUserID, appInBackground = false))
@@ -1629,11 +1641,13 @@ internal class PurchasesOrchestrator(
             // This lets the backup manager know a change in data happened that would be good to backup.
             // In this case, we want to make sure that if there is a purchase, we schedule a backup.
             backupManager.dataChanged()
-            blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
-                blockstoreHelper.storeUserIdIfNeeded(info)
-                getPurchaseCallback(storeTransaction.productIds[0])?.let { purchaseCallback ->
-                    dispatch {
-                        purchaseCallback.onCompleted(storeTransaction, info)
+            afterPostReceiptRemoteConfigRefresh {
+                blockstoreHelper.aliasCurrentAndStoredUserIdsIfNeeded {
+                    blockstoreHelper.storeUserIdIfNeeded(info)
+                    getPurchaseCallback(storeTransaction.productIds[0])?.let { purchaseCallback ->
+                        dispatch {
+                            purchaseCallback.onCompleted(storeTransaction, info)
+                        }
                     }
                 }
             }
@@ -1649,9 +1663,11 @@ internal class PurchasesOrchestrator(
         productChangeListener: ProductChangeCallback?,
     ): Pair<SuccessfulPurchaseCallback, ErrorPurchaseCallback> {
         val onSuccess: SuccessfulPurchaseCallback = { storeTransaction, info ->
-            productChangeListener?.let { productChangeCallback ->
-                dispatch {
-                    productChangeCallback.onCompleted(storeTransaction, info)
+            afterPostReceiptRemoteConfigRefresh {
+                productChangeListener?.let { productChangeCallback ->
+                    dispatch {
+                        productChangeCallback.onCompleted(storeTransaction, info)
+                    }
                 }
             }
         }

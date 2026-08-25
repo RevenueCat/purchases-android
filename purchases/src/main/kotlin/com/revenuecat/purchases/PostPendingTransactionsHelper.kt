@@ -6,6 +6,7 @@ import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.models.PurchaseState
@@ -31,6 +32,7 @@ internal class PostPendingTransactionsHelper(
     private val identityManager: IdentityManager,
     private val postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper,
     private val postReceiptHelper: PostReceiptHelper,
+    private val remoteConfigManager: RemoteConfigManager?,
 ) {
 
     @Suppress("LongMethod")
@@ -84,13 +86,13 @@ internal class PostPendingTransactionsHelper(
                                 allowSharingPlayStoreAccount = allowSharingPlayStoreAccount,
                                 pendingTransactionsTokens = pendingTransactionsTokens,
                                 onNoTransactionsToSync = {
-                                    callback?.invoke(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
+                                    completeSync(SyncPendingPurchaseResult.NoPendingPurchasesToSync, callback)
                                 },
                                 onError = {
-                                    callback?.invoke(SyncPendingPurchaseResult.Error(it))
+                                    completeSync(SyncPendingPurchaseResult.Error(it), callback)
                                 },
                                 onSuccess = {
-                                    callback?.invoke(SyncPendingPurchaseResult.Success(it))
+                                    completeSync(SyncPendingPurchaseResult.Success(it), callback)
                                 },
                             )
                         },
@@ -101,13 +103,13 @@ internal class PostPendingTransactionsHelper(
                                 pendingTransactionsTokens = pendingTransactionsTokens,
                                 onNoTransactionsToSync = {
                                     log(LogIntent.DEBUG) { PurchaseStrings.NO_PENDING_PURCHASES_TO_SYNC }
-                                    callback?.invoke(SyncPendingPurchaseResult.Error(error))
+                                    completeSync(SyncPendingPurchaseResult.Error(error), callback)
                                 },
                                 onError = {
-                                    callback?.invoke(SyncPendingPurchaseResult.Error(error))
+                                    completeSync(SyncPendingPurchaseResult.Error(error), callback)
                                 },
                                 onSuccess = {
-                                    callback?.invoke(SyncPendingPurchaseResult.Success(it))
+                                    completeSync(SyncPendingPurchaseResult.Success(it), callback)
                                 },
                             )
                         },
@@ -118,13 +120,13 @@ internal class PostPendingTransactionsHelper(
                                 pendingTransactionsTokens = pendingTransactionsTokens,
                                 onNoTransactionsToSync = {
                                     log(LogIntent.DEBUG) { PurchaseStrings.NO_PENDING_PURCHASES_TO_SYNC }
-                                    callback?.invoke(SyncPendingPurchaseResult.Success(customerInfo))
+                                    completeSync(SyncPendingPurchaseResult.Success(customerInfo), callback)
                                 },
                                 onError = {
-                                    callback?.invoke(SyncPendingPurchaseResult.Error(it))
+                                    completeSync(SyncPendingPurchaseResult.Error(it), callback)
                                 },
                                 onSuccess = {
-                                    callback?.invoke(SyncPendingPurchaseResult.Success(it))
+                                    completeSync(SyncPendingPurchaseResult.Success(it), callback)
                                 },
                             )
                         },
@@ -136,6 +138,22 @@ internal class PostPendingTransactionsHelper(
                 },
             )
         })
+    }
+
+    // Funnels every outcome that may follow successful posts, even when there is no callback to hold.
+    private fun completeSync(
+        result: SyncPendingPurchaseResult,
+        callback: ((SyncPendingPurchaseResult) -> Unit)?,
+    ) {
+        val manager = remoteConfigManager
+        if (manager == null) {
+            callback?.invoke(result)
+            return
+        }
+        manager.awaitPostReceiptRefresh(
+            appInBackground = appConfig.isAppBackgrounded,
+            appUserID = identityManager.currentAppUserID,
+        ) { callback?.invoke(result) }
     }
 
     @SuppressWarnings("LongParameterList")

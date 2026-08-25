@@ -976,6 +976,47 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
+    fun `syncing transactions holds completion until the post-receipt remote config refresh completes`() {
+        every {
+            mockSyncPurchasesHelper.syncPurchases(any(), any(), captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
+        }
+        val refreshCompletion = slot<() -> Unit>()
+        every {
+            mockRemoteConfigManager.awaitPostReceiptRefresh(any(), any(), capture(refreshCompletion))
+        } just Runs
+
+        var successCallCount = 0
+        purchases.syncPurchasesWith(
+            { fail("Expected to succeed") },
+            { successCallCount++ }
+        )
+
+        assertThat(successCallCount).isEqualTo(0)
+        refreshCompletion.captured.invoke()
+        assertThat(successCallCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `syncing transactions with an error still goes through the post-receipt refresh gate`() {
+        every {
+            mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), captureLambda())
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured.invoke(PurchasesError(PurchasesErrorCode.UnknownError))
+        }
+
+        var errorCallCount = 0
+        purchases.syncPurchasesWith(
+            { errorCallCount++ },
+            { fail("Expected to error") }
+        )
+
+        assertThat(errorCallCount).isEqualTo(1)
+        verify(exactly = 1) { mockRemoteConfigManager.awaitPostReceiptRefresh(any(), appUserId, any()) }
+    }
+
+    @Test
     fun `syncing transactions calls error callback when process completes with error`() {
         every {
             mockSyncPurchasesHelper.syncPurchases(any(), any(), any(), captureLambda())
@@ -1050,6 +1091,41 @@ internal class PurchasesTest : BasePurchasesTest() {
                 onError = any()
             )
         }
+    }
+
+    @Test
+    fun `syncing an Amazon transaction triggers the post-receipt remote config refresh`() {
+        purchases.finishTransactions = false
+
+        val skuParent = "sub"
+        val skuTerm = "sub.monthly"
+        val purchaseToken = "crazy_purchase_token"
+        val amazonUserID = "amazon_user_id"
+
+        every {
+            mockBillingAbstract.normalizePurchaseData(
+                productID = skuParent,
+                purchaseToken = purchaseToken,
+                storeUserID = amazonUserID,
+                captureLambda(),
+                any()
+            )
+        } answers {
+            lambda<(String) -> Unit>().captured.invoke(skuTerm)
+        }
+        every {
+            mockCache.getPreviouslySentHashedTokens()
+        } returns setOf()
+
+        purchases.syncAmazonPurchase(
+            productID = skuParent,
+            receiptID = purchaseToken,
+            amazonUserID = amazonUserID,
+            price = 10.40,
+            isoCurrencyCode = "USD"
+        )
+
+        verify(exactly = 1) { mockRemoteConfigManager.awaitPostReceiptRefresh(any(), appUserId, any()) }
     }
 
     @Test
@@ -1549,6 +1625,79 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
 
         assertThat(callbackCalled).isTrue()
+    }
+
+    @Test
+    fun `restoring multiple purchases waits once on the post-receipt refresh before completing`() {
+        val transactions = getMockedPurchaseList("product1", "token1", ProductType.INAPP) +
+            getMockedPurchaseList("product2", "token2", ProductType.SUBS)
+        every {
+            mockBillingAbstract.queryAllPurchases(
+                appUserID = appUserId,
+                onReceivePurchaseHistory = captureLambda(),
+                onReceivePurchaseHistoryError = any()
+            )
+        } answers {
+            lambda<(List<StoreTransaction>) -> Unit>().captured.invoke(transactions)
+        }
+
+        val refreshCompletion = slot<() -> Unit>()
+        every {
+            mockRemoteConfigManager.awaitPostReceiptRefresh(any(), any(), capture(refreshCompletion))
+        } just Runs
+
+        var callbackCalled = false
+        purchases.restorePurchasesWith(onSuccess = {
+            callbackCalled = true
+        }, onError = {
+            fail("should be success")
+        })
+
+        verify(exactly = 1) { mockRemoteConfigManager.awaitPostReceiptRefresh(any(), appUserId, any()) }
+        assertThat(callbackCalled).isFalse()
+        refreshCompletion.captured.invoke()
+        assertThat(callbackCalled).isTrue()
+    }
+
+    @Test
+    fun `a restore ending in error still goes through the post-receipt refresh gate`() {
+        val transactions = getMockedPurchaseList("product1", "token1", ProductType.INAPP)
+        every {
+            mockBillingAbstract.queryAllPurchases(
+                appUserID = appUserId,
+                onReceivePurchaseHistory = captureLambda(),
+                onReceivePurchaseHistoryError = any()
+            )
+        } answers {
+            lambda<(List<StoreTransaction>) -> Unit>().captured.invoke(transactions)
+        }
+        every {
+            mockPostReceiptHelper.postTransactionAndConsumeIfNeeded(
+                purchase = any(),
+                storeProduct = any(),
+                subscriptionOptionForProductIDs = any(),
+                isRestore = any(),
+                appUserID = any(),
+                initiationSource = any(),
+                onSuccess = any(),
+                onError = captureLambda(),
+            )
+        } answers {
+            lambda<ErrorPurchaseCallback>().captured.invoke(
+                firstArg(),
+                PurchasesError(PurchasesErrorCode.UnknownBackendError),
+            )
+        }
+
+        var onErrorCalled = false
+        purchases.restorePurchasesWith(onSuccess = {
+            fail("should be an error")
+        }, onError = {
+            onErrorCalled = true
+        })
+
+        assertThat(onErrorCalled).isTrue()
+        verify(exactly = 1) { mockRemoteConfigManager.awaitPostReceiptRefresh(any(), appUserId, any()) }
     }
 
     @Test

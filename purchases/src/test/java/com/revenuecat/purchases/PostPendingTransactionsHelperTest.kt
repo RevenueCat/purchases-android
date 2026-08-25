@@ -6,6 +6,7 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.caching.DeviceCache
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.identity.IdentityManager
@@ -37,6 +38,7 @@ class PostPendingTransactionsHelperTest {
     private lateinit var identityManager: IdentityManager
     private lateinit var postTransactionWithProductDetailsHelper: PostTransactionWithProductDetailsHelper
     private lateinit var postReceiptHelper: PostReceiptHelper
+    private lateinit var remoteConfigManager: RemoteConfigManager
 
     private lateinit var postPendingTransactionsHelper: PostPendingTransactionsHelper
 
@@ -51,6 +53,10 @@ class PostPendingTransactionsHelperTest {
         }
         postTransactionWithProductDetailsHelper = mockk()
         postReceiptHelper = mockk()
+        remoteConfigManager = mockk<RemoteConfigManager>().apply {
+            every { awaitPostReceiptRefresh(any(), any(), any()) } answers { thirdArg<() -> Unit>().invoke() }
+        }
+        every { appConfig.isAppBackgrounded } returns false
 
         // Default mock for postRemainingCachedTransactionMetadata
         every {
@@ -79,6 +85,7 @@ class PostPendingTransactionsHelperTest {
             identityManager,
             postTransactionWithProductDetailsHelper,
             postReceiptHelper,
+            remoteConfigManager,
         )
     }
 
@@ -438,6 +445,89 @@ class PostPendingTransactionsHelperTest {
         )
         assertThat(successCallCount).isEqualTo(1)
     }
+
+    // region post-receipt remote config refresh
+
+    @Test
+    fun `sync completion is held until the post-receipt remote config refresh completes`() {
+        val (purchase, activePurchase) = createGooglePurchaseAndTransaction()
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = mapOf(purchase.purchaseToken.sha1() to activePurchase),
+            notInCache = listOf(activePurchase)
+        )
+        val customerInfoMock = mockk<CustomerInfo>()
+        mockPostTransactionsSuccessful(customerInfoMock)
+
+        val refreshCompletion = slot<() -> Unit>()
+        every {
+            remoteConfigManager.awaitPostReceiptRefresh(any(), any(), capture(refreshCompletion))
+        } just Runs
+
+        var receivedResult: SyncPendingPurchaseResult? = null
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(
+            allowSharingPlayStoreAccount,
+            callback = { receivedResult = it },
+        )
+
+        assertThat(receivedResult).isNull()
+        refreshCompletion.captured.invoke()
+        assertThat(receivedResult).isEqualTo(SyncPendingPurchaseResult.Success(customerInfoMock))
+    }
+
+    @Test
+    fun `sync without a callback still triggers the post-receipt remote config refresh`() {
+        val (purchase, activePurchase) = createGooglePurchaseAndTransaction()
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = mapOf(purchase.purchaseToken.sha1() to activePurchase),
+            notInCache = listOf(activePurchase)
+        )
+        mockPostTransactionsSuccessful(mockk())
+
+        postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
+
+        verify(exactly = 1) { remoteConfigManager.awaitPostReceiptRefresh(any(), appUserId, any()) }
+    }
+
+    @Test
+    fun `sync with nothing to post still completes through the refresh gate`() {
+        mockSuccessfulQueryPurchases(
+            purchasesByHashedToken = emptyMap(),
+            notInCache = emptyList()
+        )
+
+        syncAndAssertResult(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
+
+        verify(exactly = 1) { remoteConfigManager.awaitPostReceiptRefresh(any(), appUserId, any()) }
+    }
+
+    @Test
+    fun `disabled autosync does not touch the remote config manager`() {
+        changeAutoSyncEnabled(false)
+
+        syncAndAssertResult(SyncPendingPurchaseResult.AutoSyncDisabled)
+
+        verify(exactly = 0) { remoteConfigManager.awaitPostReceiptRefresh(any(), any(), any()) }
+    }
+
+    @Test
+    fun `a query purchases error does not touch the remote config manager`() {
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken")
+        every {
+            billing.queryPurchases(
+                appUserID = appUserId,
+                onSuccess = any(),
+                onError = captureLambda()
+            )
+        } answers {
+            lambda<(PurchasesError) -> Unit>().captured(error)
+        }
+
+        syncAndAssertResult(SyncPendingPurchaseResult.Error(error))
+
+        verify(exactly = 0) { remoteConfigManager.awaitPostReceiptRefresh(any(), any(), any()) }
+    }
+
+    // endregion post-receipt remote config refresh
 
     // region postRemainingCachedTransactionMetadata tests
 

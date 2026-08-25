@@ -99,6 +99,7 @@ class SubscriberAttributesPurchasesTests {
             identityManager,
             postTransactionHelper,
             postReceiptHelperMock,
+            remoteConfigManager = null,
         )
 
         val context = mockk<Application>(relaxed = true).also { applicationMock = it }

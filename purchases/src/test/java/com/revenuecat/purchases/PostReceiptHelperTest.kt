@@ -20,6 +20,7 @@ import com.revenuecat.purchases.common.caching.WorkflowMetadata
 import com.revenuecat.purchases.common.networking.PostReceiptProductInfo
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.google.toStoreTransaction
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.StoreReplacementMode
@@ -132,6 +133,7 @@ class PostReceiptHelperTest {
     private lateinit var offlineEntitlementsManager: OfflineEntitlementsManager
     private lateinit var paywallPresentedCache: PaywallPresentedCache
     private lateinit var localTransactionMetadataStore: LocalTransactionMetadataStore
+    private lateinit var remoteConfigManager: RemoteConfigManager
 
     private lateinit var postReceiptHelper: PostReceiptHelper
 
@@ -146,6 +148,8 @@ class PostReceiptHelperTest {
         offlineEntitlementsManager = mockk()
         paywallPresentedCache = PaywallPresentedCache()
         localTransactionMetadataStore = mockk()
+        remoteConfigManager = mockk()
+        every { remoteConfigManager.onReceiptPosted() } just Runs
 
         postedReceiptInfoSlot = slot()
 
@@ -159,6 +163,7 @@ class PostReceiptHelperTest {
             offlineEntitlementsManager = offlineEntitlementsManager,
             paywallPresentedCache = paywallPresentedCache,
             localTransactionMetadataStore = localTransactionMetadataStore,
+            remoteConfigManager = remoteConfigManager,
         )
 
         mockUnsyncedSubscriberAttributes()
@@ -2461,6 +2466,117 @@ class PostReceiptHelperTest {
     }
 
     // endregion pending transactions
+
+    // region post-receipt remote config marking
+
+    @Test
+    fun `postTransactionAndConsumeIfNeeded marks a receipt posted before invoking onSuccess`() {
+        mockPostReceiptSuccess()
+
+        var successCalled = false
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = false,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ ->
+                successCalled = true
+                verify(exactly = 1) { remoteConfigManager.onReceiptPosted() }
+            },
+            onError = { _, _ -> fail("Should succeed") },
+        )
+        assertThat(successCalled).isTrue
+    }
+
+    @Test
+    fun `postTokenWithoutConsuming marks a receipt posted before invoking onSuccess`() {
+        mockPostReceiptSuccess(postType = PostType.TOKEN_WITHOUT_CONSUMING)
+
+        var successCalled = false
+        postReceiptHelper.postTokenWithoutConsuming(
+            purchaseToken = postToken,
+            receiptInfo = testReceiptInfo,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = PostReceiptInitiationSource.PURCHASE,
+            onSuccess = {
+                successCalled = true
+                verify(exactly = 1) { remoteConfigManager.onReceiptPosted() }
+            },
+            onError = { fail("Should succeed") },
+        )
+        assertThat(successCalled).isTrue
+    }
+
+    @Test
+    fun `a SHOULD_BE_MARKED_SYNCED error does not mark a receipt posted`() {
+        mockPostReceiptError(PostReceiptErrorHandlingBehavior.SHOULD_BE_MARKED_SYNCED)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = null,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> fail("Should error") },
+            onError = { _, _ -> },
+        )
+
+        verify(exactly = 0) { remoteConfigManager.onReceiptPosted() }
+    }
+
+    @Test
+    fun `a server error does not mark a receipt posted`() {
+        mockPostReceiptError(PostReceiptErrorHandlingBehavior.SHOULD_USE_OFFLINE_ENTITLEMENTS_AND_NOT_CONSUME)
+
+        postReceiptHelper.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = null,
+            subscriptionOptionForProductIDs = null,
+            isRestore = true,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> fail("Should error") },
+            onError = { _, _ -> },
+        )
+
+        verify(exactly = 0) { remoteConfigManager.onReceiptPosted() }
+    }
+
+    @Test
+    fun `a successful post works without a remote config manager`() {
+        mockPostReceiptSuccess()
+        val helperWithoutRemoteConfig = PostReceiptHelper(
+            appConfig = appConfig,
+            backend = backend,
+            billing = billing,
+            customerInfoUpdateHandler = customerInfoUpdateHandler,
+            deviceCache = deviceCache,
+            subscriberAttributesManager = subscriberAttributesManager,
+            offlineEntitlementsManager = offlineEntitlementsManager,
+            paywallPresentedCache = paywallPresentedCache,
+            localTransactionMetadataStore = localTransactionMetadataStore,
+            remoteConfigManager = null,
+        )
+
+        var successCalled = false
+        helperWithoutRemoteConfig.postTransactionAndConsumeIfNeeded(
+            purchase = mockStoreTransaction,
+            storeProduct = mockStoreProduct,
+            subscriptionOptionForProductIDs = null,
+            isRestore = false,
+            appUserID = appUserID,
+            initiationSource = initiationSource,
+            onSuccess = { _, _ -> successCalled = true },
+            onError = { _, _ -> fail("Should succeed") },
+        )
+        assertThat(successCalled).isTrue
+    }
+
+    // endregion post-receipt remote config marking
 
     // region helpers
 

@@ -424,6 +424,7 @@ internal class PurchasesFactory(
                 offlineEntitlementsManager,
                 paywallPresentedCache,
                 localTransactionMetadataStore,
+                remoteConfigManager,
             )
 
             val postTransactionWithProductDetailsHelper = PostTransactionWithProductDetailsHelper(
@@ -439,6 +440,7 @@ internal class PurchasesFactory(
                 identityManager,
                 postTransactionWithProductDetailsHelper,
                 postReceiptHelper,
+                remoteConfigManager,
             )
 
             val customerInfoHelper = CustomerInfoHelper(

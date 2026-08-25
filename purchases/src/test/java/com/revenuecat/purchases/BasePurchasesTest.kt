@@ -135,6 +135,11 @@ internal open class BasePurchasesTest {
         mockPostPendingTransactionsHelper()
         paywallPresentedCache = PaywallPresentedCache()
 
+        // The relaxed mock would swallow the completion callback, deadlocking the flows that hold on it.
+        every {
+            mockRemoteConfigManager.awaitPostReceiptRefresh(any(), any(), any())
+        } answers { thirdArg<() -> Unit>().invoke() }
+
         every {
             updatedCustomerInfoListener.onReceived(any())
         } just Runs

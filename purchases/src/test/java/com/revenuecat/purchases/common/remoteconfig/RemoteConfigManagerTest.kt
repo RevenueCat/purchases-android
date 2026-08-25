@@ -2693,6 +2693,267 @@ class RemoteConfigManagerTest {
         }
     }
 
+    // region post-receipt refresh
+
+    @Test
+    fun `awaitPostReceiptRefresh completes immediately without a request when no receipt was posted`() {
+        every { diskCache.read() } returns null
+
+        var completed = false
+        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+
+        assertThat(completed).isTrue
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `awaitPostReceiptRefresh issues a post_receipt request and completes when it is delivered`() {
+        every { diskCache.read() } returns null
+        commitInitialConfig()
+
+        manager.onReceiptPosted()
+        var completed = false
+        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.PostReceipt)
+        assertThat(completed).isFalse
+        deliverSuccess(null)
+        assertThat(completed).isTrue
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `the post-receipt request is forced to app_start until the initial config is committed`() {
+        every { diskCache.read() } returns null
+
+        manager.onReceiptPosted()
+        var completed = false
+        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
+        assertThat(completed).isFalse
+        deliverSuccess(null)
+        assertThat(completed).isTrue
+    }
+
+    @Test
+    fun `awaitPostReceiptRefresh waits for the in-flight refresh and then issues its own request`() {
+        every { diskCache.read() } returns null
+        commitInitialConfig()
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.Foreground,
+        )
+        val foregroundOnSuccess = onSuccess
+
+        manager.onReceiptPosted()
+        var completed = false
+        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+
+        // Not skipped like an overlapping refreshRemoteConfig would be, but not issued yet either.
+        assertThat(completed).isFalse
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+
+        // Finishing the in-flight foreground refresh lets the post-receipt request go out.
+        foregroundOnSuccess.invoke(null, Date(SERVER_MILLIS), VerificationResult.VERIFIED)
+        verify(exactly = 3) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.PostReceipt)
+        assertThat(completed).isFalse
+
+        deliverSuccess(null)
+        assertThat(completed).isTrue
+    }
+
+    @Test
+    fun `a failed post-receipt refresh still completes the waiter`() {
+        every { diskCache.read() } returns null
+        commitInitialConfig()
+
+        manager.onReceiptPosted()
+        var completed = false
+        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+        onFallbackError.invoke(
+            PurchasesError(PurchasesErrorCode.NetworkError),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+        )
+
+        assertThat(completed).isTrue
+    }
+
+    @Test
+    fun `a 4xx on the post-receipt refresh completes the waiter and disables later ones`() {
+        every { diskCache.read() } returns null
+        commitInitialConfig()
+
+        manager.onReceiptPosted()
+        var completed = false
+        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+
+        onError.invoke(
+            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+        )
+        assertThat(completed).isTrue
+
+        // The endpoint is disabled for the session: a later post + wait completes without any request.
+        manager.onReceiptPosted()
+        var completedWhileDisabled = false
+        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) {
+            completedWhileDisabled = true
+        }
+        assertThat(completedWhileDisabled).isTrue
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `one post-receipt refresh serves concurrent waiters`() {
+        every { diskCache.read() } returns null
+        commitInitialConfig()
+
+        manager.onReceiptPosted()
+        var firstCompleted = false
+        var secondCompleted = false
+        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) {
+            firstCompleted = true
+        }
+        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) {
+            secondCompleted = true
+        }
+
+        // The first waiter issued the post-receipt request; the second joins it instead of issuing another.
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        assertThat(firstCompleted).isFalse
+        assertThat(secondCompleted).isFalse
+
+        deliverSuccess(null)
+        assertThat(firstCompleted).isTrue
+        assertThat(secondCompleted).isTrue
+    }
+
+    @Test
+    fun `unrelated refreshes do not consume the pending post-receipt refresh`() {
+        every { diskCache.read() } returns null
+        commitInitialConfig()
+
+        manager.onReceiptPosted()
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.Foreground,
+        )
+        deliverSuccess(null)
+
+        var completed = false
+        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+
+        // The completed foreground refresh did not clear the flag: a post_receipt request still goes out.
+        verify(exactly = 3) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.PostReceipt)
+        deliverSuccess(null)
+        assertThat(completed).isTrue
+    }
+
+    @Test
+    fun `a receipt posted during a post-receipt refresh triggers a fresh one for the next waiter`() {
+        every { diskCache.read() } returns null
+        commitInitialConfig()
+
+        manager.onReceiptPosted()
+        var firstCompleted = false
+        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) {
+            firstCompleted = true
+        }
+
+        // A new receipt lands while the first post-receipt refresh is in flight.
+        manager.onReceiptPosted()
+        deliverSuccess(null)
+        assertThat(firstCompleted).isTrue
+
+        var secondCompleted = false
+        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) {
+            secondCompleted = true
+        }
+        verify(exactly = 3) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.PostReceipt)
+        deliverSuccess(null)
+        assertThat(secondCompleted).isTrue
+    }
+
+    @Test
+    fun `clearCache completes the waiter and drops the pending post-receipt refresh`() {
+        every { diskCache.read() } returns null
+        commitInitialConfig()
+
+        manager.onReceiptPosted()
+        var completed = false
+        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+        assertThat(completed).isFalse
+
+        manager.clearCache("new-user")
+        assertThat(completed).isTrue
+
+        // The identity change reset the flag: a later wait completes without a new request.
+        var completedAfterClear = false
+        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = "new-user") {
+            completedAfterClear = true
+        }
+        assertThat(completedAfterClear).isTrue
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `clearCache while waiting on an unrelated in-flight refresh completes the waiter`() {
+        every { diskCache.read() } returns null
+        commitInitialConfig()
+
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = RemoteConfigFetchContext.Foreground,
+        )
+        manager.onReceiptPosted()
+        var completed = false
+        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+        assertThat(completed).isFalse
+
+        manager.clearCache("new-user")
+        assertThat(completed).isTrue
+        // No post-receipt request was ever issued: only the initial commit and the foreground refresh went out.
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `awaitPostReceiptRefresh after close completes immediately`() {
+        every { diskCache.read() } returns null
+
+        manager.onReceiptPosted()
+        manager.close()
+
+        var completed = false
+        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+        assertThat(completed).isTrue
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    /** Commits the session's initial config with a 204 so later requests report their own fetch context. */
+    private fun commitInitialConfig() {
+        manager.refreshRemoteConfig(
+            appInBackground = false,
+            appUserID = TEST_APP_USER_ID,
+            fetchContext = DEFAULT_FETCH_CONTEXT,
+        )
+        deliverSuccess(null)
+    }
+
+    // endregion
+
     // A manager whose read methods run on this test's scheduler, so suspend reads are deterministic.
     private fun TestScope.readManager(appUserIDProvider: () -> String? = { null }): RemoteConfigManager {
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
