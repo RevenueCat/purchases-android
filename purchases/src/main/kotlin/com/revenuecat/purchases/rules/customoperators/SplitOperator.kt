@@ -30,10 +30,7 @@ internal object SplitOperator {
      * operators, which is enough for most membership and any/all tests.
      *
      * Both operands must be strings and the separator must be non-empty,
-     * otherwise [EvaluationException.TypeMismatch]. An empty separator would
-     * mean "split into characters", which the engine deliberately does not
-     * offer. Arity is exact rather than lenient: a one-sided call has no
-     * sensible implicit separator, so it is a lowering bug worth surfacing.
+     * otherwise [EvaluationException.TypeMismatch] is thrown.
      */
     @Suppress("ThrowsCount")
     fun opSplit(args: Value, vars: Scope): Value {
