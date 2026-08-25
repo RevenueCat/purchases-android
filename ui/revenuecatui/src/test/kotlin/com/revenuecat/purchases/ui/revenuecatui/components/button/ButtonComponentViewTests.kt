@@ -8,6 +8,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -141,7 +143,6 @@ class ButtonComponentViewTests {
                     state = state,
                     onClick = {
                         clickStarted.complete(Unit)
-                        // A billing flow still in front when the paywall goes away.
                         awaitCancellation()
                     },
                 )
@@ -159,6 +160,68 @@ class ButtonComponentViewTests {
 
         // Without the cleanup this stays true and every button on the paywall stays disabled.
         assertThat(state.actionInProgress).isFalse
+    }
+
+    @Test
+    fun `an action outliving the click keeps the paywall disabled`() {
+        val viewModelActionInProgress = mutableStateOf(false)
+        val state = FakePaywallState(
+            packages = listOf(TestData.Packages.annual),
+            viewModelActionInProgress = viewModelActionInProgress,
+        )
+        val clickStarted = CompletableDeferred<Unit>()
+        var buttonRendered by mutableStateOf(true)
+
+        composeTestRule.setContent {
+            if (buttonRendered) {
+                ButtonComponentView(
+                    style = purchaseButtonStyle,
+                    state = state,
+                    onClick = {
+                        clickStarted.complete(Unit)
+                        // The billing flow is still in front when the paywall goes away.
+                        awaitCancellation()
+                    },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Purchase").performClick()
+        composeTestRule.waitForIdle()
+        assertThat(clickStarted.isCompleted).isTrue
+
+        // The view model takes its gate for an action that outlives this composition.
+        viewModelActionInProgress.value = true
+        buttonRendered = false
+        composeTestRule.waitForIdle()
+
+        // The button cleared its own half, but the gate still holds the paywall.
+        assertThat(state.clickScopedActionInProgress).isFalse
+        assertThat(state.actionInProgress).isTrue
+
+        viewModelActionInProgress.value = false
+        assertThat(state.actionInProgress).isFalse
+    }
+
+    @Test
+    fun `the gate disables the button through recomposition`() {
+        val viewModelActionInProgress = mutableStateOf(false)
+        val state = FakePaywallState(
+            packages = listOf(TestData.Packages.annual),
+            viewModelActionInProgress = viewModelActionInProgress,
+        )
+
+        composeTestRule.setContent {
+            ButtonComponentView(style = purchaseButtonStyle, state = state, onClick = {})
+        }
+
+        val purchaseButton = composeTestRule.onNodeWithText("Purchase")
+        purchaseButton.assertIsEnabled()
+
+        // `actionInProgress` is computed, so this pins that Compose still tracks the reads inside it.
+        viewModelActionInProgress.value = true
+        composeTestRule.waitForIdle()
+        purchaseButton.assertIsNotEnabled()
     }
 
     @Test

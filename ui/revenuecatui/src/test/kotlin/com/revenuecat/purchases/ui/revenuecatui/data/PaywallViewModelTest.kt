@@ -1918,6 +1918,37 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `the components state flag follows the action, not the caller`(): Unit = runBlocking {
+        // Arrange
+        val model = createComponentsModel()
+        val componentsState = model.state.value as PaywallState.Loaded.Components
+        val purchaseStarted = CompletableDeferred<Unit>()
+        val storeResolved = CompletableDeferred<Unit>()
+        coEvery { purchases.awaitPurchase(any()) } coAnswers {
+            purchaseStarted.complete(Unit)
+            storeResolved.await()
+            throw PurchasesException(PurchasesError(PurchasesErrorCode.PurchaseCancelledError))
+        }
+
+        // Act: the button's composition scope dies while the billing flow is in front.
+        val buttonScope = CoroutineScope(coroutineContext + Job())
+        val click = buttonScope.launch { model.handlePackagePurchase(activity, pkg = null) }
+        withTimeout(TEST_WAIT_MS) { purchaseStarted.await() }
+        click.cancelAndJoin()
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+
+        // Assert: the flag the button tree reads must still be up, otherwise the recreated paywall
+        // shows enabled buttons whose taps the gate silently refuses.
+        assertThat(componentsState.actionInProgress).isTrue
+
+        storeResolved.complete(Unit)
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+
+        assertThat(componentsState.actionInProgress).isFalse
+        assertThat(model.actionInProgress.value).isFalse
+    }
+
+    @Test
     fun `purchase vetoed by the listener releases the action`(): Unit = runBlocking {
         // Arrange
         val model = create()
