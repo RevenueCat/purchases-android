@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import android.webkit.CookieManager
+import android.webkit.ValueCallback
 import android.webkit.WebStorage
 import android.webkit.WebView
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -14,6 +15,7 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import org.junit.After
@@ -79,9 +81,14 @@ internal class WebViewProfileTest {
         every { WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE) } returns true
         every { WebViewFeature.isFeatureSupported(WebViewFeature.DELETE_BROWSING_DATA) } returns false
 
+        val removalDone = slot<ValueCallback<Boolean>>()
+        every { cookieManager.removeAllCookies(capture(removalDone)) } just Runs
+
         clearPaywallProfileStorage()
 
-        verify { cookieManager.removeAllCookies(null) }
+        // Flushing before the removal reports back would persist the outgoing user's cookies.
+        verify(exactly = 0) { cookieManager.flush() }
+        removalDone.captured.onReceiveValue(true)
         verify { cookieManager.flush() }
         verify { webStorage.deleteAllData() }
         verify(exactly = 0) { WebStorageCompat.deleteBrowsingData(any(), any<Runnable>()) }

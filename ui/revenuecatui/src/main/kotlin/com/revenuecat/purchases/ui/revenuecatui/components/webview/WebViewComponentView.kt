@@ -493,8 +493,9 @@ internal fun clearPaywallProfileStorage() {
         } else {
             // Nothing clears this profile's network cache without DELETE_BROWSING_DATA, and deleteAllData
             // documents only Web SQL and Web Storage, so IndexedDB and CacheStorage survive here.
-            profile.cookieManager.removeAllCookies(null)
-            profile.cookieManager.flush()
+            // removeAllCookies is asynchronous, so the flush that persists it goes in its callback.
+            val cookieManager = profile.cookieManager
+            cookieManager.removeAllCookies { cookieManager.flush() }
             profile.webStorage.deleteAllData()
             Logger.d("Cleared the paywall web_view profile's cookies and web storage.")
         }
