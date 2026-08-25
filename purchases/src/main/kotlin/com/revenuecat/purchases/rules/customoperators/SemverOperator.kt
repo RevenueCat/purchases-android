@@ -27,11 +27,8 @@ internal object SemverOperator {
      * The built-in `<` / `>` compare version strings lexicographically,
      * which puts `"10.0.0"` below `"9.0.0"`.
      *
-     * Both operands must be strings that parse, otherwise
-     * [EvaluationException.TypeMismatch]. Returning `0` for a malformed
-     * version or an explicit null would report "equal", which satisfies a
-     * `>= 0` gate and so matches every rule built on it. Arity is exact for
-     * the same reason.
+     * Requires exactly two operands, both strings that parse, otherwise
+     * [EvaluationException.TypeMismatch].
      */
     fun opSemverCompare(args: Value, vars: Scope): Value {
         val evaluated = Operators.evalArgs(args, vars)
