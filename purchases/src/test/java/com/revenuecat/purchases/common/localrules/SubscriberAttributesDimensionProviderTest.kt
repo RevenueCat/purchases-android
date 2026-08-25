@@ -157,9 +157,10 @@ class SubscriberAttributesDimensionProviderTest {
         )
         val notMatching = listOf(
             """{"==": [{"var": "subscriberAttributes.goal.value"}, "gain_muscle"]}""",
-            // An attribute the app never set on this device, and one the SDK does not expose.
-            """{"!!": {"var": "subscriberAttributes.favoriteColor.value"}}""",
-            """{"!!": {"var": "subscriberAttributes.goal.isSynced"}}""",
+            // An attribute the app never set on this device, and one the SDK does not expose. Both
+            // need a default, since reading a name that resolves to nothing is an error.
+            """{"!!": {"var": ["subscriberAttributes.favoriteColor.value", false]}}""",
+            """{"!!": {"var": ["subscriberAttributes.goal.isSynced", false]}}""",
             // The same window, for an attribute set six weeks ago.
             """{"<": [{"-": [{"var": "subscriberAttributes.goal.evaluatedAt"},
                 {"var": "subscriberAttributes.goal.updatedAt"}]}, 604800000]}""",

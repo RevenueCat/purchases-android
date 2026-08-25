@@ -18,4 +18,7 @@ public interface PaywallAssetWarmer {
 
     /** Starts the WebView engine, so the first `web_view` render does not pay for it on the UI thread. */
     public fun prebootWebView(context: Context)
+
+    /** Loads bundles offscreen into the http cache. Bounded concurrency, so it returns before they finish. */
+    public fun warmWebViewUrls(context: Context, urls: List<String>)
 }
