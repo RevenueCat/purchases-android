@@ -19,6 +19,13 @@
 #PURCHASE_TESTER_API_KEY=your_key
 
 ## ──────────────────────────────────────────────
+## Checkpoint Tester (examples/checkpointtester)
+## Falls back to PAYWALL_TESTER_API_KEY_A when unset, since both apps
+## share the same applicationId and store project.
+## ──────────────────────────────────────────────
+#CHECKPOINT_TESTER_API_KEY=your_key
+
+## ──────────────────────────────────────────────
 ## E2E Tester — workflow Maestro flows (maestro/workflows/)
 ## Test-store key for the dedicated E2E project that hosts the `default_workflows`
 ## offering. When set, the e2etests app configures against it with workflows enabled.
