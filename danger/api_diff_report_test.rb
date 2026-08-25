@@ -30,6 +30,43 @@ class ApiDiffReportTest < Minitest::Test
   REMOVED_METHOD_PATCH = ADDED_METHOD_PATCH.sub("+    method public void apiDiffDemoPong();",
                                                 "-    method public void apiDiffDemoPong();").freeze
 
+  # Real declarations carry annotations, and `@kotlin.jvm.Throws(...)` opens a parameter list of its
+  # own before the member's.
+  ANNOTATED_SIGNATURE_CHANGE_PATCH = <<~PATCH.freeze
+    --- a/purchases/api-defauts.txt
+    +++ b/purchases/api-defauts.txt
+    @@ -38,6 +38,6 @@ package com.revenuecat.purchases {
+
+       public final class CoroutinesExtensionsCommonKt {
+    -    method @KotlinOnly @kotlin.jvm.Throws(exceptionClasses={com.revenuecat.purchases.PurchasesException.class}) public static suspend Object? awaitShowManageSubscriptions(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super java.lang.Void>);
+    +    method @KotlinOnly @kotlin.jvm.Throws(exceptionClasses={com.revenuecat.purchases.PurchasesException.class}) public static suspend Object? awaitShowManageSubscriptions(com.revenuecat.purchases.Purchases, optional int retries, kotlin.coroutines.Continuation<? super java.lang.Void>);
+       }
+  PATCH
+
+  ANNOTATED_SWAP_PATCH = <<~PATCH.freeze
+    --- a/purchases/api-defauts.txt
+    +++ b/purchases/api-defauts.txt
+    @@ -38,6 +38,6 @@ package com.revenuecat.purchases {
+
+       public final class CoroutinesExtensionsCommonKt {
+    -    method @KotlinOnly @kotlin.jvm.Throws(exceptionClasses={com.revenuecat.purchases.PurchasesException.class}) public static suspend Object? awaitShowManageSubscriptions(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super java.lang.Void>);
+    +    method @KotlinOnly @kotlin.jvm.Throws(exceptionClasses={com.revenuecat.purchases.PurchasesException.class}) public static suspend Object? awaitSomethingBrandNew(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super java.lang.Void>);
+       }
+  PATCH
+
+  RENAMED_METHOD_PATCH = <<~PATCH.freeze
+    --- a/purchases/api-defauts.txt
+    +++ b/purchases/api-defauts.txt
+    @@ -10,6 +10,6 @@ package com.revenuecat.purchases {
+
+       public final class ApiDiffDemo {
+    -    method public void apiDiffDemoPing();
+    +    method public void apiDiffDemoPong();
+       }
+
+     }
+  PATCH
+
   NEW_TYPE_PATCH = <<~PATCH.freeze
     --- a/feature/amazon/api.txt
     +++ b/feature/amazon/api.txt
@@ -145,16 +182,46 @@ class ApiDiffReportTest < Minitest::Test
     assert_includes message, "+ method public void apiDiffDemoPong"
   end
 
-  # The feed is the new API feed: what a signature change took away is in the PR comment.
-  def test_slack_message_lists_only_what_was_added
+  # A changed signature is an addition of a member that was removed in the same breath, and the
+  # feed announces new API, not a reshaped one.
+  def test_new_api_drops_the_addition_half_of_a_signature_change
     report = ApiDiffReport.build("ui/revenuecatui/api.txt" => SIGNATURE_CHANGE_PATCH)
+
+    assert_equal 1, report[:added].count
+    assert_empty ApiDiffReport.new_api(report)
+  end
+
+  # Reading the member name at the first `(` found the annotation's parameter list, which made every
+  # annotated declaration answer every other one.
+  def test_new_api_drops_an_annotated_signature_change
+    report = ApiDiffReport.build("purchases/api-defauts.txt" => ANNOTATED_SIGNATURE_CHANGE_PATCH)
+
+    assert_equal 1, report[:added].count
+    assert_empty ApiDiffReport.new_api(report)
+  end
+
+  def test_new_api_keeps_an_annotated_addition_a_removal_does_not_answer
+    report = ApiDiffReport.build("purchases/api-defauts.txt" => ANNOTATED_SWAP_PATCH)
+
+    assert_equal 1, ApiDiffReport.new_api(report).count
+    assert_includes ApiDiffReport.new_api(report).first, "awaitSomethingBrandNew"
+  end
+
+  def test_new_api_keeps_an_addition_no_removal_answers
+    report = ApiDiffReport.build("purchases/api-defauts.txt" => RENAMED_METHOD_PATCH)
+
+    assert_equal ["method public void apiDiffDemoPong();"], ApiDiffReport.new_api(report)
+  end
+
+  def test_slack_message_lists_only_what_was_added
+    report = ApiDiffReport.build("purchases/api-defauts.txt" => RENAMED_METHOD_PATCH)
 
     message = ApiDiffReport.slack_message(report, "")
 
-    assert message.start_with?(":sparkles: *New public API* · Android :android: · `ui:revenuecatui`")
+    assert message.start_with?(":sparkles: *New public API* · Android :android: · `purchases`")
     assert_includes message, "1 new declaration"
     refute_includes message, "removed"
-    refute_includes message, "- method public static void apiDiffDemoPing(String value);"
+    refute_includes message, "- method public void apiDiffDemoPing();"
     refute_includes message, "|#"
   end
 
@@ -286,7 +353,7 @@ class ApiDiffReportTest < Minitest::Test
   # What the PR touches changes the module list, so the modules cannot be part of the identity.
   def test_last_announcement_matches_a_previous_announcement_of_other_modules
     previous = ApiDiffReport.slack_message(
-      ApiDiffReport.build("ui/revenuecatui/api.txt" => SIGNATURE_CHANGE_PATCH), "<url|#42>"
+      ApiDiffReport.build("feature/amazon/api.txt" => NEW_TYPE_PATCH), "<url|#42>"
     )
 
     assert_equal previous, ApiDiffReport.last_announcement([previous], "<url|#42>")
@@ -383,18 +450,30 @@ class ApiDiffReportTest < Minitest::Test
 
   # A removal reaches the PR comment and the api-check gate, never the feed.
   def test_run_reports_a_removal_on_the_pull_request_without_announcing_it
-    body = ApiDiffReport.run(
+    body = run_without_slack(REMOVED_METHOD_PATCH)
+
+    assert_includes body[:comment], "- method public void apiDiffDemoPong"
+    refute_includes body[:comment], "<!-- api-diff:"
+    assert_nil body[:warning]
+  end
+
+  def test_run_reports_a_signature_change_on_the_pull_request_without_announcing_it
+    body = run_without_slack(SIGNATURE_CHANGE_PATCH)
+
+    assert_includes body[:comment], "- method public static void apiDiffDemoPing(String value);"
+    assert_includes body[:comment], "+ method public static void apiDiffDemoPing(String value, optional int count);"
+    refute_includes body[:comment], "<!-- api-diff:"
+  end
+
+  def run_without_slack(patch)
+    ApiDiffReport.run(
       changed_files: ["purchases/api-defauts.txt"],
-      patch_for: ->(_file) { REMOVED_METHOD_PATCH },
+      patch_for: ->(_file) { patch },
       pull_request_link: "<url|#42>",
       credentials: CHANNEL_CREDENTIALS,
       getter: ->(*) { raise "must not read the channel" },
       poster: ->(*) { raise "must not post" }
     )
-
-    assert_includes body[:comment], "- method public void apiDiffDemoPong"
-    refute_includes body[:comment], "<!-- api-diff:"
-    assert_nil body[:warning]
   end
 
   # chat.postMessage takes a `#name`, conversations.history does not.

@@ -99,6 +99,25 @@ module ApiDiffReport
     parts.join(", ")
   end
 
+  # `@kotlin.jvm.Throws(exceptionClasses=...)` puts a parameter list in front of the member's own,
+  # so annotations go before anything is read positionally.
+  ANNOTATION = /@[\w.]+(?:\((?:[^()]|\([^()]*\))*\))?\s*/.freeze
+
+  # `method public void foo(int);`, `field public static final int BAR = 3;` and
+  # `public final class Baz` all carry the member name as the last token before the parameter list
+  # or the initializer.
+  def member_name(declaration)
+    declaration.to_s.gsub(ANNOTATION, "").split(/[(=]/).first.to_s.sub(/;\s*\z/, "").split.last.to_s
+  end
+
+  # Metalava has no notion of a changed member: it renders one as a removal plus an addition of the
+  # same name. Only what has no removal answering it is new API.
+  def new_api(report)
+    changed = report[:removed].map { |declaration| member_name(declaration) }
+
+    report[:added].reject { |declaration| changed.include?(member_name(declaration)) }
+  end
+
   def diff_lines(report)
     report[:removed].map { |declaration| "- #{declaration}" } +
       report[:added].map { |declaration| "+ #{declaration}" }
@@ -142,15 +161,13 @@ module ApiDiffReport
     lines.join("\n")
   end
 
-  # Metalava renders a changed signature as a removal plus an addition, so the addition half of one
-  # reaches the feed on its own. The removals are in the PR comment.
   def slack_message(report, pull_request_link)
-    body = capped_lines(report[:added].map { |declaration| "+ #{declaration}" },
-                        limit: SLACK_LIMIT, width: SLACK_WIDTH)
+    additions = new_api(report)
+    body = capped_lines(additions.map { |declaration| "+ #{declaration}" }, limit: SLACK_LIMIT, width: SLACK_WIDTH)
 
     lines = [[":sparkles: *New public API*", PLATFORM_LABEL, *report[:modules].map { |name| "`#{name}`" }].join(" · ")]
     lines << pull_request_link unless pull_request_link.to_s.empty?
-    lines << counts(added: report[:added], removed: [])
+    lines << counts(added: additions, removed: [])
     lines << "```\n#{body.join("\n")}\n```"
 
     lines.join("\n")
@@ -276,8 +293,9 @@ module ApiDiffReport
     signature_files = changed_files.uniq.select { |file| signature_file?(file) }
     report = build(signature_files.to_h { |file| [file, patch_for.call(file)] })
     return nil if empty?(report)
-    # The feed announces new API; a PR that only takes API away is reported on the PR alone.
-    return { comment: markdown_section(report), warning: nil } if report[:added].empty?
+    # The feed announces new API; a PR that only takes API away or reshapes it is reported on the
+    # PR alone.
+    return { comment: markdown_section(report), warning: nil } if new_api(report).empty?
 
     message = slack_message(report, pull_request_link)
     outcome, reason = announce(message, pull_request_link, credentials, poster, getter, announced_in_comment)
