@@ -482,9 +482,12 @@ internal fun clearPaywallProfileStorage() {
         return
     }
     try {
-        val profile = ProfileStore.getInstance().getOrCreateProfile(PAYWALL_PROFILE_NAME)
+        // getProfile, not getOrCreateProfile: an app that never rendered a web_view has nothing to clear.
+        val profile = ProfileStore.getInstance().getProfile(PAYWALL_PROFILE_NAME) ?: return
         if (WebViewFeature.isFeatureSupported(WebViewFeature.DELETE_BROWSING_DATA)) {
+            // Deletion can also drop data written while it runs, so the prewarmer is told once it finishes.
             WebStorageCompat.deleteBrowsingData(profile.webStorage) {
+                PaywallWebViewPrewarmer.shared.onCacheCleared()
                 Logger.d("Cleared the paywall web_view profile's browsing data.")
             }
         } else {

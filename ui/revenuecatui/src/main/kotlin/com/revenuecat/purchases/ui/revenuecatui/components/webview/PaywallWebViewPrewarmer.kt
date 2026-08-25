@@ -94,6 +94,13 @@ internal class PaywallWebViewPrewarmer(
         warmedUrls.add(resolvedUrl)
     }
 
+    @MainThread
+    fun onCacheCleared() {
+        warmedUrls.clear()
+        // These loaded against the storage that just went away, so nothing they cached can be trusted.
+        releaseInFlight()
+    }
+
     /** Counterpart to [onDisplayStarted]. Warming resumes once the last component is gone. */
     @MainThread
     fun onDisplayEnded() {

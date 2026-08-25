@@ -104,6 +104,31 @@ internal class PaywallWebViewPrewarmerTest {
     }
 
     @Test
+    fun `warms a url again once the cache it was warmed into is cleared`() {
+        val prewarmer = prewarmer()
+        prewarmer.prewarm(context, URL)
+        finishMainFrameLoad(warmed.first())
+        idleFor(PaywallWebViewPrewarmer.SETTLE_GRACE_MS)
+
+        prewarmer.onCacheCleared()
+        prewarmer.prewarm(context, URL)
+
+        assertWarmCount(2)
+        assertThat(lastLoadedUrl()).isEqualTo(URL)
+    }
+
+    @Test
+    fun `clearing the cache abandons the warms in flight`() {
+        val prewarmer = prewarmer()
+        prewarmer.prewarm(context, URL)
+
+        prewarmer.onCacheCleared()
+        idle()
+
+        assertThat(prewarmer.warmingCount).isZero()
+    }
+
+    @Test
     fun `ignores a url already in flight or queued`() {
         val prewarmer = prewarmer()
         prewarmer.prewarmAll(URL, OTHER_URL)

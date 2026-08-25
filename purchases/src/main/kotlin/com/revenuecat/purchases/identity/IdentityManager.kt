@@ -168,7 +168,7 @@ internal class IdentityManager(
                         deviceCache.cacheAppUserID(newAppUserID)
                         deviceCache.cacheCustomerInfo(newAppUserID, customerInfo)
                         copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserID, newAppUserID)
-                        clearPaywallWebViewStorageIfOldIsIdentified(oldAppUserID)
+                        clearPaywallWebViewStorageIfUserChanged(oldAppUserID, newAppUserID)
                         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     }
                     onSuccess(customerInfo, created)
@@ -248,8 +248,8 @@ internal class IdentityManager(
     }
 
     // Anonymous is exempt: signing in mid-flow is the multipage paywall case, same customer either side.
-    private fun clearPaywallWebViewStorageIfOldIsIdentified(oldAppUserID: String) {
-        if (!isUserIDAnonymous(oldAppUserID)) {
+    private fun clearPaywallWebViewStorageIfUserChanged(oldAppUserID: String, newAppUserID: String) {
+        if (oldAppUserID != newAppUserID && !isUserIDAnonymous(oldAppUserID)) {
             paywallAssetWarming.clearWebViewStorage()
         }
     }
@@ -289,7 +289,7 @@ internal class IdentityManager(
 
     @Synchronized
     private fun resetAndSaveUserID(newUserID: String) {
-        clearPaywallWebViewStorageIfOldIsIdentified(currentAppUserID)
+        clearPaywallWebViewStorageIfUserChanged(currentAppUserID, newUserID)
         deviceCache.clearCachesForAppUserID(currentAppUserID)
         clearRemoteConfigThenOfferingsCaches(newUserID)
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)

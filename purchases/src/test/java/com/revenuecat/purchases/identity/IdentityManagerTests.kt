@@ -869,7 +869,6 @@ class IdentityManagerTests {
     @Test
     fun `logOut clears the paywall web view storage`() {
         val identifiedUserID = "Waldo"
-        every { mockDeviceCache.cleanupOldAttributionData() } just Runs
         mockIdentifiedUser(identifiedUserID)
         mockSubscriberAttributesManagerSynchronize(identifiedUserID)
 
@@ -880,21 +879,36 @@ class IdentityManagerTests {
 
     @Test
     fun `switching users clears the paywall web view storage`() {
-        val newAppUserID = "new"
         mockIdentifiedUser("cesar")
-        every { mockDeviceCache.cacheCustomerInfo(any(), any()) } just Runs
-        mockSubscriberAttributesManagerSynchronize(newAppUserID)
 
-        identityManager.switchUser(newAppUserID)
+        identityManager.switchUser("new")
 
         verify(exactly = 1) { mockPaywallAssetWarming.clearWebViewStorage() }
     }
 
     @Test
+    fun `switching from an anonymous user keeps the paywall web view storage`() {
+        mockCachedAnonymousUser()
+
+        identityManager.switchUser("new")
+
+        verify(exactly = 0) { mockPaywallAssetWarming.clearWebViewStorage() }
+    }
+
+    @Test
+    fun `switching to the same user keeps the paywall web view storage`() {
+        val identifiedUserID = "cesar"
+        mockIdentifiedUser(identifiedUserID)
+
+        identityManager.switchUser(identifiedUserID)
+
+        verify(exactly = 0) { mockPaywallAssetWarming.clearWebViewStorage() }
+    }
+
+    @Test
     fun `login from an identified user clears the paywall web view storage`() {
-        val oldAppUserID = "cesar"
         val newAppUserID = "new"
-        mockLogInSuccess(oldAppUserID, newAppUserID)
+        mockLogInSuccess(oldAppUserID = "cesar", newAppUserID = newAppUserID)
 
         identityManager.logIn(newAppUserID, { _, _ -> }, { })
 
@@ -904,7 +918,7 @@ class IdentityManagerTests {
     @Test
     fun `login from an anonymous user keeps the paywall web view storage`() {
         val newAppUserID = "new"
-        mockLogInSuccess(stubAnonymousID, newAppUserID, anonymous = true)
+        mockLogInSuccess(oldAppUserID = stubAnonymousID, newAppUserID = newAppUserID)
 
         identityManager.logIn(newAppUserID, { _, _ -> }, { })
 
@@ -935,8 +949,12 @@ class IdentityManagerTests {
         identityManager = createIdentityManager()
     }
 
-    private fun mockLogInSuccess(oldAppUserID: String, newAppUserID: String, anonymous: Boolean = false) {
-        if (anonymous) mockCachedAnonymousUser() else mockIdentifiedUser(oldAppUserID)
+    private fun mockLogInSuccess(oldAppUserID: String, newAppUserID: String) {
+        if (IdentityManager.isUserIDAnonymous(oldAppUserID)) {
+            mockCachedAnonymousUser()
+        } else {
+            mockIdentifiedUser(oldAppUserID)
+        }
         every {
             mockBackend.logIn(oldAppUserID, newAppUserID, captureLambda(), any())
         } answers {
