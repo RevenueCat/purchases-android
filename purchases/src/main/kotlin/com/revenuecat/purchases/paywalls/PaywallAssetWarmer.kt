@@ -21,4 +21,7 @@ public interface PaywallAssetWarmer {
 
     /** Loads bundles offscreen into the http cache. Bounded concurrency, so it returns before they finish. */
     public fun warmWebViewUrls(context: Context, urls: List<String>)
+
+    /** Drops the browsing data the outgoing user left behind, as far as the System WebView allows. */
+    public fun clearWebViewStorage(context: Context)
 }

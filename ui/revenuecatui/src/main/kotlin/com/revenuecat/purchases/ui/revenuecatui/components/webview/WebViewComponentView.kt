@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.ProfileStore
+import androidx.webkit.WebStorageCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import com.revenuecat.purchases.LogLevel
@@ -471,5 +472,30 @@ internal fun WebView.applyPaywallProfile() {
         WebViewCompat.setProfile(this, PAYWALL_PROFILE_NAME)
     } catch (error: RuntimeException) {
         Logger.w("Paywalls V2 web_view could not use an isolated profile; using the default. $error")
+    }
+}
+
+@Suppress("TooGenericExceptionCaught")
+internal fun clearPaywallProfileStorage() {
+    if (!WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE)) {
+        Logger.d("Paywalls V2 web_view storage was not cleared: this System WebView has no isolated profile.")
+        return
+    }
+    try {
+        val profile = ProfileStore.getInstance().getOrCreateProfile(PAYWALL_PROFILE_NAME)
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.DELETE_BROWSING_DATA)) {
+            WebStorageCompat.deleteBrowsingData(profile.webStorage) {
+                Logger.d("Cleared the paywall web_view profile's browsing data.")
+            }
+        } else {
+            // Nothing clears this profile's network cache without DELETE_BROWSING_DATA, and deleteAllData
+            // documents only Web SQL and Web Storage, so IndexedDB and CacheStorage survive here.
+            profile.cookieManager.removeAllCookies(null)
+            profile.cookieManager.flush()
+            profile.webStorage.deleteAllData()
+            Logger.d("Cleared the paywall web_view profile's cookies and web storage.")
+        }
+    } catch (error: RuntimeException) {
+        Logger.w("Paywalls V2 web_view storage could not be cleared. $error")
     }
 }

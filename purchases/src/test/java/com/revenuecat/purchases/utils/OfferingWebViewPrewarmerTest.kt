@@ -68,6 +68,8 @@ internal class OfferingWebViewPrewarmerTest {
         override fun warmWebViewUrls(context: Context, urls: List<String>) {
             warmedWebViewUrls.addAll(urls)
         }
+
+        override fun clearWebViewStorage(context: Context) = Unit
     }
 
     @Test

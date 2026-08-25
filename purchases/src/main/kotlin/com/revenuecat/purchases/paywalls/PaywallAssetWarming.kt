@@ -60,6 +60,17 @@ internal class PaywallAssetWarming(
         }
     }
 
+    fun clearWebViewStorage() {
+        // The lookup is posted too: callers hold the identity lock, and these WebView APIs want the main thread.
+        mainHandler.post {
+            val warmer = warmer ?: return@post
+            debugLog { "Clearing Paywalls V2 web_view storage for the outgoing user." }
+            runCatching { warmer.clearWebViewStorage(context) }.onFailure { error ->
+                errorLog(error) { "Paywalls V2 web_view storage could not be cleared." }
+            }
+        }
+    }
+
     private companion object {
         fun loadWarmer(): PaywallAssetWarmer? {
             // A missing descriptor yields nothing rather than throwing; only one naming an unloadable class throws.

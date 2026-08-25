@@ -26,6 +26,7 @@ class PaywallAssetWarmingTest {
         val warmed = mutableListOf<Uri>()
         var prebootCount = 0
         val warmedWebViewUrls = mutableListOf<String>()
+        var clearedStorageCount = 0
         override fun warmImages(context: Context, imageUris: List<Uri>) {
             warmed.addAll(imageUris)
         }
@@ -36,6 +37,10 @@ class PaywallAssetWarmingTest {
 
         override fun warmWebViewUrls(context: Context, urls: List<String>) {
             warmedWebViewUrls.addAll(urls)
+        }
+
+        override fun clearWebViewStorage(context: Context) {
+            clearedStorageCount++
         }
     }
 
@@ -118,16 +123,37 @@ class PaywallAssetWarmingTest {
     }
 
     @Test
+    fun `clears web_view storage off the caller's frame`() {
+        val warmer = RecordingWarmer()
+
+        warming(warmer).clearWebViewStorage()
+
+        assertThat(warmer.clearedStorageCount).isZero()
+
+        idle()
+
+        assertThat(warmer.clearedStorageCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `does not clear web_view storage when nothing is registered`() {
+        warming(warmer = null).clearWebViewStorage()
+        idle()
+    }
+
+    @Test
     fun `does not propagate a failure from the warmer`() {
         val throwingWarmer = object : PaywallAssetWarmer {
             override fun warmImages(context: Context, imageUris: List<Uri>) = throw RuntimeException("boom")
             override fun prebootWebView(context: Context) = throw RuntimeException("boom")
             override fun warmWebViewUrls(context: Context, urls: List<String>) = throw RuntimeException("boom")
+            override fun clearWebViewStorage(context: Context) = throw RuntimeException("boom")
         }
 
         warming(throwingWarmer).warmImages(listOf(uri))
         warming(throwingWarmer).prebootWebView()
         warming(throwingWarmer).warmWebViewUrls(listOf("https://example.com/index.html"))
+        warming(throwingWarmer).clearWebViewStorage()
         idle()
     }
 

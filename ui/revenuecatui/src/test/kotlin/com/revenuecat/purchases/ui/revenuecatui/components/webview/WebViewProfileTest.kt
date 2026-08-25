@@ -1,11 +1,17 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
+import android.webkit.CookieManager
+import android.webkit.WebStorage
 import android.webkit.WebView
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.webkit.Profile
 import androidx.webkit.ProfileStore
+import androidx.webkit.WebStorageCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import io.mockk.Runs
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
@@ -19,11 +25,25 @@ import org.junit.runner.RunWith
 internal class WebViewProfileTest {
 
     private val webView = mockk<WebView>(relaxed = true)
+    private val cookieManager = mockk<CookieManager>(relaxed = true)
 
     @Before
     fun setUp() {
-        mockkStatic(WebViewFeature::class, WebViewCompat::class, ProfileStore::class)
+        mockkStatic(WebViewFeature::class, WebViewCompat::class, ProfileStore::class, WebStorageCompat::class)
         every { ProfileStore.getInstance() } returns mockk(relaxed = true)
+        every { WebStorageCompat.deleteBrowsingData(any(), any<Runnable>()) } just Runs
+    }
+
+    private fun mockProfileStorage(): WebStorage {
+        val webStorage = mockk<WebStorage>(relaxed = true)
+        val profile = mockk<Profile>(relaxed = true)
+        val profileStore = mockk<ProfileStore>()
+        every { ProfileStore.getInstance() } returns profileStore
+        every { profileStore.getOrCreateProfile(PAYWALL_PROFILE_NAME) } returns profile
+        every { profile.cookieManager } returns cookieManager
+        every { profile.webStorage } returns webStorage
+        every { WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE) } returns true
+        return webStorage
     }
 
     @After
@@ -47,6 +67,52 @@ internal class WebViewProfileTest {
         webView.applyPaywallProfile()
 
         verify(exactly = 0) { WebViewCompat.setProfile(any(), any()) }
+    }
+
+    @Test
+    fun `clears the profile's browsing data when deleting browsing data is supported`() {
+        val webStorage = mockProfileStorage()
+        every { WebViewFeature.isFeatureSupported(WebViewFeature.DELETE_BROWSING_DATA) } returns true
+
+        clearPaywallProfileStorage()
+
+        verify { WebStorageCompat.deleteBrowsingData(webStorage, any<Runnable>()) }
+    }
+
+    @Test
+    fun `falls back to cookies and web storage when deleting browsing data is unsupported`() {
+        val webStorage = mockProfileStorage()
+        every { WebViewFeature.isFeatureSupported(WebViewFeature.DELETE_BROWSING_DATA) } returns false
+
+        clearPaywallProfileStorage()
+
+        verify { cookieManager.removeAllCookies(null) }
+        verify { cookieManager.flush() }
+        verify { webStorage.deleteAllData() }
+        verify(exactly = 0) { WebStorageCompat.deleteBrowsingData(any(), any<Runnable>()) }
+    }
+
+    @Test
+    fun `leaves storage alone when multi-profile is unsupported`() {
+        val profileStore = mockk<ProfileStore>(relaxed = true)
+        every { ProfileStore.getInstance() } returns profileStore
+        every { WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE) } returns false
+
+        clearPaywallProfileStorage()
+
+        verify(exactly = 0) { profileStore.getOrCreateProfile(any()) }
+    }
+
+    @Test
+    fun `does not throw when clearing storage fails`() {
+        val profileStore = mockk<ProfileStore>()
+        every { ProfileStore.getInstance() } returns profileStore
+        every { WebViewFeature.isFeatureSupported(WebViewFeature.MULTI_PROFILE) } returns true
+        every { profileStore.getOrCreateProfile(any()) } throws IllegalStateException("profile deleted")
+
+        clearPaywallProfileStorage()
+
+        verify { profileStore.getOrCreateProfile(PAYWALL_PROFILE_NAME) }
     }
 
     @Test
