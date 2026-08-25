@@ -119,16 +119,29 @@ internal class PaywallWebViewPrewarmerTest {
 
     // A warm that straddles the clear cached against storage that is now gone, so it starts over.
     @Test
-    fun `clearing the cache restarts the warms in flight`() {
+    fun `clearing the cache restarts the warms in flight ahead of the queue`() {
         val prewarmer = prewarmer()
-        prewarmer.prewarm(context, URL)
+        prewarmer.prewarmAll(URL, OTHER_URL)
 
         prewarmer.onCacheCleared()
         idle()
 
-        assertThat(prewarmer.warmingCount).isEqualTo(1)
         assertWarmCount(2)
         assertThat(lastLoadedUrl()).isEqualTo(URL)
+        assertThat(prewarmer.warmingCount).isEqualTo(1)
+        assertThat(prewarmer.queuedCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `clearing the cache does not requeue a url that is already waiting`() {
+        val prewarmer = prewarmer(maxConcurrent = 2)
+        prewarmer.prewarmAll(URL, OTHER_URL)
+        prewarmer.onDisplayStarted(THIRD_URL)
+
+        prewarmer.onCacheCleared()
+        idle()
+
+        assertThat(prewarmer.queuedCount + prewarmer.warmingCount).isEqualTo(2)
     }
 
     @Test
@@ -144,18 +157,6 @@ internal class PaywallWebViewPrewarmerTest {
         idleFor(PaywallWebViewPrewarmer.SETTLE_GRACE_MS)
 
         assertWarmCount(2)
-        assertThat(prewarmer.warmingCount).isEqualTo(1)
-    }
-
-    @Test
-    fun `clearing the cache keeps draining the queue`() {
-        val prewarmer = prewarmer()
-        prewarmer.prewarmAll(URL, OTHER_URL)
-
-        prewarmer.onCacheCleared()
-        idle()
-
-        assertThat(prewarmer.queuedCount).isEqualTo(1)
         assertThat(prewarmer.warmingCount).isEqualTo(1)
     }
 

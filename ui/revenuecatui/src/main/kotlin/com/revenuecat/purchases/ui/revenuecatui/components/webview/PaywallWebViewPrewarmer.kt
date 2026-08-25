@@ -98,10 +98,11 @@ internal class PaywallWebViewPrewarmer(
     fun onCacheCleared() {
         warmedUrls.clear()
         // These loaded against the storage that just went away, so they start over rather than being trusted.
-        queue.addAll(0, inFlight.keys)
+        queue.addAll(0, inFlight.keys.filterNot { it in queue })
         releaseInFlight()
-        // Posted so a settle or finishWarm already queued against a released warm runs first, while its
-        // url is still absent from inFlight and it is the no-op finishWarm documents.
+        // Posted so a settle already queued for a released warm runs first and no-ops on its absent url;
+        // inline it would settle the restarted warm instead. Released views post nothing new, because
+        // destroyPaywallWebView drops their client.
         mainHandler.post(::startAvailable)
     }
 

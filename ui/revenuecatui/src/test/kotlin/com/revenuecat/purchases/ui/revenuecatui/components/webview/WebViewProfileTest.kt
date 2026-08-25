@@ -36,7 +36,6 @@ internal class WebViewProfileTest {
     fun setUp() {
         mockkStatic(WebViewFeature::class, WebViewCompat::class, ProfileStore::class, WebStorageCompat::class)
         every { ProfileStore.getInstance() } returns profileStore
-        every { profileStore.getOrCreateProfile(PAYWALL_PROFILE_NAME) } returns profile
         every { profileStore.getProfile(PAYWALL_PROFILE_NAME) } returns profile
         every { profile.cookieManager } returns cookieManager
         every { profile.webStorage } returns webStorage

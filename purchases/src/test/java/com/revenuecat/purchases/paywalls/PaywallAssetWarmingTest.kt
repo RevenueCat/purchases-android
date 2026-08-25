@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.utils.RecordingPaywallAssetWarmer
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -22,28 +23,6 @@ class PaywallAssetWarmingTest {
 
     private fun idle() = shadowOf(Looper.getMainLooper()).idle()
 
-    private class RecordingWarmer : PaywallAssetWarmer {
-        val warmed = mutableListOf<Uri>()
-        var prebootCount = 0
-        val warmedWebViewUrls = mutableListOf<String>()
-        var clearedStorageCount = 0
-        override fun warmImages(context: Context, imageUris: List<Uri>) {
-            warmed.addAll(imageUris)
-        }
-
-        override fun prebootWebView(context: Context) {
-            prebootCount++
-        }
-
-        override fun warmWebViewUrls(context: Context, urls: List<String>) {
-            warmedWebViewUrls.addAll(urls)
-        }
-
-        override fun clearWebViewStorage(context: Context) {
-            clearedStorageCount++
-        }
-    }
-
     @Test
     fun `reports unavailable when nothing is registered`() {
         assertThat(warming(warmer = null).isAvailable).isFalse()
@@ -51,16 +30,16 @@ class PaywallAssetWarmingTest {
 
     @Test
     fun `reports available when a warmer is registered`() {
-        assertThat(warming(RecordingWarmer()).isAvailable).isTrue()
+        assertThat(warming(RecordingPaywallAssetWarmer()).isAvailable).isTrue()
     }
 
     @Test
     fun `hands the uris to the registered warmer`() {
-        val warmer = RecordingWarmer()
+        val warmer = RecordingPaywallAssetWarmer()
 
         warming(warmer).warmImages(listOf(uri))
 
-        assertThat(warmer.warmed).containsExactly(uri)
+        assertThat(warmer.warmedImages).containsExactly(uri)
     }
 
     @Test
@@ -70,17 +49,17 @@ class PaywallAssetWarmingTest {
 
     @Test
     fun `does not call the warmer with an empty list`() {
-        val warmer = RecordingWarmer()
+        val warmer = RecordingPaywallAssetWarmer()
 
         warming(warmer).warmImages(emptyList())
 
-        assertThat(warmer.warmed).isEmpty()
+        assertThat(warmer.warmedImages).isEmpty()
     }
 
     // Posted, so nothing warms on the caller's frame.
     @Test
     fun `warms web_view urls after preboot, not inline with it`() {
-        val warmer = RecordingWarmer()
+        val warmer = RecordingPaywallAssetWarmer()
 
         warming(warmer).warmWebViewUrls(listOf(webViewUrl))
 
@@ -99,7 +78,7 @@ class PaywallAssetWarmingTest {
 
     @Test
     fun `neither warms nor preboots for an empty url list`() {
-        val warmer = RecordingWarmer()
+        val warmer = RecordingPaywallAssetWarmer()
 
         warming(warmer).warmWebViewUrls(emptyList())
         idle()
@@ -110,7 +89,7 @@ class PaywallAssetWarmingTest {
 
     @Test
     fun `preboots the web view through the registered warmer`() {
-        val warmer = RecordingWarmer()
+        val warmer = RecordingPaywallAssetWarmer()
 
         warming(warmer).prebootWebView()
 
@@ -124,7 +103,7 @@ class PaywallAssetWarmingTest {
 
     @Test
     fun `clears web_view storage off the caller's frame`() {
-        val warmer = RecordingWarmer()
+        val warmer = RecordingPaywallAssetWarmer()
 
         warming(warmer).clearWebViewStorage()
 
