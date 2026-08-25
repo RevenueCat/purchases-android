@@ -51,9 +51,10 @@ internal object SemverOperator {
  * identifiers (empty for a release version). Build metadata is dropped, since
  * semver §10 excludes it from precedence.
  *
- * Two deliberate concessions to real-world version strings: a missing minor or
- * patch is `0` (`"2.1"` ≡ `"2.1.0"`), and leading zeros are accepted
- * (`"1.02.0"` ≡ `"1.2.0"`) even though the spec forbids them.
+ * Three deliberate concessions to real-world version strings: a missing minor
+ * or patch is `0` (`"2.1"` ≡ `"2.1.0"`), leading zeros are accepted
+ * (`"1.02.0"` ≡ `"1.2.0"`) even though the spec forbids them, and build
+ * metadata is dropped without being validated.
  */
 private class SemanticVersion(
     val core: List<Long>,
