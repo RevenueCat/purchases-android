@@ -14,7 +14,7 @@ module ApiDiffReport
   # A metalava 4.0 file holds nothing but the banner, `package … {`, `}`, types and members.
   NOISE = %r{\A(\}|package\s|//)}.freeze
 
-  SLACK_LIMIT = 10
+  SLACK_LIMIT = 5
 
   # Slack stops wrapping code blocks past this; the full list is in the PR comment.
   SLACK_WIDTH = 160
@@ -142,14 +142,15 @@ module ApiDiffReport
     lines.join("\n")
   end
 
+  # Metalava renders a changed signature as a removal plus an addition, so the addition half of one
+  # reaches the feed on its own. The removals are in the PR comment.
   def slack_message(report, pull_request_link)
-    # Metalava renders a changed signature as a removal plus an addition.
-    headline = report[:removed].any? ? ":warning: *Public API removed or changed*" : ":sparkles: *New public API*"
-    body = capped_lines(diff_lines(report), limit: SLACK_LIMIT, width: SLACK_WIDTH)
+    body = capped_lines(report[:added].map { |declaration| "+ #{declaration}" },
+                        limit: SLACK_LIMIT, width: SLACK_WIDTH)
 
-    lines = [[headline, PLATFORM_LABEL, *report[:modules].map { |name| "`#{name}`" }].join(" · ")]
+    lines = [[":sparkles: *New public API*", PLATFORM_LABEL, *report[:modules].map { |name| "`#{name}`" }].join(" · ")]
     lines << pull_request_link unless pull_request_link.to_s.empty?
-    lines << counts(report)
+    lines << counts(added: report[:added], removed: [])
     lines << "```\n#{body.join("\n")}\n```"
 
     lines.join("\n")
@@ -275,6 +276,8 @@ module ApiDiffReport
     signature_files = changed_files.uniq.select { |file| signature_file?(file) }
     report = build(signature_files.to_h { |file| [file, patch_for.call(file)] })
     return nil if empty?(report)
+    # The feed announces new API; a PR that only takes API away is reported on the PR alone.
+    return { comment: markdown_section(report), warning: nil } if report[:added].empty?
 
     message = slack_message(report, pull_request_link)
     outcome, reason = announce(message, pull_request_link, credentials, poster, getter, announced_in_comment)

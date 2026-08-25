@@ -27,6 +27,9 @@ class ApiDiffReportTest < Minitest::Test
        }
   PATCH
 
+  REMOVED_METHOD_PATCH = ADDED_METHOD_PATCH.sub("+    method public void apiDiffDemoPong();",
+                                                "-    method public void apiDiffDemoPong();").freeze
+
   NEW_TYPE_PATCH = <<~PATCH.freeze
     --- a/feature/amazon/api.txt
     +++ b/feature/amazon/api.txt
@@ -142,13 +145,16 @@ class ApiDiffReportTest < Minitest::Test
     assert_includes message, "+ method public void apiDiffDemoPong"
   end
 
-  def test_slack_message_warns_when_something_was_removed
+  # The feed is the new API feed: what a signature change took away is in the PR comment.
+  def test_slack_message_lists_only_what_was_added
     report = ApiDiffReport.build("ui/revenuecatui/api.txt" => SIGNATURE_CHANGE_PATCH)
 
     message = ApiDiffReport.slack_message(report, "")
 
-    assert message.start_with?(":warning: *Public API removed or changed* · Android :android: · `ui:revenuecatui`")
-    assert_includes message, "1 new declaration, 1 removed"
+    assert message.start_with?(":sparkles: *New public API* · Android :android: · `ui:revenuecatui`")
+    assert_includes message, "1 new declaration"
+    refute_includes message, "removed"
+    refute_includes message, "- method public static void apiDiffDemoPing(String value);"
     refute_includes message, "|#"
   end
 
@@ -375,18 +381,20 @@ class ApiDiffReportTest < Minitest::Test
     refute_equal ApiDiffReport.fingerprint(unchanged), ApiDiffReport.fingerprint(changed)
   end
 
-  # Hashing the declaration lists gave an addition and its removal the same fingerprint, which let
-  # the marker path swallow a removal.
-  def test_fingerprint_separates_an_addition_from_its_removal
-    added = ApiDiffReport.build("purchases/api-defauts.txt" => ADDED_METHOD_PATCH)
-    removed = ApiDiffReport.build(
-      "purchases/api-defauts.txt" => ADDED_METHOD_PATCH.sub("+    method public void apiDiffDemoPong();",
-                                                            "-    method public void apiDiffDemoPong();")
+  # A removal reaches the PR comment and the api-check gate, never the feed.
+  def test_run_reports_a_removal_on_the_pull_request_without_announcing_it
+    body = ApiDiffReport.run(
+      changed_files: ["purchases/api-defauts.txt"],
+      patch_for: ->(_file) { REMOVED_METHOD_PATCH },
+      pull_request_link: "<url|#42>",
+      credentials: CHANNEL_CREDENTIALS,
+      getter: ->(*) { raise "must not read the channel" },
+      poster: ->(*) { raise "must not post" }
     )
 
-    assert_equal ["method public void apiDiffDemoPong();"], removed[:removed]
-    refute_equal ApiDiffReport.fingerprint(ApiDiffReport.slack_message(added, "<url|#42>")),
-                 ApiDiffReport.fingerprint(ApiDiffReport.slack_message(removed, "<url|#42>"))
+    assert_includes body[:comment], "- method public void apiDiffDemoPong"
+    refute_includes body[:comment], "<!-- api-diff:"
+    assert_nil body[:warning]
   end
 
   # chat.postMessage takes a `#name`, conversations.history does not.

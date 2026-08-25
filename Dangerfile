@@ -93,7 +93,7 @@ end
 
 fail_on_generated_edits(["purchases/src/main/kotlin/generated/"])
 
-# Report the public API this PR changes, and mirror it into the SDK API feed channel.
+# Report the public API this PR changes, and announce what it adds in the SDK API feed channel.
 # Best effort: a raise here would take every other rule in this file down with it.
 begin
   require_relative "danger/api_diff_report"
