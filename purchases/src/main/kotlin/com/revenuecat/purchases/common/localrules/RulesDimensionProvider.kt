@@ -38,10 +38,10 @@ internal interface RulesDimensionProvider {
      * The complete current set of values relative to [namespace], keyed in camelCase (`appVersion`);
      * [RulesDimensionResolver] adds the namespace.
      *
-     * A value that is unavailable is omitted rather than guessed: an absent key resolves to null in the engine,
-     * which is a non-match rather than an error. A name no predicate could read is dropped by
-     * [RulesDimensionResolver], which applies that rule to every provider. Throwing is reserved for a systemic
-     * failure to produce this provider's values.
+     * A value that is unavailable is omitted rather than guessed: a predicate that reads an absent key fails as
+     * an unresolved variable, rather than being answered from a value we invented. A name no predicate could
+     * read is dropped by [RulesDimensionResolver], which applies that rule to every provider. Throwing is
+     * reserved for a systemic failure to produce this provider's values.
      *
      * [date] is the common reference instant for the evaluation. It does not indicate when the underlying values
      * were observed.
