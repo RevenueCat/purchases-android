@@ -20,6 +20,11 @@ internal object CustomOperators {
         "rc.entries" -> EntriesOperators.opEntries(args, vars)
         "rc.fromEntries" -> EntriesOperators.opFromEntries(args, vars)
 
+        "rc.length" -> LengthOperator.opLength(args, vars)
+
+        "rc.lower" -> CaseOperators.opLower(args, vars)
+        "rc.upper" -> CaseOperators.opUpper(args, vars)
+
         "rc.rootVar" -> RootVarOperator.opRootVar(args, vars)
 
         else -> throw EvaluationException.UnsupportedOperator(op)
