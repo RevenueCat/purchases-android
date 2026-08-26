@@ -183,23 +183,18 @@ public suspend fun AdTracker.loadAndTrackRewardedAd(
     adEventCallback: RewardedAdEventCallback? = null,
 ): AdLoadResult<RewardedAd> {
     val adUnitId = adRequest.adUnitId
-    val result = RewardedAd.load(adRequest)
-
-    when (result) {
-        is AdLoadResult.Success -> {
-            trackAdLoaded({ result.ad.getResponseInfo() }, AdFormat.REWARDED, placement, adUnitId)
-            result.ad.installTrackingEventCallback(
+    return RewardedAd.load(adRequest).trackAndConfigureAdLoadResult(
+        adFormat = AdFormat.REWARDED,
+        placement = placement,
+        adUnitId = adUnitId,
+        configureAd = { ad ->
+            ad.installTrackingEventCallback(
                 delegate = adEventCallback,
                 placement = placement,
                 adUnitId = adUnitId,
             )
-        }
-        is AdLoadResult.Failure -> {
-            trackAdFailedToLoad(result.error, AdFormat.REWARDED, placement, adUnitId)
-        }
-    }
-
-    return result
+        },
+    )
 }
 
 /**
