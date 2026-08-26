@@ -32,6 +32,8 @@ import com.revenuecat.purchases.admob.nextgen.tracking.trackAdLoaded
 import com.revenuecat.purchases.admob.nextgen.tracking.trackAndConfigureAdLoadResult
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFormat
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.onEach
 import kotlin.jvm.JvmSynthetic
 
 /**
@@ -676,6 +678,65 @@ public fun AdTracker.loadAndTrackNativeAdFromResponse(
             bannerAdEventCallback = bannerAdEventCallback,
         ),
     )
+}
+
+/**
+ * Loads up to [maxNumberOfAds] native ads and automatically tracks every callback result.
+ *
+ * Google can return standard native, custom-native, banner, and failure results in one batch. Each callback is
+ * forwarded after RevenueCat tracks and configures its result; [NativeAdLoaderCallback.onAdLoadingCompleted] is
+ * forwarded when Google finishes the batch. [loadCallback] is required to distinguish this callback-based
+ * overload from the suspending overload.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+@Suppress("LongParameterList")
+public fun AdTracker.loadAndTrackNativeAds(
+    adRequest: NativeAdRequest,
+    maxNumberOfAds: Int,
+    placement: String? = null,
+    loadCallback: NativeAdLoaderCallback,
+    nativeAdEventCallback: NativeAdEventCallback? = null,
+    bannerAdEventCallback: BannerAdEventCallback? = null,
+) {
+    NativeAdLoader.load(
+        adRequest,
+        maxNumberOfAds,
+        trackingNativeAdLoaderCallback(
+            delegate = loadCallback,
+            placement = placement,
+            adUnitId = adRequest.adUnitId,
+            nativeAdEventCallback = nativeAdEventCallback,
+            bannerAdEventCallback = bannerAdEventCallback,
+        ),
+    )
+}
+
+/**
+ * Loads up to [maxNumberOfAds] native ads and tracks every result emitted by Google's original [Flow].
+ *
+ * Results are returned unchanged and tracked when collected. Event tracking is installed on each successful result
+ * before it is emitted downstream.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+public suspend fun AdTracker.loadAndTrackNativeAds(
+    adRequest: NativeAdRequest,
+    maxNumberOfAds: Int,
+    placement: String? = null,
+    nativeAdEventCallback: NativeAdEventCallback? = null,
+    bannerAdEventCallback: BannerAdEventCallback? = null,
+): Flow<NativeAdLoadResult> {
+    val adUnitId = adRequest.adUnitId
+    return NativeAdLoader.load(adRequest, maxNumberOfAds).onEach { result ->
+        trackAndConfigureNativeAdLoadResult(
+            result = result,
+            placement = placement,
+            adUnitId = adUnitId,
+            nativeAdEventCallback = nativeAdEventCallback,
+            bannerAdEventCallback = bannerAdEventCallback,
+        )
+    }
 }
 
 private fun trackingNativeAdLoaderCallback(
