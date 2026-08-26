@@ -3,6 +3,7 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 import android.app.Activity
 import android.app.Application
 import android.content.DialogInterface
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -194,22 +195,68 @@ internal class CheckpointWorkflowPresenter(
         viewModelStore.clear()
     }
 
+    // Hand-rolls WindowCompat.enableEdgeToEdge (not available in the androidx.core version this module
+    // depends on) plus the dialog-window pieces Compose's DialogWrapper adds: unlike an Activity window,
+    // a dialog window's frame excludes the system bar regions until fitInsetsTypes says otherwise, and on
+    // API 35+ setDecorFitsSystemWindows and the bar-color setters are no-ops.
     private fun configureWindow(window: Window) {
+        // Forces decor installation so generateLayout() cannot overwrite what follows.
+        window.decorView
         // Hardware acceleration is not inherited from the host: under a software-rendered host (e.g. Unity)
         // Compose's hardware bitmaps would crash without it.
         window.addFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
         window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
+        @Suppress("DEPRECATION")
+        window.addFlags(
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR,
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.attributes = window.attributes.apply {
+                setFitInsetsTypes(0)
+                setFitInsetsSides(0)
+            }
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            window.attributes.layoutInDisplayCutoutMode =
-                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            window.attributes = window.attributes.apply {
+                layoutInDisplayCutoutMode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+                } else {
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                }
+            }
         }
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        // Legacy framework themes don't set windowDrawsSystemBarBackgrounds, without which the decor paints
+        // the bar regions black instead of transparent - including on 35+, where the bar color itself is
+        // already enforced transparent.
+        @Suppress("DEPRECATION")
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             @Suppress("DEPRECATION")
             window.statusBarColor = Color.TRANSPARENT
             @Suppress("DEPRECATION")
             window.navigationBarColor = Color.TRANSPARENT
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isStatusBarContrastEnforced = false
+            window.isNavigationBarContrastEnforced = false
+        }
+        // The legacy dialog theme never requests light system bars, leaving light-on-light icons in light
+        // mode; match enableEdgeToEdge's day/night-based appearance.
+        val isDarkMode = window.context.resources.configuration.uiMode and
+            Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = !isDarkMode
+            isAppearanceLightNavigationBars = !isDarkMode
+        }
+        window.setSoftInputMode(
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
+            } else {
+                @Suppress("DEPRECATION")
+                WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+            },
+        )
     }
 
     private val outcomeListener = object : PaywallListener {
