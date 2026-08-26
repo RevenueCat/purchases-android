@@ -685,7 +685,8 @@ public fun AdTracker.loadAndTrackNativeAdFromResponse(
  *
  * Google can return standard native, custom-native, banner, and failure results in one batch. Each callback is
  * forwarded after RevenueCat tracks and configures its result; [NativeAdLoaderCallback.onAdLoadingCompleted] is
- * forwarded when Google finishes the batch.
+ * forwarded when Google finishes the batch. [loadCallback] is required to distinguish this callback-based
+ * overload from the suspending overload.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
@@ -694,7 +695,7 @@ public fun AdTracker.loadAndTrackNativeAds(
     adRequest: NativeAdRequest,
     maxNumberOfAds: Int,
     placement: String? = null,
-    nativeAdLoaderCallback: NativeAdLoaderCallback,
+    loadCallback: NativeAdLoaderCallback,
     nativeAdEventCallback: NativeAdEventCallback? = null,
     bannerAdEventCallback: BannerAdEventCallback? = null,
 ) {
@@ -702,7 +703,7 @@ public fun AdTracker.loadAndTrackNativeAds(
         adRequest,
         maxNumberOfAds,
         trackingNativeAdLoaderCallback(
-            delegate = nativeAdLoaderCallback,
+            delegate = loadCallback,
             placement = placement,
             adUnitId = adRequest.adUnitId,
             nativeAdEventCallback = nativeAdEventCallback,
