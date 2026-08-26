@@ -288,6 +288,137 @@ rewardedInterstitialAd?.show(this) { rewardItem ->
 If preloading was started through Google's plain `start` API, `pollAndTrackAd` still installs tracking for later
 lifecycle events. RevenueCat cannot retroactively observe the original preload completion, so it does not synthesize
 a loaded event when the ad is polled.
+## Placement
+
+Use the optional `placement` to identify the logical location of an ad in your app, such as
+`"level_complete_interstitial"`. Choose stable names and apply them consistently so events from the same slot can be
+grouped together. The load-time placement is attached to load success and failure events and is the default for later
+events. If the final location is only known when the ad is shown, use `InterstitialAd.show(activity, placement)` to
+override the placement for display, click, and revenue events. Calling the Next-Gen SDK's regular `show(activity)`
+keeps the load-time placement.
+
+## Usage
+
+### Interstitial ads
+
+**Google Mobile Ads Next-Gen only**
+
+```kotlin
+val adRequest = AdRequest.Builder("AD_UNIT_ID").build()
+
+InterstitialAd.load(
+    adRequest,
+    object : AdLoadCallback<InterstitialAd> {
+        override fun onAdLoaded(ad: InterstitialAd) {
+            interstitialAd = ad
+            ad.adEventCallback = object : InterstitialAdEventCallback {
+                override fun onAdDismissedFullScreenContent() {
+                    interstitialAd = null
+                }
+            }
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            interstitialAd = null
+        }
+    },
+)
+
+// Later, to show:
+interstitialAd?.show(this)
+```
+
+**With RevenueCat tracking**
+
+```kotlin
+val adRequest = AdRequest.Builder("AD_UNIT_ID").build()
+
+Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAd(
+    adRequest = adRequest,
+    placement = "game_interstitial",
+    loadCallback = object : AdLoadCallback<InterstitialAd> {
+        override fun onAdLoaded(ad: InterstitialAd) {
+            interstitialAd = ad
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            interstitialAd = null
+        }
+    },
+    adEventCallback = object : InterstitialAdEventCallback {
+        override fun onAdDismissedFullScreenContent() {
+            interstitialAd = null
+        }
+
+        override fun onAdFailedToShowFullScreenContent(
+            fullScreenContentError: FullScreenContentError,
+        ) {
+            interstitialAd = null
+        }
+    },
+)
+
+// Later, override the load-time placement for events emitted while showing:
+interstitialAd?.show(this, placement = "level_complete_interstitial")
+```
+
+The coroutine overload returns Google's original load result:
+
+```kotlin
+lifecycleScope.launch {
+    when (
+        val result = Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAd(
+            adRequest = adRequest,
+            placement = "game_interstitial",
+        )
+    ) {
+        is AdLoadResult.Success -> interstitialAd = result.ad
+        is AdLoadResult.Failure -> interstitialAd = null
+    }
+}
+```
+
+> [!IMPORTANT]
+> Do not assign `interstitialAd.adEventCallback` directly after a tracked load. Direct assignment replaces
+> RevenueCat's tracking wrapper and prevents `show(activity, placement)` from applying its placement override. Pass
+> the callback to `loadAndTrackInterstitialAd`, or replace only the forwarded callback safely:
+
+```kotlin
+interstitialAd?.setTrackingAdEventCallback(newAdEventCallback)
+```
+
+Server-to-server interstitial responses use the callback API exposed by the pinned Google Mobile Ads SDK. Provide
+the ad unit ID explicitly so both successful and failed loads have the required attribution:
+
+```kotlin
+Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAdFromResponse(
+    adResponse = serverAdResponse,
+    adUnitId = "AD_UNIT_ID",
+    placement = "game_interstitial",
+    loadCallback = object : AdLoadCallback<InterstitialAd> {
+        override fun onAdLoaded(ad: InterstitialAd) {
+            interstitialAd = ad
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            interstitialAd = null
+        }
+    },
+    adEventCallback = interstitialAdEventCallback,
+)
+```
+
+The pinned SDK does not expose a suspending interstitial response-loading API, so the adapter intentionally does not
+add one.
+
+Google Mobile Ads Next-Gen invokes load and event callbacks on a background thread. Dispatch explicitly to the main
+thread before updating views or other UI-confined state from a callback.
+
+## Supported formats
+
+| Format       | RevenueCat tracking entry point                                 |
+| ------------ | --------------------------------------------------------------- |
+| Interstitial | `AdTracker.loadAndTrackInterstitialAd()` or `AdTracker.loadAndTrackInterstitialAdFromResponse()` |
 
 ## Events tracked
 
@@ -330,3 +461,18 @@ callback after the RevenueCat event is tracked — including the event callbacks
 
 Forwarding is unconditional. If RevenueCat is not configured the adapter logs a warning and skips tracking, and if
 tracking itself fails the adapter logs the error and swallows it. Either way your callback still runs.
+
+## Experimental API
+
+The tracking helpers use `@ExperimentalPreviewRevenueCatPurchasesAPI`. Opt in at the narrowest scope that calls them:
+
+```kotlin
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+fun loadInterstitial() {
+    val adRequest = AdRequest.Builder("AD_UNIT_ID").build()
+    Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAd(
+        adRequest = adRequest,
+        placement = "game_interstitial",
+    )
+}
+```
