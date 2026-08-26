@@ -11,8 +11,7 @@ import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdLoadResult
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingAdLoadCallback
-import com.revenuecat.purchases.admob.nextgen.tracking.trackAdFailedToLoad
-import com.revenuecat.purchases.admob.nextgen.tracking.trackAdLoaded
+import com.revenuecat.purchases.admob.nextgen.tracking.trackAndConfigureAdLoadResult
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import kotlin.jvm.JvmSynthetic
 
@@ -142,26 +141,19 @@ internal suspend fun AdView.loadAndTrackBannerAdFromResponseInternal(
     placement: String?,
     adEventCallback: BannerAdEventCallback?,
     bannerAdRefreshCallback: BannerAdRefreshCallback?,
-): AdLoadResult<BannerAd> {
-    val result = loadFromAdResponse(adResponse)
-
-    when (result) {
-        is AdLoadResult.Success -> {
-            trackAdLoaded(result.ad::getResponseInfo, AdFormat.BANNER, placement, adUnitId)
-            result.ad.installTrackingCallbacks(
-                adEventCallback = adEventCallback,
-                bannerAdRefreshCallback = bannerAdRefreshCallback,
-                placement = placement,
-                adUnitId = adUnitId,
-            )
-        }
-        is AdLoadResult.Failure -> {
-            trackAdFailedToLoad(result.error, AdFormat.BANNER, placement, adUnitId)
-        }
-    }
-
-    return result
-}
+): AdLoadResult<BannerAd> = loadFromAdResponse(adResponse).trackAndConfigureAdLoadResult(
+    adFormat = AdFormat.BANNER,
+    placement = placement,
+    adUnitId = adUnitId,
+    configureAd = { ad ->
+        ad.installTrackingCallbacks(
+            adEventCallback = adEventCallback,
+            bannerAdRefreshCallback = bannerAdRefreshCallback,
+            placement = placement,
+            adUnitId = adUnitId,
+        )
+    },
+)
 
 private fun trackingLoadCallback(
     adUnitId: String,
