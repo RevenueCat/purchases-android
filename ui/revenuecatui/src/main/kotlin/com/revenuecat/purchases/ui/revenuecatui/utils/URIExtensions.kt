@@ -25,7 +25,7 @@ internal fun URI.upsertQueryParameters(parameters: Map<String, String>): URI {
         "${name.encodeQueryParameterComponent()}=${value.encodeQueryParameterComponent()}"
     }
     val emittedParameterNames = mutableSetOf<String>()
-    val updatedQueryParts = rawQuery
+    val updatedQueryParts = rawQueryForUpsert()
         ?.split("&")
         .orEmpty()
         .filter { it.isNotEmpty() }
@@ -52,6 +52,13 @@ internal fun URI.upsertQueryParameters(parameters: Map<String, String>): URI {
     val uriWithoutQuery = if (queryIndex == -1) uriWithoutFragment else uriWithoutFragment.substring(0, queryIndex)
 
     return URI("$uriWithoutQuery?${updatedQueryParts.joinToString("&")}$fragment")
+}
+
+private fun URI.rawQueryForUpsert(): String? {
+    if (!isOpaque) return rawQuery
+
+    val queryIndex = rawSchemeSpecificPart.indexOf('?')
+    return if (queryIndex == -1) null else rawSchemeSpecificPart.substring(queryIndex + 1)
 }
 
 private fun String.encodeQueryParameterComponent(): String = Uri.encode(this)

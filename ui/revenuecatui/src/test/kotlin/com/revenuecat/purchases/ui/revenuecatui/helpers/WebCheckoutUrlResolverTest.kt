@@ -100,6 +100,23 @@ class WebCheckoutUrlResolverTest {
     }
 
     @Test
+    fun `custom checkout deep link preserves unrelated query parameters and fragment`() {
+        val state = FakePaywallState()
+        val action = customCheckoutAction(
+            customUrl = "merchant:checkout?campaign=summer#details",
+            rcPackage = TestData.Packages.monthly,
+            packageParam = "package",
+            openMethod = ButtonComponent.UrlMethod.DEEP_LINK,
+        )
+
+        val result = state.resolveWebCheckoutUrlForInteraction(action)
+
+        assertThat(result).isEqualTo(
+            "merchant:checkout?campaign=summer&rc_source=app&package=%24rc_monthly#details",
+        )
+    }
+
+    @Test
     fun `custom checkout replaces all existing parameters with configured names`() {
         val state = FakePaywallState()
         val action = customCheckoutAction(
@@ -175,9 +192,10 @@ class WebCheckoutUrlResolverTest {
         packageParam: String? = null,
         appUserIdParam: String? = null,
         envParam: String? = null,
+        openMethod: ButtonComponent.UrlMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
     ) = PaywallAction.External.LaunchWebCheckout(
         customUrl = customUrl,
-        openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
+        openMethod = openMethod,
         autoDismiss = false,
         packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
             rcPackage = rcPackage,
