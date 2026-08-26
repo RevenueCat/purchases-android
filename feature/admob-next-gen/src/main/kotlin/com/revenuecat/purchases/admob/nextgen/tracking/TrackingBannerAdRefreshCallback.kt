@@ -21,10 +21,14 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
  * [placement] stays immutable, unlike [TrackingAdEventCallback.placement]. A show-time
  * placement override only exists for the full-screen formats, which have no refresh
  * callback, so a banner reports the one placement it was loaded with.
+ *
+ * [delegate] is `@Volatile` because the app replaces it from whatever thread it calls
+ * `setTrackingBannerAdRefreshCallback` on, while the SDK reads it on the background thread
+ * it invokes refresh callbacks from.
  */
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingBannerAdRefreshCallback(
-    internal var delegate: BannerAdRefreshCallback?,
+    @Volatile internal var delegate: BannerAdRefreshCallback?,
     private val placement: String?,
     private val adUnitId: String,
     private val responseInfoProvider: () -> ResponseInfo,
