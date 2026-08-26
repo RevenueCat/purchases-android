@@ -93,6 +93,21 @@ internal class PrewarmTargetOfferingsTest {
     }
 
     @Test
+    fun `orders placements alphabetically between the current offering and the fallback`() {
+        val offerings = offeringsWith(
+            current = offering("current"),
+            others = listOf(offering("zebra"), offering("alpha"), offering("fallback")),
+            placements = Offerings.Placements(
+                fallbackOfferingId = "fallback",
+                offeringIdsByPlacement = linkedMapOf("zebra" to "zebra", "alpha" to "alpha"),
+            ),
+        )
+
+        assertThat(offerings.prewarmTargetOfferingIds())
+            .containsExactly("current", "alpha", "zebra", "fallback")
+    }
+
+    @Test
     fun `resolves ids to offerings in the same order`() {
         val current = offering("current")
         val onboarding = offering("onboarding")

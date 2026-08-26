@@ -27,6 +27,10 @@ internal object CustomOperators {
 
         "rc.rootVar" -> RootVarOperator.opRootVar(args, vars)
 
+        "rc.semverCompare" -> SemverOperator.opSemverCompare(args, vars)
+
+        "rc.split" -> SplitOperator.opSplit(args, vars)
+
         else -> throw EvaluationException.UnsupportedOperator(op)
     }
 }

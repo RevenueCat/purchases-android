@@ -36,11 +36,10 @@ internal class LocalRulesEvaluator(
     /**
      * The first rule that matches, or `null` when none does.
      *
-     * A predicate the engine cannot evaluate (malformed JSON, an operator this SDK version does not implement) is
-     * not enough to fail the call on its own: a later rule may still match definitively, and it wins. Only when
-     * nothing matched does the first such failure surface, because then "no match" cannot be told apart from "we
-     * failed to ask". A predicate that reads a dimension this SDK version does not supply is not a failure at all
-     * — the engine resolves it to null, which is an ordinary non-match.
+     * A predicate the engine cannot evaluate (malformed JSON, an operator this SDK version does not implement, a
+     * dimension this SDK version does not supply) is not enough to fail the call on its own: a later rule may
+     * still match definitively, and it wins. Only when nothing matched does the first such failure surface,
+     * because then "no match" cannot be told apart from "we failed to ask".
      *
      * When a predicate must be resolved before it can be evaluated, a resolution failure fails the call immediately.
      * [customVariables] are the caller's own values for this evaluation, readable under `custom.*`.

@@ -186,6 +186,7 @@ final class PurchasesAPI {
         purchases.setSolarEngineDistinctId("");
         purchases.setSolarEngineAccountId("");
         purchases.setSolarEngineVisitorId("");
+        purchases.setSingularDeviceID("");
         purchases.setTenjinAnalyticsInstallationID("");
         purchases.setPostHogUserId("");
         purchases.setAdGroup("");

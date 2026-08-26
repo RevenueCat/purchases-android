@@ -268,6 +268,7 @@ private class PurchasesAPI {
             setSolarEngineDistinctId("")
             setSolarEngineAccountId("")
             setSolarEngineVisitorId("")
+            setSingularDeviceID("")
             setAdGroup("")
             setAd("")
             setKeyword("")

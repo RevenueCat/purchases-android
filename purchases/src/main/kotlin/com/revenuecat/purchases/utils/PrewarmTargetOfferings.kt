@@ -18,7 +18,7 @@ internal fun Offerings.prewarmTargetOfferingIds(): Set<String> {
     current?.identifier?.let(identifiers::add)
     placements?.let { config ->
         // A placement mapped to null means "show nothing here", so it contributes no offering.
-        config.offeringIdsByPlacement.values.filterNotNullTo(identifiers)
+        config.offeringIdsByPlacement.toSortedMap().values.filterNotNullTo(identifiers)
         config.fallbackOfferingId?.let(identifiers::add)
     }
     return identifiers
