@@ -1,4 +1,5 @@
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.admob.nextgen
 
@@ -57,6 +58,7 @@ public fun AdTracker.loadAndTrackInterstitialAd(
         ),
     )
 }
+
 /**
  * Loads an [InterstitialAd] using Google Mobile Ads' suspending API and automatically tracks RevenueCat ad events.
  *
@@ -408,23 +410,18 @@ public suspend fun AdTracker.loadAndTrackRewardedInterstitialAd(
     adEventCallback: RewardedInterstitialAdEventCallback? = null,
 ): AdLoadResult<RewardedInterstitialAd> {
     val adUnitId = adRequest.adUnitId
-    val result = RewardedInterstitialAd.load(adRequest)
-
-    when (result) {
-        is AdLoadResult.Success -> {
-            trackAdLoaded({ result.ad.getResponseInfo() }, AdFormat.REWARDED_INTERSTITIAL, placement, adUnitId)
-            result.ad.installTrackingEventCallback(
+    return RewardedInterstitialAd.load(adRequest).trackAndConfigureAdLoadResult(
+        adFormat = AdFormat.REWARDED_INTERSTITIAL,
+        placement = placement,
+        adUnitId = adUnitId,
+        configureAd = { ad ->
+            ad.installTrackingEventCallback(
                 delegate = adEventCallback,
                 placement = placement,
                 adUnitId = adUnitId,
             )
-        }
-        is AdLoadResult.Failure -> {
-            trackAdFailedToLoad(result.error, AdFormat.REWARDED_INTERSTITIAL, placement, adUnitId)
-        }
-    }
-
-    return result
+        },
+    )
 }
 
 /**
