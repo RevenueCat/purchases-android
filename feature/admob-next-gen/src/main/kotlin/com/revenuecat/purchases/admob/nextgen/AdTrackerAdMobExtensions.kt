@@ -13,8 +13,6 @@ import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingAdLoadCallback
-import com.revenuecat.purchases.admob.nextgen.tracking.trackAdFailedToLoad
-import com.revenuecat.purchases.admob.nextgen.tracking.trackAdLoaded
 import com.revenuecat.purchases.admob.nextgen.tracking.trackAndConfigureAdLoadResult
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFormat
@@ -298,23 +296,18 @@ public suspend fun AdTracker.loadAndTrackAppOpenAd(
     adEventCallback: AppOpenAdEventCallback? = null,
 ): AdLoadResult<AppOpenAd> {
     val adUnitId = adRequest.adUnitId
-    val result = AppOpenAd.load(adRequest)
-
-    when (result) {
-        is AdLoadResult.Success -> {
-            trackAdLoaded({ result.ad.getResponseInfo() }, AdFormat.APP_OPEN, placement, adUnitId)
-            result.ad.installTrackingEventCallback(
+    return AppOpenAd.load(adRequest).trackAndConfigureAdLoadResult(
+        adFormat = AdFormat.APP_OPEN,
+        placement = placement,
+        adUnitId = adUnitId,
+        configureAd = { ad ->
+            ad.installTrackingEventCallback(
                 delegate = adEventCallback,
                 placement = placement,
                 adUnitId = adUnitId,
             )
-        }
-        is AdLoadResult.Failure -> {
-            trackAdFailedToLoad(result.error, AdFormat.APP_OPEN, placement, adUnitId)
-        }
-    }
-
-    return result
+        },
+    )
 }
 
 /**
