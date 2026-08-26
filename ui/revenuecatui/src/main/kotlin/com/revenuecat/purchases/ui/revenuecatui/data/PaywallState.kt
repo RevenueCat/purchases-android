@@ -463,18 +463,12 @@ internal fun getAvailableStorefrontCountryLocalesByLanguage(
     if (storefrontCountryCode.isNullOrBlank()) {
         emptyMap()
     } else {
-        buildMap {
-            availableLocales.forEach { availableLocale ->
-                val isStorefrontCountry = availableLocale.country.equals(
-                    storefrontCountryCode,
-                    ignoreCase = true,
-                )
-                val isPosix = availableLocale.variant.equals("POSIX", ignoreCase = true)
-                if (isStorefrontCountry && !isPosix) {
-                    put(availableLocale.language.lowercase(), availableLocale)
-                }
+        availableLocales
+            .filter { locale ->
+                locale.country.equals(storefrontCountryCode, ignoreCase = true) &&
+                    !locale.variant.equals("POSIX", ignoreCase = true)
             }
-        }
+            .associateBy { it.language.lowercase() }
     }
 
 internal fun PaywallState.loadedLegacy(): PaywallState.Loaded.Legacy? {
