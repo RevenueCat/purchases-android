@@ -105,10 +105,7 @@ begin
     announce: false,
   )
 
-  if api_diff
-    markdown(api_diff[:comment])
-    warn(api_diff[:warning]) if api_diff[:warning]
-  end
+  markdown(api_diff[:comment]) if api_diff
 rescue StandardError => e
   # `warn` is Danger's DSL: surfaces on the PR without failing the run.
   warn("Could not report the public API changes: #{e.message}")

@@ -510,7 +510,8 @@ class ApiDiffReportTest < Minitest::Test
     )
 
     assert_includes body[:comment], "+ method public void apiDiffDemoPong"
-    assert_nil body[:warning]
+    # Nothing was attempted, so there is no outcome to report and nothing to warn about.
+    assert_equal [:comment], body.keys
   end
 
   # The runner logged "Announced the public API change" off a failed post.
@@ -530,15 +531,9 @@ class ApiDiffReportTest < Minitest::Test
       changed_files: PATCHES.keys, patch_for: ->(file) { PATCHES[file] }, source: link,
       credentials: nil, poster: ->(*) { raise "must not post" }
     )
-    skipped = ApiDiffReport.run(
-      changed_files: PATCHES.keys, patch_for: ->(file) { PATCHES[file] }, announce: false,
-      credentials: CHANNEL_CREDENTIALS, poster: ->(*) { raise "must not post" }
-    )
-
     assert_equal :posted, posted[:outcome]
     assert_equal :duplicate, duplicate[:outcome]
     assert_equal :failed, failed[:outcome]
-    assert_equal :skipped, skipped[:outcome]
   end
 
   # --- The wiring ---

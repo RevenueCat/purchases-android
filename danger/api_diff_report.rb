@@ -303,15 +303,15 @@ module ApiDiffReport
     end
   end
 
-  # Returns { comment:, warning:, outcome: }, or nil when the public API did not change.
-  # outcome is :posted, :duplicate, :failed or :skipped; :skipped is `announce: false`.
+  # Returns nil when the public API did not change, { comment: } for `announce: false`, and
+  # { comment:, warning:, outcome: } otherwise. outcome is :posted, :duplicate or :failed.
   def run(changed_files:, patch_for:, source: "", announce: true, credentials: slack_credentials, poster: nil,
           getter: nil)
     signature_files = changed_files.uniq.select { |file| signature_file?(file) }
     report = build(signature_files.to_h { |file| [file, patch_for.call(file)] })
     return nil if empty?(report)
 
-    return { comment: markdown_section(report), warning: nil, outcome: :skipped } unless announce
+    return { comment: markdown_section(report) } unless announce
 
     outcome, reason = announce_to_slack(slack_message(report, source), source, credentials, poster, getter)
 
