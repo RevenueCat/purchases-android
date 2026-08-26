@@ -546,8 +546,8 @@ internal class PurchasesOrchestrator(
         syncPurchasesHelper.syncPurchases(
             isRestore = this.allowSharingPlayStoreAccount,
             appInBackground = this.state.appInBackground,
-            onSuccess = { afterPostReceiptRemoteConfigRefresh { listener?.onSuccess(it) } },
-            onError = { afterPostReceiptRemoteConfigRefresh { listener?.onError(it) } },
+            onSuccess = { afterPostReceiptRemoteConfigRefresh { dispatch { listener?.onSuccess(it) } } },
+            onError = { afterPostReceiptRemoteConfigRefresh { dispatch { listener?.onError(it) } } },
         )
     }
 
