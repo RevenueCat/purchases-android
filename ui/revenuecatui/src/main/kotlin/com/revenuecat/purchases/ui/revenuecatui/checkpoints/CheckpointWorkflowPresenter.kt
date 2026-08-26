@@ -55,7 +55,7 @@ internal class CheckpointWorkflowPresenter(
     private var awaitingRepresent = false
 
     // Saved on a configuration-change dismissal and restored into the re-presented window, so view hierarchy
-    // and rememberSaveable state survive rotation the way the recreated activity used to make them survive.
+    // and rememberSaveable state survive rotation.
     private var pendingSavedState: Bundle? = null
 
     private val viewModelStore = ViewModelStore()
@@ -195,27 +195,15 @@ internal class CheckpointWorkflowPresenter(
         viewModelStore.clear()
     }
 
-    // Hand-rolls WindowCompat.enableEdgeToEdge (not available in the androidx.core version this module
-    // depends on) plus the dialog-window pieces Compose's DialogWrapper adds: unlike an Activity window,
-    // a dialog window's frame excludes the system bar regions until fitInsetsTypes says otherwise, and on
-    // API 35+ setDecorFitsSystemWindows and the bar-color setters are no-ops.
+    // Hand-rolls what enableEdgeToEdge does for activity windows. The window frame itself already covers the
+    // system bar regions: the non-floating dialog theme makes PhoneWindow.generateLayout grant this window
+    // the same layout flags and fitInsetsTypes=0 an activity window gets.
     private fun configureWindow(window: Window) {
-        // Forces decor installation so generateLayout() cannot overwrite what follows.
+        // Forces decor installation so generateLayout() cannot overwrite the attributes set below.
         window.decorView
         // Hardware acceleration is not inherited from the host: under a software-rendered host (e.g. Unity)
         // Compose's hardware bitmaps would crash without it.
         window.addFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
-        window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
-        @Suppress("DEPRECATION")
-        window.addFlags(
-            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR,
-        )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.attributes = window.attributes.apply {
-                setFitInsetsTypes(0)
-                setFitInsetsSides(0)
-            }
-        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             window.attributes = window.attributes.apply {
                 layoutInDisplayCutoutMode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -225,11 +213,12 @@ internal class CheckpointWorkflowPresenter(
                 }
             }
         }
+        // <30: extends the frame behind the bars via the legacy systemUiVisibility flags; 30-34: stops the
+        // decor from padding the content; 35+: no-op (enforced).
         WindowCompat.setDecorFitsSystemWindows(window, false)
         // Legacy framework themes don't set windowDrawsSystemBarBackgrounds, without which the decor paints
         // the bar regions black instead of transparent - including on 35+, where the bar color itself is
         // already enforced transparent.
-        @Suppress("DEPRECATION")
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
             @Suppress("DEPRECATION")
@@ -238,7 +227,7 @@ internal class CheckpointWorkflowPresenter(
             window.navigationBarColor = Color.TRANSPARENT
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            window.isStatusBarContrastEnforced = false
+            // Defaults to true (unlike the status bar counterpart) and would scrim 3-button navigation.
             window.isNavigationBarContrastEnforced = false
         }
         // The legacy dialog theme never requests light system bars, leaving light-on-light icons in light

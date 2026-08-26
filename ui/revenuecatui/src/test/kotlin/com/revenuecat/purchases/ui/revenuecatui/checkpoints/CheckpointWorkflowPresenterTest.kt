@@ -248,7 +248,6 @@ class CheckpointWorkflowPresenterTest {
         assertThat(attributes.flags and WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN).isNotEqualTo(0)
         @Suppress("DEPRECATION")
         assertThat(attributes.flags and WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR).isNotEqualTo(0)
-        @Suppress("DEPRECATION")
         assertThat(attributes.flags and WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
             .isNotEqualTo(0)
         assertThat(window.isNavigationBarContrastEnforced).isFalse
