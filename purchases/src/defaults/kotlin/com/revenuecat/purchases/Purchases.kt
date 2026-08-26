@@ -258,7 +258,6 @@ public class Purchases internal constructor(
      * The AdTracker used to track ad attribution data.
      */
     @get:JvmSynthetic
-    @ExperimentalPreviewRevenueCatPurchasesAPI
     public val adTracker: AdTracker
         get() = purchasesOrchestrator.adTracker
 
@@ -845,7 +844,6 @@ public class Purchases internal constructor(
      *
      * @param impressionId The ad network's impression identifier for the loaded ad.
      */
-    @ExperimentalPreviewRevenueCatPurchasesAPI
     public fun generateRewardVerificationToken(impressionId: String): RewardVerificationToken {
         val clientTransactionId = UUID.randomUUID().toString()
         // Keys inserted in sorted order so the serialized customData is deterministic and matches the
@@ -874,7 +872,6 @@ public class Purchases internal constructor(
      * For coroutines, use the `awaitPollRewardVerification` suspend extension instead.
      */
     @JvmOverloads
-    @ExperimentalPreviewRevenueCatPurchasesAPI
     public fun pollRewardVerification(
         clientTransactionId: String,
         callback: PollRewardVerificationCallback,
@@ -886,7 +883,7 @@ public class Purchases internal constructor(
         )
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     internal suspend fun pollRewardVerification(
         clientTransactionId: String,
         trackingMetadata: RewardedAdTrackingMetadata?,
@@ -933,7 +930,7 @@ public class Purchases internal constructor(
         return if (entitlementReflected) result else RewardVerificationResult.failed
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     private fun trackRewardOutcome(
         trackingMetadata: RewardedAdTrackingMetadata,
         outcome: Outcome,
@@ -988,7 +985,7 @@ public class Purchases internal constructor(
         }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     private fun VerifiedReward.toCoreVerifiedReward(): CoreVerifiedReward {
         return when (this) {
             is VerifiedReward.VirtualCurrency -> CoreVerifiedReward.VirtualCurrency(code = code, amount = amount)
@@ -1001,7 +998,6 @@ public class Purchases internal constructor(
 
     // getCustomerInfo has no built-in retry, so retry transient (network) failures (with a short delay
     // between attempts, so a brief blip doesn't exhaust all retries at once) before giving up.
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private suspend fun refreshCustomerInfoAfterEntitlementGrant(clientTransactionId: String): Boolean {
         debugLog {
             "Reward verification granted an entitlement; refreshing CustomerInfo " +
