@@ -232,6 +232,45 @@
       "predicate": { ">=": [3, 2, 1] },
       "variables": {},
       "expected": true
+    },
+    {
+      "id": "lt_orders_strings_by_utf16_code_unit",
+      "description": "Strings order as UTF-16 code units: an astral character starts with a leading surrogate, which sorts below any code unit above the surrogate range",
+      "predicate": { "<": ["\uff21", "\ud83d\ude00"] },
+      "variables": {},
+      "expected": false
+    },
+    {
+      "id": "gt_orders_strings_by_utf16_code_unit",
+      "predicate": { ">": ["\uff21", "\ud83d\ude00"] },
+      "variables": {},
+      "expected": true
+    },
+    {
+      "id": "le_orders_strings_by_utf16_code_unit",
+      "predicate": { "<=": ["\uff21", "\ud83d\ude00"] },
+      "variables": {},
+      "expected": false
+    },
+    {
+      "id": "lt_code_unit_below_the_surrogate_range_sorts_first",
+      "description": "Control case: an ASCII code unit sorts below a leading surrogate",
+      "predicate": { "<": ["Z", "\ud83d\ude00"] },
+      "variables": {},
+      "expected": true
+    },
+    {
+      "id": "le_canonically_equivalent_strings_are_not_equal",
+      "description": "The two spellings of e-acute are distinct strings, so exactly one of <= and >= can hold",
+      "predicate": { "<=": ["\u00e9", "e\u0301"] },
+      "variables": {},
+      "expected": false
+    },
+    {
+      "id": "ge_canonically_equivalent_strings_compare_by_code_unit",
+      "predicate": { ">=": ["\u00e9", "e\u0301"] },
+      "variables": {},
+      "expected": true
     }
   ]
 }
