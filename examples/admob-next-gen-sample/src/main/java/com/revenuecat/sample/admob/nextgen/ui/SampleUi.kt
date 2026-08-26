@@ -59,7 +59,7 @@ fun AdMobNextGenSample(
         SampleScreen.APP_OPEN -> AppOpenScreen(activity, onBack)
         SampleScreen.REWARDED -> PlaceholderAdScreen(selectedScreen.title, onBack)
         SampleScreen.REWARDED_INTERSTITIAL -> PlaceholderAdScreen(selectedScreen.title, onBack)
-        SampleScreen.NATIVE -> PlaceholderAdScreen(selectedScreen.title, onBack)
+        SampleScreen.NATIVE -> NativeScreen(onBack)
         SampleScreen.DIAGNOSTICS -> PlaceholderAdScreen(selectedScreen.title, onBack)
     }
 }
