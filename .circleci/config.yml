@@ -981,6 +981,9 @@ workflows:
             - run:
                 name: Run api diff report unit tests
                 command: ruby danger/api_diff_report_test.rb
+          filters:
+            branches:
+              ignore: main
 
   announce-api-changes-on-main:
     when:
