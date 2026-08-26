@@ -30,8 +30,9 @@ internal class CheckpointPresentation(
  * slot.
  *
  * There is one instance per [Purchases] instance, held in its `checkpointManagerSlot` and reached through
- * [checkpointsManager], so the listener and any in-flight presentation die with the SDK instance that owns
- * them and reconfiguring the SDK always starts from a clean state.
+ * [checkpointsManager], so the listener dies with the SDK instance that owns it and a reconfigured SDK starts
+ * with a free presentation slot. A workflow that is already on screen keeps reporting to the manager that
+ * presented it, exactly once, even if the SDK is reconfigured underneath it.
  */
 internal class CheckpointsManager(
     private val presenterFactory: (callId: String, manager: CheckpointsManager) -> CheckpointWorkflowPresenter =

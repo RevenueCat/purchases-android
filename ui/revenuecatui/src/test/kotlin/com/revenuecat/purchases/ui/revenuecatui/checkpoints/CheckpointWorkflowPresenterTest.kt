@@ -5,6 +5,7 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 import android.app.Activity
 import android.os.Looper
 import android.view.View
+import android.widget.EditText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
@@ -44,6 +45,8 @@ class CheckpointWorkflowPresenterTest {
     private val presentedCallIds = mutableListOf<String>()
     private var lastOptions: PaywallOptions? = null
     private var result: CheckpointResult? = null
+    private var contentFactory: (Activity) -> View = { activity -> View(activity) }
+    private val contentViews = mutableListOf<View>()
 
     @Before
     fun setup() {
@@ -58,7 +61,7 @@ class CheckpointWorkflowPresenterTest {
             presentedCallIds += callId
             CheckpointWorkflowPresenter(callId, manager) { activity, options ->
                 lastOptions = options
-                View(activity)
+                contentFactory(activity).also { contentViews += it }
             }
         }
     }
@@ -178,6 +181,56 @@ class CheckpointWorkflowPresenterTest {
         assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Dismissed)
     }
 
+    @Test
+    fun `a stale dismiss callback from before a configuration change does not take down the re-presented window`() {
+        launchCheckpoint()
+
+        // Dialog delivers the dismiss callback through a posted message: dismissing without idling leaves
+        // that message in flight across the recreation, exactly like an external dismissal racing a rotation.
+        ShadowDialog.getLatestDialog().dismiss()
+        controller.recreate()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isTrue
+        assertThat(result).isNull()
+    }
+
+    @Test
+    fun `view state is restored in the re-presented window after a configuration change`() {
+        contentFactory = { activity -> EditText(activity).apply { id = CONTENT_VIEW_ID } }
+        launchCheckpoint()
+        (contentViews.last() as EditText).setText("mid-workflow input")
+
+        controller.recreate()
+
+        assertThat((contentViews.last() as EditText).text.toString()).isEqualTo("mid-workflow input")
+    }
+
+    @Test
+    fun `a failed re-present completes the call instead of hanging`() {
+        val customerInfo = mockk<CustomerInfo>()
+        launchCheckpoint()
+        manager.recordOutcome(currentCallId(), CheckpointPaywallOutcome.Purchased(customerInfo))
+        contentFactory = { throw IllegalStateException("content failed") }
+
+        controller.recreate()
+
+        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo))
+    }
+
+    @Test
+    fun `cancelling after a configuration change does not resurrect the workflow on a later recreation`() {
+        val call = launchCheckpoint()
+        controller.recreate()
+
+        call.cancel()
+
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
+        val dialogsShown = ShadowDialog.getShownDialogs().size
+        controller.recreate()
+        assertThat(ShadowDialog.getShownDialogs()).hasSize(dialogsShown)
+    }
+
     private fun launchCheckpoint(): Job = CoroutineScope(dispatcher).launch {
         result = manager.checkpoint(mockPurchases, "test_checkpoint", null)
     }
@@ -186,4 +239,8 @@ class CheckpointWorkflowPresenterTest {
 
     private fun paywallOutcome(): CheckpointPaywallOutcome? =
         (result as? CheckpointResult.PaywallPresented)?.paywallOutcome
+
+    private companion object {
+        const val CONTENT_VIEW_ID = 4242
+    }
 }

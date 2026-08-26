@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import android.app.Activity
 import android.app.Application
+import android.content.DialogInterface
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -52,6 +53,10 @@ internal class CheckpointWorkflowPresenter(
     private var application: Application? = null
     private var awaitingRepresent = false
 
+    // Saved on a configuration-change dismissal and restored into the re-presented window, so view hierarchy
+    // and rememberSaveable state survive rotation the way the recreated activity used to make them survive.
+    private var pendingSavedState: Bundle? = null
+
     private val viewModelStore = ViewModelStore()
     private val viewModelStoreOwner = object : ViewModelStoreOwner {
         override val viewModelStore: ViewModelStore
@@ -63,6 +68,7 @@ internal class CheckpointWorkflowPresenter(
      * through [CheckpointsManager.present]'s error handling, a re-present catches it in [lifecycleCallbacks].
      */
     fun show(activity: Activity) {
+        dismissWindowOnly()
         val presentation = manager.presentation(callId)
         if (presentation == null) {
             Logger.w("Checkpoint call '$callId' no longer exists. Closing the checkpoint workflow.")
@@ -89,9 +95,16 @@ internal class CheckpointWorkflowPresenter(
             ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
         )
         dialog.window?.decorView?.setViewTreeViewModelStoreOwner(viewModelStoreOwner)
-        dialog.setOnDismissListener { onWindowDismissed() }
+        dialog.setOnDismissListener { dismissed -> onWindowDismissed(dismissed) }
         this.dialog = dialog
-        dialog.show()
+        val savedState = pendingSavedState
+        pendingSavedState = null
+        // onRestoreInstanceState drives onCreate with the saved state and shows the dialog itself when the
+        // state was captured from a showing window.
+        savedState?.let(dialog::onRestoreInstanceState)
+        if (!dialog.isShowing) {
+            dialog.show()
+        }
     }
 
     // The manager already took the call, so this only takes the window down and stops observing: completing
@@ -106,6 +119,9 @@ internal class CheckpointWorkflowPresenter(
             if (activity !== host) return
             host = null
             val isConfigurationChange = activity.isChangingConfigurations
+            if (isConfigurationChange) {
+                pendingSavedState = dialog?.onSaveInstanceState()
+            }
             // Always before the host's own window teardown, or the framework reports the dialog as leaked.
             dismissWindowOnly()
             if (isConfigurationChange) {
@@ -140,8 +156,12 @@ internal class CheckpointWorkflowPresenter(
     }
 
     // Safety net for dismissals this presenter didn't initiate (e.g. the system tearing the window down):
-    // without it the suspended checkpoint() call and the one-at-a-time slot would stay stuck.
-    private fun onWindowDismissed() {
+    // without it the suspended checkpoint() call and the one-at-a-time slot would stay stuck. The identity
+    // check matters because an external dismissal posts this callback before the listener can be detached:
+    // by the time it runs, a configuration change may already have re-presented a new window, which a stale
+    // report must not take down.
+    private fun onWindowDismissed(dismissed: DialogInterface) {
+        if (dismissed !== dialog) return
         dialog = null
         finish()
     }
@@ -170,6 +190,7 @@ internal class CheckpointWorkflowPresenter(
         application = null
         host = null
         awaitingRepresent = false
+        pendingSavedState = null
         viewModelStore.clear()
     }
 
