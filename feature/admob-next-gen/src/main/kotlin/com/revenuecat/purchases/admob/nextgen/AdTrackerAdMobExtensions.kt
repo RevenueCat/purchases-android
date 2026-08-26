@@ -2,6 +2,8 @@
 
 package com.revenuecat.purchases.admob.nextgen
 
+import com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAd
+import com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdLoadResult
 import com.google.android.libraries.ads.mobile.sdk.common.AdRequest
@@ -225,6 +227,117 @@ public fun AdTracker.loadAndTrackRewardedAdFromResponse(
         TrackingAdLoadCallback(
             delegate = loadCallback,
             adFormat = AdFormat.REWARDED,
+            placement = placement,
+            adUnitId = adUnitId,
+            configureAd = { ad ->
+                ad.installTrackingEventCallback(
+                    delegate = adEventCallback,
+                    placement = placement,
+                    adUnitId = adUnitId,
+                )
+            },
+        ),
+    )
+}
+
+/**
+ * Loads an [AppOpenAd] and automatically tracks RevenueCat ad events.
+ *
+ * The loaded ad has event tracking installed before it is forwarded to [loadCallback].
+ * Call via `Purchases.sharedInstance.adTracker`.
+ *
+ * @param adRequest The [AdRequest] to load. Its ad unit ID is used for tracking.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param loadCallback Callback to receive load success and failure events.
+ * @param adEventCallback Optional callback for app open lifecycle and paid events.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+public fun AdTracker.loadAndTrackAppOpenAd(
+    adRequest: AdRequest,
+    placement: String? = null,
+    loadCallback: AdLoadCallback<AppOpenAd>,
+    adEventCallback: AppOpenAdEventCallback? = null,
+) {
+    val adUnitId = adRequest.adUnitId
+    AppOpenAd.load(
+        adRequest,
+        TrackingAdLoadCallback(
+            delegate = loadCallback,
+            adFormat = AdFormat.APP_OPEN,
+            placement = placement,
+            adUnitId = adUnitId,
+            configureAd = { ad ->
+                ad.installTrackingEventCallback(
+                    delegate = adEventCallback,
+                    placement = placement,
+                    adUnitId = adUnitId,
+                )
+            },
+        ),
+    )
+}
+
+/**
+ * Loads an [AppOpenAd] using Google Mobile Ads' suspending API and automatically tracks RevenueCat ad events.
+ *
+ * The original [AdLoadResult] is returned unchanged. A successfully loaded ad has event tracking installed before
+ * this function returns. Call via `Purchases.sharedInstance.adTracker`.
+ *
+ * @param adRequest The [AdRequest] to load. Its ad unit ID is used for tracking.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param adEventCallback Optional callback for app open lifecycle and paid events.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+public suspend fun AdTracker.loadAndTrackAppOpenAd(
+    adRequest: AdRequest,
+    placement: String? = null,
+    adEventCallback: AppOpenAdEventCallback? = null,
+): AdLoadResult<AppOpenAd> {
+    val adUnitId = adRequest.adUnitId
+    return AppOpenAd.load(adRequest).trackAndConfigureAdLoadResult(
+        adFormat = AdFormat.APP_OPEN,
+        placement = placement,
+        adUnitId = adUnitId,
+        configureAd = { ad ->
+            ad.installTrackingEventCallback(
+                delegate = adEventCallback,
+                placement = placement,
+                adUnitId = adUnitId,
+            )
+        },
+    )
+}
+
+/**
+ * Loads an [AppOpenAd] from a server-to-server ad response and automatically tracks RevenueCat ad events.
+ *
+ * The loaded ad has event tracking installed before it is forwarded to [loadCallback]. [adUnitId] is required
+ * because neither the opaque response nor a failed load reliably provides it. Call via
+ * `Purchases.sharedInstance.adTracker`.
+ *
+ * @param adResponse The opaque server-to-server ad response supplied by Google Mobile Ads.
+ * @param adUnitId The ad unit ID associated with [adResponse], used for RevenueCat tracking.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param loadCallback Callback to receive load success and failure events.
+ * @param adEventCallback Optional callback for app open lifecycle and paid events.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+@Suppress("LongParameterList")
+public fun AdTracker.loadAndTrackAppOpenAdFromResponse(
+    adResponse: String,
+    adUnitId: String,
+    placement: String? = null,
+    loadCallback: AdLoadCallback<AppOpenAd>,
+    adEventCallback: AppOpenAdEventCallback? = null,
+) {
+    AppOpenAd.loadFromAdResponse(
+        adResponse,
+        TrackingAdLoadCallback(
+            delegate = loadCallback,
+            adFormat = AdFormat.APP_OPEN,
             placement = placement,
             adUnitId = adUnitId,
             configureAd = { ad ->

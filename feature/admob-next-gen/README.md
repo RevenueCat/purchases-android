@@ -290,12 +290,12 @@ lifecycle events. RevenueCat cannot retroactively observe the original preload c
 a loaded event when the ad is polled.
 ## Placement
 
-Use the optional `placement` to identify the logical location of an ad in your app, such as
+Use the optional `placement` to identify the logical location of an ad in your app, such as `"app_start"` or
 `"level_complete_interstitial"`. Choose stable names and apply them consistently so events from the same slot can be
 grouped together. The load-time placement is attached to load success and failure events and is the default for later
-events. If the final location is only known when the ad is shown, use `InterstitialAd.show(activity, placement)` to
-override the placement for display, click, and revenue events. Calling the Next-Gen SDK's regular `show(activity)`
-keeps the load-time placement.
+events. If the final location is only known when the ad is shown, use the format's tracked
+`show(activity, placement)` overload to override the placement for display, click, and revenue events. Calling the
+Next-Gen SDK's regular `show(activity)` keeps the load-time placement.
 
 ## Usage
 
@@ -411,13 +411,126 @@ Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAdFromResponse(
 The pinned SDK does not expose a suspending interstitial response-loading API, so the adapter intentionally does not
 add one.
 
+### App open ads
+
+**Google Mobile Ads Next-Gen only**
+
+```kotlin
+val adRequest = AdRequest.Builder("AD_UNIT_ID").build()
+
+AppOpenAd.load(
+    adRequest,
+    object : AdLoadCallback<AppOpenAd> {
+        override fun onAdLoaded(ad: AppOpenAd) {
+            appOpenAd = ad
+            ad.adEventCallback = object : AppOpenAdEventCallback {
+                override fun onAdDismissedFullScreenContent() {
+                    appOpenAd = null
+                }
+            }
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            appOpenAd = null
+        }
+    },
+)
+
+// Later, to show:
+appOpenAd?.show(this)
+```
+
+**With RevenueCat tracking**
+
+```kotlin
+val adRequest = AdRequest.Builder("AD_UNIT_ID").build()
+
+Purchases.sharedInstance.adTracker.loadAndTrackAppOpenAd(
+    adRequest = adRequest,
+    placement = "app_start",
+    loadCallback = object : AdLoadCallback<AppOpenAd> {
+        override fun onAdLoaded(ad: AppOpenAd) {
+            appOpenAd = ad
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            appOpenAd = null
+        }
+    },
+    adEventCallback = object : AppOpenAdEventCallback {
+        override fun onAdDismissedFullScreenContent() {
+            appOpenAd = null
+        }
+
+        override fun onAdFailedToShowFullScreenContent(
+            fullScreenContentError: FullScreenContentError,
+        ) {
+            appOpenAd = null
+        }
+    },
+)
+
+// Later, override the load-time placement for events emitted while showing:
+appOpenAd?.show(this, placement = "app_start")
+```
+
+The coroutine overload returns Google's original load result:
+
+```kotlin
+lifecycleScope.launch {
+    when (
+        val result = Purchases.sharedInstance.adTracker.loadAndTrackAppOpenAd(
+            adRequest = adRequest,
+            placement = "app_start",
+        )
+    ) {
+        is AdLoadResult.Success -> appOpenAd = result.ad
+        is AdLoadResult.Failure -> appOpenAd = null
+    }
+}
+```
+
+> [!IMPORTANT]
+> Do not assign `appOpenAd.adEventCallback` directly after a tracked load. Direct assignment replaces
+> RevenueCat's tracking wrapper and prevents `show(activity, placement)` from applying its placement override. Pass
+> the callback to `loadAndTrackAppOpenAd`, or replace only the forwarded callback safely:
+
+```kotlin
+appOpenAd?.setTrackingAdEventCallback(newAdEventCallback)
+```
+
+Server-to-server app open responses use the callback API exposed by the pinned Google Mobile Ads SDK. Provide
+the ad unit ID explicitly so both successful and failed loads have the required attribution:
+
+```kotlin
+Purchases.sharedInstance.adTracker.loadAndTrackAppOpenAdFromResponse(
+    adResponse = serverAdResponse,
+    adUnitId = "AD_UNIT_ID",
+    placement = "app_start",
+    loadCallback = object : AdLoadCallback<AppOpenAd> {
+        override fun onAdLoaded(ad: AppOpenAd) {
+            appOpenAd = ad
+        }
+
+        override fun onAdFailedToLoad(adError: LoadAdError) {
+            appOpenAd = null
+        }
+    },
+    adEventCallback = appOpenAdEventCallback,
+)
+```
+
+The pinned SDK does not expose a suspending app open response-loading API, so the adapter intentionally does not
+add one.
+
 Google Mobile Ads Next-Gen invokes load and event callbacks on a background thread. Dispatch explicitly to the main
 thread before updating views or other UI-confined state from a callback.
 
 ## Supported formats
 
-| Format       | RevenueCat tracking entry point                                 |
-| ------------ | --------------------------------------------------------------- |
+| Format       | RevenueCat tracking entry point                                                      |
+| ------------ | ------------------------------------------------------------------------------------ |
+| App open     | `AdTracker.loadAndTrackAppOpenAd()` or `AdTracker.loadAndTrackAppOpenAdFromResponse()` |
 | Interstitial | `AdTracker.loadAndTrackInterstitialAd()` or `AdTracker.loadAndTrackInterstitialAdFromResponse()` |
 
 ## Placement
@@ -626,6 +739,15 @@ fun loadRewardedAd() {
     Purchases.sharedInstance.adTracker.loadAndTrackRewardedAd(
         adRequest = adRequest,
         placement = "game_reward",
+    )
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+fun loadAppOpenAd() {
+    val adRequest = AdRequest.Builder("AD_UNIT_ID").build()
+    Purchases.sharedInstance.adTracker.loadAndTrackAppOpenAd(
+        adRequest = adRequest,
+        placement = "app_start",
     )
 }
 ```
