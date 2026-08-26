@@ -50,7 +50,6 @@ end
 warn(result[:warning]) if result[:warning]
 
 case result[:outcome]
-when :posted    then puts "Announced the public API change on #{head}."
-when :duplicate then puts "#{head} was already announced."
-when :failed    then puts "Could not announce #{head}. See the warning above."
+when :posted then puts "Announced the public API change on #{head}."
+when :failed then puts "Could not announce #{head}. See the warning above."
 end
