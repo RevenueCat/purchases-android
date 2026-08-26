@@ -80,7 +80,7 @@ class NativeAdFlowTest {
         adTracker.loadAndTrackNativeAd(
             adRequest = adRequest,
             placement = "feed",
-            nativeAdLoaderCallback = delegate,
+            loadCallback = delegate,
             nativeAdEventCallback = nativeEventCallback,
             bannerAdEventCallback = bannerEventCallback,
         )

@@ -94,7 +94,7 @@ class NativeAdResponseFlowTest {
             adResponse = "opaque-response",
             adUnitId = "supplied-native-unit",
             placement = "feed",
-            nativeAdLoaderCallback = delegate,
+            loadCallback = delegate,
         )
         trackingLoadCallback.captured.onNativeAdLoaded(loadedAd)
 
@@ -134,7 +134,7 @@ class NativeAdResponseFlowTest {
             adResponse = "opaque-response",
             adUnitId = "supplied-banner-unit",
             placement = "feed",
-            nativeAdLoaderCallback = delegate,
+            loadCallback = delegate,
             bannerAdEventCallback = eventDelegate,
         )
         trackingLoadCallback.captured.onBannerAdLoaded(loadedAd)
@@ -160,7 +160,7 @@ class NativeAdResponseFlowTest {
             adResponse = "opaque-response",
             adUnitId = "supplied-native-unit",
             placement = "feed",
-            nativeAdLoaderCallback = delegate,
+            loadCallback = delegate,
         )
         trackingLoadCallback.captured.onAdFailedToLoad(error)
 

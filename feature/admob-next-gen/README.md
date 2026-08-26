@@ -963,7 +963,7 @@ NativeAdLoader.load(
 Purchases.sharedInstance.adTracker.loadAndTrackNativeAd(
     adRequest = adRequest,
     placement = "home_feed",
-    nativeAdLoaderCallback = object : NativeAdLoaderCallback {
+    loadCallback = object : NativeAdLoaderCallback {
         override fun onNativeAdLoaded(nativeAd: NativeAd) {
             loadedNativeAd = nativeAd
         }
@@ -1019,7 +1019,7 @@ Purchases.sharedInstance.adTracker.loadAndTrackNativeAdFromResponse(
     adResponse = serverAdResponse,
     adUnitId = "AD_UNIT_ID",
     placement = "home_feed",
-    nativeAdLoaderCallback = nativeAdLoaderCallback,
+    loadCallback = nativeAdLoaderCallback,
     nativeAdEventCallback = nativeAdEventCallback,
 )
 ```
@@ -1116,7 +1116,7 @@ fun loadNativeAd() {
     Purchases.sharedInstance.adTracker.loadAndTrackNativeAd(
         adRequest = adRequest,
         placement = "home_feed",
-        nativeAdLoaderCallback = nativeAdLoaderCallback,
+        loadCallback = nativeAdLoaderCallback,
     )
 }
 ```
