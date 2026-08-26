@@ -23,9 +23,12 @@ import com.google.android.libraries.ads.mobile.sdk.common.PreloadConfiguration
 import com.google.android.libraries.ads.mobile.sdk.rewarded.OnUserEarnedRewardListener
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdPreloader
+import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAd
+import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAdPreloader
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.enableRewardVerification
 import com.revenuecat.purchases.admob.nextgen.loadAndTrackRewardedAd
+import com.revenuecat.purchases.admob.nextgen.loadAndTrackRewardedInterstitialAd
 import com.revenuecat.purchases.admob.nextgen.pollAndTrackAd
 import com.revenuecat.purchases.admob.nextgen.show
 import com.revenuecat.purchases.admob.nextgen.startAndTrack
@@ -34,6 +37,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 private const val REWARDED_PRELOAD_ID = "sample-rewarded"
+private const val REWARDED_INTERSTITIAL_PRELOAD_ID = "sample-rewarded-interstitial"
 
 @Composable
 internal fun RewardedScreen(activity: Activity, onBack: () -> Unit) {
@@ -155,6 +159,136 @@ private fun showRewarded(
                 scope.launch {
                     updateStatus("Reward earned: ${reward.amount} ${reward.type}")
                 }
+            },
+        )
+    }
+}
+
+@Composable
+internal fun RewardedInterstitialScreen(activity: Activity, onBack: () -> Unit) {
+    var directStatus by remember { mutableStateOf("No direct rewarded-interstitial ad loaded") }
+    var useVerification by remember { mutableStateOf(false) }
+    var directLoadedWithVerification by remember { mutableStateOf(false) }
+    var directAd by remember { mutableStateOf<RewardedInterstitialAd?>(null) }
+    val preloadState = rememberPreloaderUiState(
+        REWARDED_INTERSTITIAL_PRELOAD_ID,
+        getConfiguration = {
+            RewardedInterstitialAdPreloader.getConfiguration(REWARDED_INTERSTITIAL_PRELOAD_ID)
+        },
+        getNumAdsAvailable = {
+            RewardedInterstitialAdPreloader.getNumAdsAvailable(REWARDED_INTERSTITIAL_PRELOAD_ID)
+        },
+    )
+    val scope = rememberCoroutineScope()
+
+    AdScreen("Rewarded interstitial", onBack) { mode ->
+        RewardVerificationToggle(useVerification) { useVerification = it }
+        Text("Both direct and preloaded ads can opt into RevenueCat reward verification.")
+        if (mode == LoadMode.DIRECT) {
+            StatusCard(directStatus)
+            ActionRow(
+                "Load" to {
+                    scope.launch {
+                        val verify = useVerification
+                        directStatus = "Loading directly..."
+                        when (
+                            val result = Purchases.sharedInstance.adTracker.loadAndTrackRewardedInterstitialAd(
+                                AdRequest.Builder(BuildConfig.ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID).build(),
+                                placement = "rewarded_interstitial_load",
+                            )
+                        ) {
+                            is AdLoadResult.Success -> {
+                                directAd = result.ad.also { if (verify) it.enableRewardVerification() }
+                                directLoadedWithVerification = verify
+                                directStatus = readyStatus(verify)
+                            }
+                            is AdLoadResult.Failure -> directStatus = "Load failed: ${result.error.message}"
+                        }
+                    }
+                },
+                "Show" to {
+                    val loadedAd = directAd
+                    if (loadedAd == null) {
+                        directStatus = "Load a rewarded-interstitial ad first"
+                    } else {
+                        showRewardedInterstitial(loadedAd, activity, directLoadedWithVerification) {
+                            directStatus = it
+                        }
+                        directAd = null
+                    }
+                },
+                enabled = mapOf("Show" to (directAd != null)),
+            )
+        } else {
+            PreloaderPanel(
+                state = preloadState,
+                actions = listOf(
+                    PreloaderAction(
+                        label = "Poll + Show",
+                        enabled = preloadState.started && preloadState.adsAvailable > 0,
+                        onClick = {
+                            val verify = useVerification
+                            val ad = RewardedInterstitialAdPreloader.pollAndTrackAd(
+                                REWARDED_INTERSTITIAL_PRELOAD_ID,
+                                placement = "rewarded_interstitial_poll",
+                            )?.also { if (verify) it.enableRewardVerification() }
+                            preloadState.refresh()
+                            if (ad == null) {
+                                preloadState.message = "No buffered rewarded-interstitial ad available"
+                            } else {
+                                preloadState.message = "Showing rewarded-interstitial ad"
+                                showRewardedInterstitial(ad, activity, verify) {
+                                    preloadState.message = it
+                                }
+                            }
+                        },
+                    ),
+                ),
+                onToggle = {
+                    if (preloadState.started) {
+                        preloadState.updateAfterStop(
+                            RewardedInterstitialAdPreloader.destroy(REWARDED_INTERSTITIAL_PRELOAD_ID),
+                        )
+                    } else {
+                        preloadState.updateAfterStart(
+                            RewardedInterstitialAdPreloader.startAndTrack(
+                                REWARDED_INTERSTITIAL_PRELOAD_ID,
+                                PreloadConfiguration(
+                                    AdRequest.Builder(BuildConfig.ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID).build(),
+                                    preloadState.bufferSize,
+                                ),
+                                placement = "rewarded_interstitial_preload",
+                                preloadCallback = preloadState.preloadCallback(scope),
+                            ),
+                        )
+                    }
+                },
+            )
+        }
+    }
+}
+
+private fun showRewardedInterstitial(
+    ad: RewardedInterstitialAd,
+    activity: Activity,
+    verify: Boolean,
+    updateStatus: (String) -> Unit,
+) {
+    if (verify) {
+        ad.show(
+            activity,
+            placement = "rewarded_interstitial_show",
+            rewardVerificationStarted = { updateStatus("Verifying reward...") },
+            rewardVerificationCompleted = { result ->
+                updateStatus("Verification complete: ${result.verifiedReward ?: "failed"}")
+            },
+        )
+    } else {
+        ad.show(
+            activity,
+            placement = "rewarded_interstitial_show",
+            onUserEarnedRewardListener = OnUserEarnedRewardListener { reward ->
+                updateStatus("Reward earned: ${reward.amount} ${reward.type}")
             },
         )
     }
