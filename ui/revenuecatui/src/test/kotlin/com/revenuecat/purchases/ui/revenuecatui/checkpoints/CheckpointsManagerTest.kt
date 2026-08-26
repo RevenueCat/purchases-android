@@ -191,7 +191,7 @@ class CheckpointsManagerTest {
 
         var result: CheckpointResult? = null
         val call = launch {
-            result = checkpoint(CheckpointParams("goal" to CustomVariableValue.String("test")))
+            result = checkpoint(CheckpointParams { customVariables { "goal" to "test" } })
         }
 
         assertThat(result).isNull()
@@ -215,11 +215,13 @@ class CheckpointsManagerTest {
         resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
 
         checkpoint(
-            CheckpointParams(
-                "goal" to CustomVariableValue.String("test"),
-                "attempt" to CustomVariableValue.Number(2),
-                "flag" to CustomVariableValue.Boolean(true),
-            ),
+            CheckpointParams {
+                customVariables {
+                    "goal" to "test"
+                    "attempt" to 2
+                    "flag" to true
+                }
+            },
         )
 
         val customVariables = slot<Map<String, RulesDimensionValue>>()
@@ -238,12 +240,14 @@ class CheckpointsManagerTest {
         resolvesToWorkflow()
         val call = launch {
             checkpoint(
-                CheckpointParams(
-                    "gate" to CustomVariableValue.String("hard"),
-                    "attempt" to CustomVariableValue.Number(2),
-                    "ratio" to CustomVariableValue.Number(0.5),
-                    "flag" to CustomVariableValue.Boolean(true),
-                ),
+                CheckpointParams {
+                    customVariables {
+                        "gate" to "hard"
+                        "attempt" to 2
+                        "ratio" to 0.5
+                        "flag" to true
+                    }
+                },
             )
         }
 

@@ -8,7 +8,6 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitCustomerInfo
-import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
@@ -71,7 +70,7 @@ class EntitlementGateViewModel : ViewModel() {
             try {
                 val result = Purchases.sharedInstance.awaitCheckpoint(
                     "entitlement_gate",
-                    CheckpointParams("gate" to CustomVariableValue.String("entitlement")),
+                    CheckpointParams { customVariables { "gate" to "entitlement" } },
                 )
                 handleCheckpointResult(result)
             } catch (e: PurchasesException) {
