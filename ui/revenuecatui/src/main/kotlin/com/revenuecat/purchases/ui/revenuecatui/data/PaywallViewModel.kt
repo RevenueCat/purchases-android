@@ -1604,6 +1604,7 @@ internal class PaywallViewModelImpl(
                 customVariables = options.customVariables,
                 defaultCustomVariables = extractDefaultCustomVariables(offering),
                 stateStore = stateStore,
+                viewModelActionInProgress = _actionInProgress,
             )
         }
     }

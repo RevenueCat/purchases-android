@@ -5,6 +5,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -130,6 +131,8 @@ internal sealed interface PaywallState {
              * Presentation-session store for state-driven paywalls, seeded from the paywall's declared state defaults.
              */
             val stateStore: PaywallStateStore = PaywallStateStore(emptyMap()),
+            /** The view model's gate, so every step of a workflow reads the one flag. */
+            private val viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
         ) : Loaded {
 
             /**
@@ -335,15 +338,23 @@ internal sealed interface PaywallState {
             var footerHeightPx: Int = 0
                 @JvmSynthetic internal set
 
-            var actionInProgress by mutableStateOf(false)
+            /** Raised and cleared by the button, for the actions that begin and end with the click. */
+            var clickScopedActionInProgress by mutableStateOf(false)
                 private set
+
+            /**
+             * Read live rather than mirrored, so an action that outlives the button that started it keeps
+             * the paywall disabled after [clickScopedActionInProgress] is cleared by the click's cancellation.
+             */
+            val actionInProgress: Boolean
+                get() = viewModelActionInProgress.value || clickScopedActionInProgress
 
             val sheet = initialSheetState
 
             fun update(
                 localeList: FrameworkLocaleList? = null,
                 selectedTabIndex: Int? = null,
-                actionInProgress: Boolean? = null,
+                clickScopedActionInProgress: Boolean? = null,
             ) {
                 if (localeList != null) localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
 
@@ -374,7 +385,9 @@ internal sealed interface PaywallState {
                         ?: visibleFallbackForHiddenDefaultOutsideTabs
                 }
 
-                if (actionInProgress != null) this.actionInProgress = actionInProgress
+                if (clickScopedActionInProgress != null) {
+                    this.clickScopedActionInProgress = clickScopedActionInProgress
+                }
             }
 
             fun update(selectedPackageUniqueId: String) {

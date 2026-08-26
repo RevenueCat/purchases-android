@@ -140,7 +140,7 @@ internal fun ButtonComponentView(
                     onStackClick = onStackClick@{
                         val paywallAction = buttonState.action ?: return@onStackClick
                         myActionInProgress = true
-                        state.update(actionInProgress = true)
+                        state.update(clickScopedActionInProgress = true)
                         if (style.action.isPurchaseRelated()) {
                             val currentPackage = packageForPurchaseButtonInteraction(style.action, state)
                             val componentUrl = resolvedWebCheckoutInteractionUrl(
@@ -177,7 +177,7 @@ internal fun ButtonComponentView(
                                 onClick(paywallAction)
                             } finally {
                                 myActionInProgress = false
-                                state.update(actionInProgress = false)
+                                state.update(clickScopedActionInProgress = false)
                             }
                         }
                     },
