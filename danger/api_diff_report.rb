@@ -1,6 +1,5 @@
 # Reports the public API a PR changes, from the metalava signature diffs. Loaded by the Dangerfile.
 
-require 'digest'
 require 'json'
 require 'net/http'
 require 'uri'
@@ -160,17 +159,7 @@ module ApiDiffReport
     shown
   end
 
-  # Of the rendered summary, not the report: joining the declaration lists would hash an addition of
-  # a declaration the same as its removal.
-  def fingerprint(message)
-    Digest::SHA256.hexdigest(message.to_s)[0, 12]
-  end
-
-  def fingerprint_marker(fingerprint)
-    "<!-- api-diff:#{fingerprint} -->"
-  end
-
-  def markdown_section(report, announced_fingerprint: nil)
+  def markdown_section(report)
     summary = "Public API changes in #{report[:modules].join(', ')} (#{counts(report)})"
     body = capped_lines(diff_lines(report), limit: MARKDOWN_LIMIT, width: MARKDOWN_WIDTH)
 
@@ -183,7 +172,6 @@ module ApiDiffReport
       "",
       "</details>"
     ]
-    lines << fingerprint_marker(announced_fingerprint) if announced_fingerprint
 
     lines.join("\n")
   end
@@ -290,17 +278,13 @@ module ApiDiffReport
   end
 
   # Returns [:posted | :duplicate | :failed, reason_or_nil].
-  def announce_to_slack(message, source, credentials, poster, getter, announced_in_comment)
+  def announce_to_slack(message, source, credentials, poster, getter)
     return [:failed, "no Slack credentials were reachable"] if credentials.nil?
 
     bot_token, channel = credentials
 
     state, history_error = announcement_state(message, channel, bot_token, getter, source)
     return [:duplicate, nil] if state == :same
-
-    if state == :unknown && announced_in_comment&.call(fingerprint_marker(fingerprint(message)))
-      return [:duplicate, nil]
-    end
 
     post(slack_request(message, bot_token: bot_token, channel: channel), poster: poster)
     [:posted, history_error]
@@ -322,20 +306,17 @@ module ApiDiffReport
   # Returns { comment:, warning:, outcome: }, or nil when the public API did not change.
   # outcome is :posted, :duplicate, :failed or :skipped; :skipped is `announce: false`.
   def run(changed_files:, patch_for:, source: "", announce: true, credentials: slack_credentials, poster: nil,
-          getter: nil, announced_in_comment: nil)
+          getter: nil)
     signature_files = changed_files.uniq.select { |file| signature_file?(file) }
     report = build(signature_files.to_h { |file| [file, patch_for.call(file)] })
     return nil if empty?(report)
 
-    # No fingerprint marker: a comment claiming an announcement that never happened would suppress
-    # the real one.
     return { comment: markdown_section(report), warning: nil, outcome: :skipped } unless announce
 
-    message = slack_message(report, source)
-    outcome, reason = announce_to_slack(message, source, credentials, poster, getter, announced_in_comment)
+    outcome, reason = announce_to_slack(slack_message(report, source), source, credentials, poster, getter)
 
     {
-      comment: markdown_section(report, announced_fingerprint: (fingerprint(message) unless outcome == :failed)),
+      comment: markdown_section(report),
       warning: warning(outcome, reason),
       # A warning does not mean the post failed; it also fires on an announced-but-duplicated one.
       outcome: outcome

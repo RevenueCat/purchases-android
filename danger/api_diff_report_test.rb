@@ -308,25 +308,7 @@ class ApiDiffReportTest < Minitest::Test
     assert_equal 1, posted.count
   end
 
-  def test_run_falls_back_to_the_marker_on_the_pull_request_when_history_is_unreadable
-    markers = []
-
-    body = ApiDiffReport.run(
-      changed_files: PATCHES.keys,
-      patch_for: ->(file) { PATCHES[file] },
-      source: "<url|#42>",
-      credentials: CHANNEL_CREDENTIALS,
-      getter: ->(*) { Struct.new(:code, :body).new("200", '{"ok":false,"error":"missing_scope"}') },
-      announced_in_comment: ->(marker) { markers << marker; true },
-      poster: ->(*) { raise "must not post" }
-    )
-
-    assert_match(/\A<!-- api-diff:[0-9a-f]{12} -->\z/, markers.first)
-    assert_includes body[:comment], markers.first
-    assert_nil body[:warning]
-  end
-
-  def test_run_warns_about_a_possible_duplicate_when_neither_store_is_readable
+  def test_run_warns_about_a_possible_duplicate_when_history_is_unreadable
     posted = []
 
     body = ApiDiffReport.run(
@@ -335,58 +317,11 @@ class ApiDiffReportTest < Minitest::Test
       source: "<url|#42>",
       credentials: CHANNEL_CREDENTIALS,
       getter: ->(*) { raise "slack is down" },
-      announced_in_comment: ->(_marker) { false },
       poster: collecting_poster(posted)
     )
 
     assert_equal 1, posted.count
     assert_includes body[:warning], "may be announced twice: slack is down"
-  end
-
-  def test_run_records_the_fingerprint_only_once_announced
-    announced = ApiDiffReport.run(
-      changed_files: PATCHES.keys,
-      patch_for: ->(file) { PATCHES[file] },
-      source: "<url|#42>",
-      credentials: CHANNEL_CREDENTIALS,
-      getter: history_getter([]),
-      poster: ->(*) { Struct.new(:code, :body).new("200", '{"ok":true}') }
-    )
-    failed = ApiDiffReport.run(
-      changed_files: PATCHES.keys,
-      patch_for: ->(file) { PATCHES[file] },
-      source: "<url|#42>",
-      credentials: CHANNEL_CREDENTIALS,
-      getter: history_getter([]),
-      poster: ->(*) { raise "slack is down" }
-    )
-
-    assert_match(/<!-- api-diff:[0-9a-f]{12} -->/, announced[:comment])
-    refute_match(/<!-- api-diff:/, failed[:comment])
-  end
-
-  def test_fingerprint_survives_a_rerun_and_moves_with_the_summary
-    unchanged = announcement_for("<url|#42>")
-    changed = ApiDiffReport.slack_message(
-      ApiDiffReport.build("purchases/api-defauts.txt" => ADDED_METHOD_PATCH.gsub("Pong", "Pang")), "<url|#42>"
-    )
-
-    assert_equal ApiDiffReport.fingerprint(unchanged), ApiDiffReport.fingerprint(unchanged)
-    refute_equal ApiDiffReport.fingerprint(unchanged), ApiDiffReport.fingerprint(changed)
-  end
-
-  # Hashing the declaration lists gave an addition and its removal the same fingerprint, which let
-  # the marker path swallow a removal.
-  def test_fingerprint_separates_an_addition_from_its_removal
-    added = ApiDiffReport.build("purchases/api-defauts.txt" => ADDED_METHOD_PATCH)
-    removed = ApiDiffReport.build(
-      "purchases/api-defauts.txt" => ADDED_METHOD_PATCH.sub("+    method public void apiDiffDemoPong();",
-                                                            "-    method public void apiDiffDemoPong();")
-    )
-
-    assert_equal ["method public void apiDiffDemoPong();"], removed[:removed]
-    refute_equal ApiDiffReport.fingerprint(ApiDiffReport.slack_message(added, "<url|#42>")),
-                 ApiDiffReport.fingerprint(ApiDiffReport.slack_message(removed, "<url|#42>"))
   end
 
   # chat.postMessage takes a `#name`, conversations.history does not.
@@ -576,18 +511,6 @@ class ApiDiffReportTest < Minitest::Test
 
     assert_includes body[:comment], "+ method public void apiDiffDemoPong"
     assert_nil body[:warning]
-  end
-
-  def test_run_leaves_no_announcement_marker_on_a_pull_request
-    body = ApiDiffReport.run(
-      changed_files: PATCHES.keys,
-      patch_for: ->(file) { PATCHES[file] },
-      announce: false,
-      credentials: CHANNEL_CREDENTIALS,
-      poster: ->(*) { raise "must not post" }
-    )
-
-    refute_match(/<!-- api-diff:/, body[:comment])
   end
 
   # The runner logged "Announced the public API change" off a failed post.
