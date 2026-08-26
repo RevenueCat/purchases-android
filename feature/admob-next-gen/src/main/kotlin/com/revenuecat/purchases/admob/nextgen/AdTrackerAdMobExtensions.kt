@@ -502,3 +502,67 @@ public fun AdTracker.loadAndTrackBannerAd(
         bannerAdRefreshCallback = bannerAdRefreshCallback,
     )
 }
+
+/**
+ * Loads a banner into [adView] from a server-to-server response and tracks RevenueCat ad events.
+ *
+ * The loaded ad has event and refresh tracking installed before it is forwarded to [loadCallback]. [adUnitId] is
+ * required because neither the opaque response nor a failed load reliably provides it. Call via
+ * `Purchases.sharedInstance.adTracker`.
+ *
+ * @param adView The [AdView] that will display the loaded banner.
+ * @param adResponse The opaque server-to-server ad response supplied by Google Mobile Ads.
+ * @param adUnitId The ad unit ID associated with [adResponse], used for RevenueCat tracking.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param loadCallback Required callback to receive load success and failure events and distinguish this callback-based
+ * overload from its suspending counterpart.
+ * @param adEventCallback Optional callback for banner lifecycle and paid events.
+ * @param bannerAdRefreshCallback Optional callback for automatic banner refresh events.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+@Suppress("LongParameterList")
+public fun AdTracker.loadAndTrackBannerAdFromResponse(
+    adView: AdView,
+    adResponse: String,
+    adUnitId: String,
+    placement: String? = null,
+    loadCallback: AdLoadCallback<BannerAd>,
+    adEventCallback: BannerAdEventCallback? = null,
+    bannerAdRefreshCallback: BannerAdRefreshCallback? = null,
+) {
+    adView.loadAndTrackBannerAdFromResponseInternal(
+        adResponse = adResponse,
+        adUnitId = adUnitId,
+        placement = placement,
+        loadCallback = loadCallback,
+        adEventCallback = adEventCallback,
+        bannerAdRefreshCallback = bannerAdRefreshCallback,
+    )
+}
+
+/**
+ * Loads a banner into [adView] from a server-to-server response using Google Mobile Ads' suspending API and tracks
+ * RevenueCat ad events.
+ *
+ * The original [AdLoadResult] is returned unchanged. A successfully loaded ad has event and refresh tracking
+ * installed before this function returns. [adUnitId] is required because neither the opaque response nor a failed
+ * load reliably provides it. Call via `Purchases.sharedInstance.adTracker`.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+@Suppress("LongParameterList")
+public suspend fun AdTracker.loadAndTrackBannerAdFromResponse(
+    adView: AdView,
+    adResponse: String,
+    adUnitId: String,
+    placement: String? = null,
+    adEventCallback: BannerAdEventCallback? = null,
+    bannerAdRefreshCallback: BannerAdRefreshCallback? = null,
+): AdLoadResult<BannerAd> = adView.loadAndTrackBannerAdFromResponseInternal(
+    adResponse = adResponse,
+    adUnitId = adUnitId,
+    placement = placement,
+    adEventCallback = adEventCallback,
+    bannerAdRefreshCallback = bannerAdRefreshCallback,
+)
