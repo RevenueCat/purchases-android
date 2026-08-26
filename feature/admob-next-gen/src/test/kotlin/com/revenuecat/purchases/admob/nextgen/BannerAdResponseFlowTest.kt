@@ -159,7 +159,7 @@ class BannerAdResponseFlowTest {
             every { bannerAd.adEventCallback = capture(installedEventCallback) } just runs
             every { bannerAd.bannerAdRefreshCallback = capture(installedRefreshCallback) } just runs
 
-            val result = adTracker.loadAndTrackBannerAdFromResponse(
+            val result = adTracker.awaitLoadAndTrackBannerAdFromResponse(
                 adView = adView,
                 adResponse = "opaque-response",
                 adUnitId = "supplied-banner-unit",
@@ -188,7 +188,7 @@ class BannerAdResponseFlowTest {
 
         coEvery { adView.loadFromAdResponse("opaque-response") } returns sdkResult
 
-        val result = adView.loadAndTrackAdFromResponse(
+        val result = adView.awaitLoadAndTrackAdFromResponse(
             adResponse = "opaque-response",
             adUnitId = "supplied-banner-unit",
             placement = "response-banner",

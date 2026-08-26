@@ -299,6 +299,10 @@ Next-Gen SDK's regular `show(activity)` keeps the load-time placement.
 
 ## Usage
 
+All callback-based load helpers accept an optional `loadCallback`. Omit it for fire-and-forget tracking when the
+loaded ad is owned by the SDK or another callback is not needed. Suspending helpers use the `awaitLoadAndTrack…`
+naming convention and return Google's original result unchanged.
+
 ### Interstitial ads
 
 **Google Mobile Ads Next-Gen only**
@@ -362,12 +366,12 @@ Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAd(
 interstitialAd?.show(this, placement = "level_complete_interstitial")
 ```
 
-The coroutine overload returns Google's original load result:
+The suspending `awaitLoadAndTrackInterstitialAd` helper returns Google's original load result:
 
 ```kotlin
 lifecycleScope.launch {
     when (
-        val result = Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAd(
+        val result = Purchases.sharedInstance.adTracker.awaitLoadAndTrackInterstitialAd(
             adRequest = adRequest,
             placement = "game_interstitial",
         )
@@ -474,12 +478,12 @@ Purchases.sharedInstance.adTracker.loadAndTrackAppOpenAd(
 appOpenAd?.show(this, placement = "app_start")
 ```
 
-The coroutine overload returns Google's original load result:
+The suspending `awaitLoadAndTrackAppOpenAd` helper returns Google's original load result:
 
 ```kotlin
 lifecycleScope.launch {
     when (
-        val result = Purchases.sharedInstance.adTracker.loadAndTrackAppOpenAd(
+        val result = Purchases.sharedInstance.adTracker.awaitLoadAndTrackAppOpenAd(
             adRequest = adRequest,
             placement = "app_start",
         )
@@ -593,12 +597,12 @@ rewardedInterstitialAd?.show(this, placement = "bonus_chest") { rewardItem ->
 }
 ```
 
-The coroutine overload returns Google's original load result:
+The suspending `awaitLoadAndTrackRewardedInterstitialAd` helper returns Google's original load result:
 
 ```kotlin
 lifecycleScope.launch {
     when (
-        val result = Purchases.sharedInstance.adTracker.loadAndTrackRewardedInterstitialAd(
+        val result = Purchases.sharedInstance.adTracker.awaitLoadAndTrackRewardedInterstitialAd(
             adRequest = adRequest,
             placement = "level_complete_reward",
         )
@@ -736,12 +740,12 @@ rewardedAd?.show(
 )
 ```
 
-The coroutine overload returns Google's original load result:
+The suspending `awaitLoadAndTrackRewardedAd` helper returns Google's original load result:
 
 ```kotlin
 lifecycleScope.launch {
     when (
-        val result = Purchases.sharedInstance.adTracker.loadAndTrackRewardedAd(
+        val result = Purchases.sharedInstance.adTracker.awaitLoadAndTrackRewardedAd(
             adRequest = adRequest,
             placement = "game_reward",
         )
@@ -921,7 +925,7 @@ counterpart do too. They return Google's original result unchanged:
 ```kotlin
 lifecycleScope.launch {
     when (
-        adView.loadAndTrackAdFromResponse(
+        adView.awaitLoadAndTrackAdFromResponse(
             adResponse = serverAdResponse,
             adUnitId = "AD_UNIT_ID",
             placement = "home_banner",
@@ -980,11 +984,11 @@ Purchases.sharedInstance.adTracker.loadAndTrackNativeAd(
 )
 ```
 
-The coroutine overload returns Google's original result unchanged:
+The suspending `awaitLoadAndTrackNativeAd` helper returns Google's original result unchanged:
 
 ```kotlin
 when (
-    val result = Purchases.sharedInstance.adTracker.loadAndTrackNativeAd(
+    val result = Purchases.sharedInstance.adTracker.awaitLoadAndTrackNativeAd(
         adRequest = adRequest,
         placement = "home_feed",
     )
@@ -994,6 +998,19 @@ when (
     is NativeAdLoadResult.BannerAdSuccess -> handleBannerAd(result.ad)
     is NativeAdLoadResult.Failure -> loadedNativeAd = null
 }
+```
+
+For native batch requests, use `loadAndTrackNativeAds` with an optional callback, or collect the tracked result flow
+returned by `awaitLoadAndTrackNativeAds`:
+
+```kotlin
+val results = Purchases.sharedInstance.adTracker.awaitLoadAndTrackNativeAds(
+    adRequest = adRequest,
+    maxNumberOfAds = 4,
+    placement = "home_feed",
+)
+
+results.collect(::handleNativeAdLoadResult)
 ```
 
 A `NativeAdRequest` can intentionally combine standard native, custom-native, and banner inventory. RevenueCat

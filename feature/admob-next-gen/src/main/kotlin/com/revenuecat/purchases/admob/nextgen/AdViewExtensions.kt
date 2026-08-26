@@ -18,8 +18,8 @@ import kotlin.jvm.JvmSynthetic
 /**
  * Loads a banner ad into this [AdView] and automatically tracks RevenueCat ad events.
  *
- * The loaded [BannerAd] has tracking callbacks installed before it is forwarded to [loadCallback]. Pass app
- * callbacks here instead of assigning them directly to the loaded ad, as direct assignment would replace
+ * The loaded [BannerAd] has tracking callbacks installed before it is forwarded to [loadCallback], if provided.
+ * Pass app callbacks here instead of assigning them directly to the loaded ad, as direct assignment would replace
  * RevenueCat's tracking callbacks. To change them later, use [BannerAd.setTrackingAdEventCallback] and
  * [BannerAd.setTrackingBannerAdRefreshCallback].
  */
@@ -46,8 +46,7 @@ public fun AdView.loadAndTrackAd(
  * Loads a banner into this [AdView] from a server-to-server response and tracks RevenueCat ad events.
  *
  * [adUnitId] is required because neither the opaque response nor a failed load reliably provides it. The loaded ad
- * has tracking callbacks installed before it is forwarded to [loadCallback].
- * [loadCallback] is required to distinguish this callback-based overload from its suspending counterpart.
+ * has tracking callbacks installed before it is forwarded to [loadCallback], if provided.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
@@ -56,7 +55,7 @@ public fun AdView.loadAndTrackAdFromResponse(
     adResponse: String,
     adUnitId: String,
     placement: String? = null,
-    loadCallback: AdLoadCallback<BannerAd>,
+    loadCallback: AdLoadCallback<BannerAd>? = null,
     adEventCallback: BannerAdEventCallback? = null,
     bannerAdRefreshCallback: BannerAdRefreshCallback? = null,
 ) {
@@ -81,7 +80,7 @@ public fun AdView.loadAndTrackAdFromResponse(
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 @Suppress("LongParameterList")
-public suspend fun AdView.loadAndTrackAdFromResponse(
+public suspend fun AdView.awaitLoadAndTrackAdFromResponse(
     adResponse: String,
     adUnitId: String,
     placement: String? = null,
@@ -120,7 +119,7 @@ internal fun AdView.loadAndTrackBannerAdFromResponseInternal(
     adResponse: String,
     adUnitId: String,
     placement: String?,
-    loadCallback: AdLoadCallback<BannerAd>,
+    loadCallback: AdLoadCallback<BannerAd>?,
     adEventCallback: BannerAdEventCallback?,
     bannerAdRefreshCallback: BannerAdRefreshCallback?,
 ) {

@@ -192,7 +192,7 @@ class AppOpenAdFlowTest {
 
             coEvery { AppOpenAd.load(adRequest) } returns sdkResult
 
-            val result = adTracker.loadAndTrackAppOpenAd(
+            val result = adTracker.awaitLoadAndTrackAppOpenAd(
                 adRequest = adRequest,
                 placement = "suspend-load-placement",
                 adEventCallback = eventCallback,
@@ -232,7 +232,7 @@ class AppOpenAdFlowTest {
 
         coEvery { AppOpenAd.load(adRequest) } returns sdkResult
 
-        val result = adTracker.loadAndTrackAppOpenAd(
+        val result = adTracker.awaitLoadAndTrackAppOpenAd(
             adRequest = adRequest,
             placement = "suspend-load-placement",
         )

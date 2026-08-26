@@ -199,7 +199,7 @@ class RewardedAdFlowTest {
 
             coEvery { RewardedAd.load(adRequest) } returns sdkResult
 
-            val result = adTracker.loadAndTrackRewardedAd(
+            val result = adTracker.awaitLoadAndTrackRewardedAd(
                 adRequest = adRequest,
                 placement = "suspend-load-placement",
                 adEventCallback = eventCallback,
@@ -239,7 +239,7 @@ class RewardedAdFlowTest {
 
         coEvery { RewardedAd.load(adRequest) } returns sdkResult
 
-        val result = adTracker.loadAndTrackRewardedAd(
+        val result = adTracker.awaitLoadAndTrackRewardedAd(
             adRequest = adRequest,
             placement = "suspend-load-placement",
         )

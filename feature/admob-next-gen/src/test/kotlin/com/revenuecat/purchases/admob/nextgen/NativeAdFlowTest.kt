@@ -141,7 +141,7 @@ class NativeAdFlowTest {
 
         coEvery { NativeAdLoader.load(adRequest) } returns sdkResult
 
-        val result = adTracker.loadAndTrackNativeAd(adRequest, placement = "feed")
+        val result = adTracker.awaitLoadAndTrackNativeAd(adRequest, placement = "feed")
 
         assertSame(sdkResult, result)
         assertTrue(nativeAd.adEventCallback is TrackingNativeAdEventCallback)
@@ -164,7 +164,7 @@ class NativeAdFlowTest {
         coEvery { NativeAdLoader.load(adRequest) } returns results[0] andThen results[1] andThen results[2]
 
         val returnedResults = results.map {
-            adTracker.loadAndTrackNativeAd(adRequest, placement = "feed")
+            adTracker.awaitLoadAndTrackNativeAd(adRequest, placement = "feed")
         }
 
         results.zip(returnedResults).forEach { (expected, actual) -> assertSame(expected, actual) }

@@ -208,7 +208,7 @@ class RewardedInterstitialAdFlowTest {
 
             coEvery { RewardedInterstitialAd.load(adRequest) } returns sdkResult
 
-            val result = adTracker.loadAndTrackRewardedInterstitialAd(
+            val result = adTracker.awaitLoadAndTrackRewardedInterstitialAd(
                 adRequest = adRequest,
                 placement = "suspend-load-placement",
                 adEventCallback = eventCallback,
@@ -248,7 +248,7 @@ class RewardedInterstitialAdFlowTest {
 
         coEvery { RewardedInterstitialAd.load(adRequest) } returns sdkResult
 
-        val result = adTracker.loadAndTrackRewardedInterstitialAd(
+        val result = adTracker.awaitLoadAndTrackRewardedInterstitialAd(
             adRequest = adRequest,
             placement = "suspend-load-placement",
         )

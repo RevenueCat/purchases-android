@@ -39,12 +39,12 @@ import kotlin.jvm.JvmSynthetic
 /**
  * Loads an [InterstitialAd] and automatically tracks RevenueCat ad events.
  *
- * The loaded ad has event tracking installed before it is forwarded to [loadCallback].
+ * The loaded ad has event tracking installed before it is forwarded to [loadCallback], if provided.
  * Call via `Purchases.sharedInstance.adTracker`.
  *
  * @param adRequest The [AdRequest] to load. Its ad unit ID is used for tracking.
  * @param placement Optional placement identifier used in RevenueCat tracking.
- * @param loadCallback Callback to receive load success and failure events.
+ * @param loadCallback Optional callback to receive load success and failure events.
  * @param adEventCallback Optional callback for interstitial lifecycle and paid events.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -52,7 +52,7 @@ import kotlin.jvm.JvmSynthetic
 public fun AdTracker.loadAndTrackInterstitialAd(
     adRequest: AdRequest,
     placement: String? = null,
-    loadCallback: AdLoadCallback<InterstitialAd>,
+    loadCallback: AdLoadCallback<InterstitialAd>? = null,
     adEventCallback: InterstitialAdEventCallback? = null,
 ) {
     val adUnitId = adRequest.adUnitId
@@ -86,7 +86,7 @@ public fun AdTracker.loadAndTrackInterstitialAd(
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
-public suspend fun AdTracker.loadAndTrackInterstitialAd(
+public suspend fun AdTracker.awaitLoadAndTrackInterstitialAd(
     adRequest: AdRequest,
     placement: String? = null,
     adEventCallback: InterstitialAdEventCallback? = null,
@@ -109,14 +109,14 @@ public suspend fun AdTracker.loadAndTrackInterstitialAd(
 /**
  * Loads an [InterstitialAd] from a server-to-server ad response and automatically tracks RevenueCat ad events.
  *
- * The loaded ad has event tracking installed before it is forwarded to [loadCallback]. [adUnitId] is required
- * because neither the opaque response nor a failed load reliably provides it. Call via
+ * The loaded ad has event tracking installed before it is forwarded to [loadCallback], if provided. [adUnitId] is
+ * required because neither the opaque response nor a failed load reliably provides it. Call via
  * `Purchases.sharedInstance.adTracker`.
  *
  * @param adResponse The opaque server-to-server ad response supplied by Google Mobile Ads.
  * @param adUnitId The ad unit ID associated with [adResponse], used for RevenueCat tracking.
  * @param placement Optional placement identifier used in RevenueCat tracking.
- * @param loadCallback Callback to receive load success and failure events.
+ * @param loadCallback Optional callback to receive load success and failure events.
  * @param adEventCallback Optional callback for interstitial lifecycle and paid events.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -126,7 +126,7 @@ public fun AdTracker.loadAndTrackInterstitialAdFromResponse(
     adResponse: String,
     adUnitId: String,
     placement: String? = null,
-    loadCallback: AdLoadCallback<InterstitialAd>,
+    loadCallback: AdLoadCallback<InterstitialAd>? = null,
     adEventCallback: InterstitialAdEventCallback? = null,
 ) {
     InterstitialAd.loadFromAdResponse(
@@ -150,12 +150,12 @@ public fun AdTracker.loadAndTrackInterstitialAdFromResponse(
 /**
  * Loads a [RewardedAd] and automatically tracks RevenueCat ad events.
  *
- * The loaded ad has event tracking installed before it is forwarded to [loadCallback].
+ * The loaded ad has event tracking installed before it is forwarded to [loadCallback], if provided.
  * Call via `Purchases.sharedInstance.adTracker`.
  *
  * @param adRequest The [AdRequest] to load. Its ad unit ID is used for tracking.
  * @param placement Optional placement identifier used in RevenueCat tracking.
- * @param loadCallback Callback to receive load success and failure events.
+ * @param loadCallback Optional callback to receive load success and failure events.
  * @param adEventCallback Optional callback for rewarded lifecycle and paid events.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -163,7 +163,7 @@ public fun AdTracker.loadAndTrackInterstitialAdFromResponse(
 public fun AdTracker.loadAndTrackRewardedAd(
     adRequest: AdRequest,
     placement: String? = null,
-    loadCallback: AdLoadCallback<RewardedAd>,
+    loadCallback: AdLoadCallback<RewardedAd>? = null,
     adEventCallback: RewardedAdEventCallback? = null,
 ) {
     val adUnitId = adRequest.adUnitId
@@ -197,7 +197,7 @@ public fun AdTracker.loadAndTrackRewardedAd(
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
-public suspend fun AdTracker.loadAndTrackRewardedAd(
+public suspend fun AdTracker.awaitLoadAndTrackRewardedAd(
     adRequest: AdRequest,
     placement: String? = null,
     adEventCallback: RewardedAdEventCallback? = null,
@@ -220,14 +220,14 @@ public suspend fun AdTracker.loadAndTrackRewardedAd(
 /**
  * Loads a [RewardedAd] from a server-to-server ad response and automatically tracks RevenueCat ad events.
  *
- * The loaded ad has event tracking installed before it is forwarded to [loadCallback]. [adUnitId] is required
- * because neither the opaque response nor a failed load reliably provides it. Call via
+ * The loaded ad has event tracking installed before it is forwarded to [loadCallback], if provided. [adUnitId] is
+ * required because neither the opaque response nor a failed load reliably provides it. Call via
  * `Purchases.sharedInstance.adTracker`.
  *
  * @param adResponse The opaque server-to-server ad response supplied by Google Mobile Ads.
  * @param adUnitId The ad unit ID associated with [adResponse], used for RevenueCat tracking.
  * @param placement Optional placement identifier used in RevenueCat tracking.
- * @param loadCallback Callback to receive load success and failure events.
+ * @param loadCallback Optional callback to receive load success and failure events.
  * @param adEventCallback Optional callback for rewarded lifecycle and paid events.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -237,7 +237,7 @@ public fun AdTracker.loadAndTrackRewardedAdFromResponse(
     adResponse: String,
     adUnitId: String,
     placement: String? = null,
-    loadCallback: AdLoadCallback<RewardedAd>,
+    loadCallback: AdLoadCallback<RewardedAd>? = null,
     adEventCallback: RewardedAdEventCallback? = null,
 ) {
     RewardedAd.loadFromAdResponse(
@@ -261,12 +261,12 @@ public fun AdTracker.loadAndTrackRewardedAdFromResponse(
 /**
  * Loads an [AppOpenAd] and automatically tracks RevenueCat ad events.
  *
- * The loaded ad has event tracking installed before it is forwarded to [loadCallback].
+ * The loaded ad has event tracking installed before it is forwarded to [loadCallback], if provided.
  * Call via `Purchases.sharedInstance.adTracker`.
  *
  * @param adRequest The [AdRequest] to load. Its ad unit ID is used for tracking.
  * @param placement Optional placement identifier used in RevenueCat tracking.
- * @param loadCallback Callback to receive load success and failure events.
+ * @param loadCallback Optional callback to receive load success and failure events.
  * @param adEventCallback Optional callback for app open lifecycle and paid events.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -274,7 +274,7 @@ public fun AdTracker.loadAndTrackRewardedAdFromResponse(
 public fun AdTracker.loadAndTrackAppOpenAd(
     adRequest: AdRequest,
     placement: String? = null,
-    loadCallback: AdLoadCallback<AppOpenAd>,
+    loadCallback: AdLoadCallback<AppOpenAd>? = null,
     adEventCallback: AppOpenAdEventCallback? = null,
 ) {
     val adUnitId = adRequest.adUnitId
@@ -308,7 +308,7 @@ public fun AdTracker.loadAndTrackAppOpenAd(
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
-public suspend fun AdTracker.loadAndTrackAppOpenAd(
+public suspend fun AdTracker.awaitLoadAndTrackAppOpenAd(
     adRequest: AdRequest,
     placement: String? = null,
     adEventCallback: AppOpenAdEventCallback? = null,
@@ -331,14 +331,14 @@ public suspend fun AdTracker.loadAndTrackAppOpenAd(
 /**
  * Loads an [AppOpenAd] from a server-to-server ad response and automatically tracks RevenueCat ad events.
  *
- * The loaded ad has event tracking installed before it is forwarded to [loadCallback]. [adUnitId] is required
- * because neither the opaque response nor a failed load reliably provides it. Call via
+ * The loaded ad has event tracking installed before it is forwarded to [loadCallback], if provided. [adUnitId] is
+ * required because neither the opaque response nor a failed load reliably provides it. Call via
  * `Purchases.sharedInstance.adTracker`.
  *
  * @param adResponse The opaque server-to-server ad response supplied by Google Mobile Ads.
  * @param adUnitId The ad unit ID associated with [adResponse], used for RevenueCat tracking.
  * @param placement Optional placement identifier used in RevenueCat tracking.
- * @param loadCallback Callback to receive load success and failure events.
+ * @param loadCallback Optional callback to receive load success and failure events.
  * @param adEventCallback Optional callback for app open lifecycle and paid events.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -348,7 +348,7 @@ public fun AdTracker.loadAndTrackAppOpenAdFromResponse(
     adResponse: String,
     adUnitId: String,
     placement: String? = null,
-    loadCallback: AdLoadCallback<AppOpenAd>,
+    loadCallback: AdLoadCallback<AppOpenAd>? = null,
     adEventCallback: AppOpenAdEventCallback? = null,
 ) {
     AppOpenAd.loadFromAdResponse(
@@ -372,12 +372,12 @@ public fun AdTracker.loadAndTrackAppOpenAdFromResponse(
 /**
  * Loads a [RewardedInterstitialAd] and automatically tracks RevenueCat ad events.
  *
- * The loaded ad has event tracking installed before it is forwarded to [loadCallback].
+ * The loaded ad has event tracking installed before it is forwarded to [loadCallback], if provided.
  * Call via `Purchases.sharedInstance.adTracker`.
  *
  * @param adRequest The [AdRequest] to load. Its ad unit ID is used for tracking.
  * @param placement Optional placement identifier used in RevenueCat tracking.
- * @param loadCallback Callback to receive load success and failure events.
+ * @param loadCallback Optional callback to receive load success and failure events.
  * @param adEventCallback Optional callback for rewarded interstitial lifecycle, metadata, and paid events.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -385,7 +385,7 @@ public fun AdTracker.loadAndTrackAppOpenAdFromResponse(
 public fun AdTracker.loadAndTrackRewardedInterstitialAd(
     adRequest: AdRequest,
     placement: String? = null,
-    loadCallback: AdLoadCallback<RewardedInterstitialAd>,
+    loadCallback: AdLoadCallback<RewardedInterstitialAd>? = null,
     adEventCallback: RewardedInterstitialAdEventCallback? = null,
 ) {
     val adUnitId = adRequest.adUnitId
@@ -419,7 +419,7 @@ public fun AdTracker.loadAndTrackRewardedInterstitialAd(
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
-public suspend fun AdTracker.loadAndTrackRewardedInterstitialAd(
+public suspend fun AdTracker.awaitLoadAndTrackRewardedInterstitialAd(
     adRequest: AdRequest,
     placement: String? = null,
     adEventCallback: RewardedInterstitialAdEventCallback? = null,
@@ -442,14 +442,14 @@ public suspend fun AdTracker.loadAndTrackRewardedInterstitialAd(
 /**
  * Loads a [RewardedInterstitialAd] from a server-to-server ad response and automatically tracks RevenueCat ad events.
  *
- * The loaded ad has event tracking installed before it is forwarded to [loadCallback]. [adUnitId] is required
- * because neither the opaque response nor a failed load reliably provides it. Call via
+ * The loaded ad has event tracking installed before it is forwarded to [loadCallback], if provided. [adUnitId] is
+ * required because neither the opaque response nor a failed load reliably provides it. Call via
  * `Purchases.sharedInstance.adTracker`.
  *
  * @param adResponse The opaque server-to-server ad response supplied by Google Mobile Ads.
  * @param adUnitId The ad unit ID associated with [adResponse], used for RevenueCat tracking.
  * @param placement Optional placement identifier used in RevenueCat tracking.
- * @param loadCallback Callback to receive load success and failure events.
+ * @param loadCallback Optional callback to receive load success and failure events.
  * @param adEventCallback Optional callback for rewarded interstitial lifecycle, metadata, and paid events.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
@@ -459,7 +459,7 @@ public fun AdTracker.loadAndTrackRewardedInterstitialAdFromResponse(
     adResponse: String,
     adUnitId: String,
     placement: String? = null,
-    loadCallback: AdLoadCallback<RewardedInterstitialAd>,
+    loadCallback: AdLoadCallback<RewardedInterstitialAd>? = null,
     adEventCallback: RewardedInterstitialAdEventCallback? = null,
 ) {
     RewardedInterstitialAd.loadFromAdResponse(
@@ -483,7 +483,7 @@ public fun AdTracker.loadAndTrackRewardedInterstitialAdFromResponse(
 /**
  * Sets up RevenueCat ad-event tracking for [adView] and loads a banner ad.
  *
- * The loaded ad has event and refresh tracking installed before it is forwarded to [loadCallback].
+ * The loaded ad has event and refresh tracking installed before it is forwarded to [loadCallback], if provided.
  * Call via `Purchases.sharedInstance.adTracker`. For a call directly on the view, use [AdView.loadAndTrackAd].
  *
  * @param adView The [AdView] that will display the loaded banner.
@@ -516,16 +516,15 @@ public fun AdTracker.loadAndTrackBannerAd(
 /**
  * Loads a banner into [adView] from a server-to-server response and tracks RevenueCat ad events.
  *
- * The loaded ad has event and refresh tracking installed before it is forwarded to [loadCallback]. [adUnitId] is
- * required because neither the opaque response nor a failed load reliably provides it. Call via
+ * The loaded ad has event and refresh tracking installed before it is forwarded to [loadCallback], if provided.
+ * [adUnitId] is required because neither the opaque response nor a failed load reliably provides it. Call via
  * `Purchases.sharedInstance.adTracker`.
  *
  * @param adView The [AdView] that will display the loaded banner.
  * @param adResponse The opaque server-to-server ad response supplied by Google Mobile Ads.
  * @param adUnitId The ad unit ID associated with [adResponse], used for RevenueCat tracking.
  * @param placement Optional placement identifier used in RevenueCat tracking.
- * @param loadCallback Required callback to receive load success and failure events and distinguish this callback-based
- * overload from its suspending counterpart.
+ * @param loadCallback Optional callback to receive load success and failure events.
  * @param adEventCallback Optional callback for banner lifecycle and paid events.
  * @param bannerAdRefreshCallback Optional callback for automatic banner refresh events.
  */
@@ -537,7 +536,7 @@ public fun AdTracker.loadAndTrackBannerAdFromResponse(
     adResponse: String,
     adUnitId: String,
     placement: String? = null,
-    loadCallback: AdLoadCallback<BannerAd>,
+    loadCallback: AdLoadCallback<BannerAd>? = null,
     adEventCallback: BannerAdEventCallback? = null,
     bannerAdRefreshCallback: BannerAdRefreshCallback? = null,
 ) {
@@ -562,7 +561,7 @@ public fun AdTracker.loadAndTrackBannerAdFromResponse(
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 @Suppress("LongParameterList")
-public suspend fun AdTracker.loadAndTrackBannerAdFromResponse(
+public suspend fun AdTracker.awaitLoadAndTrackBannerAdFromResponse(
     adView: AdView,
     adResponse: String,
     adUnitId: String,
@@ -581,13 +580,12 @@ public suspend fun AdTracker.loadAndTrackBannerAdFromResponse(
  * Loads one native-ad request and automatically tracks every result it can produce.
  *
  * A [NativeAdRequest] can return a standard native, custom-native, or banner ad. The matching event tracking is
- * installed before that result is forwarded to [loadCallback]. Call via
+ * installed before that result is forwarded to [loadCallback], if provided. Call via
  * `Purchases.sharedInstance.adTracker`.
  *
  * @param adRequest The native ad request. Its ad unit ID is used for tracking.
  * @param placement Optional placement identifier used in RevenueCat tracking.
- * @param loadCallback Callback to receive the load result. This parameter is required to distinguish this
- * callback-based overload from the suspending overload.
+ * @param loadCallback Optional callback to receive the load result.
  * @param nativeAdEventCallback Optional lifecycle and paid-event callback for standard and custom-native results.
  * @param bannerAdEventCallback Optional lifecycle and paid-event callback for banner results.
  */
@@ -597,7 +595,7 @@ public suspend fun AdTracker.loadAndTrackBannerAdFromResponse(
 public fun AdTracker.loadAndTrackNativeAd(
     adRequest: NativeAdRequest,
     placement: String? = null,
-    loadCallback: NativeAdLoaderCallback,
+    loadCallback: NativeAdLoaderCallback? = null,
     nativeAdEventCallback: NativeAdEventCallback? = null,
     bannerAdEventCallback: BannerAdEventCallback? = null,
 ) {
@@ -626,7 +624,7 @@ public fun AdTracker.loadAndTrackNativeAd(
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
-public suspend fun AdTracker.loadAndTrackNativeAd(
+public suspend fun AdTracker.awaitLoadAndTrackNativeAd(
     adRequest: NativeAdRequest,
     placement: String? = null,
     nativeAdEventCallback: NativeAdEventCallback? = null,
@@ -646,14 +644,14 @@ public suspend fun AdTracker.loadAndTrackNativeAd(
 /**
  * Loads one native ad from a server-to-server response and automatically tracks every possible result.
  *
- * Event tracking is installed before a successful result is forwarded to [loadCallback]. [adUnitId] is
- * required because neither the opaque response nor a failed load reliably provides it. Call via
+ * Event tracking is installed before a successful result is forwarded to [loadCallback], if provided. [adUnitId]
+ * is required because neither the opaque response nor a failed load reliably provides it. Call via
  * `Purchases.sharedInstance.adTracker`.
  *
  * @param adResponse The opaque server-to-server ad response supplied by Google Mobile Ads.
  * @param adUnitId The ad unit ID associated with [adResponse], used for RevenueCat tracking.
  * @param placement Optional placement identifier used in RevenueCat tracking.
- * @param loadCallback Callback to receive the load result.
+ * @param loadCallback Optional callback to receive the load result.
  * @param nativeAdEventCallback Optional lifecycle and paid-event callback for standard and custom-native results.
  * @param bannerAdEventCallback Optional lifecycle and paid-event callback for banner results.
  */
@@ -664,7 +662,7 @@ public fun AdTracker.loadAndTrackNativeAdFromResponse(
     adResponse: String,
     adUnitId: String,
     placement: String? = null,
-    loadCallback: NativeAdLoaderCallback,
+    loadCallback: NativeAdLoaderCallback? = null,
     nativeAdEventCallback: NativeAdEventCallback? = null,
     bannerAdEventCallback: BannerAdEventCallback? = null,
 ) {
@@ -685,8 +683,7 @@ public fun AdTracker.loadAndTrackNativeAdFromResponse(
  *
  * Google can return standard native, custom-native, banner, and failure results in one batch. Each callback is
  * forwarded after RevenueCat tracks and configures its result; [NativeAdLoaderCallback.onAdLoadingCompleted] is
- * forwarded when Google finishes the batch. [loadCallback] is required to distinguish this callback-based
- * overload from the suspending overload.
+ * forwarded when Google finishes the batch if [loadCallback] is provided.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
@@ -695,7 +692,7 @@ public fun AdTracker.loadAndTrackNativeAds(
     adRequest: NativeAdRequest,
     maxNumberOfAds: Int,
     placement: String? = null,
-    loadCallback: NativeAdLoaderCallback,
+    loadCallback: NativeAdLoaderCallback? = null,
     nativeAdEventCallback: NativeAdEventCallback? = null,
     bannerAdEventCallback: BannerAdEventCallback? = null,
 ) {
@@ -720,7 +717,7 @@ public fun AdTracker.loadAndTrackNativeAds(
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
-public suspend fun AdTracker.loadAndTrackNativeAds(
+public suspend fun AdTracker.awaitLoadAndTrackNativeAds(
     adRequest: NativeAdRequest,
     maxNumberOfAds: Int,
     placement: String? = null,
@@ -740,7 +737,7 @@ public suspend fun AdTracker.loadAndTrackNativeAds(
 }
 
 private fun trackingNativeAdLoaderCallback(
-    delegate: NativeAdLoaderCallback,
+    delegate: NativeAdLoaderCallback?,
     placement: String?,
     adUnitId: String,
     nativeAdEventCallback: NativeAdEventCallback?,

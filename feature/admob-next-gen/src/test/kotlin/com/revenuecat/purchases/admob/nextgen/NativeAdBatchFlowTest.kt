@@ -114,7 +114,7 @@ class NativeAdBatchFlowTest {
         )
         coEvery { NativeAdLoader.load(adRequest, 4) } returns flowOf(*sdkResults.toTypedArray())
 
-        val flow = adTracker.loadAndTrackNativeAds(adRequest, 4, placement = "feed")
+        val flow = adTracker.awaitLoadAndTrackNativeAds(adRequest, 4, placement = "feed")
         verify(exactly = 0) { adTracker.trackAdLoaded(any(), any()) }
         val returnedResults = flow.toList()
 
