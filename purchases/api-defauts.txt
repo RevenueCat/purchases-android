@@ -463,6 +463,7 @@ package com.revenuecat.purchases {
     method @InaccessibleFromKotlin public static void setProxyURL(java.net.URL?);
     method @InaccessibleFromKotlin @kotlin.jvm.Synchronized public void setPurchasesAreCompletedBy(com.revenuecat.purchases.PurchasesAreCompletedBy);
     method public void setPushToken(String? fcmToken);
+    method public void setSingularDeviceID(String? singularDeviceID);
     method public void setSolarEngineAccountId(String? solarEngineAccountId);
     method public void setSolarEngineDistinctId(String? solarEngineDistinctId);
     method public void setSolarEngineVisitorId(String? solarEngineVisitorId);

@@ -1323,6 +1323,16 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun setSingularDeviceID(singularDeviceID: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSingularDeviceID") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Singular,
+            singularDeviceID,
+            appUserID,
+            application,
+        )
+    }
+
     fun setAppsFlyerConversionData(data: Map<*, *>?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAppsFlyerConversionData") }
         subscriberAttributesManager.setAppsFlyerConversionData(appUserID, data)
