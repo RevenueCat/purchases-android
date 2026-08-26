@@ -2,6 +2,7 @@ package com.revenuecat.purchases.admob.nextgen.tracking
 
 import com.google.android.libraries.ads.mobile.sdk.common.Ad
 import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
+import com.google.android.libraries.ads.mobile.sdk.common.AdLoadResult
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
@@ -41,6 +42,23 @@ internal class TrackingAdLoadCallback<AdT : Ad>(
         trackAdFailedToLoad(adError, adFormat, placement, adUnitId)
         delegate?.onAdFailedToLoad(adError)
     }
+}
+
+@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+internal fun <AdT : Ad> AdLoadResult<AdT>.trackAndConfigureAdLoadResult(
+    adFormat: AdFormat,
+    placement: String?,
+    adUnitId: String,
+    configureAd: (AdT) -> Unit,
+): AdLoadResult<AdT> {
+    when (this) {
+        is AdLoadResult.Success -> {
+            trackAdLoaded({ ad.getResponseInfo() }, adFormat, placement, adUnitId)
+            configureAd(ad)
+        }
+        is AdLoadResult.Failure -> trackAdFailedToLoad(error, adFormat, placement, adUnitId)
+    }
+    return this
 }
 
 @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
