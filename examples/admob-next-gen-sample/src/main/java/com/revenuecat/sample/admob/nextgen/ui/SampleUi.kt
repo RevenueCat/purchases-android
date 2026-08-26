@@ -55,8 +55,8 @@ fun AdMobNextGenSample(
 
     when (selectedScreen) {
         SampleScreen.BANNER -> BannerScreen(activity, onBack)
-        SampleScreen.INTERSTITIAL -> PlaceholderAdScreen(selectedScreen.title, onBack)
-        SampleScreen.APP_OPEN -> PlaceholderAdScreen(selectedScreen.title, onBack)
+        SampleScreen.INTERSTITIAL -> InterstitialScreen(activity, onBack)
+        SampleScreen.APP_OPEN -> AppOpenScreen(activity, onBack)
         SampleScreen.REWARDED -> PlaceholderAdScreen(selectedScreen.title, onBack)
         SampleScreen.REWARDED_INTERSTITIAL -> PlaceholderAdScreen(selectedScreen.title, onBack)
         SampleScreen.NATIVE -> PlaceholderAdScreen(selectedScreen.title, onBack)
