@@ -1,4 +1,5 @@
 @file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.admob.nextgen
 
@@ -11,6 +12,8 @@ import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback
+import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAd
+import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAdEventCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingAdLoadCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.trackAndConfigureAdLoadResult
@@ -338,6 +341,117 @@ public fun AdTracker.loadAndTrackAppOpenAdFromResponse(
         TrackingAdLoadCallback(
             delegate = loadCallback,
             adFormat = AdFormat.APP_OPEN,
+            placement = placement,
+            adUnitId = adUnitId,
+            configureAd = { ad ->
+                ad.installTrackingEventCallback(
+                    delegate = adEventCallback,
+                    placement = placement,
+                    adUnitId = adUnitId,
+                )
+            },
+        ),
+    )
+}
+
+/**
+ * Loads a [RewardedInterstitialAd] and automatically tracks RevenueCat ad events.
+ *
+ * The loaded ad has event tracking installed before it is forwarded to [loadCallback].
+ * Call via `Purchases.sharedInstance.adTracker`.
+ *
+ * @param adRequest The [AdRequest] to load. Its ad unit ID is used for tracking.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param loadCallback Callback to receive load success and failure events.
+ * @param adEventCallback Optional callback for rewarded interstitial lifecycle, metadata, and paid events.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+public fun AdTracker.loadAndTrackRewardedInterstitialAd(
+    adRequest: AdRequest,
+    placement: String? = null,
+    loadCallback: AdLoadCallback<RewardedInterstitialAd>,
+    adEventCallback: RewardedInterstitialAdEventCallback? = null,
+) {
+    val adUnitId = adRequest.adUnitId
+    RewardedInterstitialAd.load(
+        adRequest,
+        TrackingAdLoadCallback(
+            delegate = loadCallback,
+            adFormat = AdFormat.REWARDED_INTERSTITIAL,
+            placement = placement,
+            adUnitId = adUnitId,
+            configureAd = { ad ->
+                ad.installTrackingEventCallback(
+                    delegate = adEventCallback,
+                    placement = placement,
+                    adUnitId = adUnitId,
+                )
+            },
+        ),
+    )
+}
+
+/**
+ * Loads a [RewardedInterstitialAd] using Google's suspending API and automatically tracks RevenueCat ad events.
+ *
+ * The original [AdLoadResult] is returned unchanged. A successfully loaded ad has event tracking installed before
+ * this function returns. Call via `Purchases.sharedInstance.adTracker`.
+ *
+ * @param adRequest The [AdRequest] to load. Its ad unit ID is used for tracking.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param adEventCallback Optional callback for rewarded interstitial lifecycle, metadata, and paid events.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+public suspend fun AdTracker.loadAndTrackRewardedInterstitialAd(
+    adRequest: AdRequest,
+    placement: String? = null,
+    adEventCallback: RewardedInterstitialAdEventCallback? = null,
+): AdLoadResult<RewardedInterstitialAd> {
+    val adUnitId = adRequest.adUnitId
+    return RewardedInterstitialAd.load(adRequest).trackAndConfigureAdLoadResult(
+        adFormat = AdFormat.REWARDED_INTERSTITIAL,
+        placement = placement,
+        adUnitId = adUnitId,
+        configureAd = { ad ->
+            ad.installTrackingEventCallback(
+                delegate = adEventCallback,
+                placement = placement,
+                adUnitId = adUnitId,
+            )
+        },
+    )
+}
+
+/**
+ * Loads a [RewardedInterstitialAd] from a server-to-server ad response and automatically tracks RevenueCat ad events.
+ *
+ * The loaded ad has event tracking installed before it is forwarded to [loadCallback]. [adUnitId] is required
+ * because neither the opaque response nor a failed load reliably provides it. Call via
+ * `Purchases.sharedInstance.adTracker`.
+ *
+ * @param adResponse The opaque server-to-server ad response supplied by Google Mobile Ads.
+ * @param adUnitId The ad unit ID associated with [adResponse], used for RevenueCat tracking.
+ * @param placement Optional placement identifier used in RevenueCat tracking.
+ * @param loadCallback Callback to receive load success and failure events.
+ * @param adEventCallback Optional callback for rewarded interstitial lifecycle, metadata, and paid events.
+ */
+@ExperimentalPreviewRevenueCatPurchasesAPI
+@JvmSynthetic
+@Suppress("LongParameterList")
+public fun AdTracker.loadAndTrackRewardedInterstitialAdFromResponse(
+    adResponse: String,
+    adUnitId: String,
+    placement: String? = null,
+    loadCallback: AdLoadCallback<RewardedInterstitialAd>,
+    adEventCallback: RewardedInterstitialAdEventCallback? = null,
+) {
+    RewardedInterstitialAd.loadFromAdResponse(
+        adResponse,
+        TrackingAdLoadCallback(
+            delegate = loadCallback,
+            adFormat = AdFormat.REWARDED_INTERSTITIAL,
             placement = placement,
             adUnitId = adUnitId,
             configureAd = { ad ->
