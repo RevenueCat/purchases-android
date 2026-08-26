@@ -44,7 +44,6 @@ internal class RewardVerificationRuntime(
         rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
     ) {
         val clientTransactionId = adResponseId?.let { getClientTransactionId(it) }
-        warnAndAssertIfMissingClientTransactionId(clientTransactionId)
 
         val completionDelivered = AtomicBoolean(false)
         fun deliverOnce(result: RewardVerificationResult) {
@@ -53,7 +52,8 @@ internal class RewardVerificationRuntime(
             }
         }
 
-        if (adResponseId == null || clientTransactionId == null) {
+        if (clientTransactionId == null) {
+            Logger.w(RewardVerificationStrings.NOT_SET_UP_FOR_AD)
             deliverOnce(RewardVerificationResult.failed)
             return
         }
@@ -91,12 +91,6 @@ internal class RewardVerificationRuntime(
         runOnMainIfPresent(mainHandler) {
             rewardVerificationCompleted(result)
         }
-    }
-
-    private fun warnAndAssertIfMissingClientTransactionId(clientTransactionId: String?) {
-        if (clientTransactionId != null) return
-
-        Logger.w(RewardVerificationStrings.ENABLE_REQUIRED_BEFORE_SHOW)
     }
 
     @Synchronized

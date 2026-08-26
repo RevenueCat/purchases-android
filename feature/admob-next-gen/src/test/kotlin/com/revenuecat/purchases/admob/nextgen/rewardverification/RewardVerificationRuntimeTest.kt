@@ -142,6 +142,7 @@ internal class RewardVerificationRuntimeTest {
         assertEquals(0, startedCount)
         assertNotNull(completedResult)
         assertTrue(completedResult!!.failed)
+        assertTrue(ShadowLog.getLogs().any { it.msg == RewardVerificationStrings.NOT_SET_UP_FOR_AD })
     }
 
     @Test
@@ -177,5 +178,6 @@ internal class RewardVerificationRuntimeTest {
         assertEquals(0, startedCount)
         assertNotNull(completedResult)
         assertTrue(completedResult!!.failed)
+        assertTrue(ShadowLog.getLogs().any { it.msg == RewardVerificationStrings.NOT_SET_UP_FOR_AD })
     }
 }

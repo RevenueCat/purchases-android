@@ -7,6 +7,7 @@ internal object RewardVerificationStrings {
         "Reward verification was cancelled before completion."
 
     // Setup
-    const val ENABLE_REQUIRED_BEFORE_SHOW: String =
-        "Reward verification callback requires enableRewardVerification() before show()."
+    const val NOT_SET_UP_FOR_AD: String =
+        "Reward verification is not set up for this ad. " +
+            "Call enableRewardVerification() after loading the ad and before showing it."
 }
