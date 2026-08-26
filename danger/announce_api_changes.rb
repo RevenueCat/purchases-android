@@ -3,9 +3,8 @@
 
 # Announces the public API a commit on main changes, into the SDK API feed channel.
 #
-# Danger reports the same surface on the pull request, but it no longer announces: every PR run
-# posted, so one change showed up in the feed once per push. Announcing from main instead means each
-# change lands there once, when it is actually about to ship.
+# Danger reports the same surface on the pull request but no longer announces: every PR run posted,
+# so one change showed up in the feed once per push. Announcing from main lands it there once.
 #
 # The signature files are committed, so the diff is just `HEAD^..HEAD` over them. Nothing is built.
 
@@ -13,7 +12,6 @@ require 'English'
 
 require_relative "api_diff_report"
 
-# Matches the shape ApiDiffReport expects: the whole command, argv-style, no shell in between.
 RUNNER = lambda do |*command|
   output = IO.popen(command, &:read)
   raise "#{command.join(' ')} failed with #{$CHILD_STATUS.exitstatus}" unless $CHILD_STATUS.success?
@@ -48,8 +46,7 @@ if result.nil?
   exit 0
 end
 
-# A feed that fails to post is not worth reddening main over, and the PR already reported the
-# surface. The message goes to stderr so the job log still carries it.
+# A feed that fails to post is not worth reddening main over; the PR already reported the surface.
 warn(result[:warning]) if result[:warning]
 
 case result[:outcome]

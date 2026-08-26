@@ -47,8 +47,7 @@ module ApiDiffReport
     sha
   end
 
-  # main is linear squash merges, so HEAD^ holds the surface the merge replaced. A root commit has
-  # no predecessor, and diffing against nothing would report the whole public API as new.
+  # main is linear squash merges, so HEAD^ holds the surface the merge replaced.
   def resolve_previous_commit(runner:)
     sha = runner.call("git", "rev-parse", "HEAD^").to_s.strip
     raise "Could not resolve the commit before HEAD" if sha.empty?
@@ -321,17 +320,15 @@ module ApiDiffReport
   end
 
   # Returns { comment:, warning:, outcome: }, or nil when the public API did not change.
-  # outcome is :posted, :duplicate, :failed or :skipped.
-  # `announce: false` reports the surface without touching Slack: the feed used to get one post per
-  # PR run, and only main announces now, so each change lands there once.
+  # outcome is :posted, :duplicate, :failed or :skipped; :skipped is `announce: false`.
   def run(changed_files:, patch_for:, source: "", announce: true, credentials: slack_credentials, poster: nil,
           getter: nil, announced_in_comment: nil)
     signature_files = changed_files.uniq.select { |file| signature_file?(file) }
     report = build(signature_files.to_h { |file| [file, patch_for.call(file)] })
     return nil if empty?(report)
 
-    # No fingerprint marker either: nothing reads it once PRs stop announcing, and a comment
-    # claiming an announcement that never happened would suppress the real one.
+    # No fingerprint marker: a comment claiming an announcement that never happened would suppress
+    # the real one.
     return { comment: markdown_section(report), warning: nil, outcome: :skipped } unless announce
 
     message = slack_message(report, source)
@@ -340,8 +337,7 @@ module ApiDiffReport
     {
       comment: markdown_section(report, announced_fingerprint: (fingerprint(message) unless outcome == :failed)),
       warning: warning(outcome, reason),
-      # A warning alone cannot say whether the post landed: it also fires on an announced-but-
-      # possibly-duplicated one, which the caller must not log as a failure, or vice versa.
+      # A warning does not mean the post failed; it also fires on an announced-but-duplicated one.
       outcome: outcome
     }
   end

@@ -94,7 +94,7 @@ end
 fail_on_generated_edits(["purchases/src/main/kotlin/generated/"])
 
 # Report the public API this PR changes. The SDK API feed is announced from main instead, by
-# danger/announce_api_changes.rb, so a change lands there once rather than once per push.
+# danger/announce_api_changes.rb.
 # Best effort: a raise here would take every other rule in this file down with it.
 begin
   require_relative "danger/api_diff_report"

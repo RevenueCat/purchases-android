@@ -984,8 +984,6 @@ workflows:
                 name: Run api diff report unit tests
                 command: ruby danger/api_diff_report_test.rb
 
-  # The SDK API feed is announced from here, not from the danger workflow: every PR run used to
-  # post, so one change showed up once per push.
   announce-api-changes-on-main:
     when:
       and:

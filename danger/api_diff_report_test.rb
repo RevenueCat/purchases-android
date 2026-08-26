@@ -489,7 +489,7 @@ class ApiDiffReportTest < Minitest::Test
     end
   end
 
-  # release/* runs the same pipeline, and it must not announce a surface main already announced.
+  # release/* runs the same pipeline and must not re-announce what main already did.
   def test_only_main_counts_as_main
     assert ApiDiffReport.main_branch?("main")
     assert ApiDiffReport.main_branch?(" main\n")
@@ -498,7 +498,6 @@ class ApiDiffReportTest < Minitest::Test
     refute ApiDiffReport.main_branch?(nil)
   end
 
-  # main is linear squash merges, so HEAD^ is the surface the merge replaced.
   def test_previous_commit_is_the_commit_the_merge_replaced
     runner = ->(*command) { command == ["git", "rev-parse", "HEAD^"] ? "prevsha\n" : "" }
 
@@ -539,7 +538,6 @@ class ApiDiffReportTest < Minitest::Test
     assert_equal ADDED_METHOD_PATCH, patch
   end
 
-  # The commit page already carries the PR link, and the sha is what tells a rerun it announced.
   def test_commit_link_carries_the_short_sha
     assert_equal "<https://github.com/RevenueCat/purchases-android/commit/0123456789abcdef|0123456>",
                  ApiDiffReport.commit_link("0123456789abcdef")
@@ -566,7 +564,6 @@ class ApiDiffReportTest < Minitest::Test
     assert_nil body[:warning]
   end
 
-  # The feed was noisy because every PR run announced. Only main does now, so each change lands once.
   def test_run_reports_without_announcing_when_announce_is_false
     body = ApiDiffReport.run(
       changed_files: PATCHES.keys,
@@ -581,8 +578,6 @@ class ApiDiffReportTest < Minitest::Test
     assert_nil body[:warning]
   end
 
-  # Nothing reads the marker once PRs stop announcing, and a comment claiming an announcement that
-  # never happened would suppress the real one.
   def test_run_leaves_no_announcement_marker_on_a_pull_request
     body = ApiDiffReport.run(
       changed_files: PATCHES.keys,
@@ -595,8 +590,7 @@ class ApiDiffReportTest < Minitest::Test
     refute_match(/<!-- api-diff:/, body[:comment])
   end
 
-  # The script logged "Announced the public API change" off a failed post, because the returned
-  # warning cannot tell a failure apart from an announced-but-possibly-duplicated one.
+  # The runner logged "Announced the public API change" off a failed post.
   def test_run_reports_what_became_of_the_announcement
     link = ApiDiffReport.commit_link("0123456789abcdef")
 
@@ -624,7 +618,7 @@ class ApiDiffReportTest < Minitest::Test
     assert_equal :skipped, skipped[:outcome]
   end
 
-  # --- The wiring, which is what actually stops the noise ---
+  # --- The wiring ---
 
   def dangerfile
     File.read(File.expand_path("../Dangerfile", __dir__))
