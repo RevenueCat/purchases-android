@@ -12,4 +12,10 @@ internal object WebViewMessageType {
 
     /** Content → host: reported content box size in CSS pixels. */
     const val RESIZE = "resize"
+
+    /** Host → content: the current context snapshot, pushed after the handshake. */
+    const val CONTEXT = "context"
+
+    /** Content → host request: pull the latest context snapshot. */
+    const val REQUEST_CONTEXT = "requestContext"
 }
