@@ -5,6 +5,10 @@ import android.util.Log
 internal object Logger {
     private const val TAG = "PurchasesAdMob"
 
+    fun e(message: String) {
+        Log.e(TAG, message)
+    }
+
     fun w(message: String) {
         Log.w(TAG, message)
     }
