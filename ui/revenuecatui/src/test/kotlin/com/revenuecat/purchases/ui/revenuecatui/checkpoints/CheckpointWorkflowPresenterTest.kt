@@ -212,13 +212,14 @@ class CheckpointWorkflowPresenterTest {
     @Test
     fun `a failed re-present completes the call instead of hanging`() {
         val customerInfo = mockk<CustomerInfo>()
+        val storeTransaction = mockk<StoreTransaction>()
         launchCheckpoint()
-        manager.recordOutcome(currentCallId(), CheckpointPaywallOutcome.Purchased(customerInfo))
+        manager.recordOutcome(currentCallId(), CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
         contentFactory = { throw IllegalStateException("content failed") }
 
         controller.recreate()
 
-        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo))
+        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
     }
 
     @Test
@@ -234,9 +235,11 @@ class CheckpointWorkflowPresenterTest {
         assertThat(ShadowDialog.getShownDialogs()).hasSize(dialogsShown)
     }
 
+    // Robolectric sdk 35+ breaks the Paparazzi tests sharing this test JVM (see robolectric.properties), so
+    // this pins the window configuration at 34; the assertions are identical there.
     @Test
-    @Config(sdk = [35])
-    fun `the workflow window extends behind the system bars where edge to edge is the default`() {
+    @Config(sdk = [34])
+    fun `the workflow window extends behind the system bars on modern APIs`() {
         launchCheckpoint()
 
         val window = ShadowDialog.getLatestDialog().window!!
