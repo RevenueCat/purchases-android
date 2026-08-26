@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ads.events.types
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.VerifiedReward
 import dev.drewhamilton.poko.Poko
@@ -18,7 +17,6 @@ import dev.drewhamilton.poko.Poko
  * @property reward The reward that was granted.
  */
 @InternalRevenueCatAPI
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Poko
 public class AdRewardGrantedData(
     public val networkName: String?,

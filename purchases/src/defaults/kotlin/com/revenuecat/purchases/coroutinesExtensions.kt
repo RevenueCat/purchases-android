@@ -81,7 +81,6 @@ public suspend fun Purchases.awaitShowManageSubscriptions(context: Context) {
  * @return The [RewardVerificationResult] (verified reward or a failed result).
  */
 @JvmSynthetic
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @OptIn(InternalRevenueCatAPI::class)
 public suspend fun Purchases.awaitPollRewardVerification(
     clientTransactionId: String,
@@ -95,7 +94,7 @@ public suspend fun Purchases.awaitPollRewardVerification(
  */
 @JvmSynthetic
 @InternalRevenueCatAPI
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 public suspend fun Purchases.awaitPollRewardVerification(
     clientTransactionId: String,
     trackingMetadata: RewardedAdTrackingMetadata?,

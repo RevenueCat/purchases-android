@@ -183,7 +183,6 @@ internal class PurchasesOrchestrator(
     private val checkpointsConfigProvider: CheckpointsConfigProvider? = null,
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val audiencesConfigProvider: AudiencesConfigProvider? = null,
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     val adTracker: AdTracker = AdTracker(adEventsManager),
     private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
     private val localRulesEvaluator: LocalRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
@@ -1312,6 +1311,16 @@ internal class PurchasesOrchestrator(
         subscriberAttributesManager.setAttributionID(
             SubscriberAttributeKey.AttributionIds.SolarEngineVisitorId,
             solarEngineVisitorId,
+            appUserID,
+            application,
+        )
+    }
+
+    fun setSingularDeviceID(singularDeviceID: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSingularDeviceID") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Singular,
+            singularDeviceID,
             appUserID,
             application,
         )

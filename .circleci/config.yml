@@ -324,6 +324,16 @@ jobs:
           command: ./scripts/api-check.sh
       - android/save_gradle_cache
 
+  # Stdlib only, so no bundler. Needs full history: it compares HEAD against HEAD^.
+  announce-api-changes:
+    docker:
+      - image: cimg/ruby:3.2.0
+    steps:
+      - checkout
+      - run:
+          name: Announce public API changes
+          command: ruby danger/announce_api_changes.rb
+
   docs-deploy:
     <<: *android-executor
     steps:
@@ -967,12 +977,25 @@ workflows:
     jobs:
       - revenuecat/danger:
           ruby_version: "3.2.0"
-          context:
-            - slack-secrets
           post-steps:
             - run:
                 name: Run api diff report unit tests
                 command: ruby danger/api_diff_report_test.rb
+          filters:
+            branches:
+              ignore: main
+
+  announce-api-changes-on-main:
+    when:
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "main", << pipeline.git.branch >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
+    jobs:
+      - announce-api-changes:
+          context:
+            - slack-secrets
 
   snapshot-deploy-manual:
     when:

@@ -1,6 +1,5 @@
 # Reports the public API a PR changes, from the metalava signature diffs. Loaded by the Dangerfile.
 
-require 'digest'
 require 'json'
 require 'net/http'
 require 'uri'
@@ -23,7 +22,53 @@ module ApiDiffReport
   MARKDOWN_LIMIT = 200
   MARKDOWN_WIDTH = 200
 
+  REPO_NAME = "purchases-android".freeze
+
+  MAIN_BRANCH = "main".freeze
+
   module_function
+
+  def main_branch?(branch)
+    branch.to_s.strip == MAIN_BRANCH
+  end
+
+  def current_branch(runner:)
+    branch = ENV["CIRCLE_BRANCH"].to_s.strip
+    return branch unless branch.empty?
+
+    runner.call("git", "rev-parse", "--abbrev-ref", "HEAD").to_s.strip
+  end
+
+  def head_commit(runner:)
+    sha = runner.call("git", "rev-parse", "HEAD").to_s.strip
+    raise "Could not resolve HEAD" if sha.empty?
+
+    sha
+  end
+
+  # main is linear squash merges, so HEAD^ holds the surface the merge replaced.
+  def resolve_previous_commit(runner:)
+    sha = runner.call("git", "rev-parse", "HEAD^").to_s.strip
+    raise "Could not resolve the commit before HEAD" if sha.empty?
+
+    sha
+  end
+
+  def changed_signature_files(base, head, runner:)
+    runner.call("git", "diff", "--name-only", base, head)
+          .to_s.each_line.map(&:strip).reject(&:empty?).select { |path| signature_file?(path) }
+  end
+
+  def patch_between(base, head, path, runner:)
+    runner.call("git", "diff", base, head, "--", path).to_s
+  end
+
+  # The commit page already carries the PR link, and its sha is what tells a rerun it announced.
+  def commit_link(sha)
+    return "" if sha.to_s.empty?
+
+    "<https://github.com/RevenueCat/#{REPO_NAME}/commit/#{sha}|#{sha[0, 7]}>"
+  end
 
   def signature_file?(path)
     basename = File.basename(path.to_s)
@@ -114,17 +159,7 @@ module ApiDiffReport
     shown
   end
 
-  # Of the rendered summary, not the report: joining the declaration lists would hash an addition of
-  # a declaration the same as its removal.
-  def fingerprint(message)
-    Digest::SHA256.hexdigest(message.to_s)[0, 12]
-  end
-
-  def fingerprint_marker(fingerprint)
-    "<!-- api-diff:#{fingerprint} -->"
-  end
-
-  def markdown_section(report, announced_fingerprint: nil)
+  def markdown_section(report)
     summary = "Public API changes in #{report[:modules].join(', ')} (#{counts(report)})"
     body = capped_lines(diff_lines(report), limit: MARKDOWN_LIMIT, width: MARKDOWN_WIDTH)
 
@@ -137,18 +172,21 @@ module ApiDiffReport
       "",
       "</details>"
     ]
-    lines << fingerprint_marker(announced_fingerprint) if announced_fingerprint
 
     lines.join("\n")
   end
 
-  def slack_message(report, pull_request_link)
+  def slack_message(report, source)
     # Metalava renders a changed signature as a removal plus an addition.
-    headline = report[:removed].any? ? ":warning: *Public API removed or changed*" : ":sparkles: *New public API*"
+    headline = if report[:removed].any?
+                 ":warning: *Public API removed or changed on main*"
+               else
+                 ":sparkles: *New public API landed on main*"
+               end
     body = capped_lines(diff_lines(report), limit: SLACK_LIMIT, width: SLACK_WIDTH)
 
     lines = [[headline, PLATFORM_LABEL, *report[:modules].map { |name| "`#{name}`" }].join(" · ")]
-    lines << pull_request_link unless pull_request_link.to_s.empty?
+    lines << source unless source.to_s.empty?
     lines << counts(report)
     lines << "```\n#{body.join("\n")}\n```"
 
@@ -199,22 +237,22 @@ module ApiDiffReport
   end
 
   # conversations.history answers newest first, so the first match is the channel's last word.
-  def last_announcement(texts, pull_request_link)
-    return nil if pull_request_link.to_s.empty?
+  def last_announcement(texts, source)
+    return nil if source.to_s.empty?
 
-    texts.find { |text| text.include?(pull_request_link) && text.include?(PLATFORM_LABEL) }
+    texts.find { |text| text.include?(source) && text.include?(PLATFORM_LABEL) }
   end
 
   # Each push starts two pipelines, and the auto-canceled one still posts before it dies, so the
   # channel is the only store the sibling run can see in time.
   # Returns [:same | :different | :unknown, why_unknown].
-  def announcement_state(message, channel, bot_token, getter, pull_request_link)
+  def announcement_state(message, channel, bot_token, getter, source)
     unless CHANNEL_ID.match?(channel.to_s)
       return [:unknown, "#{channel} is a channel name, and conversations.history needs the channel ID"]
     end
 
     texts = recent_messages(history_request(channel, bot_token: bot_token), getter: getter)
-    last = last_announcement(texts, pull_request_link)
+    last = last_announcement(texts, source)
     return [:unknown, nil] if last.nil?
 
     [last == message ? :same : :different, nil]
@@ -240,17 +278,13 @@ module ApiDiffReport
   end
 
   # Returns [:posted | :duplicate | :failed, reason_or_nil].
-  def announce(message, pull_request_link, credentials, poster, getter, announced_in_comment)
+  def announce_to_slack(message, source, credentials, poster, getter)
     return [:failed, "no Slack credentials were reachable"] if credentials.nil?
 
     bot_token, channel = credentials
 
-    state, history_error = announcement_state(message, channel, bot_token, getter, pull_request_link)
+    state, history_error = announcement_state(message, channel, bot_token, getter, source)
     return [:duplicate, nil] if state == :same
-
-    if state == :unknown && announced_in_comment&.call(fingerprint_marker(fingerprint(message)))
-      return [:duplicate, nil]
-    end
 
     post(slack_request(message, bot_token: bot_token, channel: channel), poster: poster)
     [:posted, history_error]
@@ -269,19 +303,23 @@ module ApiDiffReport
     end
   end
 
-  # Returns { comment:, warning: }, or nil when the public API did not change.
-  def run(changed_files:, patch_for:, pull_request_link:, credentials: slack_credentials, poster: nil,
-          getter: nil, announced_in_comment: nil)
+  # Returns { comment:, warning:, outcome: }, or nil when the public API did not change.
+  # outcome is :posted, :duplicate, :failed or :skipped; :skipped is `announce: false`.
+  def run(changed_files:, patch_for:, source: "", announce: true, credentials: slack_credentials, poster: nil,
+          getter: nil)
     signature_files = changed_files.uniq.select { |file| signature_file?(file) }
     report = build(signature_files.to_h { |file| [file, patch_for.call(file)] })
     return nil if empty?(report)
 
-    message = slack_message(report, pull_request_link)
-    outcome, reason = announce(message, pull_request_link, credentials, poster, getter, announced_in_comment)
+    return { comment: markdown_section(report), warning: nil, outcome: :skipped } unless announce
+
+    outcome, reason = announce_to_slack(slack_message(report, source), source, credentials, poster, getter)
 
     {
-      comment: markdown_section(report, announced_fingerprint: (fingerprint(message) unless outcome == :failed)),
-      warning: warning(outcome, reason)
+      comment: markdown_section(report),
+      warning: warning(outcome, reason),
+      # A warning does not mean the post failed; it also fires on an announced-but-duplicated one.
+      outcome: outcome
     }
   end
 end

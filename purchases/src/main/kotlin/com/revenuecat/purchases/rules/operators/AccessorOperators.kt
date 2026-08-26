@@ -32,6 +32,11 @@ internal object AccessorOperators {
      * nested objects**. There is no flat-key fallback (i.e. we do not also
      * try the literal dotted string as a single key in the top-level map).
      *
+     * A path that does not resolve and carries no default throws
+     * [RulesEngine.EvaluationException.UnresolvedVariable] rather than
+     * degrading to [Value.Null]. A key that *is* present but holds an explicit
+     * null is a known value, not a missing one, and resolves normally.
+     *
      * @param vars The JSON Logic evaluation scope — [Scope.current] is the
      *  data `var` reads from; path/default args evaluate against
      *  [Scope.current] as well.
@@ -56,8 +61,7 @@ internal object AccessorOperators {
         // json-logic-js coerces an `undefined` default to `null`.
         if (default is Value.Undefined) return Value.Null
         if (default != null) return default
-        RulesEngine.logger.warn("missing variable: $path")
-        return Value.Null
+        throw RulesEngine.EvaluationException.UnresolvedVariable(path)
     }
 
     /**

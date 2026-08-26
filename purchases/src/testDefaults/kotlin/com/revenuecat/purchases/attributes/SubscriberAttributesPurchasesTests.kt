@@ -357,6 +357,13 @@ class SubscriberAttributesPurchasesTests {
         }
     }
 
+    @Test
+    fun `setSingularDeviceID`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.Singular) { parameter ->
+            underTest.setSingularDeviceID(parameter)
+        }
+    }
+
     // endregion
 
     // region Integration IDs

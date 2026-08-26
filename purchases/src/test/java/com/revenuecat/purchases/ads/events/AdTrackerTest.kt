@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ads.events
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.VerifiedReward
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
@@ -28,7 +27,7 @@ import org.junit.Before
 import org.junit.Test
 import java.util.Date
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 class AdTrackerTest {
 
     private lateinit var eventsManager: EventsManager
