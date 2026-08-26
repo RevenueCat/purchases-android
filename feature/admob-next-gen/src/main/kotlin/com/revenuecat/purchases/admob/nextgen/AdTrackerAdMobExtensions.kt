@@ -9,8 +9,7 @@ import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingAdLoadCallback
-import com.revenuecat.purchases.admob.nextgen.tracking.trackAdFailedToLoad
-import com.revenuecat.purchases.admob.nextgen.tracking.trackAdLoaded
+import com.revenuecat.purchases.admob.nextgen.tracking.trackAndConfigureAdLoadResult
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import kotlin.jvm.JvmSynthetic
@@ -71,23 +70,18 @@ public suspend fun AdTracker.loadAndTrackInterstitialAd(
     adEventCallback: InterstitialAdEventCallback? = null,
 ): AdLoadResult<InterstitialAd> {
     val adUnitId = adRequest.adUnitId
-    val result = InterstitialAd.load(adRequest)
-
-    when (result) {
-        is AdLoadResult.Success -> {
-            trackAdLoaded(result.ad::getResponseInfo, AdFormat.INTERSTITIAL, placement, adUnitId)
-            result.ad.installTrackingEventCallback(
+    return InterstitialAd.load(adRequest).trackAndConfigureAdLoadResult(
+        adFormat = AdFormat.INTERSTITIAL,
+        placement = placement,
+        adUnitId = adUnitId,
+        configureAd = { ad ->
+            ad.installTrackingEventCallback(
                 delegate = adEventCallback,
                 placement = placement,
                 adUnitId = adUnitId,
             )
-        }
-        is AdLoadResult.Failure -> {
-            trackAdFailedToLoad(result.error, AdFormat.INTERSTITIAL, placement, adUnitId)
-        }
-    }
-
-    return result
+        },
+    )
 }
 
 /**
