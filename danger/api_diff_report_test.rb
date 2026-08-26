@@ -584,6 +584,14 @@ class ApiDiffReportTest < Minitest::Test
     assert_match(/slack-secrets/, workflow, "the announcement needs the Slack token and channel")
   end
 
+  # The context was there only for the announcement. A PR run has no reason to hold a write token.
+  def test_the_danger_job_no_longer_takes_the_slack_context
+    workflow = circleci_config[/^  danger:\n(?:.+\n|\n)*?(?=^  \S)/]
+
+    refute_nil workflow, "the danger workflow moved; update this test"
+    refute_match(/slack-secrets/, workflow)
+  end
+
   def test_circleci_has_a_job_that_runs_the_announce_script
     job = circleci_config[/^  announce-api-changes:\n(?:.+\n|\n)*?(?=^  \S)/]
 
