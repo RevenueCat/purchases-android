@@ -3,10 +3,11 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
-import com.revenuecat.purchases.ui.revenuecatui.utils.appendQueryParameter
+import com.revenuecat.purchases.ui.revenuecatui.utils.upsertQueryParameters
 import java.net.URI
 import java.net.URISyntaxException
 
@@ -18,6 +19,8 @@ import java.net.URISyntaxException
 internal fun PaywallState.Loaded.Components.resolveWebCheckoutUrlForInteraction(
     launchWebCheckout: PaywallAction.External.LaunchWebCheckout,
 ): String? {
+    launchWebCheckout.resolvedUrl?.let { return it }
+
     val customUrl = launchWebCheckout.customUrl
     val behavior = launchWebCheckout.packageParamBehavior
     val (packageToUse, packageParam) = when (behavior) {
@@ -26,25 +29,36 @@ internal fun PaywallState.Loaded.Components.resolveWebCheckoutUrlForInteraction(
         is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend ->
             null to null
     }
-    val fromCustomUrl: String? = if (customUrl != null) {
-        val uri = try {
-            URI(customUrl)
-        } catch (e: URISyntaxException) {
-            Logger.e("Invalid custom URI: $customUrl", e)
-            null
-        }
-        uri?.let { parsed ->
-            val finalUri = if (packageParam != null && packageToUse != null) {
-                parsed.appendQueryParameter(packageParam, packageToUse.identifier)
-            } else {
-                parsed
-            }
-            finalUri.toString()
-        }
-    } else {
-        null
+    val fromCustomUrl = customUrl?.let {
+        resolveCustomCheckoutUrl(it, behavior, packageToUse, packageParam)
     }
     return fromCustomUrl ?: packageToUse?.webCheckoutURL?.toString() ?: offering.webCheckoutURL?.toString()
+}
+
+private fun PaywallState.Loaded.Components.resolveCustomCheckoutUrl(
+    customUrl: String,
+    behavior: PaywallAction.External.LaunchWebCheckout.PackageParamBehavior,
+    packageToUse: Package?,
+    packageParam: String?,
+): String? {
+    val uri = try {
+        URI(customUrl)
+    } catch (e: URISyntaxException) {
+        Logger.e("Invalid custom URI: $customUrl", e)
+        null
+    }
+    return uri?.upsertQueryParameters(
+        buildMap {
+            put("rc_source", "app")
+            if (behavior is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append) {
+                behavior.appUserIdParam?.let { putIfAbsent(it, appUserID) }
+                behavior.envParam?.let { putIfAbsent(it, "production") }
+                if (packageParam != null && packageToUse != null) {
+                    putIfAbsent(packageParam, packageToUse.identifier)
+                }
+            }
+        },
+    )?.toString()
 }
 
 /**

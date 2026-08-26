@@ -306,6 +306,9 @@ internal sealed interface PaywallState {
             val currentDate: Date
                 get() = dateProvider()
 
+            val appUserID: String
+                get() = purchases.appUserID
+
             /**
              * The measured height of the header overlay in pixels. Set during the layout phase by
              * the custom Layout in [LoadedPaywallComponents] so that ZLayer stacks can read it

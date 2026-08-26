@@ -17,4 +17,41 @@ internal fun URI.appendQueryParameter(name: String, value: String): URI {
     return URI("$uriWithoutFragment$separator$encodedParameter$fragment")
 }
 
+@JvmSynthetic
+internal fun URI.upsertQueryParameters(parameters: Map<String, String>): URI {
+    if (parameters.isEmpty()) return this
+
+    val encodedParameters = parameters.mapValues { (name, value) ->
+        "${name.encodeQueryParameterComponent()}=${value.encodeQueryParameterComponent()}"
+    }
+    val emittedParameterNames = mutableSetOf<String>()
+    val updatedQueryParts = rawQuery
+        ?.split("&")
+        .orEmpty()
+        .filter { it.isNotEmpty() }
+        .mapNotNull { queryPart ->
+            val decodedName = Uri.decode(queryPart.substringBefore('='))
+            val replacement = encodedParameters[decodedName]
+            when {
+                replacement == null -> queryPart
+                emittedParameterNames.add(decodedName) -> replacement
+                else -> null
+            }
+        }
+        .toMutableList()
+
+    parameters.keys
+        .filterNot(emittedParameterNames::contains)
+        .mapTo(updatedQueryParts) { encodedParameters.getValue(it) }
+
+    val uriString = toString()
+    val fragmentIndex = uriString.indexOf('#')
+    val fragment = if (fragmentIndex == -1) "" else uriString.substring(fragmentIndex)
+    val uriWithoutFragment = if (fragmentIndex == -1) uriString else uriString.substring(0, fragmentIndex)
+    val queryIndex = uriWithoutFragment.indexOf('?')
+    val uriWithoutQuery = if (queryIndex == -1) uriWithoutFragment else uriWithoutFragment.substring(0, queryIndex)
+
+    return URI("$uriWithoutQuery?${updatedQueryParts.joinToString("&")}$fragment")
+}
+
 private fun String.encodeQueryParameterComponent(): String = Uri.encode(this)

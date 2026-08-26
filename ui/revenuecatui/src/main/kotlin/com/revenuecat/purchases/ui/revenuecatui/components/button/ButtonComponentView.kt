@@ -141,12 +141,20 @@ internal fun ButtonComponentView(
                         val paywallAction = buttonState.action ?: return@onStackClick
                         myActionInProgress = true
                         state.update(actionInProgress = true)
+                        var actionForClick = paywallAction
                         if (style.action.isPurchaseRelated()) {
                             val currentPackage = packageForPurchaseButtonInteraction(style.action, state)
                             val componentUrl = resolvedWebCheckoutInteractionUrl(
                                 paywallAction = paywallAction,
                                 state = state,
                             )
+                            actionForClick = if (
+                                paywallAction is PaywallAction.External.LaunchWebCheckout && componentUrl != null
+                            ) {
+                                paywallAction.copy(resolvedUrl = componentUrl)
+                            } else {
+                                paywallAction
+                            }
                             componentInteractionTracker.track(
                                 paywallPurchaseButtonAction(
                                     componentName = style.componentName,
@@ -171,7 +179,7 @@ internal fun ButtonComponentView(
                             }
                         }
                         coroutineScope.launch {
-                            onClick(paywallAction)
+                            onClick(actionForClick)
                             myActionInProgress = false
                             state.update(actionInProgress = false)
                         }

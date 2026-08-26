@@ -38,6 +38,8 @@ internal sealed interface PaywallAction {
             val openMethod: ButtonComponent.UrlMethod,
             val autoDismiss: Boolean,
             val packageParamBehavior: PackageParamBehavior,
+            /** Set at click time so the interaction event and opened URL use the same resolved value. */
+            val resolvedUrl: String? = null,
         ) : External {
             sealed interface PackageParamBehavior {
                 data class Append(

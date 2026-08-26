@@ -49,11 +49,14 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
+import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import com.revenuecat.purchases.ui.revenuecatui.helpers.resolveWebCheckoutUrlForInteraction
 import kotlinx.coroutines.CompletableDeferred
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -826,6 +829,77 @@ class ButtonComponentViewTests {
                 .assertIsDisplayed()
                 .assertHasClickAction()
                 .performClick()
+        }
+
+    @Test
+    fun `custom checkout interaction URL matches URL handed to checkout after identity changes`(): Unit =
+        with(composeTestRule) {
+            val cta = "purchase"
+            val ctaKey = LocalizationKey("purchase")
+            val urlKey = LocalizationKey("custom-checkout-url")
+            val localizations = nonEmptyMapOf(
+                LocaleId("en_US") to nonEmptyMapOf(
+                    ctaKey to LocalizationData.Text(cta),
+                    urlKey to LocalizationData.Text("https://checkout.example.com"),
+                ),
+            )
+            val component = PurchaseButtonComponent(
+                stack = StackComponent(
+                    components = listOf(
+                        TextComponent(
+                            text = ctaKey,
+                            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                        ),
+                    ),
+                ),
+                method = PurchaseButtonComponent.Method.CustomWebCheckout(
+                    customUrl = PurchaseButtonComponent.CustomUrl(
+                        urlLid = urlKey,
+                        appUserIdParam = "user",
+                    ),
+                ),
+            )
+            val offering = Offering(
+                identifier = "identifier",
+                serverDescription = "description",
+                metadata = emptyMap(),
+                availablePackages = emptyList(),
+            )
+            val style = StyleFactory(localizations = localizations, offering = offering)
+                .create(component)
+                .getOrThrow()
+                .componentStyle as ButtonComponentStyle
+            val purchases = MockPurchasesType(appUserID = "before-login")
+            val state = FakePaywallState(
+                components = listOf(component),
+                localizations = localizations,
+                purchases = purchases,
+            )
+            var interactionUrl: String? = null
+            var checkoutUrl: String? = null
+
+            setContent {
+                ButtonComponentView(
+                    style = style,
+                    state = state,
+                    onClick = { action ->
+                        checkoutUrl = state.resolveWebCheckoutUrlForInteraction(
+                            action as PaywallAction.External.LaunchWebCheckout,
+                        )
+                    },
+                    componentInteractionTracker = PaywallComponentInteractionTracker { interaction ->
+                        interactionUrl = interaction.componentUrl
+                        purchases.appUserID = "after-login"
+                    },
+                )
+            }
+
+            onNodeWithText(cta).performClick()
+            waitForIdle()
+
+            assertThat(interactionUrl)
+                .isEqualTo("https://checkout.example.com?rc_source=app&user=before-login")
+            assertThat(checkoutUrl).isEqualTo(interactionUrl)
         }
 
     @Test
