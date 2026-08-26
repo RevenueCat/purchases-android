@@ -2696,24 +2696,24 @@ class RemoteConfigManagerTest {
     // region post-receipt refresh
 
     @Test
-    fun `awaitPostReceiptRefresh completes immediately without a request when no receipt was posted`() {
+    fun `ensurePostReceiptRefresh completes immediately without a request when no receipt was posted`() {
         every { diskCache.read() } returns null
 
         var completed = false
-        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+        manager.ensurePostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
 
         assertThat(completed).isTrue
         verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
-    fun `awaitPostReceiptRefresh issues a post_receipt request and completes when it is delivered`() {
+    fun `ensurePostReceiptRefresh issues a post_receipt request and completes when it is delivered`() {
         every { diskCache.read() } returns null
         commitInitialConfig()
 
         manager.onReceiptPosted()
         var completed = false
-        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+        manager.ensurePostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
 
         assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.PostReceipt)
         assertThat(completed).isFalse
@@ -2728,7 +2728,7 @@ class RemoteConfigManagerTest {
 
         manager.onReceiptPosted()
         var completed = false
-        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+        manager.ensurePostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
 
         assertThat(capturedFetchContext).isEqualTo(RemoteConfigFetchContext.AppStart)
         assertThat(completed).isFalse
@@ -2737,7 +2737,7 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `awaitPostReceiptRefresh waits for the in-flight refresh and then issues its own request`() {
+    fun `ensurePostReceiptRefresh waits for the in-flight refresh and then issues its own request`() {
         every { diskCache.read() } returns null
         commitInitialConfig()
 
@@ -2750,7 +2750,7 @@ class RemoteConfigManagerTest {
 
         manager.onReceiptPosted()
         var completed = false
-        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+        manager.ensurePostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
 
         // Not skipped like an overlapping refreshRemoteConfig would be, but not issued yet either.
         assertThat(completed).isFalse
@@ -2773,7 +2773,7 @@ class RemoteConfigManagerTest {
 
         manager.onReceiptPosted()
         var completed = false
-        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+        manager.ensurePostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
 
         onError.invoke(
             PurchasesError(PurchasesErrorCode.NetworkError),
@@ -2794,7 +2794,7 @@ class RemoteConfigManagerTest {
 
         manager.onReceiptPosted()
         var completed = false
-        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+        manager.ensurePostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
 
         onError.invoke(
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
@@ -2805,7 +2805,7 @@ class RemoteConfigManagerTest {
         // The endpoint is disabled for the session: a later post + wait completes without any request.
         manager.onReceiptPosted()
         var completedWhileDisabled = false
-        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) {
+        manager.ensurePostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) {
             completedWhileDisabled = true
         }
         assertThat(completedWhileDisabled).isTrue
@@ -2820,10 +2820,10 @@ class RemoteConfigManagerTest {
         manager.onReceiptPosted()
         var firstCompleted = false
         var secondCompleted = false
-        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) {
+        manager.ensurePostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) {
             firstCompleted = true
         }
-        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) {
+        manager.ensurePostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) {
             secondCompleted = true
         }
 
@@ -2851,7 +2851,7 @@ class RemoteConfigManagerTest {
         deliverSuccess(null)
 
         var completed = false
-        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+        manager.ensurePostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
 
         // The completed foreground refresh did not clear the flag: a post_receipt request still goes out.
         verify(exactly = 3) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
@@ -2867,7 +2867,7 @@ class RemoteConfigManagerTest {
 
         manager.onReceiptPosted()
         var firstCompleted = false
-        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) {
+        manager.ensurePostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) {
             firstCompleted = true
         }
 
@@ -2877,7 +2877,7 @@ class RemoteConfigManagerTest {
         assertThat(firstCompleted).isTrue
 
         var secondCompleted = false
-        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) {
+        manager.ensurePostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) {
             secondCompleted = true
         }
         verify(exactly = 3) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
@@ -2893,7 +2893,7 @@ class RemoteConfigManagerTest {
 
         manager.onReceiptPosted()
         var completed = false
-        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+        manager.ensurePostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
         assertThat(completed).isFalse
 
         manager.clearCache("new-user")
@@ -2901,7 +2901,7 @@ class RemoteConfigManagerTest {
 
         // The identity change reset the flag: a later wait completes without a new request.
         var completedAfterClear = false
-        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = "new-user") {
+        manager.ensurePostReceiptRefresh(appInBackground = false, appUserID = "new-user") {
             completedAfterClear = true
         }
         assertThat(completedAfterClear).isTrue
@@ -2920,7 +2920,7 @@ class RemoteConfigManagerTest {
         )
         manager.onReceiptPosted()
         var completed = false
-        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+        manager.ensurePostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
         assertThat(completed).isFalse
 
         manager.clearCache("new-user")
@@ -2930,14 +2930,14 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `awaitPostReceiptRefresh after close completes immediately`() {
+    fun `ensurePostReceiptRefresh after close completes immediately`() {
         every { diskCache.read() } returns null
 
         manager.onReceiptPosted()
         manager.close()
 
         var completed = false
-        manager.awaitPostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
+        manager.ensurePostReceiptRefresh(appInBackground = false, appUserID = TEST_APP_USER_ID) { completed = true }
         assertThat(completed).isTrue
         verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }

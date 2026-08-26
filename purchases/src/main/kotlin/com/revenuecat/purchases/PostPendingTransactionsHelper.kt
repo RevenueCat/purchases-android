@@ -150,7 +150,7 @@ internal class PostPendingTransactionsHelper(
             callback?.invoke(result)
             return
         }
-        manager.awaitPostReceiptRefresh(
+        manager.ensurePostReceiptRefresh(
             appInBackground = appConfig.isAppBackgrounded,
             appUserID = identityManager.currentAppUserID,
         ) { callback?.invoke(result) }

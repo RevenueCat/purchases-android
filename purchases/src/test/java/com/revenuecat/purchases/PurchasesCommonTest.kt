@@ -1595,7 +1595,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         val refreshCompletion = slot<() -> Unit>()
         every {
-            mockRemoteConfigManager.awaitPostReceiptRefresh(any(), any(), capture(refreshCompletion))
+            mockRemoteConfigManager.ensurePostReceiptRefresh(any(), any(), capture(refreshCompletion))
         } just Runs
 
         val storeProduct = stubStoreProduct(productId)
@@ -1614,7 +1614,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         assertThat(callCount).isEqualTo(0)
         refreshCompletion.captured.invoke()
         assertThat(callCount).isEqualTo(1)
-        verify(exactly = 1) { mockRemoteConfigManager.awaitPostReceiptRefresh(any(), appUserId, any()) }
+        verify(exactly = 1) { mockRemoteConfigManager.ensurePostReceiptRefresh(any(), appUserId, any()) }
     }
 
     @Test
@@ -1655,7 +1655,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         )
 
         assertThat(errorCallCount).isEqualTo(1)
-        verify(exactly = 0) { mockRemoteConfigManager.awaitPostReceiptRefresh(any(), any(), any()) }
+        verify(exactly = 0) { mockRemoteConfigManager.ensurePostReceiptRefresh(any(), any(), any()) }
     }
 
     @Test

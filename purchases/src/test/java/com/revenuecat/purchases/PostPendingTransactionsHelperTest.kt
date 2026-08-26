@@ -54,7 +54,7 @@ class PostPendingTransactionsHelperTest {
         postTransactionWithProductDetailsHelper = mockk()
         postReceiptHelper = mockk()
         remoteConfigManager = mockk<RemoteConfigManager>().apply {
-            every { awaitPostReceiptRefresh(any(), any(), any()) } answers { thirdArg<() -> Unit>().invoke() }
+            every { ensurePostReceiptRefresh(any(), any(), any()) } answers { thirdArg<() -> Unit>().invoke() }
         }
         every { appConfig.isAppBackgrounded } returns false
 
@@ -460,7 +460,7 @@ class PostPendingTransactionsHelperTest {
 
         val refreshCompletion = slot<() -> Unit>()
         every {
-            remoteConfigManager.awaitPostReceiptRefresh(any(), any(), capture(refreshCompletion))
+            remoteConfigManager.ensurePostReceiptRefresh(any(), any(), capture(refreshCompletion))
         } just Runs
 
         var receivedResult: SyncPendingPurchaseResult? = null
@@ -485,7 +485,7 @@ class PostPendingTransactionsHelperTest {
 
         postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
 
-        verify(exactly = 1) { remoteConfigManager.awaitPostReceiptRefresh(any(), appUserId, any()) }
+        verify(exactly = 1) { remoteConfigManager.ensurePostReceiptRefresh(any(), appUserId, any()) }
     }
 
     @Test
@@ -497,7 +497,7 @@ class PostPendingTransactionsHelperTest {
 
         syncAndAssertResult(SyncPendingPurchaseResult.NoPendingPurchasesToSync)
 
-        verify(exactly = 1) { remoteConfigManager.awaitPostReceiptRefresh(any(), appUserId, any()) }
+        verify(exactly = 1) { remoteConfigManager.ensurePostReceiptRefresh(any(), appUserId, any()) }
     }
 
     @Test
@@ -506,7 +506,7 @@ class PostPendingTransactionsHelperTest {
 
         syncAndAssertResult(SyncPendingPurchaseResult.AutoSyncDisabled)
 
-        verify(exactly = 0) { remoteConfigManager.awaitPostReceiptRefresh(any(), any(), any()) }
+        verify(exactly = 0) { remoteConfigManager.ensurePostReceiptRefresh(any(), any(), any()) }
     }
 
     @Test
@@ -524,7 +524,7 @@ class PostPendingTransactionsHelperTest {
 
         syncAndAssertResult(SyncPendingPurchaseResult.Error(error))
 
-        verify(exactly = 0) { remoteConfigManager.awaitPostReceiptRefresh(any(), any(), any()) }
+        verify(exactly = 0) { remoteConfigManager.ensurePostReceiptRefresh(any(), any(), any()) }
     }
 
     // endregion post-receipt remote config refresh

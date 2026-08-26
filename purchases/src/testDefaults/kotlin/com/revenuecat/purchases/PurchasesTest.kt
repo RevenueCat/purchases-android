@@ -984,7 +984,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
         val refreshCompletion = slot<() -> Unit>()
         every {
-            mockRemoteConfigManager.awaitPostReceiptRefresh(any(), any(), capture(refreshCompletion))
+            mockRemoteConfigManager.ensurePostReceiptRefresh(any(), any(), capture(refreshCompletion))
         } just Runs
 
         var successCallCount = 0
@@ -1013,7 +1013,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         )
 
         assertThat(errorCallCount).isEqualTo(1)
-        verify(exactly = 1) { mockRemoteConfigManager.awaitPostReceiptRefresh(any(), appUserId, any()) }
+        verify(exactly = 1) { mockRemoteConfigManager.ensurePostReceiptRefresh(any(), appUserId, any()) }
     }
 
     @Test
@@ -1125,7 +1125,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             isoCurrencyCode = "USD"
         )
 
-        verify(exactly = 1) { mockRemoteConfigManager.awaitPostReceiptRefresh(any(), appUserId, any()) }
+        verify(exactly = 1) { mockRemoteConfigManager.ensurePostReceiptRefresh(any(), appUserId, any()) }
     }
 
     @Test
@@ -1643,7 +1643,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         val refreshCompletion = slot<() -> Unit>()
         every {
-            mockRemoteConfigManager.awaitPostReceiptRefresh(any(), any(), capture(refreshCompletion))
+            mockRemoteConfigManager.ensurePostReceiptRefresh(any(), any(), capture(refreshCompletion))
         } just Runs
 
         var callbackCalled = false
@@ -1653,7 +1653,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             fail("should be success")
         })
 
-        verify(exactly = 1) { mockRemoteConfigManager.awaitPostReceiptRefresh(any(), appUserId, any()) }
+        verify(exactly = 1) { mockRemoteConfigManager.ensurePostReceiptRefresh(any(), appUserId, any()) }
         assertThat(callbackCalled).isFalse()
         refreshCompletion.captured.invoke()
         assertThat(callbackCalled).isTrue()
@@ -1697,7 +1697,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         })
 
         assertThat(onErrorCalled).isTrue()
-        verify(exactly = 1) { mockRemoteConfigManager.awaitPostReceiptRefresh(any(), appUserId, any()) }
+        verify(exactly = 1) { mockRemoteConfigManager.ensurePostReceiptRefresh(any(), appUserId, any()) }
     }
 
     @Test

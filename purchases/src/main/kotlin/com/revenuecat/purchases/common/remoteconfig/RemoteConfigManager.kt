@@ -68,7 +68,7 @@ import kotlin.time.Duration.Companion.minutes
  * Overlapping refreshes are deduped: only one [refreshRemoteConfig] runs at a time. A call made while one is
  * already in flight is skipped (the backend collapses concurrent requests but still fires every callback, which
  * would otherwise parse and persist the same response more than once). The one exception is
- * [awaitPostReceiptRefresh], which is never skipped: it waits for the in-flight sync and then issues its own.
+ * [ensurePostReceiptRefresh], which is never skipped: it waits for the in-flight sync and then issues its own.
  *
  * Consumers read through the facade: [topic] for a topic's committed item index (metadata only) and [blobData]
  * for a resolved item's blob payload (fetched on demand). Both run on [ioDispatcher] so callers never touch disk
@@ -282,7 +282,7 @@ internal class RemoteConfigManager(
         )
     }
 
-    /** Marks that a receipt was posted, so the next [awaitPostReceiptRefresh] issues a PostReceipt sync. */
+    /** Marks that a receipt was posted, so the next [ensurePostReceiptRefresh] issues a PostReceipt sync. */
     fun onReceiptPosted() {
         synchronized(cacheLock) { postReceiptRefreshPending = true }
     }
@@ -295,7 +295,7 @@ internal class RemoteConfigManager(
      * [clearCache]/[close] cancels the manager scope mid-wait; it may run synchronously on the calling thread or
      * later on a background thread.
      */
-    fun awaitPostReceiptRefresh(appInBackground: Boolean, appUserID: String, onComplete: () -> Unit) {
+    fun ensurePostReceiptRefresh(appInBackground: Boolean, appUserID: String, onComplete: () -> Unit) {
         val completeImmediately = synchronized(cacheLock) {
             disabled || (!postReceiptRefreshPending && refreshCompletion == null)
         }
@@ -303,7 +303,7 @@ internal class RemoteConfigManager(
             onComplete()
             return
         }
-        scope.launch { ensurePostReceiptRefresh(appInBackground, appUserID) }
+        scope.launch { awaitPostReceiptRefresh(appInBackground, appUserID) }
             .invokeOnCompletion { onComplete() }
     }
 
@@ -320,7 +320,7 @@ internal class RemoteConfigManager(
      * re-checks until it can acquire the guard itself (mirroring [refreshRemoteConfig]'s critical section),
      * consuming the flag atomically with the acquire. From then on the request behaves like any other sync.
      */
-    private suspend fun ensurePostReceiptRefresh(appInBackground: Boolean, appUserID: String) {
+    private suspend fun awaitPostReceiptRefresh(appInBackground: Boolean, appUserID: String) {
         while (true) {
             var inFlight: CompletableDeferred<Unit>? = null
             var retryAfterInFlight = false

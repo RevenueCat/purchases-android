@@ -1487,7 +1487,7 @@ internal class PurchasesOrchestrator(
     /** Runs [onComplete] once remote config reflects any receipts this operation posted (see the manager). */
     private fun afterPostReceiptRemoteConfigRefresh(onComplete: () -> Unit) {
         val manager = remoteConfigManager ?: return onComplete()
-        manager.awaitPostReceiptRefresh(state.appInBackground, identityManager.currentAppUserID, onComplete)
+        manager.ensurePostReceiptRefresh(state.appInBackground, identityManager.currentAppUserID, onComplete)
     }
 
     private fun shouldRefreshCustomerInfo(firstTimeInForeground: Boolean): Boolean {

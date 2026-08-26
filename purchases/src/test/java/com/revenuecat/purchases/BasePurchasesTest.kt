@@ -137,7 +137,7 @@ internal open class BasePurchasesTest {
 
         // The relaxed mock would swallow the completion callback, deadlocking the flows that hold on it.
         every {
-            mockRemoteConfigManager.awaitPostReceiptRefresh(any(), any(), any())
+            mockRemoteConfigManager.ensurePostReceiptRefresh(any(), any(), any())
         } answers { thirdArg<() -> Unit>().invoke() }
 
         every {
