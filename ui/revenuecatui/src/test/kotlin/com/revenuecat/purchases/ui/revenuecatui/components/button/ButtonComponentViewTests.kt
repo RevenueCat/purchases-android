@@ -762,6 +762,8 @@ class ButtonComponentViewTests {
                             customUrl = PurchaseButtonComponent.CustomUrl(
                                 urlLid = LocalizationKey("custom-checkout-url"),
                                 packageParam = "my_custom_param",
+                                appUserIdParam = "my_app_user_id_param",
+                                envParam = "my_env_param",
                             ),
                         ),
                     ),
@@ -800,6 +802,8 @@ class ButtonComponentViewTests {
                         val packageParamBehavior = action.packageParamBehavior as PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append
                         assertThat(packageParamBehavior.rcPackage).isNull()
                         assertThat(packageParamBehavior.packageParam).isEqualTo("my_custom_param")
+                        assertThat(packageParamBehavior.appUserIdParam).isEqualTo("my_app_user_id_param")
+                        assertThat(packageParamBehavior.envParam).isEqualTo("my_env_param")
                     },
                 )
             }

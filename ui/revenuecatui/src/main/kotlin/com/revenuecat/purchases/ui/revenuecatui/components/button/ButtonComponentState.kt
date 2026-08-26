@@ -94,6 +94,8 @@ internal class ButtonComponentState(
                     packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
                         rcPackage = rcPackage,
                         packageParam = packageParam,
+                        appUserIdParam = appUserIdParam,
+                        envParam = envParam,
                     ),
                 )
             }

@@ -40,7 +40,12 @@ internal sealed interface PaywallAction {
             val packageParamBehavior: PackageParamBehavior,
         ) : External {
             sealed interface PackageParamBehavior {
-                data class Append(val rcPackage: Package?, val packageParam: String?) : PackageParamBehavior
+                data class Append(
+                    val rcPackage: Package?,
+                    val packageParam: String?,
+                    val appUserIdParam: String? = null,
+                    val envParam: String? = null,
+                ) : PackageParamBehavior
                 object DoNotAppend : PackageParamBehavior
             }
         }
