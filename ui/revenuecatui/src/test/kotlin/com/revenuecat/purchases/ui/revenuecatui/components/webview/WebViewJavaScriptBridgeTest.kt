@@ -8,6 +8,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.webkit.WebMessageCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
@@ -74,9 +75,7 @@ internal class WebViewJavaScriptBridgeTest {
         sizeToContentHeight: Boolean = false,
         onDocumentReset: () -> Unit = {},
         onSecureMessagingUnsupported: () -> Unit = {},
-        contextSnapshotProvider: () -> JsonObject = {
-            webViewContextSnapshot(locale = "en-US", darkMode = false)
-        },
+        contextSnapshotProvider: () -> JsonObject = { testContextSnapshot() },
     ): WebViewJavaScriptBridge {
         val bridge = WebViewJavaScriptBridge(
             webView = webView,
@@ -594,6 +593,34 @@ internal class WebViewJavaScriptBridgeTest {
         idleMainLooper()
 
         assertThat(resizes).isEmpty()
+    }
+
+    // --- Snapshot delivery ---
+
+    @Test
+    fun `context frame carries resolved custom variables`() {
+        val bridge = bridge(
+            contextSnapshotProvider = {
+                testContextSnapshot(mapOf("org" to CustomVariableValue.String("RevenueCat")))
+            },
+        )
+        bridge.connect()
+
+        assertThat(scripts().last()).contains("\"custom\":{\"org\":\"RevenueCat\"}")
+    }
+
+    @Test
+    fun `builds the snapshot once per handshake`() {
+        var builds = 0
+        val bridge = bridge(
+            contextSnapshotProvider = {
+                builds += 1
+                testContextSnapshot()
+            },
+        )
+        bridge.connect()
+
+        assertThat(builds).isEqualTo(1)
     }
 
     // --- Document lifecycle ---

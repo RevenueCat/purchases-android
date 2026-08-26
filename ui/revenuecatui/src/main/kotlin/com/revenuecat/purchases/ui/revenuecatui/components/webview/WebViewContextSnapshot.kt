@@ -2,9 +2,11 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
@@ -15,6 +17,7 @@ internal fun webViewContextSnapshot(
     state: PaywallState.Loaded.Components,
     darkMode: Boolean,
 ): JsonObject = webViewContextSnapshot(
+    customVariables = state.mergedCustomVariables,
     locale = state.locale.toLanguageTag(),
     darkMode = darkMode,
 )
@@ -29,10 +32,13 @@ internal fun webViewContextSnapshot(
  */
 @JvmSynthetic
 internal fun webViewContextSnapshot(
+    customVariables: Map<String, CustomVariableValue>,
     locale: String,
     darkMode: Boolean,
 ): JsonObject = buildJsonObject {
-    putJsonObject(Keys.CUSTOM) {}
+    putJsonObject(Keys.CUSTOM) {
+        customVariables.forEach { (name, value) -> put(name, value.asJsonPrimitive) }
+    }
     put(Keys.OFFERING, JsonNull)
     putJsonArray(Keys.PACKAGES) {}
     put(Keys.PACKAGE, JsonNull)
@@ -61,3 +67,18 @@ private object Keys {
     const val DARK_MODE = "dark_mode"
     const val UPDATED_AT = "updated_at"
 }
+
+private val CustomVariableValue.asJsonPrimitive: JsonPrimitive
+    get() = map(
+        string = { JsonPrimitive(it) },
+        number = { number ->
+            // A bare NaN or Infinity is not valid JSON.
+            if (!number.isFinite()) {
+                JsonPrimitive(number.toString())
+            } else {
+                val whole = number.toLong()
+                if (number == whole.toDouble()) JsonPrimitive(whole) else JsonPrimitive(number)
+            }
+        },
+        boolean = { JsonPrimitive(it) },
+    )
