@@ -1,7 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
-import android.app.Activity
-import android.content.Intent
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -13,12 +11,11 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.lang.ref.WeakReference
 import java.util.UUID
 
 /**
- * Everything [CheckpointWorkflowActivity] needs to build its paywall, read in a single pass so it can't observe
- * a call that was taken between two accessors.
+ * Everything [CheckpointWorkflowPresenter] needs to build its paywall, read in a single pass so it can't
+ * observe a call that was taken between two accessors.
  */
 internal class CheckpointPresentation(
     val resolution: CheckpointResolution.MatchedWorkflow,
@@ -27,15 +24,19 @@ internal class CheckpointPresentation(
 
 /**
  * Runs a checkpoint hit end to end: fires listener events, asks the core module what the checkpoint resolves
- * to, and either returns its data or presents the resolved workflow through [CheckpointWorkflowActivity]. Owns
- * the one-presentation-at-a-time constraint and the pending call that routes a presented paywall's terminal
- * outcome back to the suspended [checkpoint] call. Data-only results never claim that presentation slot.
+ * to, and either returns its data or presents the resolved workflow through [CheckpointWorkflowPresenter].
+ * Owns the one-presentation-at-a-time constraint and the pending call that routes a presented paywall's
+ * terminal outcome back to the suspended [checkpoint] call. Data-only results never claim that presentation
+ * slot.
  *
  * There is one instance per [Purchases] instance, held in its `checkpointManagerSlot` and reached through
  * [checkpointsManager], so the listener and any in-flight presentation die with the SDK instance that owns
  * them and reconfiguring the SDK always starts from a clean state.
  */
-internal class CheckpointsManager {
+internal class CheckpointsManager(
+    private val presenterFactory: (callId: String, manager: CheckpointsManager) -> CheckpointWorkflowPresenter =
+        { callId, manager -> CheckpointWorkflowPresenter(callId, manager) },
+) {
 
     private class PendingCall(
         val callId: String,
@@ -43,12 +44,12 @@ internal class CheckpointsManager {
         val customVariables: Map<String, CustomVariableValue>,
         val paywallFinished: CompletableDeferred<CheckpointPaywallOutcome>,
     ) {
-        // Kept here rather than on the activity so a configuration change doesn't reset it.
+        // Kept on the call rather than the presented window so losing the window (configuration change)
+        // doesn't reset it.
         var outcome: CheckpointPaywallOutcome = CheckpointPaywallOutcome.Dismissed
 
-        // Weak because this manager outlives every activity. Only used to take an orphaned paywall down
-        // when its call is abandoned.
-        var activity: WeakReference<Activity>? = null
+        // Only used to take an orphaned workflow window down when its call is abandoned.
+        var presenter: CheckpointWorkflowPresenter? = null
     }
 
     @get:Synchronized
@@ -97,21 +98,11 @@ internal class CheckpointsManager {
     fun presentation(callId: String): CheckpointPresentation? =
         withPendingCall(callId) { CheckpointPresentation(it.resolution, it.customVariables) }
 
-    fun onPresentationStarted(callId: String, activity: Activity) {
-        withPendingCall(callId) { it.activity = WeakReference(activity) }
-    }
-
     fun recordOutcome(callId: String, outcome: CheckpointPaywallOutcome) {
         withPendingCall(callId) { it.outcome = outcome }
     }
 
-    /**
-     * A rotation must keep the pending call alive for the recreated instance, but a backgrounded destroy
-     * (memory pressure, "Don't keep activities") must still release it, or the suspended caller and the
-     * one-at-a-time slot stay stuck for as long as this manager lives.
-     */
-    fun onActivityDestroyed(callId: String, isChangingConfigurations: Boolean) {
-        if (isChangingConfigurations) return
+    fun onPresentationFinished(callId: String) {
         val finished = take(callId) ?: return
         finished.paywallFinished.complete(finished.outcome)
     }
@@ -134,10 +125,9 @@ internal class CheckpointsManager {
             )
         }
         try {
-            activity.startActivity(
-                Intent(activity, CheckpointWorkflowActivity::class.java)
-                    .putExtra(CheckpointWorkflowActivity.EXTRA_CALL_ID, call.callId),
-            )
+            val presenter = presenterFactory(call.callId, this)
+            withPendingCall(call.callId) { it.presenter = presenter }
+            presenter.show(activity)
             return call.paywallFinished.await()
         } catch (e: CancellationException) {
             abandon(call.callId)
@@ -151,11 +141,11 @@ internal class CheckpointsManager {
         }
     }
 
-    // Counterpart of onActivityDestroyed for calls that fail or get cancelled before the presented workflow
+    // Counterpart of onPresentationFinished for calls that fail or get cancelled before the presented workflow
     // reports: releases the slot and takes the orphaned paywall down with the caller that asked for it.
     // Always runs on the main thread, inside the checkpoint() dispatch.
     private fun abandon(callId: String) {
-        take(callId)?.activity?.get()?.finish()
+        take(callId)?.presenter?.abandon()
     }
 
     private fun take(callId: String): PendingCall? = withPendingCall(callId) {
