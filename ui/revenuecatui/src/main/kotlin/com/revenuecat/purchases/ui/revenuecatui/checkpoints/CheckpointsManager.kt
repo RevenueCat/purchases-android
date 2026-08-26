@@ -70,7 +70,7 @@ internal class CheckpointsManager {
         identifier: String,
         params: CheckpointParams?,
     ): CheckpointResult = withContext(Dispatchers.Main) {
-        val checkpoint = CheckpointInfo(identifier, params ?: CheckpointParams())
+        val checkpoint = CheckpointInfo(identifier, params ?: CheckpointParams {})
         checkpointListener?.onCheckpointHit(checkpoint)
         if (!CheckpointIdentifierValidator.isValid(identifier)) {
             Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(identifier))

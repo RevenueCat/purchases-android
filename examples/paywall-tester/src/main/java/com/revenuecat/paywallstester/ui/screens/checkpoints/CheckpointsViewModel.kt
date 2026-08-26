@@ -11,7 +11,6 @@ import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
@@ -69,7 +68,7 @@ internal class CheckpointsViewModelImpl(
             val resultUi = try {
                 Purchases.sharedInstance.awaitCheckpoint(
                     checkpointIdentifier,
-                    CheckpointParams("source" to CustomVariableValue.String("paywall-tester")),
+                    CheckpointParams { customVariables { "source" to "paywall-tester" } },
                 ).toUi()
             } catch (e: PurchasesException) {
                 CheckpointResultUi(

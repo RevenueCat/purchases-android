@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
@@ -76,7 +75,7 @@ class OnboardingViewModel : ViewModel() {
             val message = try {
                 val result = Purchases.sharedInstance.awaitCheckpoint(
                     "onboarding_complete",
-                    CheckpointParams("step" to CustomVariableValue.String(Step.Personalize.name)),
+                    CheckpointParams { customVariables { "step" to Step.Personalize.name } },
                 )
                 when (result) {
                     is CheckpointResult.ReceivedOffering ->
