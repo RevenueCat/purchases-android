@@ -463,13 +463,14 @@ class ApiDiffReportTest < Minitest::Test
                  ApiDiffReport.changed_signature_files("basesha", "headsha", runner: runner)
   end
 
-  def test_patch_between_asks_git_for_that_one_file
+  # A `diff.external` in the caller's config silently empties the patch, so the flag is the test.
+  def test_patch_between_asks_git_for_that_one_file_ignoring_any_external_differ
     asked = []
     runner = ->(*command) { asked << command; ADDED_METHOD_PATCH }
 
     patch = ApiDiffReport.patch_between("basesha", "headsha", "purchases/api-defauts.txt", runner: runner)
 
-    assert_equal [["git", "diff", "basesha", "headsha", "--", "purchases/api-defauts.txt"]], asked
+    assert_equal [["git", "diff", "--no-ext-diff", "basesha", "headsha", "--", "purchases/api-defauts.txt"]], asked
     assert_equal ADDED_METHOD_PATCH, patch
   end
 

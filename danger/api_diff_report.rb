@@ -59,8 +59,10 @@ module ApiDiffReport
           .to_s.each_line.map(&:strip).reject(&:empty?).select { |path| signature_file?(path) }
   end
 
+  # --no-ext-diff: a `diff.external` in the caller's git config replaces the unified patch this
+  # parses, and an unparseable patch reads as "nothing changed" rather than as an error.
   def patch_between(base, head, path, runner:)
-    runner.call("git", "diff", base, head, "--", path).to_s
+    runner.call("git", "diff", "--no-ext-diff", base, head, "--", path).to_s
   end
 
   # The commit page already carries the PR link, and its sha is what tells a rerun it announced.
