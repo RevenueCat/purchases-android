@@ -9,8 +9,6 @@ import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallbac
 import com.google.android.libraries.ads.mobile.sdk.common.PreloadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.PreloadConfiguration
 import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdEventCallback
-import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdRefreshCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingPreloadCallback
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import kotlin.jvm.JvmSynthetic
@@ -66,25 +64,11 @@ public fun BannerAdPreloader.Companion.pollAndTrackAd(
     bannerAdRefreshCallback: BannerAdRefreshCallback? = null,
 ): BannerAd? {
     val ad = pollAd(preloadId) ?: return null
-    ad.installPreloaderTrackingCallbacks(adEventCallback, bannerAdRefreshCallback, placement)
-    return ad
-}
-
-private fun BannerAd.installPreloaderTrackingCallbacks(
-    adEventCallback: BannerAdEventCallback?,
-    bannerAdRefreshCallback: BannerAdRefreshCallback?,
-    placement: String?,
-) {
-    this.adEventCallback = TrackingBannerAdEventCallback(
-        initialDelegate = adEventCallback,
-        initialPlacement = placement,
-        adUnitId = adUnitId,
-        responseInfoProvider = ::getResponseInfo,
-    )
-    this.bannerAdRefreshCallback = TrackingBannerAdRefreshCallback(
-        delegate = bannerAdRefreshCallback,
+    ad.installTrackingCallbacks(
+        adEventCallback = adEventCallback,
+        bannerAdRefreshCallback = bannerAdRefreshCallback,
         placement = placement,
-        adUnitId = adUnitId,
-        responseInfoProvider = ::getResponseInfo,
+        adUnitId = ad.adUnitId,
     )
+    return ad
 }
