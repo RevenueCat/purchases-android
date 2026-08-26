@@ -514,7 +514,8 @@ public fun AdTracker.loadAndTrackBannerAd(
  * @param adResponse The opaque server-to-server ad response supplied by Google Mobile Ads.
  * @param adUnitId The ad unit ID associated with [adResponse], used for RevenueCat tracking.
  * @param placement Optional placement identifier used in RevenueCat tracking.
- * @param loadCallback Callback to receive load success and failure events.
+ * @param loadCallback Required callback to receive load success and failure events and distinguish this callback-based
+ * overload from its suspending counterpart.
  * @param adEventCallback Optional callback for banner lifecycle and paid events.
  * @param bannerAdRefreshCallback Optional callback for automatic banner refresh events.
  */

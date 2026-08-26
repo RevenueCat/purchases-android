@@ -47,6 +47,7 @@ public fun AdView.loadAndTrackAd(
  *
  * [adUnitId] is required because neither the opaque response nor a failed load reliably provides it. The loaded ad
  * has tracking callbacks installed before it is forwarded to [loadCallback].
+ * [loadCallback] is required to distinguish this callback-based overload from its suspending counterpart.
  */
 @ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
