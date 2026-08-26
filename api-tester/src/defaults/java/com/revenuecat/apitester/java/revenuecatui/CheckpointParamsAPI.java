@@ -1,5 +1,8 @@
 package com.revenuecat.apitester.java.revenuecatui;
 
+import androidx.annotation.OptIn;
+
+import com.revenuecat.purchases.InternalRevenueCatAPI;
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams;
 
@@ -8,6 +11,7 @@ import java.util.Map;
 @SuppressWarnings({"unused"})
 final class CheckpointParamsAPI {
 
+    @OptIn(markerClass = InternalRevenueCatAPI.class)
     static void check(CheckpointParams params) {
         Map<String, CustomVariableValue> customVariables = params.getCustomVariables();
 
