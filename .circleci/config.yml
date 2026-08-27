@@ -23,6 +23,11 @@ aliases:
       branches:
         only: main
 
+  non-main-branches: &non-main-branches
+    filters:
+      branches:
+        ignore: main
+
   android-executor: &android-executor
     executor:
       name: android/android_docker
@@ -1036,6 +1041,7 @@ workflows:
           build_type: "debug"
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - test:
           name: test_cec_<< matrix.build_type >>
           flavor: "customEntitlementComputation"
@@ -1045,6 +1051,7 @@ workflows:
           matrix:
             parameters:
               build_type: ["debug", "release"]
+          <<: *non-main-branches
       # Special case for defaults release with kover
       - test:
           name: test_defaults_release
@@ -1056,45 +1063,58 @@ workflows:
       - verify-compatibility:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - lint:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - detekt:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - metalava:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - assemble-purchase-tester:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - assemble-paywall-tester-release:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - assemble-rct-tester-release:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - assemble-admob-integration-sample-app:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - assemble-checkpoint-tester:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - test_dokka_hide_internal:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - test_detekt_rules:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - run-backend-integration-tests:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - record-and-upload-paparazzi-revenuecatui-snapshots:
           requires:
             - prepare-tests
       - run-revenuecatui-ui-tests:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - emerge_purchases_ui_snapshot_tests:
           requires:
             - prepare-tests
@@ -1104,23 +1124,28 @@ workflows:
       - run-maestro-e2e-tests:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - run-maestro-workflow-tests:
           context:
             - maestro
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - run-integration-tests:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - run-purchases-cec-integration-tests:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - run-purchases-integration-tests:
           requires:
             - prepare-tests
           matrix:
             parameters:
               backend_environment: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
+          <<: *non-main-branches
       - hold:
           type: approval
           requires:
