@@ -9,8 +9,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonDecoder
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Decodes a paywall's `default_locale`, falling back to [FALLBACK] when the backend sends `null`.
@@ -33,8 +32,8 @@ internal object DefaultLocaleIdSerializer : KSerializer<LocaleId> {
     override fun deserialize(decoder: Decoder): LocaleId {
         val jsonDecoder = decoder as? JsonDecoder
             ?: error("This serializer can be used only with JSON format")
-        val element = jsonDecoder.decodeJsonElement()
-        if (element is JsonNull) return FALLBACK
-        return LocaleId(element.jsonPrimitive.content)
+        // `isString` is false for JsonNull and for unquoted primitives, so both fall back here.
+        val primitive = jsonDecoder.decodeJsonElement() as? JsonPrimitive
+        return if (primitive?.isString == true) LocaleId(primitive.content) else FALLBACK
     }
 }

@@ -260,6 +260,21 @@ internal class WorkflowModelsDeserializationTest {
     }
 
     @Test
+    fun `WorkflowScreen default_locale falls back to en for non-string values`() {
+        // iOS only accepts a JSON string here, so coercing a number or bool into LocaleId("42")
+        // would hand the renderer a locale the other platforms never produce.
+        listOf("42", "1.5", "true", "{}", """{ "value": "es_ES" }""", """["es_ES"]""").forEach { value ->
+            val screen = JsonTools.json.decodeFromString(
+                WorkflowScreen.serializer(),
+                screenJson(""""default_locale": $value,"""),
+            )
+            assertThat(screen.defaultLocaleIdentifier)
+                .`as`("default_locale was coerced from: %s", value)
+                .isEqualTo(LocaleId("en"))
+        }
+    }
+
+    @Test
     fun `WorkflowScreen default_locale falls back to en when missing`() {
         val screen = JsonTools.json.decodeFromString(WorkflowScreen.serializer(), screenJson(""))
         assertThat(screen.defaultLocaleIdentifier).isEqualTo(LocaleId("en"))
@@ -269,7 +284,14 @@ internal class WorkflowModelsDeserializationTest {
     fun `workflow and offerings paths agree on default_locale`() {
         // Both models describe the same screen; the workflow path only re-wraps what /offerings
         // serves directly. They must not diverge on a shared field.
-        listOf(""""default_locale": "es_ES",""", """"default_locale": null,""", "").forEach { fragment ->
+        listOf(
+            """"default_locale": "es_ES",""",
+            """"default_locale": null,""",
+            """"default_locale": 42,""",
+            """"default_locale": true,""",
+            """"default_locale": {},""",
+            "",
+        ).forEach { fragment ->
             val json = screenJson(fragment)
             val fromWorkflow = JsonTools.json
                 .decodeFromString(WorkflowScreen.serializer(), json).defaultLocaleIdentifier
