@@ -73,8 +73,11 @@ private fun PlaceholderAdScreen(title: String, onBack: () -> Unit) {
 @Composable
 private fun HomeScreen(application: MainApplication, onSelectScreen: (SampleScreen) -> Unit) {
     val adsStatus by application.adsStatus.collectAsState()
+    val revenueCatStatus by application.revenueCatStatus.collectAsState()
+    val sdksReady = adsStatus.ready && revenueCatStatus.ready
     SampleScaffold(title = "AdMob Next-Gen", contentPadding = PaddingValues(16.dp)) {
-        Text(adsStatus, style = MaterialTheme.typography.bodyMedium)
+        Text(revenueCatStatus.message, style = MaterialTheme.typography.bodyMedium)
+        Text(adsStatus.message, style = MaterialTheme.typography.bodyMedium)
         Text(
             "Every format demonstrates RevenueCat tracking through both direct loading and Google's preloaders.",
             style = MaterialTheme.typography.bodyMedium,
@@ -83,6 +86,7 @@ private fun HomeScreen(application: MainApplication, onSelectScreen: (SampleScre
             Button(
                 modifier = Modifier.fillMaxWidth(),
                 onClick = { onSelectScreen(screen) },
+                enabled = sdksReady,
             ) {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     Text(screen.title)

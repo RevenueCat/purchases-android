@@ -15,11 +15,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
+internal data class InitializationStatus(
+    val message: String,
+    val ready: Boolean = false,
+)
+
 class MainApplication : Application() {
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private val mutableAdsStatus = MutableStateFlow("Google Mobile Ads: initializing")
+    private val mutableRevenueCatStatus = MutableStateFlow(InitializationStatus("RevenueCat: initializing"))
+    private val mutableAdsStatus = MutableStateFlow(InitializationStatus("Google Mobile Ads: initializing"))
 
-    val adsStatus: StateFlow<String> = mutableAdsStatus.asStateFlow()
+    internal val revenueCatStatus: StateFlow<InitializationStatus> = mutableRevenueCatStatus.asStateFlow()
+    internal val adsStatus: StateFlow<InitializationStatus> = mutableAdsStatus.asStateFlow()
 
     override fun onCreate() {
         super.onCreate()
@@ -30,13 +37,23 @@ class MainApplication : Application() {
     private fun initializeRevenueCat() {
         if (BuildConfig.REVENUECAT_API_KEY.isBlank()) {
             Log.w(TAG, "Set REVENUECAT_API_KEY in local.properties to enable RevenueCat tracking")
+            mutableRevenueCatStatus.value = InitializationStatus("RevenueCat: missing REVENUECAT_API_KEY")
             return
         }
 
-        Purchases.logLevel = LogLevel.DEBUG
-        Purchases.configure(
-            PurchasesConfiguration.Builder(this, BuildConfig.REVENUECAT_API_KEY).build(),
-        )
+        runCatching {
+            Purchases.logLevel = LogLevel.DEBUG
+            Purchases.configure(
+                PurchasesConfiguration.Builder(this, BuildConfig.REVENUECAT_API_KEY).build(),
+            )
+        }.onSuccess {
+            mutableRevenueCatStatus.value = InitializationStatus("RevenueCat: ready", ready = true)
+        }.onFailure { error ->
+            Log.e(TAG, "RevenueCat initialization failed", error)
+            mutableRevenueCatStatus.value = InitializationStatus(
+                "RevenueCat: ${error.message ?: "initialization failed"}",
+            )
+        }
     }
 
     private fun initializeGoogleMobileAds() {
@@ -46,11 +63,13 @@ class MainApplication : Application() {
                     this@MainApplication,
                     InitializationConfig.Builder(BuildConfig.ADMOB_APP_ID).build(),
                 ) {
-                    mutableAdsStatus.value = "Google Mobile Ads: ready"
+                    mutableAdsStatus.value = InitializationStatus("Google Mobile Ads: ready", ready = true)
                 }
             }.onFailure { error ->
                 Log.e(TAG, "Google Mobile Ads initialization failed", error)
-                mutableAdsStatus.value = "Google Mobile Ads: ${error.message ?: "initialization failed"}"
+                mutableAdsStatus.value = InitializationStatus(
+                    "Google Mobile Ads: ${error.message ?: "initialization failed"}",
+                )
             }
         }
     }
