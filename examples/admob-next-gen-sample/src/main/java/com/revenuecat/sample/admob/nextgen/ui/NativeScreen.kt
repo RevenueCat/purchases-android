@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-
 package com.revenuecat.sample.admob.nextgen.ui
 
 import android.view.LayoutInflater
@@ -33,7 +31,6 @@ import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoadResult
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdPreloader
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdRequest
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdView
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.loadAndTrackNativeAd
 import com.revenuecat.purchases.admob.nextgen.loadAndTrackNativeAds
@@ -52,6 +49,18 @@ private const val MAX_NATIVE_BATCH_SIZE = 3
 @Composable
 @Suppress("LongMethod")
 internal fun NativeScreen(onBack: () -> Unit) {
+    val existingPreloadConfiguration = remember {
+        NativeAdPreloader.getConfiguration(NATIVE_PRELOAD_ID)
+    }
+    var adVariant by remember {
+        mutableStateOf(
+            if (existingPreloadConfiguration?.request?.adUnitId == NativeAdVariant.VIDEO.adUnitId) {
+                NativeAdVariant.VIDEO
+            } else {
+                NativeAdVariant.STANDARD
+            },
+        )
+    }
     var directStatus by remember { mutableStateOf("No direct native ad loaded") }
     var batchLoading by remember { mutableStateOf(false) }
     var batchSize by remember { mutableIntStateOf(MAX_NATIVE_BATCH_SIZE) }
@@ -72,6 +81,24 @@ internal fun NativeScreen(onBack: () -> Unit) {
 
     AdScreen("Native", onBack) { mode ->
         Text("Native is the only format with a multi-ad Flow.")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Switch(
+                checked = adVariant == NativeAdVariant.VIDEO,
+                onCheckedChange = { useVideoAdUnit ->
+                    loadJob?.cancel()
+                    directAds = emptyList()
+                    preloadedAds = emptyList()
+                    directStatus = "No direct native ad loaded"
+                    adVariant = if (useVideoAdUnit) NativeAdVariant.VIDEO else NativeAdVariant.STANDARD
+                },
+                enabled = !preloadState.started,
+            )
+            Text("Native video ad unit")
+        }
         if (mode == LoadMode.DIRECT) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -100,9 +127,9 @@ internal fun NativeScreen(onBack: () -> Unit) {
                         directStatus = if (batchLoading) "Collecting batch Flow..." else "Loading native ad..."
                         if (batchLoading) {
                             Purchases.sharedInstance.adTracker.loadAndTrackNativeAds(
-                                nativeRequest(),
+                                nativeRequest(adVariant),
                                 maxNumberOfAds = batchSize,
-                                placement = "native_batch",
+                                placement = adVariant.placement("batch"),
                             ).collect { result ->
                                 val handled = handleNativeResult(result, directAds)
                                 directAds = handled.ads
@@ -110,8 +137,8 @@ internal fun NativeScreen(onBack: () -> Unit) {
                             }
                         } else {
                             val result = Purchases.sharedInstance.adTracker.loadAndTrackNativeAd(
-                                nativeRequest(),
-                                placement = "native_single",
+                                nativeRequest(adVariant),
+                                placement = adVariant.placement("single"),
                             )
                             val handled = handleNativeResult(result, directAds)
                             directAds = handled.ads
@@ -142,7 +169,7 @@ internal fun NativeScreen(onBack: () -> Unit) {
                         onClick = {
                             val numberOfAds = preloadedAdCount.coerceAtMost(preloadState.adsAvailable)
                             preloadedAds = emptyList()
-                            val handled = pollNativeAds(numberOfAds)
+                            val handled = pollNativeAds(numberOfAds, adVariant)
                             preloadState.refresh()
                             if (handled == null) {
                                 preloadState.message = "No buffered native result available"
@@ -160,8 +187,8 @@ internal fun NativeScreen(onBack: () -> Unit) {
                         preloadState.updateAfterStart(
                             NativeAdPreloader.startAndTrack(
                                 NATIVE_PRELOAD_ID,
-                                PreloadConfiguration(nativeRequest(), preloadState.bufferSize),
-                                placement = "native_preload",
+                                PreloadConfiguration(nativeRequest(adVariant), preloadState.bufferSize),
+                                placement = adVariant.placement("preload"),
                                 preloadCallback = preloadState.preloadCallback(scope),
                             ),
                         )
@@ -208,12 +235,12 @@ private fun NativeAdCountSetting(
 
 private data class HandledNativeResult(val ads: List<NativeAd>, val status: String)
 
-private fun pollNativeAds(numberOfAds: Int): HandledNativeResult? {
+private fun pollNativeAds(numberOfAds: Int, adVariant: NativeAdVariant): HandledNativeResult? {
     var handledResult: HandledNativeResult? = null
     repeat(numberOfAds) {
         val result = NativeAdPreloader.pollAndTrackAd(
             NATIVE_PRELOAD_ID,
-            placement = "native_poll",
+            placement = adVariant.placement("poll"),
         )
         if (result != null) {
             handledResult = handleNativeResult(
@@ -285,7 +312,18 @@ private fun populateNativeAdView(nativeAd: NativeAd, adView: NativeAdView) {
     adView.registerNativeAd(nativeAd, media)
 }
 
-private fun nativeRequest(): NativeAdRequest = NativeAdRequest.Builder(
-    BuildConfig.ADMOB_NATIVE_AD_UNIT_ID,
+private enum class NativeAdVariant(
+    val adUnitId: String,
+    private val placementPrefix: String,
+) {
+    STANDARD(BuildConfig.ADMOB_NATIVE_AD_UNIT_ID, "native"),
+    VIDEO(BuildConfig.ADMOB_NATIVE_VIDEO_AD_UNIT_ID, "native_video"),
+    ;
+
+    fun placement(stage: String): String = "${placementPrefix}_$stage"
+}
+
+private fun nativeRequest(adVariant: NativeAdVariant): NativeAdRequest = NativeAdRequest.Builder(
+    adVariant.adUnitId,
     listOf(NativeAd.NativeAdType.NATIVE),
 ).build()
