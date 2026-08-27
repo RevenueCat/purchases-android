@@ -37,8 +37,8 @@ class WebCheckoutUrlResolverTest {
     }
 
     @Test
-    fun `custom checkout reads the app user ID each time the URL is resolved`() {
-        val purchases = MockPurchasesType(appUserID = "before-login")
+    fun `custom checkout reads the app user ID from state on every resolution`() {
+        val purchases = MockPurchasesType(appUserID = "first-user")
         val state = FakePaywallState(purchases = purchases)
         val action = customCheckoutAction(
             customUrl = "https://example.com/checkout",
@@ -46,12 +46,12 @@ class WebCheckoutUrlResolverTest {
         )
 
         assertThat(state.resolveWebCheckoutUrlForInteraction(action))
-            .isEqualTo("https://example.com/checkout?rc_source=app&user=before-login")
+            .isEqualTo("https://example.com/checkout?rc_source=app&user=first-user")
 
-        purchases.appUserID = "after-login"
+        purchases.appUserID = "second-user"
 
         assertThat(state.resolveWebCheckoutUrlForInteraction(action))
-            .isEqualTo("https://example.com/checkout?rc_source=app&user=after-login")
+            .isEqualTo("https://example.com/checkout?rc_source=app&user=second-user")
     }
 
     @Test

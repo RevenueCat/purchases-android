@@ -141,17 +141,17 @@ internal fun ButtonComponentView(
                         val paywallAction = buttonState.action ?: return@onStackClick
                         myActionInProgress = true
                         state.update(actionInProgress = true)
-                        var actionForClick = paywallAction
-                        if (style.action.isPurchaseRelated()) {
+                        val actionForClick = if (style.action.isPurchaseRelated()) {
                             val currentPackage = packageForPurchaseButtonInteraction(style.action, state)
                             val componentUrl = resolvedWebCheckoutInteractionUrl(
                                 paywallAction = paywallAction,
                                 state = state,
                             )
-                            actionForClick = if (
+                            // Resolve the URL once and carry it on the action: PaywallViewModel reuses it instead of
+                            // resolving again, so the interaction event and the URL opened for checkout cannot differ.
+                            val resolvedAction = if (
                                 paywallAction is PaywallAction.External.LaunchWebCheckout && componentUrl != null
                             ) {
-                                // Freeze the click-time URL so tracking and checkout use the same user-specific values.
                                 paywallAction.copy(resolvedUrl = componentUrl)
                             } else {
                                 paywallAction
@@ -165,6 +165,7 @@ internal fun ButtonComponentView(
                                     currentProductIdentifier = currentPackage?.product?.paywallProductIdentifier(),
                                 ),
                             )
+                            resolvedAction
                         } else {
                             val urlForEvent = paywallAction.navigationUrlForComponentInteraction()
                             val interaction = style.action.componentInteraction(urlForEvent)
@@ -178,6 +179,7 @@ internal fun ButtonComponentView(
                                     ),
                                 )
                             }
+                            paywallAction
                         }
                         coroutineScope.launch {
                             onClick(actionForClick)

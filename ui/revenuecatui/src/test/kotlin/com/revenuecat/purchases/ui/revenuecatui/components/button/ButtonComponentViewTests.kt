@@ -832,7 +832,7 @@ class ButtonComponentViewTests {
         }
 
     @Test
-    fun `custom checkout interaction URL matches URL handed to checkout after identity changes`(): Unit =
+    fun `custom checkout interaction URL matches URL handed to checkout without resolving twice`(): Unit =
         with(composeTestRule) {
             val cta = "purchase"
             val ctaKey = LocalizationKey("purchase")
@@ -869,7 +869,7 @@ class ButtonComponentViewTests {
                 .create(component)
                 .getOrThrow()
                 .componentStyle as ButtonComponentStyle
-            val purchases = MockPurchasesType(appUserID = "before-login")
+            val purchases = MockPurchasesType(appUserID = "at-resolution")
             val state = FakePaywallState(
                 components = listOf(component),
                 localizations = localizations,
@@ -889,7 +889,7 @@ class ButtonComponentViewTests {
                     },
                     componentInteractionTracker = PaywallComponentInteractionTracker { interaction ->
                         interactionUrl = interaction.componentUrl
-                        purchases.appUserID = "after-login"
+                        purchases.appUserID = "changed-after-resolution"
                     },
                 )
             }
@@ -898,7 +898,7 @@ class ButtonComponentViewTests {
             waitForIdle()
 
             assertThat(interactionUrl)
-                .isEqualTo("https://checkout.example.com?rc_source=app&user=before-login")
+                .isEqualTo("https://checkout.example.com?rc_source=app&user=at-resolution")
             assertThat(checkoutUrl).isEqualTo(interactionUrl)
         }
 
