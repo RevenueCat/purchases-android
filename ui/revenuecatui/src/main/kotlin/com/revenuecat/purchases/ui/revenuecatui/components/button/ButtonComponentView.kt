@@ -151,6 +151,7 @@ internal fun ButtonComponentView(
                             actionForClick = if (
                                 paywallAction is PaywallAction.External.LaunchWebCheckout && componentUrl != null
                             ) {
+                                // Freeze the click-time URL so tracking and checkout use the same user-specific values.
                                 paywallAction.copy(resolvedUrl = componentUrl)
                             } else {
                                 paywallAction
