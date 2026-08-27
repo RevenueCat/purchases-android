@@ -84,9 +84,15 @@ import io.mockk.verify
 import io.mockk.verifyOrder
 import junit.framework.TestCase.fail
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
@@ -95,7 +101,10 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.shadows.ShadowLooper
 import java.net.URL
+
+private const val TEST_WAIT_MS = 5_000L
 
 @Suppress("LargeClass")
 @RunWith(AndroidJUnit4::class)
@@ -1839,6 +1848,152 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `handlePackagePurchase cancelled mid-flight does not block later purchases`(): Unit = runBlocking {
+        // Arrange
+        val model = createComponentsModel()
+        // The store resolves as cancelled only after the caller is already gone.
+        val purchaseStarted = CompletableDeferred<Unit>()
+        val storeResolved = CompletableDeferred<Unit>()
+        coEvery { purchases.awaitPurchase(any()) } coAnswers {
+            purchaseStarted.complete(Unit)
+            storeResolved.await()
+            throw PurchasesException(PurchasesError(PurchasesErrorCode.PurchaseCancelledError))
+        }
+
+        // Act: the button's composition scope dies while the billing flow is in front.
+        val buttonScope = CoroutineScope(coroutineContext + Job())
+        val click = buttonScope.launch { model.handlePackagePurchase(activity, pkg = null) }
+        withTimeout(TEST_WAIT_MS) { purchaseStarted.await() }
+        click.cancelAndJoin()
+
+        // The abandoned flow resolves, so the action is genuinely over.
+        storeResolved.complete(Unit)
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+
+        // The user is back on the paywall and taps subscribe again.
+        coEvery {
+            purchases.awaitPurchase(any())
+        } throws PurchasesException(PurchasesError(PurchasesErrorCode.PurchaseCancelledError))
+        model.handlePackagePurchase(activity, pkg = null)
+
+        // Assert: the second tap must reach the billing flow.
+        assertThat(model.actionInProgress.value).isFalse
+        coVerify(exactly = 2) { purchases.awaitPurchase(any()) }
+    }
+
+    @Test
+    fun `purchase outliving a cancelled caller still completes and blocks a second attempt`(): Unit = runBlocking {
+        // Arrange
+        val model = createComponentsModel()
+        val purchaseStarted = CompletableDeferred<Unit>()
+        val storeResolved = CompletableDeferred<Unit>()
+        val purchaseResult = PurchaseResult(mockk<StoreTransaction>(relaxed = true), customerInfo)
+        coEvery { purchases.awaitPurchase(any()) } coAnswers {
+            purchaseStarted.complete(Unit)
+            storeResolved.await()
+            purchaseResult
+        }
+
+        // Act: the caller's composition scope dies while the store flow is still live.
+        val buttonScope = CoroutineScope(coroutineContext + Job())
+        val click = buttonScope.launch { model.handlePackagePurchase(activity, pkg = null) }
+        withTimeout(TEST_WAIT_MS) { purchaseStarted.await() }
+        click.cancelAndJoin()
+
+        // Must not start an overlapping purchase. Launched rather than called, so a regression fails
+        // this assertion instead of deadlocking on the unresolved flow.
+        val secondTap = launch { model.handlePackagePurchase(activity, pkg = null) }
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+        coVerify(exactly = 1) { purchases.awaitPurchase(any()) }
+        assertThat(model.actionInProgress.value).isTrue
+
+        // The abandoned flow succeeds: its completion must still be handled, not dropped.
+        storeResolved.complete(Unit)
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+
+        // Assert
+        verify(exactly = 1) { listener.onPurchaseCompleted(customerInfo, purchaseResult.storeTransaction) }
+        assertThat(model.actionInProgress.value).isFalse
+        secondTap.cancelAndJoin()
+    }
+
+    @Test
+    fun `the components state flag follows the action, not the caller`(): Unit = runBlocking {
+        // Arrange
+        val model = createComponentsModel()
+        val componentsState = model.state.value as PaywallState.Loaded.Components
+        val purchaseStarted = CompletableDeferred<Unit>()
+        val storeResolved = CompletableDeferred<Unit>()
+        coEvery { purchases.awaitPurchase(any()) } coAnswers {
+            purchaseStarted.complete(Unit)
+            storeResolved.await()
+            throw PurchasesException(PurchasesError(PurchasesErrorCode.PurchaseCancelledError))
+        }
+
+        // Act: the button's composition scope dies while the billing flow is in front.
+        val buttonScope = CoroutineScope(coroutineContext + Job())
+        val click = buttonScope.launch { model.handlePackagePurchase(activity, pkg = null) }
+        withTimeout(TEST_WAIT_MS) { purchaseStarted.await() }
+        click.cancelAndJoin()
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+
+        // Assert: the flag the button tree reads must still be up, otherwise the recreated paywall
+        // shows enabled buttons whose taps the gate silently refuses.
+        assertThat(componentsState.actionInProgress).isTrue
+
+        storeResolved.complete(Unit)
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+
+        assertThat(componentsState.actionInProgress).isFalse
+        assertThat(model.actionInProgress.value).isFalse
+    }
+
+    @Test
+    fun `purchase vetoed by the listener releases the action`(): Unit = runBlocking {
+        // Arrange
+        val model = create()
+        every { listener.onPurchasePackageInitiated(any(), any()) } answers {
+            secondArg<Resumable>()(false)
+        }
+
+        // Act
+        model.handlePackagePurchase(activity, pkg = null)
+
+        // Assert: the veto path must not strand the action either.
+        assertThat(model.actionInProgress.value).isFalse
+        coVerify(exactly = 0) { purchases.awaitPurchase(any()) }
+    }
+
+    @Test
+    fun `handleRestorePurchases cancelled mid-flight does not block later restores`(): Unit = runBlocking {
+        // Arrange
+        val model = create()
+        val restoreStarted = CompletableDeferred<Unit>()
+        val storeResolved = CompletableDeferred<Unit>()
+        coEvery { purchases.awaitRestore() } coAnswers {
+            restoreStarted.complete(Unit)
+            storeResolved.await()
+            customerInfo
+        }
+
+        // Act
+        val buttonScope = CoroutineScope(coroutineContext + Job())
+        val click = buttonScope.launch { model.handleRestorePurchases() }
+        withTimeout(TEST_WAIT_MS) { restoreStarted.await() }
+        click.cancelAndJoin()
+
+        storeResolved.complete(Unit)
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+
+        coEvery { purchases.awaitRestore() } returns customerInfo
+        model.handleRestorePurchases()
+
+        // Assert
+        assertThat(model.actionInProgress.value).isFalse
+        coVerify(exactly = 2) { purchases.awaitRestore() }
+    }
+
+    @Test
     fun `purchase errors other than cancellation do not track cancel event`() {
         val model = create()
         model.trackPaywallImpressionIfNeeded()
@@ -3435,6 +3590,25 @@ class PaywallViewModelTest {
         // Fallback rendered as components AND the stale workflow state was cleared.
         assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
         assertThat(model.workflowState.value).isNull()
+    }
+
+    /** A loaded components paywall with the monthly package selected. */
+    private fun createComponentsModel(): PaywallViewModelImpl {
+        val offeringId = "offering-id"
+        val offering = Offering(
+            identifier = offeringId,
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(
+                TestData.Packages.monthly.copy(offeringId),
+                TestData.Packages.annual.copy(offeringId),
+            ),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        return create(offering = offering).apply {
+            (state.value as PaywallState.Loaded.Components).update(TestData.Packages.monthly.identifier)
+            trackPaywallImpressionIfNeeded()
+        }
     }
 
     private fun create(

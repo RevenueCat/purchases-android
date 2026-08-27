@@ -554,11 +554,10 @@ internal class PaywallViewModelImpl(
         purchases.track(event)
     }
 
+    override suspend fun handleRestorePurchases() = runExclusiveAction { performRestore() }
+
     @Suppress("NestedBlockDepth", "CyclomaticComplexMethod", "LongMethod")
-    override suspend fun handleRestorePurchases() {
-        if (verifyNoActionInProgressOrStartAction()) {
-            return
-        }
+    private suspend fun performRestore() {
         val shouldResume = suspendCancellableCoroutine { continuation ->
             Logger.d("Restore Purchases Initiated… waiting for listener.onRestoreInitiated to proceed.")
             listener?.onRestoreInitiated { shouldResume ->
@@ -570,7 +569,6 @@ internal class PaywallViewModelImpl(
         Logger.d("Restore Purchases gate complete. The SDK **$detail** attempt to restore purchases.")
 
         if (!shouldResume) {
-            finishAction()
             return
         }
         try {
@@ -648,14 +646,12 @@ internal class PaywallViewModelImpl(
             listener?.onRestoreError(e.error)
             _actionError.value = e.error
         }
-
-        finishAction()
     }
 
-    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?, resolvedOffer: ResolvedOffer?) {
-        if (verifyNoActionInProgressOrStartAction()) {
-            return
-        }
+    override suspend fun handlePackagePurchase(activity: Activity, pkg: Package?, resolvedOffer: ResolvedOffer?) =
+        runExclusiveAction { performPackagePurchase(activity, pkg, resolvedOffer) }
+
+    private suspend fun performPackagePurchase(activity: Activity, pkg: Package?, resolvedOffer: ResolvedOffer?) {
         when (val currentState = _state.value) {
             is PaywallState.Loaded.Legacy -> {
                 val selectedPackage = currentState.selectedPackage.value
@@ -681,7 +677,6 @@ internal class PaywallViewModelImpl(
             is PaywallState.Loading,
             -> Logger.e("Unexpected state trying to purchase package: $currentState")
         }
-        finishAction()
     }
 
     private suspend fun performPurchaseIfNecessary(
@@ -818,8 +813,6 @@ internal class PaywallViewModelImpl(
                 _actionError.value = e.error
             }
         }
-
-        finishAction()
     }
 
     private fun validateState() {
@@ -1611,8 +1604,29 @@ internal class PaywallViewModelImpl(
                 customVariables = options.customVariables,
                 defaultCustomVariables = extractDefaultCustomVariables(offering),
                 stateStore = stateStore,
+                viewModelActionInProgress = _actionInProgress,
             )
         }
+    }
+
+    /**
+     * Runs [block] as the paywall's single in-flight action, releasing the gate when it finishes.
+     *
+     * Runs on [viewModelScope] and is only joined by the caller: callers are composition-scoped, and
+     * awaitPurchase does not forward their cancellation to the store, so running it on the caller's
+     * scope would abandon a live purchase and strand the gate.
+     */
+    private suspend fun runExclusiveAction(block: suspend () -> Unit) {
+        if (verifyNoActionInProgressOrStartAction()) {
+            return
+        }
+        viewModelScope.launch {
+            try {
+                block()
+            } finally {
+                finishAction()
+            }
+        }.join()
     }
 
     /**
