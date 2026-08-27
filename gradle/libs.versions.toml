@@ -161,6 +161,8 @@ google-mobile-ads = { module = "com.google.android.gms:play-services-ads", versi
 hamcrest-core = { module = "org.hamcrest:hamcrest-core", version.ref = "hamcrest" }
 
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+# Android modules need this one: plain kotlin-test leaves JUnit off the test compile classpath.
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJSON" }
 
 material = { module = "com.google.android.material:material", version.ref = "material" }
@@ -194,7 +196,6 @@ dependencyGraph = { id = "com.savvasdalkitsis.module-dependency-graph", version.
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 dokka = { id ="org.jetbrains.dokka", version.ref = "dokka"}
 emerge = { id = "com.emergetools.android", version.ref = "emergeGradlePlugin" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-parcelize = { id = "org.jetbrains.kotlin.plugin.parcelize", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
