@@ -41,8 +41,7 @@ public abstract class CheckpointPaywallOutcome internal constructor() {
 
     /**
      * The user tapped a web checkout call to action and left to pay externally. There is no in-app completion
-     * signal for that payment; a later purchase, restore, or error in the same presentation replaces this
-     * outcome.
+     * signal for that payment.
      */
     public object WebCheckoutOpened : CheckpointPaywallOutcome() {
         override fun toString(): String = "WebCheckoutOpened"
