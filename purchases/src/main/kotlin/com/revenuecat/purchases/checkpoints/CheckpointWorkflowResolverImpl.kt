@@ -45,10 +45,10 @@ import kotlinx.serialization.json.JsonPrimitive
  * apps to exercise the throw path, since nothing in the config-driven path throws.
  */
 internal class CheckpointWorkflowResolverImpl(
-    private val workflowManager: WorkflowManager?,
-    private val uiConfigProvider: UiConfigProvider?,
-    private val checkpointsConfigProvider: CheckpointsConfigProvider?,
-    private val audiencesConfigProvider: AudiencesConfigProvider?,
+    private val workflowManager: WorkflowManager,
+    private val uiConfigProvider: UiConfigProvider,
+    private val checkpointsConfigProvider: CheckpointsConfigProvider,
+    private val audiencesConfigProvider: AudiencesConfigProvider,
     private val localRulesEvaluator: LocalRulesEvaluator,
     private val getOfferings: suspend () -> Offerings,
 ) : CheckpointWorkflowResolver {
@@ -76,26 +76,14 @@ internal class CheckpointWorkflowResolverImpl(
      * rules the winning rule came from are no longer the committed ones, so the answer can't be reported as if it
      * were. [resolve] retries such an attempt exactly once, so resolution never runs more than twice.
      */
-    @Suppress("ReturnCount", "CyclomaticComplexMethod", "ComplexCondition")
+    @Suppress("ReturnCount", "CyclomaticComplexMethod")
     private suspend fun attemptResolve(
         identifier: String,
         customVariables: Map<String, RulesDimensionValue>,
     ): CheckpointResolution? {
-        if (
-            workflowManager == null ||
-            uiConfigProvider == null ||
-            checkpointsConfigProvider == null ||
-            audiencesConfigProvider == null
-        ) {
-            return configurationUnavailable(
-                "Checkpoints are not available: required configuration components are missing.",
-            )
-        }
         val rulesResolution = when (val resolution = checkpointsConfigProvider.resolveCheckpoint(identifier)) {
             is CheckpointRulesResolution.Found -> resolution
             CheckpointRulesResolution.NotConfigured -> return unknownCheckpoint(identifier)
-            CheckpointRulesResolution.Disabled ->
-                return configurationUnavailable("The checkpoints configuration is disabled for this app.")
             CheckpointRulesResolution.Unavailable ->
                 return configurationUnavailable("The rules for checkpoint '$identifier' could not be read.")
         }

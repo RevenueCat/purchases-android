@@ -311,12 +311,10 @@ class WorkflowManagerTest {
 
     @Test
     fun `onPaywallConfigReady completes without error-logging when there is no ui_config to ready`() {
-        // A project with no paywalls configured has no ui_config at all, and neither does a session whose
-        // /v1/config endpoint was killed, or one whose resolve was superseded by a newer commit. None of those
-        // is a failure, so none may reach the developer's log as an error.
+        // A project with no paywalls configured has no ui_config at all, and neither does one whose resolve was
+        // superseded by a newer commit. Neither is a failure, so neither may reach the developer's log as an error.
         val validOutcomes = listOf(
             UiConfigResolution.NotConfigured,
-            UiConfigResolution.Disabled,
             UiConfigResolution.Superseded,
         )
 

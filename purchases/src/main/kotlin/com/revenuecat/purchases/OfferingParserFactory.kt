@@ -11,7 +11,7 @@ internal object OfferingParserFactory {
 
     fun createOfferingParser(
         store: Store,
-        shouldParsePaywallComponents: () -> Boolean = { true },
+        shouldParsePaywallComponents: Boolean = true,
     ): OfferingParser {
         return when (store) {
             Store.TEST_STORE -> SimulatedStoreOfferingParser(shouldParsePaywallComponents)

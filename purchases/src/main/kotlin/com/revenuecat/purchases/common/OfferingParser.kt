@@ -26,10 +26,10 @@ import java.net.URL
 
 internal abstract class OfferingParser(
     // Whether to actually build [Offering.PaywallComponents] (capturing the raw component JSON) when an offering
-    // carries `paywall_components`. Evaluated per parse: under workflows with remote config still enabled the
-    // components are served from `/v1/config`, so capturing them here is dead memory. Reverts to `true` once the
-    // 4xx kill switch disables remote config, so a subsequent refetch decodes them for the fallback render path.
-    private val shouldParsePaywallComponents: () -> Boolean = { true },
+    // carries `paywall_components`. Under workflows the components are served from `/v1/config`, so capturing
+    // them here is dead memory; only with remote config off (customEntitlementComputation) are the inline
+    // components decoded for the legacy render path.
+    private val shouldParsePaywallComponents: Boolean = true,
 ) {
 
     protected abstract fun findMatchingProduct(
@@ -199,7 +199,7 @@ internal abstract class OfferingParser(
             warnLog { "Skipping paywall components data with unexpected shape for offering" }
             return null
         }
-        if (!shouldParsePaywallComponents()) return null
+        if (!shouldParsePaywallComponents) return null
 
         // Defer the (potentially expensive) component-tree deserialization until the paywall is actually
         // accessed/displayed. Capturing the raw JSON string here is cheap; without this we would eagerly

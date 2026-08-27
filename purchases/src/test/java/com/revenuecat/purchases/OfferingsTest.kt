@@ -46,10 +46,11 @@ class OfferingsTest {
         Store.PLAY_STORE,
     )
 
-    // Parser that skips capturing paywall_components (as under workflows with remote config still enabled).
+    // Parser that skips capturing paywall_components (as under workflows with remote config enabled).
     private val skippingPaywallComponentsParser = OfferingParserFactory.createOfferingParser(
         Store.PLAY_STORE,
-    ) { false }
+        shouldParsePaywallComponents = false,
+    )
 
     @Test
     fun `createPackage returns null if packageJson planIdentifier doesnt match any sub StoreProduct base plan ids`() {

@@ -822,12 +822,12 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
                 override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean = false
 
                 override fun modifyRequestURL(url: URL, endpoint: Endpoint): URL {
-                    return URL("$url?force_killswitch=true")
+                    return URL("$url?test_param=true")
                 }
             },
         )
         enqueue(
-            "${endpoint.getPath()}?force_killswitch=true",
+            "${endpoint.getPath()}?test_param=true",
             expectedResult = HTTPResult.createResult(),
         )
 
@@ -839,7 +839,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             mapOf("" to ""),
         )
 
-        assertThat(server.takeRequest().requestUrl?.queryParameter("force_killswitch")).isEqualTo("true")
+        assertThat(server.takeRequest().requestUrl?.queryParameter("test_param")).isEqualTo("true")
     }
 
     @Test

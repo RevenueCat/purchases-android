@@ -56,7 +56,6 @@ import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
-import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.sha1
@@ -172,17 +171,17 @@ internal class PurchasesOrchestrator(
     private val virtualCurrencyManager: VirtualCurrencyManager,
     private val purchaseParamsValidator: PurchaseParamsValidator,
 
-    private val workflowManager: WorkflowManager?,
+    private val workflowManager: WorkflowManager,
     val processLifecycleOwnerProvider: () -> LifecycleOwner = { ProcessLifecycleOwner.get() },
     private val blockstoreHelper: BlockstoreHelper = BlockstoreHelper(application, identityManager),
     private val backupManager: BackupManager = BackupManager(application),
     val fileRepository: FileRepository = DefaultFileRepository(application),
-    private val remoteConfigManager: RemoteConfigManager? = null,
-    private val uiConfigProvider: UiConfigProvider? = null,
-    private val workflowsConfigProvider: WorkflowsConfigProvider? = null,
-    private val checkpointsConfigProvider: CheckpointsConfigProvider? = null,
+    private val remoteConfigManager: RemoteConfigManager,
+    private val uiConfigProvider: UiConfigProvider,
+    private val workflowsConfigProvider: WorkflowsConfigProvider,
+    private val checkpointsConfigProvider: CheckpointsConfigProvider,
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    internal val audiencesConfigProvider: AudiencesConfigProvider? = null,
+    internal val audiencesConfigProvider: AudiencesConfigProvider,
     val adTracker: AdTracker = AdTracker(adEventsManager),
     private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
     private val localRulesEvaluator: LocalRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
@@ -331,21 +330,6 @@ internal class PurchasesOrchestrator(
         if (!appConfig.dangerousSettings.autoSyncPurchases) {
             log(LogIntent.WARNING) { ConfigureStrings.AUTO_SYNC_PURCHASES_DISABLED }
         }
-
-        // When the `/v1/config` 4xx kill-switch trips, workflow-served paywalls are no longer available, so the
-        // cached offerings (parsed while the endpoint was live, with paywall components skipped) can no longer
-        // serve the fallback render path. Invalidate the in-memory cache first so any getOfferings caller in the
-        // window before the refetch lands takes the cache-miss -> network path and gets freshly decoded
-        // components, instead of being served the stale null-component objects. The refetch (with the endpoint
-        // now disabled) then repopulates the cache proactively.
-        remoteConfigManager?.registerListener(object : RemoteConfigCommitListener {
-            // Only the disable transition matters here; commits/invalidations are handled by the config providers.
-            override fun onConfigCommitted(generation: Int) = Unit
-            override fun onRemoteConfigDisabled(generation: Int) {
-                offeringsManager.clearInMemoryOfferingsCache(invalidateInFlightFetches = true)
-                offeringsManager.fetchAndCacheOfferings(appUserID, state.appInBackground)
-            }
-        })
     }
 
     /** @suppress */
@@ -377,7 +361,7 @@ internal class PurchasesOrchestrator(
         enqueue {
             if (appConfig.uiPreviewMode) return@enqueue
 
-            remoteConfigManager?.refreshRemoteConfigIfStale(
+            remoteConfigManager.refreshRemoteConfigIfStale(
                 appInBackground = false,
                 appUserID = identityManager.currentAppUserID,
                 fetchContext = if (firstTimeInForeground) {
@@ -517,7 +501,7 @@ internal class PurchasesOrchestrator(
             appUserID,
             Delay.jitterOnlyIfInBackground(state.appInBackground),
         ) {
-            remoteConfigManager?.refreshRemoteConfig(
+            remoteConfigManager.refreshRemoteConfig(
                 state.appInBackground,
                 appUserID,
                 RemoteConfigFetchContext.Read,
@@ -678,18 +662,19 @@ internal class PurchasesOrchestrator(
                 ),
             )
         }
-        val manager = workflowManager ?: throw PurchasesException(
-            PurchasesError(PurchasesErrorCode.ConfigurationError, "Workflows are not enabled."),
-        )
-        return manager.getWorkflow(workflowId)
+        if (remoteConfigManager.isDisabled) {
+            throw PurchasesException(
+                PurchasesError(PurchasesErrorCode.ConfigurationError, "Workflows are not enabled."),
+            )
+        }
+        return workflowManager.getWorkflow(workflowId)
     }
 
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
-        workflowManager?.resolveWorkflow(offeringId) ?: WorkflowResolution.NoWorkflow
+        workflowManager.resolveWorkflow(offeringId)
 
     suspend fun getUiConfig(): UiConfig {
-        val provider = uiConfigProvider
-        if (appConfig.uiPreviewMode || provider == null) {
+        if (appConfig.uiPreviewMode || remoteConfigManager.isDisabled) {
             val message = if (appConfig.uiPreviewMode) {
                 "UI config cannot be fetched in UI preview mode."
             } else {
@@ -697,7 +682,7 @@ internal class PurchasesOrchestrator(
             }
             throw PurchasesException(PurchasesError(PurchasesErrorCode.ConfigurationError, message))
         }
-        return provider.getUiConfig() ?: throw PurchasesException(
+        return uiConfigProvider.getUiConfig() ?: throw PurchasesException(
             PurchasesError(
                 PurchasesErrorCode.UnknownError,
                 "UI config is unavailable.",
@@ -892,7 +877,7 @@ internal class PurchasesOrchestrator(
                             callback?.onReceived(customerInfo, created)
                             customerInfoUpdateHandler.notifyListeners(customerInfo)
                         }
-                        remoteConfigManager?.refreshRemoteConfig(
+                        remoteConfigManager.refreshRemoteConfig(
                             state.appInBackground,
                             newAppUserID,
                             RemoteConfigFetchContext.IdentityChange,
@@ -945,10 +930,10 @@ internal class PurchasesOrchestrator(
             state = state.copy(purchaseCallbacksByProductId = Collections.emptyMap())
         }
         this.backend.close()
-        this.remoteConfigManager?.close()
-        this.workflowManager?.close()
-        this.uiConfigProvider?.close()
-        this.workflowsConfigProvider?.close()
+        this.remoteConfigManager.close()
+        this.workflowManager.close()
+        this.uiConfigProvider.close()
+        this.workflowsConfigProvider.close()
 
         billing.close()
         updatedCustomerInfoListener = null // Do not call on state since the setter does more stuff
@@ -1461,7 +1446,7 @@ internal class PurchasesOrchestrator(
         identityManager.switchUser(newAppUserID)
 
         offeringsManager.fetchAndCacheOfferings(newAppUserID, state.appInBackground)
-        remoteConfigManager?.refreshRemoteConfig(
+        remoteConfigManager.refreshRemoteConfig(
             state.appInBackground,
             newAppUserID,
             RemoteConfigFetchContext.IdentityChange,
@@ -1542,7 +1527,7 @@ internal class PurchasesOrchestrator(
         completion: ReceiveCustomerInfoCallback? = null,
     ) {
         state.appInBackground.let { appInBackground ->
-            remoteConfigManager?.refreshRemoteConfig(appInBackground, appUserID, fetchContext)
+            remoteConfigManager.refreshRemoteConfig(appInBackground, appUserID, fetchContext)
             customerInfoHelper.retrieveCustomerInfo(
                 appUserID,
                 CacheFetchPolicy.FETCH_CURRENT,
