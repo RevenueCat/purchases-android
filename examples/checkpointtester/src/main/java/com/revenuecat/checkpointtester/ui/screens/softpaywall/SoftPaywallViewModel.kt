@@ -48,10 +48,11 @@ class SoftPaywallViewModel : ViewModel() {
                         is CheckpointPaywallOutcome.Purchased -> upgraded("Purchased.")
                         is CheckpointPaywallOutcome.Restored -> upgraded("Restored.")
                         CheckpointPaywallOutcome.Dismissed -> free("Dismissed, staying on the free tier.")
+                        CheckpointPaywallOutcome.WebCheckoutOpened -> free("Left to pay via web checkout.")
                         is CheckpointPaywallOutcome.Error -> free("Paywall error: ${outcome.error.message}")
                         else -> free("Unknown paywall outcome.")
                     }
-                    is CheckpointResult.NoAction -> free("No paywall shown (${result.reason.value}).")
+                    is CheckpointResult.NoAction -> free("No paywall shown (${result.reason}).")
                     else -> free("Unknown checkpoint result.")
                 }
             } catch (e: PurchasesException) {

@@ -73,13 +73,15 @@ internal class CheckpointWorkflowResolverImpl(
             checkpointsConfigProvider == null ||
             audiencesConfigProvider == null
         ) {
-            return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.DISABLED)
+            return configurationUnavailable(
+                "Checkpoints are not available: required configuration components are missing.",
+            )
         }
         val checkpoint = when (val resolution = checkpointsConfigProvider.resolveCheckpoint(identifier)) {
             is CheckpointRulesResolution.Found -> resolution.checkpoint
             CheckpointRulesResolution.NotConfigured -> return unknownCheckpoint(identifier)
             CheckpointRulesResolution.Disabled ->
-                return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.DISABLED)
+                return configurationUnavailable("The checkpoints configuration is disabled for this app.")
             CheckpointRulesResolution.Unavailable ->
                 return configurationUnavailable("The rules for checkpoint '$identifier' could not be read.")
         }
