@@ -66,7 +66,7 @@ Or view / build our Android sample app:
 
 ## Requirements
 - Java 8+
-- Kotlin 1.8.0+
+- Kotlin 2.1.0+
 - Minimum target: Android 6.0+ (API level 23+)
     - Paywalls and Customer Center minimum target: Android 7.0+ (API level 24+)
 
