@@ -211,7 +211,7 @@ internal fun RewardedInterstitialScreen(activity: Activity, onBack: () -> Unit) 
                     if (loadedAd == null) {
                         directStatus = "Load a rewarded-interstitial ad first"
                     } else {
-                        showRewardedInterstitial(loadedAd, activity, directLoadedWithVerification) {
+                        showRewardedInterstitial(loadedAd, activity, directLoadedWithVerification, scope) {
                             directStatus = it
                         }
                         directAd = null
@@ -237,7 +237,7 @@ internal fun RewardedInterstitialScreen(activity: Activity, onBack: () -> Unit) 
                                 preloadState.message = "No buffered rewarded-interstitial ad available"
                             } else {
                                 preloadState.message = "Showing rewarded-interstitial ad"
-                                showRewardedInterstitial(ad, activity, verify) {
+                                showRewardedInterstitial(ad, activity, verify, scope) {
                                     preloadState.message = it
                                 }
                             }
@@ -272,6 +272,7 @@ private fun showRewardedInterstitial(
     ad: RewardedInterstitialAd,
     activity: Activity,
     verify: Boolean,
+    scope: CoroutineScope,
     updateStatus: (String) -> Unit,
 ) {
     if (verify) {
@@ -288,7 +289,9 @@ private fun showRewardedInterstitial(
             activity,
             placement = "rewarded_interstitial_show",
             onUserEarnedRewardListener = OnUserEarnedRewardListener { reward ->
-                updateStatus("Reward earned: ${reward.amount} ${reward.type}")
+                scope.launch {
+                    updateStatus("Reward earned: ${reward.amount} ${reward.type}")
+                }
             },
         )
     }
