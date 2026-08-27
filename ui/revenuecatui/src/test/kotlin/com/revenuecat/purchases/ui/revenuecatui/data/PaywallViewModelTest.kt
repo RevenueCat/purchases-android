@@ -162,7 +162,7 @@ class PaywallViewModelTest {
         customUrl = "https://revenuecat.com",
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
             rcPackage = TestData.Packages.monthly,
             packageParam = "rc_package",
         ),
@@ -171,7 +171,7 @@ class PaywallViewModelTest {
         customUrl = "https://revenuecat.com",
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
             rcPackage = null,
             packageParam = "rc_package",
         ),
@@ -180,7 +180,7 @@ class PaywallViewModelTest {
         customUrl = "https://revenuecat.com",
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
             rcPackage = null,
             packageParam = null,
         ),
@@ -189,7 +189,7 @@ class PaywallViewModelTest {
         customUrl = null,
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
             rcPackage = TestData.Packages.monthly,
             packageParam = null,
         ),
@@ -198,7 +198,7 @@ class PaywallViewModelTest {
         customUrl = null,
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
             rcPackage = null,
             packageParam = null,
         ),
@@ -207,7 +207,7 @@ class PaywallViewModelTest {
         customUrl = null,
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend,
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.DoNotAppend,
     )
 
     @get:Rule
@@ -2402,15 +2402,15 @@ class PaywallViewModelTest {
         val model = create(offering = offeringWithWPL)
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=%24rc_monthly")
+        ).isEqualTo("https://revenuecat.com?rc_source=app&rc_package=%24rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage),
-        ).isEqualTo("https://revenuecat.com")
+        ).isEqualTo("https://revenuecat.com?rc_source=app")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackageParam),
-        ).isEqualTo("https://revenuecat.com")
+        ).isEqualTo("https://revenuecat.com?rc_source=app")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithPackage),
@@ -2436,16 +2436,16 @@ class PaywallViewModelTest {
         // Uses given package
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=%24rc_monthly")
+        ).isEqualTo("https://revenuecat.com?rc_source=app&rc_package=%24rc_monthly")
 
         // Uses selected package when no package specified in action
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=%24rc_monthly")
+        ).isEqualTo("https://revenuecat.com?rc_source=app&rc_package=%24rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackageParam),
-        ).isEqualTo("https://revenuecat.com")
+        ).isEqualTo("https://revenuecat.com?rc_source=app")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithPackage),
@@ -2472,7 +2472,7 @@ class PaywallViewModelTest {
             customUrl = "https://revenuecat.com",
             autoDismiss = true,
             openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-            packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+            paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
                 rcPackage = packageWithWhitespace,
                 packageParam = "rc_package",
             ),
@@ -2481,7 +2481,7 @@ class PaywallViewModelTest {
 
         assertThat(
             model.getWebCheckoutUrl(action),
-        ).isEqualTo("https://revenuecat.com?rc_package=Annual%20Trial")
+        ).isEqualTo("https://revenuecat.com?rc_source=app&rc_package=Annual%20Trial")
     }
 
     @Test
