@@ -46,6 +46,12 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+    }
+}
+
 dependencies {
     // RevenueCat SDK
     implementation(project(":purchases"))
@@ -77,10 +83,4 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     debugImplementation(libs.compose.ui.tooling)
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
-    }
 }

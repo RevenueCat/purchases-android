@@ -44,7 +44,6 @@ recyclerview = "1.2.1"
 roboelectric = "4.16"
 kotlin = "2.2.21"
 kotlinLanguage = "1.8"
-# Can't update until we use more recent kotlin. 1.6.0 uses Kotlin 1.9.0
 kotlinxSerializationJSON = "1.5.1"
 samsungIap = "6.5.2"
 kover = "0.9.9"

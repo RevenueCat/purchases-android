@@ -1,6 +1,6 @@
 # V11 API Migration Guide
 
-This release updates the SDK's build toolchain to Android Gradle Plugin 9 and Kotlin 2.2.21. Our new minimum version is Kotlin 2.1.0+. If you were using an older version of Kotlin, you will need to update it.
+This release updates the SDK's build toolchain to Android Gradle Plugin 9 and Kotlin 2.2.21. Our new minimum version is Kotlin 2.1.0+.
 
 There are no public API changes in this release.
 

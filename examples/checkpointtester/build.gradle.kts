@@ -65,6 +65,12 @@ android {
     }
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+    }
+}
+
 dependencies {
     implementation(project(":purchases"))
     implementation(project(":ui:revenuecatui"))
@@ -81,10 +87,4 @@ dependencies {
     implementation(libs.navigation.compose)
     debugImplementation(libs.androidx.test.compose.manifest)
     debugImplementation(libs.compose.ui.tooling)
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
-    }
 }
