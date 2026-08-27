@@ -65,7 +65,7 @@ module ApiDiffReport
     runner.call("git", "diff", "--no-ext-diff", base, head, "--", path).to_s
   end
 
-  # The commit page already carries the PR link, and its sha is what tells a rerun it announced.
+  # The commit page already carries the PR link, so the message needs only the commit.
   def commit_link(sha)
     return "" if sha.to_s.empty?
 
