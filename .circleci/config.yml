@@ -16,13 +16,6 @@ aliases:
       branches:
         only: /^release\/.*/
 
-  only-main-branch: &only-main-branch
-    filters:
-      tags:
-        ignore: /.*/
-      branches:
-        only: main
-
   non-main-branches: &non-main-branches
     filters:
       branches:
