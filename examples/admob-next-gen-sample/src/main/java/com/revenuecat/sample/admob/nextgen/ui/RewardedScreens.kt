@@ -32,6 +32,7 @@ import com.revenuecat.purchases.admob.nextgen.pollAndTrackAd
 import com.revenuecat.purchases.admob.nextgen.show
 import com.revenuecat.purchases.admob.nextgen.startAndTrack
 import com.revenuecat.sample.admob.nextgen.BuildConfig
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 private const val REWARDED_PRELOAD_ID = "sample-rewarded"
@@ -79,7 +80,9 @@ internal fun RewardedScreen(activity: Activity, onBack: () -> Unit) {
                     if (loadedAd == null) {
                         directStatus = "Load a rewarded ad first"
                     } else {
-                        showRewarded(loadedAd, activity, directLoadedWithVerification) { directStatus = it }
+                        showRewarded(loadedAd, activity, directLoadedWithVerification, scope) {
+                            directStatus = it
+                        }
                         directAd = null
                     }
                 },
@@ -103,7 +106,7 @@ internal fun RewardedScreen(activity: Activity, onBack: () -> Unit) {
                                 preloadState.message = "No buffered rewarded ad available"
                             } else {
                                 preloadState.message = "Showing rewarded ad"
-                                showRewarded(ad, activity, verify) { preloadState.message = it }
+                                showRewarded(ad, activity, verify, scope) { preloadState.message = it }
                             }
                         },
                     ),
@@ -134,6 +137,7 @@ private fun showRewarded(
     ad: RewardedAd,
     activity: Activity,
     verify: Boolean,
+    scope: CoroutineScope,
     updateStatus: (String) -> Unit,
 ) {
     if (verify) {
@@ -150,7 +154,9 @@ private fun showRewarded(
             activity,
             placement = "rewarded_show",
             onUserEarnedRewardListener = OnUserEarnedRewardListener { reward ->
-                updateStatus("Reward earned: ${reward.amount} ${reward.type}")
+                scope.launch {
+                    updateStatus("Reward earned: ${reward.amount} ${reward.type}")
+                }
             },
         )
     }
