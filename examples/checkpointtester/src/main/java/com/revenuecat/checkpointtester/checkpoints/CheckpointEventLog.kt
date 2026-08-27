@@ -2,11 +2,11 @@ package com.revenuecat.checkpointtester.checkpoints
 
 import android.util.Log
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointCompletedContext
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointHitContext
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointListener
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.OnCheckpointCompletedContext
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.OnCheckpointHitContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,11 +30,11 @@ object CheckpointEventLog : CheckpointListener {
     private val _events = MutableStateFlow<List<String>>(emptyList())
     val events: StateFlow<List<String>> = _events.asStateFlow()
 
-    override fun onCheckpointHit(context: OnCheckpointHitContext) {
+    override fun onCheckpointHit(context: CheckpointHitContext) {
         track("Hit · ${context.identifier} · customVariables=${context.customVariables}")
     }
 
-    override fun onCheckpointCompleted(context: OnCheckpointCompletedContext) {
+    override fun onCheckpointCompleted(context: CheckpointCompletedContext) {
         track("Completed · ${context.identifier} · ${describe(context.result)}")
     }
 

@@ -4,20 +4,20 @@ package com.revenuecat.apitester.kotlin.revenuecatui
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointCompletedContext
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointContext
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointHitContext
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointListener
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.OnCheckpointCompletedContext
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.OnCheckpointHitContext
 
 @Suppress("unused", "UNUSED_VARIABLE", "EmptyFunctionBlock")
 private class CheckpointListenerAPI {
 
     fun check() {
         val listener = object : CheckpointListener {
-            override fun onCheckpointHit(context: OnCheckpointHitContext) {}
+            override fun onCheckpointHit(context: CheckpointHitContext) {}
 
-            override fun onCheckpointCompleted(context: OnCheckpointCompletedContext) {}
+            override fun onCheckpointCompleted(context: CheckpointCompletedContext) {}
         }
 
         // Every method has a default implementation.
@@ -29,11 +29,11 @@ private class CheckpointListenerAPI {
         val customVariables: Map<String, CustomVariableValue> = context.customVariables
     }
 
-    fun checkOnCheckpointHitContext(context: OnCheckpointHitContext) {
+    fun checkCheckpointHitContext(context: CheckpointHitContext) {
         val supertype: CheckpointContext = context
     }
 
-    fun checkOnCheckpointCompletedContext(context: OnCheckpointCompletedContext) {
+    fun checkCheckpointCompletedContext(context: CheckpointCompletedContext) {
         val supertype: CheckpointContext = context
         val result: CheckpointResult = context.result
     }

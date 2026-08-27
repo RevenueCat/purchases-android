@@ -71,11 +71,11 @@ internal class CheckpointsManager {
         params: CheckpointParams?,
     ): CheckpointResult = withContext(Dispatchers.Main) {
         val customVariables = (params ?: CheckpointParams {}).customVariables
-        checkpointListener?.onCheckpointHit(OnCheckpointHitContext(identifier, customVariables))
+        checkpointListener?.onCheckpointHit(CheckpointHitContext(identifier, customVariables))
         if (!CheckpointIdentifierValidator.isValid(identifier)) {
             Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(identifier))
             val result = CheckpointResult.NoAction(CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER)
-            checkpointListener?.onCheckpointCompleted(OnCheckpointCompletedContext(identifier, customVariables, result))
+            checkpointListener?.onCheckpointCompleted(CheckpointCompletedContext(identifier, customVariables, result))
             return@withContext result
         }
 
@@ -90,7 +90,7 @@ internal class CheckpointsManager {
             is CheckpointResolution.NoAction ->
                 CheckpointResult.NoAction(resolution.reason.toResultReason())
         }
-        checkpointListener?.onCheckpointCompleted(OnCheckpointCompletedContext(identifier, customVariables, result))
+        checkpointListener?.onCheckpointCompleted(CheckpointCompletedContext(identifier, customVariables, result))
         result
     }
 

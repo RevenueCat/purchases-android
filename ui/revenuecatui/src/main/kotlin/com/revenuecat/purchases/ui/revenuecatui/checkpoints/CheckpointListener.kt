@@ -22,7 +22,7 @@ public abstract class CheckpointContext internal constructor() {
  */
 @InternalRevenueCatAPI
 @Poko
-public class OnCheckpointHitContext internal constructor(
+public class CheckpointHitContext internal constructor(
     override val identifier: String,
     override val customVariables: Map<String, CustomVariableValue>,
 ) : CheckpointContext()
@@ -32,7 +32,7 @@ public class OnCheckpointHitContext internal constructor(
  */
 @InternalRevenueCatAPI
 @Poko
-public class OnCheckpointCompletedContext internal constructor(
+public class CheckpointCompletedContext internal constructor(
     override val identifier: String,
     override val customVariables: Map<String, CustomVariableValue>,
     /** What the checkpoint resolved to. */
@@ -48,12 +48,12 @@ public class OnCheckpointCompletedContext internal constructor(
 public interface CheckpointListener {
 
     /** A checkpoint was hit, before evaluation. */
-    public fun onCheckpointHit(context: OnCheckpointHitContext) {
+    public fun onCheckpointHit(context: CheckpointHitContext) {
         // Default empty implementation
     }
 
     /** The checkpoint completed and the result was returned. */
-    public fun onCheckpointCompleted(context: OnCheckpointCompletedContext) {
+    public fun onCheckpointCompleted(context: CheckpointCompletedContext) {
         // Default empty implementation
     }
 }

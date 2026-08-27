@@ -12,9 +12,9 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointCompletedContext
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointHitContext
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointListener
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.OnCheckpointCompletedContext
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.OnCheckpointHitContext
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpointListener
 
 private const val TAG = "MainApplication"
@@ -34,7 +34,7 @@ class MainApplication : Application() {
             Log.d(TAG, "DebugEvent: ${event.name} ${event.properties}")
         }
         Purchases.sharedInstance.checkpointListener = object : CheckpointListener {
-            override fun onCheckpointHit(context: OnCheckpointHitContext) {
+            override fun onCheckpointHit(context: CheckpointHitContext) {
                 Log.d(TAG, "CheckpointListener: onCheckpointHit: $context")
                 Toast.makeText(
                     this@MainApplication,
@@ -43,7 +43,7 @@ class MainApplication : Application() {
                 ).show()
             }
 
-            override fun onCheckpointCompleted(context: OnCheckpointCompletedContext) {
+            override fun onCheckpointCompleted(context: CheckpointCompletedContext) {
                 Log.d(TAG, "CheckpointListener: onCheckpointCompleted: ${context.result}")
             }
         }
