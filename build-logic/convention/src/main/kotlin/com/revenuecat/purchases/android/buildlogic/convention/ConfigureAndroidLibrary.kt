@@ -28,8 +28,6 @@ internal fun Project.configureAndroidLibrary() {
 
     extensions.configure<LibraryAndroidComponentsExtension> {
         beforeVariants { variantBuilder ->
-            // AGP 9 only creates unit tests for the testBuildType variant, so the release
-            // variant we publish would otherwise have none.
             (variantBuilder as HasUnitTestBuilder).enableUnitTest = true
         }
     }
