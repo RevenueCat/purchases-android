@@ -493,10 +493,10 @@ class ButtonComponentViewTests {
                         assertThat(action.customUrl).isNull()
                         assertThat(action.openMethod).isEqualTo(ButtonComponent.UrlMethod.EXTERNAL_BROWSER)
                         assertThat(action.autoDismiss).isTrue()
-                        val packageParamBehavior = action.packageParamBehavior as PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append
-                        assertThat(packageParamBehavior.rcPackage).isNotNull()
-                        assertThat(packageParamBehavior.rcPackage?.identifier).isEqualTo(expectedPackageId)
-                        assertThat(packageParamBehavior.packageParam).isNull()
+                        val paramBehavior = action.paramBehavior as PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append
+                        assertThat(paramBehavior.rcPackage).isNotNull()
+                        assertThat(paramBehavior.rcPackage?.identifier).isEqualTo(expectedPackageId)
+                        assertThat(paramBehavior.packageParam).isNull()
                     },
                 )
             }
@@ -590,9 +590,9 @@ class ButtonComponentViewTests {
                         assertThat(action.customUrl).isNull()
                         assertThat(action.openMethod).isEqualTo(ButtonComponent.UrlMethod.EXTERNAL_BROWSER)
                         assertThat(action.autoDismiss).isTrue()
-                        val packageParamBehavior = action.packageParamBehavior as PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append
-                        assertThat(packageParamBehavior.rcPackage).isNull()
-                        assertThat(packageParamBehavior.packageParam).isNull()
+                        val paramBehavior = action.paramBehavior as PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append
+                        assertThat(paramBehavior.rcPackage).isNull()
+                        assertThat(paramBehavior.packageParam).isNull()
                     },
                 )
             }
@@ -693,8 +693,8 @@ class ButtonComponentViewTests {
                         assertThat(action.customUrl).isNull()
                         assertThat(action.openMethod).isEqualTo(ButtonComponent.UrlMethod.EXTERNAL_BROWSER)
                         assertThat(action.autoDismiss).isTrue()
-                        assertThat(action.packageParamBehavior).isInstanceOf(
-                            PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend::class.java
+                        assertThat(action.paramBehavior).isInstanceOf(
+                            PaywallAction.External.LaunchWebCheckout.ParamBehavior.DoNotAppend::class.java
                         )
                     },
                 )
@@ -802,11 +802,11 @@ class ButtonComponentViewTests {
                         assertThat(action.customUrl).isEqualTo("https://custom-checkout.revenuecat.com")
                         assertThat(action.openMethod).isEqualTo(ButtonComponent.UrlMethod.EXTERNAL_BROWSER)
                         assertThat(action.autoDismiss).isTrue()
-                        val packageParamBehavior = action.packageParamBehavior as PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append
-                        assertThat(packageParamBehavior.rcPackage).isNull()
-                        assertThat(packageParamBehavior.packageParam).isEqualTo("my_custom_param")
-                        assertThat(packageParamBehavior.appUserIdParam).isEqualTo("my_app_user_id_param")
-                        assertThat(packageParamBehavior.envParam).isEqualTo("my_env_param")
+                        val paramBehavior = action.paramBehavior as PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append
+                        assertThat(paramBehavior.rcPackage).isNull()
+                        assertThat(paramBehavior.packageParam).isEqualTo("my_custom_param")
+                        assertThat(paramBehavior.appUserIdParam).isEqualTo("my_app_user_id_param")
+                        assertThat(paramBehavior.envParam).isEqualTo("my_env_param")
                     },
                 )
             }

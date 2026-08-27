@@ -153,7 +153,7 @@ class PaywallViewModelTest {
         customUrl = "https://revenuecat.com",
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
             rcPackage = TestData.Packages.monthly,
             packageParam = "rc_package",
         ),
@@ -162,7 +162,7 @@ class PaywallViewModelTest {
         customUrl = "https://revenuecat.com",
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
             rcPackage = null,
             packageParam = "rc_package",
         ),
@@ -171,7 +171,7 @@ class PaywallViewModelTest {
         customUrl = "https://revenuecat.com",
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
             rcPackage = null,
             packageParam = null,
         ),
@@ -180,7 +180,7 @@ class PaywallViewModelTest {
         customUrl = null,
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
             rcPackage = TestData.Packages.monthly,
             packageParam = null,
         ),
@@ -189,7 +189,7 @@ class PaywallViewModelTest {
         customUrl = null,
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
             rcPackage = null,
             packageParam = null,
         ),
@@ -198,7 +198,7 @@ class PaywallViewModelTest {
         customUrl = null,
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend,
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.DoNotAppend,
     )
 
     @get:Rule
@@ -2317,7 +2317,7 @@ class PaywallViewModelTest {
             customUrl = "https://revenuecat.com",
             autoDismiss = true,
             openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-            packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+            paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
                 rcPackage = packageWithWhitespace,
                 packageParam = "rc_package",
             ),

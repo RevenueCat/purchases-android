@@ -157,7 +157,7 @@ class WebCheckoutUrlResolverTest {
             customUrl = null,
             openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
             autoDismiss = false,
-            packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+            paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
                 rcPackage = TestData.Packages.monthly,
                 packageParam = "package",
                 envParam = "environment",
@@ -178,7 +178,7 @@ class WebCheckoutUrlResolverTest {
             customUrl = null,
             openMethod = ButtonComponent.UrlMethod.IN_APP_BROWSER,
             autoDismiss = false,
-            packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend,
+            paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.DoNotAppend,
         )
 
         val result = state.resolveWebCheckoutUrlForInteraction(action)
@@ -197,7 +197,7 @@ class WebCheckoutUrlResolverTest {
         customUrl = customUrl,
         openMethod = openMethod,
         autoDismiss = false,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
             rcPackage = rcPackage,
             packageParam = packageParam,
             appUserIdParam = appUserIdParam,

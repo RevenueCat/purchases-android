@@ -22,11 +22,11 @@ internal fun PaywallState.Loaded.Components.resolveWebCheckoutUrlForInteraction(
     launchWebCheckout.resolvedUrl?.let { return it }
 
     val customUrl = launchWebCheckout.customUrl
-    val behavior = launchWebCheckout.packageParamBehavior
+    val behavior = launchWebCheckout.paramBehavior
     val (packageToUse, packageParam) = when (behavior) {
-        is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append ->
+        is PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append ->
             (behavior.rcPackage ?: selectedPackageInfo?.rcPackage) to behavior.packageParam
-        is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend ->
+        is PaywallAction.External.LaunchWebCheckout.ParamBehavior.DoNotAppend ->
             null to null
     }
     val fromCustomUrl = customUrl?.let {
@@ -37,7 +37,7 @@ internal fun PaywallState.Loaded.Components.resolveWebCheckoutUrlForInteraction(
 
 private fun PaywallState.Loaded.Components.resolveCustomCheckoutUrl(
     customUrl: String,
-    behavior: PaywallAction.External.LaunchWebCheckout.PackageParamBehavior,
+    behavior: PaywallAction.External.LaunchWebCheckout.ParamBehavior,
     packageToUse: Package?,
     packageParam: String?,
 ): String? {
@@ -50,7 +50,7 @@ private fun PaywallState.Loaded.Components.resolveCustomCheckoutUrl(
     return uri?.upsertQueryParameters(
         buildMap {
             put("rc_source", "app")
-            if (behavior is PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append) {
+            if (behavior is PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append) {
                 behavior.appUserIdParam?.let { putIfAbsent(it, appUserID) }
                 behavior.envParam?.let { putIfAbsent(it, "production") }
                 if (packageParam != null && packageToUse != null) {
