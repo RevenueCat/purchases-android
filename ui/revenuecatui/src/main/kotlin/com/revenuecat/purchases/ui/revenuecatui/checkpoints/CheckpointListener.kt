@@ -5,30 +5,39 @@ import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import dev.drewhamilton.poko.Poko
 
 /**
- * Information delivered to [CheckpointListener.onCheckpointHit].
+ * Information about the checkpoint a [CheckpointListener] callback fires for.
  */
 @InternalRevenueCatAPI
-@Poko
-public class OnCheckpointHitInfo internal constructor(
+public abstract class CheckpointContext internal constructor() {
+
     /** The identifier of the checkpoint that was hit. */
-    public val identifier: String,
+    public abstract val identifier: String
+
     /** The custom variables supplied when the checkpoint was hit. */
-    public val customVariables: Map<String, CustomVariableValue>,
-)
+    public abstract val customVariables: Map<String, CustomVariableValue>
+}
 
 /**
- * Information delivered to [CheckpointListener.onCheckpointCompleted].
+ * Context delivered to [CheckpointListener.onCheckpointHit].
  */
 @InternalRevenueCatAPI
 @Poko
-public class OnCheckpointCompletedInfo internal constructor(
-    /** The identifier of the checkpoint that completed. */
-    public val identifier: String,
-    /** The custom variables supplied when the checkpoint was hit. */
-    public val customVariables: Map<String, CustomVariableValue>,
+public class OnCheckpointHitContext internal constructor(
+    override val identifier: String,
+    override val customVariables: Map<String, CustomVariableValue>,
+) : CheckpointContext()
+
+/**
+ * Context delivered to [CheckpointListener.onCheckpointCompleted].
+ */
+@InternalRevenueCatAPI
+@Poko
+public class OnCheckpointCompletedContext internal constructor(
+    override val identifier: String,
+    override val customVariables: Map<String, CustomVariableValue>,
     /** What the checkpoint resolved to. */
     public val result: CheckpointResult,
-)
+) : CheckpointContext()
 
 /**
  * Global listener for checkpoint activity, set through
@@ -39,12 +48,12 @@ public class OnCheckpointCompletedInfo internal constructor(
 public interface CheckpointListener {
 
     /** A checkpoint was hit, before evaluation. */
-    public fun onCheckpointHit(hit: OnCheckpointHitInfo) {
+    public fun onCheckpointHit(context: OnCheckpointHitContext) {
         // Default empty implementation
     }
 
     /** The checkpoint completed and the result was returned. */
-    public fun onCheckpointCompleted(completion: OnCheckpointCompletedInfo) {
+    public fun onCheckpointCompleted(context: OnCheckpointCompletedContext) {
         // Default empty implementation
     }
 }

@@ -13,8 +13,8 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointListener
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.OnCheckpointCompletedInfo
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.OnCheckpointHitInfo
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.OnCheckpointCompletedContext
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.OnCheckpointHitContext
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpointListener
 
 private const val TAG = "MainApplication"
@@ -34,17 +34,17 @@ class MainApplication : Application() {
             Log.d(TAG, "DebugEvent: ${event.name} ${event.properties}")
         }
         Purchases.sharedInstance.checkpointListener = object : CheckpointListener {
-            override fun onCheckpointHit(hit: OnCheckpointHitInfo) {
-                Log.d(TAG, "CheckpointListener: onCheckpointHit: $hit")
+            override fun onCheckpointHit(context: OnCheckpointHitContext) {
+                Log.d(TAG, "CheckpointListener: onCheckpointHit: $context")
                 Toast.makeText(
                     this@MainApplication,
-                    "Checkpoint hit: ${hit.identifier}",
+                    "Checkpoint hit: ${context.identifier}",
                     Toast.LENGTH_SHORT,
                 ).show()
             }
 
-            override fun onCheckpointCompleted(completion: OnCheckpointCompletedInfo) {
-                Log.d(TAG, "CheckpointListener: onCheckpointCompleted: ${completion.result}")
+            override fun onCheckpointCompleted(context: OnCheckpointCompletedContext) {
+                Log.d(TAG, "CheckpointListener: onCheckpointCompleted: ${context.result}")
             }
         }
         Purchases.sharedInstance.customerCenterListener =

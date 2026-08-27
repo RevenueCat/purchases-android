@@ -97,8 +97,8 @@ class CheckpointsManagerTest {
         assertThat(result.reason).isEqualTo(CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER)
         coVerify(exactly = 0) { mockPurchases.resolveCheckpoint(any(), any()) }
         verifyOrder {
-            mockListener.onCheckpointHit(OnCheckpointHitInfo(invalidIdentifier, emptyMap()))
-            mockListener.onCheckpointCompleted(OnCheckpointCompletedInfo(invalidIdentifier, emptyMap(), result))
+            mockListener.onCheckpointHit(OnCheckpointHitContext(invalidIdentifier, emptyMap()))
+            mockListener.onCheckpointCompleted(OnCheckpointCompletedContext(invalidIdentifier, emptyMap(), result))
         }
         verify(exactly = 1) {
             Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(invalidIdentifier))
@@ -113,8 +113,8 @@ class CheckpointsManagerTest {
 
         assertThat(result.reason).isEqualTo(CheckpointResult.NoAction.Reason.UNKNOWN_CHECKPOINT)
         verifyOrder {
-            mockListener.onCheckpointHit(OnCheckpointHitInfo(checkpointId, emptyMap()))
-            mockListener.onCheckpointCompleted(OnCheckpointCompletedInfo(checkpointId, emptyMap(), result))
+            mockListener.onCheckpointHit(OnCheckpointHitContext(checkpointId, emptyMap()))
+            mockListener.onCheckpointCompleted(OnCheckpointCompletedContext(checkpointId, emptyMap(), result))
         }
     }
 
@@ -129,8 +129,8 @@ class CheckpointsManagerTest {
         assertThat(result.offering).isEqualTo(offering)
         verify(exactly = 0) { mockActivity.startActivity(any()) }
         verifyOrder {
-            mockListener.onCheckpointHit(OnCheckpointHitInfo(checkpointId, emptyMap()))
-            mockListener.onCheckpointCompleted(OnCheckpointCompletedInfo(checkpointId, emptyMap(), result))
+            mockListener.onCheckpointHit(OnCheckpointHitContext(checkpointId, emptyMap()))
+            mockListener.onCheckpointCompleted(OnCheckpointCompletedContext(checkpointId, emptyMap(), result))
         }
     }
 
@@ -196,8 +196,8 @@ class CheckpointsManagerTest {
         assertThat(presented.paywallOutcome).isEqualTo(CheckpointPaywallOutcome.Dismissed)
         val customVariables = mapOf("goal" to CustomVariableValue.String("test"))
         verifyOrder {
-            mockListener.onCheckpointHit(OnCheckpointHitInfo(checkpointId, customVariables))
-            mockListener.onCheckpointCompleted(OnCheckpointCompletedInfo(checkpointId, customVariables, presented))
+            mockListener.onCheckpointHit(OnCheckpointHitContext(checkpointId, customVariables))
+            mockListener.onCheckpointCompleted(OnCheckpointCompletedContext(checkpointId, customVariables, presented))
         }
     }
 
