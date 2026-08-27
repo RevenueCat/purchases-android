@@ -5,60 +5,36 @@ package com.revenuecat.purchases.ui.revenuecatui.utils
 import android.net.Uri
 import java.net.URI
 
-@JvmSynthetic
-internal fun URI.appendQueryParameter(name: String, value: String): URI {
-    val encodedParameter = "${name.encodeQueryParameterComponent()}=${value.encodeQueryParameterComponent()}"
-    val uriString = toString()
-    val fragmentIndex = uriString.indexOf('#')
-    val uriWithoutFragment = if (fragmentIndex == -1) uriString else uriString.substring(0, fragmentIndex)
-    val fragment = if (fragmentIndex == -1) "" else uriString.substring(fragmentIndex)
-    val separator = if (this.rawQuery == null) "?" else "&"
-
-    return URI("$uriWithoutFragment$separator$encodedParameter$fragment")
-}
-
+/**
+ * Returns this URI with [parameters] set, encoding names and values. Existing parameters with the same name are
+ * replaced where they are, further duplicates of those names are dropped, and the rest are appended in iteration
+ * order. Any fragment is preserved.
+ *
+ * The query is edited as a string rather than through [URI]'s components, so opaque URIs like
+ * `merchant:checkout?campaign=summer` keep their query too.
+ */
 @JvmSynthetic
 internal fun URI.upsertQueryParameters(parameters: Map<String, String>): URI {
     if (parameters.isEmpty()) return this
 
-    val encodedParameters = parameters.mapValues { (name, value) ->
-        "${name.encodeQueryParameterComponent()}=${value.encodeQueryParameterComponent()}"
+    // Drained as we walk the existing query: the first occurrence of a name is replaced in place, any later
+    // occurrence maps to null and is dropped, and whatever is left over has no occurrence to replace.
+    val pending = parameters.entries.associateTo(LinkedHashMap()) { (name, value) ->
+        name to "${Uri.encode(name)}=${Uri.encode(value)}"
     }
-    val emittedParameterNames = mutableSetOf<String>()
-    val updatedQueryParts = rawQueryForUpsert()
-        ?.split("&")
-        .orEmpty()
-        .filter { it.isNotEmpty() }
-        .mapNotNull { queryPart ->
-            val decodedName = Uri.decode(queryPart.substringBefore('='))
-            val replacement = encodedParameters[decodedName]
-            when {
-                replacement == null -> queryPart
-                emittedParameterNames.add(decodedName) -> replacement
-                else -> null
-            }
-        }
-        .toMutableList()
-
-    parameters.keys
-        .filterNot(emittedParameterNames::contains)
-        .mapTo(updatedQueryParts) { encodedParameters.getValue(it) }
 
     val uriString = toString()
-    val fragmentIndex = uriString.indexOf('#')
-    val fragment = if (fragmentIndex == -1) "" else uriString.substring(fragmentIndex)
-    val uriWithoutFragment = if (fragmentIndex == -1) uriString else uriString.substring(0, fragmentIndex)
-    val queryIndex = uriWithoutFragment.indexOf('?')
-    val uriWithoutQuery = if (queryIndex == -1) uriWithoutFragment else uriWithoutFragment.substring(0, queryIndex)
+    val beforeFragment = uriString.substringBefore('#')
+    val fragment = uriString.removePrefix(beforeFragment)
+    val updatedQuery = beforeFragment.substringAfter('?', missingDelimiterValue = "")
+        .split('&')
+        .filter { it.isNotEmpty() }
+        .mapNotNull { queryPart ->
+            val name = Uri.decode(queryPart.substringBefore('='))
+            if (name in parameters) pending.remove(name) else queryPart
+        }
+        .plus(pending.values)
+        .joinToString("&")
 
-    return URI("$uriWithoutQuery?${updatedQueryParts.joinToString("&")}$fragment")
+    return URI("${beforeFragment.substringBefore('?')}?$updatedQuery$fragment")
 }
-
-private fun URI.rawQueryForUpsert(): String? {
-    if (!isOpaque) return rawQuery
-
-    val queryIndex = rawSchemeSpecificPart.indexOf('?')
-    return if (queryIndex == -1) null else rawSchemeSpecificPart.substring(queryIndex + 1)
-}
-
-private fun String.encodeQueryParameterComponent(): String = Uri.encode(this)
