@@ -11,13 +11,12 @@ internal object OfferingParserFactory {
 
     fun createOfferingParser(
         store: Store,
-        shouldParsePaywallComponents: Boolean = true,
     ): OfferingParser {
         return when (store) {
-            Store.TEST_STORE -> SimulatedStoreOfferingParser(shouldParsePaywallComponents)
-            Store.PLAY_STORE -> GoogleOfferingParser(shouldParsePaywallComponents)
-            Store.AMAZON -> AmazonOfferingParser(shouldParsePaywallComponents)
-            Store.GALAXY -> GalaxyOfferingParser(shouldParsePaywallComponents)
+            Store.TEST_STORE -> SimulatedStoreOfferingParser()
+            Store.PLAY_STORE -> GoogleOfferingParser()
+            Store.AMAZON -> AmazonOfferingParser()
+            Store.GALAXY -> GalaxyOfferingParser()
             else -> {
                 errorLog { "Incompatible store ($store) used" }
                 throw IllegalArgumentException("Couldn't configure SDK. Incompatible store ($store) used")

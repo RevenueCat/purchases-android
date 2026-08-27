@@ -12,7 +12,6 @@ import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.paywalls.PaywallData
-import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.getNullableString
 import com.revenuecat.purchases.utils.optNullableInt
@@ -24,13 +23,7 @@ import org.json.JSONObject
 import java.net.MalformedURLException
 import java.net.URL
 
-internal abstract class OfferingParser(
-    // Whether to actually build [Offering.PaywallComponents] (capturing the raw component JSON) when an offering
-    // carries `paywall_components`. Under workflows the components are served from `/v1/config`, so capturing
-    // them here is dead memory; only with remote config off (customEntitlementComputation) are the inline
-    // components decoded for the legacy render path.
-    private val shouldParsePaywallComponents: Boolean = true,
-) {
+internal abstract class OfferingParser {
 
     protected abstract fun findMatchingProduct(
         productsById: Map<String, List<StoreProduct>>,
@@ -156,9 +149,12 @@ internal abstract class OfferingParser(
 
         val paywallComponentsJson = offeringJson.optJSONObject("paywall_components")
         // Presence is tracked independently of whether we decode: [Offering.hasPaywall] must keep reporting a
-        // components paywall even when we skip capturing it (workflows serve it), so external integrators still
+        // components paywall even though we never capture it (workflows serve it), so external integrators still
         // see the offering as paywall-capable.
         val hasPaywallComponents = hasWellShapedPaywallComponents(paywallComponentsJson, uiConfig)
+        if (paywallComponentsJson != null && uiConfig != null && !hasPaywallComponents) {
+            warnLog { "Skipping paywall components data with unexpected shape for offering" }
+        }
         val paywallComponents = createPaywallComponents(paywallComponentsJson, uiConfig, hasPaywallComponents)
 
         val webCheckoutURL = offeringJson.getWebCheckoutURL()
@@ -184,33 +180,16 @@ internal abstract class OfferingParser(
         paywallComponentsJson != null && uiConfig != null && paywallComponentsJson.hasPaywallComponentsShape()
 
     /**
-     * Builds the (lazily-decoded) [Offering.PaywallComponents] from the raw JSON, or `null` when there is nothing
-     * to build ([hasWellShaped] is false) or when [shouldParsePaywallComponents] says to skip capturing it.
+     * Builds [Offering.PaywallComponents] from the raw JSON. Components are served from `/v1/config` (workflows),
+     * so the SDK's parsers never capture the offerings-response copy (dead memory) and this returns `null`. Only
+     * the debug-preview parser overrides it, so Emerge template previews can render offerings from local JSON.
      */
     @OptIn(InternalRevenueCatAPI::class)
-    @Suppress("ReturnCount")
-    private fun createPaywallComponents(
+    protected open fun createPaywallComponents(
         paywallComponentsJson: JSONObject?,
         uiConfig: UiConfig?,
         hasWellShaped: Boolean,
-    ): Offering.PaywallComponents? {
-        if (paywallComponentsJson == null || uiConfig == null) return null
-        if (!hasWellShaped) {
-            warnLog { "Skipping paywall components data with unexpected shape for offering" }
-            return null
-        }
-        if (!shouldParsePaywallComponents) return null
-
-        // Defer the (potentially expensive) component-tree deserialization until the paywall is actually
-        // accessed/displayed. Capturing the raw JSON string here is cheap; without this we would eagerly
-        // deserialize every cached offering's component tree at load, even those that are never shown.
-        val rawPaywallComponents = paywallComponentsJson.toString()
-        // A content hash of the raw JSON serves as the equality key, so comparing offerings (e.g. cached vs
-        // network) never forces the lazy decode.
-        return Offering.PaywallComponents(uiConfig, componentsHash = rawPaywallComponents.sha256()) {
-            json.decodeFromString<PaywallComponentsData>(rawPaywallComponents)
-        }
-    }
+    ): Offering.PaywallComponents? = null
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     fun createPackage(

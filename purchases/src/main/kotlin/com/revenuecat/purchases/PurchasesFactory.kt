@@ -441,13 +441,7 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
                 uiPreviewMode = appConfig.uiPreviewMode,
             )
-            // Under workflows, paywall components are served from `/v1/config`, so skip capturing the raw
-            // component JSON at parse time (memory). When remote config is off (customEntitlementComputation),
-            // offerings keep decoding their inline components so the legacy render path works.
-            val offeringParser = OfferingParserFactory.createOfferingParser(
-                finalStore,
-                shouldParsePaywallComponents = remoteConfigManager.isDisabled,
-            )
+            val offeringParser = OfferingParserFactory.createOfferingParser(finalStore)
 
             var diagnosticsSynchronizer: DiagnosticsSynchronizer? = null
             @Suppress("ComplexCondition")
