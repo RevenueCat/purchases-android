@@ -57,14 +57,6 @@ parameters:
     default: alpha
 
 commands:
-  android-dependencies:
-    steps:
-      - android/restore_gradle_cache
-      - run:
-          name: Download Dependencies
-          command: ./gradlew androidDependencies
-      - android/save_gradle_cache
-
   prepare-signing-key:
     steps:
       - run:
@@ -174,7 +166,7 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - accept-android-licenses
-      - android-dependencies
+      - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
           name: Build sample app
@@ -191,7 +183,7 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - accept-android-licenses
-      - android-dependencies
+      - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
           name: Build sample app
@@ -208,7 +200,7 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - accept-android-licenses
-      - android-dependencies
+      - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
           name: Build sample app

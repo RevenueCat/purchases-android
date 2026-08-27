@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.android.buildlogic.convention
 
+import com.android.build.api.variant.HasUnitTestBuilder
+import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import com.android.build.gradle.LibraryExtension
 import com.revenuecat.purchases.android.buildlogic.ktx.getVersion
 import com.revenuecat.purchases.android.buildlogic.ktx.versionCatalog
@@ -22,6 +24,12 @@ internal fun Project.configureAndroidLibrary() {
             result = project.property("minSdkVersion").toString().toInt()
         }
         return result
+    }
+
+    extensions.configure<LibraryAndroidComponentsExtension> {
+        beforeVariants { variantBuilder ->
+            (variantBuilder as HasUnitTestBuilder).enableUnitTest = true
+        }
     }
 
     extensions.configure<LibraryExtension> {
