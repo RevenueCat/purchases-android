@@ -139,8 +139,6 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/accept_licenses
-      # This lane builds a nested Gradle project, so it restores the shared dependency cache but
-      # must not save it: that key belongs to the root build.
       - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
