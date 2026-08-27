@@ -228,6 +228,26 @@ internal class WebViewJavaScriptBridge(
         sendFitIfNeeded()
     }
 
+    /** Re-sends the current snapshot; a no-op until the handshake has seeded the content's cache. */
+    @MainThread
+    fun pushContextNow() {
+        if (released || !channelOpen) return
+        sendContext()
+    }
+
+    private fun sendContext() {
+        deliverEnvelopeNow(
+            WebViewEnvelope(
+                kind = WebViewEnvelope.Kind.MESSAGE,
+                protocolVersion = protocolVersion,
+                componentId = componentId,
+                type = WebViewMessageType.CONTEXT,
+                payload = contextSnapshotProvider(),
+            ),
+            allowBeforeNavigation = false,
+        )
+    }
+
     private fun sendFitIfNeeded() {
         if (!sizeToContentWidth && !sizeToContentHeight) return
         val payload = buildJsonObject {

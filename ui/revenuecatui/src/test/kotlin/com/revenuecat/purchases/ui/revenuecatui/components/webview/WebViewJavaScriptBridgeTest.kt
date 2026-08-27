@@ -610,7 +610,33 @@ internal class WebViewJavaScriptBridgeTest {
     }
 
     @Test
-    fun `builds the snapshot once per handshake`() {
+    fun `pushContextNow re-sends the snapshot once the channel is open`() {
+        val bridge = bridge()
+        bridge.connect()
+        val afterHandshake = scripts().size
+
+        bridge.pushContextNow()
+
+        assertThat(scripts()).hasSize(afterHandshake + 1)
+        assertThat(scripts().last()).contains("\"type\":\"context\"")
+    }
+
+    @Test
+    fun `pushContextNow is a no-op before the handshake and after release`() {
+        val beforeHandshake = bridge()
+        beforeHandshake.pushContextNow()
+        assertThat(scripts()).describedAs("before handshake").isEmpty()
+
+        beforeHandshake.connect()
+        val afterHandshake = scripts().size
+        beforeHandshake.release()
+        beforeHandshake.pushContextNow()
+
+        assertThat(scripts()).describedAs("after release").hasSize(afterHandshake)
+    }
+
+    @Test
+    fun `builds a fresh snapshot per delivery`() {
         var builds = 0
         val bridge = bridge(
             contextSnapshotProvider = {
@@ -619,8 +645,11 @@ internal class WebViewJavaScriptBridgeTest {
             },
         )
         bridge.connect()
+        assertThat(builds).describedAs("handshake").isEqualTo(1)
 
-        assertThat(builds).isEqualTo(1)
+        bridge.pushContextNow()
+
+        assertThat(builds).describedAs("re-push").isEqualTo(2)
     }
 
     // --- Document lifecycle ---
