@@ -178,7 +178,6 @@ jobs:
       - run:
           name: Build sample app
           command: bundle exec fastlane android build_admob_integration_sample
-      - android/save_gradle_cache
       - android/save_build_cache
 
   prepare-tests:
