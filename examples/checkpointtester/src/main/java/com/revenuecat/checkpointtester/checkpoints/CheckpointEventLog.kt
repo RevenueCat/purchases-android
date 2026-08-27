@@ -2,10 +2,11 @@ package com.revenuecat.checkpointtester.checkpoints
 
 import android.util.Log
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointInfo
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointListener
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.OnCheckpointCompletedInfo
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.OnCheckpointHitInfo
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,12 +30,12 @@ object CheckpointEventLog : CheckpointListener {
     private val _events = MutableStateFlow<List<String>>(emptyList())
     val events: StateFlow<List<String>> = _events.asStateFlow()
 
-    override fun onCheckpointHit(checkpoint: CheckpointInfo) {
-        track("Hit · ${checkpoint.identifier} · params=${checkpoint.params.customVariables}")
+    override fun onCheckpointHit(hit: OnCheckpointHitInfo) {
+        track("Hit · ${hit.identifier} · customVariables=${hit.customVariables}")
     }
 
-    override fun onCheckpointCompleted(checkpoint: CheckpointInfo, result: CheckpointResult) {
-        track("Completed · ${checkpoint.identifier} · ${describe(result)}")
+    override fun onCheckpointCompleted(completion: OnCheckpointCompletedInfo) {
+        track("Completed · ${completion.identifier} · ${describe(completion.result)}")
     }
 
     fun clear() {
@@ -47,10 +48,11 @@ object CheckpointEventLog : CheckpointListener {
             is CheckpointPaywallOutcome.Purchased -> "Purchased"
             is CheckpointPaywallOutcome.Restored -> "Restored"
             CheckpointPaywallOutcome.Dismissed -> "Dismissed"
+            CheckpointPaywallOutcome.WebCheckoutOpened -> "Web checkout opened"
             is CheckpointPaywallOutcome.Error -> "Paywall error: ${outcome.error.message}"
             else -> "Unknown outcome"
         }
-        is CheckpointResult.NoAction -> "No action (${result.reason.value})"
+        is CheckpointResult.NoAction -> "No action (${result.reason})"
         else -> "Unknown result"
     }
 
