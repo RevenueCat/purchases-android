@@ -36,11 +36,11 @@ public sealed class RulesDimensionValue {
      *
      * Reaches the engine as an array of objects, which `some`, `all`, `none` and `filter` walk one record at a
      * time. A record's own values are dimensions in their own right, so the same rules apply to them: a value the
-     * record has none of is left out, and an absent key resolves to null in the engine.
+     * record has none of is left out, and a predicate that reads an absent key fails as an unresolved variable.
      *
-     * A predicate inside an iteration operator sees only the record it is looking at, with no access to the scope
-     * around it, so a record has to carry every value a predicate about it might need — including the evaluation
-     * instant it is compared against.
+     * A predicate inside an iteration operator sees only the record it is looking at. `var` cannot reach the
+     * scope around it, so a record has to carry every value a predicate about it might need — including the
+     * evaluation instant it is compared against — unless the predicate reads the snapshot with `rc.rootVar`.
      */
     public data class ObjectListValue(val value: List<Map<String, RulesDimensionValue>>) : RulesDimensionValue()
 

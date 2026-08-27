@@ -1,11 +1,9 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
 package com.revenuecat.purchases.admob.nextgen
 
 import android.app.Activity
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingInterstitialAdEventCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.applyPlacementOverride
 import kotlin.jvm.JvmSynthetic
@@ -17,7 +15,6 @@ import kotlin.jvm.JvmSynthetic
  * Passing `null` clears the load-time placement instead of keeping it, so call the Next-Gen SDK's
  * own `show(activity)` when there is no override to apply.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun InterstitialAd.show(activity: Activity, placement: String?) {
     adEventCallback.applyPlacementOverride(placement)
@@ -31,7 +28,6 @@ public fun InterstitialAd.show(activity: Activity, placement: String?) {
  * via [loadAndTrackInterstitialAd]. If the ad was not loaded via `loadAndTrack`, this
  * falls back to direct assignment.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun InterstitialAd.setTrackingAdEventCallback(callback: InterstitialAdEventCallback?) {
     val trackingCallback = adEventCallback as? TrackingInterstitialAdEventCallback

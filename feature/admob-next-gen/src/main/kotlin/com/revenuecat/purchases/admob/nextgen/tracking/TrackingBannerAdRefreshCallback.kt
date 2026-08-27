@@ -3,7 +3,6 @@ package com.revenuecat.purchases.admob.nextgen.tracking
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdFormat
 
 /**
@@ -26,7 +25,6 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
  * `setTrackingBannerAdRefreshCallback` on, while the SDK reads it on the background thread
  * it invokes refresh callbacks from.
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingBannerAdRefreshCallback(
     @Volatile internal var delegate: BannerAdRefreshCallback?,
     private val placement: String?,

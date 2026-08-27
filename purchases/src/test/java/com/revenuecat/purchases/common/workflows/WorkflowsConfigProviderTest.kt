@@ -376,12 +376,12 @@ internal class WorkflowsConfigProviderTest {
     }
 
     @Test
-    fun `warm notifies onCurrentWorkflowLoaded with only the current offering's workflow`() = runTest {
+    fun `warm does not announce a workflow outside the prewarm set`() = runTest {
         var announcedId: String? = null
         val providerWithListener = WorkflowsConfigProvider(
             manager,
             currentOfferingIdProvider = { currentOfferingId },
-            onCurrentWorkflowLoaded = { workflowId, _ -> announcedId = workflowId },
+            onWorkflowLoaded = { workflowId, _ -> announcedId = workflowId },
             scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
         stubTopic()
@@ -390,19 +390,57 @@ internal class WorkflowsConfigProviderTest {
 
         providerWithListener.warm(generation = 0)
 
-        // Mirrors the offerings path: only the current offering's workflow is announced for asset prewarming.
-        // WF_PREFETCH's bytes are cached too, but a prefetch-only workflow (not the current offering's) is not
-        // the paywall about to be shown, so its assets are not warmed.
+        // WF_PREFETCH's bytes are cached, but it sits behind no offering this customer could be served.
         assertThat(announcedId).isEqualTo(WF_CURRENT)
     }
 
+    // A project using placements gets one current offering per placement, and each can have its own workflow.
     @Test
-    fun `warm notifies onCurrentWorkflowLoaded even when the workflow body was not byte-warmed`() = runTest {
+    fun `warm announces the workflow behind every offering in the prewarm set`() = runTest {
+        val announced = mutableListOf<String>()
+        val providerWithListener = WorkflowsConfigProvider(
+            manager,
+            currentOfferingIdProvider = { currentOfferingId },
+            prewarmOfferingIdsProvider = { setOf(CURRENT_OFFERING, OTHER_OFFERING) },
+            onWorkflowLoaded = { workflowId, _ -> announced += workflowId },
+            scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+        )
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        stubWorkflowBody(WF_CURRENT)
+        stubWorkflowBody(WF_OTHER)
+
+        providerWithListener.warm(generation = 0)
+
+        assertThat(announced).containsExactlyInAnyOrder(WF_CURRENT, WF_OTHER)
+    }
+
+    @Test
+    fun `warm announces each workflow once when the current offering is also in the prewarm set`() = runTest {
+        val announced = mutableListOf<String>()
+        val providerWithListener = WorkflowsConfigProvider(
+            manager,
+            currentOfferingIdProvider = { currentOfferingId },
+            prewarmOfferingIdsProvider = { setOf(CURRENT_OFFERING) },
+            onWorkflowLoaded = { workflowId, _ -> announced += workflowId },
+            scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+        )
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        stubWorkflowBody(WF_CURRENT)
+
+        providerWithListener.warm(generation = 0)
+
+        assertThat(announced).containsExactly(WF_CURRENT)
+    }
+
+    @Test
+    fun `warm notifies onWorkflowLoaded even when the workflow body was not byte-warmed`() = runTest {
         var announcedId: String? = null
         val providerWithListener = WorkflowsConfigProvider(
             manager,
             currentOfferingIdProvider = { currentOfferingId },
-            onCurrentWorkflowLoaded = { workflowId, _ -> announcedId = workflowId },
+            onWorkflowLoaded = { workflowId, _ -> announcedId = workflowId },
             scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
         stubTopic()
@@ -422,13 +460,13 @@ internal class WorkflowsConfigProviderTest {
 
     // Cold start: warm() runs before the offerings response, so it has no current offering to announce.
     @Test
-    fun `prewarmCurrentOfferingAssets announces once the offering is known after a warm that had none`() = runTest {
+    fun `prewarmOfferingAssets announces once the offering is known after a warm that had none`() = runTest {
         var announcedId: String? = null
         currentOfferingId = null
         val providerWithListener = WorkflowsConfigProvider(
             manager,
             currentOfferingIdProvider = { currentOfferingId },
-            onCurrentWorkflowLoaded = { workflowId, _ -> announcedId = workflowId },
+            onWorkflowLoaded = { workflowId, _ -> announcedId = workflowId },
             scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
         stubTopic()
@@ -441,34 +479,34 @@ internal class WorkflowsConfigProviderTest {
         assertThat(providerWithListener.isWarmForCurrentOffering()).isTrue
 
         currentOfferingId = CURRENT_OFFERING
-        providerWithListener.prewarmCurrentOfferingAssets()
+        providerWithListener.prewarmOfferingAssets()
 
         assertThat(announcedId).isEqualTo(WF_CURRENT)
     }
 
     @Test
-    fun `prewarmCurrentOfferingAssets does not announce when nothing has been warmed yet`() = runTest {
+    fun `prewarmOfferingAssets does not announce when nothing has been warmed yet`() = runTest {
         var announced = false
         val providerWithListener = WorkflowsConfigProvider(
             manager,
             currentOfferingIdProvider = { currentOfferingId },
-            onCurrentWorkflowLoaded = { _, _ -> announced = true },
+            onWorkflowLoaded = { _, _ -> announced = true },
             scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
 
-        providerWithListener.prewarmCurrentOfferingAssets()
+        providerWithListener.prewarmOfferingAssets()
 
         assertThat(announced).isFalse
     }
 
     @Test
-    fun `warm does not notify onCurrentWorkflowLoaded when the current offering has no workflow`() = runTest {
+    fun `warm does not notify onWorkflowLoaded when the current offering has no workflow`() = runTest {
         var announced = false
         currentOfferingId = "offering_without_workflow"
         val providerWithListener = WorkflowsConfigProvider(
             manager,
             currentOfferingIdProvider = { currentOfferingId },
-            onCurrentWorkflowLoaded = { _, _ -> announced = true },
+            onWorkflowLoaded = { _, _ -> announced = true },
             scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
         stubTopic()

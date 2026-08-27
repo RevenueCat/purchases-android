@@ -60,6 +60,7 @@ class OfferingVideoPredownloaderTest {
     @Test
     fun `if the component tree fails to decode, it does not throw and prefetches nothing`() {
         val offering = mockk<Offering>().apply {
+            every { identifier } returns "broken"
             every { paywallComponents } returns Offering.PaywallComponents(
                 uiConfig = mockk(),
                 componentsHash = "hash",

@@ -1,11 +1,9 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
 package com.revenuecat.purchases.admob.nextgen
 
 import android.app.Activity
 import com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAd
 import com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdEventCallback
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingAppOpenAdEventCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.applyPlacementOverride
 import kotlin.jvm.JvmSynthetic
@@ -17,7 +15,6 @@ import kotlin.jvm.JvmSynthetic
  * Passing `null` clears the load-time placement instead of keeping it, so call the Next-Gen SDK's
  * own `show(activity)` when there is no override to apply.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun AppOpenAd.show(activity: Activity, placement: String?) {
     adEventCallback.applyPlacementOverride(placement)
@@ -31,7 +28,6 @@ public fun AppOpenAd.show(activity: Activity, placement: String?) {
  * via [loadAndTrackAppOpenAd]. If the ad was not loaded via `loadAndTrack`, this
  * falls back to direct assignment.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun AppOpenAd.setTrackingAdEventCallback(callback: AppOpenAdEventCallback?) {
     val trackingCallback = adEventCallback as? TrackingAppOpenAdEventCallback

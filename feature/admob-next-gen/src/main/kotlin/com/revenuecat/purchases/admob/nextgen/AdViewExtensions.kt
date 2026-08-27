@@ -1,4 +1,3 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
 package com.revenuecat.purchases.admob.nextgen
 
@@ -9,7 +8,6 @@ import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallbac
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRequest
 import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdLoadResult
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingAdLoadCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.trackAndConfigureAdLoadResult
 import com.revenuecat.purchases.ads.events.types.AdFormat
@@ -23,7 +21,6 @@ import kotlin.jvm.JvmSynthetic
  * RevenueCat's tracking callbacks. To change them later, use [BannerAd.setTrackingAdEventCallback] and
  * [BannerAd.setTrackingBannerAdRefreshCallback].
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 @Suppress("LongParameterList")
 public fun AdView.loadAndTrackAd(
@@ -49,7 +46,6 @@ public fun AdView.loadAndTrackAd(
  * has tracking callbacks installed before it is forwarded to [loadCallback].
  * [loadCallback] is required to distinguish this callback-based overload from its suspending counterpart.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 @Suppress("LongParameterList")
 public fun AdView.loadAndTrackAdFromResponse(
@@ -78,7 +74,6 @@ public fun AdView.loadAndTrackAdFromResponse(
  * before this function returns. [adUnitId] is required because neither the opaque response nor a failed load
  * reliably provides it.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 @Suppress("LongParameterList")
 public suspend fun AdView.loadAndTrackAdFromResponse(

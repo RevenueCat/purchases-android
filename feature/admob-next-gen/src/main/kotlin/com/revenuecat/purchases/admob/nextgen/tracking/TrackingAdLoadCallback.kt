@@ -5,7 +5,6 @@ import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdLoadResult
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
@@ -23,7 +22,6 @@ import com.revenuecat.purchases.ads.events.types.AdMediatorName
  * delegate, so the caller can wire up the tracking that the ad object itself
  * exposes. It is not invoked for an ad that failed to load.
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingAdLoadCallback<AdT : Ad>(
     private val delegate: AdLoadCallback<AdT>?,
     private val adFormat: AdFormat,
@@ -44,7 +42,6 @@ internal class TrackingAdLoadCallback<AdT : Ad>(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal fun <AdT : Ad> AdLoadResult<AdT>.trackAndConfigureAdLoadResult(
     adFormat: AdFormat,
     placement: String?,
@@ -61,7 +58,6 @@ internal fun <AdT : Ad> AdLoadResult<AdT>.trackAndConfigureAdLoadResult(
     return this
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal fun trackAdLoaded(
     responseInfoProvider: () -> ResponseInfo,
     adFormat: AdFormat,
@@ -83,7 +79,6 @@ internal fun trackAdLoaded(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal fun trackAdFailedToLoad(
     adError: LoadAdError,
     adFormat: AdFormat,

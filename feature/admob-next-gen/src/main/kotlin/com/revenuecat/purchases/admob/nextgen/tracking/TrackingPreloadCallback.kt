@@ -3,14 +3,12 @@ package com.revenuecat.purchases.admob.nextgen.tracking
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.common.PreloadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdFormat
 
 /**
  * A [PreloadCallback] wrapper that tracks every completed preload attempt before
  * forwarding the callback to the user-provided [delegate].
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingPreloadCallback(
     private val delegate: PreloadCallback?,
     private val adFormat: AdFormat,

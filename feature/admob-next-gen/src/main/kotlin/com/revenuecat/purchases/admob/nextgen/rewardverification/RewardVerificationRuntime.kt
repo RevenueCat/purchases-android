@@ -2,7 +2,6 @@ package com.revenuecat.purchases.admob.nextgen.rewardverification
 
 import android.os.Handler
 import android.os.Looper
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.Logger
@@ -23,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * Holds the per-configuration reward verification state. A fresh instance is created when [Purchases] is
  * configured and discarded with [close] when it closes, so no verification state outlives a configuration.
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 internal class RewardVerificationRuntime(
     private val mainHandler: Handler = Handler(Looper.getMainLooper()),
     createVerificationScope: () -> CoroutineScope = {

@@ -881,7 +881,6 @@ internal class RemoteConfigManager(
         // carried-forward index (the server omits them); topics no longer active are pruned.
         val mergedTopics = (previousTopics + response.topics)
             .filterKeys { it in response.activeTopics }
-
         // Blobs the current config still wants: the prefetch set plus any active-topic blob ref.
         val blobRefsToKeep = response.prefetchBlobs.toSet() + mergedTopics.toTopicBlobRefs().values.flatten()
 

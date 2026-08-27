@@ -1,14 +1,10 @@
-@file:OptIn(
-    ExperimentalPreviewRevenueCatPurchasesAPI::class,
-    InternalRevenueCatAPI::class,
-)
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.admob.nextgen
 
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAd
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAdPreloader
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingRewardedInterstitialAdEventCallback
 import com.revenuecat.purchases.ads.events.types.AdFormat

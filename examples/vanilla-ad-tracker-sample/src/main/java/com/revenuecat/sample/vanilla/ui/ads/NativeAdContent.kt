@@ -30,7 +30,6 @@ import com.google.android.gms.ads.VideoOptions
 import com.google.android.gms.ads.nativead.MediaView
 import com.google.android.gms.ads.nativead.NativeAd
 import com.google.android.gms.ads.nativead.NativeAdOptions
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
@@ -44,7 +43,6 @@ import com.revenuecat.sample.vanilla.data.Constants
 import com.google.android.gms.ads.nativead.NativeAdView as AdMobNativeAdView
 
 @Suppress("MultipleEmitters", "LongMethod")
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun NativeAdContent() {
     val context = LocalContext.current
@@ -173,7 +171,6 @@ internal fun NativeAdContent() {
 }
 
 @Suppress("MultipleEmitters", "LongMethod")
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun NativeVideoAdContent() {
     val context = LocalContext.current

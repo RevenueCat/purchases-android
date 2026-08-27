@@ -5,7 +5,6 @@ package com.revenuecat.purchases.utils
 import android.content.Context
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.models.Checksum
 import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.paywalls.components.VideoComponent
@@ -21,26 +20,14 @@ internal class OfferingVideoPredownloader(
 ) {
 
     fun downloadVideos(offering: Offering) {
-        if (assetWarming.isAvailable) {
-            val paywallComponents = offering.paywallComponents ?: return
-            // `paywallComponents.data` is decoded lazily on first access and fails if the component tree passed
-            // the cheap parse-time shape check but is structurally invalid. Pre-downloading is best-effort, so a
-            // decode failure here must not abort the offerings success/caching path that invokes this.
-            val stack = paywallComponents.data.getOrElse { error ->
-                errorLog(error) { "Error deserializing paywall components data. Skipping video pre-download." }
-                return
-            }.componentsConfig.base.stack
-            // WIP: We will add a remote flag in the offering metadata that will indicate if we should
-            // pre-download videos or not. For now, we want to only download the low-res to ensure we
-            // don't rack up high cloudfront costs
-            stack
-                .filter { it is VideoComponent }
-                .forEach { component ->
-                    if (component is VideoComponent) {
-                        fileRepository.prefetch(component.source.checkedUrls())
-                    }
-                }
-        }
+        if (!assetWarming.isAvailable) return
+        val stack = offering.baseComponentsConfig()?.stack ?: return
+        // WIP: We will add a remote flag in the offering metadata that will indicate if we should
+        // pre-download videos or not. For now, we want to only download the low-res to ensure we
+        // don't rack up high cloudfront costs
+        stack.flatten()
+            .filterIsInstance<VideoComponent>()
+            .forEach { fileRepository.prefetch(it.source.checkedUrls()) }
     }
 }
 

@@ -329,7 +329,7 @@ internal open class BasePurchasesTest {
 
     private fun mockSubscriberAttributesManager() {
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId)
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), any())
         } just Runs
     }
     // endregion

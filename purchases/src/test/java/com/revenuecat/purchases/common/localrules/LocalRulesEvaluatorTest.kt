@@ -54,12 +54,18 @@ class LocalRulesEvaluatorTest {
     }
 
     @Test
-    fun `a predicate reading an unsupplied dimension is an ordinary non-match`() = runTest {
+    fun `a predicate reading an unsupplied dimension surfaces as an error`() = runTest {
+        // A dimension this SDK version cannot resolve makes the rule
+        // unanswerable. Reporting that is what lets the caller tell it apart
+        // from a rule that was evaluated and did not match.
         val result = evaluator().match(
             listOf(TestRule("only", """{"==": [{"var": "device.unknown_dimension"}, true]}""")),
         )
 
-        assertThat(result.getOrThrow()).isNull()
+        val error = result.exceptionOrNull() as LocalRulesEvaluationException.PredicateEvaluation
+        assertThat(error.ruleIndex).isZero()
+        assertThat(error.error)
+            .isEqualTo(RulesEngine.EvaluationException.UnresolvedVariable("device.unknown_dimension"))
     }
 
     @Test
@@ -106,6 +112,34 @@ class LocalRulesEvaluatorTest {
     }
 
     @Test
+    fun `lazy predicates are resolved in order only until a rule matches`() = runTest {
+        val resolved = mutableListOf<String>()
+        val rules = listOf("first", "second", "unused")
+
+        val result = evaluator().match(rules) { rule ->
+            resolved += rule
+            Result.success(if (rule == "second") matchingPredicate else nonMatchingPredicate)
+        }
+
+        assertThat(result.getOrThrow()).isEqualTo("second")
+        assertThat(resolved).containsExactly("first", "second")
+    }
+
+    @Test
+    fun `predicate resolution failure stops evaluation`() = runTest {
+        val resolved = mutableListOf<String>()
+        val failure = IllegalStateException("audience unavailable")
+
+        val result = evaluator().match(listOf("missing", "unused")) { rule ->
+            resolved += rule
+            if (rule == "missing") Result.failure(failure) else Result.success(matchingPredicate)
+        }
+
+        assertThat(result.exceptionOrNull()).isSameAs(failure)
+        assertThat(resolved).containsExactly("missing")
+    }
+
+    @Test
     fun `a predicate reading a custom variable matches`() = runTest {
         val rules = listOf(TestRule("only", """{"==": [{"var": "custom.source"}, "settings"]}"""))
 
@@ -117,7 +151,10 @@ class LocalRulesEvaluatorTest {
             evaluator().match(rules, mapOf("source" to RulesDimensionValue.StringValue("other")))
                 .getOrThrow(),
         ).isNull()
-        assertThat(evaluator().match(rules).getOrThrow()).isNull()
+        // Supplying no custom variables at all leaves `custom.source` unresolved,
+        // which is unanswerable rather than a non-match.
+        assertThat(evaluator().match(rules).exceptionOrNull())
+            .isInstanceOf(LocalRulesEvaluationException.PredicateEvaluation::class.java)
     }
 
     @Test
@@ -140,13 +177,9 @@ class LocalRulesEvaluatorTest {
 
     @Test
     fun `dimensions are collected once per call regardless of rule count`() = runTest {
-        evaluator().match(
-            listOf(
-                TestRule("first", nonMatchingPredicate),
-                TestRule("second", nonMatchingPredicate),
-                TestRule("third", matchingPredicate),
-            ),
-        )
+        evaluator().match(listOf("first", "second", "third")) { rule ->
+            Result.success(if (rule == "third") matchingPredicate else nonMatchingPredicate)
+        }
 
         assertThat(snapshotsTaken).isEqualTo(1)
     }

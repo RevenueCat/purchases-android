@@ -45,7 +45,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.1.0
-  revenuecat: revenuecat/sdks-common-config@4.6.0
+  revenuecat: revenuecat/sdks-common-config@4.6.1
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -324,6 +324,16 @@ jobs:
           command: ./scripts/api-check.sh
       - android/save_gradle_cache
 
+  # Stdlib only, so no bundler. Needs full history: it compares HEAD against HEAD^.
+  announce-api-changes:
+    docker:
+      - image: cimg/ruby:3.2.0
+    steps:
+      - checkout
+      - run:
+          name: Announce public API changes
+          command: ruby danger/announce_api_changes.rb
+
   docs-deploy:
     <<: *android-executor
     steps:
@@ -345,7 +355,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.18.0 s3://purchases-docs/android/10.18.0 --delete
+          command: aws s3 sync ~/project/docs/10.20.0-SNAPSHOT s3://purchases-docs/android/10.20.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -967,12 +977,25 @@ workflows:
     jobs:
       - revenuecat/danger:
           ruby_version: "3.2.0"
-          context:
-            - slack-secrets
           post-steps:
             - run:
                 name: Run api diff report unit tests
                 command: ruby danger/api_diff_report_test.rb
+          filters:
+            branches:
+              ignore: main
+
+  announce-api-changes-on-main:
+    when:
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "main", << pipeline.git.branch >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
+    jobs:
+      - announce-api-changes:
+          context:
+            - slack-secrets
 
   snapshot-deploy-manual:
     when:

@@ -1,4 +1,3 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @file:Suppress("TooManyFunctions")
 
 package com.revenuecat.purchases.admob.nextgen
@@ -24,7 +23,6 @@ import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAd
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAdEventCallback
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingAdLoadCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingNativeAdLoaderCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.trackAdFailedToLoad
@@ -47,7 +45,6 @@ import kotlin.jvm.JvmSynthetic
  * @param loadCallback Callback to receive load success and failure events.
  * @param adEventCallback Optional callback for interstitial lifecycle and paid events.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun AdTracker.loadAndTrackInterstitialAd(
     adRequest: AdRequest,
@@ -84,7 +81,6 @@ public fun AdTracker.loadAndTrackInterstitialAd(
  * @param placement Optional placement identifier used in RevenueCat tracking.
  * @param adEventCallback Optional callback for interstitial lifecycle and paid events.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public suspend fun AdTracker.loadAndTrackInterstitialAd(
     adRequest: AdRequest,
@@ -119,7 +115,6 @@ public suspend fun AdTracker.loadAndTrackInterstitialAd(
  * @param loadCallback Callback to receive load success and failure events.
  * @param adEventCallback Optional callback for interstitial lifecycle and paid events.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 @Suppress("LongParameterList")
 public fun AdTracker.loadAndTrackInterstitialAdFromResponse(
@@ -158,7 +153,6 @@ public fun AdTracker.loadAndTrackInterstitialAdFromResponse(
  * @param loadCallback Callback to receive load success and failure events.
  * @param adEventCallback Optional callback for rewarded lifecycle and paid events.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun AdTracker.loadAndTrackRewardedAd(
     adRequest: AdRequest,
@@ -195,7 +189,6 @@ public fun AdTracker.loadAndTrackRewardedAd(
  * @param placement Optional placement identifier used in RevenueCat tracking.
  * @param adEventCallback Optional callback for rewarded lifecycle and paid events.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public suspend fun AdTracker.loadAndTrackRewardedAd(
     adRequest: AdRequest,
@@ -230,7 +223,6 @@ public suspend fun AdTracker.loadAndTrackRewardedAd(
  * @param loadCallback Callback to receive load success and failure events.
  * @param adEventCallback Optional callback for rewarded lifecycle and paid events.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 @Suppress("LongParameterList")
 public fun AdTracker.loadAndTrackRewardedAdFromResponse(
@@ -269,7 +261,6 @@ public fun AdTracker.loadAndTrackRewardedAdFromResponse(
  * @param loadCallback Callback to receive load success and failure events.
  * @param adEventCallback Optional callback for app open lifecycle and paid events.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun AdTracker.loadAndTrackAppOpenAd(
     adRequest: AdRequest,
@@ -306,7 +297,6 @@ public fun AdTracker.loadAndTrackAppOpenAd(
  * @param placement Optional placement identifier used in RevenueCat tracking.
  * @param adEventCallback Optional callback for app open lifecycle and paid events.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public suspend fun AdTracker.loadAndTrackAppOpenAd(
     adRequest: AdRequest,
@@ -341,7 +331,6 @@ public suspend fun AdTracker.loadAndTrackAppOpenAd(
  * @param loadCallback Callback to receive load success and failure events.
  * @param adEventCallback Optional callback for app open lifecycle and paid events.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 @Suppress("LongParameterList")
 public fun AdTracker.loadAndTrackAppOpenAdFromResponse(
@@ -380,7 +369,6 @@ public fun AdTracker.loadAndTrackAppOpenAdFromResponse(
  * @param loadCallback Callback to receive load success and failure events.
  * @param adEventCallback Optional callback for rewarded interstitial lifecycle, metadata, and paid events.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun AdTracker.loadAndTrackRewardedInterstitialAd(
     adRequest: AdRequest,
@@ -417,7 +405,6 @@ public fun AdTracker.loadAndTrackRewardedInterstitialAd(
  * @param placement Optional placement identifier used in RevenueCat tracking.
  * @param adEventCallback Optional callback for rewarded interstitial lifecycle, metadata, and paid events.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public suspend fun AdTracker.loadAndTrackRewardedInterstitialAd(
     adRequest: AdRequest,
@@ -452,7 +439,6 @@ public suspend fun AdTracker.loadAndTrackRewardedInterstitialAd(
  * @param loadCallback Callback to receive load success and failure events.
  * @param adEventCallback Optional callback for rewarded interstitial lifecycle, metadata, and paid events.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 @Suppress("LongParameterList")
 public fun AdTracker.loadAndTrackRewardedInterstitialAdFromResponse(
@@ -493,7 +479,6 @@ public fun AdTracker.loadAndTrackRewardedInterstitialAdFromResponse(
  * @param adEventCallback Optional callback for banner lifecycle and paid events.
  * @param bannerAdRefreshCallback Optional callback for automatic banner refresh events.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 @Suppress("LongParameterList")
 public fun AdTracker.loadAndTrackBannerAd(
@@ -529,7 +514,6 @@ public fun AdTracker.loadAndTrackBannerAd(
  * @param adEventCallback Optional callback for banner lifecycle and paid events.
  * @param bannerAdRefreshCallback Optional callback for automatic banner refresh events.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 @Suppress("LongParameterList")
 public fun AdTracker.loadAndTrackBannerAdFromResponse(
@@ -559,7 +543,6 @@ public fun AdTracker.loadAndTrackBannerAdFromResponse(
  * installed before this function returns. [adUnitId] is required because neither the opaque response nor a failed
  * load reliably provides it. Call via `Purchases.sharedInstance.adTracker`.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 @Suppress("LongParameterList")
 public suspend fun AdTracker.loadAndTrackBannerAdFromResponse(
@@ -591,7 +574,6 @@ public suspend fun AdTracker.loadAndTrackBannerAdFromResponse(
  * @param nativeAdEventCallback Optional lifecycle and paid-event callback for standard and custom-native results.
  * @param bannerAdEventCallback Optional lifecycle and paid-event callback for banner results.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 @Suppress("LongParameterList")
 public fun AdTracker.loadAndTrackNativeAd(
@@ -624,7 +606,6 @@ public fun AdTracker.loadAndTrackNativeAd(
  * @param nativeAdEventCallback Optional lifecycle and paid-event callback for standard and custom-native results.
  * @param bannerAdEventCallback Optional lifecycle and paid-event callback for banner results.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public suspend fun AdTracker.loadAndTrackNativeAd(
     adRequest: NativeAdRequest,
@@ -657,7 +638,6 @@ public suspend fun AdTracker.loadAndTrackNativeAd(
  * @param nativeAdEventCallback Optional lifecycle and paid-event callback for standard and custom-native results.
  * @param bannerAdEventCallback Optional lifecycle and paid-event callback for banner results.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 @Suppress("LongParameterList")
 public fun AdTracker.loadAndTrackNativeAdFromResponse(
@@ -688,7 +668,6 @@ public fun AdTracker.loadAndTrackNativeAdFromResponse(
  * forwarded when Google finishes the batch. [loadCallback] is required to distinguish this callback-based
  * overload from the suspending overload.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 @Suppress("LongParameterList")
 public fun AdTracker.loadAndTrackNativeAds(
@@ -718,7 +697,6 @@ public fun AdTracker.loadAndTrackNativeAds(
  * Results are returned unchanged and tracked when collected. Event tracking is installed on each successful result
  * before it is emitted downstream.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public suspend fun AdTracker.loadAndTrackNativeAds(
     adRequest: NativeAdRequest,

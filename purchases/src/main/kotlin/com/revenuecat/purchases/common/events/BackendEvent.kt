@@ -242,8 +242,8 @@ internal sealed class BackendEvent : Event {
         val identifier: String,
         @SerialName("app_user_id")
         val appUserID: String,
-        @SerialName("session_id")
-        val sessionID: String,
+        @SerialName("app_session_id")
+        val appSessionID: String,
         val timestamp: Long,
     ) : BackendEvent()
 

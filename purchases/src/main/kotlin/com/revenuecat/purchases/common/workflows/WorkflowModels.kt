@@ -13,6 +13,7 @@ import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfigSe
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.paywalls.components.common.StateDeclarationMapSerializer
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
+import com.revenuecat.purchases.utils.serializers.GoogleListSerializer
 import com.revenuecat.purchases.utils.serializers.JsonObjectToMapSerializer
 import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import com.revenuecat.purchases.utils.serializers.URLSerializer
@@ -130,6 +131,8 @@ public data class WorkflowScreen(
     @SerialName("default_locale") val defaultLocaleIdentifier: LocaleId,
     @SerialName("config") val config: JsonObject = JsonObject(emptyMap()),
     @SerialName("offering_identifier") val offeringIdentifier: String? = null,
+    @Serializable(with = GoogleListSerializer::class)
+    @SerialName("zero_decimal_place_countries") val zeroDecimalPlaceCountries: List<String> = emptyList(),
     @SerialName("exit_offers") val exitOffers: ExitOffers? = null,
     @Serializable(with = ProductChangeConfigSerializer::class)
     @SerialName("play_store_product_change_mode") val productChangeConfig: ProductChangeConfig? = null,

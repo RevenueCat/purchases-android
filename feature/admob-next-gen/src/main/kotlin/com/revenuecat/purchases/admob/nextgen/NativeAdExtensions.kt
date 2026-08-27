@@ -1,11 +1,9 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
 package com.revenuecat.purchases.admob.nextgen
 
 import com.google.android.libraries.ads.mobile.sdk.nativead.CustomNativeAd
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingNativeAdEventCallback
 import kotlin.jvm.JvmSynthetic
 
@@ -15,7 +13,6 @@ import kotlin.jvm.JvmSynthetic
  * Use this instead of assigning [NativeAd.adEventCallback] directly when the ad was loaded through a RevenueCat
  * native-ad tracking API. If tracking is not installed, this falls back to direct assignment.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun NativeAd.setTrackingAdEventCallback(callback: NativeAdEventCallback?) {
     val trackingCallback = adEventCallback as? TrackingNativeAdEventCallback
@@ -32,7 +29,6 @@ public fun NativeAd.setTrackingAdEventCallback(callback: NativeAdEventCallback?)
  * This overload handles custom-native results returned by a RevenueCat native-ad tracking API. If tracking is not
  * installed, it falls back to direct assignment.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun CustomNativeAd.setTrackingAdEventCallback(callback: NativeAdEventCallback?) {
     val trackingCallback = adEventCallback as? TrackingNativeAdEventCallback

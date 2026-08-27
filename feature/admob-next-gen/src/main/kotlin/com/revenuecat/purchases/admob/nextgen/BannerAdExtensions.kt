@@ -1,11 +1,9 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
 package com.revenuecat.purchases.admob.nextgen
 
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAd
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdRefreshCallback
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdEventCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdRefreshCallback
 import kotlin.jvm.JvmSynthetic
@@ -16,7 +14,6 @@ import kotlin.jvm.JvmSynthetic
  * Use this instead of assigning [BannerAd.adEventCallback] directly when the ad was loaded through a RevenueCat
  * tracking helper. If RevenueCat tracking is not installed, this falls back to direct assignment.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun BannerAd.setTrackingAdEventCallback(callback: BannerAdEventCallback?) {
     val trackingCallback = adEventCallback as? TrackingBannerAdEventCallback
@@ -33,7 +30,6 @@ public fun BannerAd.setTrackingAdEventCallback(callback: BannerAdEventCallback?)
  * Use this instead of assigning [BannerAd.bannerAdRefreshCallback] directly when the ad was loaded through a
  * RevenueCat tracking helper. If RevenueCat tracking is not installed, this falls back to direct assignment.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun BannerAd.setTrackingBannerAdRefreshCallback(callback: BannerAdRefreshCallback?) {
     val trackingCallback = bannerAdRefreshCallback as? TrackingBannerAdRefreshCallback

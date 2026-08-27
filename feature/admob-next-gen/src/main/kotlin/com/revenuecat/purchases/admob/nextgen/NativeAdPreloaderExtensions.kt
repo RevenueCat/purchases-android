@@ -1,4 +1,3 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
 package com.revenuecat.purchases.admob.nextgen
 
@@ -9,7 +8,6 @@ import com.google.android.libraries.ads.mobile.sdk.common.PreloadConfiguration
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoadResult
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdPreloader
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingPreloadCallback
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import kotlin.jvm.JvmSynthetic
@@ -26,7 +24,6 @@ import kotlin.jvm.JvmSynthetic
  * @param preloadCallback Optional callback that receives every Google preload callback.
  * @return Google's unchanged result indicating whether preloading started.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun NativeAdPreloader.Companion.startAndTrack(
     preloadId: String,
@@ -57,7 +54,6 @@ public fun NativeAdPreloader.Companion.startAndTrack(
  * @param bannerAdEventCallback Optional callback used when Google returns a banner result.
  * @param bannerAdRefreshCallback Optional refresh callback used when Google returns a banner result.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun NativeAdPreloader.Companion.pollAndTrackAd(
     preloadId: String,

@@ -7,10 +7,8 @@ import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEv
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAdEventCallback
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdFormat
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingBannerAdEventCallback(
     initialDelegate: BannerAdEventCallback?,
     initialPlacement: String?,
@@ -30,7 +28,6 @@ internal class TrackingBannerAdEventCallback(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingInterstitialAdEventCallback(
     initialDelegate: InterstitialAdEventCallback?,
     initialPlacement: String?,
@@ -50,7 +47,6 @@ internal class TrackingInterstitialAdEventCallback(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingAppOpenAdEventCallback(
     initialDelegate: AppOpenAdEventCallback?,
     initialPlacement: String?,
@@ -66,7 +62,6 @@ internal class TrackingAppOpenAdEventCallback(
 ),
     AppOpenAdEventCallback
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingRewardedAdEventCallback(
     initialDelegate: RewardedAdEventCallback?,
     initialPlacement: String?,
@@ -86,7 +81,6 @@ internal class TrackingRewardedAdEventCallback(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingRewardedInterstitialAdEventCallback(
     initialDelegate: RewardedInterstitialAdEventCallback?,
     initialPlacement: String?,
@@ -106,7 +100,6 @@ internal class TrackingRewardedInterstitialAdEventCallback(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingNativeAdEventCallback(
     initialDelegate: NativeAdEventCallback?,
     initialPlacement: String?,

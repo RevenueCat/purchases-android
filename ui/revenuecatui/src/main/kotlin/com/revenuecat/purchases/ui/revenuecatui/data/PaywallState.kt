@@ -217,17 +217,7 @@ internal sealed interface PaywallState {
 
             // We find all available device locales with the same country as the storefront country.
             private val availableStorefrontCountryLocalesByLanguage: Map<String, Locale> by lazy {
-                if (storefrontCountryCode.isNullOrBlank()) {
-                    emptyMap()
-                } else {
-                    buildMap {
-                        Locale.getAvailableLocales().forEach { availableLocale ->
-                            if (availableLocale.country.equals(storefrontCountryCode, ignoreCase = true)) {
-                                put(availableLocale.language.lowercase(), availableLocale)
-                            }
-                        }
-                    }
-                }
+                getAvailableStorefrontCountryLocalesByLanguage(storefrontCountryCode)
             }
 
             /**
@@ -461,6 +451,25 @@ internal sealed interface PaywallState {
         }
     }
 }
+
+/**
+ * Returns the available locales for the storefront country keyed by language.
+ * POSIX locales are excluded because their currency format can contain spacing that differs from the store format.
+ */
+internal fun getAvailableStorefrontCountryLocalesByLanguage(
+    storefrontCountryCode: String?,
+    availableLocales: Array<Locale> = Locale.getAvailableLocales(),
+): Map<String, Locale> =
+    if (storefrontCountryCode.isNullOrBlank()) {
+        emptyMap()
+    } else {
+        availableLocales
+            .filter { locale ->
+                locale.country.equals(storefrontCountryCode, ignoreCase = true) &&
+                    !locale.variant.equals("POSIX", ignoreCase = true)
+            }
+            .associateBy { it.language.lowercase() }
+    }
 
 internal fun PaywallState.loadedLegacy(): PaywallState.Loaded.Legacy? {
     return when (val state = this) {

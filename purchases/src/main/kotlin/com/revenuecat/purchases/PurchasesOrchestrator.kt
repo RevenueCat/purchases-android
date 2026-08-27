@@ -39,6 +39,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
@@ -180,7 +181,8 @@ internal class PurchasesOrchestrator(
     private val uiConfigProvider: UiConfigProvider? = null,
     private val workflowsConfigProvider: WorkflowsConfigProvider? = null,
     private val checkpointsConfigProvider: CheckpointsConfigProvider? = null,
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val audiencesConfigProvider: AudiencesConfigProvider? = null,
     val adTracker: AdTracker = AdTracker(adEventsManager),
     private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
     private val localRulesEvaluator: LocalRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
@@ -189,6 +191,7 @@ internal class PurchasesOrchestrator(
         workflowManager = workflowManager,
         uiConfigProvider = uiConfigProvider,
         checkpointsConfigProvider = checkpointsConfigProvider,
+        audiencesConfigProvider = audiencesConfigProvider,
         localRulesEvaluator = localRulesEvaluator,
         getOfferings = { Purchases.sharedInstance.awaitOfferings() },
     ),
@@ -356,7 +359,7 @@ internal class PurchasesOrchestrator(
         )
         appConfig.isAppBackgrounded = true
         if (!appConfig.uiPreviewMode) {
-            synchronizeSubscriberAttributesIfNeeded()
+            synchronizeSubscriberAttributesIfNeeded(Delay.NONE)
             flushEvents(Delay.NONE)
         }
     }
@@ -404,7 +407,7 @@ internal class PurchasesOrchestrator(
             }
             offeringsManager.onAppForeground(identityManager.currentAppUserID)
             postPendingTransactionsHelper.syncPendingPurchaseQueue(allowSharingPlayStoreAccount)
-            synchronizeSubscriberAttributesIfNeeded()
+            synchronizeSubscriberAttributesIfNeeded(Delay.DEFAULT)
             offlineEntitlementsManager.updateProductEntitlementMappingCacheIfStale()
             flushEvents(Delay.DEFAULT)
             if (firstTimeInForeground && isAndroidNOrNewer()) {
@@ -510,7 +513,10 @@ internal class PurchasesOrchestrator(
             return
         }
 
-        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID) {
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+            appUserID,
+            Delay.jitterOnlyIfInBackground(state.appInBackground),
+        ) {
             remoteConfigManager?.refreshRemoteConfig(
                 state.appInBackground,
                 appUserID,
@@ -1310,6 +1316,16 @@ internal class PurchasesOrchestrator(
         )
     }
 
+    fun setSingularDeviceID(singularDeviceID: String?) {
+        log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setSingularDeviceID") }
+        subscriberAttributesManager.setAttributionID(
+            SubscriberAttributeKey.AttributionIds.Singular,
+            singularDeviceID,
+            appUserID,
+            application,
+        )
+    }
+
     fun setAppsFlyerConversionData(data: Map<*, *>?) {
         log(LogIntent.DEBUG) { AttributionStrings.METHOD_CALLED.format("setAppsFlyerConversionData") }
         subscriberAttributesManager.setAppsFlyerConversionData(appUserID, data)
@@ -1877,9 +1893,9 @@ internal class PurchasesOrchestrator(
         )
     }
 
-    private fun synchronizeSubscriberAttributesIfNeeded() {
+    private fun synchronizeSubscriberAttributesIfNeeded(delay: Delay) {
         if (appConfig.uiPreviewMode) return
-        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID)
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserID, delay)
     }
 
     private fun flushEvents(delay: Delay) {

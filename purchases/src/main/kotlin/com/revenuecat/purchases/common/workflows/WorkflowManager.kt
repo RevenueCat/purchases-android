@@ -154,7 +154,7 @@ internal class WorkflowManager(
     fun onPaywallConfigReady(onComplete: () -> Unit) {
         // warm() may already have run with no current offering (config commits before offerings land), and the
         // fast path below would then never re-run it. Deduped by workflow id, so a repeat call is free.
-        workflowsConfigProvider.prewarmCurrentOfferingAssets()
+        workflowsConfigProvider.prewarmOfferingAssets()
         if (uiConfigProvider.isWarm() && workflowsConfigProvider.isWarmForCurrentOffering()) {
             onComplete()
             return

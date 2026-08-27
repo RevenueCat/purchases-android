@@ -10,6 +10,8 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.common.audiences.Audience
+import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.checkpoints.CheckpointResponse
 import com.revenuecat.purchases.common.checkpoints.CheckpointRule
 import com.revenuecat.purchases.common.checkpoints.CheckpointRulesResolution
@@ -53,6 +55,7 @@ class CheckpointWorkflowResolverImplTest {
     private lateinit var mockWorkflowManager: WorkflowManager
     private lateinit var mockUiConfigProvider: UiConfigProvider
     private lateinit var mockCheckpointsConfigProvider: CheckpointsConfigProvider
+    private lateinit var mockAudiencesConfigProvider: AudiencesConfigProvider
     private lateinit var mockWorkflow: PublishedWorkflow
     private lateinit var mockUiConfig: UiConfig
     private lateinit var mockOffering: Offering
@@ -67,6 +70,7 @@ class CheckpointWorkflowResolverImplTest {
         mockWorkflowManager = mockk()
         mockUiConfigProvider = mockk()
         mockCheckpointsConfigProvider = mockk()
+        mockAudiencesConfigProvider = mockk()
         mockWorkflow = uiWorkflow("wf1234")
         mockUiConfig = mockk()
         mockOffering = mockk {
@@ -78,11 +82,16 @@ class CheckpointWorkflowResolverImplTest {
         every { mockWorkflowManager.prewarmWorkflowAssets(any(), any()) } just Runs
         coEvery { mockUiConfigProvider.getUiConfig() } returns mockUiConfig
         every { mockOfferings.all } returns mapOf("default" to mockOffering)
+        coEvery { mockAudiencesConfigProvider.getAudience(any()) } answers {
+            val audienceId = firstArg<String>()
+            Audience(id = audienceId, rules = "true")
+        }
         configureRules(rule("wf1234"))
         resolver = CheckpointWorkflowResolverImpl(
             workflowManager = mockWorkflowManager,
             uiConfigProvider = mockUiConfigProvider,
             checkpointsConfigProvider = mockCheckpointsConfigProvider,
+            audiencesConfigProvider = mockAudiencesConfigProvider,
             localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
             getOfferings = {
                 offeringsFetched++
@@ -110,6 +119,7 @@ class CheckpointWorkflowResolverImplTest {
             workflowManager = null,
             uiConfigProvider = null,
             checkpointsConfigProvider = null,
+            audiencesConfigProvider = null,
             localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
             getOfferings = { mockOfferings },
         )
@@ -124,6 +134,7 @@ class CheckpointWorkflowResolverImplTest {
 
         assertThat(noActionReason(resolve()))
             .isEqualTo(CheckpointResolution.NoAction.Reason.DISABLED)
+        coVerify(exactly = 0) { mockAudiencesConfigProvider.getAudience(any()) }
     }
 
     @Test
@@ -140,6 +151,7 @@ class CheckpointWorkflowResolverImplTest {
 
         assertThat(noActionReason(resolve()))
             .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        coVerify(exactly = 0) { mockAudiencesConfigProvider.getAudience(any()) }
     }
 
     @Test
@@ -188,8 +200,54 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `checkpoint resolves the workflow of the first rule`() = runTest {
+    fun `the first matching audience determines the workflow`() = runTest {
+        configureRules(rule("wf5678"), rule("wf1234"))
+        coEvery { mockAudiencesConfigProvider.getAudience("aud_wf5678") } returns
+            Audience("aud_wf5678", "false")
+        coEvery { mockAudiencesConfigProvider.getAudience("aud_wf1234") } returns
+            Audience("aud_wf1234", "true")
+
+        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
+
+        assertThat(resolution.workflow).isEqualTo(mockWorkflow)
+    }
+
+    @Test
+    fun `audiences after the first match are not loaded`() = runTest {
         configureRules(rule("wf1234"), rule("wf5678"))
+
+        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
+
+        assertThat(resolution.workflow).isEqualTo(mockWorkflow)
+        coVerify(exactly = 0) { mockAudiencesConfigProvider.getAudience("aud_wf5678") }
+    }
+
+    @Test
+    fun `a missing audience before a match is configuration unavailable`() = runTest {
+        configureRules(rule("missing"), rule("wf1234"))
+        coEvery { mockAudiencesConfigProvider.getAudience("aud_missing") } returns null
+
+        assertThat(noActionReason(resolve()))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        coVerify(exactly = 0) { mockAudiencesConfigProvider.getAudience("aud_wf1234") }
+    }
+
+    @Test
+    fun `false audiences resolve to no match`() = runTest {
+        coEvery { mockAudiencesConfigProvider.getAudience("aud_wf1234") } returns
+            Audience("aud_wf1234", "false")
+
+        assertThat(noActionReason(resolve())).isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
+        assertThat(offeringsFetched).isZero()
+    }
+
+    @Test
+    fun `a malformed audience before a match does not prevent a later matching workflow`() = runTest {
+        configureRules(rule("wf5678"), rule("wf1234"))
+        coEvery { mockAudiencesConfigProvider.getAudience("aud_wf5678") } returns
+            Audience("aud_wf5678", "{not json")
+        coEvery { mockAudiencesConfigProvider.getAudience("aud_wf1234") } returns
+            Audience("aud_wf1234", "true")
 
         val resolution = resolve() as CheckpointResolution.MatchedWorkflow
 
@@ -239,6 +297,7 @@ class CheckpointWorkflowResolverImplTest {
                 workflowManager = mockWorkflowManager,
                 uiConfigProvider = mockUiConfigProvider,
                 checkpointsConfigProvider = mockCheckpointsConfigProvider,
+                audiencesConfigProvider = mockAudiencesConfigProvider,
                 localRulesEvaluator = LocalRulesEvaluator(providers = listOf(FailingDimensionProvider)),
                 getOfferings = { mockOfferings },
             )
@@ -267,7 +326,8 @@ class CheckpointWorkflowResolverImplTest {
 
     @Test
     fun `a custom variable the audience requires resolves the workflow`() = runTest {
-        resolver = resolverWithPredicate("""{"==": [{"var": "custom.source"}, "settings"]}""")
+        coEvery { mockAudiencesConfigProvider.getAudience("aud_wf1234") } returns
+            Audience("aud_wf1234", """{"==": [{"var": "custom.source"}, "settings"]}""")
 
         val resolution = resolver.resolve(checkpointId, mapOf("source" to RulesDimensionValue.StringValue("settings")))
 
@@ -276,12 +336,36 @@ class CheckpointWorkflowResolverImplTest {
 
     @Test
     fun `a custom variable the audience does not accept resolves NoAction with NO_MATCH`() = runTest {
-        resolver = resolverWithPredicate("""{"==": [{"var": "custom.source"}, "settings"]}""")
+        coEvery { mockAudiencesConfigProvider.getAudience("aud_wf1234") } returns
+            Audience("aud_wf1234", """{"==": [{"var": "custom.source"}, "settings"]}""")
 
         assertThat(noActionReason(resolver.resolve(checkpointId, mapOf("source" to RulesDimensionValue.StringValue("onboarding")))))
             .isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
+    }
+
+    @Test
+    fun `a custom variable the audience requires but the app omitted is not a NO_MATCH`() = runTest {
+        // The audience asks about a variable the call never supplied, so the SDK cannot place this
+        // customer inside or outside it. Saying NO_MATCH would claim an answer it does not have.
+        coEvery { mockAudiencesConfigProvider.getAudience("aud_wf1234") } returns
+            Audience("aud_wf1234", """{"==": [{"var": "custom.source"}, "settings"]}""")
+
         assertThat(noActionReason(resolver.resolve(checkpointId, emptyMap())))
-            .isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+    }
+
+    @Test
+    fun `negating an audience on an omitted variable does not manufacture a match`() = runTest {
+        // Negation is where an unanswerable comparison does the most damage: a false inner result
+        // becomes a match, admitting exactly the customers the audience was written to exclude.
+        coEvery { mockAudiencesConfigProvider.getAudience("aud_wf1234") } returns
+            Audience("aud_wf1234", """{"!": [{"==": [{"var": "custom.source"}, "settings"]}]}""")
+
+        val resolution = resolver.resolve(checkpointId, emptyMap())
+
+        assertThat(resolution).isNotInstanceOf(CheckpointResolution.MatchedWorkflow::class.java)
+        assertThat(noActionReason(resolution))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
     }
 
     @Test
@@ -303,6 +387,7 @@ class CheckpointWorkflowResolverImplTest {
             workflowManager = mockWorkflowManager,
             uiConfigProvider = null,
             checkpointsConfigProvider = mockCheckpointsConfigProvider,
+            audiencesConfigProvider = mockAudiencesConfigProvider,
             localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
             getOfferings = {
                 offeringsFetched++
@@ -446,6 +531,7 @@ class CheckpointWorkflowResolverImplTest {
             workflowManager = mockWorkflowManager,
             uiConfigProvider = mockUiConfigProvider,
             checkpointsConfigProvider = mockCheckpointsConfigProvider,
+            audiencesConfigProvider = mockAudiencesConfigProvider,
             localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
             getOfferings = { throw CancellationException("cancelled") },
         )
@@ -460,15 +546,6 @@ class CheckpointWorkflowResolverImplTest {
         override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> =
             throw IllegalStateException("no dimensions")
     }
-
-    private fun resolverWithPredicate(predicate: String) = CheckpointWorkflowResolverImpl(
-        workflowManager = mockWorkflowManager,
-        uiConfigProvider = mockUiConfigProvider,
-        checkpointsConfigProvider = mockCheckpointsConfigProvider,
-        localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
-        getOfferings = { mockOfferings },
-        audiencePredicate = predicate,
-    )
 
     private fun rule(workflowId: String) = CheckpointRule(
         id = "rule_$workflowId",

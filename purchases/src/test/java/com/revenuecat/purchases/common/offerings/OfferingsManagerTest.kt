@@ -6,13 +6,19 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.Delay
+import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
+import com.revenuecat.purchases.utils.MockHandlerFactory
+import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
+import com.revenuecat.purchases.utils.OfferingWebViewPrewarmer
+import com.revenuecat.purchases.utils.prewarmTargetOfferings
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.stubOfferings
@@ -48,6 +54,7 @@ class OfferingsManagerTest {
     private lateinit var offeringImagePreDownloader: OfferingImagePreDownloader
     private lateinit var mockDiagnosticsTracker: DiagnosticsTracker
     private lateinit var mockOfferingFontPreDownloader: OfferingFontPreDownloader
+    private lateinit var mockOfferingWebViewPrewarmer: OfferingWebViewPrewarmer
     private lateinit var mockWorkflowManager: WorkflowManager
 
     private lateinit var offeringsManager: OfferingsManager
@@ -64,6 +71,9 @@ class OfferingsManagerTest {
         mockOfferingFontPreDownloader = mockk<OfferingFontPreDownloader>().apply {
             every { preDownloadOfferingFontsIfNeeded(any()) } just Runs
         }
+        mockOfferingWebViewPrewarmer = mockk<OfferingWebViewPrewarmer>().apply {
+            every { prewarmWebViews(any()) } just Runs
+        }
         mockWorkflowManager = mockk(relaxed = true)
         every { mockWorkflowManager.onPaywallConfigReady(onComplete = any()) } answers {
             firstArg<() -> Unit>().invoke()
@@ -79,6 +89,8 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             workflowManager = mockWorkflowManager,
         )
     }
@@ -533,6 +545,8 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             workflowManager = null,
         )
         every { cache.cachedOfferings } returns null
@@ -648,7 +662,107 @@ class OfferingsManagerTest {
         }
     }
 
+    // A SyncDispatcher runs the block inline, so this holds the command instead: without the enqueue the
+    // fan-out would decode on the backend response thread.
+    @Test
+    fun `getOfferings enqueues placement target warming rather than running it on the response thread`() {
+        val commands = mutableListOf<Runnable>()
+        val holdingDispatcher = object : Dispatcher(mockk(), MockHandlerFactory.createMockHandler()) {
+            override fun enqueue(command: Runnable, delay: Delay) {
+                commands += command
+            }
+        }
+        val other = mockk<Offering>(relaxed = true).apply { every { identifier } returns "onboarding" }
+        val offerings = testOfferings.copy(
+            all = testOfferings.all + ("onboarding" to other),
+            placements = Offerings.Placements(
+                fallbackOfferingId = null,
+                offeringIdsByPlacement = mapOf("onboarding" to "onboarding"),
+            ),
+        )
+        val manager = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = holdingDispatcher,
+            workflowManager = null,
+        )
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory(offerings)
+        mockDeviceCache()
+        val warmed = mutableListOf<String>()
+        every { offeringImagePreDownloader.preDownloadOfferingImages(any()) } answers {
+            warmed += firstArg<Offering>().identifier
+        }
+
+        manager.getOfferings(appUserId, appInBackground = false, onError = { fail("should be a success") })
+
+        assertThat(warmed).containsExactly(offerings.current!!.identifier)
+        assertThat(commands).hasSize(1)
+
+        commands.forEach { it.run() }
+
+        assertThat(warmed).containsExactly(offerings.current!!.identifier, "onboarding")
+    }
+
+    // Each placement target decodes its own component tree, so the fan-out must stay off this path.
+    @Test
+    fun `getOfferings pre downloads placement target images only after delivering offerings`() {
+        val other = mockk<Offering>(relaxed = true).apply { every { identifier } returns "onboarding" }
+        val offerings = testOfferings.copy(
+            all = testOfferings.all + ("onboarding" to other),
+            placements = Offerings.Placements(
+                fallbackOfferingId = null,
+                offeringIdsByPlacement = mapOf("onboarding" to "onboarding"),
+            ),
+        )
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory(offerings)
+        mockDeviceCache()
+        val warmed = mutableListOf<String>()
+        every { offeringImagePreDownloader.preDownloadOfferingImages(any()) } answers {
+            warmed += firstArg<Offering>().identifier
+        }
+        var warmedAtDelivery: List<String>? = null
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = { warmedAtDelivery = warmed.toList() },
+        )
+
+        assertThat(warmedAtDelivery).containsExactly(offerings.current!!.identifier)
+        assertThat(warmed).containsExactly(offerings.current!!.identifier, "onboarding")
+    }
+
     // endregion pre download offering images
+
+    // region prewarm web_view bundles
+
+    @Test
+    fun `getOfferings prewarms web_view bundles`() {
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = {},
+        )
+
+        verify(exactly = 1) {
+            mockOfferingWebViewPrewarmer.prewarmWebViews(testOfferings.prewarmTargetOfferings())
+        }
+    }
+
+    // endregion prewarm web_view bundles
 
     // region pre download font files
 
@@ -886,6 +1000,8 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             uiPreviewMode = true,
         )
 
@@ -915,6 +1031,8 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             uiPreviewMode = true,
         )
         mockCacheStale(offeringsStale = true)
@@ -936,6 +1054,8 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             uiPreviewMode = true,
         )
 
@@ -1093,6 +1213,8 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             workflowManager = null,
         )
 
@@ -1126,6 +1248,8 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             workflowManager = mockWorkflowManager,
         )
 
@@ -1163,6 +1287,8 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             workflowManager = mockWorkflowManager,
         )
 

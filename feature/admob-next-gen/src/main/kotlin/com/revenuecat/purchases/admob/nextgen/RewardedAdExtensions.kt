@@ -1,4 +1,3 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
 package com.revenuecat.purchases.admob.nextgen
 
@@ -6,7 +5,6 @@ import android.app.Activity
 import com.google.android.libraries.ads.mobile.sdk.rewarded.OnUserEarnedRewardListener
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingRewardedAdEventCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.applyPlacementOverride
 import kotlin.jvm.JvmSynthetic
@@ -18,7 +16,6 @@ import kotlin.jvm.JvmSynthetic
  * Passing `null` clears the load-time placement instead of keeping it, so call the Next-Gen SDK's
  * own `show(activity, onUserEarnedRewardListener)` when there is no override to apply.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedAd.show(
     activity: Activity,
@@ -36,7 +33,6 @@ public fun RewardedAd.show(
  * via [loadAndTrackRewardedAd]. If the ad was not loaded via `loadAndTrack`, this
  * falls back to direct assignment.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedAd.setTrackingAdEventCallback(callback: RewardedAdEventCallback?) {
     val trackingCallback = adEventCallback as? TrackingRewardedAdEventCallback

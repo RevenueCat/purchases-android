@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ads.events
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
@@ -21,7 +20,6 @@ import com.revenuecat.purchases.common.events.EventsManager
  * [InternalRevenueCatAPI] overloads to stamp [AdCaptureMethod.ADAPTER] instead.
  */
 @OptIn(InternalRevenueCatAPI::class)
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @Suppress("TooManyFunctions")
 public class AdTracker internal constructor(
     private val eventsManager: EventsManager,

@@ -1,5 +1,6 @@
 package com.revenuecat.purchases
 
+import android.content.Context
 import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.rewardverification.Poller
@@ -11,6 +12,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
 import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
+import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
@@ -40,6 +42,35 @@ public suspend fun Purchases.awaitCustomerInfo(
 }
 
 /**
+ * Opens the subscription management page for the current user.
+ *
+ * Coroutine friendly version of [Purchases.showManageSubscriptions].
+ *
+ * @param context Context used to start the subscription management page. An application
+ * context is sufficient.
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if the subscription management page could not be opened.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+public suspend fun Purchases.awaitShowManageSubscriptions(context: Context) {
+    suspendCancellableCoroutine { continuation ->
+        showManageSubscriptions(
+            context,
+            object : ManageSubscriptionsCallback {
+                override fun onSuccess() {
+                    continuation.safeResume(Unit)
+                }
+
+                override fun onError(error: PurchasesError) {
+                    continuation.safeResumeWithException(PurchasesException(error))
+                }
+            },
+        )
+    }
+}
+
+/**
  * Polls the backend until reward verification completes or the attempt budget is exhausted.
  *
  * Coroutine friendly version of [Purchases.pollRewardVerification].
@@ -50,7 +81,6 @@ public suspend fun Purchases.awaitCustomerInfo(
  * @return The [RewardVerificationResult] (verified reward or a failed result).
  */
 @JvmSynthetic
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @OptIn(InternalRevenueCatAPI::class)
 public suspend fun Purchases.awaitPollRewardVerification(
     clientTransactionId: String,
@@ -64,7 +94,7 @@ public suspend fun Purchases.awaitPollRewardVerification(
  */
 @JvmSynthetic
 @InternalRevenueCatAPI
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 public suspend fun Purchases.awaitPollRewardVerification(
     clientTransactionId: String,
     trackingMetadata: RewardedAdTrackingMetadata?,

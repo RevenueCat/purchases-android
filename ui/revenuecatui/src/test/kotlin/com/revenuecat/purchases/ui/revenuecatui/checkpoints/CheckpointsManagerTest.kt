@@ -14,13 +14,16 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.runs
 import io.mockk.slot
+import io.mockk.unmockkObject
 import io.mockk.verify
 import io.mockk.verifyOrder
 import kotlinx.coroutines.Dispatchers
@@ -54,6 +57,8 @@ class CheckpointsManagerTest {
     @Before
     fun setup() {
         Dispatchers.setMain(dispatcher)
+        mockkObject(Logger)
+        every { Logger.e(any()) } just runs
         startedIntents.clear()
         mockActivity = mockk(relaxed = true)
         capturesStartedIntents()
@@ -67,7 +72,42 @@ class CheckpointsManagerTest {
 
     @After
     fun tearDown() {
+        unmockkObject(Logger)
         Dispatchers.resetMain()
+    }
+
+    @Test
+    fun `valid checkpoint identifier reaches listener and resolution`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
+
+        manager.checkpoint(mockPurchases, "A-1_b", null)
+
+        coVerify(exactly = 1) { mockPurchases.resolveCheckpoint("A-1_b", emptyMap()) }
+        verify(exactly = 1) { mockListener.onCheckpointHit(match { it.identifier == "A-1_b" }) }
+        verify(exactly = 1) {
+            mockListener.onCheckpointCompleted(
+                match { it.identifier == "A-1_b" },
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun `invalid checkpoint identifier is logged and reported to listener without resolution`() = runTest(dispatcher) {
+        val invalidIdentifier = " checkout😀"
+
+        val result = manager.checkpoint(mockPurchases, invalidIdentifier, null) as CheckpointResult.NoAction
+
+        assertThat(result.reason).isEqualTo(CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER)
+        assertThat(result.checkpoint.identifier).isEqualTo(invalidIdentifier)
+        coVerify(exactly = 0) { mockPurchases.resolveCheckpoint(any(), any()) }
+        verifyOrder {
+            mockListener.onCheckpointHit(result.checkpoint)
+            mockListener.onCheckpointCompleted(result.checkpoint, result)
+        }
+        verify(exactly = 1) {
+            Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(invalidIdentifier))
+        }
     }
 
     @Test
@@ -151,7 +191,7 @@ class CheckpointsManagerTest {
 
         var result: CheckpointResult? = null
         val call = launch {
-            result = checkpoint(CheckpointParams("goal" to CustomVariableValue.String("test")))
+            result = checkpoint(CheckpointParams { customVariables { "goal" to "test" } })
         }
 
         assertThat(result).isNull()
@@ -175,11 +215,13 @@ class CheckpointsManagerTest {
         resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
 
         checkpoint(
-            CheckpointParams(
-                "goal" to CustomVariableValue.String("test"),
-                "attempt" to CustomVariableValue.Number(2),
-                "flag" to CustomVariableValue.Boolean(true),
-            ),
+            CheckpointParams {
+                customVariables {
+                    "goal" to "test"
+                    "attempt" to 2
+                    "flag" to true
+                }
+            },
         )
 
         val customVariables = slot<Map<String, RulesDimensionValue>>()
@@ -198,12 +240,14 @@ class CheckpointsManagerTest {
         resolvesToWorkflow()
         val call = launch {
             checkpoint(
-                CheckpointParams(
-                    "gate" to CustomVariableValue.String("hard"),
-                    "attempt" to CustomVariableValue.Number(2),
-                    "ratio" to CustomVariableValue.Number(0.5),
-                    "flag" to CustomVariableValue.Boolean(true),
-                ),
+                CheckpointParams {
+                    customVariables {
+                        "gate" to "hard"
+                        "attempt" to 2
+                        "ratio" to 0.5
+                        "flag" to true
+                    }
+                },
             )
         }
 

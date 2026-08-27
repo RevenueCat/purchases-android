@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-
 package com.revenuecat.purchases.admob
 
 import android.app.Activity
@@ -9,7 +7,6 @@ import com.google.android.gms.ads.appopen.AppOpenAd
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.tracking.TrackingFullScreenContentCallback
 import kotlin.jvm.JvmSynthetic
 
@@ -28,7 +25,6 @@ private fun applyPlacementOverride(callback: FullScreenContentCallback?, placeme
  * Call this instead of [InterstitialAd.show] when you want to specify or override the placement
  * at show time. The placement passed here takes precedence over any placement provided at load time.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun InterstitialAd.show(activity: Activity, placement: String?) {
     applyPlacementOverride(fullScreenContentCallback, placement)
@@ -41,7 +37,6 @@ public fun InterstitialAd.show(activity: Activity, placement: String?) {
  * Call this instead of [AppOpenAd.show] when you want to specify or override the placement
  * at show time. The placement passed here takes precedence over any placement provided at load time.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun AppOpenAd.show(activity: Activity, placement: String?) {
     applyPlacementOverride(fullScreenContentCallback, placement)
@@ -54,7 +49,6 @@ public fun AppOpenAd.show(activity: Activity, placement: String?) {
  * Call this instead of [RewardedAd.show] when you want to specify or override the placement
  * at show time. The placement passed here takes precedence over any placement provided at load time.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedAd.show(
     activity: Activity,
@@ -71,7 +65,6 @@ public fun RewardedAd.show(
  * Call this instead of [RewardedInterstitialAd.show] when you want to specify or override the placement
  * at show time. The placement passed here takes precedence over any placement provided at load time.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedInterstitialAd.show(
     activity: Activity,
@@ -91,7 +84,6 @@ public fun RewardedInterstitialAd.show(
  * was loaded via [AdTracker.loadAndTrackInterstitialAd]. If the ad was not loaded via
  * `loadAndTrack`, this falls back to direct assignment.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun InterstitialAd.setTrackingFullScreenContentCallback(callback: FullScreenContentCallback?) {
     val wrapper = fullScreenContentCallback as? TrackingFullScreenContentCallback
@@ -109,7 +101,6 @@ public fun InterstitialAd.setTrackingFullScreenContentCallback(callback: FullScr
  * was loaded via [AdTracker.loadAndTrackAppOpenAd]. If the ad was not loaded via
  * `loadAndTrack`, this falls back to direct assignment.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun AppOpenAd.setTrackingFullScreenContentCallback(callback: FullScreenContentCallback?) {
     val wrapper = fullScreenContentCallback as? TrackingFullScreenContentCallback
@@ -127,7 +118,6 @@ public fun AppOpenAd.setTrackingFullScreenContentCallback(callback: FullScreenCo
  * was loaded via [AdTracker.loadAndTrackRewardedAd]. If the ad was not loaded via
  * `loadAndTrack`, this falls back to direct assignment.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedAd.setTrackingFullScreenContentCallback(callback: FullScreenContentCallback?) {
     val wrapper = fullScreenContentCallback as? TrackingFullScreenContentCallback
@@ -145,7 +135,6 @@ public fun RewardedAd.setTrackingFullScreenContentCallback(callback: FullScreenC
  * the ad was loaded via [AdTracker.loadAndTrackRewardedInterstitialAd]. If the ad was not loaded
  * via `loadAndTrack`, this falls back to direct assignment.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedInterstitialAd.setTrackingFullScreenContentCallback(callback: FullScreenContentCallback?) {
     val wrapper = fullScreenContentCallback as? TrackingFullScreenContentCallback

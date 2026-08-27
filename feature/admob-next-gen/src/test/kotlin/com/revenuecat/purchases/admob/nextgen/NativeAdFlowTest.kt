@@ -1,7 +1,4 @@
-@file:OptIn(
-    ExperimentalPreviewRevenueCatPurchasesAPI::class,
-    InternalRevenueCatAPI::class,
-)
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.admob.nextgen
 
@@ -17,7 +14,6 @@ import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoadResult
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoader
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoaderCallback
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdRequest
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdEventCallback

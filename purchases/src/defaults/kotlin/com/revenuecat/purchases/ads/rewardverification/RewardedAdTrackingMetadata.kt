@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ads.rewardverification
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
@@ -17,7 +16,6 @@ import dev.drewhamilton.poko.Poko
  * @property adUnitId The ad unit ID.
  * @property impressionId The impression ID.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @Poko
 public class RewardedAdTrackingMetadata(
     public val networkName: String?,

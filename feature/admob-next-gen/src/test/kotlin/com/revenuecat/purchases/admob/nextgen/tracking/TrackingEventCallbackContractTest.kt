@@ -1,14 +1,10 @@
-@file:OptIn(
-    ExperimentalPreviewRevenueCatPurchasesAPI::class,
-    InternalRevenueCatAPI::class,
-)
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.admob.nextgen.tracking
 
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdValue
 import com.google.android.libraries.ads.mobile.sdk.common.PrecisionType
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ads.events.AdCaptureMethod

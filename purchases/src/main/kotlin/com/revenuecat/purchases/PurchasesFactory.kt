@@ -17,6 +17,7 @@ import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SharedPreferencesManager
+import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
@@ -76,9 +77,11 @@ import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
 import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
+import com.revenuecat.purchases.utils.OfferingWebViewPrewarmer
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
 import com.revenuecat.purchases.utils.UrlConnectionFactory
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
+import com.revenuecat.purchases.utils.prewarmTargetOfferingIds
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
 import java.net.URL
 import java.util.concurrent.ExecutorService
@@ -338,10 +341,6 @@ internal class PurchasesFactory(
             // ones the manager warms on commit. Registered as commit listeners; a null manager means workflows
             // are off, so neither exists.
             val uiConfigProvider = remoteConfigManager?.let { UiConfigProvider(it) }
-            // Warms a workflow's assets (images + ui_config fonts) once — eagerly at load time for the current
-            // offering's workflow (transiently so the cache stays byte-only, mirroring how offerings pre-download
-            // only the current offering's assets) and on the render path. Shared with WorkflowManager so both
-            // dedup against one set of warmed workflow ids.
             val workflowAssetPrewarmer = uiConfigProvider?.let {
                 WorkflowAssetPrewarmer(it, paywallAssetWarming, offeringFontPreDownloader)
             }
@@ -349,11 +348,17 @@ internal class PurchasesFactory(
                 WorkflowsConfigProvider(
                     it,
                     currentOfferingIdProvider = { offeringsCache.cachedOfferings?.current?.identifier },
-                    onCurrentWorkflowLoaded = workflowAssetPrewarmer?.let { it::onCurrentWorkflowLoaded },
+                    prewarmOfferingIdsProvider = {
+                        offeringsCache.cachedOfferings?.prewarmTargetOfferingIds().orEmpty()
+                    },
+                    onWorkflowLoaded = workflowAssetPrewarmer?.let { it::onWorkflowLoaded },
                 )
             }
             val checkpointsConfigProvider = remoteConfigManager?.let {
                 CheckpointsConfigProvider(it)
+            }
+            val audiencesConfigProvider = remoteConfigManager?.let {
+                AudiencesConfigProvider(it)
             }
             if (remoteConfigManager != null && uiConfigProvider != null && workflowsConfigProvider != null) {
                 remoteConfigManager.registerListener(uiConfigProvider)
@@ -367,6 +372,7 @@ internal class PurchasesFactory(
             }
 
             val identityManager = IdentityManager(
+                appConfig,
                 cache,
                 subscriberAttributesCache,
                 subscriberAttributesManager,
@@ -501,6 +507,8 @@ internal class PurchasesFactory(
                 OfferingImagePreDownloader(assetWarming = paywallAssetWarming),
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
+                offeringWebViewPrewarmer = OfferingWebViewPrewarmer(assetWarming = paywallAssetWarming),
+                dispatcher = dispatcher,
                 uiPreviewMode = appConfig.uiPreviewMode,
                 workflowManager = workflowManager,
             )
@@ -575,6 +583,7 @@ internal class PurchasesFactory(
                 uiConfigProvider = uiConfigProvider,
                 workflowsConfigProvider = workflowsConfigProvider,
                 checkpointsConfigProvider = checkpointsConfigProvider,
+                audiencesConfigProvider = audiencesConfigProvider,
                 localRulesEvaluator = localRulesEvaluator,
             )
 

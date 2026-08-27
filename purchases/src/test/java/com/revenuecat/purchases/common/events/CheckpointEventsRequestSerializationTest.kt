@@ -20,7 +20,7 @@ class CheckpointEventsRequestSerializationTest {
                 type = BackendEvent.CHECKPOINT_EVENT_TYPE,
                 identifier = "onboarding_complete",
                 appUserID = "app_user_id",
-                sessionID = "315107f4-98bf-4b68-a582-eb27bcb6e111",
+                appSessionID = "315107f4-98bf-4b68-a582-eb27bcb6e111",
                 timestamp = 1699270688995,
             ),
         ),
@@ -40,7 +40,7 @@ class CheckpointEventsRequestSerializationTest {
                         "\"type\":\"checkpoint_hit\"," +
                         "\"identifier\":\"onboarding_complete\"," +
                         "\"app_user_id\":\"app_user_id\"," +
-                        "\"session_id\":\"315107f4-98bf-4b68-a582-eb27bcb6e111\"," +
+                        "\"app_session_id\":\"315107f4-98bf-4b68-a582-eb27bcb6e111\"," +
                         "\"timestamp\":1699270688995" +
                     "}" +
                 "]" +

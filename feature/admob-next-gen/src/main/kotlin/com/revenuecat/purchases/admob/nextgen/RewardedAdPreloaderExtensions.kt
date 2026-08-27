@@ -1,4 +1,3 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 
 package com.revenuecat.purchases.admob.nextgen
 
@@ -7,7 +6,6 @@ import com.google.android.libraries.ads.mobile.sdk.common.PreloadConfiguration
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdPreloader
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingPreloadCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingRewardedAdEventCallback
 import com.revenuecat.purchases.ads.events.types.AdFormat
@@ -25,7 +23,6 @@ import kotlin.jvm.JvmSynthetic
  * @param preloadCallback Optional callback that receives every Google preload callback.
  * @return Google's unchanged result indicating whether preloading started.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedAdPreloader.Companion.startAndTrack(
     preloadId: String,
@@ -54,7 +51,6 @@ public fun RewardedAdPreloader.Companion.startAndTrack(
  * @param placement Optional placement for lifecycle events, independent from the start-time placement.
  * @param adEventCallback Optional callback for rewarded lifecycle, metadata, and paid events.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedAdPreloader.Companion.pollAndTrackAd(
     preloadId: String,

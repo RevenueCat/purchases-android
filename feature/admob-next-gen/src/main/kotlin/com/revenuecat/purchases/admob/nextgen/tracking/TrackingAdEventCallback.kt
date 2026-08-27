@@ -4,7 +4,6 @@ import com.google.android.libraries.ads.mobile.sdk.common.AdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdValue
 import com.google.android.libraries.ads.mobile.sdk.common.FullScreenContentError
 import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFormat
@@ -32,7 +31,6 @@ internal enum class AdDisplayedTrigger {
  * them on the background thread it invokes ad event callbacks from. Without it the callback
  * thread has no guarantee it ever observes those writes.
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal abstract class TrackingAdEventCallback<CallbackT : AdEventCallback>(
     @Volatile internal var delegate: CallbackT?,
     private val adFormat: AdFormat,
