@@ -1,7 +1,7 @@
 [versions]
 agp = "8.13.2"
 androidxNavigation = "2.5.3"
-kotlin = "1.8.22"
+kotlin = "2.2.21"
 purchases = "10.20.0-SNAPSHOT"
 lifecycle = "2.5.0"
 androidxCore = "1.10.1"
@@ -9,6 +9,7 @@ androidxCore = "1.10.1"
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 
 [libraries]
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
