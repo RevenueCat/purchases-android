@@ -19,6 +19,7 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
+import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
@@ -34,6 +35,11 @@ import kotlinx.serialization.json.JsonPrimitive
  * absent from the fetched offerings, or its body unavailable — the checkpoint resolves to
  * [CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE] rather than falling through to a rule the
  * customer was not the first choice for.
+ *
+ * Resolution reads config across several suspension points, so a commit (or an identity change) can land halfway
+ * through and leave the rules the winner was picked from stale. That answer is discarded and resolution starts
+ * over against the new state, once — a second stale attempt reports
+ * [CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE] rather than spinning on a burst of commits.
  *
  * [SIMULATED_ERROR_CHECKPOINT_ID] is the one piece of PoC scaffolding left: it is the only way for the tester
  * apps to exercise the throw path, since nothing in the config-driven path throws.
@@ -59,14 +65,22 @@ internal class CheckpointWorkflowResolverImpl(
             errorLog(error)
             throw PurchasesException(error)
         }
-        return resolveConfiguredWorkflow(identifier, customVariables)
+        attemptResolve(identifier, customVariables)?.let { return it }
+        verboseLog { "Remote config changed while resolving checkpoint '$identifier'; resolving it again." }
+        return attemptResolve(identifier, customVariables)
+            ?: configurationUnavailable("Remote config kept changing while resolving checkpoint '$identifier'.")
     }
 
+    /**
+     * One resolution attempt against a single config generation, or `null` if the generation moved under it — the
+     * rules the winning rule came from are no longer the committed ones, so the answer can't be reported as if it
+     * were. [resolve] retries such an attempt exactly once, so resolution never runs more than twice.
+     */
     @Suppress("ReturnCount", "CyclomaticComplexMethod", "ComplexCondition")
-    private suspend fun resolveConfiguredWorkflow(
+    private suspend fun attemptResolve(
         identifier: String,
         customVariables: Map<String, RulesDimensionValue>,
-    ): CheckpointResolution {
+    ): CheckpointResolution? {
         if (
             workflowManager == null ||
             uiConfigProvider == null ||
@@ -77,8 +91,8 @@ internal class CheckpointWorkflowResolverImpl(
                 "Checkpoints are not available: required configuration components are missing.",
             )
         }
-        val checkpoint = when (val resolution = checkpointsConfigProvider.resolveCheckpoint(identifier)) {
-            is CheckpointRulesResolution.Found -> resolution.checkpoint
+        val rulesResolution = when (val resolution = checkpointsConfigProvider.resolveCheckpoint(identifier)) {
+            is CheckpointRulesResolution.Found -> resolution
             CheckpointRulesResolution.NotConfigured -> return unknownCheckpoint(identifier)
             CheckpointRulesResolution.Disabled ->
                 return configurationUnavailable("The checkpoints configuration is disabled for this app.")
@@ -86,7 +100,7 @@ internal class CheckpointWorkflowResolverImpl(
                 return configurationUnavailable("The rules for checkpoint '$identifier' could not be read.")
         }
         val matchResult = localRulesEvaluator.match(
-            rules = checkpoint.rules,
+            rules = rulesResolution.checkpoint.rules,
             customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables),
         ) { rule ->
             audiencesConfigProvider.getAudience(rule.audienceId)
@@ -99,7 +113,9 @@ internal class CheckpointWorkflowResolverImpl(
             return configurationUnavailable(
                 "The audiences for checkpoint '$identifier' could not be evaluated: ${error.message}",
             )
-        } ?: return noMatch(identifier)
+        }
+        if (!checkpointsConfigProvider.isCurrent(rulesResolution)) return null
+        if (rule == null) return noMatch(identifier)
         val uiConfig = try {
             uiConfigProvider.getUiConfig()
         } catch (e: CancellationException) {
@@ -108,7 +124,8 @@ internal class CheckpointWorkflowResolverImpl(
             errorLog(e) { "UI config could not be fetched for checkpoint '$identifier'." }
             null
         } ?: return configurationUnavailable("UI config is unavailable for checkpoint '$identifier'.")
-        return resolveRule(identifier, workflowManager, rule, uiConfig)
+        val result = resolveRule(identifier, workflowManager, rule, uiConfig)
+        return result.takeIf { checkpointsConfigProvider.isCurrent(rulesResolution) }
     }
 
     @Suppress("ReturnCount")
