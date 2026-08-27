@@ -2,6 +2,8 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.Offering
@@ -65,6 +67,7 @@ internal fun FakePaywallState(
     stickyFooter: StickyFooterComponent? = null,
     purchases: PurchasesType = MockPurchasesType(),
     offeringWebCheckoutURL: URL? = null,
+    viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
 ): PaywallState.Loaded.Components {
     val packageComponents = packages.map { pkg ->
         PackageComponent(
@@ -101,5 +104,6 @@ internal fun FakePaywallState(
         validated,
         purchases = purchases,
         customVariables = customVariables,
+        viewModelActionInProgress = viewModelActionInProgress,
     )
 }

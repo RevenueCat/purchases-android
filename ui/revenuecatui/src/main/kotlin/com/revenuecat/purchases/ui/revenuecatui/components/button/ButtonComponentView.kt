@@ -140,7 +140,7 @@ internal fun ButtonComponentView(
                     onStackClick = onStackClick@{
                         val paywallAction = buttonState.action ?: return@onStackClick
                         myActionInProgress = true
-                        state.update(actionInProgress = true)
+                        state.update(clickScopedActionInProgress = true)
                         val actionForClick = if (style.action.isPurchaseRelated()) {
                             val currentPackage = packageForPurchaseButtonInteraction(style.action, state)
                             val componentUrl = resolvedWebCheckoutInteractionUrl(
@@ -182,9 +182,14 @@ internal fun ButtonComponentView(
                             paywallAction
                         }
                         coroutineScope.launch {
-                            onClick(actionForClick)
-                            myActionInProgress = false
-                            state.update(actionInProgress = false)
+                            // `state` outlives this composition-scoped coroutine, so skipping the reset
+                            // on cancellation leaves every button on the paywall disabled.
+                            try {
+                                onClick(actionForClick)
+                            } finally {
+                                myActionInProgress = false
+                                state.update(clickScopedActionInProgress = false)
+                            }
                         }
                     },
                 )

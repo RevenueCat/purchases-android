@@ -114,7 +114,7 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `checkpoint resolves NoAction with DISABLED when workflows are disabled`() = runTest {
+    fun `checkpoint resolves NoAction with CONFIGURATION_UNAVAILABLE when workflows are disabled`() = runTest {
         resolver = CheckpointWorkflowResolverImpl(
             workflowManager = null,
             uiConfigProvider = null,
@@ -125,15 +125,15 @@ class CheckpointWorkflowResolverImplTest {
         )
 
         assertThat(noActionReason(resolve()))
-            .isEqualTo(CheckpointResolution.NoAction.Reason.DISABLED)
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
     }
 
     @Test
-    fun `checkpoint resolves NoAction with DISABLED when remote config is disabled`() = runTest {
+    fun `checkpoint resolves NoAction with CONFIGURATION_UNAVAILABLE when remote config is disabled`() = runTest {
         configureResolution(CheckpointRulesResolution.Disabled)
 
         assertThat(noActionReason(resolve()))
-            .isEqualTo(CheckpointResolution.NoAction.Reason.DISABLED)
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
         coVerify(exactly = 0) { mockAudiencesConfigProvider.getAudience(any()) }
     }
 
@@ -381,7 +381,7 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `offering checkpoint resolves DISABLED when no UI config provider is installed`() = runTest {
+    fun `offering checkpoint resolves CONFIGURATION_UNAVAILABLE when no UI config provider is installed`() = runTest {
         coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns offeringWorkflow("wf1234", "default")
         resolver = CheckpointWorkflowResolverImpl(
             workflowManager = mockWorkflowManager,
@@ -395,7 +395,8 @@ class CheckpointWorkflowResolverImplTest {
             },
         )
 
-        assertThat(noActionReason(resolve())).isEqualTo(CheckpointResolution.NoAction.Reason.DISABLED)
+        assertThat(noActionReason(resolve()))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
         assertThat(offeringsFetched).isZero()
         coVerify(exactly = 0) { mockWorkflowManager.getWorkflowBody(any()) }
     }
