@@ -1,6 +1,6 @@
 package com.revenuecat.purchases.android.buildlogic.convention
 
-import com.android.build.gradle.BaseExtension
+import com.android.build.api.dsl.ApplicationExtension
 import com.revenuecat.purchases.android.buildlogic.ktx.getVersion
 import com.revenuecat.purchases.android.buildlogic.ktx.versionCatalog
 import org.gradle.api.JavaVersion
@@ -14,8 +14,8 @@ internal fun Project.configureAndroidApplication() {
     val minSdkVersion = libs.getVersion("android-minSdk").toInt()
     val targetSdkVersion = libs.getVersion("android-targetSdk").toInt()
 
-    extensions.configure<BaseExtension> {
-        compileSdkVersion(compileSdkVersion)
+    extensions.configure<ApplicationExtension> {
+        compileSdk = compileSdkVersion
 
         defaultConfig {
             minSdk = minSdkVersion
