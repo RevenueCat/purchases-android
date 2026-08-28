@@ -13,6 +13,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,6 +21,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -36,12 +38,14 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.trackMainAxisUnbounded
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import kotlinx.serialization.json.JsonObject
 
 @JvmSynthetic
 @Composable
@@ -73,6 +77,17 @@ internal fun WebViewComponentView(
     if (componentId.isBlank()) return
     val sizeToContentWidth = style.size.width is Fit
     val sizeToContentHeight = style.size.height is Fit
+
+    // AndroidView's factory captures this lambda once, and the view model hands out a new
+    // PaywallState instance on every rebuild, so both reads go through State to stay current.
+    val darkMode by rememberUpdatedState(isSystemInDarkTheme())
+    val currentState by rememberUpdatedState(state)
+    val contextSnapshotProvider: () -> JsonObject = {
+        webViewContextSnapshot(
+            locale = currentState.locale.toLocaleId().value,
+            darkMode = darkMode,
+        )
+    }
 
     val identity = WebViewIdentity(
         resolvedUrl = resolvedUrl,
@@ -137,6 +152,7 @@ internal fun WebViewComponentView(
                             onDocumentReset = onDocumentReset,
                             onLoadFailed = onLoadFailed,
                             onLoadFinished = { PaywallWebViewPrewarmer.shared.markWarmed(resolvedUrl) },
+                            contextSnapshotProvider = contextSnapshotProvider,
                         )
                     } catch (error: Throwable) {
                         // A missing or mid-update WebView package throws Error, not Exception.
@@ -262,6 +278,7 @@ internal fun createPaywallWebView(
     onDocumentReset: () -> Unit = {},
     onLoadFailed: () -> Unit,
     onLoadFinished: () -> Unit = {},
+    contextSnapshotProvider: () -> JsonObject,
 ): ConfiguredPaywallWebView? {
     var terminalFailure = false
     val expectedOrigin = identity.resolvedUrl.toOriginOrNull()
@@ -279,6 +296,7 @@ internal fun createPaywallWebView(
                 terminalFailure = true
                 onLoadFailed()
             },
+            contextSnapshotProvider = contextSnapshotProvider,
         )
         bridge.attach()
         if (terminalFailure) {

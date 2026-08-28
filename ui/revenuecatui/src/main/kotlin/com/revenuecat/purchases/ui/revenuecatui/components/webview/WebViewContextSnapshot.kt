@@ -10,7 +10,7 @@ import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
 /**
- * Builds the payload shared by the `context` push and the `requestContext` response, per the
+ * Builds the payload the handshake seeds and later `context` pushes replace, per the
  * custom component variables contract (RevenueCat/docs#1874): absent structured sections are
  * literal `null`, empty maps are `{}`, and `workflow` is omitted entirely outside a funnel.
  */
@@ -19,16 +19,32 @@ internal fun webViewContextSnapshot(
     locale: String,
     darkMode: Boolean,
 ): JsonObject = buildJsonObject {
-    putJsonObject("custom") {}
-    put("offering", JsonNull)
-    putJsonArray("packages") {}
-    put("package", JsonNull)
-    put("selected_package", JsonNull)
-    putJsonObject("inputs") {}
-    putJsonObject("device_meta") {
-        put("is_preview", false)
-        put("locale", locale)
-        put("dark_mode", darkMode)
-        put("updated_at", System.currentTimeMillis())
+    putJsonObject(Keys.CUSTOM) {}
+    put(Keys.OFFERING, JsonNull)
+    putJsonArray(Keys.PACKAGES) {}
+    put(Keys.PACKAGE, JsonNull)
+    put(Keys.SELECTED_PACKAGE, JsonNull)
+    putJsonObject(Keys.INPUTS) {}
+    putJsonObject(Keys.DEVICE_META) {
+        put(Keys.IS_PREVIEW, false)
+        put(Keys.LOCALE, locale)
+        put(Keys.DARK_MODE, darkMode)
+        put(Keys.UPDATED_AT, System.currentTimeMillis())
     }
+}
+
+/** Wire keys from the contract (RevenueCat/docs#1874), in the order its table lists them. */
+private object Keys {
+    const val CUSTOM = "custom"
+    const val OFFERING = "offering"
+    const val PACKAGES = "packages"
+    const val PACKAGE = "package"
+    const val SELECTED_PACKAGE = "selected_package"
+    const val INPUTS = "inputs"
+    const val DEVICE_META = "device_meta"
+
+    const val IS_PREVIEW = "is_preview"
+    const val LOCALE = "locale"
+    const val DARK_MODE = "dark_mode"
+    const val UPDATED_AT = "updated_at"
 }

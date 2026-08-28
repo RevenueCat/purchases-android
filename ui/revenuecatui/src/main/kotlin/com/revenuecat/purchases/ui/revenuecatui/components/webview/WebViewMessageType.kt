@@ -1,5 +1,3 @@
-@file:JvmSynthetic
-
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 /**
@@ -13,9 +11,6 @@ internal object WebViewMessageType {
     /** Content → host: reported content box size in CSS pixels. */
     const val RESIZE = "resize"
 
-    /** Host → content: the current context snapshot, pushed after the handshake. */
+    /** Host → content: replaces the snapshot the handshake seeded, when it changes. */
     const val CONTEXT = "context"
-
-    /** Content → host request: pull the latest context snapshot. */
-    const val REQUEST_CONTEXT = "requestContext"
 }

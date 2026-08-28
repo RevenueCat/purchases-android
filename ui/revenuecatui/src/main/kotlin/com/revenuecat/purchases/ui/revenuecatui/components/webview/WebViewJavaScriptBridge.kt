@@ -43,6 +43,7 @@ internal class WebViewJavaScriptBridge(
     private val onContentResize: (widthCssPx: Int?, heightCssPx: Int?) -> Unit = { _, _ -> },
     private val onDocumentReset: () -> Unit = {},
     private val onSecureMessagingUnsupported: () -> Unit = {},
+    private val contextSnapshotProvider: () -> JsonObject,
 ) {
 
     private val webViewRef = WeakReference(webView)
@@ -214,6 +215,9 @@ internal class WebViewJavaScriptBridge(
                 kind = WebViewEnvelope.Kind.INIT,
                 protocolVersion = protocolVersion,
                 componentId = componentId,
+                // The content SDK reads the first snapshot from here and resolves `whenReady()` in
+                // the same task, so a separate `context` frame would arrive too late.
+                payload = buildJsonObject { put("context", contextSnapshotProvider()) },
             ),
             allowBeforeNavigation = true,
         )
@@ -257,7 +261,11 @@ internal class WebViewJavaScriptBridge(
             return
         }
 
-        // resize is the only app frame serviced in v1 (no message handler, no variables).
+        if (envelope.componentId != componentId) {
+            Logger.w("Dropping inbound web view message: component id does not match.")
+            return
+        }
+
         if (envelope.type == WebViewMessageType.RESIZE) {
             handleResize(envelope)
         } else {
@@ -267,10 +275,6 @@ internal class WebViewJavaScriptBridge(
 
     @MainThread
     private fun handleResize(envelope: WebViewEnvelope) {
-        if (envelope.componentId != componentId) {
-            Logger.w("Dropping inbound web view message: resize component id does not match.")
-            return
-        }
         val payload = envelope.payload ?: return
 
         val width = applyResize(
