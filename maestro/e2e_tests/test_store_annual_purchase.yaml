@@ -6,7 +6,7 @@ appId: com.revenuecat.e2etests
 - assertVisible: "Active Subscriptions: None"
 - assertVisible: "Entitlements: None"
 - tapOn: Offerings
-- tapOn: default
+- tapOn: maestro_annual_purchase
 - tapOn: Show paywall
 - assertVisible: Get CatPrrro
 - tapOn: "12" # Annual package selector
