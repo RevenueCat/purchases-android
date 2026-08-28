@@ -1248,7 +1248,8 @@ class PurchaseInformationTest {
             isTrial = isTrial,
             managementURL = managementURL,
             price = price,
-            isSandbox = isSandbox
+            isSandbox = isSandbox,
+            purchaseHistoryEntryId = "subscription:$productIdentifier",
         )
     }
 
@@ -1262,7 +1263,8 @@ class PurchaseInformationTest {
             productIdentifier = productIdentifier,
             store = store,
             price = price,
-            isSandbox = isSandbox
+            isSandbox = isSandbox,
+            purchaseHistoryEntryId = "non_subscription:$productIdentifier",
         )
     }
 
@@ -1358,13 +1360,13 @@ class PurchaseInformationTest {
                 store = Store.PLAY_STORE,
                 price = null,
                 isSandbox = false,
+                purchaseHistoryEntryId = "non_subscription:txn-2",
             ),
             dateFormatter = dateFormatter,
             locale = locale,
             localization = localization,
         )
 
-        assertThat(purchaseInformation.purchaseHistoryEntryId).isEmpty()
         assertThat(purchaseInformation.purchaseDate).isNull()
         assertThat(purchaseInformation.originalPurchaseDate).isNull()
         assertThat(purchaseInformation.storeTransactionId).isNull()
