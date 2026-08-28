@@ -74,7 +74,10 @@ internal class PreloaderUiState(
 
     fun preloadCallback(scope: CoroutineScope): PreloadCallback = preloadStatusCallback(
         scope = scope,
-        onAdPreloaded = ::refresh,
+        onAdPreloaded = {
+            refresh()
+            message = "Ad preloaded"
+        },
         updateStatus = { status ->
             message = status
             refresh()
