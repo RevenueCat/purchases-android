@@ -479,13 +479,15 @@ class SubscriberAttributesPurchasesTests {
             subscriberAttributesManagerMock.setAppstackAttributionParams(appUserId, data, any())
         } just Runs
         every {
-            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), any())
+            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), any(), any())
         } just Runs
 
         underTest.setAppstackAttributionParams(data, mockk(relaxed = true))
 
         verify { subscriberAttributesManagerMock.setAppstackAttributionParams(appUserId, data, any()) }
-        verify { subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), any()) }
+        verify {
+            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), any(), any())
+        }
     }
 
     // endregion

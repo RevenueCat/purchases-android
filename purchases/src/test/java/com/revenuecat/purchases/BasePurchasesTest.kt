@@ -337,6 +337,9 @@ internal open class BasePurchasesTest {
         every {
             mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), any())
         } just Runs
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), any(), any())
+        } just Runs
     }
     // endregion
 
