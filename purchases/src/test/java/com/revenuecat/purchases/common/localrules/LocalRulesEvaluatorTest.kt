@@ -12,13 +12,13 @@ import java.util.Date
 
 class LocalRulesEvaluatorTest {
 
-    private val matchingPredicate = """{"==": [{"var": "device.platform"}, "android"]}"""
-    private val nonMatchingPredicate = """{"==": [{"var": "device.platform"}, "amazon"]}"""
+    private val matchingPredicate = """{"==": [{"var": "platform"}, "android"]}"""
+    private val nonMatchingPredicate = """{"==": [{"var": "platform"}, "amazon"]}"""
     private val malformedPredicate = "{not json"
 
     private var snapshotsTaken = 0
     private val deviceProvider = object : RulesDimensionProvider {
-        override val namespace = RulesDimensionNamespace.Device
+        override val name = "device"
         override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
             snapshotsTaken++
             return mapOf("platform" to RulesDimensionValue.StringValue("android"))
@@ -59,13 +59,13 @@ class LocalRulesEvaluatorTest {
         // unanswerable. Reporting that is what lets the caller tell it apart
         // from a rule that was evaluated and did not match.
         val result = evaluator().match(
-            listOf(TestRule("only", """{"==": [{"var": "device.unknown_dimension"}, true]}""")),
+            listOf(TestRule("only", """{"==": [{"var": "unknown_dimension"}, true]}""")),
         )
 
         val error = result.exceptionOrNull() as LocalRulesEvaluationException.PredicateEvaluation
         assertThat(error.ruleIndex).isZero()
         assertThat(error.error)
-            .isEqualTo(RulesEngine.EvaluationException.UnresolvedVariable("device.unknown_dimension"))
+            .isEqualTo(RulesEngine.EvaluationException.UnresolvedVariable("unknown_dimension"))
     }
 
     @Test
@@ -98,7 +98,7 @@ class LocalRulesEvaluatorTest {
     @Test
     fun `a failed dimension snapshot fails the evaluation`() = runTest {
         val failing = object : RulesDimensionProvider {
-            override val namespace = RulesDimensionNamespace.Device
+            override val name = "device"
             override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> =
                 throw IllegalStateException("nope")
         }
@@ -108,7 +108,7 @@ class LocalRulesEvaluatorTest {
 
         val error = result.exceptionOrNull() as LocalRulesEvaluationException.DimensionResolution
         assertThat(error.reason)
-            .isEqualTo(RulesDimensionResolutionException.ProviderFailed(RulesDimensionNamespace.Device, "nope"))
+            .isEqualTo(RulesDimensionResolutionException.ProviderFailed("device", "nope"))
     }
 
     @Test
@@ -163,7 +163,7 @@ class LocalRulesEvaluatorTest {
             TestRule(
                 "only",
                 """{"and": [
-                    {"==": [{"var": "device.platform"}, "android"]},
+                    {"==": [{"var": "platform"}, "android"]},
                     {"==": [{"var": "custom.source"}, "settings"]}
                 ]}""",
             ),
@@ -197,7 +197,7 @@ class LocalRulesEvaluatorTest {
             TestRule(
                 "only",
                 """{"and": [
-                    {"==": [{"var": "device.platform"}, "android"]},
+                    {"==": [{"var": "platform"}, "android"]},
                     {"==": [{"var": "custom.source"}, "settings"]},
                     {"var": ["backend.hash", false]}
                 ]}""",

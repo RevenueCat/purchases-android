@@ -24,7 +24,7 @@ internal class DeviceDimensionProvider(
     private val localeProvider: LocaleProvider,
 ) : RulesDimensionProvider {
 
-    override val namespace: RulesDimensionNamespace = RulesDimensionNamespace.Device
+    override val name: String = "device"
 
     private val fixedDimensions: Map<String, RulesDimensionValue> = mapOf(
         KEY_APP_VERSION to RulesDimensionValue.StringValue(appConfig.versionName),
@@ -56,11 +56,11 @@ internal class DeviceDimensionProvider(
             .replace(oldChar = '-', newChar = '_')
 
     internal companion object {
-        const val KEY_APP_VERSION = "appVersion"
+        const val KEY_APP_VERSION = "app_version"
         const val KEY_LOCALE = "locale"
         const val KEY_PLATFORM = "platform"
-        const val KEY_PLATFORM_VERSION = "platformVersion"
-        const val KEY_SDK_VERSION = "sdkVersion"
+        const val KEY_PLATFORM_VERSION = "platform_version"
+        const val KEY_SDK_VERSION = "sdk_version"
 
         /**
          * A dimension the device could not tell us about is omitted rather than reported as an empty string: a

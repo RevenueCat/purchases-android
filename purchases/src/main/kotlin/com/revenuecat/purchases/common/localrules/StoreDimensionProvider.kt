@@ -13,8 +13,8 @@ import java.util.MissingResourceException
 /**
  * Store dimensions: what the customer's storefront says about where they buy.
  *
- * `country` is an ISO 3166-1 **alpha-3** code such as `USA`, which is the format StoreKit hands the iOS SDK, so one
- * predicate can target a country on either platform. Android's stores report alpha-2 (`US`), so it is converted
+ * `storefront` is an ISO 3166-1 **alpha-3** code such as `USA`, which is the format StoreKit hands the iOS SDK, so
+ * one predicate can target a country on either platform. Android's stores report alpha-2 (`US`), so it is converted
  * here, and a code with no alpha-3 equivalent is omitted rather than guessed — the Amazon Appstore reports a
  * marketplace rather than a country, and values like `UK` are not ISO regions.
  */
@@ -22,7 +22,7 @@ internal class StoreDimensionProvider(
     private val storefrontCountryCode: suspend () -> String?,
 ) : RulesDimensionProvider {
 
-    override val namespace: RulesDimensionNamespace = RulesDimensionNamespace.Store
+    override val name: String = "store"
 
     /**
      * Fetched rather than snapshotted: the storefront is not known until the store has been asked, and it can
@@ -50,7 +50,7 @@ internal class StoreDimensionProvider(
             warnLog { "Ignoring store country '$countryCode': it has no ISO 3166-1 alpha-3 equivalent." }
             return emptyMap()
         }
-        return mapOf(KEY_COUNTRY to RulesDimensionValue.StringValue(alpha3CountryCode))
+        return mapOf(KEY_STOREFRONT to RulesDimensionValue.StringValue(alpha3CountryCode))
     }
 
     private fun String.asAlpha3CountryCodeOrNull(): String? =
@@ -63,6 +63,6 @@ internal class StoreDimensionProvider(
         }
 
     internal companion object {
-        const val KEY_COUNTRY = "country"
+        const val KEY_STOREFRONT = "storefront"
     }
 }

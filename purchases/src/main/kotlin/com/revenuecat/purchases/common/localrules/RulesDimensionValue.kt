@@ -48,7 +48,7 @@ public sealed class RulesDimensionValue {
      * A named group of values, for a dimension that is one thing described several ways — a subscriber attribute
      * and when it was set.
      *
-     * Reaches the engine as a nested object, which `var` walks by dot-path: `subscriberAttributes.goal.value`
+     * Reaches the engine as a nested object, which `var` walks by dot-path: `subscriber_attributes.goal.value`
      * resolves *through* `goal`. Unlike a record inside [ObjectListValue], a predicate reading one of these still
      * sees the whole scope around it, because no iteration operator is involved.
      *

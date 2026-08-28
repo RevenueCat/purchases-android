@@ -35,11 +35,11 @@ class DeviceDimensionProviderTest {
 
         assertThat(dimensions).isEqualTo(
             mapOf(
-                "appVersion" to RulesDimensionValue.StringValue("1.2.3"),
+                "app_version" to RulesDimensionValue.StringValue("1.2.3"),
                 "locale" to RulesDimensionValue.StringValue("en_us"),
                 "platform" to RulesDimensionValue.StringValue("android"),
-                "platformVersion" to RulesDimensionValue.IntValue(34),
-                "sdkVersion" to RulesDimensionValue.StringValue(Config.frameworkVersion),
+                "platform_version" to RulesDimensionValue.IntValue(34),
+                "sdk_version" to RulesDimensionValue.StringValue(Config.frameworkVersion),
             ),
         )
     }
@@ -85,7 +85,7 @@ class DeviceDimensionProviderTest {
 
         val dimensions = provider(languageTag = "", versionName = "").dimensions(date)
 
-        assertThat(dimensions).containsOnlyKeys("platform", "platformVersion", "sdkVersion")
+        assertThat(dimensions).containsOnlyKeys("platform", "platform_version", "sdk_version")
     }
 
     private fun provider(
