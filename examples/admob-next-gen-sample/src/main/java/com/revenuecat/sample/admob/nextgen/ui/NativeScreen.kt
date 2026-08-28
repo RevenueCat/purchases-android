@@ -12,6 +12,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -75,11 +76,28 @@ internal fun NativeScreen(onBack: () -> Unit) {
     )
     val scope = rememberCoroutineScope()
 
+    DisposableEffect(Unit) {
+        onDispose {
+            loadJob?.cancel()
+            directAds.destroyAll()
+            preloadedAds.destroyAll()
+        }
+    }
+
     LaunchedEffect(preloadState.adsAvailable) {
         preloadedAdCount = preloadState.adsAvailable
     }
 
-    AdScreen("Native", onBack) { mode ->
+    AdScreen(
+        title = "Native",
+        onBack = onBack,
+        onModeChange = {
+            directAds.destroyAll()
+            directAds = emptyList()
+            preloadedAds.destroyAll()
+            preloadedAds = emptyList()
+        },
+    ) { mode ->
         Text("Native is the only format with a multi-ad Flow.")
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -90,7 +108,9 @@ internal fun NativeScreen(onBack: () -> Unit) {
                 checked = adVariant == NativeAdVariant.VIDEO,
                 onCheckedChange = { useVideoAdUnit ->
                     loadJob?.cancel()
+                    directAds.destroyAll()
                     directAds = emptyList()
+                    preloadedAds.destroyAll()
                     preloadedAds = emptyList()
                     directStatus = "No direct native ad loaded"
                     adVariant = if (useVideoAdUnit) NativeAdVariant.VIDEO else NativeAdVariant.STANDARD
@@ -122,6 +142,7 @@ internal fun NativeScreen(onBack: () -> Unit) {
             ActionRow(
                 "Load + Show" to {
                     loadJob?.cancel()
+                    directAds.destroyAll()
                     directAds = emptyList()
                     loadJob = scope.launch {
                         directStatus = if (batchLoading) "Collecting batch Flow..." else "Loading native ad..."
@@ -168,6 +189,7 @@ internal fun NativeScreen(onBack: () -> Unit) {
                         enabled = preloadState.started && preloadState.adsAvailable > 0,
                         onClick = {
                             val numberOfAds = preloadedAdCount.coerceAtMost(preloadState.adsAvailable)
+                            preloadedAds.destroyAll()
                             preloadedAds = emptyList()
                             val handled = pollNativeAds(numberOfAds, adVariant)
                             preloadState.refresh()
@@ -234,6 +256,8 @@ private fun NativeAdCountSetting(
 }
 
 private data class HandledNativeResult(val ads: List<NativeAd>, val status: String)
+
+private fun List<NativeAd>.destroyAll() = forEach { it.destroy() }
 
 private fun pollNativeAds(numberOfAds: Int, adVariant: NativeAdVariant): HandledNativeResult? {
     var handledResult: HandledNativeResult? = null

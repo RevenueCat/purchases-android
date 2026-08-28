@@ -102,6 +102,7 @@ private fun HomeScreen(application: MainApplication, onSelectScreen: (SampleScre
 internal fun AdScreen(
     title: String,
     onBack: () -> Unit,
+    onModeChange: () -> Unit = {},
     content: @Composable (LoadMode) -> Unit,
 ) {
     var mode by remember { mutableStateOf(LoadMode.DIRECT) }
@@ -110,7 +111,12 @@ internal fun AdScreen(
             LoadMode.entries.forEach { option ->
                 FilterChip(
                     selected = mode == option,
-                    onClick = { mode = option },
+                    onClick = {
+                        if (mode != option) {
+                            mode = option
+                            onModeChange()
+                        }
+                    },
                     label = { Text(option.label) },
                 )
             }
