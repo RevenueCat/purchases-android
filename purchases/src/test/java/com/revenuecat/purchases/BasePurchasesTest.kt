@@ -468,6 +468,7 @@ internal open class BasePurchasesTest {
         apiKeyValidationResult: APIKeyValidator.ValidationResult = APIKeyValidator.ValidationResult.VALID,
         enableSimulatedStore: Boolean = false,
         store: Store = Store.PLAY_STORE,
+        subscriberAttributesManager: SubscriberAttributesManager = mockSubscriberAttributesManager,
     ) {
         appConfig = AppConfig(
             context = mockContext,
@@ -492,7 +493,7 @@ internal open class BasePurchasesTest {
             mockBillingAbstract,
             mockCache,
             identityManager = mockIdentityManager,
-            subscriberAttributesManager = mockSubscriberAttributesManager,
+            subscriberAttributesManager = subscriberAttributesManager,
             appConfig = appConfig,
             customerInfoHelper = mockCustomerInfoHelper,
             customerInfoUpdateHandler = mockCustomerInfoUpdateHandler,
