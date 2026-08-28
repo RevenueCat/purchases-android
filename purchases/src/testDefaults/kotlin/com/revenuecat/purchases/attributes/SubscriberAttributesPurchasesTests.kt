@@ -133,6 +133,11 @@ class SubscriberAttributesPurchasesTests {
             virtualCurrencyManager = virtualCurrencyManagerMock,
             purchaseParamsValidator = purchaseParamsValidator,
             workflowManager = mockk(relaxed = true),
+            remoteConfigManager = mockk(relaxed = true),
+            uiConfigProvider = mockk(relaxed = true),
+            workflowsConfigProvider = mockk(relaxed = true),
+            checkpointsConfigProvider = mockk(relaxed = true),
+            audiencesConfigProvider = mockk(relaxed = true),
         )
 
         underTest = Purchases(purchasesOrchestrator)

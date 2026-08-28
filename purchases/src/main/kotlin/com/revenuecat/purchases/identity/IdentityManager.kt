@@ -37,7 +37,7 @@ internal class IdentityManager(
     private val subscriberAttributesCache: SubscriberAttributesCache,
     private val subscriberAttributesManager: SubscriberAttributesManager,
     private val offeringsCache: OfferingsCache,
-    private val remoteConfigManager: RemoteConfigManager?,
+    private val remoteConfigManager: RemoteConfigManager,
     private val backend: Backend,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val dispatcher: Dispatcher,
@@ -240,7 +240,7 @@ internal class IdentityManager(
      * [IdentityManager] monitor.
      */
     private fun clearRemoteConfigThenOfferingsCaches(newAppUserID: String) {
-        remoteConfigManager?.clearCache(newAppUserID)
+        remoteConfigManager.clearCache(newAppUserID)
         offeringsCache.clearCache()
     }
 

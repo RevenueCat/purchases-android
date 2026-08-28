@@ -77,18 +77,18 @@ internal class WorkflowsConfigProvider(
 
     /**
      * Resolves an offering to its workflow through the `/v1/config` workflows topic, distinguishing a genuinely
-     * workflowless offering ([WorkflowResolution.NoWorkflow]) from a topic that could not be read because the
-     * endpoint is disabled ([WorkflowResolution.Disabled]) or a sync failed transiently
+     * workflowless offering ([WorkflowResolution.NoWorkflow]) from a topic that could not be read
      * ([WorkflowResolution.Unavailable]). Memory-first: a warm cache resolves synchronously; only a miss reads the
      * topic (which may trigger a sync).
      */
     @Suppress("ReturnCount")
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution {
-        // Once the endpoint is disabled (4xx kill switch) the offering was parsed with its components skipped, so
-        // resolution must always yield Disabled (→ offerings reload) — even off a warm cache. Check the flag
-        // before the fast path: disabling sets isDisabled and invalidates this cache non-atomically, so a warm
-        // cache can briefly coexist with isDisabled, and a stale Found/NoWorkflow here would skip the reload.
-        if (manager.isDisabled) return WorkflowResolution.Disabled
+        // Workflows are never resolved with remote config off (customEntitlementComputation), so a call here is
+        // a wiring bug worth surfacing rather than a state to recover from.
+        if (manager.isDisabled) {
+            errorLog { "Workflows are unavailable: remote config is disabled for this SDK configuration." }
+            return WorkflowResolution.Unavailable
+        }
         cache.cached?.let { cached ->
             return cached.offeringToWorkflowId[offeringId]?.let { WorkflowResolution.Found(it) }
                 ?: WorkflowResolution.NoWorkflow
@@ -96,18 +96,11 @@ internal class WorkflowsConfigProvider(
         val generation = manager.configGeneration
         val topic = manager.topic(RemoteConfigTopic.Workflows)
         verboseLog { "workflows topic ${if (topic == null) "is absent" else "has ${topic.size} item(s)"}" }
-        // A null topic means it could not be read. If the /v1/config endpoint is disabled (4xx kill switch) the
-        // offering was parsed with its components skipped, so the caller can reload offerings to recover them;
-        // any other (transient) failure should fall back to the offering's default paywall. Either way this is not
-        // the same as a genuinely workflowless offering.
+        // A null topic means it could not be read (a failed or not-yet-run sync). The caller should fall back to
+        // the offering's default paywall; this is not the same as a genuinely workflowless offering.
         return if (topic == null) {
-            if (manager.isDisabled) {
-                verboseLog { "Workflows topic unavailable (remote config disabled) resolving offering '$offeringId'" }
-                WorkflowResolution.Disabled
-            } else {
-                verboseLog { "Workflows topic unavailable resolving offering '$offeringId'" }
-                WorkflowResolution.Unavailable
-            }
+            verboseLog { "Workflows topic unavailable resolving offering '$offeringId'" }
+            WorkflowResolution.Unavailable
         } else {
             val matches = topic.entries
                 .filter { (_, item) -> item.metadata.stringOrNull(KEY_OFFERING_IDENTIFIER) == offeringId }

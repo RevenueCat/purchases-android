@@ -912,8 +912,7 @@ internal class PaywallViewModelImpl(
 
     /**
      * Resolves [workflowOffering] to its workflow and either presents it or decides how to fall back: a
-     * workflowless offering renders its own paywall, a 4xx kill switch reloads offerings to recover the
-     * components skipped during the workflows-enabled parse, and a transient topic failure renders the default
+     * workflowless offering renders its own paywall, and an unreadable workflows topic renders the default
      * paywall.
      */
     @Suppress("ReturnCount")
@@ -943,22 +942,6 @@ internal class PaywallViewModelImpl(
                 clearWorkflowState()
                 return WorkflowOutcome.Fallback(workflowOffering, preloadedOfferings)
             }
-            WorkflowResolution.Disabled -> {
-                // A 4xx kill switch disabled remote config. The offering was parsed with its components skipped,
-                // so reload it from /offerings — which now re-parse with those components — to recover its paywall.
-                // When the resolved offering already carries decoded components (the cache was repopulated when the
-                // kill switch first tripped), render it directly instead of reloading offerings on every present.
-                if (workflowOffering.paywallComponents != null) {
-                    clearWorkflowState()
-                    return WorkflowOutcome.Fallback(workflowOffering, preloadedOfferings)
-                }
-                Logger.w(
-                    "Paywalls: Workflows unavailable for offering '${workflowOffering.identifier}' after a " +
-                        "remote config disable. Falling back to the offerings-provided paywall.",
-                )
-                val reloaded = reloadOfferingAfterConfigDisabled(workflowOffering)
-                return WorkflowOutcome.Fallback(reloaded.offering, reloaded.offerings)
-            }
             WorkflowResolution.Unavailable -> {
                 // The workflows topic could not be read for a transient reason (e.g. a network failure) with
                 // nothing cached, so whether this offering has a workflow is unknown. Rather than surfacing an
@@ -987,24 +970,6 @@ internal class PaywallViewModelImpl(
             )
         }
     }
-
-    /**
-     * Reloads offerings after the `/v1/config` endpoint was disabled by a 4xx kill switch. The disable makes
-     * `/offerings` re-parse with the paywall components that were skipped while workflows were enabled, so the
-     * offering's own paywall can be recovered. Falls back to [originalOffering] when it is no longer present in
-     * the reloaded offerings (rather than leaving no offering to render), and clears any stale workflow state so
-     * the fallback isn't masked by a prior successful workflow render.
-     */
-    private suspend fun reloadOfferingAfterConfigDisabled(originalOffering: Offering): ReloadedOffering {
-        val reloadedOfferings = purchases.awaitOfferings()
-        val reloadedOffering = reloadedOfferings[originalOffering.identifier]?.let { offering ->
-            originalOffering.presentedOfferingContext?.let(offering::copy) ?: offering
-        } ?: originalOffering
-        clearWorkflowState()
-        return ReloadedOffering(reloadedOffering, reloadedOfferings)
-    }
-
-    private data class ReloadedOffering(val offering: Offering, val offerings: Offerings)
 
     private suspend fun resolveOfferingSelection(offeringSelection: OfferingSelection): ResolvedOfferingSelection =
         when (offeringSelection) {

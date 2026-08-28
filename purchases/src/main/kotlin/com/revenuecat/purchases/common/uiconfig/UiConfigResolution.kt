@@ -12,8 +12,6 @@ import com.revenuecat.purchases.UiConfig
  * - [Found]: the [UiConfig] is resolved and in memory.
  * - [NotConfigured]: the topic is absent, or carries none of the ui_config parts. A project with no paywalls
  *   configured legitimately has no `ui_config` at all, so there is nothing to resolve — not a failure.
- * - [Disabled]: the `/v1/config` endpoint is disabled for the session by the 4xx kill switch, so no topic can
- *   be read at all.
  * - [Superseded]: a [UiConfig] **was** resolved, but a newer config commit or an identity change advanced the
  *   config generation while it was in flight, so it was dropped instead of served (store-if-newer). The next
  *   read re-resolves against the fresher config.
@@ -24,8 +22,6 @@ internal sealed interface UiConfigResolution {
     data class Found(val uiConfig: UiConfig) : UiConfigResolution
 
     object NotConfigured : UiConfigResolution
-
-    object Disabled : UiConfigResolution
 
     object Superseded : UiConfigResolution
 
