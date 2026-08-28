@@ -375,6 +375,7 @@ internal class PurchasesFactory(
                 backend,
                 offlineEntitlementsManager,
                 dispatcher,
+                paywallAssetWarming,
                 uiPreviewMode = appConfig.uiPreviewMode,
             )
 

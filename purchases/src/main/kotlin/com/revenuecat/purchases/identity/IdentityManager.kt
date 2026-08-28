@@ -22,6 +22,7 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
@@ -41,6 +42,7 @@ internal class IdentityManager(
     private val backend: Backend,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val dispatcher: Dispatcher,
+    private val paywallAssetWarming: PaywallAssetWarming,
     private val uiPreviewMode: Boolean = false,
 ) {
     companion object {
@@ -166,6 +168,7 @@ internal class IdentityManager(
                         deviceCache.cacheAppUserID(newAppUserID)
                         deviceCache.cacheCustomerInfo(newAppUserID, customerInfo)
                         copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserID, newAppUserID)
+                        clearPaywallWebViewStorageIfUserChanged(oldAppUserID, newAppUserID)
                         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     }
                     onSuccess(customerInfo, created)
@@ -244,6 +247,13 @@ internal class IdentityManager(
         offeringsCache.clearCache()
     }
 
+    // Anonymous is exempt: signing in mid-flow is the multipage paywall case, same customer either side.
+    private fun clearPaywallWebViewStorageIfUserChanged(oldAppUserID: String, newAppUserID: String) {
+        if (oldAppUserID != newAppUserID && !isUserIDAnonymous(oldAppUserID)) {
+            paywallAssetWarming.clearWebViewStorage()
+        }
+    }
+
     private fun copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserId: String, newAppUserId: String) {
         if (isUserIDAnonymous(oldAppUserId)) {
             subscriberAttributesManager.copyUnsyncedSubscriberAttributes(oldAppUserId, newAppUserId)
@@ -279,6 +289,7 @@ internal class IdentityManager(
 
     @Synchronized
     private fun resetAndSaveUserID(newUserID: String) {
+        clearPaywallWebViewStorageIfUserChanged(currentAppUserID, newUserID)
         deviceCache.clearCachesForAppUserID(currentAppUserID)
         clearRemoteConfigThenOfferingsCaches(newUserID)
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)

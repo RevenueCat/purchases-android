@@ -36,38 +36,22 @@ import java.net.URL
 @RunWith(AndroidJUnit4::class)
 internal class OfferingWebViewPrewarmerTest {
 
-    private lateinit var warmer: RecordingWarmer
+    private lateinit var warmer: RecordingPaywallAssetWarmer
     private lateinit var prewarmer: OfferingWebViewPrewarmer
 
     @Before
     fun setUp() {
-        warmer = RecordingWarmer()
+        warmer = RecordingPaywallAssetWarmer()
         prewarmer = prewarmerWith(warmer)
     }
 
-    private fun prewarmerWith(warmer: PaywallAssetWarmer?) = OfferingWebViewPrewarmer(
-        PaywallAssetWarming(context = mockk(relaxed = true), warmerProvider = { warmer }),
-    )
+    private fun prewarmerWith(warmer: PaywallAssetWarmer?) =
+        OfferingWebViewPrewarmer(paywallAssetWarming(warmer))
 
     // The warm is posted to the main thread, so tests need a pump to see it.
     private fun OfferingWebViewPrewarmer.prewarmAndIdle(offerings: Offerings) {
         prewarmWebViews(offerings.prewarmTargetOfferings())
         shadowOf(Looper.getMainLooper()).idle()
-    }
-
-    private class RecordingWarmer : PaywallAssetWarmer {
-        val warmedWebViewUrls = mutableListOf<String>()
-        var prebootCount = 0
-
-        override fun warmImages(context: Context, imageUris: List<Uri>) = Unit
-
-        override fun prebootWebView(context: Context) {
-            prebootCount++
-        }
-
-        override fun warmWebViewUrls(context: Context, urls: List<String>) {
-            warmedWebViewUrls.addAll(urls)
-        }
     }
 
     @Test
