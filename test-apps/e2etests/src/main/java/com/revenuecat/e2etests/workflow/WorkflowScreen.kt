@@ -1,5 +1,3 @@
-@file:OptIn(InternalRevenueCatAPI::class)
-
 package com.revenuecat.e2etests.workflow
 
 import androidx.compose.foundation.layout.Arrangement
@@ -16,49 +14,30 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.revenuecat.e2etests.E2ETestsApplication
 import com.revenuecat.purchases.CustomerInfo
-import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitCustomerInfo
 import com.revenuecat.purchases.awaitOfferings
-import com.revenuecat.purchases.awaitSyncAttributesAndOfferingsIfNeeded
-import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 
 private const val WORKFLOW_OFFERING_ID = "default_workflows"
 private const val ENTITLEMENT_ID = "pro"
-
-// Keep this longer than Maestro's 30-second wait so app-side polling cannot preempt the test timeout.
-private const val KILL_SWITCH_TIMEOUT_MILLIS = 35_000L
-
-private const val KILL_SWITCH_POLL_INTERVAL_MILLIS = 100L
 
 private sealed interface OfferingState {
     data object Loading : OfferingState
     data class Loaded(val offering: Offering) : OfferingState
     data class Failed(val message: String) : OfferingState
-}
-
-private enum class ConfigKillSwitchState {
-    Off,
-    Armed,
-    On,
 }
 
 @Composable
@@ -155,45 +134,6 @@ private fun WorkflowLauncher(
         }
 
         Text(text = "entitlement ($ENTITLEMENT_ID): ${entitlementStatus(customerInfo)}")
-        ConfigKillSwitchControls()
-    }
-}
-
-@Composable
-private fun ConfigKillSwitchControls() {
-    var configKillSwitchState by remember { mutableStateOf(ConfigKillSwitchState.Off) }
-    val coroutineScope = rememberCoroutineScope()
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Button(
-            onClick = {
-                E2ETestsApplication.forceConfigKillSwitch()
-                configKillSwitchState = ConfigKillSwitchState.Armed
-            },
-        ) {
-            Text("Force Config Killswitch")
-        }
-
-        Button(
-            onClick = {
-                coroutineScope.launch {
-                    if (syncAndWaitForConfigKillSwitch()) {
-                        configKillSwitchState = ConfigKillSwitchState.On
-                    }
-                }
-            },
-        ) {
-            Text("Sync Attributes And Offerings")
-        }
-
-        when (configKillSwitchState) {
-            ConfigKillSwitchState.Off -> Unit
-            ConfigKillSwitchState.Armed -> Text("config killswitch: armed")
-            ConfigKillSwitchState.On -> Text("config killswitch: on")
-        }
     }
 }
 
@@ -208,22 +148,6 @@ private suspend fun loadWorkflowOffering(): OfferingState = try {
         ?: OfferingState.Failed("Offering '$WORKFLOW_OFFERING_ID' not found")
 } catch (e: PurchasesException) {
     OfferingState.Failed(e.message ?: "Failed to load offerings")
-}
-
-private suspend fun syncAndWaitForConfigKillSwitch(): Boolean {
-    try {
-        // Intentionally discard these offerings so the screen retains its pre-switch Offering instance.
-        Purchases.sharedInstance.awaitSyncAttributesAndOfferingsIfNeeded()
-    } catch (@Suppress("SwallowedException") e: PurchasesException) {
-        // The config request intentionally fails; readiness is checked below.
-    }
-
-    return withTimeoutOrNull(KILL_SWITCH_TIMEOUT_MILLIS) {
-        while (Purchases.sharedInstance.resolveWorkflow(WORKFLOW_OFFERING_ID) !is WorkflowResolution.Disabled) {
-            delay(KILL_SWITCH_POLL_INTERVAL_MILLIS)
-        }
-        true
-    } ?: false
 }
 
 private fun entitlementStatus(customerInfo: CustomerInfo?): String {

@@ -306,6 +306,7 @@ private fun ImageComponentView_Preview_SmallerContainer() {
     }
 }
 
+@EmergeSnapshotConfig(precision = 0.99f)
 @Preview
 @Composable
 private fun ImageComponentView_Preview_Margin_Padding() {

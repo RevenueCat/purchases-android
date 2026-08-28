@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.Evaluator
+import com.revenuecat.purchases.rules.Scope
 import com.revenuecat.purchases.rules.Value
 
 /**
@@ -16,14 +17,14 @@ internal object LogicOperators {
      * `{"!": x}` — boolean negation. Coerces to bool first per JSON Logic
      * truthiness rules.
      */
-    fun opNot(args: Value, vars: Value): Value {
-        val value = firstArgEvaluated(args, vars)
+    fun opNot(args: Value, vars: Scope): Value {
+        val value = Operators.firstArgEvaluated(args, vars)
         return Value.BoolValue(!value.isTruthy)
     }
 
     /** `{"!!": x}` — boolean cast. Spec: equivalent to `!!x` in JS. */
-    fun opNotNot(args: Value, vars: Value): Value {
-        val value = firstArgEvaluated(args, vars)
+    fun opNotNot(args: Value, vars: Scope): Value {
+        val value = Operators.firstArgEvaluated(args, vars)
         return Value.BoolValue(value.isTruthy)
     }
 
@@ -34,7 +35,7 @@ internal object LogicOperators {
      * returns [Value.Undefined] (json-logic-js reduces an empty `and` to
      * `undefined`, which is falsy but `!== null`).
      */
-    fun opAnd(args: Value, vars: Value): Value {
+    fun opAnd(args: Value, vars: Scope): Value {
         var last: Value = Value.Undefined
         for (item in Operators.argsAsList(args)) {
             last = Evaluator.evaluateValue(item, vars)
@@ -48,7 +49,7 @@ internal object LogicOperators {
      * value or, if all are falsy, the last value. Empty args returns
      * [Value.Undefined] for the same reason as [opAnd].
      */
-    fun opOr(args: Value, vars: Value): Value {
+    fun opOr(args: Value, vars: Scope): Value {
         var last: Value = Value.Undefined
         for (item in Operators.argsAsList(args)) {
             last = Evaluator.evaluateValue(item, vars)
@@ -64,7 +65,7 @@ internal object LogicOperators {
      * also fall through to `Null` (the loop never enters and `index <
      * items.size` is false).
      */
-    fun opIf(args: Value, vars: Value): Value {
+    fun opIf(args: Value, vars: Scope): Value {
         val items = Operators.argsAsList(args)
         var index = 0
         while (index + 1 < items.size) {
@@ -79,11 +80,5 @@ internal object LogicOperators {
         } else {
             Value.Null
         }
-    }
-
-    private fun firstArgEvaluated(args: Value, vars: Value): Value {
-        val items = Operators.argsAsList(args)
-        val first = items.firstOrNull() ?: Value.Null
-        return Evaluator.evaluateValue(first, vars)
     }
 }

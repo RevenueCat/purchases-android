@@ -5,6 +5,7 @@ import android.net.Uri
 import coil.request.ImageRequest
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.PaywallAssetWarmer
+import com.revenuecat.purchases.ui.revenuecatui.components.webview.PaywallWebViewPrewarmer
 import com.revenuecat.purchases.ui.revenuecatui.components.webview.PaywallWebViewStartUp
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -19,5 +20,9 @@ internal class PaywallAssetWarmerImpl : PaywallAssetWarmer {
 
     override fun prebootWebView(context: Context) {
         PaywallWebViewStartUp.startUp(context)
+    }
+
+    override fun warmWebViewUrls(context: Context, urls: List<String>) {
+        urls.forEach { url -> PaywallWebViewPrewarmer.shared.prewarm(context, url) }
     }
 }

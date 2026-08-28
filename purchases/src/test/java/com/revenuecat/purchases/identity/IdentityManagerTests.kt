@@ -8,7 +8,9 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -39,6 +41,7 @@ import kotlin.random.Random
 class IdentityManagerTests {
 
     private lateinit var cachedAppUserIDSlot: CapturingSlot<String>
+    private lateinit var mockAppConfig: AppConfig
     private lateinit var mockDeviceCache: DeviceCache
     private lateinit var mockSubscriberAttributesCache: SubscriberAttributesCache
     private lateinit var mockSubscriberAttributesManager: SubscriberAttributesManager
@@ -53,6 +56,9 @@ class IdentityManagerTests {
     @Before
     fun setup() {
         cachedAppUserIDSlot = slot()
+        mockAppConfig = mockk<AppConfig>().apply {
+            every { isAppBackgrounded } returns false
+        }
         mockEditor = mockk<Editor>().apply {
             every { apply() } just Runs
         }
@@ -136,14 +142,27 @@ class IdentityManagerTests {
     }
 
     @Test
-    fun `login synchronizes subscriber attributes`() {
+    fun `login synchronizes subscriber attributes without delay when foregrounded`() {
         mockCachedAnonymousUser()
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers("test", any())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers("test", any(), any())
         } just Runs
         identityManager.logIn("test", { _, _ -> }, { })
         verify(exactly = 1) {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers("test", any())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers("test", Delay.NONE, any())
+        }
+    }
+
+    @Test
+    fun `login synchronizes subscriber attributes with delay when backgrounded`() {
+        every { mockAppConfig.isAppBackgrounded } returns true
+        mockCachedAnonymousUser()
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers("test", any(), any())
+        } just Runs
+        identityManager.logIn("test", { _, _ -> }, { })
+        verify(exactly = 1) {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers("test", Delay.DEFAULT, any())
         }
     }
 
@@ -370,15 +389,29 @@ class IdentityManagerTests {
     }
 
     @Test
-    fun `logout synchronizes subscriber attributes`() {
+    fun `logout synchronizes subscriber attributes without delay when foregrounded`() {
         val identifiedUserID = "Waldo"
         mockIdentifiedUser(identifiedUserID)
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(identifiedUserID, any())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(identifiedUserID, any(), any())
         } just Runs
         identityManager.logOut { }
         verify(exactly = 1) {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(identifiedUserID, any())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(identifiedUserID, Delay.NONE, any())
+        }
+    }
+
+    @Test
+    fun `logout synchronizes subscriber attributes with delay when backgrounded`() {
+        every { mockAppConfig.isAppBackgrounded } returns true
+        val identifiedUserID = "Waldo"
+        mockIdentifiedUser(identifiedUserID)
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(identifiedUserID, any(), any())
+        } just Runs
+        identityManager.logOut { }
+        verify(exactly = 1) {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(identifiedUserID, Delay.DEFAULT, any())
         }
     }
 
@@ -893,7 +926,7 @@ class IdentityManagerTests {
         appUserId: String
     ) {
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, captureLambda())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), captureLambda())
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }
@@ -909,6 +942,7 @@ class IdentityManagerTests {
     }
 
     private fun createIdentityManager(
+        appConfig: AppConfig = mockAppConfig,
         deviceCache: DeviceCache = mockDeviceCache,
         subscriberAttributesCache: SubscriberAttributesCache = mockSubscriberAttributesCache,
         subscriberAttributesManager: SubscriberAttributesManager = mockSubscriberAttributesManager,
@@ -919,6 +953,7 @@ class IdentityManagerTests {
         uiPreviewMode: Boolean = false,
     ): IdentityManager {
         return IdentityManager(
+            appConfig,
             deviceCache,
             subscriberAttributesCache,
             subscriberAttributesManager,

@@ -18,6 +18,9 @@ internal enum class RulesDimensionNamespace(val key: String) {
     Custom("custom"),
     Device("device"),
     Store("store"),
+
+    /** What the app has told the SDK about the customer; see `Purchases.setAttributes`. */
+    SubscriberAttributes("subscriberAttributes"),
 }
 
 /**
@@ -28,19 +31,17 @@ internal enum class RulesDimensionNamespace(val key: String) {
  */
 internal interface RulesDimensionProvider {
 
-    /** Stable identifier, used only for diagnostics. */
-    val identifier: String
-
-    /** The root this provider's values are nested under. */
+    /** The root this provider's values are nested under, and the name it is reported under in diagnostics. */
     val namespace: RulesDimensionNamespace
 
     /**
      * The complete current set of values relative to [namespace], keyed in camelCase (`appVersion`);
      * [RulesDimensionResolver] adds the namespace.
      *
-     * A value that is unavailable is omitted rather than guessed: an absent key resolves to null in the engine,
-     * which is a non-match rather than an error. Throwing is reserved for a systemic failure to produce this
-     * provider's values.
+     * A value that is unavailable is omitted rather than guessed: a predicate that reads an absent key fails as
+     * an unresolved variable, rather than being answered from a value we invented. A name no predicate could
+     * read is dropped by [RulesDimensionResolver], which applies that rule to every provider. Throwing is
+     * reserved for a systemic failure to produce this provider's values.
      *
      * [date] is the common reference instant for the evaluation. It does not indicate when the underlying values
      * were observed.

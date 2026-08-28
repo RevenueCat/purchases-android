@@ -2,7 +2,6 @@
 
 package com.revenuecat.purchases.checkpoints
 
-import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
@@ -11,15 +10,16 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.CustomVariableKeyValidator
+import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.checkpoints.CheckpointRule
 import com.revenuecat.purchases.common.checkpoints.CheckpointRulesResolution
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.localrules.LocalRule
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
+import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
@@ -31,20 +31,26 @@ import kotlinx.serialization.json.JsonPrimitive
  * Resolves a checkpoint through the `checkpoint_rules` topic: the checkpoint's rules are read from remote config
  * and evaluated in order against locally collected dimensions, and the first rule whose audience matches wins.
  *
- * Audience predicates are not served yet, so every rule currently carries [PLACEHOLDER_AUDIENCE_PREDICATE] and the
- * published order remains the effective signal; see [AudienceRule].
+ * The winner is final. If its workflow turns out to be unservable — no offering configured for it, that offering
+ * absent from the fetched offerings, or its body unavailable — the checkpoint resolves to
+ * [CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE] rather than falling through to a rule the
+ * customer was not the first choice for.
+ *
+ * Resolution reads config across several suspension points, so a commit (or an identity change) can land halfway
+ * through and leave the rules the winner was picked from stale. That answer is discarded and resolution starts
+ * over against the new state, once — a second stale attempt reports
+ * [CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE] rather than spinning on a burst of commits.
  *
  * [SIMULATED_ERROR_CHECKPOINT_ID] is the one piece of PoC scaffolding left: it is the only way for the tester
  * apps to exercise the throw path, since nothing in the config-driven path throws.
  */
 internal class CheckpointWorkflowResolverImpl(
-    private val workflowManager: WorkflowManager?,
-    private val uiConfigProvider: UiConfigProvider?,
-    private val checkpointsConfigProvider: CheckpointsConfigProvider?,
+    private val workflowManager: WorkflowManager,
+    private val uiConfigProvider: UiConfigProvider,
+    private val checkpointsConfigProvider: CheckpointsConfigProvider,
+    private val audiencesConfigProvider: AudiencesConfigProvider,
     private val localRulesEvaluator: LocalRulesEvaluator,
     private val getOfferings: suspend () -> Offerings,
-    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    private val audiencePredicate: String = PLACEHOLDER_AUDIENCE_PREDICATE,
 ) : CheckpointWorkflowResolver {
 
     override suspend fun resolve(
@@ -59,37 +65,45 @@ internal class CheckpointWorkflowResolverImpl(
             errorLog(error)
             throw PurchasesException(error)
         }
-        return resolveConfiguredWorkflow(identifier, customVariables)
+        attemptResolve(identifier, customVariables)?.let { return it }
+        verboseLog { "Remote config changed while resolving checkpoint '$identifier'; resolving it again." }
+        return attemptResolve(identifier, customVariables)
+            ?: configurationUnavailable("Remote config kept changing while resolving checkpoint '$identifier'.")
     }
 
-    @Suppress("ReturnCount")
-    private suspend fun resolveConfiguredWorkflow(
+    /**
+     * One resolution attempt against a single config generation, or `null` if the generation moved under it — the
+     * rules the winning rule came from are no longer the committed ones, so the answer can't be reported as if it
+     * were. [resolve] retries such an attempt exactly once, so resolution never runs more than twice.
+     */
+    @Suppress("ReturnCount", "CyclomaticComplexMethod")
+    private suspend fun attemptResolve(
         identifier: String,
         customVariables: Map<String, RulesDimensionValue>,
-    ): CheckpointResolution {
-        if (workflowManager == null || uiConfigProvider == null || checkpointsConfigProvider == null) {
-            return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.DISABLED)
-        }
-        val checkpoint = when (val resolution = checkpointsConfigProvider.resolveCheckpoint(identifier)) {
-            is CheckpointRulesResolution.Found -> resolution.checkpoint
+    ): CheckpointResolution? {
+        val rulesResolution = when (val resolution = checkpointsConfigProvider.resolveCheckpoint(identifier)) {
+            is CheckpointRulesResolution.Found -> resolution
             CheckpointRulesResolution.NotConfigured -> return unknownCheckpoint(identifier)
-            CheckpointRulesResolution.Disabled ->
-                return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.DISABLED)
             CheckpointRulesResolution.Unavailable ->
                 return configurationUnavailable("The rules for checkpoint '$identifier' could not be read.")
         }
         val matchResult = localRulesEvaluator.match(
-            rules = checkpoint.rules.map { rule -> AudienceRule(rule, audiencePredicate) },
+            rules = rulesResolution.checkpoint.rules,
             customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables),
-        )
+        ) { rule ->
+            audiencesConfigProvider.getAudience(rule.audienceId)
+                ?.let { audience -> Result.success(audience.rules) }
+                ?: Result.failure(AudienceUnavailableException(rule.audienceId))
+        }
         // An audience the SDK failed to evaluate is not the same answer as an audience the customer is outside of,
         // so it can't report NO_MATCH.
         val rule = matchResult.getOrElse { error ->
             return configurationUnavailable(
                 "The audiences for checkpoint '$identifier' could not be evaluated: ${error.message}",
             )
-        }?.checkpointRule ?: return noMatch(identifier)
-
+        }
+        if (!checkpointsConfigProvider.isCurrent(rulesResolution)) return null
+        if (rule == null) return noMatch(identifier)
         val uiConfig = try {
             uiConfigProvider.getUiConfig()
         } catch (e: CancellationException) {
@@ -98,7 +112,8 @@ internal class CheckpointWorkflowResolverImpl(
             errorLog(e) { "UI config could not be fetched for checkpoint '$identifier'." }
             null
         } ?: return configurationUnavailable("UI config is unavailable for checkpoint '$identifier'.")
-        return resolveRule(identifier, workflowManager, rule, uiConfig)
+        val result = resolveRule(identifier, workflowManager, rule, uiConfig)
+        return result.takeIf { checkpointsConfigProvider.isCurrent(rulesResolution) }
     }
 
     @Suppress("ReturnCount")
@@ -208,20 +223,12 @@ internal class CheckpointWorkflowResolverImpl(
         return CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH)
     }
 
-    /**
-     * Pairs a checkpoint rule with the predicate its audience stands for. Audience predicates will arrive in their
-     * own remote-config topic, whose shape is not settled, so until then every audience matches and the rules are
-     * effectively still walked in published order.
-     */
-    private class AudienceRule(
-        val checkpointRule: CheckpointRule,
-        override val predicate: String,
-    ) : LocalRule
+    private class AudienceUnavailableException(identifier: String) :
+        Exception("audience '$identifier' could not be read")
 
     private companion object {
         const val SIMULATED_ERROR_CHECKPOINT_ID = "error_checkpoint"
         const val OFFERING_STEP_TYPE = "offering"
         const val OFFERING_IDENTIFIER_PARAM = "offering_identifier"
-        const val PLACEHOLDER_AUDIENCE_PREDICATE = "true"
     }
 }

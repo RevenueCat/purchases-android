@@ -69,12 +69,17 @@ class OfferingImagePreDownloaderTest {
     private class RecordingWarmer : PaywallAssetWarmer {
         val warmed = mutableListOf<Uri>()
         var prebootCount = 0
+        val warmedWebViewUrls = mutableListOf<String>()
         override fun warmImages(context: Context, imageUris: List<Uri>) {
             warmed.addAll(imageUris)
         }
 
         override fun prebootWebView(context: Context) {
             prebootCount++
+        }
+
+        override fun warmWebViewUrls(context: Context, urls: List<String>) {
+            warmedWebViewUrls.addAll(urls)
         }
     }
 
@@ -124,19 +129,22 @@ class OfferingImagePreDownloaderTest {
 
     // region Paywalls V2
 
-    // WebView startup is not free, so it is triggered only for paywalls that actually carry a web_view.
     @Test
-    fun `paywalls V2 - preboots the web view when the tree has one`() {
-        preDownloader.preDownloadOfferingImages(offeringWithWebView())
-
-        assertThat(warmer.prebootCount).isEqualTo(1)
-    }
-
-    @Test
-    fun `paywalls V2 - does not preboot the web view when the tree has none`() {
+    fun `paywalls V2 - does not preboot the engine when the tree has no web_view`() {
         preDownloader.preDownloadOfferingImages(createOfferingWithV2Paywall())
 
-        assertThat(warmer.prebootCount).isEqualTo(0)
+        assertThat(warmer.prebootCount).isZero()
+    }
+
+    // Preboot has to happen on this path because it runs before offerings are delivered; the bundle loads
+    // themselves are the offerings-prewarm path's job.
+    @Test
+    fun `paywalls V2 - preboots the engine for a web_view without warming it`() {
+        preDownloader.preDownloadOfferingImages(offeringWithWebView())
+
+        assertThat(warmer.warmed).isEmpty()
+        assertThat(warmer.prebootCount).isEqualTo(1)
+        assertThat(warmer.warmedWebViewUrls).isEmpty()
     }
 
     private fun offeringWithWebView(): Offering = createOfferingWithV2Paywall(
@@ -165,6 +173,7 @@ class OfferingImagePreDownloaderTest {
     @Test
     fun `paywalls V2 - if the component tree fails to decode, it does not throw and downloads nothing`() {
         val offering = mockk<Offering>().apply {
+            every { identifier } returns "broken"
             every { paywall } returns null
             every { paywallComponents } returns Offering.PaywallComponents(
                 uiConfig = mockk(),

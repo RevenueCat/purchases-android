@@ -68,7 +68,7 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
     // them.
     private val outcomeListener = object : PaywallListener {
         override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
-            recordOutcome(CheckpointPaywallOutcome.Purchased(customerInfo))
+            recordOutcome(CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
         }
 
         override fun onRestoreCompleted(customerInfo: CustomerInfo) {
@@ -83,6 +83,10 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
 
         override fun onRestoreError(error: PurchasesError) {
             recordOutcome(CheckpointPaywallOutcome.Error(error))
+        }
+
+        override fun onWebCheckoutOpened() {
+            recordOutcome(CheckpointPaywallOutcome.WebCheckoutOpened)
         }
     }
 

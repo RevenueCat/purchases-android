@@ -22,7 +22,55 @@ module ApiDiffReport
   MARKDOWN_LIMIT = 200
   MARKDOWN_WIDTH = 200
 
+  REPO_NAME = "purchases-android".freeze
+
+  MAIN_BRANCH = "main".freeze
+
   module_function
+
+  def main_branch?(branch)
+    branch.to_s.strip == MAIN_BRANCH
+  end
+
+  def current_branch(runner:)
+    branch = ENV["CIRCLE_BRANCH"].to_s.strip
+    return branch unless branch.empty?
+
+    runner.call("git", "rev-parse", "--abbrev-ref", "HEAD").to_s.strip
+  end
+
+  def head_commit(runner:)
+    sha = runner.call("git", "rev-parse", "HEAD").to_s.strip
+    raise "Could not resolve HEAD" if sha.empty?
+
+    sha
+  end
+
+  # main is linear squash merges, so HEAD^ holds the surface the merge replaced.
+  def resolve_previous_commit(runner:)
+    sha = runner.call("git", "rev-parse", "HEAD^").to_s.strip
+    raise "Could not resolve the commit before HEAD" if sha.empty?
+
+    sha
+  end
+
+  def changed_signature_files(base, head, runner:)
+    runner.call("git", "diff", "--name-only", base, head)
+          .to_s.each_line.map(&:strip).reject(&:empty?).select { |path| signature_file?(path) }
+  end
+
+  # --no-ext-diff: a `diff.external` in the caller's git config replaces the unified patch this
+  # parses, and an unparseable patch reads as "nothing changed" rather than as an error.
+  def patch_between(base, head, path, runner:)
+    runner.call("git", "diff", "--no-ext-diff", base, head, "--", path).to_s
+  end
+
+  # The commit page already carries the PR link, so the message needs only the commit.
+  def commit_link(sha)
+    return "" if sha.to_s.empty?
+
+    "<https://github.com/RevenueCat/#{REPO_NAME}/commit/#{sha}|#{sha[0, 7]}>"
+  end
 
   def signature_file?(path)
     basename = File.basename(path.to_s)
@@ -117,7 +165,7 @@ module ApiDiffReport
     summary = "Public API changes in #{report[:modules].join(', ')} (#{counts(report)})"
     body = capped_lines(diff_lines(report), limit: MARKDOWN_LIMIT, width: MARKDOWN_WIDTH)
 
-    [
+    lines = [
       "<details><summary>#{summary}</summary>",
       "",
       "```diff",
@@ -125,16 +173,22 @@ module ApiDiffReport
       "```",
       "",
       "</details>"
-    ].join("\n")
+    ]
+
+    lines.join("\n")
   end
 
-  def slack_message(report, pull_request_link)
+  def slack_message(report, source)
     # Metalava renders a changed signature as a removal plus an addition.
-    headline = report[:removed].any? ? ":warning: *Public API removed or changed*" : ":sparkles: *New public API*"
+    headline = if report[:removed].any?
+                 ":warning: *Public API removed or changed on main*"
+               else
+                 ":sparkles: *New public API landed on main*"
+               end
     body = capped_lines(diff_lines(report), limit: SLACK_LIMIT, width: SLACK_WIDTH)
 
     lines = [[headline, PLATFORM_LABEL, *report[:modules].map { |name| "`#{name}`" }].join(" · ")]
-    lines << pull_request_link unless pull_request_link.to_s.empty?
+    lines << source unless source.to_s.empty?
     lines << counts(report)
     lines << "```\n#{body.join("\n")}\n```"
 
@@ -177,27 +231,35 @@ module ApiDiffReport
     nil
   end
 
-  # The PR comment is the report and Slack only mirrors it, so a failed announcement must not cost
-  # us the comment. Returns the reason it was not announced, or nil.
-  def announce(report, pull_request_link, credentials, poster)
-    return "no Slack credentials were reachable" if credentials.nil?
+  # Returns [:posted | :failed, reason_or_nil].
+  def announce_to_slack(message, credentials, poster)
+    return [:failed, "no Slack credentials were reachable"] if credentials.nil?
 
     bot_token, channel = credentials
-    post(slack_request(slack_message(report, pull_request_link), bot_token: bot_token, channel: channel), poster: poster)
-    nil
+
+    post(slack_request(message, bot_token: bot_token, channel: channel), poster: poster)
+    [:posted, nil]
   rescue StandardError => e
-    e.message
+    [:failed, e.message]
   end
 
-  # Returns { comment:, slack_error: }, or nil when the public API did not change.
-  def run(changed_files:, patch_for:, pull_request_link:, credentials: slack_credentials, poster: nil)
+  def warning(outcome, reason)
+    return nil unless outcome == :failed
+
+    "The public API changed, but it was not announced in the SDK API feed: #{reason}."
+  end
+
+  # Returns nil when the public API did not change, { comment: } for `announce: false`, and
+  # { comment:, warning:, outcome: } otherwise. outcome is :posted or :failed.
+  def run(changed_files:, patch_for:, source: "", announce: true, credentials: slack_credentials, poster: nil)
     signature_files = changed_files.uniq.select { |file| signature_file?(file) }
     report = build(signature_files.to_h { |file| [file, patch_for.call(file)] })
     return nil if empty?(report)
 
-    {
-      comment: markdown_section(report),
-      slack_error: announce(report, pull_request_link, credentials, poster)
-    }
+    return { comment: markdown_section(report) } unless announce
+
+    outcome, reason = announce_to_slack(slack_message(report, source), credentials, poster)
+
+    { comment: markdown_section(report), warning: warning(outcome, reason), outcome: outcome }
   end
 end

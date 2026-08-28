@@ -136,7 +136,7 @@ class ApiDiffReportTest < Minitest::Test
 
     message = ApiDiffReport.slack_message(report, "<https://github.com/RevenueCat/purchases-android/pull/42|#42>")
 
-    assert message.start_with?(":sparkles: *New public API* · Android :android: · `ui:revenuecatui`")
+    assert message.start_with?(":sparkles: *New public API landed on main* · Android :android: · `ui:revenuecatui`")
     assert_includes message, "|#42>"
     assert_includes message, "1 new declaration"
     assert_includes message, "+ method public void apiDiffDemoPong"
@@ -147,7 +147,7 @@ class ApiDiffReportTest < Minitest::Test
 
     message = ApiDiffReport.slack_message(report, "")
 
-    assert message.start_with?(":warning: *Public API removed or changed* · Android :android: · `ui:revenuecatui`")
+    assert message.start_with?(":warning: *Public API removed or changed on main* · Android :android: · `ui:revenuecatui`")
     assert_includes message, "1 new declaration, 1 removed"
     refute_includes message, "|#"
   end
@@ -208,22 +208,28 @@ class ApiDiffReportTest < Minitest::Test
     "purchases/src/main/kotlin/Purchases.kt" => "irrelevant"
   }.freeze
 
+  CHANNEL_CREDENTIALS = ["xoxb-1", "C0BLWE7VBS4"].freeze
+
+  def collecting_poster(posted)
+    lambda do |_url, request_body, _headers|
+      posted << JSON.parse(request_body)
+      Struct.new(:code, :body).new("200", '{"ok":true}')
+    end
+  end
+
   def test_run_returns_the_comment_body_and_posts_to_slack
     posted = []
 
     body = ApiDiffReport.run(
       changed_files: PATCHES.keys,
       patch_for: ->(file) { PATCHES[file] },
-      pull_request_link: "<url|#42>",
-      credentials: ["xoxb-1", "#some-channel"],
-      poster: lambda do |_url, request_body, _headers|
-        posted << JSON.parse(request_body)
-        Struct.new(:code, :body).new("200", '{"ok":true}')
-      end
+      source: "<url|#42>",
+      credentials: CHANNEL_CREDENTIALS,
+      poster: collecting_poster(posted)
     )
 
     assert_includes body[:comment], "+ method public void apiDiffDemoPong"
-    assert_nil body[:slack_error]
+    assert_nil body[:warning]
     assert_equal 1, posted.count
     assert_includes posted.first["text"], "<url|#42>"
   end
@@ -232,27 +238,26 @@ class ApiDiffReportTest < Minitest::Test
     body = ApiDiffReport.run(
       changed_files: PATCHES.keys,
       patch_for: ->(file) { PATCHES[file] },
-      pull_request_link: "<url|#42>",
+      source: "<url|#42>",
       credentials: nil,
       poster: ->(*) { raise "must not post" }
     )
 
     assert_includes body[:comment], "+ method public void apiDiffDemoPong"
-    assert_equal "no Slack credentials were reachable", body[:slack_error]
+    assert_includes body[:warning], "no Slack credentials were reachable"
   end
 
-  # The comment is the report; Slack only mirrors it.
   def test_run_still_returns_the_comment_when_slack_fails
     body = ApiDiffReport.run(
       changed_files: PATCHES.keys,
       patch_for: ->(file) { PATCHES[file] },
-      pull_request_link: "<url|#42>",
+      source: "<url|#42>",
       credentials: ["xoxb-1", "#some-channel"],
       poster: ->(*) { raise "slack is down" }
     )
 
     assert_includes body[:comment], "+ method public void apiDiffDemoPong"
-    assert_equal "slack is down", body[:slack_error]
+    assert_includes body[:warning], "not announced in the SDK API feed: slack is down"
   end
 
   def test_slack_credentials_accepts_the_legacy_ios_token_name
@@ -274,11 +279,184 @@ class ApiDiffReportTest < Minitest::Test
     ENV.delete("SLACK_ACCESS_TOKEN_CIRCLE_CI_NOTIFY_ORB")
   end
 
+  # --- Announcing from main only ---
+
+  def with_circle_branch(value)
+    previous = ENV["CIRCLE_BRANCH"]
+    ENV["CIRCLE_BRANCH"] = value
+    yield
+  ensure
+    ENV["CIRCLE_BRANCH"] = previous
+  end
+
+  def test_current_branch_prefers_the_ci_variable
+    with_circle_branch("main") do
+      assert_equal "main", ApiDiffReport.current_branch(runner: ->(*_c) { "detached\n" })
+    end
+  end
+
+  def test_current_branch_falls_back_to_git
+    with_circle_branch(nil) do
+      runner = ->(*command) { command == ["git", "rev-parse", "--abbrev-ref", "HEAD"] ? "my-branch\n" : "" }
+
+      assert_equal "my-branch", ApiDiffReport.current_branch(runner: runner)
+    end
+  end
+
+  # release/* runs the same pipeline and must not re-announce what main already did.
+  def test_only_main_counts_as_main
+    assert ApiDiffReport.main_branch?("main")
+    assert ApiDiffReport.main_branch?(" main\n")
+    refute ApiDiffReport.main_branch?("release/10.19.0")
+    refute ApiDiffReport.main_branch?("facu/my-branch")
+    refute ApiDiffReport.main_branch?(nil)
+  end
+
+  def test_previous_commit_is_the_commit_the_merge_replaced
+    runner = ->(*command) { command == ["git", "rev-parse", "HEAD^"] ? "prevsha\n" : "" }
+
+    assert_equal "prevsha", ApiDiffReport.resolve_previous_commit(runner: runner)
+  end
+
+  # A root commit would otherwise diff the whole public API in as new.
+  def test_previous_commit_raises_when_empty
+    error = assert_raises(RuntimeError) { ApiDiffReport.resolve_previous_commit(runner: ->(*_c) { "\n" }) }
+
+    assert_match(/before HEAD/, error.message)
+  end
+
+  def test_head_commit_raises_when_empty
+    error = assert_raises(RuntimeError) { ApiDiffReport.head_commit(runner: ->(*_c) { "\n" }) }
+
+    assert_match(/HEAD/, error.message)
+  end
+
+  def test_changed_signature_files_keeps_only_the_signature_files
+    runner = lambda do |*command|
+      next "" unless command == ["git", "diff", "--name-only", "basesha", "headsha"]
+
+      "purchases/api-defauts.txt\npurchases/src/main/kotlin/Purchases.kt\nui/revenuecatui/api.txt\n"
+    end
+
+    assert_equal ["purchases/api-defauts.txt", "ui/revenuecatui/api.txt"],
+                 ApiDiffReport.changed_signature_files("basesha", "headsha", runner: runner)
+  end
+
+  # A `diff.external` in the caller's config silently empties the patch, so the flag is the test.
+  def test_patch_between_asks_git_for_that_one_file_ignoring_any_external_differ
+    asked = []
+    runner = ->(*command) { asked << command; ADDED_METHOD_PATCH }
+
+    patch = ApiDiffReport.patch_between("basesha", "headsha", "purchases/api-defauts.txt", runner: runner)
+
+    assert_equal [["git", "diff", "--no-ext-diff", "basesha", "headsha", "--", "purchases/api-defauts.txt"]], asked
+    assert_equal ADDED_METHOD_PATCH, patch
+  end
+
+  def test_commit_link_carries_the_short_sha
+    assert_equal "<https://github.com/RevenueCat/purchases-android/commit/0123456789abcdef|0123456>",
+                 ApiDiffReport.commit_link("0123456789abcdef")
+  end
+
+  # slack_message omits the link line entirely for an empty source.
+  def test_commit_link_is_empty_without_a_sha
+    assert_equal "", ApiDiffReport.commit_link("")
+    assert_equal "", ApiDiffReport.commit_link(nil)
+  end
+
+  def test_run_reports_without_announcing_when_announce_is_false
+    body = ApiDiffReport.run(
+      changed_files: PATCHES.keys,
+      patch_for: ->(file) { PATCHES[file] },
+      announce: false,
+      credentials: CHANNEL_CREDENTIALS,
+      poster: ->(*) { raise "must not post" }
+    )
+
+    assert_includes body[:comment], "+ method public void apiDiffDemoPong"
+    # Nothing was attempted, so there is no outcome to report and nothing to warn about.
+    assert_equal [:comment], body.keys
+  end
+
+  # The runner logged "Announced the public API change" off a failed post.
+  def test_run_reports_what_became_of_the_announcement
+    link = ApiDiffReport.commit_link("0123456789abcdef")
+
+    posted = ApiDiffReport.run(
+      changed_files: PATCHES.keys, patch_for: ->(file) { PATCHES[file] }, source: link,
+      credentials: CHANNEL_CREDENTIALS, poster: collecting_poster([])
+    )
+    failed = ApiDiffReport.run(
+      changed_files: PATCHES.keys, patch_for: ->(file) { PATCHES[file] }, source: link,
+      credentials: nil, poster: ->(*) { raise "must not post" }
+    )
+    assert_equal :posted, posted[:outcome]
+    assert_equal :failed, failed[:outcome]
+  end
+
+  # --- The wiring ---
+
+  def dangerfile
+    File.read(File.expand_path("../Dangerfile", __dir__))
+  end
+
+  def announce_script
+    File.read(File.expand_path("announce_api_changes.rb", __dir__))
+  end
+
+  def circleci_config
+    File.read(File.expand_path("../.circleci/config.yml", __dir__))
+  end
+
+  def test_danger_reports_the_diff_without_announcing_it
+    call = dangerfile[/ApiDiffReport\.run\(.*?\n  \)/m]
+
+    refute_nil call, "the ApiDiffReport.run call in the Dangerfile moved; update this test"
+    assert_match(/announce: false/, call, "a PR run must not announce")
+  end
+
+  def test_the_announce_script_bails_off_main
+    assert_match(/main_branch\?/, announce_script, "the script must bail off main")
+    assert_match(/resolve_previous_commit/, announce_script, "main compares against the previous commit")
+    assert_match(/commit_link/, announce_script, "the announcement links the commit")
+  end
+
+  # It used to print that it had announced even when the post failed.
+  def test_the_announce_script_does_not_claim_an_announcement_it_did_not_make
+    assert_match(/:outcome\]|\[:outcome/, announce_script, "the script must read the outcome")
+    assert_match(/:failed/, announce_script, "a failed post must not read as success")
+  end
+
+  # The script is the only thing that announces now, so a workflow that never runs it means silence.
+  def test_circleci_runs_the_announce_script_on_main_with_the_slack_context
+    workflow = circleci_config[/^  announce-api-changes-on-main:\n(?:.+\n|\n)*?(?=^  \S)/]
+
+    refute_nil workflow, "the announce-api-changes-on-main workflow moved; update this test"
+    assert_match(/"main", << pipeline\.git\.branch >>/, workflow, "it must be gated on main")
+    assert_match(/- announce-api-changes:/, workflow)
+    assert_match(/slack-secrets/, workflow, "the announcement needs the Slack token and channel")
+  end
+
+  # The context was there only for the announcement. A PR run has no reason to hold a write token.
+  def test_the_danger_job_no_longer_takes_the_slack_context
+    workflow = circleci_config[/^  danger:\n(?:.+\n|\n)*?(?=^  \S)/]
+
+    refute_nil workflow, "the danger workflow moved; update this test"
+    refute_match(/slack-secrets/, workflow)
+  end
+
+  def test_circleci_has_a_job_that_runs_the_announce_script
+    job = circleci_config[/^  announce-api-changes:\n(?:.+\n|\n)*?(?=^  \S)/]
+
+    refute_nil job, "the announce-api-changes job moved; update this test"
+    assert_match(%r{ruby danger/announce_api_changes\.rb}, job)
+  end
+
   def test_run_is_nil_when_no_signature_file_changed
     assert_nil ApiDiffReport.run(
       changed_files: ["purchases/src/main/kotlin/Purchases.kt"],
       patch_for: ->(_file) { "irrelevant" },
-      pull_request_link: "<url|#42>",
+      source: "<url|#42>",
       credentials: ["xoxb-1", "#some-channel"],
       poster: ->(*) { raise "must not post" }
     )
@@ -288,7 +466,7 @@ class ApiDiffReportTest < Minitest::Test
     assert_nil ApiDiffReport.run(
       changed_files: ["purchases/api-defauts.txt"],
       patch_for: ->(_file) { nil },
-      pull_request_link: "",
+      source: "",
       credentials: nil
     )
   end

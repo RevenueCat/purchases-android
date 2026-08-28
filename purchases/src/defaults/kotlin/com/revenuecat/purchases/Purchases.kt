@@ -45,6 +45,7 @@ import com.revenuecat.purchases.interfaces.GetStorefrontCallback
 import com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback
 import com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
+import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
 import com.revenuecat.purchases.interfaces.PollRewardVerificationCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -257,7 +258,6 @@ public class Purchases internal constructor(
      * The AdTracker used to track ad attribution data.
      */
     @get:JvmSynthetic
-    @ExperimentalPreviewRevenueCatPurchasesAPI
     public val adTracker: AdTracker
         get() = purchasesOrchestrator.adTracker
 
@@ -713,6 +713,30 @@ public class Purchases internal constructor(
     }
 
     /**
+     * Opens the subscription management page for the current user.
+     *
+     * Uses [CustomerInfo.managementURL] if available, which covers non-Play purchases such as
+     * Stripe or web purchases. Otherwise falls back to the store's default subscription management
+     * URL for the configured store.
+     *
+     * The page is opened in a new task, so an application context is enough. Note that
+     * [CustomerInfo] may be fetched from the network first, so the page can end up being requested
+     * after your app is no longer in the foreground. In that case Android may silently drop the
+     * launch, and [ManageSubscriptionsCallback.onSuccess] is still reported.
+     *
+     * @param context Context used to start the subscription management page. An application
+     * context is sufficient.
+     * @param callback Optional [ManageSubscriptionsCallback] called on success or error.
+     */
+    @JvmOverloads
+    public fun showManageSubscriptions(
+        context: Context,
+        callback: ManageSubscriptionsCallback? = null,
+    ) {
+        purchasesOrchestrator.showManageSubscriptions(context, callback)
+    }
+
+    /**
      * Invalidates the cache for customer information.
      *
      * Most apps will not need to use this method; invalidating the cache can leave your app in an invalid state.
@@ -820,7 +844,6 @@ public class Purchases internal constructor(
      *
      * @param impressionId The ad network's impression identifier for the loaded ad.
      */
-    @ExperimentalPreviewRevenueCatPurchasesAPI
     public fun generateRewardVerificationToken(impressionId: String): RewardVerificationToken {
         val clientTransactionId = UUID.randomUUID().toString()
         // Keys inserted in sorted order so the serialized customData is deterministic and matches the
@@ -849,7 +872,6 @@ public class Purchases internal constructor(
      * For coroutines, use the `awaitPollRewardVerification` suspend extension instead.
      */
     @JvmOverloads
-    @ExperimentalPreviewRevenueCatPurchasesAPI
     public fun pollRewardVerification(
         clientTransactionId: String,
         callback: PollRewardVerificationCallback,
@@ -861,7 +883,7 @@ public class Purchases internal constructor(
         )
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     internal suspend fun pollRewardVerification(
         clientTransactionId: String,
         trackingMetadata: RewardedAdTrackingMetadata?,
@@ -908,7 +930,7 @@ public class Purchases internal constructor(
         return if (entitlementReflected) result else RewardVerificationResult.failed
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     private fun trackRewardOutcome(
         trackingMetadata: RewardedAdTrackingMetadata,
         outcome: Outcome,
@@ -963,7 +985,7 @@ public class Purchases internal constructor(
         }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     private fun VerifiedReward.toCoreVerifiedReward(): CoreVerifiedReward {
         return when (this) {
             is VerifiedReward.VirtualCurrency -> CoreVerifiedReward.VirtualCurrency(code = code, amount = amount)
@@ -976,7 +998,6 @@ public class Purchases internal constructor(
 
     // getCustomerInfo has no built-in retry, so retry transient (network) failures (with a short delay
     // between attempts, so a brief blip doesn't exhaust all retries at once) before giving up.
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     private suspend fun refreshCustomerInfoAfterEntitlementGrant(clientTransactionId: String): Boolean {
         debugLog {
             "Reward verification granted an entitlement; refreshing CustomerInfo " +
@@ -1253,6 +1274,16 @@ public class Purchases internal constructor(
      */
     public fun setSolarEngineVisitorId(solarEngineVisitorId: String?) {
         purchasesOrchestrator.setSolarEngineVisitorId(solarEngineVisitorId)
+    }
+
+    /**
+     * Subscriber attribute associated with the Singular Device ID (SDID) for the user
+     * Required for the RevenueCat Singular integration when using Singular's Event Endpoint V2
+     *
+     * @param singularDeviceID null or an empty string will delete the subscriber attribute.
+     */
+    public fun setSingularDeviceID(singularDeviceID: String?) {
+        purchasesOrchestrator.setSingularDeviceID(singularDeviceID)
     }
 
     /**

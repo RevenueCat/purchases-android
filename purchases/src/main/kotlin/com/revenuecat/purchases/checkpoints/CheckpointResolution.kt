@@ -32,9 +32,6 @@ public sealed class CheckpointResolution {
             /** The configuration needed to serve the checkpoint could not be read. */
             CONFIGURATION_UNAVAILABLE,
 
-            /** Checkpoints are turned off for this app. */
-            DISABLED,
-
             /** The identifier is not configured in the RevenueCat dashboard. */
             UNKNOWN_CHECKPOINT,
         }

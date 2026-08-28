@@ -231,6 +231,23 @@ internal sealed class BackendEvent : Event {
     ) : BackendEvent()
 
     /**
+     * Represents a checkpoint hit.
+     */
+    @Serializable
+    @SerialName("checkpoint")
+    data class Checkpoint(
+        val id: String,
+        val version: Int,
+        val type: String,
+        val identifier: String,
+        @SerialName("app_user_id")
+        val appUserID: String,
+        @SerialName("app_session_id")
+        val appSessionID: String,
+        val timestamp: Long,
+    ) : BackendEvent()
+
+    /**
      * Wire shape for workflow lifecycle events. Matches khepri's WorkflowsEvent schema.
      */
     @Serializable
@@ -394,6 +411,16 @@ internal sealed class BackendEvent : Event {
          * Defines the version number of the custom paywall event schema.
          */
         const val CUSTOM_PAYWALL_EVENT_SCHEMA_VERSION = 1
+
+        /**
+         * Defines the version number of the checkpoint event schema.
+         */
+        const val CHECKPOINT_EVENT_SCHEMA_VERSION = 1
+
+        /**
+         * Defines the type identifier for checkpoint hit events.
+         */
+        const val CHECKPOINT_EVENT_TYPE = "checkpoint_hit"
 
         /**
          * Defines the version number of the workflow event schema.

@@ -22,6 +22,7 @@ import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
 import com.revenuecat.purchases.ads.events.types.AdRewardFailureReason
+import com.revenuecat.purchases.checkpoints.CheckpointEvent
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
@@ -95,6 +96,11 @@ class EventsManagerTest {
         placement = "banner_home",
         adUnitId = "ca-app-pub-123456",
         impressionId = "impression-id"
+    )
+    private val checkpointEvent = CheckpointEvent(
+        identifier = "onboarding_complete",
+        id = UUID.fromString("498207f4-87af-4b57-a581-eb27bcc6e009"),
+        timestamp = Date(1699270688995),
     )
     private val paywallStoredEvent = PaywallStoredEvent(paywallEvent, userID)
     private val disabledRateLimiter = mockk<RateLimiter>().apply {
@@ -174,6 +180,16 @@ class EventsManagerTest {
                 + "\n"
                 + """{"type":"paywalls","event":{"id":"298207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"paywall_cancel","app_user_id":"testAppUserId","session_id":"315107f4-98bf-4b68-a582-eb27bcb6e111","offering_id":"offeringID","paywall_id":"paywallID","paywall_revision":5,"timestamp":1699270688884,"display_mode":"footer","dark_mode":true,"locale":"es_ES","presented_offering_context":{"paywall_id":"paywallID"}}}""".trimIndent()
                 + "\n"
+        )
+    }
+
+    @Test
+    fun `tracking checkpoint event adds it to file`() {
+        eventsManager.track(checkpointEvent)
+
+        checkFileContents(
+            """{"type":"checkpoint","event":{"id":"498207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"checkpoint_hit","identifier":"onboarding_complete","app_user_id":"testAppUserId","app_session_id":"$appSessionID","timestamp":1699270688995}}""" +
+                "\n",
         )
     }
 

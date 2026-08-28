@@ -9,7 +9,10 @@ internal class SyncDispatcher : Dispatcher(mockk(), MockHandlerFactory.createMoc
 
     private var closed = false
 
+    var calledDelay: Delay? = null
+
     override fun enqueue(command: Runnable, delay: Delay) {
+        calledDelay = delay
         if (closed) {
             throw RejectedExecutionException()
         }

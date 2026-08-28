@@ -2,10 +2,10 @@
 
 package com.revenuecat.purchases.common.events
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.VerifiedReward
 import com.revenuecat.purchases.ads.events.AdEvent
+import com.revenuecat.purchases.checkpoints.CheckpointEvent
 import com.revenuecat.purchases.common.workflows.events.WorkflowEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterImpressionEvent
 import com.revenuecat.purchases.customercenter.events.CustomerCenterSurveyOptionChosenEvent
@@ -60,6 +60,13 @@ internal sealed class BackendStoredEvent : Event {
     data class CustomPaywall(val event: BackendEvent.CustomPaywall) : BackendStoredEvent()
 
     /**
+     * Represents a stored checkpoint hit event.
+     */
+    @Serializable
+    @SerialName("checkpoint")
+    data class Checkpoint(val event: BackendEvent.Checkpoint) : BackendStoredEvent()
+
+    /**
      * Represents a stored event related to Workflows.
      */
     @Serializable
@@ -79,9 +86,29 @@ internal fun BackendStoredEvent.toBackendEvent(): BackendEvent {
         is BackendStoredEvent.CustomerCenter -> { this.event }
         is BackendStoredEvent.Ad -> { this.event }
         is BackendStoredEvent.CustomPaywall -> { this.event }
+        is BackendStoredEvent.Checkpoint -> { this.event }
         is BackendStoredEvent.Workflows -> { this.event }
     }
 }
+
+/**
+ * Converts a checkpoint hit into its persisted backend representation.
+ */
+@JvmSynthetic
+internal fun CheckpointEvent.toBackendStoredEvent(
+    appUserID: String,
+    appSessionID: String,
+): BackendStoredEvent.Checkpoint = BackendStoredEvent.Checkpoint(
+    BackendEvent.Checkpoint(
+        id = id.toString(),
+        version = BackendEvent.CHECKPOINT_EVENT_SCHEMA_VERSION,
+        type = BackendEvent.CHECKPOINT_EVENT_TYPE,
+        identifier = identifier,
+        appUserID = appUserID,
+        appSessionID = appSessionID,
+        timestamp = timestamp.time,
+    ),
+)
 
 /**
  * Converts a `PaywallEvent` into a `BackendStoredEvent.Paywalls` instance.
@@ -220,7 +247,7 @@ internal fun CustomerCenterSurveyOptionChosenEvent.toBackendStoredEvent(
  * @param appSessionID The session ID of the app session when this event occurred.
  * @return A `BackendStoredEvent` containing a `BackendEvent.Ad`.
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.toBackendStoredEvent(
     appUserID: String,
@@ -237,7 +264,7 @@ internal fun AdEvent.toBackendStoredEvent(
     is AdEvent.RewardFailedToVerify -> toBackendStoredEvent(appUserID, appSessionID)
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Open.toBackendStoredEvent(
     appUserID: String,
@@ -262,7 +289,7 @@ internal fun AdEvent.Open.toBackendStoredEvent(
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Displayed.toBackendStoredEvent(
     appUserID: String,
@@ -287,7 +314,7 @@ internal fun AdEvent.Displayed.toBackendStoredEvent(
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Revenue.toBackendStoredEvent(
     appUserID: String,
@@ -315,7 +342,7 @@ internal fun AdEvent.Revenue.toBackendStoredEvent(
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.Loaded.toBackendStoredEvent(
     appUserID: String,
@@ -340,7 +367,7 @@ internal fun AdEvent.Loaded.toBackendStoredEvent(
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.FailedToLoad.toBackendStoredEvent(
     appUserID: String,
@@ -386,7 +413,7 @@ private val VerifiedReward.wireVirtualCurrencyAmount: Int?
 private val VerifiedReward.wireEntitlementId: String?
     get() = (this as? VerifiedReward.Entitlement)?.identifier
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.RewardEarnedUnverified.toBackendStoredEvent(
     appUserID: String,
@@ -412,7 +439,7 @@ internal fun AdEvent.RewardEarnedUnverified.toBackendStoredEvent(
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.RewardVerified.toBackendStoredEvent(
     appUserID: String,
@@ -437,7 +464,7 @@ internal fun AdEvent.RewardVerified.toBackendStoredEvent(
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.RewardGranted.toBackendStoredEvent(
     appUserID: String,
@@ -466,7 +493,7 @@ internal fun AdEvent.RewardGranted.toBackendStoredEvent(
     )
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @JvmSynthetic
 internal fun AdEvent.RewardFailedToVerify.toBackendStoredEvent(
     appUserID: String,

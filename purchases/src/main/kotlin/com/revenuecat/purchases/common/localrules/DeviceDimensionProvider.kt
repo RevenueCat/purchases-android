@@ -24,8 +24,6 @@ internal class DeviceDimensionProvider(
     private val localeProvider: LocaleProvider,
 ) : RulesDimensionProvider {
 
-    override val identifier: String = "device"
-
     override val namespace: RulesDimensionNamespace = RulesDimensionNamespace.Device
 
     private val fixedDimensions: Map<String, RulesDimensionValue> = mapOf(
@@ -65,8 +63,9 @@ internal class DeviceDimensionProvider(
         const val KEY_SDK_VERSION = "sdkVersion"
 
         /**
-         * A dimension the device could not tell us about is omitted rather than reported as an empty string: an
-         * absent key resolves to null in the engine, while `""` would compare equal to another absent value.
+         * A dimension the device could not tell us about is omitted rather than reported as an empty string: a
+         * predicate that reads an absent key fails as an unresolved variable, while `""` would quietly compare
+         * equal to another device's missing value.
          */
         private val RulesDimensionValue.hasValue: Boolean
             get() = this !is RulesDimensionValue.StringValue || value.isNotEmpty()

@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.common.localrules
 
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.rules.RulesEngine
@@ -11,8 +12,13 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 import java.util.Date
 
+// Robolectric because the resolver warns about a dimension it drops, and warnLog reaches android.util.Log.
+@RunWith(AndroidJUnit4::class)
+@Config(manifest = Config.NONE)
 class RulesDimensionResolverTest {
 
     private val evaluationDate = Date(1_700_000_000_000)
@@ -76,11 +82,10 @@ class RulesDimensionResolverTest {
     }
 
     @Test
-    fun `a provider that throws fails the snapshot with its identifier`() = runTest {
+    fun `a provider that throws fails the snapshot with its namespace`() = runTest {
         val resolver = resolver(
-            provider(RulesDimensionNamespace.Device, "platform" to string("android")),
+            provider(RulesDimensionNamespace.Store, "country" to string("USA")),
             object : RulesDimensionProvider {
-                override val identifier = "failing"
                 override val namespace = RulesDimensionNamespace.Device
                 override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> =
                     throw IllegalStateException("nope")
@@ -89,14 +94,14 @@ class RulesDimensionResolverTest {
 
         val error = resolver.snapshot().exceptionOrNull()
 
-        assertThat(error).isEqualTo(RulesDimensionResolutionException.ProviderFailed("failing", "nope"))
+        assertThat(error)
+            .isEqualTo(RulesDimensionResolutionException.ProviderFailed(RulesDimensionNamespace.Device, "nope"))
     }
 
     @Test
     fun `cancellation propagates instead of failing the snapshot`() = runTest {
         val resolver = resolver(
             object : RulesDimensionProvider {
-                override val identifier = "cancelling"
                 override val namespace = RulesDimensionNamespace.Device
                 override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> =
                     throw CancellationException("cancelled")
@@ -116,9 +121,8 @@ class RulesDimensionResolverTest {
     @Test
     fun `every provider sees the same evaluation date`() = runTest {
         val dates = mutableListOf<Date>()
-        val recordingProvider = { name: String ->
+        val recordingProvider = {
             object : RulesDimensionProvider {
-                override val identifier = name
                 override val namespace = RulesDimensionNamespace.Device
                 override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
                     dates += date
@@ -126,7 +130,7 @@ class RulesDimensionResolverTest {
                 }
             }
         }
-        val resolver = resolver(recordingProvider("first"), recordingProvider("second"))
+        val resolver = resolver(recordingProvider(), recordingProvider())
 
         val snapshot = resolver.snapshot().getOrThrow()
 
@@ -143,6 +147,13 @@ class RulesDimensionResolverTest {
                 "flag" to RulesDimensionValue.BoolValue(true),
                 "count" to RulesDimensionValue.IntValue(3),
                 "ratio" to RulesDimensionValue.DoubleValue(1.5),
+                "date" to RulesDimensionValue.DateValue(evaluationDate),
+                "records" to RulesDimensionValue.ObjectListValue(
+                    listOf(mapOf("id" to RulesDimensionValue.StringValue("one"))),
+                ),
+                "record" to RulesDimensionValue.ObjectValue(
+                    mapOf("id" to RulesDimensionValue.StringValue("one")),
+                ),
             ),
         )
 
@@ -155,9 +166,110 @@ class RulesDimensionResolverTest {
                     "flag" to Value.BoolValue(true),
                     "count" to Value.IntValue(3),
                     "ratio" to Value.FloatValue(1.5),
+                    "date" to Value.IntValue(1_700_000_000_000),
+                    "records" to Value.ArrayValue(
+                        listOf(Value.ObjectValue(mapOf("id" to Value.StringValue("one")))),
+                    ),
+                    "record" to Value.ObjectValue(mapOf("id" to Value.StringValue("one"))),
                 ),
             ),
         )
+    }
+
+    @Test
+    fun `a date dimension is ordered by a predicate`() = runTest {
+        val resolver = resolver(
+            provider(
+                RulesDimensionNamespace.Device,
+                "expiresAt" to RulesDimensionValue.DateValue(Date(1_700_000_000_000)),
+            ),
+        )
+        val values = resolver.snapshot().getOrThrow().values
+
+        assertThat(
+            RulesEngine.evaluate("""{">": [{"var": "device.expiresAt"}, 1699999999999]}""", values).getOrThrow(),
+        ).isTrue()
+        assertThat(
+            RulesEngine.evaluate("""{">": [{"var": "device.expiresAt"}, 1700000000001]}""", values).getOrThrow(),
+        ).isFalse()
+    }
+
+    @Test
+    fun `an object list dimension is walked one record at a time by a predicate`() = runTest {
+        val resolver = resolver(
+            provider(
+                RulesDimensionNamespace.Device,
+                "purchases" to RulesDimensionValue.ObjectListValue(
+                    listOf(
+                        mapOf(
+                            "productId" to RulesDimensionValue.StringValue("plus"),
+                            "isActive" to RulesDimensionValue.BoolValue(false),
+                        ),
+                        mapOf(
+                            "productId" to RulesDimensionValue.StringValue("pro"),
+                            "isActive" to RulesDimensionValue.BoolValue(true),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val values = resolver.snapshot().getOrThrow().values
+
+        val active = """{"some": [{"var": "device.purchases"},
+            {"and": [{"==": [{"var": "productId"}, "pro"]}, {"var": "isActive"}]}]}"""
+        assertThat(RulesEngine.evaluate(active, values).getOrThrow()).isTrue()
+
+        // A record is searched on its own values, so the same product with the other record's state does not match.
+        val inactive = """{"some": [{"var": "device.purchases"},
+            {"and": [{"==": [{"var": "productId"}, "plus"]}, {"var": "isActive"}]}]}"""
+        assertThat(RulesEngine.evaluate(inactive, values).getOrThrow()).isFalse()
+
+        // A record is reachable by index too.
+        val byIndex = """{"==": [{"var": "device.purchases.1.productId"}, "pro"]}"""
+        assertThat(RulesEngine.evaluate(byIndex, values).getOrThrow()).isTrue()
+    }
+
+    @Test
+    fun `an empty object list is an empty array rather than an absent dimension`() = runTest {
+        val resolver = resolver(
+            provider(
+                RulesDimensionNamespace.Device,
+                "purchases" to RulesDimensionValue.ObjectListValue(emptyList()),
+            ),
+        )
+        val values = resolver.snapshot().getOrThrow().values
+
+        // "Has bought nothing" has to be a definite answer, which only a present, empty array gives.
+        assertThat(values["device"]).isEqualTo(Value.ObjectValue(mapOf("purchases" to Value.ArrayValue(emptyList()))))
+        assertThat(
+            RulesEngine.evaluate("""{"none": [{"var": "device.purchases"}, {"var": "isActive"}]}""", values)
+                .getOrThrow(),
+        ).isTrue()
+    }
+
+    @Test
+    fun `an object dimension is read through by name rather than searched`() = runTest {
+        val resolver = resolver(
+            provider(
+                RulesDimensionNamespace.Device,
+                "goal" to RulesDimensionValue.ObjectValue(
+                    mapOf(
+                        "value" to RulesDimensionValue.StringValue("lose_weight"),
+                        "updatedAt" to RulesDimensionValue.DateValue(Date(1_700_000_000_000)),
+                    ),
+                ),
+            ),
+        )
+        val values = resolver.snapshot().getOrThrow().values
+
+        val byName = """{"==": [{"var": "device.goal.value"}, "lose_weight"]}"""
+        assertThat(RulesEngine.evaluate(byName, values).getOrThrow()).isTrue()
+
+        // Unlike a record inside an object list, a predicate reading one of these still sees the scope around it,
+        // because no iteration operator is involved.
+        val alongsideTheRestOfTheScope = """{"and": [{"==": [{"var": "device.goal.value"}, "lose_weight"]},
+            {">": [{"var": "device.goal.updatedAt"}, 1699999999999]}]}"""
+        assertThat(RulesEngine.evaluate(alongsideTheRestOfTheScope, values).getOrThrow()).isTrue()
     }
 
     @Test
@@ -178,7 +290,10 @@ class RulesDimensionResolverTest {
 
         assertThat(values).containsOnlyKeys("device")
         // An empty object would be truthy, so an absent namespace is what makes this a non-match.
-        assertThat(RulesEngine.evaluate("""{"!!": [{"var": "custom"}]}""", values).getOrThrow()).isFalse()
+        // The default keeps the read legal, because an unresolved name is an error.
+        assertThat(
+            RulesEngine.evaluate("""{"!!": [{"var": ["custom", false]}]}""", values).getOrThrow(),
+        ).isFalse()
     }
 
     @Test
@@ -201,7 +316,44 @@ class RulesDimensionResolverTest {
 
         assertThat(values).containsOnlyKeys("device")
         // An empty object would be truthy, which is what makes the absence matter.
-        assertThat(RulesEngine.evaluate("""{"!!": [{"var": "store"}]}""", values).getOrThrow()).isFalse()
+        assertThat(
+            RulesEngine.evaluate("""{"!!": [{"var": ["store", false]}]}""", values).getOrThrow(),
+        ).isFalse()
+    }
+
+    @Test
+    fun `a name no predicate could read is dropped rather than exposed`() = runTest {
+        val resolver = resolver(
+            provider(
+                RulesDimensionNamespace.SubscriberAttributes,
+                // A '.' would be walked as a path through a "user" object that does not exist, and "" is not a
+                // name a predicate can be written against.
+                "user.tier" to string("gold"),
+                "" to string("anything"),
+                "tier" to string("gold"),
+            ),
+        )
+
+        val values = resolver.snapshot().getOrThrow().values
+
+        assertThat(values["subscriberAttributes"])
+            .isEqualTo(Value.ObjectValue(mapOf("tier" to Value.StringValue("gold"))))
+    }
+
+    @Test
+    fun `a provider whose every name is unreachable leaves its namespace absent`() = runTest {
+        val resolver = resolver(
+            provider(RulesDimensionNamespace.Device, "platform" to string("android")),
+            provider(RulesDimensionNamespace.SubscriberAttributes, "user.tier" to string("gold")),
+        )
+
+        val values = resolver.snapshot().getOrThrow().values
+
+        // Filtering the names inside the namespace would leave an empty object behind, which is truthy.
+        assertThat(values).containsOnlyKeys("device")
+        assertThat(
+            RulesEngine.evaluate("""{"!!": [{"var": ["subscriberAttributes", false]}]}""", values).getOrThrow(),
+        ).isFalse()
     }
 
     @Test
@@ -222,7 +374,6 @@ class RulesDimensionResolverTest {
         dimensionNamespace: RulesDimensionNamespace,
         vararg values: Pair<String, RulesDimensionValue>,
     ) = object : RulesDimensionProvider {
-        override val identifier = dimensionNamespace.key
         override val namespace = dimensionNamespace
         override suspend fun dimensions(date: Date) = values.toMap()
     }

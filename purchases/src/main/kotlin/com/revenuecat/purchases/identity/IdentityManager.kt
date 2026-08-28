@@ -6,6 +6,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
@@ -31,11 +32,12 @@ import java.util.UUID
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class IdentityManager(
+    private val appConfig: AppConfig,
     private val deviceCache: DeviceCache,
     private val subscriberAttributesCache: SubscriberAttributesCache,
     private val subscriberAttributesManager: SubscriberAttributesManager,
     private val offeringsCache: OfferingsCache,
-    private val remoteConfigManager: RemoteConfigManager?,
+    private val remoteConfigManager: RemoteConfigManager,
     private val backend: Backend,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val dispatcher: Dispatcher,
@@ -145,7 +147,10 @@ internal class IdentityManager(
 
         log(LogIntent.USER) { IdentityStrings.LOGGING_IN.format(currentAppUserID, newAppUserID) }
         val oldAppUserID = currentAppUserID
-        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(newAppUserID) {
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+            newAppUserID,
+            Delay.jitterOnlyIfInBackground(appConfig.isAppBackgrounded),
+        ) {
             backend.logIn(
                 oldAppUserID,
                 newAppUserID,
@@ -202,7 +207,10 @@ internal class IdentityManager(
             completion(PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError))
             return
         }
-        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(currentAppUserID) {
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+            currentAppUserID,
+            Delay.jitterOnlyIfInBackground(appConfig.isAppBackgrounded),
+        ) {
             resetAndSaveUserID(generateRandomID())
             log(LogIntent.USER) { IdentityStrings.LOG_OUT_SUCCESSFUL }
             completion(null)
@@ -232,7 +240,7 @@ internal class IdentityManager(
      * [IdentityManager] monitor.
      */
     private fun clearRemoteConfigThenOfferingsCaches(newAppUserID: String) {
-        remoteConfigManager?.clearCache(newAppUserID)
+        remoteConfigManager.clearCache(newAppUserID)
         offeringsCache.clearCache()
     }
 
