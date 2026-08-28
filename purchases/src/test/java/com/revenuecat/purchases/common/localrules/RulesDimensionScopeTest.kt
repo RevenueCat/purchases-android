@@ -58,6 +58,7 @@ class RulesDimensionScopeTest {
         assertThat(scope.render()).isEqualTo(
             """
             {
+              "acquisition_channel": "paid_search",
               "app_user_id": "current_user",
               "app_version": "1.2.3",
               "backend": {
@@ -111,6 +112,7 @@ class RulesDimensionScopeTest {
               "original_purchased_at": 1609459200000,
               "platform": "android",
               "platform_version": "34",
+              "predicted_ltv_band": 3,
               "purchases": [
                 {
                   "auto_resume_at": 1717200000000,
@@ -186,6 +188,7 @@ class RulesDimensionScopeTest {
             """{"==": [{"var": "custom.plan"}, "gold"]}""",
             """{"var": ["backend.349OzehoTyCAdiZblj9w0J0yD-Uow8X3", false]}""",
             """{"==": [{"var": "app_user_id"}, "current_user"]}""",
+            """{"==": [{"var": "acquisition_channel"}, "paid_search"]}""",
             """{"some": [{"var": "purchases"}, {"==": [{"var": "period_type"}, "trial"]}]}""",
             """{"some": [{"var": "entitlements"}, {"var": "is_active"}]}""",
             """{"==": [{"var": "subscriber_attributes.${'$'}email.value"}, "jane@example.com"]}""",
@@ -226,6 +229,7 @@ class RulesDimensionScopeTest {
                     customerInfo = { customerInfo },
                 ),
                 SubscriberAttributesDimensionProvider { SUBSCRIBER_ATTRIBUTES },
+                SubscriberDimensionsProvider { SUBSCRIBER_DIMENSIONS },
             ),
             dateProvider = object : DateProvider {
                 override val now: Date get() = evaluationDate
@@ -291,6 +295,14 @@ class RulesDimensionScopeTest {
         val BACKEND_VALUES = mapOf(
             "349OzehoTyCAdiZblj9w0J0yD-Uow8X3" to RulesDimensionValue.BoolValue(true),
         )
+
+        /** The dimensions the backend last sent alongside the subscriber, root-level under their own names. */
+        val SUBSCRIBER_DIMENSIONS = """
+            {
+              "acquisition_channel": "paid_search",
+              "predicted_ltv_band": 3
+            }
+        """
 
         /**
          * One Google subscription with every field the backend can send, one Amazon one-time purchase, and two
