@@ -349,12 +349,7 @@ abstract class BaseIntegrationPurchasesTest : BasePurchasesIntegrationTest() {
         onActivityReady { activity ->
             Purchases.sharedInstance.purchaseWith(
                 purchaseParams = PurchaseParams.Builder(activity, storeProduct).build(),
-                onError = { error, _ ->
-                    fail(
-                        "Purchase should be successful. Error code: ${error.code}. " +
-                            "Error: ${error.message}. Underlying error: ${error.underlyingErrorMessage}",
-                    )
-                },
+                onError = { error, _ -> fail("Purchase should be successful. Error: ${error.message}") },
                 onSuccess = { transaction, customerInfo ->
                     assertThat(transaction).isEqualTo(storeTransaction)
                     verifyCustomerInfoHasPurchase(customerInfo)
