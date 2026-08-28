@@ -223,8 +223,11 @@ internal class PurchasesFactory(
             // network or disk, so the whole graph below stays non-null in both flavors.
             val remoteConfigEnabled = !appConfig.customEntitlementComputation
             val remoteConfigDiskCache = RemoteConfigDiskCache(contextForStorage)
-            val remoteConfigTopicStore = RemoteConfigTopicStore {
-                remoteConfigDiskCache.read()?.topics?.get(it.wireName)
+            // Gated here, not just in the manager: the API source provider reads this store directly (bypassing
+            // the manager's isDisabled gates), and a disk cache left behind by a pre-CEC install of the app must
+            // not feed API-source failover.
+            val remoteConfigTopicStore = RemoteConfigTopicStore { topic ->
+                if (remoteConfigEnabled) remoteConfigDiskCache.read()?.topics?.get(topic.wireName) else null
             }
             val apiSourceProvider = DefaultRemoteConfigSourceProvider(remoteConfigTopicStore)
             val apiSourceFailover = APISourceFailover(

@@ -5,6 +5,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.assertDebugLog
 import com.revenuecat.purchases.emptyUiConfig
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
@@ -242,6 +243,42 @@ class WorkflowManagerTest {
         assertThat(completed).isTrue()
         coVerify(exactly = 0) { mockProvider.warm() }
         coVerify(exactly = 0) { mockUiConfigProvider.resolveUiConfig() }
+    }
+
+    @Test
+    fun `onPaywallConfigReady completes synchronously without touching providers when disabled`() {
+        // Strict, unstubbed mocks: any provider or prewarmer touch fails the test. The caches can never warm
+        // while remote config is off (customEntitlementComputation), so without the disabled gate every
+        // getOfferings would take the async readiness path instead of delivering on the caller's thread.
+        val disabledManager = WorkflowManager(
+            mockk(),
+            mockk(),
+            mockk(),
+            scope = testScope,
+            enabled = false,
+        )
+
+        var completed = false
+        // No advanceUntilIdle: delivery must happen on the caller's thread with no dispatch.
+        disabledManager.onPaywallConfigReady { completed = true }
+
+        assertThat(completed).isTrue()
+        assertThat(errorLogs).isEmpty()
+    }
+
+    @Test
+    fun `onPaywallConfigReady debug-logs the skip when disabled`() {
+        val disabledManager = WorkflowManager(
+            mockk(),
+            mockk(),
+            mockk(),
+            scope = testScope,
+            enabled = false,
+        )
+
+        assertDebugLog("Workflows are disabled for this SDK configuration; skipping paywall config readiness.") {
+            disabledManager.onPaywallConfigReady { }
+        }
     }
 
     // The fast path returns before warm(), so the prewarm must not sit behind it.
