@@ -26,7 +26,6 @@ internal val VersionCatalog.plugins: PluginAccessor
 
 internal class PluginAccessor(private val catalog: VersionCatalog) {
     val android: PluginGroup get() = PluginGroup(catalog, "android")
-    val kotlin: PluginGroup get() = PluginGroup(catalog, "kotlin")
     val kover: Provider<PluginDependency> get() = catalog.findPlugin("kover").get()
     val dokka: Provider<PluginDependency> get() = catalog.findPlugin("dokka").get()
     val mavenPublish: Provider<PluginDependency> get() = catalog.findPlugin("mavenPublish").get()
@@ -37,5 +36,4 @@ internal class PluginAccessor(private val catalog: VersionCatalog) {
 internal class PluginGroup(private val catalog: VersionCatalog, private val prefix: String) {
     val library: Provider<PluginDependency> get() = catalog.findPlugin("$prefix.library").get()
     val application: Provider<PluginDependency> get() = catalog.findPlugin("$prefix.application").get()
-    val android: Provider<PluginDependency> get() = catalog.findPlugin("$prefix.android").get()
 }
