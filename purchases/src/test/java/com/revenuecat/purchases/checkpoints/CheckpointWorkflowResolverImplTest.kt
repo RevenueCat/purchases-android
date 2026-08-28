@@ -236,6 +236,46 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
+    fun `config changing during a failed audiences read is retried`() = runTest {
+        // A snapshot that could not be read while the generation moved is stale, not authoritative: the commit
+        // that moved the generation is the likely reason the read failed, so the retry gets a consistent view.
+        var generation = 0
+        var snapshotReads = 0
+        configureRulesReadAt { generation }
+        coEvery { mockAudiencesConfigProvider.getSnapshot() } answers {
+            if (snapshotReads++ == 0) {
+                generation++
+                null
+            } else {
+                AudiencesSnapshot(
+                    audiences = mapOf("aud_wf1234" to alwaysMatching("aud_wf1234")),
+                    backendPredicateResults = emptyMap(),
+                )
+            }
+        }
+
+        assertThat(resolve()).isInstanceOf(CheckpointResolution.MatchedWorkflow::class.java)
+    }
+
+    @Test
+    fun `config changing during every failed audiences read is configuration unavailable after one retry`() =
+        runTest {
+            var generation = 0
+            var snapshotReads = 0
+            configureRulesReadAt { generation }
+            coEvery { mockAudiencesConfigProvider.getSnapshot() } answers {
+                snapshotReads++
+                generation++
+                null
+            }
+
+            assertThat(noActionReason(resolve()))
+                .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+            // Two resolution attempts, no more: a burst of commits can't keep resolution spinning.
+            assertThat(snapshotReads).isEqualTo(2)
+        }
+
+    @Test
     fun `config changing once while resolving the workflow is retried`() = runTest {
         var generation = 0
         var workflowFetches = 0

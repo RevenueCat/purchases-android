@@ -89,6 +89,10 @@ internal class CheckpointWorkflowResolverImpl(
                 return configurationUnavailable("The rules for checkpoint '$identifier' could not be read.")
         }
         val matchResult = matchRule(audiencesConfigProvider, rulesResolution.checkpoint.rules, customVariables)
+        // Checked before the result is unwrapped: a match that failed against a generation that moved mid-read
+        // (audiences read from a later commit than the rules) is stale rather than authoritative, and deserves
+        // the retry as much as a stale success does.
+        if (!checkpointsConfigProvider.isCurrent(rulesResolution)) return null
         // An audience the SDK failed to evaluate is not the same answer as an audience the customer is outside of,
         // so it can't report NO_MATCH.
         val rule = matchResult.getOrElse { error ->
@@ -96,7 +100,6 @@ internal class CheckpointWorkflowResolverImpl(
                 "The audiences for checkpoint '$identifier' could not be evaluated: ${error.message}",
             )
         }
-        if (!checkpointsConfigProvider.isCurrent(rulesResolution)) return null
         if (rule == null) return noMatch(identifier)
         val uiConfig = try {
             uiConfigProvider.getUiConfig()

@@ -116,9 +116,11 @@ private fun MutableMap<String, MutableMap<String, Value>>.addDimensions(
 }
 
 /**
- * Drops the names no predicate could ever read. The engine's `var` walks a strict dot-path, so a name containing a
- * `.` would be read as a path through a nested object that does not exist, and an empty one is not a name a
- * predicate can be written against.
+ * Drops the names no predicate could ever read, at any depth. The engine's `var` walks a strict dot-path, so a
+ * name containing a `.` would be read as a path through a nested object that does not exist, and an empty one is
+ * not a name a predicate can be written against. Names inside [RulesDimensionValue.ObjectValue] and
+ * [RulesDimensionValue.ObjectListValue] records are one `var` path segment each, so the same rule applies to
+ * them, one entry at a time.
  *
  * Dropped rather than failing the snapshot, unlike this resolver's other two rejections: a namespace like
  * [RulesDimensionNamespace.SubscriberAttributes] is named by the app, so a single attribute the SDK cannot expose
@@ -127,15 +129,28 @@ private fun MutableMap<String, MutableMap<String, Value>>.addDimensions(
  */
 private fun Map<String, RulesDimensionValue>.filterReachable(
     namespace: RulesDimensionNamespace,
-): Map<String, RulesDimensionValue> = filterKeys { name ->
-    (name.isNotEmpty() && !name.contains(DIMENSION_PATH_SEPARATOR)).also { reachable ->
-        if (!reachable) {
-            warnLog {
-                "Ignoring dimension '${namespace.key}.$name': a dimension name can't be empty or contain " +
-                    "'$DIMENSION_PATH_SEPARATOR'."
-            }
+): Map<String, RulesDimensionValue> = filterReachable(parentPath = namespace.key)
+
+private fun Map<String, RulesDimensionValue>.filterReachable(
+    parentPath: String,
+): Map<String, RulesDimensionValue> = mapNotNull { (name, value) ->
+    val path = "$parentPath$DIMENSION_PATH_SEPARATOR$name"
+    if (name.isEmpty() || name.contains(DIMENSION_PATH_SEPARATOR)) {
+        warnLog {
+            "Ignoring dimension '$path': a dimension name can't be empty or contain '$DIMENSION_PATH_SEPARATOR'."
         }
+        null
+    } else {
+        name to value.filterReachable(path)
     }
+}.toMap()
+
+private fun RulesDimensionValue.filterReachable(path: String): RulesDimensionValue = when (this) {
+    is RulesDimensionValue.ObjectValue -> RulesDimensionValue.ObjectValue(value.filterReachable(path))
+    is RulesDimensionValue.ObjectListValue -> RulesDimensionValue.ObjectListValue(
+        value.mapIndexed { index, record -> record.filterReachable("$path$DIMENSION_PATH_SEPARATOR$index") },
+    )
+    else -> this
 }
 
 private const val DIMENSION_PATH_SEPARATOR = '.'
