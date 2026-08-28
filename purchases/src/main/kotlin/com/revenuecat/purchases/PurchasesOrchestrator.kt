@@ -27,6 +27,7 @@ import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolver
 import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolverImpl
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.BackendErrorCode
 import com.revenuecat.purchases.common.BillingAbstract
 import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.common.Constants
@@ -39,6 +40,7 @@ import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.DeviceCache
@@ -126,6 +128,7 @@ import java.util.Collections
 import java.util.Date
 import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
@@ -497,17 +500,40 @@ internal class PurchasesOrchestrator(
             return
         }
 
+        val firstBlockingError = AtomicReference<PurchasesError?>()
+
+        /**
+         * Whether an attribute sync error should prevent offerings from being fetched.
+         */
+        val shouldBlockOfferingsFetch = { error: PurchasesError, attributeErrors: List<SubscriberAttributeError> ->
+            error.code != PurchasesErrorCode.InvalidSubscriberAttributesError ||
+                attributeErrors.isEmpty() ||
+                attributeErrors.any {
+                    it.backendErrorCode != BackendErrorCode.BackendInvalidSubscriberAttributes.value ||
+                        !it.keyName.startsWith("$")
+                }
+        }
+
         subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
             appUserID,
             Delay.jitterOnlyIfInBackground(state.appInBackground),
-        ) {
-            remoteConfigManager.refreshRemoteConfig(
-                state.appInBackground,
-                appUserID,
-                RemoteConfigFetchContext.Read,
-            )
-            getOfferings(receiveOfferingsCallback, fetchCurrent = true)
-        }
+            syncedAttribute = { error, attributeErrors ->
+                // Reserved-only 7263 errors are non-blocking because those attributes cannot always be updated.
+                if (error != null && shouldBlockOfferingsFetch(error, attributeErrors)) {
+                    firstBlockingError.compareAndSet(null, error)
+                }
+            },
+            completion = {
+                firstBlockingError.get()?.let(callback::onError) ?: run {
+                    remoteConfigManager.refreshRemoteConfig(
+                        state.appInBackground,
+                        appUserID,
+                        RemoteConfigFetchContext.Read,
+                    )
+                    getOfferings(receiveOfferingsCallback, fetchCurrent = true)
+                }
+            },
+        )
     }
 
     fun syncPurchases(

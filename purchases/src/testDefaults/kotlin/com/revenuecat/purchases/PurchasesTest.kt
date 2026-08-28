@@ -835,7 +835,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         purchases.purchasesOrchestrator.state =
             purchases.purchasesOrchestrator.state.copy(appInBackground = false)
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), any())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), any(), any())
         } just Runs
 
         purchases.syncAttributesAndOfferingsIfNeededWith({ fail("Expected to succeed") }, {})
@@ -844,6 +844,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
                 currentAppUserID = any(),
                 delay = Delay.NONE,
+                syncedAttribute = any(),
                 completion = any(),
             )
         }
@@ -854,7 +855,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         purchases.purchasesOrchestrator.state =
             purchases.purchasesOrchestrator.state.copy(appInBackground = true)
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), any())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), any(), any())
         } just Runs
 
         purchases.syncAttributesAndOfferingsIfNeededWith({ fail("Expected to succeed") }, {})
@@ -863,6 +864,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
                 currentAppUserID = any(),
                 delay = Delay.DEFAULT,
+                syncedAttribute = any(),
                 completion = any(),
             )
         }
@@ -871,7 +873,12 @@ internal class PurchasesTest : BasePurchasesTest() {
     @Test
     fun `syncing attributes and offerings calls success callback when process completes successfully`() {
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), captureLambda())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+                any(),
+                any(),
+                any(),
+                captureLambda(),
+            )
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }
@@ -899,7 +906,12 @@ internal class PurchasesTest : BasePurchasesTest() {
     @Test
     fun `syncing attributes and offerings calls error callback when called twice within 60 seconds`() {
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), captureLambda())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+                any(),
+                any(),
+                any(),
+                captureLambda(),
+            )
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }
@@ -922,6 +934,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
                 currentAppUserID = any(),
                 delay = any(),
+                syncedAttribute = any(),
                 completion = any(),
             )
         }
