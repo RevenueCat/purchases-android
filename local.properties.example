@@ -23,7 +23,7 @@
 ## Test-store key for the shared Maestro RevenueCat project.
 ## Configure Purchases from the first Activity so Maestro launch arguments are available.
 ## ──────────────────────────────────────────────
-#E2E_API_KEY=your_test_store_key
+#MAESTRO_TEST_STORE_API_KEY=your_test_store_key
 #E2E_CONFIGURE_PURCHASES_ON_FIRST_ACTIVITY=false
 
 ## ──────────────────────────────────────────────

@@ -34,7 +34,7 @@ android {
         buildConfigField(
             "String",
             "API_KEY",
-            "\"${resolveProperty("E2E_API_KEY", "api_key_to_replace")}\"",
+            "\"${resolveProperty("MAESTRO_TEST_STORE_API_KEY", "api_key_to_replace")}\"",
         )
         buildConfigField(
             "boolean",

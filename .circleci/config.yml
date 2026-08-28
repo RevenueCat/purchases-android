@@ -817,7 +817,7 @@ jobs:
           install: true
       - android/start_emulator:
           avd_name: test-e2e-tester
-          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug -PE2E_API_KEY=$MAESTRO_TEST_STORE_API_KEY
+          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug -PMAESTRO_TEST_STORE_API_KEY=$MAESTRO_TEST_STORE_API_KEY
       - android/restore_gradle_cache
       - run:
           name: Install E2E Tester on emulator
@@ -850,7 +850,7 @@ jobs:
           avd_name: test-e2e-workflow-tester
           # Workflow tests configure Purchases from the first Activity so Maestro launch arguments
           # are available before the SDK starts. Both Maestro jobs use the same RevenueCat project.
-          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug -PE2E_API_KEY=$MAESTRO_TEST_STORE_API_KEY -PE2E_CONFIGURE_PURCHASES_ON_FIRST_ACTIVITY=true
+          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug -PMAESTRO_TEST_STORE_API_KEY=$MAESTRO_TEST_STORE_API_KEY -PE2E_CONFIGURE_PURCHASES_ON_FIRST_ACTIVITY=true
       - android/restore_gradle_cache
       - run:
           name: Install E2E Tester on emulator
