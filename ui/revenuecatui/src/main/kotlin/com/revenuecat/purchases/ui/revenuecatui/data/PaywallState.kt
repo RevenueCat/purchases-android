@@ -128,6 +128,7 @@ internal sealed interface PaywallState {
             initialSelectedTabIndex: Int? = null,
             initialSheetState: SimpleSheetState = SimpleSheetState(),
             private val purchases: PurchasesType,
+            val workflowScreen: WorkflowScreenContext? = null,
             /**
              * Presentation-session store for state-driven paywalls, seeded from the paywall's declared state defaults.
              */

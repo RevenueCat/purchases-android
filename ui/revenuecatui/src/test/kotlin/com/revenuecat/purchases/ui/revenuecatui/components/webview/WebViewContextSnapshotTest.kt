@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowScreenContext
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import kotlinx.serialization.json.Json
@@ -15,6 +16,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.long
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
+
+private val prettyJson = Json { prettyPrint = true }
 
 internal class WebViewContextSnapshotTest {
 
@@ -37,6 +40,97 @@ internal class WebViewContextSnapshotTest {
         assertThat(snapshot.getValue("package")).isEqualTo(JsonNull)
         assertThat(snapshot.getValue("selected_package")).isEqualTo(JsonNull)
         assertThat(snapshot.getValue("inputs").jsonObject).isEmpty()
+    }
+
+    @Test
+    fun `serializes the whole payload in contract order`() {
+        val prepaid = prepaidPackage()
+
+        val snapshot = testContextSnapshot(
+            customVariables = mapOf("org" to CustomVariableValue.String("RevenueCat")),
+            offering = offeringOf(prepaid),
+            componentPackage = prepaid,
+            storefrontCountryCode = "ES",
+            workflowScreen = WorkflowScreenContext(
+                workflowId = "wf_123",
+                stepId = "step_paywall",
+                stepType = "screen",
+                screenType = listOf("paywall"),
+            ),
+        ).withFixedTimestamp()
+
+        assertThat(prettyJson.encodeToString(JsonObject.serializer(), snapshot)).isEqualTo(
+            """
+            {
+                "custom": {
+                    "org": "RevenueCat"
+                },
+                "offering": {
+                    "identifier": "promo",
+                    "display_name": "Promo offering"
+                },
+                "packages": [
+                    {
+                        "identifier": "prepaid",
+                        "products": [
+                            {
+                                "identifier": "prepaid_monthly",
+                                "store": {
+                                    "store_type": "play_store",
+                                    "country": "ES"
+                                },
+                                "display_name": "Prepaid Monthly",
+                                "is_subscription": true,
+                                "period": "P1M",
+                                "is_auto_renewing": false,
+                                "price": {
+                                    "amount": 2.99,
+                                    "currency": "USD"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "package": {
+                    "identifier": "prepaid",
+                    "products": [
+                        {
+                            "identifier": "prepaid_monthly",
+                            "store": {
+                                "store_type": "play_store",
+                                "country": "ES"
+                            },
+                            "display_name": "Prepaid Monthly",
+                            "is_subscription": true,
+                            "period": "P1M",
+                            "is_auto_renewing": false,
+                            "price": {
+                                "amount": 2.99,
+                                "currency": "USD"
+                            }
+                        }
+                    ]
+                },
+                "selected_package": null,
+                "inputs": {
+                },
+                "workflow": {
+                    "workflow_id": "wf_123",
+                    "step_id": "step_paywall",
+                    "step_type": "screen",
+                    "screen_type": [
+                        "paywall"
+                    ]
+                },
+                "device_meta": {
+                    "is_preview": false,
+                    "locale": "en-US",
+                    "dark_mode": false,
+                    "updated_at": 0
+                }
+            }
+            """.trimIndent(),
+        )
     }
 
     // --- custom ---
@@ -207,6 +301,44 @@ internal class WebViewContextSnapshotTest {
         assertThat(product.getValue("is_subscription").jsonPrimitive.boolean).isFalse()
         assertThat(product).doesNotContainKey("period")
         assertThat(product).doesNotContainKey("is_auto_renewing")
+    }
+
+    // --- workflow ---
+
+    @Test
+    fun `workflow is omitted on a standalone paywall`() {
+        assertThat(testContextSnapshot()).doesNotContainKey("workflow")
+    }
+
+    @Test
+    fun `workflow carries the step this state renders`() {
+        val workflow = testContextSnapshot(
+            workflowScreen = WorkflowScreenContext(
+                workflowId = "wf_123",
+                stepId = "step_paywall",
+                stepType = "screen",
+                screenType = listOf("paywall"),
+            ),
+        ).getValue("workflow").jsonObject
+
+        assertThat(Json.encodeToString(JsonObject.serializer(), workflow)).isEqualTo(
+            """{"workflow_id":"wf_123","step_id":"step_paywall","step_type":"screen","screen_type":["paywall"]}""",
+        )
+    }
+
+    @Test
+    fun `screen_type is an empty array for an untagged step`() {
+        // The wire type has no null; the untagged-vs-tagged-empty distinction is native-only.
+        val workflow = testContextSnapshot(
+            workflowScreen = WorkflowScreenContext(
+                workflowId = "wf_123",
+                stepId = "step_paywall",
+                stepType = "screen",
+                screenType = null,
+            ),
+        ).getValue("workflow").jsonObject
+
+        assertThat(workflow.getValue("screen_type").jsonArray).isEmpty()
     }
 
     // --- device_meta ---

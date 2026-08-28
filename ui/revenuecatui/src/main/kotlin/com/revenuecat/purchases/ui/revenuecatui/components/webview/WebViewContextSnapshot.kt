@@ -12,8 +12,10 @@ import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowScreenContext
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
@@ -38,6 +40,7 @@ internal fun webViewContextSnapshot(
             selectedPackage = selectedPackage,
             store = state.store,
             storefrontCountryCode = state.storefrontCountryCode,
+            workflowScreen = state.workflowScreen,
             locale = state.locale.toLanguageTag(),
             darkMode = darkMode,
         ),
@@ -63,11 +66,22 @@ internal fun webViewContextSnapshot(input: WebViewContextInput): JsonObject = bu
     put(Keys.PACKAGE, input.componentPackage?.asJson(input) ?: JsonNull)
     put(Keys.SELECTED_PACKAGE, input.selectedPackage?.asJson(input) ?: JsonNull)
     putJsonObject(Keys.INPUTS) {}
+    input.workflowScreen?.let { putWorkflow(it) }
     putJsonObject(Keys.DEVICE_META) {
         put(Keys.IS_PREVIEW, false)
         put(Keys.LOCALE, input.locale)
         put(Keys.DARK_MODE, input.darkMode)
         put(Keys.UPDATED_AT, System.currentTimeMillis())
+    }
+}
+
+private fun JsonObjectBuilder.putWorkflow(workflowScreen: WorkflowScreenContext) {
+    putJsonObject(Keys.WORKFLOW) {
+        put(Keys.WORKFLOW_ID, workflowScreen.workflowId)
+        put(Keys.STEP_ID, workflowScreen.stepId)
+        put(Keys.STEP_TYPE, workflowScreen.stepType)
+        // The wire type has no null: an untagged step and one tagged with nothing look the same.
+        putJsonArray(Keys.SCREEN_TYPE) { workflowScreen.screenType?.forEach { add(it) } }
     }
 }
 
@@ -134,6 +148,12 @@ private object Keys {
     const val PRICE = "price"
     const val AMOUNT = "amount"
     const val CURRENCY = "currency"
+
+    const val WORKFLOW = "workflow"
+    const val WORKFLOW_ID = "workflow_id"
+    const val STEP_ID = "step_id"
+    const val STEP_TYPE = "step_type"
+    const val SCREEN_TYPE = "screen_type"
 }
 
 private val CustomVariableValue.asJsonPrimitive: JsonPrimitive

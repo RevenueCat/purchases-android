@@ -21,6 +21,7 @@ internal fun deviceContextSnapshot(
         selectedPackage = null,
         store = Store.PLAY_STORE,
         storefrontCountryCode = "US",
+        workflowScreen = null,
         locale = "en-US",
         darkMode = false,
     ),
