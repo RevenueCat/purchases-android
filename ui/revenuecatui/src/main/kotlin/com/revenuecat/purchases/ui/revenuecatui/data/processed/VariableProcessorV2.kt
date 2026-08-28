@@ -2,12 +2,14 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableProcessor.PackageContext
+import com.revenuecat.purchases.ui.revenuecatui.extensions.localized
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import java.util.Currency
 import java.util.Date
@@ -53,6 +55,9 @@ internal object VariableProcessorV2 {
         PRODUCT_SECONDARY_OFFER_PERIOD("product.secondary_offer_period"),
         PRODUCT_SECONDARY_OFFER_PERIOD_ABBREVIATED("product.secondary_offer_period_abbreviated"),
         PRODUCT_RELATIVE_DISCOUNT("product.relative_discount"),
+        PRODUCT_ABSOLUTE_DISCOUNT("product.absolute_discount"),
+        PRODUCT_OFFER_RELATIVE_DISCOUNT("product.offer_relative_discount"),
+        PRODUCT_OFFER_ABSOLUTE_DISCOUNT("product.offer_absolute_discount"),
         PRODUCT_STORE_PRODUCT_NAME("product.store_product_name"),
 
         COUNT_DAYS_WITH_ZERO("count_days_with_zero"),
@@ -576,6 +581,28 @@ internal object VariableProcessorV2 {
             ) { rcPackage?.productPeriodAbbreviated(localizedVariableKeys) }
 
         Variable.PRODUCT_RELATIVE_DISCOUNT -> packageContext?.relativeDiscount(localizedVariableKeys)
+
+        Variable.PRODUCT_ABSOLUTE_DISCOUNT -> packageContext?.absoluteDiscount(rcPackage, currencyLocale)
+
+        Variable.PRODUCT_OFFER_RELATIVE_DISCOUNT ->
+            primaryDiscountPhase(subscriptionOption, rcPackage)
+                ?.comparableOfferPriceMicros(rcPackage)
+                ?.let { offerPriceMicros ->
+                    offerRelativeDiscount(rcPackage, offerPriceMicros, localizedVariableKeys)
+                }
+
+        Variable.PRODUCT_OFFER_ABSOLUTE_DISCOUNT ->
+            primaryDiscountPhase(subscriptionOption, rcPackage)
+                ?.comparableOfferPriceMicros(rcPackage)
+                ?.let { offerPriceMicros ->
+                    offerAbsoluteDiscount(
+                        rcPackage = rcPackage,
+                        offerPriceMicros = offerPriceMicros,
+                        locale = currencyLocale,
+                        showZeroDecimalPlacePrices = packageContext?.showZeroDecimalPlacePrices ?: false,
+                    )
+                }
+
         Variable.PRODUCT_STORE_PRODUCT_NAME -> rcPackage?.product?.name
 
         Variable.COUNT_DAYS_WITH_ZERO -> countdownTime?.let {
@@ -655,4 +682,55 @@ internal object VariableProcessorV2 {
             ?.let { discountPercentage ->
                 localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.PERCENT)?.format(discountPercentage)
             }
+
+    /**
+     * The saving against the most expensive package, expressed over this package's own period.
+     *
+     * The anchor is picked by per-month price, exactly as [relativeDiscount] does, so the two variables
+     * always compare the same pair of packages. The amount is then normalized to the period being
+     * purchased: a ratio is period-invariant, but a currency amount is not, so quoting it per month would
+     * peg the number to an arbitrary unit rather than to what the customer actually buys.
+     */
+    private fun PackageContext.absoluteDiscount(rcPackage: Package?, locale: Locale): String? {
+        val product = rcPackage?.product ?: return null
+        val mostExpensiveMicros = mostExpensivePricePerMonthMicros ?: return null
+        val pricePerMonthMicros = product.pricePerMonth(locale)?.amountMicros ?: return null
+        // Non-subscriptions have no period to normalize the anchor to.
+        val periodInMonths = product.period?.valueInMonths ?: return null
+
+        if (mostExpensiveMicros <= pricePerMonthMicros) return null
+
+        val savingMicros = (mostExpensiveMicros * periodInMonths).toLong() - product.price.amountMicros
+        if (savingMicros <= 0L) return null
+
+        // `formatted` is unused: localized() derives the display string from amountMicros.
+        return Price("", savingMicros, product.price.currencyCode).localized(locale, showZeroDecimalPlacePrices)
+    }
+
+    private fun offerRelativeDiscount(
+        rcPackage: Package?,
+        offerPriceMicros: Long,
+        localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    ): String? {
+        val standardMicros = rcPackage?.product?.price?.amountMicros ?: return null
+        if (standardMicros <= offerPriceMicros) return null
+
+        val percentage =
+            ((standardMicros - offerPriceMicros).toDouble() * PERCENT_SCALE / standardMicros).roundToInt()
+        return localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.PERCENT)?.format(percentage)
+    }
+
+    private fun offerAbsoluteDiscount(
+        rcPackage: Package?,
+        offerPriceMicros: Long,
+        locale: Locale,
+        showZeroDecimalPlacePrices: Boolean,
+    ): String? {
+        val standardPrice = rcPackage?.product?.price ?: return null
+        val savingMicros = standardPrice.amountMicros - offerPriceMicros
+        if (savingMicros <= 0L) return null
+
+        // `formatted` is unused: localized() derives the display string from amountMicros.
+        return Price("", savingMicros, standardPrice.currencyCode).localized(locale, showZeroDecimalPlacePrices)
+    }
 }
