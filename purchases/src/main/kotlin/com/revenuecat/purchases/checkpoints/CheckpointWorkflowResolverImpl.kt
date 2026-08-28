@@ -126,9 +126,7 @@ internal class CheckpointWorkflowResolverImpl(
         return localRulesEvaluator.match(
             rules = rules,
             customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables),
-            backendValues = snapshot.backendPredicateResults.mapValues { (_, result) ->
-                RulesDimensionValue.BoolValue(result)
-            },
+            backendValues = snapshot.backendPredicateResults,
         ) { rule ->
             snapshot.audiences[rule.audienceId]
                 ?.let { audience -> Result.success(audience.rules) }

@@ -435,7 +435,7 @@ class CheckpointWorkflowResolverImplTest {
                     {"==": [{"var": "custom.country"}, "PL"]}
                 ]}""",
             ),
-            backendPredicateResults = mapOf(BACKEND_PREDICATE_HASH to true),
+            backendPredicateResults = mapOf(BACKEND_PREDICATE_HASH to RulesDimensionValue.BoolValue(true)),
         )
 
         assertThat(resolve()).isInstanceOf(CheckpointResolution.MatchedWorkflow::class.java)
@@ -445,10 +445,20 @@ class CheckpointWorkflowResolverImplTest {
     fun `a false backend predicate result resolves NoAction with NO_MATCH`() = runTest {
         configureAudiences(
             Audience("aud_wf1234", """{"var": ["backend.$BACKEND_PREDICATE_HASH", false]}"""),
-            backendPredicateResults = mapOf(BACKEND_PREDICATE_HASH to false),
+            backendPredicateResults = mapOf(BACKEND_PREDICATE_HASH to RulesDimensionValue.BoolValue(false)),
         )
 
         assertThat(noActionReason(resolve())).isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
+    }
+
+    @Test
+    fun `a non-boolean backend predicate result is compared like any other dimension`() = runTest {
+        configureAudiences(
+            Audience("aud_wf1234", """{"==": [{"var": ["backend.$BACKEND_PREDICATE_HASH", ""]}, "variant_b"]}"""),
+            backendPredicateResults = mapOf(BACKEND_PREDICATE_HASH to RulesDimensionValue.StringValue("variant_b")),
+        )
+
+        assertThat(resolve()).isInstanceOf(CheckpointResolution.MatchedWorkflow::class.java)
     }
 
     @Test
@@ -637,7 +647,7 @@ class CheckpointWorkflowResolverImplTest {
 
     private fun configureAudiences(
         vararg audiences: Audience,
-        backendPredicateResults: Map<String, Boolean> = emptyMap(),
+        backendPredicateResults: Map<String, RulesDimensionValue> = emptyMap(),
     ) {
         coEvery { mockAudiencesConfigProvider.getSnapshot() } returns AudiencesSnapshot(
             audiences = audiences.associateBy { it.id },

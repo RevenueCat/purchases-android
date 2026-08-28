@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.audiences
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.common.currentLogHandler
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.remoteconfig.ConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
@@ -113,7 +114,7 @@ internal class AudiencesConfigProviderTest {
     }
 
     @Test
-    fun `boolean backend predicate results are read from the topic item`() = runTest {
+    fun `backend predicate results are read from the topic item`() = runTest {
         returnDefaultBlob("{}")
         returnTopicItems(
             "backend_predicate_results" to """
@@ -126,28 +127,70 @@ internal class AudiencesConfigProviderTest {
 
         assertThat(provider.getSnapshot()?.backendPredicateResults).isEqualTo(
             mapOf(
-                "349OzehoTyCAdiZblj9w0J0yD-Uow8X3" to false,
-                "PROg2cJoAVWa3sWx-6djaRxQQbDPpWwW" to true,
+                "349OzehoTyCAdiZblj9w0J0yD-Uow8X3" to RulesDimensionValue.BoolValue(false),
+                "PROg2cJoAVWa3sWx-6djaRxQQbDPpWwW" to RulesDimensionValue.BoolValue(true),
             ),
         )
     }
 
     @Test
-    fun `a non-boolean backend predicate result is dropped without dropping the others`() = runTest {
+    fun `every backend predicate result shape a rule can read is kept`() = runTest {
         returnDefaultBlob("{}")
         returnTopicItems(
             "backend_predicate_results" to """
             {
-              "string-boolean": "true",
-              "number": 1,
+              "string": "variant_b",
+              "int": 3,
+              "double": 1.5,
+              "object": { "value": true, "count": 2 },
+              "records": [{ "id": "one" }, { "id": "two" }]
+            }
+            """.trimIndent(),
+        )
+
+        assertThat(provider.getSnapshot()?.backendPredicateResults).isEqualTo(
+            mapOf(
+                "string" to RulesDimensionValue.StringValue("variant_b"),
+                "int" to RulesDimensionValue.IntValue(3),
+                "double" to RulesDimensionValue.DoubleValue(1.5),
+                "object" to RulesDimensionValue.ObjectValue(
+                    mapOf(
+                        "value" to RulesDimensionValue.BoolValue(true),
+                        "count" to RulesDimensionValue.IntValue(2),
+                    ),
+                ),
+                "records" to RulesDimensionValue.ObjectListValue(
+                    listOf(
+                        mapOf("id" to RulesDimensionValue.StringValue("one")),
+                        mapOf("id" to RulesDimensionValue.StringValue("two")),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun `a backend predicate result no rule could read is dropped without dropping the others`() = runTest {
+        returnDefaultBlob("{}")
+        returnTopicItems(
+            "backend_predicate_results" to """
+            {
               "null-result": null,
-              "object": { "value": true },
+              "scalar-array": [1, 2, 3],
+              "null-in-object": { "value": null, "kept": true },
               "kept": true
             }
             """.trimIndent(),
         )
 
-        assertThat(provider.getSnapshot()?.backendPredicateResults).isEqualTo(mapOf("kept" to true))
+        assertThat(provider.getSnapshot()?.backendPredicateResults).isEqualTo(
+            mapOf(
+                "null-in-object" to RulesDimensionValue.ObjectValue(
+                    mapOf("kept" to RulesDimensionValue.BoolValue(true)),
+                ),
+                "kept" to RulesDimensionValue.BoolValue(true),
+            ),
+        )
     }
 
     @Test
