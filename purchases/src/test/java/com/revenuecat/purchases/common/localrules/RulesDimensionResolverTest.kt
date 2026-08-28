@@ -297,6 +297,46 @@ class RulesDimensionResolverTest {
     }
 
     @Test
+    fun `backend values are nested under the backend namespace`() = runTest {
+        val resolver = resolver(provider(RulesDimensionNamespace.Device, "platform" to string("android")))
+
+        val values = resolver
+            .snapshot(backendValues = mapOf("349OzehoTyCAdiZblj9w0J0yD-Uow8X3" to RulesDimensionValue.BoolValue(true)))
+            .getOrThrow()
+            .values
+
+        val matches = RulesEngine.evaluate(
+            """{"var": ["backend.349OzehoTyCAdiZblj9w0J0yD-Uow8X3", false]}""",
+            values,
+        )
+        assertThat(matches.getOrThrow()).isTrue()
+    }
+
+    @Test
+    fun `no backend values leaves the namespace absent rather than empty`() = runTest {
+        val resolver = resolver(provider(RulesDimensionNamespace.Device, "platform" to string("android")))
+
+        val values = resolver.snapshot().getOrThrow().values
+
+        assertThat(values).containsOnlyKeys("device")
+        // An absent hash reads as the rule's default, which is what keeps unknown hashes forward-compatible.
+        assertThat(
+            RulesEngine.evaluate("""{"var": ["backend.unknown_hash", false]}""", values).getOrThrow(),
+        ).isFalse()
+    }
+
+    @Test
+    fun `a backend value colliding with a provider fails the snapshot`() = runTest {
+        val resolver = resolver(provider(RulesDimensionNamespace.Backend, "hash" to RulesDimensionValue.BoolValue(false)))
+
+        val error = resolver
+            .snapshot(backendValues = mapOf("hash" to RulesDimensionValue.BoolValue(true)))
+            .exceptionOrNull()
+
+        assertThat(error).isEqualTo(RulesDimensionResolutionException.ConflictingDimension("backend.hash"))
+    }
+
+    @Test
     fun `a custom variable colliding with a provider fails the snapshot`() = runTest {
         val resolver = resolver(provider(RulesDimensionNamespace.Custom, "source" to string("provided")))
 

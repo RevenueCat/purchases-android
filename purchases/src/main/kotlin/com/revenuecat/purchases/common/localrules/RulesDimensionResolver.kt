@@ -48,11 +48,13 @@ internal class RulesDimensionResolver(
 
     /**
      * [customVariables] are the caller's own values for this one evaluation, exposed under
-     * [RulesDimensionNamespace.Custom].
+     * [RulesDimensionNamespace.Custom]. [backendValues] are the backend's pre-evaluated values for this one
+     * evaluation, exposed under [RulesDimensionNamespace.Backend].
      */
     @Suppress("ReturnCount")
     suspend fun snapshot(
         customVariables: Map<String, RulesDimensionValue> = emptyMap(),
+        backendValues: Map<String, RulesDimensionValue> = emptyMap(),
     ): Result<RulesDimensionSnapshot> {
         val date = dateProvider.now
         val values = mutableMapOf<String, MutableMap<String, Value>>()
@@ -76,6 +78,10 @@ internal class RulesDimensionResolver(
         }
 
         values.addDimensions(RulesDimensionNamespace.Custom, customVariables)?.let { conflict ->
+            return Result.failure(conflict)
+        }
+
+        values.addDimensions(RulesDimensionNamespace.Backend, backendValues)?.let { conflict ->
             return Result.failure(conflict)
         }
 

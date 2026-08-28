@@ -14,6 +14,9 @@ import java.util.Date
  * `device`, it is never a literal key.
  */
 internal enum class RulesDimensionNamespace(val key: String) {
+    /** Predicate results pre-evaluated by the backend, supplied per evaluation; see [LocalRulesEvaluator.match]. */
+    Backend("backend"),
+
     /** Values supplied by the caller for one evaluation; see [LocalRulesEvaluator.match]. */
     Custom("custom"),
     Device("device"),

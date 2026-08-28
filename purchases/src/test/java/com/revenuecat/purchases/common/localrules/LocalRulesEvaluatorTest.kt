@@ -176,6 +176,44 @@ class LocalRulesEvaluatorTest {
     }
 
     @Test
+    fun `a predicate reading a backend value matches`() = runTest {
+        val rules = listOf(TestRule("only", """{"var": ["backend.hash", false]}"""))
+
+        assertThat(
+            evaluator().match(rules, backendValues = mapOf("hash" to RulesDimensionValue.BoolValue(true)))
+                .getOrThrow()?.name,
+        ).isEqualTo("only")
+        assertThat(
+            evaluator().match(rules, backendValues = mapOf("hash" to RulesDimensionValue.BoolValue(false)))
+                .getOrThrow(),
+        ).isNull()
+        // A backend value this SDK never received reads as the default the rule was authored with.
+        assertThat(evaluator().match(rules).getOrThrow()).isNull()
+    }
+
+    @Test
+    fun `backend values, custom variables, and ambient dimensions are visible in the same call`() = runTest {
+        val rules = listOf(
+            TestRule(
+                "only",
+                """{"and": [
+                    {"==": [{"var": "device.platform"}, "android"]},
+                    {"==": [{"var": "custom.source"}, "settings"]},
+                    {"var": ["backend.hash", false]}
+                ]}""",
+            ),
+        )
+
+        val matched = evaluator().match(
+            rules,
+            customVariables = mapOf("source" to RulesDimensionValue.StringValue("settings")),
+            backendValues = mapOf("hash" to RulesDimensionValue.BoolValue(true)),
+        )
+
+        assertThat(matched.getOrThrow()?.name).isEqualTo("only")
+    }
+
+    @Test
     fun `dimensions are collected once per call regardless of rule count`() = runTest {
         evaluator().match(listOf("first", "second", "third")) { rule ->
             Result.success(if (rule == "third") matchingPredicate else nonMatchingPredicate)
