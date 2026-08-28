@@ -41,6 +41,7 @@ internal enum class LoadMode(val label: String) {
 
 @Composable
 fun AdMobNextGenSample(
+    @Suppress("UnusedParameter")
     activity: Activity,
     application: MainApplication,
     selectedScreen: SampleScreen?,
