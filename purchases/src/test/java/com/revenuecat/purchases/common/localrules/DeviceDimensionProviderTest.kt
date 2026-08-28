@@ -38,7 +38,7 @@ class DeviceDimensionProviderTest {
                 "app_version" to RulesDimensionValue.StringValue("1.2.3"),
                 "locale" to RulesDimensionValue.StringValue("en_us"),
                 "platform" to RulesDimensionValue.StringValue("android"),
-                "platform_version" to RulesDimensionValue.IntValue(34),
+                "platform_version" to RulesDimensionValue.StringValue("34"),
                 "sdk_version" to RulesDimensionValue.StringValue(Config.frameworkVersion),
             ),
         )

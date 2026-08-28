@@ -29,7 +29,9 @@ internal class DeviceDimensionProvider(
     private val fixedDimensions: Map<String, RulesDimensionValue> = mapOf(
         KEY_APP_VERSION to RulesDimensionValue.StringValue(appConfig.versionName),
         KEY_PLATFORM to RulesDimensionValue.StringValue(appConfig.store.platformName),
-        KEY_PLATFORM_VERSION to RulesDimensionValue.IntValue(Build.VERSION.SDK_INT.toLong()),
+        // A string rather than a number so one predicate can treat the platform version the same on every
+        // platform: iOS reports versions like "26.1", which only a string can carry.
+        KEY_PLATFORM_VERSION to RulesDimensionValue.StringValue(Build.VERSION.SDK_INT.toString()),
         KEY_SDK_VERSION to RulesDimensionValue.StringValue(Config.frameworkVersion),
     )
 
