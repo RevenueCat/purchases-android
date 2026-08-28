@@ -58,6 +58,7 @@ class StoreDimensionProviderTest {
                     deviceProvider("platform" to "android"),
                     StoreDimensionProvider { throw failure },
                 ),
+                currentAppUserId = { "user" },
             ).snapshot()
 
             assertThat(snapshot.isSuccess).describedAs("%s", failure).isTrue()
@@ -95,7 +96,8 @@ class StoreDimensionProviderTest {
 
     @Test
     fun `the storefront is reachable by name from a predicate`() = runTest {
-        val values = RulesDimensionResolver(providers = listOf(provider("US"))).snapshot().getOrThrow().values
+        val values = RulesDimensionResolver(providers = listOf(provider("US")), currentAppUserId = { "user" })
+            .snapshot().getOrThrow().values
 
         val matches = RulesEngine.evaluate("""{"==": [{"var": "storefront"}, "USA"]}""", values)
 

@@ -28,10 +28,11 @@ internal sealed class LocalRulesEvaluationException(message: String) : Exception
  */
 internal class LocalRulesEvaluator(
     providers: List<RulesDimensionProvider>,
+    currentAppUserId: () -> String,
     dateProvider: DateProvider = DefaultDateProvider(),
 ) {
 
-    private val dimensionResolver = RulesDimensionResolver(providers, dateProvider)
+    private val dimensionResolver = RulesDimensionResolver(providers, currentAppUserId, dateProvider)
 
     /**
      * The first rule that matches, or `null` when none does.

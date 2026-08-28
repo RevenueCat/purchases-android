@@ -28,6 +28,9 @@ internal sealed class RulesDimensionResolutionException(message: String) : Excep
     internal data class ConflictingDimension(
         val path: String,
     ) : RulesDimensionResolutionException("two dimension sources supplied '$path'")
+
+    internal class CustomerChanged :
+        RulesDimensionResolutionException("the customer changed while dimensions were being collected")
 }
 
 /**
@@ -36,13 +39,18 @@ internal sealed class RulesDimensionResolutionException(message: String) : Excep
  *
  * All providers see the same reference instant, so every dimension in one snapshot is consistent with the others.
  *
- * Both failure modes are configuration bugs rather than runtime conditions — a provider that cannot produce its
- * values, and two sources claiming the same root name — so they fail the whole snapshot instead of silently
+ * Two of the failure modes are configuration bugs rather than runtime conditions — a provider that cannot produce
+ * its values, and two sources claiming the same root name — so they fail the whole snapshot instead of silently
  * degrading a rule to a non-match, which would be indistinguishable from a customer who genuinely does not match.
- * Cancellation is neither, and propagates.
+ * The third is a runtime condition: providers suspend, so an identity change can land mid-collection and leave a
+ * snapshot describing two customers at once, or one whose values were emptied under it. That snapshot must not be
+ * evaluated either, so [currentAppUserId] is read before the first provider and verified after the last. An
+ * identity change also advances the remote config generation, so a caller guarding on it retries against the new
+ * customer rather than reporting this failure. Cancellation is none of these, and propagates.
  */
 internal class RulesDimensionResolver(
     private val providers: List<RulesDimensionProvider>,
+    private val currentAppUserId: () -> String,
     private val dateProvider: DateProvider = DefaultDateProvider(),
 ) {
 
@@ -55,6 +63,7 @@ internal class RulesDimensionResolver(
     suspend fun snapshot(
         customVariables: Map<String, RulesDimensionValue> = emptyMap(),
     ): Result<RulesDimensionSnapshot> {
+        val appUserId = currentAppUserId()
         val date = dateProvider.now
         // Seeded before any provider runs, so a provider claiming this root is an ordinary collision.
         val values = mutableMapOf<String, Value>(KEY_EVALUATED_AT to Value.IntValue(date.time))
@@ -79,6 +88,11 @@ internal class RulesDimensionResolver(
 
         values.addNestedDimensions(KEY_CUSTOM, customVariables)?.let { conflict ->
             return Result.failure(conflict)
+        }
+
+        // Checked once, at the end: a change at any point during collection is still a change here.
+        if (currentAppUserId() != appUserId) {
+            return Result.failure(RulesDimensionResolutionException.CustomerChanged())
         }
 
         return Result.success(

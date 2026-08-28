@@ -72,6 +72,7 @@ class SubscriberAttributesDimensionIntegrationTest {
                     attributesCache.getAllStoredSubscriberAttributes(cache.getCachedAppUserID() ?: "")
                 },
             ),
+            currentAppUserId = { cache.getCachedAppUserID() ?: "" },
             dateProvider = object : DateProvider {
                 override val now: Date get() = evaluationDate
             },

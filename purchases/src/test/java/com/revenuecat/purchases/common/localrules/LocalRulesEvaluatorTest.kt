@@ -103,12 +103,30 @@ class LocalRulesEvaluatorTest {
                 throw IllegalStateException("nope")
         }
 
-        val result = LocalRulesEvaluator(providers = listOf(failing))
+        val result = LocalRulesEvaluator(providers = listOf(failing), currentAppUserId = { "user" })
             .match(listOf(TestRule("only", matchingPredicate)))
 
         val error = result.exceptionOrNull() as LocalRulesEvaluationException.DimensionResolution
         assertThat(error.reason)
             .isEqualTo(RulesDimensionResolutionException.ProviderFailed("device", "nope"))
+    }
+
+    @Test
+    fun `a customer change during the snapshot fails the evaluation`() = runTest {
+        var currentUser = "userA"
+        val flipping = object : RulesDimensionProvider {
+            override val name = "identity_flipper"
+            override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
+                currentUser = "userB"
+                return emptyMap()
+            }
+        }
+
+        val result = LocalRulesEvaluator(providers = listOf(flipping), currentAppUserId = { currentUser })
+            .match(listOf(TestRule("only", matchingPredicate)))
+
+        val error = result.exceptionOrNull() as LocalRulesEvaluationException.DimensionResolution
+        assertThat(error.reason).isInstanceOf(RulesDimensionResolutionException.CustomerChanged::class.java)
     }
 
     @Test
@@ -184,7 +202,7 @@ class LocalRulesEvaluatorTest {
         assertThat(snapshotsTaken).isEqualTo(1)
     }
 
-    private fun evaluator() = LocalRulesEvaluator(providers = listOf(deviceProvider))
+    private fun evaluator() = LocalRulesEvaluator(providers = listOf(deviceProvider), currentAppUserId = { "user" })
 
     private data class TestRule(
         val name: String,

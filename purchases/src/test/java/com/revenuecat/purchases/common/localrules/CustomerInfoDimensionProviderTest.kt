@@ -271,6 +271,41 @@ class CustomerInfoDimensionProviderTest {
     }
 
     @Test
+    fun `a customer change while the customer info is being fetched fails the snapshot`() = runTest {
+        var currentUser = APP_USER_ID
+        val provider = CustomerInfoDimensionProvider(
+            currentAppUserId = { currentUser },
+            customerInfo = {
+                // A logIn completing while the fetch is in flight: the answer describes the previous customer.
+                currentUser = "another_user"
+                customerInfo(SUBSCRIBED_RESPONSE)
+            },
+        )
+
+        val error = resolver(provider, currentAppUserId = { currentUser }).snapshot().exceptionOrNull()
+
+        assertThat(error).isInstanceOf(RulesDimensionResolutionException.CustomerChanged::class.java)
+    }
+
+    @Test
+    fun `a customer info read broken by a customer change fails the snapshot instead of degrading it`() = runTest {
+        var currentUser = APP_USER_ID
+        val provider = CustomerInfoDimensionProvider(
+            currentAppUserId = { currentUser },
+            customerInfo = {
+                // A logOut wiping the caches mid-fetch: the read fails *because* the customer changed, so the
+                // snapshot must not quietly carry on with only the identity dimensions.
+                currentUser = "another_user"
+                throw PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError, "Caches were cleared."))
+            },
+        )
+
+        val error = resolver(provider, currentAppUserId = { currentUser }).snapshot().exceptionOrNull()
+
+        assertThat(error).isInstanceOf(RulesDimensionResolutionException.CustomerChanged::class.java)
+    }
+
+    @Test
     fun `a customer the SDK has no ID for is not asked about`() = runTest {
         var asked = false
         val provider = CustomerInfoDimensionProvider(
@@ -355,8 +390,12 @@ class CustomerInfoDimensionProviderTest {
         customerInfo = customerInfo,
     )
 
-    private fun resolver(customerInfoProvider: RulesDimensionProvider) = RulesDimensionResolver(
+    private fun resolver(
+        customerInfoProvider: RulesDimensionProvider,
+        currentAppUserId: () -> String = { APP_USER_ID },
+    ) = RulesDimensionResolver(
         providers = listOf(deviceProvider(), customerInfoProvider),
+        currentAppUserId = currentAppUserId,
     )
 
     private fun deviceProvider() = object : RulesDimensionProvider {

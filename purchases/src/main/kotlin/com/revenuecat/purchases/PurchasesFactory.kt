@@ -409,6 +409,7 @@ internal class PurchasesFactory(
                         cache.getCachedSubscriberDimensionsJson(identityManager.currentAppUserID)
                     },
                 ),
+                currentAppUserId = { identityManager.currentAppUserID },
             )
 
             val customerInfoUpdateHandler = CustomerInfoUpdateHandler(

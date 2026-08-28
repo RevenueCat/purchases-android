@@ -95,6 +95,51 @@ class RulesDimensionResolverTest {
     }
 
     @Test
+    fun `a customer change while dimensions are collected fails the snapshot`() = runTest {
+        var currentUser = "userA"
+        val resolver = resolver(
+            provider("platform" to string("android")),
+            object : RulesDimensionProvider {
+                override val name = "identity_flipper"
+                override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
+                    currentUser = "userB"
+                    return emptyMap()
+                }
+            },
+            currentAppUserId = { currentUser },
+        )
+
+        val error = resolver.snapshot().exceptionOrNull()
+
+        assertThat(error).isInstanceOf(RulesDimensionResolutionException.CustomerChanged::class.java)
+        assertThat(error).hasMessage("the customer changed while dimensions were being collected")
+    }
+
+    @Test
+    fun `a customer that changed back by the end of collection does not fail the snapshot`() = runTest {
+        var currentUser = "userA"
+        val resolver = resolver(
+            object : RulesDimensionProvider {
+                override val name = "identity_flipper"
+                override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
+                    currentUser = "userB"
+                    return emptyMap()
+                }
+            },
+            object : RulesDimensionProvider {
+                override val name = "identity_flipper_back"
+                override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
+                    currentUser = "userA"
+                    return emptyMap()
+                }
+            },
+            currentAppUserId = { currentUser },
+        )
+
+        assertThat(resolver.snapshot().isSuccess).isTrue()
+    }
+
+    @Test
     fun `cancellation propagates instead of failing the snapshot`() = runTest {
         val resolver = resolver(
             object : RulesDimensionProvider {
@@ -495,8 +540,12 @@ class RulesDimensionResolverTest {
         assertThat(resolver().snapshot().getOrThrow().values).isEqualTo(mapOf(evaluatedAt))
     }
 
-    private fun resolver(vararg providers: RulesDimensionProvider) = RulesDimensionResolver(
+    private fun resolver(
+        vararg providers: RulesDimensionProvider,
+        currentAppUserId: () -> String = { "user" },
+    ) = RulesDimensionResolver(
         providers = providers.toList(),
+        currentAppUserId = currentAppUserId,
         dateProvider = object : DateProvider {
             override val now: Date = evaluationDate
         },
