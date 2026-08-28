@@ -4,7 +4,6 @@ import android.Manifest
 import android.app.Application
 import android.content.Context
 import android.os.Looper
-import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.Purchases
@@ -30,7 +29,7 @@ class PerfHarness(
     private val server: MockWebServer,
     private val apiKey: String = "test_perfHarnessKey",
 ) {
-    fun runCycle(useWorkflows: Boolean, cold: Boolean): CycleResult {
+    fun runCycle(cold: Boolean): CycleResult {
         // Robolectric does not auto-grant manifest permissions; configure() requires INTERNET.
         (context.applicationContext as? Application)?.let {
             shadowOf(it).grantPermissions(Manifest.permission.INTERNET)
@@ -40,7 +39,6 @@ class PerfHarness(
         Purchases.proxyURL = server.url("/").toUrl()
 
         val builder = PurchasesConfiguration.Builder(context, apiKey).diagnosticsEnabled(false)
-        if (useWorkflows) builder.dangerousSettings(DangerousSettings.forWorkflows())
         Purchases.configure(builder.build())
 
         val latch = CountDownLatch(1)
@@ -62,12 +60,14 @@ class PerfHarness(
         val elapsedMs = (System.nanoTime() - start) / 1_000_000
         check(latch.count == 0L) { "getOfferings timed out after $TIMEOUT_SECONDS s" }
 
-        // The workflow /config sync is fired on a background thread and is NOT awaited by
-        // getOfferings, so it may still be in flight when the callback returns. Drain with a
+        // The /config fetch is awaited by the paywall-config readiness gate before getOfferings'
+        // success callback fires (WorkflowManager.onPaywallConfigReady), but asset prewarming it
+        // kicks off alongside (offering/workflow image and font prefetch) runs fire-and-forget on a
+        // background scope and may still be in flight when the callback returns. Drain with a
         // bounded grace wait — collect requests until none arrives within DRAIN_GRACE_MS, capped
-        // by DRAIN_MAX_MS — so the async config request is captured deterministically rather than
-        // racing a zero-timeout drain. (takeRequest blocks this thread, but the SDK's network I/O
-        // runs on background executors, so the in-flight request still lands.)
+        // by DRAIN_MAX_MS — so any trailing background request is captured deterministically rather
+        // than racing a zero-timeout drain. (takeRequest blocks this thread, but the SDK's network
+        // I/O runs on background executors, so an in-flight request still lands.)
         val paths = mutableListOf<String>()
         val drainDeadlineMs = System.currentTimeMillis() + DRAIN_MAX_MS
         while (System.currentTimeMillis() < drainDeadlineMs) {

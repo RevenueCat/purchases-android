@@ -24,12 +24,12 @@ class PerfHarnessTest {
     }
 
     @Test
-    fun coldFeatureCycleSucceedsAndHitsConfig() {
+    fun coldCycleSucceedsAndHitsConfig() {
         // server.url("/") already starts the server as a side effect (MockWebServer.before()), so no
         // separate server.start() call is needed here — calling it explicitly would throw
         // "start() already called".
         server.dispatcher = PerfFixtures.dispatcher(server.url("/").toString())
-        val result = PerfHarness(context, server).runCycle(useWorkflows = true, cold = true)
+        val result = PerfHarness(context, server).runCycle(cold = true)
         assertThat(result.error).isNull()
         assertThat(result.offeringsCount).isGreaterThan(0)
         assertThat(result.requestPaths.any { it.contains("/config") }).isTrue

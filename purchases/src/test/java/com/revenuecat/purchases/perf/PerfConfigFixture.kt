@@ -11,8 +11,9 @@ import com.revenuecat.purchases.common.networking.RCContainerTestData
  * [com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager] extract and cache all of them
  * synchronously at persist time (`extractInlineBlobs`), so both `WorkflowsConfigProvider.awaitReady()`
  * and `UiConfigProvider.getUiConfig()` — both awaited by `WorkflowManager.onPaywallConfigReady`, which
- * gates `getOfferings()`'s success callback when `DangerousSettings.forWorkflows()` is on — resolve
- * without any further network round-trip beyond the single `/v1/config` request.
+ * gates `getOfferings()`'s success callback on every default-flavor configuration (remote config is on
+ * by default; it is only disabled for the `customEntitlementComputation` flavor) — resolve without any
+ * further network round-trip beyond the single `/v1/config` request.
  *
  * Built via [RCContainerTestData.buildContainer], the same internal test helper backing
  * `RCContainerTest`/`RCContainerBackwardsCompatTest`, so the wire format never drifts from what the
