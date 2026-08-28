@@ -68,7 +68,7 @@ class PerfFixturesDispatcherTest {
         val offeringsResp = client.newCall(
             Request.Builder().url(server.url("/v1/subscribers/u/offerings")).build(),
         ).execute()
-        assertThat(offeringsResp.body!!.string()).contains("offering_a")
+        assertThat(offeringsResp.body!!.string()).contains("cheapest_subs")
 
         val productsResp = client.newCall(
             Request.Builder().url(server.url("/rcbilling/v1/subscribers/u/products?id=x")).build(),

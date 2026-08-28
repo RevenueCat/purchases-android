@@ -38,4 +38,23 @@ class NetworkProfileTest {
         val elapsedMs = (System.nanoTime() - start) / 1_000_000
         assertThat(elapsedMs).isGreaterThanOrEqualTo(NetworkProfile.BAD.perRequestDelayMs - 50)
     }
+
+    @Test
+    fun withPathDelayDelaysOnlyMatchingPath() {
+        val delayMs = 300L
+        server.dispatcher = okDispatcher().withPathDelay("/config", delayMs)
+        server.start()
+        val client = OkHttpClient()
+
+        val configStart = System.nanoTime()
+        client.newCall(Request.Builder().url(server.url("/v1/config/app")).build()).execute()
+        val configElapsedMs = (System.nanoTime() - configStart) / 1_000_000
+
+        val offeringsStart = System.nanoTime()
+        client.newCall(Request.Builder().url(server.url("/v1/offerings")).build()).execute()
+        val offeringsElapsedMs = (System.nanoTime() - offeringsStart) / 1_000_000
+
+        assertThat(configElapsedMs).isGreaterThanOrEqualTo(delayMs - 50)
+        assertThat(offeringsElapsedMs).isLessThan(delayMs)
+    }
 }
