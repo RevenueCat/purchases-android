@@ -92,6 +92,7 @@ internal fun NativeScreen(onBack: () -> Unit) {
         title = "Native",
         onBack = onBack,
         onModeChange = {
+            loadJob?.cancel()
             directAds.destroyAll()
             directAds = emptyList()
             preloadedAds.destroyAll()
