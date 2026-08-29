@@ -1,0 +1,15 @@
+# This flow requires passing the Android API version, user name and password as parameters like so:
+# maestro test -e API_VERSION 36 -e USERNAME=user@example.com -e PASSWORD=123 google-login.yml
+
+appId: "com.android.settings"
+---
+- runFlow:
+    label: "Log in on API >= 36"
+    when:
+      true: ${API_VERSION >= 36}
+    file: api/36.yml
+- runFlow:
+    label: "Log in on API >= 32"
+    when:
+      true: ${API_VERSION >= 32 && API_VERSION < 36}
+    file: api/32.yml
