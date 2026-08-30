@@ -290,7 +290,10 @@ class RulesDimensionResolverTest {
 
         assertThat(values).containsOnlyKeys("device")
         // An empty object would be truthy, so an absent namespace is what makes this a non-match.
-        assertThat(RulesEngine.evaluate("""{"!!": [{"var": "custom"}]}""", values).getOrThrow()).isFalse()
+        // The default keeps the read legal, because an unresolved name is an error.
+        assertThat(
+            RulesEngine.evaluate("""{"!!": [{"var": ["custom", false]}]}""", values).getOrThrow(),
+        ).isFalse()
     }
 
     @Test
@@ -313,7 +316,9 @@ class RulesDimensionResolverTest {
 
         assertThat(values).containsOnlyKeys("device")
         // An empty object would be truthy, which is what makes the absence matter.
-        assertThat(RulesEngine.evaluate("""{"!!": [{"var": "store"}]}""", values).getOrThrow()).isFalse()
+        assertThat(
+            RulesEngine.evaluate("""{"!!": [{"var": ["store", false]}]}""", values).getOrThrow(),
+        ).isFalse()
     }
 
     @Test
@@ -347,7 +352,7 @@ class RulesDimensionResolverTest {
         // Filtering the names inside the namespace would leave an empty object behind, which is truthy.
         assertThat(values).containsOnlyKeys("device")
         assertThat(
-            RulesEngine.evaluate("""{"!!": [{"var": "subscriberAttributes"}]}""", values).getOrThrow(),
+            RulesEngine.evaluate("""{"!!": [{"var": ["subscriberAttributes", false]}]}""", values).getOrThrow(),
         ).isFalse()
     }
 

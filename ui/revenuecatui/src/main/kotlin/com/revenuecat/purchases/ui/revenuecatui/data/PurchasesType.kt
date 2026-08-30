@@ -34,6 +34,8 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
  */
 @Suppress("TooManyFunctions")
 internal interface PurchasesType {
+    val appUserID: String
+
     suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult
 
     suspend fun awaitRestore(): CustomerInfo
@@ -79,6 +81,9 @@ internal interface PurchasesType {
 
 @Suppress("TooManyFunctions")
 internal class PurchasesImpl(private val purchases: Purchases = Purchases.sharedInstance) : PurchasesType {
+    override val appUserID: String
+        get() = purchases.appUserID
+
     override suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult {
         return purchases.awaitPurchase(purchaseParams.build())
     }

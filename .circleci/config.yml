@@ -16,12 +16,10 @@ aliases:
       branches:
         only: /^release\/.*/
 
-  only-main-branch: &only-main-branch
+  non-main-branches: &non-main-branches
     filters:
-      tags:
-        ignore: /.*/
       branches:
-        only: main
+        ignore: main
 
   android-executor: &android-executor
     executor:
@@ -45,7 +43,7 @@ aliases:
 version: 2.1
 orbs:
   android: circleci/android@3.1.0
-  revenuecat: revenuecat/sdks-common-config@4.6.0
+  revenuecat: revenuecat/sdks-common-config@4.6.1
   codecov: codecov/codecov@3.2.4
 
 parameters:
@@ -324,6 +322,16 @@ jobs:
           command: ./scripts/api-check.sh
       - android/save_gradle_cache
 
+  # Stdlib only, so no bundler. Needs full history: it compares HEAD against HEAD^.
+  announce-api-changes:
+    docker:
+      - image: cimg/ruby:3.2.0
+    steps:
+      - checkout
+      - run:
+          name: Announce public API changes
+          command: ruby danger/announce_api_changes.rb
+
   docs-deploy:
     <<: *android-executor
     steps:
@@ -345,7 +353,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.19.0-SNAPSHOT s3://purchases-docs/android/10.19.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/10.20.0-SNAPSHOT s3://purchases-docs/android/10.20.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -967,12 +975,25 @@ workflows:
     jobs:
       - revenuecat/danger:
           ruby_version: "3.2.0"
-          context:
-            - slack-secrets
           post-steps:
             - run:
                 name: Run api diff report unit tests
                 command: ruby danger/api_diff_report_test.rb
+          filters:
+            branches:
+              ignore: main
+
+  announce-api-changes-on-main:
+    when:
+      and:
+        - not:
+            equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
+        - equal: [ "main", << pipeline.git.branch >> ]
+        - equal: [ "default", << pipeline.parameters.action >> ]
+    jobs:
+      - announce-api-changes:
+          context:
+            - slack-secrets
 
   snapshot-deploy-manual:
     when:
@@ -1013,6 +1034,7 @@ workflows:
           build_type: "debug"
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - test:
           name: test_cec_<< matrix.build_type >>
           flavor: "customEntitlementComputation"
@@ -1022,6 +1044,7 @@ workflows:
           matrix:
             parameters:
               build_type: ["debug", "release"]
+          <<: *non-main-branches
       # Special case for defaults release with kover
       - test:
           name: test_defaults_release
@@ -1033,45 +1056,58 @@ workflows:
       - verify-compatibility:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - lint:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - detekt:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - metalava:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - assemble-purchase-tester:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - assemble-paywall-tester-release:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - assemble-rct-tester-release:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - assemble-admob-integration-sample-app:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - assemble-checkpoint-tester:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - test_dokka_hide_internal:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - test_detekt_rules:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - run-backend-integration-tests:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - record-and-upload-paparazzi-revenuecatui-snapshots:
           requires:
             - prepare-tests
       - run-revenuecatui-ui-tests:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - emerge_purchases_ui_snapshot_tests:
           requires:
             - prepare-tests
@@ -1081,23 +1117,28 @@ workflows:
       - run-maestro-e2e-tests:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - run-maestro-workflow-tests:
           context:
             - maestro
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - run-integration-tests:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - run-purchases-cec-integration-tests:
           requires:
             - prepare-tests
+          <<: *non-main-branches
       - run-purchases-integration-tests:
           requires:
             - prepare-tests
           matrix:
             parameters:
               backend_environment: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
+          <<: *non-main-branches
       - hold:
           type: approval
           requires:

@@ -133,6 +133,11 @@ class SubscriberAttributesPurchasesTests {
             virtualCurrencyManager = virtualCurrencyManagerMock,
             purchaseParamsValidator = purchaseParamsValidator,
             workflowManager = mockk(relaxed = true),
+            remoteConfigManager = mockk(relaxed = true),
+            uiConfigProvider = mockk(relaxed = true),
+            workflowsConfigProvider = mockk(relaxed = true),
+            checkpointsConfigProvider = mockk(relaxed = true),
+            audiencesConfigProvider = mockk(relaxed = true),
         )
 
         underTest = Purchases(purchasesOrchestrator)
@@ -357,6 +362,13 @@ class SubscriberAttributesPurchasesTests {
         }
     }
 
+    @Test
+    fun `setSingularDeviceID`() {
+        attributionIDTest(SubscriberAttributeKey.AttributionIds.Singular) { parameter ->
+            underTest.setSingularDeviceID(parameter)
+        }
+    }
+
     // endregion
 
     // region Integration IDs
@@ -467,13 +479,15 @@ class SubscriberAttributesPurchasesTests {
             subscriberAttributesManagerMock.setAppstackAttributionParams(appUserId, data, any())
         } just Runs
         every {
-            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), any())
+            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), any(), any())
         } just Runs
 
         underTest.setAppstackAttributionParams(data, mockk(relaxed = true))
 
         verify { subscriberAttributesManagerMock.setAppstackAttributionParams(appUserId, data, any()) }
-        verify { subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), any()) }
+        verify {
+            subscriberAttributesManagerMock.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), any(), any())
+        }
     }
 
     // endregion

@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ads.rewardverification
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import dev.drewhamilton.poko.Poko
 
@@ -11,7 +10,6 @@ import dev.drewhamilton.poko.Poko
  * ad network's server-side verification options, and keep [clientTransactionId] to correlate the reward
  * callback with [Purchases.pollRewardVerification].
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @Poko
 public class RewardVerificationToken(
     /** Set as the ad network's server-side verification custom data. */

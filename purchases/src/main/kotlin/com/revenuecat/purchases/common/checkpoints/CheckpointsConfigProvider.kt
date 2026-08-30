@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.checkpoints
 
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.verboseLog
@@ -21,19 +22,30 @@ internal class CheckpointsConfigProvider(
      * change under it: an identity change wipes the cache (the rules just read may belong to the previous user)
      * and an ordinary commit can publish fresher rules. Either advances [RemoteConfigManager.configGeneration],
      * and since there is no in-memory cache to fall back on the answer is to read once more against the new
-     * state rather than to discard. Bounded to a single retry so a burst of commits can't spin here.
+     * state rather than to discard. Only once, so a burst of commits can't spin here.
      */
     suspend fun resolveCheckpoint(identifier: String): CheckpointRulesResolution {
-        val generation = manager.configGeneration
-        val resolution = readCheckpoint(identifier)
-        if (manager.configGeneration == generation) return resolution
+        attemptRead(identifier)?.let { return it }
         verboseLog { "Remote config changed while resolving checkpoint '$identifier'; reading it again." }
-        return readCheckpoint(identifier)
+        return attemptRead(identifier) ?: CheckpointRulesResolution.Unavailable
     }
 
-    private suspend fun readCheckpoint(identifier: String): CheckpointRulesResolution =
+    /**
+     * One read, or `null` if the committed state moved under it and the answer can no longer be trusted.
+     * [resolveCheckpoint] retries such a read exactly once, so it never reads more than twice.
+     */
+    private suspend fun attemptRead(identifier: String): CheckpointRulesResolution? {
+        val generation = manager.configGeneration
+        val resolution = readCheckpoint(identifier, generation)
+        return resolution.takeIf { manager.configGeneration == generation }
+    }
+
+    fun isCurrent(resolution: CheckpointRulesResolution.Found): Boolean =
+        manager.configGeneration == resolution.configGeneration
+
+    private suspend fun readCheckpoint(identifier: String, generation: Int): CheckpointRulesResolution =
         manager.blobData<CheckpointResponse>(RemoteConfigTopic.CheckpointRules, identifier)
-            ?.let { CheckpointRulesResolution.Found(it) }
+            ?.let { CheckpointRulesResolution.Found(it, generation) }
             ?: classifyUnresolved(identifier)
 
     /**
@@ -43,10 +55,13 @@ internal class CheckpointsConfigProvider(
      */
     private suspend fun classifyUnresolved(identifier: String): CheckpointRulesResolution {
         // First: committedTopicOrNull also returns null when the endpoint is disabled, which would otherwise be
-        // indistinguishable from an absent topic.
+        // indistinguishable from an absent topic. Checkpoints are never resolved with remote config off
+        // (customEntitlementComputation), so a call here is a wiring bug worth surfacing.
         if (manager.isDisabled) {
-            verboseLog { "Remote config is disabled (4xx); checkpoint '$identifier' cannot be resolved." }
-            return CheckpointRulesResolution.Disabled
+            errorLog {
+                "Checkpoint '$identifier' is unavailable: remote config is disabled for this SDK configuration."
+            }
+            return CheckpointRulesResolution.Unavailable
         }
         // A project with no checkpoints still gets checkpoint_rules committed as an empty item index, so only an
         // item-level miss on a committed topic means "not configured": an absent topic means nothing is committed

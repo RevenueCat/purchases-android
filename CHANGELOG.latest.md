@@ -1,7 +1,10 @@
-## RevenueCat SDK
-### 🐞 Bugfixes
-* Don't jitter developer-initiated subscriber attribute posts in foreground (#4041) via Toni Rico (@tonidero)
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* fix(paywalls): add user context to custom web checkout URLs (#4107) via Cesar de la Vega (@vegaro)
+* fix(paywalls): keep the subscribe button working after a cancelled purchase (#4071) via Facundo Menzella (@facumenzella)
 
 ### 🔄 Other Changes
-* Rename `session_id` to `app_session_id` in checkpoint events (#4039) via Cesar de la Vega (@vegaro)
-* Evaluate checkpoint audiences before resolving workflows (#3971) via Cesar de la Vega (@vegaro)
+* fix(checkpoints): Fix checkpoint resolution config races (#4058) via Cesar de la Vega (@vegaro)
+* Improve Checkpoints APIs (#4108) via Toni Rico (@tonidero)
+* ci(danger): Clean up API notifications after move to main-only posts (#4101) via Álvaro Brey (@AlvaroBrey)

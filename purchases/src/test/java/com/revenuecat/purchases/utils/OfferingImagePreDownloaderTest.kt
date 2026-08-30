@@ -52,7 +52,7 @@ import java.net.URL
 @RunWith(AndroidJUnit4::class)
 class OfferingImagePreDownloaderTest {
 
-    private val warmer = RecordingWarmer()
+    private val warmer = RecordingPaywallAssetWarmer()
 
     private lateinit var preDownloader: OfferingImagePreDownloader
 
@@ -60,22 +60,7 @@ class OfferingImagePreDownloaderTest {
 
     @Before
     fun setUp() {
-        preDownloader = OfferingImagePreDownloader(warming(warmer))
-    }
-
-    private fun warming(warmer: PaywallAssetWarmer?) =
-        PaywallAssetWarming(context = mockk(relaxed = true), warmerProvider = { warmer })
-
-    private class RecordingWarmer : PaywallAssetWarmer {
-        val warmed = mutableListOf<Uri>()
-        var prebootCount = 0
-        override fun warmImages(context: Context, imageUris: List<Uri>) {
-            warmed.addAll(imageUris)
-        }
-
-        override fun prebootWebView(context: Context) {
-            prebootCount++
-        }
+        preDownloader = OfferingImagePreDownloader(paywallAssetWarming(warmer))
     }
 
     @Test
@@ -87,14 +72,14 @@ class OfferingImagePreDownloaderTest {
             }
         )
 
-        assertThat(warmer.warmed).isEmpty()
+        assertThat(warmer.warmedImages).isEmpty()
     }
 
     @Test
     fun `if disabled, it does not download anything`() {
         val offering = mockk<Offering>()
 
-        OfferingImagePreDownloader(warming(warmer = null)).preDownloadOfferingImages(offering)
+        OfferingImagePreDownloader(paywallAssetWarming(warmer = null)).preDownloadOfferingImages(offering)
 
         verify(exactly = 0) { offering.paywall }
         verify(exactly = 0) { offering.paywallComponents }
@@ -106,7 +91,7 @@ class OfferingImagePreDownloaderTest {
     fun `downloads images from offering paywall data`() {
         preDownloader.preDownloadOfferingImages(createOfferings())
 
-        assertThat(warmer.warmed).containsExactlyInAnyOrder(
+        assertThat(warmer.warmedImages).containsExactlyInAnyOrder(
             Uri.parse("https://www.revenuecat.com/test_header.png"),
             Uri.parse("https://www.revenuecat.com/test_background.png"),
             Uri.parse("https://www.revenuecat.com/test_icon.png"),
@@ -117,26 +102,29 @@ class OfferingImagePreDownloaderTest {
     fun `if no images, it does not download anything`() {
         preDownloader.preDownloadOfferingImages(createOfferings(null, null, null))
 
-        assertThat(warmer.warmed).isEmpty()
+        assertThat(warmer.warmedImages).isEmpty()
     }
 
     // endregion Paywalls V1
 
     // region Paywalls V2
 
-    // WebView startup is not free, so it is triggered only for paywalls that actually carry a web_view.
     @Test
-    fun `paywalls V2 - preboots the web view when the tree has one`() {
-        preDownloader.preDownloadOfferingImages(offeringWithWebView())
-
-        assertThat(warmer.prebootCount).isEqualTo(1)
-    }
-
-    @Test
-    fun `paywalls V2 - does not preboot the web view when the tree has none`() {
+    fun `paywalls V2 - does not preboot the engine when the tree has no web_view`() {
         preDownloader.preDownloadOfferingImages(createOfferingWithV2Paywall())
 
-        assertThat(warmer.prebootCount).isEqualTo(0)
+        assertThat(warmer.prebootCount).isZero()
+    }
+
+    // Preboot has to happen on this path because it runs before offerings are delivered; the bundle loads
+    // themselves are the offerings-prewarm path's job.
+    @Test
+    fun `paywalls V2 - preboots the engine for a web_view without warming it`() {
+        preDownloader.preDownloadOfferingImages(offeringWithWebView())
+
+        assertThat(warmer.warmedImages).isEmpty()
+        assertThat(warmer.prebootCount).isEqualTo(1)
+        assertThat(warmer.warmedWebViewUrls).isEmpty()
     }
 
     private fun offeringWithWebView(): Offering = createOfferingWithV2Paywall(
@@ -159,14 +147,14 @@ class OfferingImagePreDownloaderTest {
     fun `paywalls V2 - if no images, it does not download anything`() {
         preDownloader.preDownloadOfferingImages(createOfferingWithV2Paywall())
 
-        assertThat(warmer.warmed).isEmpty()
+        assertThat(warmer.warmedImages).isEmpty()
     }
 
     @Test
     fun `paywalls V2 - if the component tree fails to decode, it does not throw and downloads nothing`() {
         val offering = mockk<Offering>().apply {
-            every { paywall } returns null
             every { identifier } returns "broken"
+            every { paywall } returns null
             every { paywallComponents } returns Offering.PaywallComponents(
                 uiConfig = mockk(),
                 componentsHash = "hash",
@@ -179,7 +167,7 @@ class OfferingImagePreDownloaderTest {
         // offerings success/caching path that invokes this.
         preDownloader.preDownloadOfferingImages(offering)
 
-        assertThat(warmer.warmed).isEmpty()
+        assertThat(warmer.warmedImages).isEmpty()
     }
 
     @Test
@@ -429,7 +417,7 @@ class OfferingImagePreDownloaderTest {
             ),
         ))
 
-        assertThat(warmer.warmed)
+        assertThat(warmer.warmedImages)
             .containsExactlyInAnyOrderElementsOf(expectedImageDownloads.map { Uri.parse(it) })
     }
 

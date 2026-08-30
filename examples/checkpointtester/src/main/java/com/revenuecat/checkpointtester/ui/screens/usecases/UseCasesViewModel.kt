@@ -35,7 +35,7 @@ class UseCasesViewModel : ViewModel() {
                 when (val result = Purchases.sharedInstance.awaitCheckpoint(identifier)) {
                     is CheckpointResult.ReceivedOffering ->
                         "Offering ${result.offering.identifier} returned. The app takes over from here."
-                    is CheckpointResult.NoAction -> "No action (${result.reason.value})."
+                    is CheckpointResult.NoAction -> "No action (${result.reason})."
                     is CheckpointResult.PaywallPresented -> "Unexpectedly presented a paywall."
                     else -> "Unknown checkpoint result."
                 }

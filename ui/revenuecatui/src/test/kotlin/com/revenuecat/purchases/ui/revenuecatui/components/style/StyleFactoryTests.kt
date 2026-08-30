@@ -1180,6 +1180,38 @@ class StyleFactoryTests {
     }
 
     @Test
+    fun `Custom web checkout purchase button should carry configured query parameter names into the style action`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                PurchaseButtonComponent(
+                    stack = StackComponent(components = emptyList()),
+                    method = PurchaseButtonComponent.Method.CustomWebCheckout(
+                        customUrl = PurchaseButtonComponent.CustomUrl(
+                            urlLid = LOCALIZATION_KEY_TEXT_1,
+                            packageParam = "rc_package",
+                            appUserIdParam = "rc_app_user_id",
+                            envParam = "rc_environment",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val stackComponentStyle = (result as Result.Success).value.componentStyle as StackComponentStyle
+        val purchaseButtonStyle = stackComponentStyle.children.single() as ButtonComponentStyle
+        val purchaseAction = purchaseButtonStyle.action as ButtonComponentStyle.Action.CustomWebCheckout
+        assertThat(purchaseAction.packageParam).isEqualTo("rc_package")
+        assertThat(purchaseAction.appUserIdParam).isEqualTo("rc_app_user_id")
+        assertThat(purchaseAction.envParam).isEqualTo("rc_environment")
+    }
+
+    @Test
     fun `Should ignore top window insets for the first full-width image in the first z-stack`() {
         // Arrange
         val imageUrls = ThemeImageUrls(

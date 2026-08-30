@@ -46,12 +46,9 @@ import kotlinx.serialization.json.JsonPrimitive
 internal class WorkflowsConfigProvider(
     private val manager: RemoteConfigManager,
     private val currentOfferingIdProvider: () -> String? = { null },
-    // Called after warm() loads the current offering's workflow, so a collaborator can warm that workflow's
-    // assets at load time — mirroring the offerings path, which pre-downloads only the current offering's assets.
-    // The second argument decodes a workflow from the config layer WITHOUT populating this provider's retained
-    // decode cache, so prewarming never forces the memory-first Lazy the render path holds — the in-memory cache
-    // stays raw-bytes-only.
-    private val onCurrentWorkflowLoaded: (
+    private val prewarmOfferingIdsProvider: () -> Set<String> = { setOfNotNull(currentOfferingIdProvider()) },
+    // transientDecode must not populate the retained decode cache: the workflows cache stays raw-bytes-only.
+    private val onWorkflowLoaded: (
         suspend (workflowId: String, transientDecode: suspend (String) -> PublishedWorkflow?) -> Unit
     )? = null,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
@@ -80,18 +77,18 @@ internal class WorkflowsConfigProvider(
 
     /**
      * Resolves an offering to its workflow through the `/v1/config` workflows topic, distinguishing a genuinely
-     * workflowless offering ([WorkflowResolution.NoWorkflow]) from a topic that could not be read because the
-     * endpoint is disabled ([WorkflowResolution.Disabled]) or a sync failed transiently
+     * workflowless offering ([WorkflowResolution.NoWorkflow]) from a topic that could not be read
      * ([WorkflowResolution.Unavailable]). Memory-first: a warm cache resolves synchronously; only a miss reads the
      * topic (which may trigger a sync).
      */
     @Suppress("ReturnCount")
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution {
-        // Once the endpoint is disabled (4xx kill switch) the offering was parsed with its components skipped, so
-        // resolution must always yield Disabled (→ offerings reload) — even off a warm cache. Check the flag
-        // before the fast path: disabling sets isDisabled and invalidates this cache non-atomically, so a warm
-        // cache can briefly coexist with isDisabled, and a stale Found/NoWorkflow here would skip the reload.
-        if (manager.isDisabled) return WorkflowResolution.Disabled
+        // Workflows are never resolved with remote config off (customEntitlementComputation), so a call here is
+        // a wiring bug worth surfacing rather than a state to recover from.
+        if (manager.isDisabled) {
+            errorLog { "Workflows are unavailable: remote config is disabled for this SDK configuration." }
+            return WorkflowResolution.Unavailable
+        }
         cache.cached?.let { cached ->
             return cached.offeringToWorkflowId[offeringId]?.let { WorkflowResolution.Found(it) }
                 ?: WorkflowResolution.NoWorkflow
@@ -99,18 +96,11 @@ internal class WorkflowsConfigProvider(
         val generation = manager.configGeneration
         val topic = manager.topic(RemoteConfigTopic.Workflows)
         verboseLog { "workflows topic ${if (topic == null) "is absent" else "has ${topic.size} item(s)"}" }
-        // A null topic means it could not be read. If the /v1/config endpoint is disabled (4xx kill switch) the
-        // offering was parsed with its components skipped, so the caller can reload offerings to recover them;
-        // any other (transient) failure should fall back to the offering's default paywall. Either way this is not
-        // the same as a genuinely workflowless offering.
+        // A null topic means it could not be read (a failed or not-yet-run sync). The caller should fall back to
+        // the offering's default paywall; this is not the same as a genuinely workflowless offering.
         return if (topic == null) {
-            if (manager.isDisabled) {
-                verboseLog { "Workflows topic unavailable (remote config disabled) resolving offering '$offeringId'" }
-                WorkflowResolution.Disabled
-            } else {
-                verboseLog { "Workflows topic unavailable resolving offering '$offeringId'" }
-                WorkflowResolution.Unavailable
-            }
+            verboseLog { "Workflows topic unavailable resolving offering '$offeringId'" }
+            WorkflowResolution.Unavailable
         } else {
             val matches = topic.entries
                 .filter { (_, item) -> item.metadata.stringOrNull(KEY_OFFERING_IDENTIFIER) == offeringId }
@@ -254,30 +244,23 @@ internal class WorkflowsConfigProvider(
         }
         cache.store(generation, Cached(workflows, offeringToWorkflowId))
 
-        announceCurrentWorkflow(offeringToWorkflowId)
+        announceWorkflowsToPrewarm(offeringToWorkflowId)
     }
 
-    /** Announces against the already-warmed cache, for callers that learn the current offering after [warm]. */
-    fun prewarmCurrentOfferingAssets() {
-        announceCurrentWorkflow(cache.cached?.offeringToWorkflowId)
+    /** For callers that learn the current offerings after [warm]. */
+    fun prewarmOfferingAssets() {
+        announceWorkflowsToPrewarm(cache.cached?.offeringToWorkflowId)
     }
 
-    // Warm the current offering's workflow assets (images + ui_config fonts) at load time — mirrors the
-    // offerings path, which pre-downloads only the current offering's assets, never other offerings'. So a
-    // prefetch-flagged workflow that isn't the current offering's has its bytes cached but not its assets: it
-    // isn't the paywall about to be shown. Fire-and-forget so it never blocks warm() or the getOfferings
-    // readiness gate. resolveWorkflowBody decodes transiently: it reads bytes + parses without touching the
-    // retained Lazy, so prewarming keeps the cache raw-bytes-only.
-    private fun announceCurrentWorkflow(offeringToWorkflowId: Map<String, String>?) {
-        val notify = onCurrentWorkflowLoaded ?: return
-        // Notify whenever the current offering maps to a workflow — do NOT gate on `workflows` (the byte-warm
-        // map), whose parallel preload can miss a body that hasn't finished its LOW-priority prefetch yet.
-        // resolveWorkflowBody fetches the body on demand, so gating here would drop the current offering's
-        // asset prewarm purely on preload timing.
-        val currentWorkflowId = currentOfferingIdProvider()
-            ?.let { offeringToWorkflowId?.get(it) }
-            ?: return
-        scope.launch { notify(currentWorkflowId, ::resolveWorkflowBody) }
+    private fun announceWorkflowsToPrewarm(offeringToWorkflowId: Map<String, String>?) {
+        val notify = onWorkflowLoaded ?: return
+        // Never gated on the byte-warm map: a body's LOW-priority prefetch may still be in flight, and
+        // resolveWorkflowBody fetches on demand anyway.
+        val workflowIds = offeringToWorkflowId?.let { mapping ->
+            prewarmOfferingIdsProvider().mapNotNullTo(linkedSetOf(), mapping::get)
+        }
+        if (workflowIds.isNullOrEmpty()) return
+        workflowIds.forEach { workflowId -> scope.launch { notify(workflowId, ::resolveWorkflowBody) } }
     }
 
     /** Warms at the current config generation; used by the offerings readiness gate. */

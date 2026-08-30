@@ -835,7 +835,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         purchases.purchasesOrchestrator.state =
             purchases.purchasesOrchestrator.state.copy(appInBackground = false)
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), any())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), any(), any())
         } just Runs
 
         purchases.syncAttributesAndOfferingsIfNeededWith({ fail("Expected to succeed") }, {})
@@ -844,6 +844,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
                 currentAppUserID = any(),
                 delay = Delay.NONE,
+                syncedAttribute = any(),
                 completion = any(),
             )
         }
@@ -854,7 +855,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         purchases.purchasesOrchestrator.state =
             purchases.purchasesOrchestrator.state.copy(appInBackground = true)
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), any())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), any(), any())
         } just Runs
 
         purchases.syncAttributesAndOfferingsIfNeededWith({ fail("Expected to succeed") }, {})
@@ -863,6 +864,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
                 currentAppUserID = any(),
                 delay = Delay.DEFAULT,
+                syncedAttribute = any(),
                 completion = any(),
             )
         }
@@ -871,7 +873,12 @@ internal class PurchasesTest : BasePurchasesTest() {
     @Test
     fun `syncing attributes and offerings calls success callback when process completes successfully`() {
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), captureLambda())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+                any(),
+                any(),
+                any(),
+                captureLambda(),
+            )
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }
@@ -899,7 +906,12 @@ internal class PurchasesTest : BasePurchasesTest() {
     @Test
     fun `syncing attributes and offerings calls error callback when called twice within 60 seconds`() {
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), captureLambda())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+                any(),
+                any(),
+                any(),
+                captureLambda(),
+            )
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }
@@ -922,6 +934,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
                 currentAppUserID = any(),
                 delay = any(),
+                syncedAttribute = any(),
                 completion = any(),
             )
         }
@@ -2053,7 +2066,6 @@ internal class PurchasesTest : BasePurchasesTest() {
             .isNotEqualTo(token.clientTransactionId)
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `pollRewardVerification invalidates virtual currencies cache on verified virtual currency reward`() {
         every { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() } returns Unit
@@ -2071,7 +2083,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         verify(exactly = 1) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `pollRewardVerification does not invalidate virtual currencies cache on non virtual currency reward`() {
         runBlocking {
@@ -2092,7 +2103,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         verify(exactly = 0) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `awaitPollRewardVerification polls the backend and returns the verified reward`() = runTest {
         mockVerifiedVirtualCurrencyRewardBackend()
@@ -2104,7 +2115,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         verify(exactly = 1) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `reward verification poll launcher delivers the result to the callback`() {
         val launcher = RewardVerificationPollLauncher(
@@ -2119,7 +2130,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(delivered?.verifiedReward).isEqualTo(PollReward.VirtualCurrency(code = "coins", amount = 10))
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `closing the reward verification poll launcher cancels an in-flight poll`() {
         val launcher = RewardVerificationPollLauncher(
@@ -2137,7 +2148,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(delivered).isNull()
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `pollRewardVerification invalidates virtual currencies cache for a reward in moreRewards`() {
         every { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() } returns Unit
@@ -2159,7 +2169,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         verify(exactly = 1) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `pollRewardVerification refreshes customer info on verified entitlement reward`() {
         mockCustomerInfoHelper()
@@ -2191,7 +2200,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `pollRewardVerification returns failed when entitlement customer info refresh fails`() {
         mockCustomerInfoHelper(
@@ -2224,7 +2232,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         impressionId = "impression-789",
     )
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     private fun pollWithTracking(poll: suspend (String) -> Outcome): List<AdEvent> {
         val trackedEvents = mutableListOf<AdEvent>()
         every { mockAdEventsManager.track(any()) } answers { trackedEvents.add(firstArg<AdEvent>()) }
@@ -2240,7 +2248,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         return trackedEvents
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `pollRewardVerification with tracking metadata fires earned then verified when nothing is granted`() {
         val tracked = pollWithTracking { Outcome.Verified(PollReward.NoReward, moreRewards = emptyList()) }
@@ -2250,7 +2257,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(tracked[1]).isInstanceOf(AdEvent.RewardVerified::class.java)
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `pollRewardVerification with tracking metadata fires one granted event for a single reward`() {
         val tracked = pollWithTracking {
@@ -2264,7 +2270,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(granted.reward).isEqualTo(VerifiedReward.VirtualCurrency(code = "gems", amount = 5))
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `pollRewardVerification with tracking metadata fires one granted event per reward on multi-grant`() {
         val tracked = pollWithTracking {
@@ -2282,7 +2287,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         )
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `pollRewardVerification with tracking metadata fires failed to verify with the mapped reason`() {
         val tracked = pollWithTracking { Outcome.Failed.BackendRejected("rejected", "no_reward_rule") }
@@ -2293,7 +2297,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(failed.failureReason.value).isEqualTo("no_reward_rule")
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+    @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `pollRewardVerification tracks failed to verify with Cancelled reason when poll is cancelled`() {
         val tracked = mutableListOf<AdEvent>()
@@ -2316,7 +2320,6 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(failed.failureReason).isEqualTo(AdRewardFailureReason.Cancelled)
     }
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     @Test
     fun `pollRewardVerification tracks nothing when trackingMetadata is absent`() {
         every { mockAdEventsManager.track(any()) } just Runs

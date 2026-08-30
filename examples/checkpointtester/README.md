@@ -64,6 +64,8 @@ gated on the outcome, so this is how you exercise a checkpoint configured in the
 **No action / Simulated error** — run inline from the use-case list, using an identifier the dashboard doesn't
 know about and the `error_checkpoint` identifier above.
 
+**Subscriber attribute** — the person icon in the top bar opens a dialog that sets or unsets a single subscriber attribute. Attributes are part of the checkpoint rule evaluation scope, so this is how you flip which rule matches without rebuilding. *Unset* passes a `null` value, which is how the SDK deletes an attribute.
+
 **Listener log** — the second tab renders everything the app-wide `CheckpointListener` (registered in
 `MainApplication` as `CheckpointEventLog`) observed: an `onCheckpointHit` and an `onCheckpointCompleted` entry per
 run, regardless of which screen triggered it. Events are also written to logcat under the `CheckpointEventLog`

@@ -93,7 +93,8 @@ end
 
 fail_on_generated_edits(["purchases/src/main/kotlin/generated/"])
 
-# Report the public API this PR changes, and mirror it into the SDK API feed channel.
+# Report the public API this PR changes. The SDK API feed is announced from main instead, by
+# danger/announce_api_changes.rb.
 # Best effort: a raise here would take every other rule in this file down with it.
 begin
   require_relative "danger/api_diff_report"
@@ -101,19 +102,10 @@ begin
   api_diff = ApiDiffReport.run(
     changed_files: git.modified_files + git.added_files + git.deleted_files,
     patch_for: ->(file) { git.diff_for_file(file)&.patch },
-    pull_request_link: "<#{github.pr_json['html_url']}|##{github.pr_json['number']}>",
-    announced_in_comment: lambda do |marker|
-      github.api.issue_comments(github.pr_json["base"]["repo"]["full_name"], github.pr_json["number"])
-            .any? { |comment| comment.body.to_s.include?(marker) }
-    rescue StandardError
-      false
-    end,
+    announce: false,
   )
 
-  if api_diff
-    markdown(api_diff[:comment])
-    warn(api_diff[:warning]) if api_diff[:warning]
-  end
+  markdown(api_diff[:comment]) if api_diff
 rescue StandardError => e
   # `warn` is Danger's DSL: surfaces on the PR without failing the run.
   warn("Could not report the public API changes: #{e.message}")

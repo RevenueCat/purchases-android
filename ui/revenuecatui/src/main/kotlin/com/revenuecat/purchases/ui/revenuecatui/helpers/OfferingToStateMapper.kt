@@ -3,6 +3,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import androidx.compose.material3.ColorScheme
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
@@ -367,6 +369,7 @@ internal fun Offering.toComponentsPaywallState(
     customVariables: Map<String, CustomVariableValue> = emptyMap(),
     defaultCustomVariables: Map<String, CustomVariableValue> = emptyMap(),
     stateStore: PaywallStateStore? = null,
+    viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
         !validationResult.zeroDecimalPlaceCountries.contains(it)
@@ -397,6 +400,7 @@ internal fun Offering.toComponentsPaywallState(
         mainStackHasHeroImage = validationResult.mainStackHasHeroImage,
         purchases = purchases,
         stateStore = resolvedStateStore,
+        viewModelActionInProgress = viewModelActionInProgress,
     )
 }
 

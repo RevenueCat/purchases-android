@@ -4,6 +4,8 @@ package com.revenuecat.purchases.paywalls
 
 import android.content.Context
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
@@ -19,6 +21,8 @@ internal class PaywallAssetWarming(
 ) {
 
     private val warmer: PaywallAssetWarmer? by lazy { warmerProvider() }
+
+    private val mainHandler by lazy { Handler(Looper.getMainLooper()) }
 
     val isAvailable: Boolean
         get() = warmer != null
@@ -39,6 +43,31 @@ internal class PaywallAssetWarming(
         debugLog { "Prebooting the WebView engine for a paywall web_view component." }
         runCatching { warmer.prebootWebView(context) }.onFailure { error ->
             errorLog(error) { "Paywalls V2 WebView preboot failed." }
+        }
+    }
+
+    fun warmWebViewUrls(urls: Collection<String>) {
+        if (urls.isEmpty()) return
+        val warmer = warmer ?: return
+        debugLog { "Warming ${urls.size} Paywalls V2 web_view bundle(s): $urls" }
+        // Moves WebView startup off the thread the first load would otherwise pay it on.
+        prebootWebView()
+        // Posted so warming never runs inline on the frame that delivered the offerings.
+        mainHandler.post {
+            runCatching { warmer.warmWebViewUrls(context, urls.toList()) }.onFailure { error ->
+                errorLog(error) { "Paywalls V2 web_view warming failed." }
+            }
+        }
+    }
+
+    fun clearWebViewStorage() {
+        // The lookup is posted too: callers hold the identity lock, and these WebView APIs want the main thread.
+        mainHandler.post {
+            val warmer = warmer ?: return@post
+            debugLog { "Clearing Paywalls V2 web_view storage for the outgoing user." }
+            runCatching { warmer.clearWebViewStorage(context) }.onFailure { error ->
+                errorLog(error) { "Paywalls V2 web_view storage could not be cleared." }
+            }
         }
     }
 

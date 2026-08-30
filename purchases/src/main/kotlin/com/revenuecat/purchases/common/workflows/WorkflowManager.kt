@@ -40,6 +40,7 @@ internal class WorkflowManager(
     private val uiConfigProvider: UiConfigProvider,
     private val workflowAssetPrewarmer: WorkflowAssetPrewarmer,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    private val enabled: Boolean = true,
 ) {
 
     // Guards [inFlightReadiness] so that concurrent calls to [onPaywallConfigReady] see the same
@@ -152,9 +153,16 @@ internal class WorkflowManager(
      * cache next reads committed data.
      */
     fun onPaywallConfigReady(onComplete: () -> Unit) {
+        // The caches can never warm while remote config is off, so without this gate every getOfferings would
+        // take the async readiness path below instead of completing synchronously.
+        if (!enabled) {
+            debugLog { "Workflows are disabled for this SDK configuration; skipping paywall config readiness." }
+            onComplete()
+            return
+        }
         // warm() may already have run with no current offering (config commits before offerings land), and the
         // fast path below would then never re-run it. Deduped by workflow id, so a repeat call is free.
-        workflowsConfigProvider.prewarmCurrentOfferingAssets()
+        workflowsConfigProvider.prewarmOfferingAssets()
         if (uiConfigProvider.isWarm() && workflowsConfigProvider.isWarmForCurrentOffering()) {
             onComplete()
             return
@@ -190,9 +198,6 @@ internal class WorkflowManager(
             is UiConfigResolution.Found -> Unit
             UiConfigResolution.NotConfigured -> verboseLog {
                 "Remote config has no ui_config to resolve before getOfferings."
-            }
-            UiConfigResolution.Disabled -> debugLog {
-                "Remote config is disabled for this session; skipping ui_config readiness before getOfferings."
             }
             UiConfigResolution.Superseded -> verboseLog {
                 "ui_config was superseded by a newer config commit before getOfferings; the next read re-resolves it."

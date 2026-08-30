@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-
 package com.revenuecat.purchases.admob
 
 import android.content.Context
@@ -11,7 +9,6 @@ import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.ResponseInfo
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.tracking.TrackingFullScreenContentCallback
 import com.revenuecat.purchases.ads.events.AdTracker
 import io.mockk.every
