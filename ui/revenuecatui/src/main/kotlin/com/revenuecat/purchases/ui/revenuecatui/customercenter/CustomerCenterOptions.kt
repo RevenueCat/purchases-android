@@ -4,35 +4,29 @@ import com.revenuecat.purchases.customercenter.CustomerCenterListener
 
 public class CustomerCenterOptions internal constructor(
     internal val listener: CustomerCenterListener?,
-    internal val shouldShowCloseButton: Boolean = true,
+    internal val navigationOptions: CustomerCenterNavigationOptions = CustomerCenterNavigationOptions(),
 ) {
 
     internal constructor(builder: Builder) : this(
         listener = builder.listener,
-        shouldShowCloseButton = builder.shouldShowCloseButton,
+        navigationOptions = builder.navigationOptions,
     )
 
     public class Builder {
 
         internal var listener: CustomerCenterListener? = null
-        internal var shouldShowCloseButton: Boolean = true
+        internal var navigationOptions: CustomerCenterNavigationOptions = CustomerCenterNavigationOptions()
 
         public fun setListener(listener: CustomerCenterListener?): Builder = apply {
             this.listener = listener
         }
 
         /**
-         * Whether to show the close button in the Customer Center top bar.
-         *
-         * When `true` (the default), a close button is displayed that dismisses the Customer Center.
-         * When `false`, the close button is hidden. This is useful when the Customer Center is pushed onto an
-         * existing navigation stack that already provides a way to navigate back.
-         *
-         * Note this only affects the close button shown on the main screen. The back button used to navigate
-         * between Customer Center screens is always displayed.
+         * Sets the [CustomerCenterNavigationOptions] that configure how the Customer Center navigation integrates
+         * with the app displaying it.
          */
-        public fun setShouldShowCloseButton(shouldShowCloseButton: Boolean): Builder = apply {
-            this.shouldShowCloseButton = shouldShowCloseButton
+        public fun setNavigationOptions(navigationOptions: CustomerCenterNavigationOptions): Builder = apply {
+            this.navigationOptions = navigationOptions
         }
 
         public fun build(): CustomerCenterOptions {
@@ -47,18 +41,18 @@ public class CustomerCenterOptions internal constructor(
         other as CustomerCenterOptions
 
         if (listener != other.listener) return false
-        if (shouldShowCloseButton != other.shouldShowCloseButton) return false
+        if (navigationOptions != other.navigationOptions) return false
 
         return true
     }
 
     override fun hashCode(): Int {
         var result = listener?.hashCode() ?: 0
-        result = 31 * result + shouldShowCloseButton.hashCode()
+        result = 31 * result + navigationOptions.hashCode()
         return result
     }
 
     override fun toString(): String {
-        return "CustomerCenterOptions(listener=$listener, shouldShowCloseButton=$shouldShowCloseButton)"
+        return "CustomerCenterOptions(listener=$listener, navigationOptions=$navigationOptions)"
     }
 }

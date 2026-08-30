@@ -13,6 +13,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.customercenter.Resumable
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterNavigationOptions
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
@@ -126,16 +127,13 @@ public class CustomerCenterView : CompatComposeView {
     }
 
     /**
-     * Sets whether the close button is shown in the Customer Center top bar. Defaults to `true`.
-     *
-     * Set this to `false` when the Customer Center is pushed onto an existing navigation stack that already
-     * provides a way to navigate back. The back button used to navigate between Customer Center screens is
-     * always displayed.
+     * Sets the [CustomerCenterNavigationOptions] that configure how the Customer Center navigation integrates
+     * with the app displaying it.
      */
-    public fun setShouldShowCloseButton(shouldShowCloseButton: Boolean) {
+    public fun setNavigationOptions(navigationOptions: CustomerCenterNavigationOptions) {
         customerCenterOptions = CustomerCenterOptions(
             listener = customerCenterOptions.listener,
-            shouldShowCloseButton = shouldShowCloseButton,
+            navigationOptions = navigationOptions,
         )
     }
 

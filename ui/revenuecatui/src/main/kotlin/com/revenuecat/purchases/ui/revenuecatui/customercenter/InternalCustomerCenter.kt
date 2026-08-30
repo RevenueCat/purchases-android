@@ -86,11 +86,10 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun InternalCustomerCenter(
     modifier: Modifier = Modifier,
-    listener: CustomerCenterListener? = null,
-    shouldShowCloseButton: Boolean = true,
+    options: CustomerCenterOptions = CustomerCenterOptions.Builder().build(),
     viewModel: CustomerCenterViewModel = getCustomerCenterViewModel(
         isDarkMode = isSystemInDarkTheme(),
-        listener = listener,
+        listener = options.listener,
     ),
     onDismiss: () -> Unit,
 ) {
@@ -148,6 +147,8 @@ internal fun InternalCustomerCenter(
         viewModel.onNavigationButtonPressed(context, onDismiss)
     }
 
+    NotifyNavigationListener(state = state, listener = options.navigationOptions.listener)
+
     viewModel.actionError.value?.let {
         ErrorDialog(
             dismissRequest = viewModel::clearActionError,
@@ -158,7 +159,7 @@ internal fun InternalCustomerCenter(
     InternalCustomerCenter(
         state,
         modifier,
-        shouldShowCloseButton = shouldShowCloseButton,
+        shouldShowNavigationButton = options.navigationOptions.shouldShowNavigationButton,
         onAction = { action ->
             when (action) {
                 is CustomerCenterAction.PathButtonPressed -> {
@@ -210,7 +211,7 @@ internal fun InternalCustomerCenter(
 private fun InternalCustomerCenter(
     state: CustomerCenterState,
     modifier: Modifier = Modifier,
-    shouldShowCloseButton: Boolean = true,
+    shouldShowNavigationButton: Boolean = true,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     val colorScheme = createColorScheme(state)
@@ -226,7 +227,7 @@ private fun InternalCustomerCenter(
                 title = title,
                 shouldUseLargeTopBar = shouldUseLargeTopBar,
                 navigationButtonType = navigationButtonType,
-                shouldShowCloseButton = shouldShowCloseButton,
+                shouldShowNavigationButton = shouldShowNavigationButton,
             ),
             onAction = onAction,
         ) {
@@ -250,6 +251,20 @@ private fun InternalCustomerCenter(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun NotifyNavigationListener(
+    state: CustomerCenterState,
+    listener: CustomerCenterNavigationListener?,
+) {
+    val currentListener by rememberUpdatedState(listener)
+    val canNavigateBack = state.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK
+    val title = (state as? CustomerCenterState.Success)?.currentDestination?.title
+
+    LaunchedEffect(canNavigateBack, title) {
+        currentListener?.onNavigationChanged(canNavigateBack = canNavigateBack, title = title)
     }
 }
 
@@ -310,12 +325,8 @@ private data class CustomerCenterScaffoldConfig(
     val title: String?,
     val shouldUseLargeTopBar: Boolean,
     val navigationButtonType: CustomerCenterState.NavigationButtonType,
-    val shouldShowCloseButton: Boolean = true,
-) {
-    val shouldShowNavigationButton: Boolean
-        get() = shouldShowCloseButton ||
-            navigationButtonType != CustomerCenterState.NavigationButtonType.CLOSE
-}
+    val shouldShowNavigationButton: Boolean = true,
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -761,7 +772,7 @@ internal fun CustomerCenterMultiplePurchasesPreview() {
 
 @Preview
 @Composable
-internal fun CustomerCenterLoadedNoCloseButtonPreview() {
+internal fun CustomerCenterLoadedNoNavigationButtonPreview() {
     InternalCustomerCenter(
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
@@ -774,28 +785,7 @@ internal fun CustomerCenterLoadedNoCloseButtonPreview() {
         modifier = Modifier
             .fillMaxSize()
             .padding(10.dp),
-        shouldShowCloseButton = false,
-        onAction = {},
-    )
-}
-
-@Preview
-@Composable
-internal fun CustomerCenterBackButtonNoCloseButtonPreview() {
-    InternalCustomerCenter(
-        state = CustomerCenterState.Success(
-            customerCenterConfigData = previewConfigData,
-            purchases = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
-            mainScreenPaths = previewConfigData.getManagementScreen()?.paths ?: emptyList(),
-            detailScreenPaths = previewConfigData.getManagementScreen()?.paths?.filter {
-                it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL
-            } ?: emptyList(),
-            navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
-        ),
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(10.dp),
-        shouldShowCloseButton = false,
+        shouldShowNavigationButton = false,
         onAction = {},
     )
 }
