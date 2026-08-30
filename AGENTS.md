@@ -112,6 +112,9 @@ Variant names combine the flavor and build type, e.g. `defaultsDebug`, `customEn
 ## Code Style
 
 - **Imports over inline fully-qualified references**: Always add an `import` statement at the top of the file rather than using a fully-qualified name inline (e.g., write `import foo.Bar` and use `Bar`, not `foo.Bar` inline in the code).
+- **Clean up dead code when refactoring** — When removing or replacing functionality, delete all orphaned callers, unused interfaces, and leftover helper methods in the same PR. Don't leave dead code behind for a follow-up.
+- **No blocking I/O on the main thread** — Disk reads/writes and network calls must run on a background dispatcher (`Dispatchers.IO` or a dedicated executor). Use `withContext(Dispatchers.IO)` for one-shot calls or move the work into a coroutine launched on a background scope.
+- **Private companion objects by default** — Use `private companion object` unless the companion intentionally exposes public API. An unprefixed `companion object` leaks a `Companion` type into the public API surface.
 
 ## Testing Framework
 
@@ -219,6 +222,7 @@ When creating a pull request, **always add one of these labels** to categorize t
 
 - **Avoid `onSizeChanged`** — It introduces a mutable state that triggers recomposition after the first frame (first frame renders with size = 0). Prefer custom `Layout` or `SubcomposeLayout` composables to measure and position children in a single pass. Only fall back to `onSizeChanged` if a single-pass approach is too complex.
 - **Avoid `CompositionLocal`** — Do not introduce new `CompositionLocal` values. Pass dependencies explicitly through function parameters instead.
+- **No side effects in composable body** — Never place logging, analytics, or other side-effect calls directly in a `@Composable` function body; they re-execute on every recomposition. Wrap them in `LaunchedEffect` (or `SideEffect`/`DisposableEffect`) with an appropriate key.
 
 ## Guardrails
 
