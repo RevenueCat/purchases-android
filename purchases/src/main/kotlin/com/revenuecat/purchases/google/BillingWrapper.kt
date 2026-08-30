@@ -972,6 +972,8 @@ internal class BillingWrapper(
     ): Result<BillingFlowParams, PurchasesError> {
         val productDetailsParamsList = BillingFlowParams.ProductDetailsParams.newBuilder().apply {
             setProductDetails(purchaseInfo.productDetails)
+            val offerToken = purchaseInfo.selectedOfferToken
+            offerToken?.let { setOfferToken(it) }
         }.build()
 
         try {

@@ -7,9 +7,10 @@ import dev.drewhamilton.poko.Poko
 
 public sealed class GooglePurchasingData : PurchasingData {
     @Poko
-    public class InAppProduct(
+    public class InAppProduct @JvmOverloads constructor(
         public override val productId: String,
         public val productDetails: ProductDetails,
+        public val selectedOfferToken: String? = null,
     ) : GooglePurchasingData()
 
     @Poko

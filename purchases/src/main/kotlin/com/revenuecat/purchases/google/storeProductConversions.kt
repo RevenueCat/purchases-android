@@ -5,7 +5,9 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.models.GoogleOneTimePurchaseOfferDetails
 import com.revenuecat.purchases.models.GoogleStoreProduct
+import com.revenuecat.purchases.models.OneTimePurchaseOfferDetailsList
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.SubscriptionOptions
@@ -29,6 +31,17 @@ internal fun ProductDetails.toStoreProduct(
     val basePlanPrice = basePlan?.fullPricePhase?.price
     val price = createOneTimeProductPrice() ?: basePlanPrice ?: return null
 
+    val oneTimePurchaseOfferDetailsList =
+        if (productType.toRevenueCatProductType() == ProductType.INAPP) {
+            OneTimePurchaseOfferDetailsList(
+                this.oneTimePurchaseOfferDetailsList?.map {
+                    it.toGoogleOneTimePurchaseOfferDetails(productId, this)
+                } ?: emptyList()
+            )
+        } else {
+            null
+        }
+
     return GoogleStoreProduct(
         productId = productId,
         basePlanId = basePlan?.id,
@@ -42,6 +55,8 @@ internal fun ProductDetails.toStoreProduct(
         defaultOption = subscriptionOptions?.defaultOffer,
         productDetails = this,
         presentedOfferingContext = null,
+        oneTimePurchaseOfferDetailsList = oneTimePurchaseOfferDetailsList,
+        defaultOneTimeOffer = oneTimePurchaseOfferDetailsList?.defaultOffer
     )
 }
 
@@ -57,6 +72,26 @@ private fun ProductDetails.createOneTimeProductPrice(): Price? {
     } else {
         null
     }
+}
+
+internal fun ProductDetails.OneTimePurchaseOfferDetails.toGoogleOneTimePurchaseOfferDetails(
+    productId: String,
+    productDetails: ProductDetails,
+): GoogleOneTimePurchaseOfferDetails {
+    val price = Price(
+        formatted = this.formattedPrice,
+        amountMicros = this.priceAmountMicros,
+        currencyCode = this.priceCurrencyCode,
+    )
+    return GoogleOneTimePurchaseOfferDetails(
+        productId = productId,
+        price = price,
+        offerId = this.offerId,
+        offerToken = this.offerToken,
+        offerTags = this.offerTags,
+        productDetails = productDetails,
+        presentedOfferingContext = null,
+    )
 }
 
 @OptIn(InternalRevenueCatAPI::class)

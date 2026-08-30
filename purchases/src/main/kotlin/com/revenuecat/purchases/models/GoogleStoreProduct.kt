@@ -111,6 +111,19 @@ constructor(
      * Null if not using RevenueCat offerings system, or if fetched directly via `Purchases.getProducts`
      */
     override val presentedOfferingContext: PresentedOfferingContext? = null,
+
+    /**
+     * Contains all [OneTimePurchaseOfferDetails]. Null for subscriptions or if no offer details exist.
+     */
+    override val oneTimePurchaseOfferDetailsList: OneTimePurchaseOfferDetailsList?,
+
+    /**
+     * The default [OneTimePurchaseOfferDetails] that will be used when purchasing an INAPP product without specifying
+     * a different option. Evaluates the cheapest offer excluding "rc-ignore-offer" and "rc-customer-center" tags.
+     * Null for SUBS products or if no offer details exist.
+     */
+    override val defaultOneTimeOffer: OneTimePurchaseOfferDetails?
+
 ) : StoreProduct {
 
     internal constructor(
@@ -126,6 +139,8 @@ constructor(
         defaultOption: SubscriptionOption?,
         productDetails: ProductDetails,
         presentedOfferingContext: PresentedOfferingContext? = null,
+        oneTimePurchaseOfferDetailsList: OneTimePurchaseOfferDetailsList?,
+        defaultOneTimeOffer: OneTimePurchaseOfferDetails?
     ) : this(
         productId,
         basePlanId,
@@ -140,6 +155,8 @@ constructor(
         productDetails,
         presentedOfferingContext?.offeringIdentifier,
         presentedOfferingContext,
+        oneTimePurchaseOfferDetailsList,
+        defaultOneTimeOffer,
     )
 
     @Deprecated(
@@ -174,6 +191,8 @@ constructor(
         defaultOption,
         productDetails,
         presentedOfferingIdentifier?.let { PresentedOfferingContext(it) },
+        null,
+        null,
     )
 
     private constructor(
@@ -181,6 +200,8 @@ constructor(
         defaultOption: SubscriptionOption?,
         subscriptionOptionsWithOfferingId: SubscriptionOptions?,
         presentedOfferingContext: PresentedOfferingContext?,
+        oneTimePurchaseOfferDetailsList: OneTimePurchaseOfferDetailsList?,
+        defaultOneTimeOffer: OneTimePurchaseOfferDetails?
     ) :
         this(
             otherProduct.productId,
@@ -195,6 +216,8 @@ constructor(
             defaultOption,
             otherProduct.productDetails,
             presentedOfferingContext,
+            oneTimePurchaseOfferDetailsList,
+            defaultOneTimeOffer,
         )
 
     /**
@@ -213,6 +236,8 @@ constructor(
     override val purchasingData: PurchasingData
         get() = if (type == ProductType.SUBS && defaultOption != null) {
             defaultOption.purchasingData
+        } else if (type == ProductType.INAPP && defaultOneTimeOffer != null) {
+            defaultOneTimeOffer.purchasingData
         } else {
             GooglePurchasingData.InAppProduct(
                 id,
@@ -267,11 +292,23 @@ constructor(
             )
         }
 
+        val oneTimeOfferDetailsWithContext = oneTimePurchaseOfferDetailsList?.mapNotNull {
+            (it as? GoogleOneTimePurchaseOfferDetails)?.let { googleOffer ->
+                GoogleOneTimePurchaseOfferDetails(googleOffer, presentedOfferingContext)
+            }
+        }
+
+        val defaultOneTimeOfferWithContext = (defaultOneTimeOffer as? GoogleOneTimePurchaseOfferDetails)?.let {
+            GoogleOneTimePurchaseOfferDetails(it, presentedOfferingContext)
+        }
+
         return GoogleStoreProduct(
             this,
             defaultOptionWithOfferingId,
             subscriptionOptionsWithContext?.let { SubscriptionOptions(it) },
             presentedOfferingContext,
+            oneTimeOfferDetailsWithContext?.let { OneTimePurchaseOfferDetailsList(it) },
+            defaultOneTimeOfferWithContext,
         )
     }
 
