@@ -180,6 +180,7 @@ internal class AmazonBilling(
     override fun queryProductDetailsAsync(
         productType: RevenueCatProductType,
         productIds: Set<String>,
+        logUnfetchedProducts: Boolean,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     ) {
@@ -192,6 +193,7 @@ internal class AmazonBilling(
                         productDataHandler.getProductData(
                             productIds,
                             userData.marketplace,
+                            logUnfetchedProducts,
                             {
                                 trackAmazonQueryProductDetailsRequestIfNeeded(
                                     wasSuccessful = true,

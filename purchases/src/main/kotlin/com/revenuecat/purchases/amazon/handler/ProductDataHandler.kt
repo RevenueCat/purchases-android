@@ -31,6 +31,7 @@ internal class ProductDataHandler(
     private data class Request(
         val skuList: List<String>,
         val marketplace: String,
+        val logUnfetchedProducts: Boolean,
         val onReceive: StoreProductsCallback,
         val onError: PurchasesErrorCallback,
     )
@@ -44,6 +45,7 @@ internal class ProductDataHandler(
     override fun getProductData(
         skus: Set<String>,
         marketplace: String,
+        logUnfetchedProducts: Boolean,
         onReceive: (List<StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -55,7 +57,7 @@ internal class ProductDataHandler(
                 handleSuccessfulProductDataResponse(cachedProducts, marketplace, onReceive)
             } else {
                 val productDataRequestId = purchasingServiceProvider.getProductData(skus)
-                val request = Request(skus.toList(), marketplace, onReceive, onError)
+                val request = Request(skus.toList(), marketplace, logUnfetchedProducts, onReceive, onError)
                 synchronized(this) {
                     productDataRequests[productDataRequestId] = request
                     addTimeoutToProductDataRequest(productDataRequestId)
@@ -69,12 +71,12 @@ internal class ProductDataHandler(
         try {
             log(LogIntent.DEBUG) { AmazonStrings.PRODUCTS_REQUEST_FINISHED.format(response.requestStatus.name) }
 
-            if (response.unavailableSkus.isNotEmpty()) {
-                log(LogIntent.DEBUG) { AmazonStrings.PRODUCTS_REQUEST_UNAVAILABLE.format(response.unavailableSkus) }
-            }
-
             val requestId = response.requestId
             val request = getRequest(requestId) ?: return
+
+            if (request.logUnfetchedProducts && response.unavailableSkus.isNotEmpty()) {
+                log(LogIntent.DEBUG) { AmazonStrings.PRODUCTS_REQUEST_UNAVAILABLE.format(response.unavailableSkus) }
+            }
 
             val responseIsSuccessful = response.requestStatus == ProductDataResponse.RequestStatus.SUCCESSFUL
 

@@ -36,6 +36,7 @@ internal class ProductDataHandler(
     private data class Request(
         val productIds: Set<String>,
         val productType: ProductType,
+        val logUnfetchedProducts: Boolean,
         val onReceive: StoreProductsCallback,
         val onError: PurchasesErrorCallback,
     )
@@ -44,6 +45,7 @@ internal class ProductDataHandler(
     override fun getProductDetails(
         productIds: Set<String>,
         productType: ProductType,
+        logUnfetchedProducts: Boolean,
         onReceive: (List<StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
@@ -70,6 +72,7 @@ internal class ProductDataHandler(
         this.inFlightRequest = Request(
             productIds = productIds,
             productType = productType,
+            logUnfetchedProducts = logUnfetchedProducts,
             onReceive = onReceive,
             onError = onError,
         )
@@ -102,10 +105,12 @@ internal class ProductDataHandler(
         products: List<ProductVo?>,
     ) {
         val nonNullProducts = products.mapNotNull { it }
-        logMissingProductIdsIfAny(
-            requestedProductIds = inFlightRequest?.productIds,
-            products = nonNullProducts,
-        )
+        inFlightRequest?.takeIf { it.logUnfetchedProducts }?.let { request ->
+            logMissingProductIdsIfAny(
+                requestedProductIds = request.productIds,
+                products = nonNullProducts,
+            )
+        }
 
         val subscriptionProducts = nonNullProducts.filter {
             it.type.createRevenueCatProductTypeFromSamsungIAPTypeString() == ProductType.SUBS
