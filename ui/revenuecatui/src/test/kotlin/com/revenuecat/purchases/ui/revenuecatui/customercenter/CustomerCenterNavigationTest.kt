@@ -199,6 +199,30 @@ class CustomerCenterNavigationTest {
     }
 
     @Test
+    fun `navigation listener attached after the first composition is notified`() {
+        val events = mutableListOf<Pair<Boolean, String?>>()
+        val optionsState = mutableStateOf(CustomerCenterOptions.Builder().build())
+
+        composeTestRule.setContent {
+            InternalCustomerCenter(
+                options = optionsState.value,
+                viewModel = viewModel(MutableStateFlow(successState())),
+                onDismiss = {},
+            )
+        }
+        composeTestRule.waitForIdle()
+
+        optionsState.value = optionsWith(
+            CustomerCenterNavigationOptions.Builder()
+                .setListener { canNavigateBack, title -> events.add(canNavigateBack to title) }
+                .build(),
+        )
+        composeTestRule.waitForIdle()
+
+        assertThat(events).containsExactly(false to null)
+    }
+
+    @Test
     fun `navigation options default to showing the top bar and no listener`() {
         val navigationOptions = CustomerCenterOptions.Builder().build().navigationOptions
 

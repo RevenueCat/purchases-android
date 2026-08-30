@@ -13,6 +13,7 @@ import com.revenuecat.purchases.customercenter.CustomerCenterManagementOption
 import com.revenuecat.purchases.customercenter.Resumable
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterNavigationListener
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterNavigationOptions
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -99,9 +100,20 @@ public class CustomerCenterView : CompatComposeView {
             customerCenterListener?.onPromotionalOfferSucceeded(customerInfo, transaction)
         }
     }
+    private var navigationListener: CustomerCenterNavigationListener? = null
+    private var lastNavigationUpdate: Pair<Boolean, String?>? = null
+    private val internalNavigationListener = CustomerCenterNavigationListener { canNavigateBack, title ->
+        lastNavigationUpdate = canNavigateBack to title
+        navigationListener?.onNavigationChanged(canNavigateBack, title)
+    }
     private val customerCenterOptionsState = mutableStateOf(
         CustomerCenterOptions.Builder()
             .setListener(internalListener)
+            .setNavigationOptions(
+                CustomerCenterNavigationOptions.Builder()
+                    .setListener(internalNavigationListener)
+                    .build(),
+            )
             .build(),
     )
 
@@ -131,10 +143,17 @@ public class CustomerCenterView : CompatComposeView {
      * with the app displaying it.
      */
     public fun setNavigationOptions(navigationOptions: CustomerCenterNavigationOptions) {
+        navigationListener = navigationOptions.listener
         customerCenterOptions = CustomerCenterOptions(
             listener = customerCenterOptions.listener,
-            navigationOptions = navigationOptions,
+            navigationOptions = CustomerCenterNavigationOptions(
+                shouldShowTopBar = navigationOptions.shouldShowTopBar,
+                listener = internalNavigationListener,
+            ),
         )
+        lastNavigationUpdate?.let { (canNavigateBack, title) ->
+            navigationOptions.listener?.onNavigationChanged(canNavigateBack, title)
+        }
     }
 
     override fun onBackPressed() {
