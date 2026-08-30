@@ -37,12 +37,12 @@ class CustomerCenterNavigationTest {
     }
 
     @Test
-    fun `close button is hidden when shouldShowNavigationButton is false`() {
+    fun `close button is hidden when the top bar is hidden`() {
         composeTestRule.setContent {
             InternalCustomerCenter(
                 options = optionsWith(
                     CustomerCenterNavigationOptions.Builder()
-                        .setShouldShowNavigationButton(false)
+                        .setShouldShowTopBar(false)
                         .build(),
                 ),
                 viewModel = viewModel(MutableStateFlow(successState())),
@@ -54,12 +54,12 @@ class CustomerCenterNavigationTest {
     }
 
     @Test
-    fun `back button is hidden when shouldShowNavigationButton is false`() {
+    fun `back button is hidden when the top bar is hidden`() {
         composeTestRule.setContent {
             InternalCustomerCenter(
                 options = optionsWith(
                     CustomerCenterNavigationOptions.Builder()
-                        .setShouldShowNavigationButton(false)
+                        .setShouldShowTopBar(false)
                         .build(),
                 ),
                 viewModel = viewModel(
@@ -88,6 +88,66 @@ class CustomerCenterNavigationTest {
         }
 
         composeTestRule.onNodeWithTag("customer_center_navigation_button").assertIsDisplayed()
+    }
+
+    @Test
+    fun `top bar is not shown when shouldShowTopBar is false`() {
+        composeTestRule.setContent {
+            InternalCustomerCenter(
+                options = optionsWith(
+                    CustomerCenterNavigationOptions.Builder()
+                        .setShouldShowTopBar(false)
+                        .build(),
+                ),
+                viewModel = viewModel(MutableStateFlow(successState())),
+                onDismiss = {},
+            )
+        }
+
+        composeTestRule.onNodeWithTag("customer_center_top_bar").assertDoesNotExist()
+    }
+
+    @Test
+    fun `top bar is not shown when shouldShowTopBar is false and the screen has a title`() {
+        composeTestRule.setContent {
+            InternalCustomerCenter(
+                options = optionsWith(
+                    CustomerCenterNavigationOptions.Builder()
+                        .setShouldShowTopBar(false)
+                        .build(),
+                ),
+                viewModel = viewModel(MutableStateFlow(purchaseDetailState("Subscription details"))),
+                onDismiss = {},
+            )
+        }
+
+        composeTestRule.onNodeWithTag("customer_center_top_bar").assertDoesNotExist()
+        composeTestRule.onNodeWithTag("customer_center_top_bar_title").assertDoesNotExist()
+    }
+
+    @Test
+    fun `top bar shows the screen title by default`() {
+        composeTestRule.setContent {
+            InternalCustomerCenter(
+                viewModel = viewModel(MutableStateFlow(purchaseDetailState("Subscription details"))),
+                onDismiss = {},
+            )
+        }
+
+        composeTestRule.onNodeWithTag("customer_center_top_bar").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("customer_center_top_bar_title").assertIsDisplayed()
+    }
+
+    @Test
+    fun `top bar is shown by default`() {
+        composeTestRule.setContent {
+            InternalCustomerCenter(
+                viewModel = viewModel(MutableStateFlow(successState())),
+                onDismiss = {},
+            )
+        }
+
+        composeTestRule.onNodeWithTag("customer_center_top_bar").assertIsDisplayed()
     }
 
     @Test
@@ -128,28 +188,21 @@ class CustomerCenterNavigationTest {
         }
         composeTestRule.waitForIdle()
 
-        stateFlow.value = successState(
-            navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
-            navigationState = navigationStateShowing(
-                CustomerCenterDestination.SelectedPurchaseDetail(
-                    purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
-                    title = "Subscription details",
-                ),
-            ),
-        )
+        val pushedScreenTitle = "Subscription details"
+        stateFlow.value = purchaseDetailState(pushedScreenTitle)
         composeTestRule.waitForIdle()
 
         assertThat(events).containsExactly(
             false to null,
-            true to "Subscription details",
+            true to pushedScreenTitle,
         )
     }
 
     @Test
-    fun `navigation options default to showing the navigation button and no listener`() {
+    fun `navigation options default to showing the top bar and no listener`() {
         val navigationOptions = CustomerCenterOptions.Builder().build().navigationOptions
 
-        assertThat(navigationOptions.shouldShowNavigationButton).isTrue()
+        assertThat(navigationOptions.shouldShowTopBar).isTrue()
         assertThat(navigationOptions.listener).isNull()
     }
 
@@ -158,13 +211,23 @@ class CustomerCenterNavigationTest {
         val listener = CustomerCenterNavigationListener { _, _ -> }
 
         val navigationOptions = CustomerCenterNavigationOptions.Builder()
-            .setShouldShowNavigationButton(false)
+            .setShouldShowTopBar(false)
             .setListener(listener)
             .build()
 
-        assertThat(navigationOptions.shouldShowNavigationButton).isFalse()
+        assertThat(navigationOptions.shouldShowTopBar).isFalse()
         assertThat(navigationOptions.listener).isEqualTo(listener)
     }
+
+    private fun purchaseDetailState(title: String): CustomerCenterState = successState(
+        navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
+        navigationState = navigationStateShowing(
+            CustomerCenterDestination.SelectedPurchaseDetail(
+                purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+                title = title,
+            ),
+        ),
+    )
 
     private fun optionsWith(navigationOptions: CustomerCenterNavigationOptions) =
         CustomerCenterOptions.Builder()

@@ -159,7 +159,7 @@ internal fun InternalCustomerCenter(
     InternalCustomerCenter(
         state,
         modifier,
-        shouldShowNavigationButton = options.navigationOptions.shouldShowNavigationButton,
+        shouldShowTopBar = options.navigationOptions.shouldShowTopBar,
         onAction = { action ->
             when (action) {
                 is CustomerCenterAction.PathButtonPressed -> {
@@ -211,7 +211,7 @@ internal fun InternalCustomerCenter(
 private fun InternalCustomerCenter(
     state: CustomerCenterState,
     modifier: Modifier = Modifier,
-    shouldShowNavigationButton: Boolean = true,
+    shouldShowTopBar: Boolean = true,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     val colorScheme = createColorScheme(state)
@@ -227,7 +227,7 @@ private fun InternalCustomerCenter(
                 title = title,
                 shouldUseLargeTopBar = shouldUseLargeTopBar,
                 navigationButtonType = navigationButtonType,
-                shouldShowNavigationButton = shouldShowNavigationButton,
+                shouldShowTopBar = shouldShowTopBar,
             ),
             onAction = onAction,
         ) {
@@ -325,7 +325,7 @@ private data class CustomerCenterScaffoldConfig(
     val title: String?,
     val shouldUseLargeTopBar: Boolean,
     val navigationButtonType: CustomerCenterState.NavigationButtonType,
-    val shouldShowNavigationButton: Boolean = true,
+    val shouldShowTopBar: Boolean = true,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -345,11 +345,13 @@ private fun CustomerCenterScaffold(
     Scaffold(
         modifier = modifier.applyIfNotNull(scrollBehavior) { nestedScroll(it.nestedScrollConnection) },
         topBar = {
-            CustomerCenterTopBar(
-                scaffoldConfig = scaffoldConfig,
-                scrollBehavior = scrollBehavior,
-                onAction = onAction,
-            )
+            if (scaffoldConfig.shouldShowTopBar) {
+                CustomerCenterTopBar(
+                    scaffoldConfig = scaffoldConfig,
+                    scrollBehavior = scrollBehavior,
+                    onAction = onAction,
+                )
+            }
         },
     ) { paddingValues ->
         Column(
@@ -379,32 +381,34 @@ private fun CustomerCenterTopBar(
     )
     if (scaffoldConfig.shouldUseLargeTopBar) {
         LargeTopAppBar(
+            modifier = Modifier.testTag("customer_center_top_bar"),
             title = {
-                scaffoldConfig.title?.let { Text(text = it) }
+                scaffoldConfig.title?.let {
+                    Text(text = it, modifier = Modifier.testTag("customer_center_top_bar_title"))
+                }
             },
             navigationIcon = {
-                if (scaffoldConfig.shouldShowNavigationButton) {
-                    CustomerCenterNavigationIcon(
-                        navigationButtonType = scaffoldConfig.navigationButtonType,
-                        onAction = onAction,
-                    )
-                }
+                CustomerCenterNavigationIcon(
+                    navigationButtonType = scaffoldConfig.navigationButtonType,
+                    onAction = onAction,
+                )
             },
             colors = colors,
             scrollBehavior = scrollBehavior,
         )
     } else {
         TopAppBar(
+            modifier = Modifier.testTag("customer_center_top_bar"),
             title = {
-                scaffoldConfig.title?.let { Text(text = it) }
+                scaffoldConfig.title?.let {
+                    Text(text = it, modifier = Modifier.testTag("customer_center_top_bar_title"))
+                }
             },
             navigationIcon = {
-                if (scaffoldConfig.shouldShowNavigationButton) {
-                    CustomerCenterNavigationIcon(
-                        navigationButtonType = scaffoldConfig.navigationButtonType,
-                        onAction = onAction,
-                    )
-                }
+                CustomerCenterNavigationIcon(
+                    navigationButtonType = scaffoldConfig.navigationButtonType,
+                    onAction = onAction,
+                )
             },
             colors = colors,
         )
@@ -772,7 +776,7 @@ internal fun CustomerCenterMultiplePurchasesPreview() {
 
 @Preview
 @Composable
-internal fun CustomerCenterLoadedNoNavigationButtonPreview() {
+internal fun CustomerCenterLoadedNoTopBarPreview() {
     InternalCustomerCenter(
         state = CustomerCenterState.Success(
             customerCenterConfigData = previewConfigData,
@@ -785,7 +789,7 @@ internal fun CustomerCenterLoadedNoNavigationButtonPreview() {
         modifier = Modifier
             .fillMaxSize()
             .padding(10.dp),
-        shouldShowNavigationButton = false,
+        shouldShowTopBar = false,
         onAction = {},
     )
 }

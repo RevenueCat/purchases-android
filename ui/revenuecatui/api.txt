@@ -321,7 +321,7 @@ package com.revenuecat.purchases.ui.revenuecatui.customercenter {
     ctor public CustomerCenterNavigationOptions.Builder();
     method public com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterNavigationOptions build();
     method public com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterNavigationOptions.Builder setListener(com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterNavigationListener? listener);
-    method public com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterNavigationOptions.Builder setShouldShowNavigationButton(boolean shouldShowNavigationButton);
+    method public com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterNavigationOptions.Builder setShouldShowTopBar(boolean shouldShowTopBar);
   }
 
   public final class CustomerCenterOptions {

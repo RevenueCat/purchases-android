@@ -1,27 +1,27 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
 public class CustomerCenterNavigationOptions internal constructor(
-    internal val shouldShowNavigationButton: Boolean = true,
+    internal val shouldShowTopBar: Boolean = true,
     internal val listener: CustomerCenterNavigationListener? = null,
 ) {
 
     internal constructor(builder: Builder) : this(
-        shouldShowNavigationButton = builder.shouldShowNavigationButton,
+        shouldShowTopBar = builder.shouldShowTopBar,
         listener = builder.listener,
     )
 
     public class Builder {
 
-        internal var shouldShowNavigationButton: Boolean = true
+        internal var shouldShowTopBar: Boolean = true
         internal var listener: CustomerCenterNavigationListener? = null
 
         /**
-         * Whether to show the navigation button in the Customer Center top bar.
+         * Whether to show the topbar in the Customer Center.
          *
          * Set to false when you want to use your own navigation toolbar.
          */
-        public fun setShouldShowNavigationButton(shouldShowNavigationButton: Boolean): Builder = apply {
-            this.shouldShowNavigationButton = shouldShowNavigationButton
+        public fun setShouldShowTopBar(shouldShowTopBar: Boolean): Builder = apply {
+            this.shouldShowTopBar = shouldShowTopBar
         }
 
         /**
