@@ -223,6 +223,38 @@ class CustomerCenterNavigationTest {
     }
 
     @Test
+    fun `navigation listener reports it can navigate back on a screen pushed with a close button`() {
+        val events = mutableListOf<Pair<Boolean, String?>>()
+        val stateFlow = MutableStateFlow(successState())
+
+        composeTestRule.setContent {
+            InternalCustomerCenter(
+                options = optionsWith(
+                    CustomerCenterNavigationOptions.Builder()
+                        .setListener { canNavigateBack, title -> events.add(canNavigateBack to title) }
+                        .build(),
+                ),
+                viewModel = viewModel(stateFlow),
+                onDismiss = {},
+            )
+        }
+        composeTestRule.waitForIdle()
+
+        stateFlow.value = successState(
+            navigationButtonType = CustomerCenterState.NavigationButtonType.CLOSE,
+            navigationState = navigationStateShowing(
+                CustomerCenterDestination.SelectedPurchaseDetail(
+                    purchaseInformation = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing,
+                    title = "Offer",
+                ),
+            ),
+        )
+        composeTestRule.waitForIdle()
+
+        assertThat(events).containsExactly(false to null, true to "Offer")
+    }
+
+    @Test
     fun `navigation options default to showing the top bar and no listener`() {
         val navigationOptions = CustomerCenterOptions.Builder().build().navigationOptions
 

@@ -262,8 +262,9 @@ private fun NotifyNavigationListener(
     if (listener == null) return
 
     val currentListener by rememberUpdatedState(listener)
-    val canNavigateBack = state.navigationButtonType == CustomerCenterState.NavigationButtonType.BACK
-    val title = (state as? CustomerCenterState.Success)?.currentDestination?.title
+    val successState = state as? CustomerCenterState.Success
+    val canNavigateBack = successState?.navigationState?.canNavigateBack == true
+    val title = successState?.currentDestination?.title
 
     LaunchedEffect(canNavigateBack, title) {
         currentListener.onNavigationChanged(canNavigateBack = canNavigateBack, title = title)
