@@ -4,6 +4,7 @@ import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.assertErrorLog
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.remoteconfig.ConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
@@ -262,13 +263,19 @@ internal class UiConfigProviderTest {
     }
 
     @Test
-    fun `resolveUiConfig returns Disabled without reading the topic when remote config is disabled`() = runTest {
+    fun `resolveUiConfig returns Unavailable without reading the topic when the manager is disabled`() {
         // committedTopicOrNull also returns null when disabled, so the disabled check has to come first or a
-        // killed session would look like a project with no ui_config.
+        // disabled manager would look like a project with no ui_config.
         stubUnresolvableMergedRead()
         every { manager.isDisabled } returns true
 
-        assertThat(provider.resolveUiConfig()).isEqualTo(UiConfigResolution.Disabled)
+        assertErrorLog(
+            "ui_config is unavailable: remote config is disabled for this SDK configuration.",
+        ) {
+            runTest {
+                assertThat(provider.resolveUiConfig()).isEqualTo(UiConfigResolution.Unavailable)
+            }
+        }
         coVerify(exactly = 0) { manager.topic(any()) }
         coVerify(exactly = 0) { manager.committedTopicOrNull(any()) }
     }

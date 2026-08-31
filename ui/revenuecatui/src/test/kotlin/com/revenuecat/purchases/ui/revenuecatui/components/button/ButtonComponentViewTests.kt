@@ -2,9 +2,14 @@ package com.revenuecat.purchases.ui.revenuecatui.components.button
 
 import android.os.LocaleList
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.test.assertHasClickAction
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -49,12 +54,16 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponent
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.variableLocalizationKeysForEnUs
+import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallComponentInteractionTracker
 import com.revenuecat.purchases.ui.revenuecatui.helpers.StyleFactory
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
+import com.revenuecat.purchases.ui.revenuecatui.helpers.resolveWebCheckoutUrlForInteraction
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
 import org.junit.Test
@@ -67,70 +76,165 @@ class ButtonComponentViewTests {
     @get:Rule
     val composeTestRule = createComposeRule()
 
+    private val purchaseButtonStyle = ButtonComponentStyle(
+        stackComponentStyle = StackComponentStyle(
+            children = listOf(
+                TextComponentStyle(
+                    texts = nonEmptyMapOf(LocaleId("en_US") to "Purchase"),
+                    color = ColorStyles(
+                        light = ColorStyle.Solid(Color.Black),
+                    ),
+                    fontSize = 15,
+                    fontWeight = FontWeight.REGULAR.toFontWeight(),
+                    fontSpec = null,
+                    textAlign = CENTER.toTextAlign(),
+                    horizontalAlignment = CENTER.toAlignment(),
+                    backgroundColor = ColorStyles(
+                        light = ColorStyle.Solid(Color.Yellow),
+                    ),
+                    visible = true,
+                    size = Size(width = Fill, height = Fill),
+                    padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
+                    margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0)
+                        .toPaddingValues(),
+                    rcPackage = null,
+                    tabIndex = null,
+                    variableLocalizations = nonEmptyMapOf(
+                        LocaleId("en_US") to variableLocalizationKeysForEnUs()
+                    ),
+                    countdownDate = null,
+                    countFrom = CountdownComponent.CountFrom.DAYS,
+                    overrides = emptyList(),
+                ),
+            ),
+            dimension = Dimension.Vertical(alignment = CENTER, distribution = START),
+            visible = true,
+            size = Size(width = Fill, height = Fill),
+            spacing = 16.dp,
+            background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.Red))),
+            padding = PaddingValues(all = 16.dp),
+            margin = PaddingValues(all = 16.dp),
+            shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
+            border = BorderStyles(width = 2.dp, colors = ColorStyles(ColorStyle.Solid(Color.Blue))),
+            shadow = ShadowStyles(
+                colors = ColorStyles(ColorStyle.Solid(Color.Black)),
+                radius = 10.dp,
+                x = 0.dp,
+                y = 3.dp,
+            ),
+            badge = null,
+            scrollOrientation = null,
+            rcPackage = null,
+            tabIndex = null,
+            countdownDate = null,
+            countFrom = CountdownComponent.CountFrom.DAYS,
+            overrides = emptyList(),
+        ),
+        action = ButtonComponentStyle.Action.PurchasePackage(rcPackage = null),
+    )
+
+    @Test
+    fun `a click cut short by the button leaving composition releases the paywall action`() {
+        val state = FakePaywallState(TestData.Packages.annual)
+        val clickStarted = CompletableDeferred<Unit>()
+        var buttonRendered by mutableStateOf(true)
+
+        composeTestRule.setContent {
+            if (buttonRendered) {
+                ButtonComponentView(
+                    style = purchaseButtonStyle,
+                    state = state,
+                    onClick = {
+                        clickStarted.complete(Unit)
+                        awaitCancellation()
+                    },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Purchase").performClick()
+        composeTestRule.waitForIdle()
+        assertThat(clickStarted.isCompleted).isTrue
+        assertThat(state.actionInProgress).isTrue
+
+        // The paywall leaves composition, cancelling the click's coroutine.
+        buttonRendered = false
+        composeTestRule.waitForIdle()
+
+        // Without the cleanup this stays true and every button on the paywall stays disabled.
+        assertThat(state.actionInProgress).isFalse
+    }
+
+    @Test
+    fun `an action outliving the click keeps the paywall disabled`() {
+        val viewModelActionInProgress = mutableStateOf(false)
+        val state = FakePaywallState(
+            packages = listOf(TestData.Packages.annual),
+            viewModelActionInProgress = viewModelActionInProgress,
+        )
+        val clickStarted = CompletableDeferred<Unit>()
+        var buttonRendered by mutableStateOf(true)
+
+        composeTestRule.setContent {
+            if (buttonRendered) {
+                ButtonComponentView(
+                    style = purchaseButtonStyle,
+                    state = state,
+                    onClick = {
+                        clickStarted.complete(Unit)
+                        // The billing flow is still in front when the paywall goes away.
+                        awaitCancellation()
+                    },
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Purchase").performClick()
+        composeTestRule.waitForIdle()
+        assertThat(clickStarted.isCompleted).isTrue
+
+        // The view model takes its gate for an action that outlives this composition.
+        viewModelActionInProgress.value = true
+        buttonRendered = false
+        composeTestRule.waitForIdle()
+
+        // The button cleared its own half, but the gate still holds the paywall.
+        assertThat(state.clickScopedActionInProgress).isFalse
+        assertThat(state.actionInProgress).isTrue
+
+        viewModelActionInProgress.value = false
+        assertThat(state.actionInProgress).isFalse
+    }
+
+    @Test
+    fun `the gate disables the button through recomposition`() {
+        val viewModelActionInProgress = mutableStateOf(false)
+        val state = FakePaywallState(
+            packages = listOf(TestData.Packages.annual),
+            viewModelActionInProgress = viewModelActionInProgress,
+        )
+
+        composeTestRule.setContent {
+            ButtonComponentView(style = purchaseButtonStyle, state = state, onClick = {})
+        }
+
+        val purchaseButton = composeTestRule.onNodeWithText("Purchase")
+        purchaseButton.assertIsEnabled()
+
+        // `actionInProgress` is computed, so this pins that Compose still tracks the reads inside it.
+        viewModelActionInProgress.value = true
+        composeTestRule.waitForIdle()
+        purchaseButton.assertIsNotEnabled()
+    }
+
     @Test
     fun `onClick ignores further clicks until processing current click is done`() {
         var actionHandleCalledCount = 0
         val completable = CompletableDeferred<Unit>()
 
         composeTestRule.setContent {
-            val style = ButtonComponentStyle(
-                stackComponentStyle = StackComponentStyle(
-                    children = listOf(
-                        TextComponentStyle(
-                            texts = nonEmptyMapOf(LocaleId("en_US") to "Purchase"),
-                            color = ColorStyles(
-                                light = ColorStyle.Solid(Color.Black),
-                            ),
-                            fontSize = 15,
-                            fontWeight = FontWeight.REGULAR.toFontWeight(),
-                            fontSpec = null,
-                            textAlign = CENTER.toTextAlign(),
-                            horizontalAlignment = CENTER.toAlignment(),
-                            backgroundColor = ColorStyles(
-                                light = ColorStyle.Solid(Color.Yellow),
-                            ),
-                            visible = true,
-                            size = Size(width = Fill, height = Fill),
-                            padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0).toPaddingValues(),
-                            margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0)
-                                .toPaddingValues(),
-                            rcPackage = null,
-                            tabIndex = null,
-                            variableLocalizations = nonEmptyMapOf(
-                                LocaleId("en_US") to variableLocalizationKeysForEnUs()
-                            ),
-                            countdownDate = null,
-                            countFrom = CountdownComponent.CountFrom.DAYS,
-                            overrides = emptyList(),
-                        ),
-                    ),
-                    dimension = Dimension.Vertical(alignment = CENTER, distribution = START),
-                    visible = true,
-                    size = Size(width = Fill, height = Fill),
-                    spacing = 16.dp,
-                    background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.Red))),
-                    padding = PaddingValues(all = 16.dp),
-                    margin = PaddingValues(all = 16.dp),
-                    shape = Shape.Rectangle(CornerRadiuses.Dp(all = 20.0)),
-                    border = BorderStyles(width = 2.dp, colors = ColorStyles(ColorStyle.Solid(Color.Blue))),
-                    shadow = ShadowStyles(
-                        colors = ColorStyles(ColorStyle.Solid(Color.Black)),
-                        radius = 10.dp,
-                        x = 0.dp,
-                        y = 3.dp,
-                    ),
-                    badge = null,
-                    scrollOrientation = null,
-                    rcPackage = null,
-                    tabIndex = null,
-                    countdownDate = null,
-                    countFrom = CountdownComponent.CountFrom.DAYS,
-                    overrides = emptyList(),
-                ),
-                action = ButtonComponentStyle.Action.PurchasePackage(rcPackage = null),
-            )
             ButtonComponentView(
-                style = style,
+                style = purchaseButtonStyle,
                 state = FakePaywallState(TestData.Packages.annual),
                 onClick = {
                     actionHandleCalledCount++
@@ -490,10 +594,10 @@ class ButtonComponentViewTests {
                         assertThat(action.customUrl).isNull()
                         assertThat(action.openMethod).isEqualTo(ButtonComponent.UrlMethod.EXTERNAL_BROWSER)
                         assertThat(action.autoDismiss).isTrue()
-                        val packageParamBehavior = action.packageParamBehavior as PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append
-                        assertThat(packageParamBehavior.rcPackage).isNotNull()
-                        assertThat(packageParamBehavior.rcPackage?.identifier).isEqualTo(expectedPackageId)
-                        assertThat(packageParamBehavior.packageParam).isNull()
+                        val paramBehavior = action.paramBehavior as PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append
+                        assertThat(paramBehavior.rcPackage).isNotNull()
+                        assertThat(paramBehavior.rcPackage?.identifier).isEqualTo(expectedPackageId)
+                        assertThat(paramBehavior.packageParam).isNull()
                     },
                 )
             }
@@ -587,9 +691,9 @@ class ButtonComponentViewTests {
                         assertThat(action.customUrl).isNull()
                         assertThat(action.openMethod).isEqualTo(ButtonComponent.UrlMethod.EXTERNAL_BROWSER)
                         assertThat(action.autoDismiss).isTrue()
-                        val packageParamBehavior = action.packageParamBehavior as PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append
-                        assertThat(packageParamBehavior.rcPackage).isNull()
-                        assertThat(packageParamBehavior.packageParam).isNull()
+                        val paramBehavior = action.paramBehavior as PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append
+                        assertThat(paramBehavior.rcPackage).isNull()
+                        assertThat(paramBehavior.packageParam).isNull()
                     },
                 )
             }
@@ -690,8 +794,8 @@ class ButtonComponentViewTests {
                         assertThat(action.customUrl).isNull()
                         assertThat(action.openMethod).isEqualTo(ButtonComponent.UrlMethod.EXTERNAL_BROWSER)
                         assertThat(action.autoDismiss).isTrue()
-                        assertThat(action.packageParamBehavior).isInstanceOf(
-                            PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend::class.java
+                        assertThat(action.paramBehavior).isInstanceOf(
+                            PaywallAction.External.LaunchWebCheckout.ParamBehavior.DoNotAppend::class.java
                         )
                     },
                 )
@@ -762,6 +866,8 @@ class ButtonComponentViewTests {
                             customUrl = PurchaseButtonComponent.CustomUrl(
                                 urlLid = LocalizationKey("custom-checkout-url"),
                                 packageParam = "my_custom_param",
+                                appUserIdParam = "my_app_user_id_param",
+                                envParam = "my_env_param",
                             ),
                         ),
                     ),
@@ -797,9 +903,11 @@ class ButtonComponentViewTests {
                         assertThat(action.customUrl).isEqualTo("https://custom-checkout.revenuecat.com")
                         assertThat(action.openMethod).isEqualTo(ButtonComponent.UrlMethod.EXTERNAL_BROWSER)
                         assertThat(action.autoDismiss).isTrue()
-                        val packageParamBehavior = action.packageParamBehavior as PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append
-                        assertThat(packageParamBehavior.rcPackage).isNull()
-                        assertThat(packageParamBehavior.packageParam).isEqualTo("my_custom_param")
+                        val paramBehavior = action.paramBehavior as PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append
+                        assertThat(paramBehavior.rcPackage).isNull()
+                        assertThat(paramBehavior.packageParam).isEqualTo("my_custom_param")
+                        assertThat(paramBehavior.appUserIdParam).isEqualTo("my_app_user_id_param")
+                        assertThat(paramBehavior.envParam).isEqualTo("my_env_param")
                     },
                 )
             }
@@ -822,6 +930,77 @@ class ButtonComponentViewTests {
                 .assertIsDisplayed()
                 .assertHasClickAction()
                 .performClick()
+        }
+
+    @Test
+    fun `custom checkout interaction URL matches URL handed to checkout without resolving twice`(): Unit =
+        with(composeTestRule) {
+            val cta = "purchase"
+            val ctaKey = LocalizationKey("purchase")
+            val urlKey = LocalizationKey("custom-checkout-url")
+            val localizations = nonEmptyMapOf(
+                LocaleId("en_US") to nonEmptyMapOf(
+                    ctaKey to LocalizationData.Text(cta),
+                    urlKey to LocalizationData.Text("https://checkout.example.com"),
+                ),
+            )
+            val component = PurchaseButtonComponent(
+                stack = StackComponent(
+                    components = listOf(
+                        TextComponent(
+                            text = ctaKey,
+                            color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
+                        ),
+                    ),
+                ),
+                method = PurchaseButtonComponent.Method.CustomWebCheckout(
+                    customUrl = PurchaseButtonComponent.CustomUrl(
+                        urlLid = urlKey,
+                        appUserIdParam = "user",
+                    ),
+                ),
+            )
+            val offering = Offering(
+                identifier = "identifier",
+                serverDescription = "description",
+                metadata = emptyMap(),
+                availablePackages = emptyList(),
+            )
+            val style = StyleFactory(localizations = localizations, offering = offering)
+                .create(component)
+                .getOrThrow()
+                .componentStyle as ButtonComponentStyle
+            val purchases = MockPurchasesType(appUserID = "at-resolution")
+            val state = FakePaywallState(
+                components = listOf(component),
+                localizations = localizations,
+                purchases = purchases,
+            )
+            var interactionUrl: String? = null
+            var checkoutUrl: String? = null
+
+            setContent {
+                ButtonComponentView(
+                    style = style,
+                    state = state,
+                    onClick = { action ->
+                        checkoutUrl = state.resolveWebCheckoutUrlForInteraction(
+                            action as PaywallAction.External.LaunchWebCheckout,
+                        )
+                    },
+                    componentInteractionTracker = PaywallComponentInteractionTracker { interaction ->
+                        interactionUrl = interaction.componentUrl
+                        purchases.appUserID = "changed-after-resolution"
+                    },
+                )
+            }
+
+            onNodeWithText(cta).performClick()
+            waitForIdle()
+
+            assertThat(interactionUrl)
+                .isEqualTo("https://checkout.example.com?rc_source=app&user=at-resolution")
+            assertThat(checkoutUrl).isEqualTo(interactionUrl)
         }
 
     @Test

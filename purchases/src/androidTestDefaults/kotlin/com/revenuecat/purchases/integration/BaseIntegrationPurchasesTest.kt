@@ -142,8 +142,7 @@ abstract class BaseIntegrationPurchasesTest : BasePurchasesIntegrationTest() {
                     assertThat(offerings.current?.paywall).isNull()
                     // This offering has a components paywall, but the components are served from `/v1/config`, so
                     // they're not captured on the offering — only the cheap presence flag behind `hasPaywall` is.
-                    // Whether `paywallComponents` itself is populated depends on the remote config kill switch;
-                    // ProductionWorkflowsPaywallComponentsIntegrationTest covers both sides of that deterministically.
+                    // ProductionWorkflowsPaywallComponentsIntegrationTest covers this deterministically.
                     assertThat(offerings.current?.hasPaywall).isTrue
 
                     lock.countDown()

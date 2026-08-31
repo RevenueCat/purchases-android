@@ -106,71 +106,6 @@ class OfferingsManagerTest {
 
     // endregion clearInMemoryOfferingsCache
 
-    // region cache write invalidation guard
-
-    @Test
-    fun `in-flight fetch write is dropped after an invalidating clear (kill-switch)`() {
-        every { cache.clearInMemoryOfferingsCache() } just Runs
-        mockDeviceCache()
-        val onSuccessSlot = captureFactoryOnSuccess()
-
-        // The fetch reaches the factory but its parsed result is not delivered yet (still in flight).
-        offeringsManager.fetchAndCacheOfferings(appUserId, appInBackground = false)
-
-        // Kill switch trips: invalidate in-flight fetches, then the in-flight parse finally completes.
-        offeringsManager.clearInMemoryOfferingsCache(invalidateInFlightFetches = true)
-        onSuccessSlot.captured.invoke(OfferingsResultData(testOfferings, setOf(productId), emptySet()))
-
-        // The stale parse is dropped (a re-parse is issued instead, but its onSuccess is never fired here).
-        verify(exactly = 0) { cache.cacheOfferings(any(), any()) }
-    }
-
-    @Test
-    fun `stale in-flight parse is re-parsed and only the decoded result is delivered and cached`() {
-        every { cache.clearInMemoryOfferingsCache() } just Runs
-        mockDeviceCache()
-        val onSuccessSlot = captureFactoryOnSuccess()
-
-        // Two distinguishable results: the in-flight parse (pre-disable, paywall components skipped) and the
-        // re-parse (post-disable, components decoded). Distinct instances so we can assert which one is used.
-        val staleOfferings = testOfferings.copy(current = null)
-        val decodedOfferings = testOfferings
-
-        var delivered: OfferingsResultData? = null
-        offeringsManager.fetchAndCacheOfferings(
-            appUserId,
-            appInBackground = false,
-            onSuccess = { delivered = it },
-        )
-
-        // Kill switch trips: invalidate in-flight fetches.
-        offeringsManager.clearInMemoryOfferingsCache(invalidateInFlightFetches = true)
-
-        // The in-flight (pre-disable) parse completes -> guard is stale -> a re-parse is issued.
-        onSuccessSlot.captured.invoke(OfferingsResultData(staleOfferings, setOf(productId), emptySet()))
-        // The re-parse completes -> generation now matches -> cached and delivered.
-        onSuccessSlot.captured.invoke(OfferingsResultData(decodedOfferings, setOf(productId), emptySet()))
-
-        assertThat(delivered).isNotNull
-        assertThat(delivered!!.offerings).isEqualTo(decodedOfferings)
-        verify(exactly = 2) {
-            offeringsFactory.createOfferings(any(), any(), any(), onError = any(), onSuccess = any())
-        }
-        verify(exactly = 1) { cache.cacheOfferings(decodedOfferings, any()) }
-        verify(exactly = 0) { cache.cacheOfferings(staleOfferings, any()) }
-    }
-
-    @Test
-    fun `in-flight fetch write lands when no clear happens`() {
-        mockDeviceCache()
-        val onSuccessSlot = captureFactoryOnSuccess()
-
-        offeringsManager.fetchAndCacheOfferings(appUserId, appInBackground = false)
-        onSuccessSlot.captured.invoke(OfferingsResultData(testOfferings, setOf(productId), emptySet()))
-
-        verify(exactly = 1) { cache.cacheOfferings(any(), any()) }
-    }
-
     @Test
     fun `a network fetch caches the response body as received`() {
         mockDeviceCache()
@@ -184,20 +119,18 @@ class OfferingsManagerTest {
     }
 
     @Test
-    fun `in-flight fetch write lands after a non-invalidating clear (previous behavior preserved)`() {
+    fun `in-flight fetch write lands after a clear`() {
         every { cache.clearInMemoryOfferingsCache() } just Runs
         mockDeviceCache()
         val onSuccessSlot = captureFactoryOnSuccess()
 
         offeringsManager.fetchAndCacheOfferings(appUserId, appInBackground = false)
-        // A plain clear (locale override / remote config disabled path) must not drop the late write.
+        // A clear (e.g. the locale override path) must not drop the late write.
         offeringsManager.clearInMemoryOfferingsCache()
         onSuccessSlot.captured.invoke(OfferingsResultData(testOfferings, setOf(productId), emptySet()))
 
         verify(exactly = 1) { cache.cacheOfferings(any(), any()) }
     }
-
-    // endregion cache write invalidation guard
 
     // region onAppForeground
 
@@ -536,34 +469,6 @@ class OfferingsManagerTest {
         verify(exactly = 1) { cache.forceCacheStale() }
     }
 
-    @Test
-    fun `getOfferings succeeds without NPE when workflowManager is null`() {
-        val managerWithNoWorkflows = OfferingsManager(
-            offeringsCache = cache,
-            backend = backend,
-            offeringsFactory = offeringsFactory,
-            offeringImagePreDownloader = offeringImagePreDownloader,
-            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
-            offeringFontPreDownloader = mockOfferingFontPreDownloader,
-            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
-            dispatcher = SyncDispatcher(),
-            workflowManager = null,
-        )
-        every { cache.cachedOfferings } returns null
-        mockOfferingsFactory()
-        mockDeviceCache()
-
-        var receivedOfferings: Offerings? = null
-        managerWithNoWorkflows.getOfferings(
-            appUserId,
-            appInBackground = false,
-            onError = { fail("Expected success but got error: $it") },
-            onSuccess = { receivedOfferings = it },
-        )
-
-        assertThat(receivedOfferings).isEqualTo(testOfferings)
-    }
-
     // This situation shouldn't happen normally since we only cache when we have loaded the offerings at least once,
     // but it's possible something changed in the store. So better to handle it.
     @Test
@@ -689,7 +594,7 @@ class OfferingsManagerTest {
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
             offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
             dispatcher = holdingDispatcher,
-            workflowManager = null,
+            workflowManager = mockWorkflowManager,
         )
         every { cache.cachedOfferings } returns null
         mockOfferingsFactory(offerings)
@@ -1003,6 +908,7 @@ class OfferingsManagerTest {
             offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
             dispatcher = SyncDispatcher(),
             uiPreviewMode = true,
+            workflowManager = mockWorkflowManager,
         )
 
         var receivedOfferings: Offerings? = null
@@ -1034,6 +940,7 @@ class OfferingsManagerTest {
             offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
             dispatcher = SyncDispatcher(),
             uiPreviewMode = true,
+            workflowManager = mockWorkflowManager,
         )
         mockCacheStale(offeringsStale = true)
         mockDeviceCache()
@@ -1057,6 +964,7 @@ class OfferingsManagerTest {
             offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
             dispatcher = SyncDispatcher(),
             uiPreviewMode = true,
+            workflowManager = mockWorkflowManager,
         )
 
         var receivedResult: OfferingsResultData? = null
@@ -1203,35 +1111,6 @@ class OfferingsManagerTest {
         )
 
     // region workflowManager onComplete integration
-
-    @Test
-    fun `getOfferings calls onSuccess immediately when workflowManager is null`() {
-        val managerWithoutWorkflow = OfferingsManager(
-            offeringsCache = cache,
-            backend = backend,
-            offeringsFactory = offeringsFactory,
-            offeringImagePreDownloader = offeringImagePreDownloader,
-            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
-            offeringFontPreDownloader = mockOfferingFontPreDownloader,
-            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
-            dispatcher = SyncDispatcher(),
-            workflowManager = null,
-        )
-
-        every { cache.cachedOfferings } returns null
-        mockOfferingsFactory()
-        mockDeviceCache()
-
-        var receivedOfferings: Offerings? = null
-        managerWithoutWorkflow.getOfferings(
-            appUserId,
-            appInBackground = false,
-            onError = { fail("should be success") },
-            onSuccess = { receivedOfferings = it },
-        )
-
-        assertThat(receivedOfferings).isNotNull()
-    }
 
     @Test
     fun `getOfferings does not call onSuccess until onPaywallConfigReady completes`() {

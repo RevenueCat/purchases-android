@@ -53,10 +53,6 @@ class E2ETestsApplication : Application() {
         private const val WORKFLOWS_API_KEY_PLACEHOLDER = "workflows_api_key_to_replace"
         private const val APP_LOCALE_EXTRA_KEY = "app_locale"
         private const val FORCE_SERVER_ERROR_EXTRA_KEY = "force_server_error_strategy"
-
-        fun forceConfigKillSwitch() {
-            armRemoteConfigKillSwitchForE2ETests()
-        }
     }
 }
 
