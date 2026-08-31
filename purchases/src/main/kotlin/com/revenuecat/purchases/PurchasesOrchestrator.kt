@@ -21,10 +21,10 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
-import com.revenuecat.purchases.checkpoints.CheckpointEvent
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolver
 import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolverImpl
+import com.revenuecat.purchases.checkpoints.toCheckpointEvent
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendErrorCode
@@ -432,13 +432,13 @@ internal class PurchasesOrchestrator(
         checkpointIdentifier: String,
         customVariables: Map<String, RulesDimensionValue>,
     ): CheckpointResolution {
-        track(
-            CheckpointEvent(
-                identifier = checkpointIdentifier,
-                timestamp = dateProvider.now,
-            ),
-        )
-        return checkpointWorkflowResolver.resolve(checkpointIdentifier, customVariables)
+        // The timestamp is captured before resolving so it keeps meaning "when the user reached the checkpoint",
+        // while the event itself reports what the checkpoint resolved to. An identifier the dashboard doesn't know
+        // still emits a hit, so the backend keeps auto-registering checkpoints the SDK declares.
+        val hitTimestamp = dateProvider.now
+        val resolution = checkpointWorkflowResolver.resolve(checkpointIdentifier, customVariables)
+        track(resolution.toCheckpointEvent(identifier = checkpointIdentifier, timestamp = hitTimestamp))
+        return resolution
     }
 
     fun getStorefrontCountryCode(callback: GetStorefrontCallback) {

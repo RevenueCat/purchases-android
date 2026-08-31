@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.checkpoints.CheckpointHitResult
 import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.events.CustomerCenterDisplayMode
@@ -231,7 +232,12 @@ internal sealed class BackendEvent : Event {
     ) : BackendEvent()
 
     /**
-     * Represents a checkpoint hit.
+     * Represents a checkpoint hit and what the checkpoint resolved to.
+     *
+     * @property result What the checkpoint resolved to. Null only for hits recorded by an SDK version that sent
+     * the event before evaluating the checkpoint.
+     * @property workflowID The workflow the checkpoint matched, when it matched one.
+     * @property offeringID The offering the checkpoint resolved to, when it resolved to one.
      */
     @Serializable
     @SerialName("checkpoint")
@@ -245,6 +251,11 @@ internal sealed class BackendEvent : Event {
         @SerialName("app_session_id")
         val appSessionID: String,
         val timestamp: Long,
+        val result: CheckpointHitResult? = null,
+        @SerialName("workflow_id")
+        val workflowID: String? = null,
+        @SerialName("offering_id")
+        val offeringID: String? = null,
     ) : BackendEvent()
 
     /**

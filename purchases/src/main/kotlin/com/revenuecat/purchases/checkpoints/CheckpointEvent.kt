@@ -2,15 +2,85 @@ package com.revenuecat.purchases.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.events.FeatureEvent
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import java.util.Date
 import java.util.UUID
 
 /**
- * Records that a checkpoint was hit. This is persisted and sent through the shared analytics events pipeline.
+ * What a checkpoint resolved to, as reported in the `result` field of a checkpoint hit. The values are the
+ * vocabulary khepri validates the field against, which describes what the SDK did rather than what it matched.
+ */
+@Serializable
+internal enum class CheckpointHitResult {
+    /** A workflow matched and RevenueCat-managed UI is presented for it. */
+    @SerialName("present_ui")
+    PRESENT_UI,
+
+    /** An offering matched and is handed back to the app, which decides whether to present anything. */
+    @SerialName("return_data")
+    RETURN_DATA,
+
+    @SerialName("no_match")
+    NO_MATCH,
+
+    @SerialName("configuration_unavailable")
+    CONFIGURATION_UNAVAILABLE,
+
+    @SerialName("unknown_checkpoint")
+    UNKNOWN_CHECKPOINT,
+}
+
+/**
+ * Records that a checkpoint was hit and what it resolved to. This is persisted and sent through the shared
+ * analytics events pipeline.
+ *
+ * [timestamp] is when the user reached the checkpoint, not when the event was created, so hit volume over time
+ * stays comparable with events recorded before the outcome was attached.
  */
 @OptIn(InternalRevenueCatAPI::class)
 internal data class CheckpointEvent(
     val identifier: String,
+    val result: CheckpointHitResult,
+    val workflowId: String? = null,
+    val offeringId: String? = null,
     val id: UUID = UUID.randomUUID(),
     val timestamp: Date = Date(),
 ) : FeatureEvent
+
+/**
+ * Builds the hit event for a resolved checkpoint. [timestamp] is the moment the checkpoint was reached, captured
+ * before resolution started.
+ */
+@JvmSynthetic
+@OptIn(InternalRevenueCatAPI::class)
+internal fun CheckpointResolution.toCheckpointEvent(identifier: String, timestamp: Date): CheckpointEvent =
+    when (this) {
+        is CheckpointResolution.MatchedWorkflow -> CheckpointEvent(
+            identifier = identifier,
+            result = CheckpointHitResult.PRESENT_UI,
+            workflowId = workflow.id,
+            offeringId = offering.identifier,
+            timestamp = timestamp,
+        )
+        is CheckpointResolution.MatchedOffering -> CheckpointEvent(
+            identifier = identifier,
+            result = CheckpointHitResult.RETURN_DATA,
+            offeringId = offering.identifier,
+            timestamp = timestamp,
+        )
+        is CheckpointResolution.NoAction -> CheckpointEvent(
+            identifier = identifier,
+            result = reason.toCheckpointHitResult(),
+            timestamp = timestamp,
+        )
+    }
+
+@OptIn(InternalRevenueCatAPI::class)
+private fun CheckpointResolution.NoAction.Reason.toCheckpointHitResult(): CheckpointHitResult =
+    when (this) {
+        CheckpointResolution.NoAction.Reason.NO_MATCH -> CheckpointHitResult.NO_MATCH
+        CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE ->
+            CheckpointHitResult.CONFIGURATION_UNAVAILABLE
+        CheckpointResolution.NoAction.Reason.UNKNOWN_CHECKPOINT -> CheckpointHitResult.UNKNOWN_CHECKPOINT
+    }

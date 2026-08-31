@@ -21,6 +21,9 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.checkpoints.CheckpointEvent
+import com.revenuecat.purchases.checkpoints.CheckpointHitResult
+import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.common.checkpoints.CheckpointRulesResolution
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.sha1
@@ -58,6 +61,7 @@ import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubStoreProductWithGoogleSubscriptionPurchaseData
 import io.mockk.Runs
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -1590,17 +1594,55 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     @OptIn(InternalRevenueCatAPI::class)
     @Test
-    fun `resolving checkpoint tracks checkpoint hit`() = runTest {
+    fun `resolving checkpoint tracks checkpoint hit with the resolution`() = runTest {
         val timestamp = Date(1699270688995)
         val event = slot<CheckpointEvent>()
         every { mockDateProvider.now } returns timestamp
         every { mockEventsManager.track(capture(event)) } just Runs
+        coEvery {
+            mockCheckpointsConfigProvider.resolveCheckpoint("onboarding_complete")
+        } returns CheckpointRulesResolution.NotConfigured
+
+        val resolution = purchases.resolveCheckpoint("onboarding_complete")
+
+        assertThat(resolution).isEqualTo(
+            CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.UNKNOWN_CHECKPOINT),
+        )
+        assertThat(event.captured.identifier).isEqualTo("onboarding_complete")
+        assertThat(event.captured.timestamp).isEqualTo(timestamp)
+        assertThat(event.captured.result).isEqualTo(CheckpointHitResult.UNKNOWN_CHECKPOINT)
+        assertThat(event.captured.workflowId).isNull()
+        assertThat(event.captured.offeringId).isNull()
+        verify(exactly = 1) { mockEventsManager.track(event.captured) }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `resolving checkpoint tracks the hit after resolving`() = runTest {
+        every { mockEventsManager.track(any<CheckpointEvent>()) } just Runs
+        coEvery {
+            mockCheckpointsConfigProvider.resolveCheckpoint("onboarding_complete")
+        } coAnswers {
+            verify(exactly = 0) { mockEventsManager.track(any<CheckpointEvent>()) }
+            CheckpointRulesResolution.NotConfigured
+        }
 
         purchases.resolveCheckpoint("onboarding_complete")
 
-        assertThat(event.captured.identifier).isEqualTo("onboarding_complete")
-        assertThat(event.captured.timestamp).isEqualTo(timestamp)
-        verify(exactly = 1) { mockEventsManager.track(event.captured) }
+        verify(exactly = 1) { mockEventsManager.track(any<CheckpointEvent>()) }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `resolving checkpoint tracks nothing when resolution throws`() = runTest {
+        every { mockEventsManager.track(any<CheckpointEvent>()) } just Runs
+
+        // "error_checkpoint" is the resolver's simulated-error hook, the only path that throws.
+        assertThatThrownBy {
+            runBlocking { purchases.resolveCheckpoint("error_checkpoint") }
+        }.isInstanceOf(PurchasesException::class.java)
+
+        verify(exactly = 0) { mockEventsManager.track(any<CheckpointEvent>()) }
     }
 
     @Test

@@ -107,6 +107,9 @@ internal fun CheckpointEvent.toBackendStoredEvent(
         appUserID = appUserID,
         appSessionID = appSessionID,
         timestamp = timestamp.time,
+        result = result,
+        workflowID = workflowId,
+        offeringID = offeringId,
     ),
 )
 
