@@ -10,9 +10,6 @@ import com.revenuecat.purchases.rules.strictEq
  * String + array operators: `in`, `cat`, `substr`, `merge`.
  *
  * Behavior follows the JSON Logic JS reference (`json-logic-js`).
- * `substr` slices by Unicode code points, not UTF-16 code units —
- * matches Kotlin's `String.codePointCount` semantics; differs from JS
- * only for surrogate-pair characters.
  */
 internal object StringArrayOperators {
 
@@ -73,13 +70,19 @@ internal object StringArrayOperators {
      * `{"substr": [source, start]}` or
      * `{"substr": [source, start, length]}`. `source` is stringified.
      * Negative `start` counts from the end. A negative `length` drops
-     * that many code points from the right of the substring that starts
-     * at `start`. Code-point-based, not char-based — see type docs.
-     * `json-logic-js` declares `substr` as
+     * that many code units from the right of the substring that starts
+     * at `start`. `json-logic-js` declares `substr` as
      * `function(source, start, end)`, so a missing `start` defaults to
      * `0` and arguments past the third are silently ignored. A missing
      * `source` is `undefined`, which stringifies to `"undefined"` (not
      * `"null"`).
+     *
+     * Indices are **UTF-16 code units**, because `json-logic-js` is
+     * `String.prototype.substr` and that is the unit JS strings are indexed
+     * in. Kotlin's [String] is already a code-unit sequence, so a slice that
+     * lands inside a surrogate pair keeps the half pair exactly as JS does.
+     * A Swift `String` cannot, so `purchases-ios` yields U+FFFD there —
+     * same code-unit count, different content.
      */
     fun opSubstr(args: Value, vars: Scope): Value {
         val evaluated = Operators.evalArgs(args, vars)
@@ -95,8 +98,8 @@ internal object StringArrayOperators {
             null
         }
 
-        val codePoints = jsString(source).toCodePointArray()
-        val total = codePoints.size
+        val text = jsString(source)
+        val total = text.length
 
         val startN = Operators.clampedInt(start.toNumberOrNull() ?: 0.0)
         val begin = if (startN < 0) {
@@ -114,33 +117,11 @@ internal object StringArrayOperators {
             } else {
                 lenN.coerceAtMost(afterStartLength)
             }
-            codePoints.toStringFromCodePoints(begin, begin + count)
+            text.substring(begin, begin + count)
         } else {
-            codePoints.toStringFromCodePoints(begin, total)
+            text.substring(begin, total)
         }
         return Value.StringValue(result)
-    }
-
-    /**
-     * Unicode code points without [String.codePoints] (API 24+).
-     */
-    private fun String.toCodePointArray(): IntArray {
-        val points = mutableListOf<Int>()
-        var index = 0
-        while (index < length) {
-            val codePoint = codePointAt(index)
-            points.add(codePoint)
-            index += Character.charCount(codePoint)
-        }
-        return points.toIntArray()
-    }
-
-    private fun IntArray.toStringFromCodePoints(start: Int, end: Int): String {
-        val builder = StringBuilder()
-        for (index in start until end) {
-            builder.appendCodePoint(this[index])
-        }
-        return builder.toString()
     }
 
     /**
