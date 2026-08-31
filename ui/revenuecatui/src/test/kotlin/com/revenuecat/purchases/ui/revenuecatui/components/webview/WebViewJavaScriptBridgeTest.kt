@@ -74,7 +74,9 @@ internal class WebViewJavaScriptBridgeTest {
         sizeToContentHeight: Boolean = false,
         onDocumentReset: () -> Unit = {},
         onSecureMessagingUnsupported: () -> Unit = {},
-        contextSnapshotProvider: () -> JsonObject = { webViewContextSnapshot(locale = "en_US", darkMode = false) },
+        contextSnapshotProvider: () -> JsonObject = {
+            webViewContextSnapshot(locale = "en-US", darkMode = false)
+        },
     ): WebViewJavaScriptBridge {
         val bridge = WebViewJavaScriptBridge(
             webView = webView,
@@ -224,7 +226,7 @@ internal class WebViewJavaScriptBridgeTest {
         assertThat(script).contains("\"selected_package\":null")
         assertThat(script).contains("\"inputs\":{}")
         assertThat(script).contains("\"is_preview\":false")
-        assertThat(script).contains("\"locale\":\"en_US\"")
+        assertThat(script).contains("\"locale\":\"en-US\"")
         assertThat(script).doesNotContain("\"workflow\"")
     }
 

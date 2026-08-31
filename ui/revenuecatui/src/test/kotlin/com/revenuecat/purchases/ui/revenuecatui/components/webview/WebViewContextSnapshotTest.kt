@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
+import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.jsonArray
@@ -13,7 +14,7 @@ internal class WebViewContextSnapshotTest {
 
     @Test
     fun `contains every section with its empty shape and no workflow key`() {
-        val snapshot = webViewContextSnapshot(locale = "en_US", darkMode = true)
+        val snapshot = webViewContextSnapshot(locale = "en-US", darkMode = true)
 
         assertThat(snapshot.keys).containsExactly(
             "custom",
@@ -36,13 +37,22 @@ internal class WebViewContextSnapshotTest {
     fun `device_meta carries host details`() {
         val before = System.currentTimeMillis()
 
-        val deviceMeta = webViewContextSnapshot(locale = "en_US", darkMode = true)
+        val deviceMeta = webViewContextSnapshot(locale = "en-US", darkMode = true)
             .getValue("device_meta").jsonObject
 
         assertThat(deviceMeta.getValue("is_preview").jsonPrimitive.boolean).isFalse()
-        assertThat(deviceMeta.getValue("locale").jsonPrimitive.content).isEqualTo("en_US")
+        assertThat(deviceMeta.getValue("locale").jsonPrimitive.content).isEqualTo("en-US")
         assertThat(deviceMeta.getValue("dark_mode").jsonPrimitive.boolean).isTrue()
         assertThat(deviceMeta.getValue("updated_at").jsonPrimitive.long)
             .isBetween(before, System.currentTimeMillis())
+    }
+
+    @Test
+    fun `derives the locale from the paywall state as a BCP-47 tag`() {
+        // The state carries the locale as an underscored `LocaleId`; the wire needs a tag.
+        val deviceMeta = webViewContextSnapshot(FakePaywallState(components = emptyList()), darkMode = false)
+            .getValue("device_meta").jsonObject
+
+        assertThat(deviceMeta.getValue("locale").jsonPrimitive.content).isEqualTo("en-US")
     }
 }

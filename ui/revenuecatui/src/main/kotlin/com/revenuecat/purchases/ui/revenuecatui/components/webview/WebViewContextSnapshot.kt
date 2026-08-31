@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -9,10 +10,22 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
+@JvmSynthetic
+internal fun webViewContextSnapshot(
+    state: PaywallState.Loaded.Components,
+    darkMode: Boolean,
+): JsonObject = webViewContextSnapshot(
+    locale = state.locale.toLanguageTag(),
+    darkMode = darkMode,
+)
+
 /**
  * Builds the payload the handshake seeds and later `context` pushes replace, per the
  * custom component variables contract (RevenueCat/docs#1874): absent structured sections are
  * literal `null`, empty maps are `{}`, and `workflow` is omitted entirely outside a funnel.
+ *
+ * @param locale a BCP-47 language tag. The content SDK feeds it to `Intl`, which rejects the
+ * underscored `LocaleId` form with a `RangeError`.
  */
 @JvmSynthetic
 internal fun webViewContextSnapshot(

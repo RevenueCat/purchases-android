@@ -40,7 +40,7 @@ class WebViewContextBridgeTest {
                     sizeToContentHeight = true,
                 ),
                 onLoadFailed = {},
-                contextSnapshotProvider = { webViewContextSnapshot(locale = "en_US", darkMode = false) },
+                contextSnapshotProvider = { webViewContextSnapshot(locale = "en-US", darkMode = false) },
             )
         }
         assumeTrue(configured != null)
@@ -57,7 +57,7 @@ class WebViewContextBridgeTest {
                 """"type":"fit"""",
                 """"payload":{"context":{""",
                 """"is_preview":false""",
-                """"locale":"en_US"""",
+                """"locale":"en-US"""",
             )
             assertThat(frames).doesNotContain("workflow")
         } finally {

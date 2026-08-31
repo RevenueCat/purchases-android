@@ -244,7 +244,9 @@ private fun TestWebViewSlot(
                         expectedUrl = identity.resolvedUrl,
                         sizeToContentWidth = identity.sizeToContentWidth,
                         sizeToContentHeight = identity.sizeToContentHeight,
-                        contextSnapshotProvider = { webViewContextSnapshot(locale = "en_US", darkMode = false) },
+                        contextSnapshotProvider = {
+                            webViewContextSnapshot(locale = "en-US", darkMode = false)
+                        },
                     ).also { created ->
                         created.attach()
                         onBridgeCreated(created)

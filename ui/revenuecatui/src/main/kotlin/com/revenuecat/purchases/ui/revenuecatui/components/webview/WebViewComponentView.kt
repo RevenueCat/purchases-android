@@ -38,7 +38,6 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
-import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -82,12 +81,7 @@ internal fun WebViewComponentView(
     // PaywallState instance on every rebuild, so both reads go through State to stay current.
     val darkMode by rememberUpdatedState(isSystemInDarkTheme())
     val currentState by rememberUpdatedState(state)
-    val contextSnapshotProvider: () -> JsonObject = {
-        webViewContextSnapshot(
-            locale = currentState.locale.toLocaleId().value,
-            darkMode = darkMode,
-        )
-    }
+    val contextSnapshotProvider: () -> JsonObject = { webViewContextSnapshot(currentState, darkMode) }
 
     val identity = WebViewIdentity(
         resolvedUrl = resolvedUrl,
