@@ -243,6 +243,7 @@ class SubscriberAttributesPosterTests {
         assertThat(receivedAttributeErrors!!.size).isEqualTo(1)
         assertThat(receivedAttributeErrors!![0].keyName).isEqualTo("email")
         assertThat(receivedAttributeErrors!![0].message).isEqualTo("Value is not a valid email address.")
+        assertThat(receivedAttributeErrors!![0].backendErrorCode).isEqualTo(7263)
     }
 
     @Test

@@ -8,7 +8,6 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitCustomerInfo
-import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
@@ -71,7 +70,7 @@ class EntitlementGateViewModel : ViewModel() {
             try {
                 val result = Purchases.sharedInstance.awaitCheckpoint(
                     "entitlement_gate",
-                    CheckpointParams("gate" to CustomVariableValue.String("entitlement")),
+                    CheckpointParams { customVariables { "gate" to "entitlement" } },
                 )
                 handleCheckpointResult(result)
             } catch (e: PurchasesException) {
@@ -86,7 +85,7 @@ class EntitlementGateViewModel : ViewModel() {
             is CheckpointResult.ReceivedOffering ->
                 finish("Offering ${result.offering.identifier} returned; the app should present it.")
             is CheckpointResult.PaywallPresented -> handlePaywallOutcome(result.paywallOutcome)
-            is CheckpointResult.NoAction -> finish("No paywall shown (${result.reason.value}).")
+            is CheckpointResult.NoAction -> finish("No paywall shown (${result.reason}).")
             else -> finish("Unknown checkpoint result.")
         }
     }
@@ -98,6 +97,8 @@ class EntitlementGateViewModel : ViewModel() {
             is CheckpointPaywallOutcome.Purchased -> granted("Purchased.", outcome.customerInfo)
             is CheckpointPaywallOutcome.Restored -> granted("Restored.", outcome.customerInfo)
             CheckpointPaywallOutcome.Dismissed -> finish("Dismissed, still no entitlement.")
+            CheckpointPaywallOutcome.WebCheckoutOpened ->
+                finish("Left to pay via web checkout; entitlements not confirmed yet.")
             is CheckpointPaywallOutcome.Error -> finish("Paywall error: ${outcome.error.message}")
             else -> finish("Unknown paywall outcome.")
         }

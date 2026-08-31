@@ -148,7 +148,7 @@ internal class ProductionRemoteConfigFallbackIntegrationTest : BaseBackendIntegr
                     verification = verificationResult
                     latch.countDown()
                 },
-                onError = { purchasesError, _ ->
+                onError = { purchasesError ->
                     error = purchasesError
                     latch.countDown()
                 },

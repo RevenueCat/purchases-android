@@ -67,6 +67,8 @@ internal data class ButtonComponentStyle(
             val openMethod: ButtonComponent.UrlMethod,
             val rcPackage: Package?,
             val packageParam: String?,
+            val appUserIdParam: String? = null,
+            val envParam: String? = null,
         ) : Action {
             override val description: String
                 get() = "custom_web_checkout"

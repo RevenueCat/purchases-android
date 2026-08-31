@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
@@ -76,7 +75,7 @@ class OnboardingViewModel : ViewModel() {
             val message = try {
                 val result = Purchases.sharedInstance.awaitCheckpoint(
                     "onboarding_complete",
-                    CheckpointParams("step" to CustomVariableValue.String(Step.Personalize.name)),
+                    CheckpointParams { customVariables { "step" to Step.Personalize.name } },
                 )
                 when (result) {
                     is CheckpointResult.ReceivedOffering ->
@@ -85,10 +84,11 @@ class OnboardingViewModel : ViewModel() {
                         is CheckpointPaywallOutcome.Purchased -> "Purchased during onboarding."
                         is CheckpointPaywallOutcome.Restored -> "Restored during onboarding."
                         CheckpointPaywallOutcome.Dismissed -> "Paywall dismissed."
+                        CheckpointPaywallOutcome.WebCheckoutOpened -> "Left to pay via web checkout."
                         is CheckpointPaywallOutcome.Error -> "Paywall error: ${outcome.error.message}"
                         else -> "Unknown paywall outcome."
                     }
-                    is CheckpointResult.NoAction -> "No paywall shown (${result.reason.value})."
+                    is CheckpointResult.NoAction -> "No paywall shown (${result.reason})."
                     else -> "Unknown checkpoint result."
                 }
             } catch (e: PurchasesException) {

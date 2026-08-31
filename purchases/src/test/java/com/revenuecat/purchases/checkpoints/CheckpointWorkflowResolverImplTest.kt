@@ -4,6 +4,7 @@ package com.revenuecat.purchases.checkpoints
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
@@ -20,6 +21,10 @@ import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesDimensionNamespace
 import com.revenuecat.purchases.common.localrules.RulesDimensionProvider
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
+import com.revenuecat.purchases.common.remoteconfig.ConfigTopic
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
@@ -39,12 +44,14 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.util.Date
+import java.util.concurrent.atomic.AtomicInteger
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -86,6 +93,7 @@ class CheckpointWorkflowResolverImplTest {
             val audienceId = firstArg<String>()
             Audience(id = audienceId, rules = "true")
         }
+        every { mockCheckpointsConfigProvider.isCurrent(any()) } returns true
         configureRules(rule("wf1234"))
         resolver = CheckpointWorkflowResolverImpl(
             workflowManager = mockWorkflowManager,
@@ -111,30 +119,6 @@ class CheckpointWorkflowResolverImplTest {
         }
 
         assertThat(errorCode).isEqualTo(PurchasesErrorCode.ConfigurationError)
-    }
-
-    @Test
-    fun `checkpoint resolves NoAction with DISABLED when workflows are disabled`() = runTest {
-        resolver = CheckpointWorkflowResolverImpl(
-            workflowManager = null,
-            uiConfigProvider = null,
-            checkpointsConfigProvider = null,
-            audiencesConfigProvider = null,
-            localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
-            getOfferings = { mockOfferings },
-        )
-
-        assertThat(noActionReason(resolve()))
-            .isEqualTo(CheckpointResolution.NoAction.Reason.DISABLED)
-    }
-
-    @Test
-    fun `checkpoint resolves NoAction with DISABLED when remote config is disabled`() = runTest {
-        configureResolution(CheckpointRulesResolution.Disabled)
-
-        assertThat(noActionReason(resolve()))
-            .isEqualTo(CheckpointResolution.NoAction.Reason.DISABLED)
-        coVerify(exactly = 0) { mockAudiencesConfigProvider.getAudience(any()) }
     }
 
     @Test
@@ -210,6 +194,62 @@ class CheckpointWorkflowResolverImplTest {
         val resolution = resolve() as CheckpointResolution.MatchedWorkflow
 
         assertThat(resolution.workflow).isEqualTo(mockWorkflow)
+    }
+
+    @Test
+    fun `config changing once during audience evaluation is retried`() = runTest {
+        val generation = AtomicInteger(1)
+        val audienceReads = AtomicInteger(0)
+        resolver = resolverBackedBy(
+            stalenessManager(generation) { if (audienceReads.getAndIncrement() == 0) generation.incrementAndGet() },
+        )
+
+        assertThat(resolve()).isInstanceOf(CheckpointResolution.MatchedWorkflow::class.java)
+    }
+
+    @Test
+    fun `config changing on every audience evaluation is configuration unavailable after one retry`() = runTest {
+        val generation = AtomicInteger(1)
+        val audienceReads = AtomicInteger(0)
+        resolver = resolverBackedBy(
+            stalenessManager(generation) {
+                audienceReads.incrementAndGet()
+                generation.incrementAndGet()
+            },
+        )
+
+        assertThat(noActionReason(resolve()))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        // Two resolution attempts, no more: a burst of commits can't keep resolution spinning.
+        assertThat(audienceReads.get()).isEqualTo(2)
+    }
+
+    @Test
+    fun `config changing once while resolving the workflow is retried`() = runTest {
+        var generation = 0
+        var workflowFetches = 0
+        configureRulesReadAt { generation }
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } answers {
+            if (workflowFetches++ == 0) generation++
+            mockWorkflow
+        }
+
+        assertThat(resolve()).isInstanceOf(CheckpointResolution.MatchedWorkflow::class.java)
+    }
+
+    @Test
+    fun `config changing on every workflow resolution is configuration unavailable after one retry`() = runTest {
+        var generation = 0
+        configureRulesReadAt { generation }
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } answers {
+            generation++
+            mockWorkflow
+        }
+
+        assertThat(noActionReason(resolve()))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        // Two resolution attempts, no more: a burst of commits can't keep resolution spinning.
+        coVerify(exactly = 2) { mockWorkflowManager.getWorkflowBody("wf1234") }
     }
 
     @Test
@@ -381,26 +421,6 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `offering checkpoint resolves DISABLED when no UI config provider is installed`() = runTest {
-        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns offeringWorkflow("wf1234", "default")
-        resolver = CheckpointWorkflowResolverImpl(
-            workflowManager = mockWorkflowManager,
-            uiConfigProvider = null,
-            checkpointsConfigProvider = mockCheckpointsConfigProvider,
-            audiencesConfigProvider = mockAudiencesConfigProvider,
-            localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
-            getOfferings = {
-                offeringsFetched++
-                mockOfferings
-            },
-        )
-
-        assertThat(noActionReason(resolve())).isEqualTo(CheckpointResolution.NoAction.Reason.DISABLED)
-        assertThat(offeringsFetched).isZero()
-        coVerify(exactly = 0) { mockWorkflowManager.getWorkflowBody(any()) }
-    }
-
-    @Test
     fun `terminal offering workflow requires ui config`() = runTest {
         coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns offeringWorkflow("wf1234", "default")
 
@@ -554,12 +574,67 @@ class CheckpointWorkflowResolverImplTest {
     )
 
     private fun configureRules(vararg rules: CheckpointRule) {
-        configureResolution(CheckpointRulesResolution.Found(CheckpointResponse(rules = rules.toList())))
+        configureResolution(
+            CheckpointRulesResolution.Found(
+                checkpoint = CheckpointResponse(rules = rules.toList()),
+                configGeneration = 0,
+            ),
+        )
     }
 
     private fun configureResolution(resolution: CheckpointRulesResolution) {
         coEvery { mockCheckpointsConfigProvider.resolveCheckpoint(checkpointId) } returns resolution
     }
+
+    /**
+     * Rules that are always read against whatever [generation] is current, so an attempt only looks stale if the
+     * generation moves after its own read.
+     */
+    private fun configureRulesReadAt(generation: () -> Int) {
+        coEvery { mockCheckpointsConfigProvider.resolveCheckpoint(checkpointId) } answers {
+            CheckpointRulesResolution.Found(
+                checkpoint = CheckpointResponse(rules = listOf(rule("wf1234"))),
+                configGeneration = generation(),
+            )
+        }
+        every { mockCheckpointsConfigProvider.isCurrent(any()) } answers {
+            firstArg<CheckpointRulesResolution.Found>().configGeneration == generation()
+        }
+    }
+
+    /** A manager serving one checkpoint and one always-matching audience, running [onAudienceRead] on each read. */
+    private fun stalenessManager(generation: AtomicInteger, onAudienceRead: () -> Unit): RemoteConfigManager =
+        mockk<RemoteConfigManager>().also { manager ->
+            every { manager.configGeneration } answers { generation.get() }
+            coEvery {
+                manager.blobData(
+                    RemoteConfigTopic.CheckpointRules,
+                    checkpointId,
+                    any<(ByteArray) -> CheckpointResponse?>(),
+                )
+            } returns CheckpointResponse(rules = listOf(rule("wf1234")))
+            coEvery { manager.topic(RemoteConfigTopic.Audiences) } answers {
+                onAudienceRead()
+                ConfigTopic(
+                    mapOf(
+                        "aud_wf1234" to RemoteConfiguration.ConfigItem(
+                            metadata = JsonTools.json.parseToJsonElement(
+                                """{"id":"aud_wf1234","rules":{"==":[1,1]}}""",
+                            ).jsonObject,
+                        ),
+                    ),
+                )
+            }
+        }
+
+    private fun resolverBackedBy(manager: RemoteConfigManager) = CheckpointWorkflowResolverImpl(
+        workflowManager = mockWorkflowManager,
+        uiConfigProvider = mockUiConfigProvider,
+        checkpointsConfigProvider = CheckpointsConfigProvider(manager),
+        audiencesConfigProvider = AudiencesConfigProvider(manager),
+        localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
+        getOfferings = { mockOfferings },
+    )
 
     private suspend fun resolve(): CheckpointResolution = resolver.resolve(checkpointId, emptyMap())
 

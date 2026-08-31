@@ -51,6 +51,7 @@ class CustomCheckpointViewModel : ViewModel() {
                             is CheckpointPaywallOutcome.Purchased -> "Purchased."
                             is CheckpointPaywallOutcome.Restored -> "Restored."
                             CheckpointPaywallOutcome.Dismissed -> "Dismissed."
+                            CheckpointPaywallOutcome.WebCheckoutOpened -> "Left to pay via web checkout."
                             is CheckpointPaywallOutcome.Error -> "Paywall error: ${outcome.error.message}"
                             else -> "Unknown paywall outcome."
                         },
@@ -58,7 +59,7 @@ class CustomCheckpointViewModel : ViewModel() {
                     )
                     is CheckpointResult.NoAction -> UiState(
                         title = "No action",
-                        detail = "Reason: ${result.reason.value}",
+                        detail = "Reason: ${result.reason}",
                         raw = result.toString(),
                     )
                     else -> UiState(title = "Unknown checkpoint result.", raw = result.toString())

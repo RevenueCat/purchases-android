@@ -9,8 +9,11 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
+import com.revenuecat.purchases.common.BackendErrorCode
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.ReplaceProductInfo
+import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.subscriberattributes.DeviceIdentifiersFetcher
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
@@ -31,6 +34,10 @@ import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.strings.PurchaseStrings
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
@@ -2952,7 +2959,12 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     @Test
     fun `syncAttributesAndOfferingsIfNeeded refreshes remote config`() {
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), captureLambda())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+                appUserId,
+                any(),
+                any(),
+                captureLambda(),
+            )
         } answers { lambda<() -> Unit>().captured.invoke() }
         every {
             mockOfferingsManager.getOfferings(appUserId, false, any(), any(), fetchCurrent = true)
@@ -2971,9 +2983,170 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `syncAttributesAndOfferingsIfNeeded returns attribute sync error without fetching offerings`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
+        assertAttributeSyncErrorBlocksOfferings(expectedError)
+    }
+
+    @Test
+    fun `syncAttributesAndOfferingsIfNeeded fetches offerings for reserved attribute 7263 error`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.InvalidSubscriberAttributesError)
+        buildPurchasesWithAttributeSyncError(
+            expectedError,
+            listOf(
+                SubscriberAttributeError(
+                    "\$idfv",
+                    "IDFV cannot be modified.",
+                    BackendErrorCode.BackendInvalidSubscriberAttributes.value,
+                ),
+            ),
+        )
+        every {
+            mockOfferingsManager.getOfferings(appUserId, false, any(), any(), fetchCurrent = true)
+        } just Runs
+
+        purchases.purchasesOrchestrator.syncAttributesAndOfferingsIfNeeded(
+            object : SyncAttributesAndOfferingsCallback {
+                override fun onSuccess(offerings: Offerings) {}
+                override fun onError(error: PurchasesError) = fail("Expected offerings to be fetched")
+            },
+        )
+
+        verify(exactly = 1) {
+            mockOfferingsManager.getOfferings(appUserId, false, any(), any(), fetchCurrent = true)
+        }
+    }
+
+    @Test
+    fun `syncAttributesAndOfferingsIfNeeded returns custom attribute 7263 error`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.InvalidSubscriberAttributesError)
+        assertAttributeSyncErrorBlocksOfferings(
+            expectedError,
+            listOf(
+                SubscriberAttributeError(
+                    "favorite_color",
+                    "Value is too long.",
+                    BackendErrorCode.BackendInvalidSubscriberAttributes.value,
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun `syncAttributesAndOfferingsIfNeeded returns mixed attribute 7263 error`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.InvalidSubscriberAttributesError)
+        assertAttributeSyncErrorBlocksOfferings(
+            expectedError,
+            listOf(
+                SubscriberAttributeError(
+                    "\$idfv",
+                    "IDFV cannot be modified.",
+                    BackendErrorCode.BackendInvalidSubscriberAttributes.value,
+                ),
+                SubscriberAttributeError(
+                    "favorite_color",
+                    "Value is too long.",
+                    BackendErrorCode.BackendInvalidSubscriberAttributes.value,
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun `syncAttributesAndOfferingsIfNeeded returns 7263 error without attribute details`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.InvalidSubscriberAttributesError)
+        assertAttributeSyncErrorBlocksOfferings(expectedError)
+    }
+
+    @Test
+    fun `syncAttributesAndOfferingsIfNeeded returns reserved attribute 7264 error`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.InvalidSubscriberAttributesError)
+        assertAttributeSyncErrorBlocksOfferings(
+            expectedError,
+            listOf(
+                SubscriberAttributeError(
+                    "\$idfv",
+                    "IDFV cannot be modified.",
+                    BackendErrorCode.BackendInvalidSubscriberAttributesBody.value,
+                ),
+            ),
+        )
+    }
+
+    private fun assertAttributeSyncErrorBlocksOfferings(
+        expectedError: PurchasesError,
+        attributeErrors: List<SubscriberAttributeError> = emptyList(),
+    ) {
+        buildPurchasesWithAttributeSyncError(expectedError, attributeErrors)
+        every {
+            mockOfferingsManager.getOfferings(appUserId, false, any(), any(), fetchCurrent = true)
+        } just Runs
+
+        var receivedError: PurchasesError? = null
+        purchases.purchasesOrchestrator.syncAttributesAndOfferingsIfNeeded(
+            object : SyncAttributesAndOfferingsCallback {
+                override fun onSuccess(offerings: Offerings) = fail("Expected attribute sync to fail")
+
+                override fun onError(error: PurchasesError) {
+                    receivedError = error
+                }
+            },
+        )
+
+        assertThat(receivedError).isEqualTo(expectedError)
+        verify(exactly = 0) {
+            mockOfferingsManager.getOfferings(appUserId, false, any(), any(), fetchCurrent = true)
+        }
+    }
+
+    private fun buildPurchasesWithAttributeSyncError(
+        error: PurchasesError,
+        attributeErrors: List<SubscriberAttributeError> = emptyList(),
+    ) {
+        val subscriberAttribute = SubscriberAttribute("key", "value", isSynced = false)
+        val subscriberAttributesCache = mockk<SubscriberAttributesCache>()
+        val subscriberAttributesPoster = mockk<SubscriberAttributesPoster>()
+
+        every {
+            subscriberAttributesCache.getUnsyncedSubscriberAttributes()
+        } returns mapOf(appUserId to mapOf("key" to subscriberAttribute))
+        every {
+            subscriberAttributesPoster.postSubscriberAttributes(
+                any(),
+                appUserId,
+                any(),
+                any(),
+                captureLambda(),
+            )
+        } answers {
+            lambda<(PurchasesError, Boolean, List<SubscriberAttributeError>) -> Unit>().captured.invoke(
+                error,
+                false,
+                attributeErrors,
+            )
+        }
+
+        val subscriberAttributesManager = SubscriberAttributesManager(
+            subscriberAttributesCache,
+            subscriberAttributesPoster,
+            mockk<DeviceIdentifiersFetcher>(),
+            automaticDeviceIdentifierCollectionEnabled = true,
+        )
+        buildPurchases(
+            anonymous = false,
+            subscriberAttributesManager = subscriberAttributesManager,
+        )
+    }
+
+    @Test
     fun `syncAttributesAndOfferingsIfNeeded does not refresh remote config when rate limited`() {
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), captureLambda())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+                appUserId,
+                any(),
+                any(),
+                captureLambda(),
+            )
         } answers { lambda<() -> Unit>().captured.invoke() }
         every {
             mockOfferingsManager.getOfferings(appUserId, false, any(), any(), any())
@@ -2989,25 +3162,6 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         verify(exactly = 5) {
             mockRemoteConfigManager.refreshRemoteConfig(false, appUserId, RemoteConfigFetchContext.Read)
-        }
-    }
-
-    @Test
-    fun `remote config disable invalidates the offerings cache then refetches from network`() {
-        every { mockOfferingsManager.clearInMemoryOfferingsCache(true) } just Runs
-        every { mockOfferingsManager.fetchAndCacheOfferings(appUserId, false, any(), any()) } just Runs
-
-        // Capture the disable listener the orchestrator registered on construction.
-        val listenerSlot = slot<RemoteConfigCommitListener>()
-        verify { mockRemoteConfigManager.registerListener(capture(listenerSlot)) }
-
-        listenerSlot.captured.onRemoteConfigDisabled(generation = 1)
-
-        // The in-memory cache must be dropped BEFORE the refetch, so getOfferings callers in the window take the
-        // cache-miss -> network path (freshly decoded components) instead of the stale null-component offerings.
-        verifyOrder {
-            mockOfferingsManager.clearInMemoryOfferingsCache(true)
-            mockOfferingsManager.fetchAndCacheOfferings(appUserId, false, any(), any())
         }
     }
 

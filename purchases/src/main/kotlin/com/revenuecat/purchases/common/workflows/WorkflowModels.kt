@@ -12,6 +12,7 @@ import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfigSerializer
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.paywalls.components.common.StateDeclarationMapSerializer
+import com.revenuecat.purchases.utils.serializers.DefaultLocaleIdSerializer
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
 import com.revenuecat.purchases.utils.serializers.GoogleListSerializer
 import com.revenuecat.purchases.utils.serializers.JsonObjectToMapSerializer
@@ -128,7 +129,8 @@ public data class WorkflowScreen(
     @SerialName("components_config") val componentsConfig: ComponentsConfig,
     @SerialName("components_localizations")
     val componentsLocalizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>>,
-    @SerialName("default_locale") val defaultLocaleIdentifier: LocaleId,
+    @Serializable(with = DefaultLocaleIdSerializer::class)
+    @SerialName("default_locale") val defaultLocaleIdentifier: LocaleId = DefaultLocaleIdSerializer.FALLBACK,
     @SerialName("config") val config: JsonObject = JsonObject(emptyMap()),
     @SerialName("offering_identifier") val offeringIdentifier: String? = null,
     @Serializable(with = GoogleListSerializer::class)

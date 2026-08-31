@@ -5,6 +5,8 @@ package com.revenuecat.purchases.common.workflows
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.models.StoreReplacementMode
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -213,4 +215,94 @@ internal class WorkflowModelsDeserializationTest {
             }
         """.trimIndent()
     }
+
+    // region default_locale
+
+    private fun screenJson(defaultLocaleFragment: String) = """
+        {
+          $defaultLocaleFragment
+          "template_name": "tmpl",
+          "asset_base_url": "https://assets.revenuecat.com",
+          "components_localizations": {},
+          "components_config": {
+            "base": {
+              "stack": {
+                "type": "stack", "components": [],
+                "dimension": { "type": "vertical", "alignment": "center", "distribution": "center" },
+                "size": { "width": { "type": "fill" }, "height": { "type": "fill" } },
+                "padding": { "top": 0, "bottom": 0, "leading": 0, "trailing": 0 },
+                "margin": { "top": 0, "bottom": 0, "leading": 0, "trailing": 0 }
+              },
+              "background": { "type": "color", "value": { "light": { "type": "hex", "value": "#FFFFFF" } } }
+            }
+          }
+        }
+    """.trimIndent()
+
+    @Test
+    fun `WorkflowScreen default_locale is preserved when present`() {
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            screenJson(""""default_locale": "es_ES","""),
+        )
+        assertThat(screen.defaultLocaleIdentifier).isEqualTo(LocaleId("es_ES"))
+    }
+
+    @Test
+    fun `WorkflowScreen default_locale falls back to en when null`() {
+        // The backend sends null for template-derived screens. Throwing here discards the whole
+        // workflow, not just this field, taking every screen in it down with the paywall.
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            screenJson(""""default_locale": null,"""),
+        )
+        assertThat(screen.defaultLocaleIdentifier).isEqualTo(LocaleId("en"))
+    }
+
+    @Test
+    fun `WorkflowScreen default_locale falls back to en for non-string values`() {
+        // iOS only accepts a JSON string here, so coercing a number or bool into LocaleId("42")
+        // would hand the renderer a locale the other platforms never produce.
+        listOf("42", "1.5", "true", "{}", """{ "value": "es_ES" }""", """["es_ES"]""").forEach { value ->
+            val screen = JsonTools.json.decodeFromString(
+                WorkflowScreen.serializer(),
+                screenJson(""""default_locale": $value,"""),
+            )
+            assertThat(screen.defaultLocaleIdentifier)
+                .`as`("default_locale was coerced from: %s", value)
+                .isEqualTo(LocaleId("en"))
+        }
+    }
+
+    @Test
+    fun `WorkflowScreen default_locale falls back to en when missing`() {
+        val screen = JsonTools.json.decodeFromString(WorkflowScreen.serializer(), screenJson(""))
+        assertThat(screen.defaultLocaleIdentifier).isEqualTo(LocaleId("en"))
+    }
+
+    @Test
+    fun `workflow and offerings paths agree on default_locale`() {
+        // Both models describe the same screen; the workflow path only re-wraps what /offerings
+        // serves directly. They must not diverge on a shared field.
+        listOf(
+            """"default_locale": "es_ES",""",
+            """"default_locale": null,""",
+            """"default_locale": 42,""",
+            """"default_locale": true,""",
+            """"default_locale": {},""",
+            "",
+        ).forEach { fragment ->
+            val json = screenJson(fragment)
+            val fromWorkflow = JsonTools.json
+                .decodeFromString(WorkflowScreen.serializer(), json).defaultLocaleIdentifier
+            val fromOfferings = JsonTools.json
+                .decodeFromString(PaywallComponentsData.serializer(), json).defaultLocaleIdentifier
+
+            assertThat(fromWorkflow)
+                .`as`("default_locale diverged for fragment: %s", fragment.ifEmpty { "<omitted>" })
+                .isEqualTo(fromOfferings)
+        }
+    }
+
+    // endregion
 }
