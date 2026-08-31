@@ -20,6 +20,7 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
  * Mock implementation of [PurchasesType] for tests and previews
  */
 internal class MockPurchasesType(
+    override var appUserID: String = "",
     override val preferredUILocaleOverride: String? = null,
     override val purchasesAreCompletedBy: PurchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
     override val storefrontCountryCode: String? = null,

@@ -23,15 +23,16 @@ internal class WebPurchaseRedemptionHelper(
         listener: RedeemWebPurchaseListener,
     ) {
         debugLog { "Starting web purchase redemption." }
+        val appUserID = identityManager.currentAppUserID
         backend.postRedeemWebPurchase(
-            identityManager.currentAppUserID,
+            appUserID,
             webPurchaseRedemption.redemptionToken,
             onResultHandler = { result ->
                 when (result) {
                     is RedeemWebPurchaseListener.Result.Success -> {
                         debugLog { "Successfully redeemed web purchase. Updating customer info." }
                         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
-                        customerInfoUpdateHandler.cacheAndNotifyListeners(result.customerInfo)
+                        customerInfoUpdateHandler.cacheAndNotifyListeners(result.customerInfo, appUserID)
                         dispatchResult(listener, result)
                     }
                     else -> {

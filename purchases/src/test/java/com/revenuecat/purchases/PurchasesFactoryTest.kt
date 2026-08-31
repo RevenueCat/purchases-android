@@ -15,6 +15,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.verify
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.After
@@ -192,7 +193,7 @@ class PurchasesFactoryTest {
     }
 
     @Test
-    fun `creating purchases with custom entitlement computation does not provide audiences config to the orchestrator`() {
+    fun `creating purchases with custom entitlement computation constructs the config graph disabled`() {
         val application = spyk(ApplicationProvider.getApplicationContext<Application>())
         every { application.applicationContext } returns application
         every { application.checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns
@@ -210,7 +211,12 @@ class PurchasesFactoryTest {
             overrideBillingAbstract = mockk<BillingAbstract>(relaxed = true),
         )
 
-        assertThat(purchases.purchasesOrchestrator.audiencesConfigProvider).isNull()
+        // The graph is constructed (non-null) but disabled: workflow reads refuse with ConfigurationError
+        // before touching the network.
+        assertThat(purchases.purchasesOrchestrator.audiencesConfigProvider).isNotNull()
+        assertThatExceptionOfType(PurchasesException::class.java)
+            .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getWorkflow("some-workflow") } }
+            .matches { it.code == PurchasesErrorCode.ConfigurationError }
         purchases.close()
     }
 
