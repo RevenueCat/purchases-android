@@ -3,6 +3,8 @@ package com.revenuecat.purchases.ui.revenuecatui.data.processed
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.models.Price
+import com.revenuecat.purchases.models.PricingPhase
+import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
@@ -58,6 +60,8 @@ internal object VariableProcessorV2 {
         PRODUCT_ABSOLUTE_DISCOUNT("product.absolute_discount"),
         PRODUCT_OFFER_RELATIVE_DISCOUNT("product.offer_relative_discount"),
         PRODUCT_OFFER_ABSOLUTE_DISCOUNT("product.offer_absolute_discount"),
+        PRODUCT_RELATIVE_DISCOUNT_WITH_OFFER("product.relative_discount_with_offer"),
+        PRODUCT_ABSOLUTE_DISCOUNT_WITH_OFFER("product.absolute_discount_with_offer"),
         PRODUCT_STORE_PRODUCT_NAME("product.store_product_name"),
 
         COUNT_DAYS_WITH_ZERO("count_days_with_zero"),
@@ -603,6 +607,12 @@ internal object VariableProcessorV2 {
                     )
                 }
 
+        Variable.PRODUCT_RELATIVE_DISCOUNT_WITH_OFFER ->
+            packageContext?.relativeDiscountWithOffer(rcPackage, subscriptionOption, localizedVariableKeys)
+
+        Variable.PRODUCT_ABSOLUTE_DISCOUNT_WITH_OFFER ->
+            packageContext?.absoluteDiscountWithOffer(rcPackage, subscriptionOption, currencyLocale)
+
         Variable.PRODUCT_STORE_PRODUCT_NAME -> rcPackage?.product?.name
 
         Variable.COUNT_DAYS_WITH_ZERO -> countdownTime?.let {
@@ -705,6 +715,96 @@ internal object VariableProcessorV2 {
 
         // `formatted` is unused: localized() derives the display string from amountMicros.
         return Price("", savingMicros, product.price.currencyCode).localized(locale, showZeroDecimalPlacePrices)
+    }
+
+    /**
+     * What the customer actually pays and over how long: the primary offer's, or the package's own
+     * when there is no usable offer. A free offer counts as no offer — "100% off" isn't the claim
+     * these variables make.
+     *
+     * [totalMicros] and [months] are null only when the phase repeats until cancellation, because there
+     * is then no term over which a total saving accrues. [ratePerMonthMicros] is still known in that
+     * case, so the relative variant keeps working.
+     */
+    private data class EffectiveTerm(
+        val ratePerMonthMicros: Double,
+        val totalMicros: Long?,
+        val months: Double?,
+    )
+
+    private fun effectiveTerm(rcPackage: Package?, subscriptionOption: SubscriptionOption?): EffectiveTerm? {
+        val product = rcPackage?.product ?: return null
+        val phase = primaryDiscountPhase(subscriptionOption, rcPackage)
+
+        if (phase != null && phase.price.amountMicros > 0L) {
+            val periodInMonths = phase.billingPeriod.valueInMonths
+            if (periodInMonths <= 0.0) return null
+            val cycles = phase.offerCycleCount()
+
+            return EffectiveTerm(
+                ratePerMonthMicros = phase.price.amountMicros / periodInMonths,
+                totalMicros = cycles?.let { phase.price.amountMicros * it },
+                months = cycles?.let { periodInMonths * it },
+            )
+        }
+
+        // Non-subscriptions have no period to normalize the anchor to.
+        val periodInMonths = product.period?.valueInMonths ?: return null
+        if (periodInMonths <= 0.0) return null
+
+        return EffectiveTerm(
+            ratePerMonthMicros = product.price.amountMicros / periodInMonths,
+            totalMicros = product.price.amountMicros,
+            months = periodInMonths,
+        )
+    }
+
+    /**
+     * How many times this phase is billed, or null when it repeats until cancellation.
+     *
+     * Deliberately keys off [RecurrenceMode] rather than `billingCycleCount` being null. Play's
+     * `getBillingCycleCount()` is a primitive int, so `toRevenueCatPricingPhase` passes through 0 —
+     * never null — for non-finite phases, despite what the property's doc comment says. Treating 0 as
+     * "no cycles" would multiply a single-payment offer's total out to zero and silently blank it.
+     */
+    private fun PricingPhase.offerCycleCount(): Int? = when (recurrenceMode) {
+        RecurrenceMode.INFINITE_RECURRING -> null
+        RecurrenceMode.NON_RECURRING -> 1
+        RecurrenceMode.FINITE_RECURRING,
+        RecurrenceMode.UNKNOWN,
+        -> billingCycleCount?.takeIf { it > 0 } ?: 1
+    }
+
+    private fun PackageContext.relativeDiscountWithOffer(
+        rcPackage: Package?,
+        subscriptionOption: SubscriptionOption?,
+        localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    ): String? {
+        val anchorMicros = mostExpensivePricePerMonthMicros ?: return null
+        val term = effectiveTerm(rcPackage, subscriptionOption) ?: return null
+        if (term.ratePerMonthMicros >= anchorMicros) return null
+
+        val percentage = ((anchorMicros - term.ratePerMonthMicros) * PERCENT_SCALE / anchorMicros).roundToInt()
+        return localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.PERCENT)?.format(percentage)
+    }
+
+    private fun PackageContext.absoluteDiscountWithOffer(
+        rcPackage: Package?,
+        subscriptionOption: SubscriptionOption?,
+        locale: Locale,
+    ): String? {
+        val anchorMicros = mostExpensivePricePerMonthMicros ?: return null
+        val currencyCode = rcPackage?.product?.price?.currencyCode ?: return null
+        val term = effectiveTerm(rcPackage, subscriptionOption) ?: return null
+        val totalMicros = term.totalMicros ?: return null
+        val months = term.months ?: return null
+
+        // Compare totals rather than scaling a monthly rate back up, so no rounding is amplified.
+        val savingMicros = (anchorMicros * months).toLong() - totalMicros
+        if (savingMicros <= 0L) return null
+
+        // `formatted` is unused: localized() derives the display string from amountMicros.
+        return Price("", savingMicros, currencyCode).localized(locale, showZeroDecimalPlacePrices)
     }
 
     private fun offerRelativeDiscount(
