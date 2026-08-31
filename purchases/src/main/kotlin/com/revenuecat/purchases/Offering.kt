@@ -50,20 +50,69 @@ constructor(
         webCheckoutURL = null,
     )
 
+    // Whether the backend served a components paywall for this offering, tracked independently of whether
+    // [paywallComponents] was actually decoded. Under workflows the components are served from `/v1/config` and are
+    // not captured here to save memory, but [hasPaywall] must still report the offering as paywall-capable. Kept
+    // internal (module-only, not in the primary constructor) so it stays out of the public API and out of the
+    // @Poko-generated equals/hashCode/toString; the parser sets it right after construction.
+    internal var hasPaywallComponents: Boolean = false
+
     @InternalRevenueCatAPI
-    @Poko
-    public class PaywallComponents(
+    public class PaywallComponents private constructor(
         public val uiConfig: UiConfig,
-        public val data: PaywallComponentsData,
-    )
+        // Cheap, stable equality key that never touches the lazily-decoded [data]. For parser-built instances
+        // this is a SHA-256 of the raw component-tree JSON; for instances built from already-decoded data it is
+        // that data's structural hash (cheap — there is nothing to decode). This keeps
+        // Offering.equals/hashCode/toString — which are @Poko-generated over `paywallComponents` — from forcing
+        // a decode of every offering's component tree (e.g. when the cache compares cached vs network offerings).
+        private val componentsHash: String,
+        private val dataResult: Lazy<Result<PaywallComponentsData>>,
+    ) {
+        /**
+         * Constructor for callers that already hold decoded [PaywallComponentsData] (e.g. previews, tests,
+         * hybrid SDKs).
+         */
+        public constructor(uiConfig: UiConfig, data: PaywallComponentsData) :
+            this(uiConfig, data.hashCode().toString(), lazyOf(Result.success(data)))
+
+        // Used by the parser: the component tree is decoded lazily on first [data] access, not at load time.
+        // [componentsHash] is a cheap content hash of the raw JSON, used for equality so comparisons never decode.
+        internal constructor(
+            uiConfig: UiConfig,
+            componentsHash: String,
+            dataProvider: () -> PaywallComponentsData,
+        ) : this(uiConfig, componentsHash, lazy(LazyThreadSafetyMode.SYNCHRONIZED) { runCatching(dataProvider) })
+
+        // Decoded once on first access; the outcome (success or failure) is memoized. [data] exposes that
+        // outcome as a [Result] so callers must handle a decode failure explicitly (there is deliberately no
+        // throwing accessor to reach for by mistake). [dataOrNull] is the convenience for best-effort reads
+        // that treat a failure as absence.
+        public val data: Result<PaywallComponentsData> get() = dataResult.value
+
+        public val dataOrNull: PaywallComponentsData? get() = dataResult.value.getOrNull()
+
+        // Hand-written instead of @Poko so equality/hash/toString compare [componentsHash], never the lazy [data].
+        override fun equals(other: Any?): Boolean =
+            this === other || (
+                other is PaywallComponents &&
+                    uiConfig == other.uiConfig &&
+                    componentsHash == other.componentsHash
+                )
+
+        override fun hashCode(): Int = 31 * uiConfig.hashCode() + componentsHash.hashCode()
+
+        override fun toString(): String = "PaywallComponents(uiConfig=$uiConfig)"
+    }
 
     /**
-     * Whether the offering contains a paywall.
+     * Whether the offering has a paywall configured. This reflects the *presence* of paywall data, not its
+     * validity: a components paywall is reported here as soon as it's present, and its component tree is only
+     * fully validated when the paywall is displayed (falling back to a default paywall if validation fails).
      */
     @OptIn(InternalRevenueCatAPI::class)
     @get:JvmName("hasPaywall")
     public val hasPaywall: Boolean
-        get() = paywall != null || paywallComponents != null
+        get() = paywall != null || paywallComponents != null || hasPaywallComponents
 
     /**
      * Lifetime package type configured in the RevenueCat dashboard, if available.
@@ -145,6 +194,6 @@ constructor(
             paywall = this.paywall,
             paywallComponents = this.paywallComponents,
             webCheckoutURL = this.webCheckoutURL,
-        )
+        ).also { it.hasPaywallComponents = this.hasPaywallComponents }
     }
 }

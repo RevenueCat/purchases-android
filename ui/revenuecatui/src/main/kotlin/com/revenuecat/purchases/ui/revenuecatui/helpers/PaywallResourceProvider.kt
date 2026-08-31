@@ -17,7 +17,9 @@ import java.util.Locale
  */
 internal interface ResourceProvider {
     companion object {
-        const val ASSETS_FONTS_DIR = "fonts"
+        // Directories within the app's assets where embedded fonts may be bundled, searched in order.
+        // "public/assets" is a likely location for Capacitor apps that use our paywalls SDK to place their fonts.
+        val ASSETS_FONTS_DIRS = listOf("fonts", "public/assets")
     }
 
     fun getApplicationName(): String
@@ -82,13 +84,17 @@ internal class PaywallResourceProvider(
     }
 
     override fun getAssetFontPaths(names: List<String>): Map<String, String>? {
-        val assetsList = resources.assets.list(ResourceProvider.ASSETS_FONTS_DIR)
+        val assetsListByDir = ResourceProvider.ASSETS_FONTS_DIRS.associateWith { dir ->
+            resources.assets.list(dir)
+        }
 
         return names
             .mapNotNull { name ->
                 val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
-                val path = assetsList?.find { it == nameWithExtension }
-                    ?.let { "${ResourceProvider.ASSETS_FONTS_DIR}/$it" }
+                val path = ResourceProvider.ASSETS_FONTS_DIRS.firstNotNullOfOrNull { dir ->
+                    assetsListByDir[dir]?.find { it == nameWithExtension }
+                        ?.let { "$dir/$it" }
+                }
                 if (path != null) {
                     name to path
                 } else {

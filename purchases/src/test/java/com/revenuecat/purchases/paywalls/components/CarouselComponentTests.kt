@@ -3,6 +3,8 @@ package com.revenuecat.purchases.paywalls.components
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
+import com.revenuecat.purchases.paywalls.components.common.StateUpdateValue
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -195,7 +197,10 @@ internal class CarouselComponentTests {
                               "components": []
                             }
                           ],
-                          "visible": false
+                          "visible": false,
+                          "state_updates": [
+                            { "set": "activeSlide", "to": "${'$'}value" }
+                          ]
                         }
                         """.trimIndent(),
                         expected = CarouselComponent(
@@ -207,7 +212,7 @@ internal class CarouselComponentTests {
                             visible = false,
                             initialPageIndex = 2,
                             pageAlignment = VerticalAlignment.CENTER,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                             pagePeek = 10,
                             padding = Padding(
                                 top = 1.0,
@@ -291,7 +296,10 @@ internal class CarouselComponentTests {
                                 msTimePerPage = 1000,
                                 msTransitionTime = 500,
                                 transitionType = CarouselComponent.AutoAdvancePages.TransitionType.FADE,
-                            )
+                            ),
+                            stateUpdates = listOf(
+                                StateUpdate.Set(key = "activeSlide", value = StateUpdateValue.PayloadReference),
+                            ),
                         )
                     ),
                 ),
@@ -594,7 +602,7 @@ internal class CarouselComponentTests {
                             visible = true,
                             initialPageIndex = 2,
                             pageAlignment = VerticalAlignment.CENTER,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                             pageSpacing = 8f,
                             backgroundColor = ColorScheme(
                                 light = ColorInfo.Alias(ColorAlias("tertiary")),

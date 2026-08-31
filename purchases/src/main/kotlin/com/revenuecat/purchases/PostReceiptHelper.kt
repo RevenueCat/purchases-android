@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadata
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
+import com.revenuecat.purchases.common.caching.WorkflowMetadata
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -172,6 +173,7 @@ constructor(
                 receiptInfo = transactionMetadata.receiptInfo,
                 initiationSource = PostReceiptInitiationSource.UNSYNCED_ACTIVE_PURCHASES,
                 paywallData = transactionMetadata.paywallPostReceiptData,
+                workflowMetadata = transactionMetadata.workflowMetadata,
                 purchasesAreCompletedBy = transactionMetadata.purchasesAreCompletedBy,
                 hasCachedTransactionMetadata = true,
                 onSuccess = {
@@ -238,6 +240,8 @@ constructor(
 
         val effectivePaywallData = cachedTransactionMetadata?.paywallPostReceiptData
             ?: presentedPaywall?.toPaywallPostReceiptData()
+        val effectiveWorkflowMetadata = cachedTransactionMetadata?.workflowMetadata
+            ?: presentedPaywall?.data?.let { WorkflowMetadata.from(it.workflowId, it.stepId) }
         val effectiveReceiptInfo = cachedTransactionMetadata?.receiptInfo
             ?: receiptInfo
         val effectivePurchasesAreCompletedBy = cachedTransactionMetadata?.purchasesAreCompletedBy
@@ -259,6 +263,7 @@ constructor(
             receiptInfo = effectiveReceiptInfo,
             initiationSource = initiationSource,
             paywallData = effectivePaywallData,
+            workflowMetadata = effectiveWorkflowMetadata,
             purchasesAreCompletedBy = effectivePurchasesAreCompletedBy,
             hasCachedTransactionMetadata = cachedTransactionMetadata != null || didCacheData,
             onSuccess = onSuccess,
@@ -316,6 +321,9 @@ constructor(
                 receiptInfo = effectiveReceiptInfo,
                 paywallPostReceiptData = presentedPaywall?.toPaywallPostReceiptData(),
                 purchasesAreCompletedBy = purchasesAreCompletedBy,
+                workflowMetadata = presentedPaywall?.data?.let {
+                    WorkflowMetadata.from(it.workflowId, it.stepId)
+                },
             )
             cacheLocalTransactionMetadata(purchaseToken, dataToCache)
         }
@@ -335,6 +343,7 @@ constructor(
         receiptInfo: ReceiptInfo,
         initiationSource: PostReceiptInitiationSource,
         paywallData: PaywallPostReceiptData?,
+        workflowMetadata: WorkflowMetadata?,
         purchasesAreCompletedBy: PurchasesAreCompletedBy,
         hasCachedTransactionMetadata: Boolean,
         onSuccess: (PostReceiptResponse) -> Unit,
@@ -350,6 +359,7 @@ constructor(
                 receiptInfo = receiptInfo,
                 initiationSource = initiationSource,
                 paywallPostReceiptData = paywallData,
+                workflowMetadata = workflowMetadata,
                 purchasesAreCompletedBy = purchasesAreCompletedBy,
                 onSuccess = { postReceiptResponse ->
                     if (hasCachedTransactionMetadata) {

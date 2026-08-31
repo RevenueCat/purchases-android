@@ -26,9 +26,8 @@ android {
         )
 
         // Library modules have dimensions used to separate different APIs and billing client versions.
-        // Applications don't need these, so we default to the "defaults" and "bc8" flavors.
+        // Applications don't need this, so we default to the "defaults" flavor.
         missingDimensionStrategy("apis", "defaults")
-        missingDimensionStrategy("billingclient", "bc8")
 
         vectorDrawables {
             useSupportLibrary = true

@@ -2,10 +2,13 @@ package com.revenuecat.purchases.paywalls.events
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.common.JsonProvider
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.toBackendStoredEvent
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -36,6 +39,29 @@ class PaywallEventSerializationTests {
                 displayMode = "footer",
                 localeIdentifier = "es_ES",
                 darkMode = true
+            ),
+            type = PaywallEventType.IMPRESSION,
+        ),
+        userID = "testAppUserId",
+    )
+
+    private val workflowImpressionEvent = PaywallStoredEvent(
+        event = PaywallEvent(
+            creationData = PaywallEvent.CreationData(
+                id = UUID.fromString("111207f4-87af-4b57-a581-eb27bcc6e001"),
+                date = Date(1699270688884)
+            ),
+            data = PaywallEvent.Data(
+                paywallIdentifier = "paywallID",
+                presentedOfferingContext = PresentedOfferingContext("offeringID"),
+                paywallRevision = 5,
+                sessionIdentifier = UUID.fromString("222107f4-98bf-4b68-a582-eb27bcb6e002"),
+                displayMode = "footer",
+                localeIdentifier = "en_US",
+                darkMode = false,
+                workflowId = "workflow-xyz",
+                stepId = "step-xyz",
+                traceId = "trace-xyz",
             ),
             type = PaywallEventType.IMPRESSION,
         ),
@@ -151,12 +177,13 @@ class PaywallEventSerializationTests {
                 placementIdentifier = "placementID",
                 targetingRevision = 5,
                 targetingRuleId = "ruleID",
+                paywallID = "paywallID",
             )
         )
     }
 
     @Test
-    fun `round trip serialization without placement produces null backend context`() {
+    fun `round trip serialization without placement includes only paywall_id in backend context`() {
         val eventWithoutPlacement = PaywallStoredEvent(
             event = PaywallEvent(
                 creationData = PaywallEvent.CreationData(
@@ -170,7 +197,7 @@ class PaywallEventSerializationTests {
                     sessionIdentifier = UUID.fromString("315107f4-98bf-4b68-a582-eb27bcb6e111"),
                     displayMode = "footer",
                     localeIdentifier = "es_ES",
-                    darkMode = true
+                    darkMode = true,
                 ),
                 type = PaywallEventType.IMPRESSION,
             ),
@@ -180,7 +207,11 @@ class PaywallEventSerializationTests {
         val decodedEvent = PaywallStoredEvent.fromString(eventString)
         val backendEvent = decodedEvent.toBackendEvent()
 
-        assertThat(backendEvent.presentedOfferingContext).isNull()
+        assertThat(backendEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.PresentedOfferingContextData(
+                paywallID = "paywallID",
+            )
+        )
     }
 
     @Test
@@ -318,6 +349,7 @@ class PaywallEventSerializationTests {
         assertThat(backendEvent.presentedOfferingContext).isEqualTo(
             BackendEvent.PresentedOfferingContextData(
                 placementIdentifier = "placementID",
+                paywallID = "paywallID",
             )
         )
     }
@@ -358,6 +390,7 @@ class PaywallEventSerializationTests {
             BackendEvent.PresentedOfferingContextData(
                 targetingRevision = 7,
                 targetingRuleId = "targetingRuleID",
+                paywallID = "paywallID",
             )
         )
     }
@@ -535,5 +568,157 @@ class PaywallEventSerializationTests {
         assertThat(backend.resultingPackageIdentifier).isEqualTo("annual")
         assertThat(backend.currentProductIdentifier).isEqualTo("com.monthly")
         assertThat(backend.resultingProductIdentifier).isEqualTo("com.annual")
+    }
+
+    @Test
+    fun `can encode paywall event with workflowId correctly`() {
+        val eventString = PaywallStoredEvent.json.encodeToString(workflowImpressionEvent)
+        assertThat(eventString).contains("\"workflowId\":\"workflow-xyz\"")
+        assertThat(eventString).contains("\"stepId\":\"step-xyz\"")
+    }
+
+    @Test
+    fun `can round-trip encode and decode event with workflowId`() {
+        val eventString = PaywallStoredEvent.json.encodeToString(workflowImpressionEvent)
+        val decoded = PaywallStoredEvent.json.decodeFromString<PaywallStoredEvent>(eventString)
+        assertThat(decoded.event.data.workflowId).isEqualTo("workflow-xyz")
+        assertThat(decoded.event.data.stepId).isEqualTo("step-xyz")
+    }
+
+    @Test
+    fun `toPaywallPostReceiptData does not include workflowId or stepId`() {
+        val paywallPostReceiptData = workflowImpressionEvent.event.toPaywallPostReceiptData()
+
+        assertThat(paywallPostReceiptData.paywallID).isEqualTo("paywallID")
+        assertThat(paywallPostReceiptData.toMap()).doesNotContainKey("workflow_id")
+        assertThat(paywallPostReceiptData.toMap()).doesNotContainKey("step_id")
+    }
+
+    @Test
+    fun `toPaywallPostReceiptData sends trace_id nested in the paywall object`() {
+        val paywallPostReceiptData = workflowImpressionEvent.event.toPaywallPostReceiptData()
+
+        // The post-receipt body rejects unknown top-level keys, so trace_id rides inside `paywall`
+        // alongside session_id and revision rather than next to presented_workflow_id.
+        assertThat(paywallPostReceiptData.traceId).isEqualTo("trace-xyz")
+        assertThat(paywallPostReceiptData.toMap()).containsEntry("trace_id", "trace-xyz")
+    }
+
+    @Test
+    fun `toPaywallPostReceiptData omits trace_id for a standalone paywall`() {
+        val paywallPostReceiptData = impressionEvent.event.toPaywallPostReceiptData()
+
+        assertThat(paywallPostReceiptData.traceId).isNull()
+        assertThat(paywallPostReceiptData.toMap()).doesNotContainKey("trace_id")
+    }
+
+    @Test
+    fun `PaywallPostReceiptData cached before this change still decodes`() {
+        // This type is persisted by LocalTransactionMetadata, so entries written by an older SDK
+        // version have no trace_id and must not fail to deserialize on upgrade.
+        val legacyJson = """{"paywall_id":"paywallID","session_id":"222107f4-98bf-4b68-a582-eb27bcb6e002","revision":5,"display_mode":"footer","dark_mode":false,"locale":"en_US","offering_id":"offeringID"}"""
+        val decoded = PaywallPostReceiptData.json.decodeFromString<PaywallPostReceiptData>(legacyJson)
+
+        assertThat(decoded.traceId).isNull()
+        assertThat(decoded.paywallID).isEqualTo("paywallID")
+    }
+
+    @Test
+    fun `workflowId and stepId on PaywallEvent Data are available for WorkflowMetadata construction`() {
+        val data = workflowImpressionEvent.event.data
+        assertThat(data.workflowId).isEqualTo("workflow-xyz")
+        assertThat(data.stepId).isEqualTo("step-xyz")
+    }
+
+    @Test
+    fun `can decode legacy event without workflowId field`() {
+        val legacyJson = """{"event":{"creationData":{"id":"111207f4-87af-4b57-a581-eb27bcc6e001","date":1699270688884},"data":{"paywallIdentifier":"paywallID","presentedOfferingContext":{"offeringIdentifier":"offeringID","placementIdentifier":null,"targetingContext":null},"paywallRevision":5,"sessionIdentifier":"222107f4-98bf-4b68-a582-eb27bcb6e002","displayMode":"footer","localeIdentifier":"en_US","darkMode":false},"type":"IMPRESSION"},"userID":"testAppUserId"}"""
+        val decoded = PaywallStoredEvent.fromString(legacyJson)
+        assertThat(decoded.event.data.workflowId).isNull()
+        assertThat(decoded.event.data.stepId).isNull()
+    }
+
+    @Test
+    fun `toBackendEvent includes workflowId in presented_offering_context and at top level`() {
+        val backendEvent = workflowImpressionEvent.toBackendEvent()
+
+        assertThat(backendEvent.workflowID).isEqualTo("workflow-xyz")
+        assertThat(backendEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.PresentedOfferingContextData(
+                paywallID = "paywallID",
+                workflowID = "workflow-xyz",
+                traceId = "trace-xyz",
+            )
+        )
+    }
+
+    @Test
+    fun `toBackendEvent without workflowId still includes paywallId in presented_offering_context`() {
+        val backendEvent = exitOfferEvent.toBackendEvent()
+        assertThat(backendEvent.workflowID).isNull()
+        assertThat(backendEvent.presentedOfferingContext).isEqualTo(
+            BackendEvent.PresentedOfferingContextData(
+                paywallID = "paywallID",
+            )
+        )
+    }
+
+    @Test
+    fun `can round-trip encode and decode event with traceId`() {
+        val eventString = PaywallStoredEvent.json.encodeToString(workflowImpressionEvent)
+        assertThat(eventString).contains("\"traceId\":\"trace-xyz\"")
+
+        val decoded = PaywallStoredEvent.json.decodeFromString<PaywallStoredEvent>(eventString)
+        assertThat(decoded.event.data.traceId).isEqualTo("trace-xyz")
+    }
+
+    @Test
+    fun `can decode legacy event without traceId field`() {
+        val legacyJson = """{"event":{"creationData":{"id":"111207f4-87af-4b57-a581-eb27bcc6e001","date":1699270688884},"data":{"paywallIdentifier":"paywallID","presentedOfferingContext":{"offeringIdentifier":"offeringID","placementIdentifier":null,"targetingContext":null},"paywallRevision":5,"sessionIdentifier":"222107f4-98bf-4b68-a582-eb27bcb6e002","displayMode":"footer","localeIdentifier":"en_US","darkMode":false,"workflowId":"workflow-xyz","stepId":"step-xyz"},"type":"IMPRESSION"},"userID":"testAppUserId"}"""
+        val decoded = PaywallStoredEvent.fromString(legacyJson)
+        assertThat(decoded.event.data.workflowId).isEqualTo("workflow-xyz")
+        assertThat(decoded.event.data.traceId).isNull()
+    }
+
+    @Test
+    fun `toBackendEvent sends trace_id nested in presented_offering_context, not at the top level`() {
+        val backendEvent = workflowImpressionEvent.toBackendEvent()
+        assertThat(backendEvent.presentedOfferingContext?.traceId).isEqualTo("trace-xyz")
+
+        // khepri treats presented_offering_context as an opaque blob and passes unknown keys through,
+        // so trace_id has to be nested there. A top-level trace_id would be dropped by the event model.
+        val encoded = JsonProvider.defaultJson.encodeToJsonElement(
+            BackendEvent.serializer(),
+            backendEvent,
+        ).jsonObject
+        assertThat(encoded).doesNotContainKey("trace_id")
+        assertThat(encoded["presented_offering_context"]!!.jsonObject["trace_id"]!!.jsonPrimitive.content)
+            .isEqualTo("trace-xyz")
+    }
+
+    @Test
+    fun `toBackendEvent omits trace_id when there is no workflow traversal`() {
+        val encoded = JsonProvider.defaultJson.encodeToString(
+            BackendEvent.serializer(),
+            exitOfferEvent.toBackendEvent(),
+        )
+        assertThat(encoded).doesNotContain("trace_id")
+    }
+
+    @Test
+    fun `presented_offering_context survives when traceId is the only attribution`() {
+        val context = BackendEvent.PresentedOfferingContextData.fromContext(
+            context = PresentedOfferingContext("offeringID"),
+            traceId = "trace-only",
+        )
+        assertThat(context).isEqualTo(BackendEvent.PresentedOfferingContextData(traceId = "trace-only"))
+    }
+
+    @Test
+    fun `presented_offering_context is still null when nothing is present`() {
+        val context = BackendEvent.PresentedOfferingContextData.fromContext(
+            context = PresentedOfferingContext("offeringID"),
+        )
+        assertThat(context).isNull()
     }
 }

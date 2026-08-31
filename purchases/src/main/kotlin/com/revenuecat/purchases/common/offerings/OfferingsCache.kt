@@ -8,7 +8,6 @@ import com.revenuecat.purchases.common.LocaleProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.InMemoryCachedObject
 import com.revenuecat.purchases.common.caching.isCacheStale
-import com.revenuecat.purchases.utils.copy
 import org.json.JSONObject
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -20,10 +19,6 @@ internal class OfferingsCache(
     ),
     private val localeProvider: LocaleProvider,
 ) {
-    companion object {
-        const val ORIGINAL_SOURCE_KEY = "rc_original_source"
-    }
-
     private var cachedLanguageTags: String? = null
 
     @Synchronized
@@ -33,13 +28,14 @@ internal class OfferingsCache(
         cachedLanguageTags = null
     }
 
+    /**
+     * [responsePayload] is null when [offerings] was parsed from the disk cache, whose response is already
+     * on disk: re-writing it would re-serialize a multi-MB payload on every failed fetch.
+     */
     @Synchronized
-    fun cacheOfferings(offerings: Offerings, offeringsResponse: JSONObject) {
-        val finalJsonToCache = offeringsResponse.copy(deep = false).apply {
-            put(ORIGINAL_SOURCE_KEY, offerings.originalSource)
-        }
+    fun cacheOfferings(offerings: Offerings, responsePayload: String?) {
         offeringsCachedObject.cacheInstance(offerings)
-        deviceCache.cacheOfferingsResponse(finalJsonToCache)
+        responsePayload?.let { deviceCache.cacheOfferingsResponse(it) }
         offeringsCachedObject.updateCacheTimestamp(dateProvider.now)
         cachedLanguageTags = String(localeProvider.currentLocalesLanguageTags.toCharArray())
     }

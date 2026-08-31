@@ -1,3 +1,4 @@
+import org.jetbrains.dokka.gradle.engine.parameters.DokkaSourceSetSpec
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import java.io.FileInputStream
 import java.util.Properties
@@ -28,29 +29,9 @@ android {
         buildConfig = true
     }
 
-    // billingclient dimension is added for bc7/bc8 support
-    flavorDimensions += "billingclient"
-
     productFlavors {
         create("customEntitlementComputation") {
             dimension = "apis"
-        }
-        create("bc8") {
-            dimension = "billingclient"
-            isDefault = true
-            buildConfigField(
-                type = "String",
-                name = "BILLING_CLIENT_VERSION",
-                value = "\"${libs.versions.bc8.get()}\"",
-            )
-        }
-        create("bc7") {
-            dimension = "billingclient"
-            buildConfigField(
-                type = "String",
-                name = "BILLING_CLIENT_VERSION",
-                value = "\"${libs.versions.bc7.get()}\"",
-            )
         }
     }
 
@@ -59,27 +40,15 @@ android {
         testBuildType = obtainTestBuildType()
 
         buildConfigField(
+            type = "String",
+            name = "BILLING_CLIENT_VERSION",
+            value = "\"${libs.versions.billingClient.get()}\"",
+        )
+
+        buildConfigField(
             type = "boolean",
             name = "ENABLE_EXTRA_REQUEST_LOGGING",
             value = (localProperties["ENABLE_EXTRA_REQUEST_LOGGING"] as? String ?: "false"),
-        )
-
-        buildConfigField(
-            type = "boolean",
-            name = "USE_WORKFLOWS_ENDPOINT",
-            value = (resolveProperty("revenuecat.useWorkflowsEndpoint") == "true").toString(),
-        )
-
-        buildConfigField(
-            type = "String",
-            name = "REMOTE_CONFIG_BASE_URL",
-            value = "\"${(localProperties["REMOTE_CONFIG_BASE_URL"] as? String) ?: ""}\"",
-        )
-
-        buildConfigField(
-            type = "String",
-            name = "SAMSUNG_IAP_SDK_VERSION",
-            value = "\"${libs.versions.samsungIap.get()}\"",
         )
 
         packagingOptions.resources.excludes.addAll(
@@ -170,17 +139,15 @@ metalava {
         "src/androidTest",
         "src/androidTestDefaults",
         "src/androidTestCustomEntitlementComputation",
+        // AGP's generated BuildConfig is not part of the published API surface, and some of its
+        // fields are machine-dependent (ENABLE_EXTRA_REQUEST_LOGGING comes from local.properties).
+        "build/generated/source/buildConfig/defaults/release",
+        "build/generated/source/buildConfig/customEntitlementComputation/release",
     )
 
     val name = if (variantName.lowercase().contains("defaults")) {
         excludeSourceSets.add("src/customEntitlementComputation/kotlin")
-        if (variantName.lowercase().contains("bc8")) {
-            "api-defauts.txt"
-        } else if (variantName.lowercase().contains("bc7")) {
-            "api-defaults-bc7.txt"
-        } else {
-            "api-defaults-unknown.txt"
-        }
+        "api-defauts.txt"
     } else if (variantName.lowercase().contains("entitlement")) {
         excludeSourceSets.add("src/defaults/kotlin")
         "api-entitlement.txt"
@@ -195,10 +162,6 @@ metalava {
 }
 
 tasks.withType<KotlinCompilationTask<*>>().configureEach {
-    compilerOptions {
-        freeCompilerArgs.add("-Xjvm-default=all-compatibility")
-    }
-
     if (name.contains("UnitTest") || name.contains("AndroidTest")) {
         compilerOptions {
             freeCompilerArgs.add("-opt-in=com.revenuecat.purchases.InternalRevenueCatAPI")
@@ -239,26 +202,25 @@ dependencies {
     implementation(libs.tink)
     implementation(libs.playServices.ads.identifier)
     implementation(libs.coroutines.core)
-    "bc8Api"(libs.billing.bc8)
-    "bc7Api"(libs.billing.bc7)
+    implementation(libs.coroutines.android)
+    api(libs.billing)
 
     compileOnly(libs.compose.annotations)
     compileOnly(libs.amazon.appstore.sdk)
-    compileOnly(libs.coil.base)
 
     debugImplementation(libs.androidx.annotation.experimental)
 
     dokkaPlugin(project(":dokka-hide-internal"))
 
-    testImplementation(libs.coil.base)
     testImplementation(libs.bundles.test)
-    "testBc8Implementation"(libs.billing.bc8)
-    "testBc7Implementation"(libs.billing.bc7)
+    testImplementation(libs.billing)
     testImplementation(libs.coroutines.test)
     testImplementation(libs.amazon.appstore.sdk)
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.playServices.ads.identifier)
     testImplementation(libs.testJUnitParams)
+    // Android stubs `org.json` in unit tests; add a real impl so ValueJson's tests exercise the parser.
+    testImplementation(libs.json)
 
     androidTestImplementation(libs.androidx.appcompat)
     androidTestImplementation(libs.androidx.lifecycle.runtime.ktx)
@@ -275,52 +237,37 @@ dependencies {
 
     baselineProfile(project(":baselineprofile"))
     testImplementation(kotlin("test"))
+
+    kover(project(":feature:amazon"))
 }
 
-tasks.dokkaHtmlPartial.configure {
+fun DokkaSourceSetSpec.configureDocumentedSourceSet() {
+    reportUndocumented.set(true)
+    skipDeprecated.set(true)
+    externalDocumentationLinks.register("android") {
+        url("https://developer.android.com/reference/")
+    }
+}
+
+dokka {
     dokkaSourceSets {
-        named("customEntitlementComputationBc8") {
+        named("customEntitlementComputation") {
             suppress.set(true)
         }
-        named("customEntitlementComputationBc7") {
-            suppress.set(true)
-        }
-        named("defaultsBc7") {
-            suppress.set(true)
-        }
-        named("defaultsBc8") {
-            dependsOn("main")
-            reportUndocumented.set(true)
-            includeNonPublic.set(false)
-            skipDeprecated.set(true)
-            externalDocumentationLink {
-                url.set(
-                    uri("https://developer.android.com/reference/package-list").toURL(),
-                )
-            }
-            sourceLink {
-                localDirectory.set(
-                    file("src/main/kotlin"),
-                )
-                remoteUrl.set(
-                    uri("https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin").toURL(),
-                )
-                remoteLineSuffix.set("#L")
-            }
-            sourceLink {
-                localDirectory.set(
-                    file("src/main/java"),
-                )
-                remoteUrl.set(
-                    uri("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java").toURL(),
-                )
-                remoteLineSuffix.set("#L")
-            }
+        named("defaults") {
+            dependentSourceSets.addLater(dokkaSourceSets.named("main").flatMap { it.sourceSetId })
+            configureDocumentedSourceSet()
         }
         named("main") {
-            reportUndocumented.set(true)
-            includeNonPublic.set(false)
-            skipDeprecated.set(true)
+            configureDocumentedSourceSet()
+            sourceLink {
+                localDirectory.set(file("src/main/kotlin"))
+                remoteUrl("https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin")
+            }
+            sourceLink {
+                localDirectory.set(file("src/main/java"))
+                remoteUrl("https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/java")
+            }
 
             // This package exclusively contains symbols annotated with @InternalRevenueCatAPI, for which no
             // documentation is generated due to our dokka-hide-internal plugin. However, by default Dokka still
@@ -329,44 +276,12 @@ tasks.dokkaHtmlPartial.configure {
                 matchingRegex.set("com\\.revenuecat\\.purchases\\.paywalls\\.components.*")
                 suppress.set(true)
             }
-            externalDocumentationLink {
-                url.set(
-                    uri("https://developer.android.com/reference/package-list").toURL(),
-                )
-            }
-            sourceLink {
-                localDirectory.set(
-                    file("src/main/kotlin"),
-                )
-                remoteUrl.set(
-                    uri(
-                        "https://github.com/revenuecat/purchases-android/blob/main/purchases/src/main/kotlin",
-                    ).toURL(),
-                )
-                remoteLineSuffix.set("#L")
-            }
-            sourceLink {
-                localDirectory.set(file("src/main/java"))
-                remoteUrl.set(
-                    uri("https://github.com/revenuecat/purchases-android/blob/main/public/src/main/java").toURL(),
-                )
-                remoteLineSuffix.set("#L")
-            }
         }
-    }
-}
-
-// Remove afterEvaluate
-// after https://github.com/Kotlin/kotlinx-kover/issues/362 is fixed
-afterEvaluate {
-    dependencies {
-        add("kover", project(":feature:amazon"))
     }
 }
 
 baselineProfile {
     mergeIntoMain = true
-    baselineProfileOutputDir = "."
     filter {
         include("com.revenuecat.purchases.**")
         exclude("com.revenuecat.purchases.ui.revenuecatui.**")

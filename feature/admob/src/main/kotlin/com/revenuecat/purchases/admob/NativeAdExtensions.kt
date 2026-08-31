@@ -1,5 +1,4 @@
 @file:JvmName("RCAdMobNativeAd")
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @file:SuppressLint("MissingPermission")
 
 package com.revenuecat.purchases.admob
@@ -10,7 +9,10 @@ import com.google.android.gms.ads.AdLoader
 import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.ResponseInfo
 import com.google.android.gms.ads.nativead.NativeAd
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.admob.tracking.TrackingAdListener
+import com.revenuecat.purchases.admob.tracking.TrackingOnPaidEventListener
+import com.revenuecat.purchases.admob.tracking.trackFromAdapter
+import com.revenuecat.purchases.admob.tracking.trackIfConfigured
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
@@ -37,7 +39,6 @@ import kotlin.jvm.JvmSynthetic
  * @param onNativeAdLoaded Called with the loaded [NativeAd] (already tracked).
  * @return This [AdLoader.Builder] for chaining.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun AdLoader.Builder.forNativeAdWithTracking(
     adUnitId: String,
@@ -53,7 +54,7 @@ public fun AdLoader.Builder.forNativeAdWithTracking(
         latestResponseInfo = nativeAd.responseInfo
 
         trackIfConfigured {
-            adTracker.trackAdLoaded(
+            adTracker.trackFromAdapter(
                 AdLoadedData(
                     networkName = latestResponseInfo?.mediationAdapterClassName,
                     mediatorName = AdMediatorName.AD_MOB,

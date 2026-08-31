@@ -191,6 +191,7 @@ internal class PurchasesConfigureTest : BasePurchasesTest() {
                 mockContext.getSharedPreferences("test", Context.MODE_PRIVATE)
             every { isDeviceProtectedStorageCompat } returns true
             every { cacheDir } returns File("test_cache_folder")
+            every { noBackupFilesDir } returns File("test_no_backup_files_folder")
         }
 
         // Act

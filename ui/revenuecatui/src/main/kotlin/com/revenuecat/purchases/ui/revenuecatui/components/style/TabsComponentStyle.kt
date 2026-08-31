@@ -4,6 +4,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.style
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Immutable
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
@@ -52,7 +53,7 @@ internal class TabControlToggleComponentStyle(
     val componentName: String? = null,
 ) : ComponentStyle {
     override val visible: Boolean = true
-    override val size: Size = Size(width = Fit, height = Fit)
+    override val size: Size = Size(width = Fit(), height = Fit())
 }
 
 @Immutable
@@ -79,10 +80,15 @@ internal data class TabsComponentStyle(
     val tabs: NonEmptyList<Tab>,
     @get:JvmSynthetic
     val overrides: List<PresentedOverride<PresentedTabsPartial>>,
+    @get:JvmSynthetic
+    val stateUpdates: List<StateUpdate>? = null,
 ) : ComponentStyle {
 
     @Immutable
-    data class Tab(@get:JvmSynthetic val stack: StackComponentStyle)
+    data class Tab(
+        @get:JvmSynthetic val id: String,
+        @get:JvmSynthetic val stack: StackComponentStyle,
+    )
 }
 
 @Immutable

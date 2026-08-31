@@ -12,11 +12,14 @@ import com.revenuecat.purchases.UiConfig as ActualUiConfig
  */
 @Suppress("TestFunctionName")
 internal fun UiConfig(
-    app: AppConfig = AppConfig(),
+    app: AppConfig = AppConfig(colors = emptyMap(), fonts = emptyMap()),
     localizations: Map<LocaleId, Map<VariableLocalizationKey, String>> = mapOf(
         LocaleId("en_US") to variableLocalizationKeysForEnUs()
     ),
-    variableConfig: VariableConfig = VariableConfig(),
+    variableConfig: VariableConfig = VariableConfig(
+        variableCompatibilityMap = emptyMap(),
+        functionCompatibilityMap = emptyMap(),
+    ),
 ): ActualUiConfig =
     ActualUiConfig(
         app = app,

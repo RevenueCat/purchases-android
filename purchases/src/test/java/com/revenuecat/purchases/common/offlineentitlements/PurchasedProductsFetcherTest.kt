@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.offlineentitlements
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.android.billingclient.api.Purchase
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -9,6 +10,8 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.google.toStoreTransaction
+import com.revenuecat.purchases.models.PurchaseState
+import com.revenuecat.purchases.models.PurchaseType
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.utils.stubGooglePurchase
@@ -17,6 +20,7 @@ import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.fail
+import org.json.JSONObject
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -312,6 +316,87 @@ class PurchasedProductsFetcherTest {
             annualProduct,
             activePurchaseAnnual,
             mapOfEntitlements,
+        )
+    }
+
+    @Test
+    fun `pending purchases are excluded from purchased products`() {
+        val pendingProductIdentifier = "monthly"
+        val purchasedProductIdentifier = "annual"
+        val mapOfEntitlements = mapOf(
+            pendingProductIdentifier to listOf("pro"),
+            purchasedProductIdentifier to listOf("premium"),
+        )
+        mockEntitlementMapping(mapOfEntitlements)
+        val pendingPurchase = stubStoreTransactionFromGooglePurchase(
+            productIds = listOf(pendingProductIdentifier),
+            purchaseTime = testDate.time,
+            purchaseToken = "test-token-1",
+            purchaseState = Purchase.PurchaseState.PENDING,
+        )
+        val activePurchase = stubStoreTransactionFromGooglePurchase(
+            productIds = listOf(purchasedProductIdentifier),
+            purchaseTime = testDate.time,
+            purchaseToken = "test-token-2",
+        )
+        mockActivePurchases(listOf(pendingPurchase, activePurchase))
+        var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
+
+        fetcher.queryActiveProducts(
+            appUserID = "appUserID",
+            onSuccess = {
+                receivedListOfPurchasedProducts = it
+            },
+            unexpectedOnError,
+        )
+
+        assertThat(receivedListOfPurchasedProducts.size).isEqualTo(1)
+        assertPurchasedProduct(
+            receivedListOfPurchasedProducts[0],
+            activePurchase,
+            mapOfEntitlements,
+        )
+    }
+
+    @Test
+    fun `purchases with unspecified state are included in purchased products`() {
+        // Amazon transactions always have UNSPECIFIED_STATE, so they must not be filtered out.
+        val productIdentifier = "monthly"
+        val productIdentifierToEntitlements = mapOf(productIdentifier to listOf("pro"))
+        mockEntitlementMapping(productIdentifierToEntitlements)
+        val unspecifiedStatePurchase = StoreTransaction(
+            orderId = null,
+            productIds = listOf(productIdentifier),
+            type = ProductType.SUBS,
+            purchaseTime = testDate.time,
+            purchaseToken = "test-token-1",
+            purchaseState = PurchaseState.UNSPECIFIED_STATE,
+            isAutoRenewing = null,
+            signature = null,
+            originalJson = JSONObject(),
+            presentedOfferingContext = null,
+            storeUserID = null,
+            purchaseType = PurchaseType.AMAZON_PURCHASE,
+            marketplace = null,
+            subscriptionOptionId = null,
+            replacementMode = null,
+        )
+        mockActivePurchases(listOf(unspecifiedStatePurchase))
+        var receivedListOfPurchasedProducts: List<PurchasedProduct> = emptyList()
+
+        fetcher.queryActiveProducts(
+            appUserID = "appUserID",
+            onSuccess = {
+                receivedListOfPurchasedProducts = it
+            },
+            unexpectedOnError,
+        )
+
+        assertThat(receivedListOfPurchasedProducts.size).isEqualTo(1)
+        assertPurchasedProduct(
+            receivedListOfPurchasedProducts[0],
+            unspecifiedStatePurchase,
+            productIdentifierToEntitlements,
         )
     }
 

@@ -36,7 +36,7 @@ public class StackComponent(
     @get:JvmSynthetic
     public val dimension: Dimension = Vertical(CENTER, START),
     @get:JvmSynthetic
-    public val size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+    public val size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
     @get:JvmSynthetic
     public val spacing: Float? = null,
     @get:JvmSynthetic

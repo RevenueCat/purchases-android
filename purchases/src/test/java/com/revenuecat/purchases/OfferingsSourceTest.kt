@@ -14,6 +14,7 @@ import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.stubStoreProduct
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.json.JSONObject
 import org.junit.Before
@@ -102,7 +103,7 @@ class OfferingsSourceTest {
     }
 
     @Test
-    fun `offerings cache stores and restores originalSource`() {
+    fun `caching offerings stores the response body as received`() {
         val offeringsJson = JSONObject(ONE_OFFERINGS_RESPONSE)
         val productsById = mapOf(STUB_PRODUCT_IDENTIFIER to listOf(stubStoreProduct(STUB_PRODUCT_IDENTIFIER)))
 
@@ -121,11 +122,10 @@ class OfferingsSourceTest {
 
         // Cache the offerings
         every { deviceCache.cacheOfferingsResponse(any()) } returns Unit
-        offeringsCache.cacheOfferings(originalOfferings, offeringsJson)
+        offeringsCache.cacheOfferings(originalOfferings, ONE_OFFERINGS_RESPONSE)
 
-        // Verify originalSource was stored in JSON
-        io.mockk.verify(exactly = 1) {
-            deviceCache.cacheOfferingsResponse(any())
+        verify(exactly = 1) {
+            deviceCache.cacheOfferingsResponse(ONE_OFFERINGS_RESPONSE)
         }
     }
 
@@ -148,12 +148,7 @@ class OfferingsSourceTest {
         )
 
         every { deviceCache.cacheOfferingsResponse(any()) } returns Unit
-        // Mock cached response with originalSource in JSON
-        val cachedJsonWithSource = JSONObject(ONE_OFFERINGS_RESPONSE).apply {
-            put(OfferingsCache.ORIGINAL_SOURCE_KEY, HTTPResponseOriginalSource.FALLBACK.name)
-        }
-        every { deviceCache.getOfferingsResponseCache() } returns cachedJsonWithSource
-        offeringsCache.cacheOfferings(originalOfferings, offeringsJson)
+        offeringsCache.cacheOfferings(originalOfferings, ONE_OFFERINGS_RESPONSE)
 
         // Retrieve from cache - originalSource should be preserved
         val cachedOfferings = offeringsCache.cachedOfferings
@@ -164,19 +159,20 @@ class OfferingsSourceTest {
     }
 
     @Test
-    fun `offerings defaults to MAIN when no source information provided`() {
+    fun `offerings source is null when not known`() {
         val offeringsJson = JSONObject(ONE_OFFERINGS_RESPONSE)
         val productsById = mapOf(STUB_PRODUCT_IDENTIFIER to listOf(stubStoreProduct(STUB_PRODUCT_IDENTIFIER)))
 
-        // Create offerings without specifying source (should default to MAIN)
+        // Null rather than MAIN: a caller that does not say where the response came from must not have
+        // the main API asserted on its behalf. The disk-cache path is the real case.
         val offerings = offeringParser.createOfferings(offeringsJson, productsById)
 
-        assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.MAIN)
+        assertThat(offerings.originalSource).isNull()
         assertThat(offerings.loadedFromDiskCache).isFalse
     }
 
     @Test
-    fun `offerings cache handles missing originalSource gracefully`() {
+    fun `the cached offerings instance keeps the source it was built with`() {
         val offeringsJson = JSONObject(ONE_OFFERINGS_RESPONSE)
         val productsById = mapOf(STUB_PRODUCT_IDENTIFIER to listOf(stubStoreProduct(STUB_PRODUCT_IDENTIFIER)))
 
@@ -188,13 +184,9 @@ class OfferingsSourceTest {
             loadedFromDiskCache = true,
         )
 
-        // Cache without storing originalSource (simulating old cache)
         every { deviceCache.cacheOfferingsResponse(any()) } returns Unit
-        // Mock cached response without originalSource field (old cache format)
-        every { deviceCache.getOfferingsResponseCache() } returns JSONObject(ONE_OFFERINGS_RESPONSE)
-        offeringsCache.cacheOfferings(originalOfferings, offeringsJson)
+        offeringsCache.cacheOfferings(originalOfferings, ONE_OFFERINGS_RESPONSE)
 
-        // Retrieve from cache - should use cached instance's originalSource
         val cachedOfferings = offeringsCache.cachedOfferings
 
         assertThat(cachedOfferings).isNotNull
@@ -219,7 +211,6 @@ class OfferingsSourceTest {
             loadedFromDiskCache = false,
         )
 
-        // LOAD_SHEDDER should take precedence
         assertThat(offerings.originalSource).isEqualTo(HTTPResponseOriginalSource.FALLBACK)
         assertThat(offerings.loadedFromDiskCache).isFalse
     }

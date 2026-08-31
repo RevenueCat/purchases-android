@@ -205,6 +205,14 @@ private class LoadingViewModel(
         // no-op
     }
 
+    override fun onPaywallPresented() {
+        // no-op
+    }
+
+    override fun onPaywallDismissed() {
+        // no-op
+    }
+
     override fun closePaywall(result: PaywallResult?) {
         // no-op
     }
@@ -212,6 +220,14 @@ private class LoadingViewModel(
     override fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String? {
         // no-op
         return null
+    }
+
+    override fun notifyWebCheckoutOpened() {
+        // no-op
+    }
+
+    override fun notifyUrlOpened(url: String) {
+        // no-op
     }
 
     override fun invalidateCustomerInfoCache() {

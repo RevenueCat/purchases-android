@@ -45,6 +45,10 @@ abstract class BasePurchasesIntegrationTest {
     protected open val initialActivePurchasesToUse: Map<String, StoreTransaction> = emptyMap()
     protected open val initialForceSigningErrors: Boolean = false
 
+    // Optional dangerous settings applied at configure time (e.g. to enable workflows). Null keeps the default.
+    @OptIn(InternalRevenueCatAPI::class)
+    internal open val dangerousSettings: DangerousSettings? = null
+
     protected val testTimeout = 10.seconds
     protected val currentTimestamp = Date().time
     protected val testUserId = "android-integration-test-$currentTimestamp"
@@ -69,7 +73,7 @@ abstract class BasePurchasesIntegrationTest {
         get() = _activity ?: Assertions.fail("Expected activity to not be null")
     private var _activity: MainActivity? = null
 
-    private val eTagsSharedPreferencesNameTemplate = "%s_preferences_etags"
+    private val eTagsSharedPreferencesNameTemplate = "%s_preferences_etags_v2"
     private val diagnosticsSharedPreferencesNameTemplate = "com_revenuecat_purchases_%s_preferences_diagnostics"
     private val transactionMetadataSharedPrefsNameTemplate =
         "com.revenuecat.purchases.transaction_metadata.%s"
@@ -80,6 +84,12 @@ abstract class BasePurchasesIntegrationTest {
             get() = forceServerErrorsStrategy?.serverErrorURL ?: super.serverErrorURL
         override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
             return forceServerErrorsStrategy?.shouldForceServerError(baseURL, endpoint) ?: false
+        }
+        override fun modifyRequestURL(url: URL, endpoint: Endpoint): URL {
+            return forceServerErrorsStrategy?.modifyRequestURL(url, endpoint) ?: url
+        }
+        override fun shouldForceConnectionFailure(url: String): Boolean {
+            return forceServerErrorsStrategy?.shouldForceConnectionFailure(url) ?: false
         }
         override fun fakeResponseWithoutPerformingRequest(baseURL: URL, endpoint: Endpoint): HTTPResult? {
             return forceServerErrorsStrategy?.fakeResponseWithoutPerformingRequest(baseURL, endpoint)
@@ -153,6 +163,7 @@ abstract class BasePurchasesIntegrationTest {
                 entitlementVerificationMode,
                 forceServerErrorStrategyDelegate,
                 forceSigningErrors,
+                dangerousSettings,
             )
 
             postSetupTestCallback(it)

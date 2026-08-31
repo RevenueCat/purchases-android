@@ -165,11 +165,13 @@ fun stubStoreTransactionFromGooglePurchase(
     purchaseTime: Long,
     purchaseToken: String = "abcdefghijipehfnbbnldmai.AO-J1OxqriTepvB7suzlIhxqPIveA0IHtX9amMedK0KK9CsO0S3Zk5H6gdwvV" +
         "7HzZIJeTzqkY4okyVk8XKTmK1WZKAKSNTKop4dgwSmFnLWsCxYbahUmADg",
+    purchaseState: Int = Purchase.PurchaseState.PURCHASED,
 ): StoreTransaction {
     return stubGooglePurchase(
         productIds,
         purchaseTime,
         purchaseToken = purchaseToken,
+        purchaseState = purchaseState,
     ).toStoreTransaction(ProductType.SUBS, null)
 }
 

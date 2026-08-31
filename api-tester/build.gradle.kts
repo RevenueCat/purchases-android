@@ -6,7 +6,6 @@ plugins {
 android {
     defaultConfig {
         minSdk = 24 // RevenueCat UI requires 24
-        missingDimensionStrategy("billingclient", "bc8")
     }
 
     compileOptions {

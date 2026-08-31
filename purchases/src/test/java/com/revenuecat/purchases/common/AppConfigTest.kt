@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.APIKeyValidator
 import com.revenuecat.purchases.DangerousSettings
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesAreCompletedBy.MY_APP
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.Store
@@ -506,7 +507,8 @@ class AppConfigTest {
                 "autoSyncPurchases=true, " +
                 "customEntitlementComputation=false, " +
                 "uiPreviewMode=false, " +
-                "applyObfuscatedAccountIdToSubscriptionChanges=false), " +
+                "applyObfuscatedAccountIdToSubscriptionChanges=false, " +
+                "usesRemoteConfigAPISources=false), " +
                 "languageTag='', " +
                 "versionName='', " +
                 "packageName='', " +

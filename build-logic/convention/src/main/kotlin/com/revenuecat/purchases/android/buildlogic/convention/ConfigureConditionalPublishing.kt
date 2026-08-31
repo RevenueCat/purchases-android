@@ -10,10 +10,6 @@ import org.gradle.api.Project
  * - For other modules: only apply publishing for variants that don't contain "customEntitlementComputation"
  */
 internal fun Project.configureConditionalPublishing() {
-    // `:rules-engine-internal` is a skeleton with no functionality and no consumers yet,
-    // so we deliberately don't publish `purchases-rules-engine-internal` to Maven Central.
-    if (project.path == ":rules-engine-internal") return
-
     val variantToPublish = project.properties["ANDROID_VARIANT_TO_PUBLISH"].toString()
     val isPurchasesModule = project.path == ":purchases"
 

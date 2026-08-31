@@ -109,7 +109,7 @@ internal fun previewEmptyState(initialSelectedTabIndex: Int? = null): PaywallSta
         metadata = emptyMap(),
         availablePackages = listOf(TestData.Packages.monthly),
         paywallComponents = Offering.PaywallComponents(
-            uiConfig = UiConfig(
+            uiConfig = previewUiConfig(
                 localizations = nonEmptyMapOf(LocaleId("en_US") to variableLocalizationKeysForEnUs()),
             ),
             data = data,
@@ -131,11 +131,14 @@ internal fun previewEmptyState(initialSelectedTabIndex: Int? = null): PaywallSta
 }
 
 internal fun previewUiConfig(
-    app: AppConfig = AppConfig(),
+    app: AppConfig = AppConfig(colors = emptyMap(), fonts = emptyMap()),
     localizations: Map<LocaleId, Map<VariableLocalizationKey, String>> = mapOf(
         LocaleId("en_US") to variableLocalizationKeysForEnUs(),
     ),
-    variableConfig: VariableConfig = VariableConfig(),
+    variableConfig: VariableConfig = VariableConfig(
+        variableCompatibilityMap = emptyMap(),
+        functionCompatibilityMap = emptyMap(),
+    ),
 ): UiConfig =
     UiConfig(
         app = app,
@@ -151,7 +154,7 @@ internal fun previewStackComponentStyle(
         distribution = FlexDistribution.START,
     ),
     visible: Boolean = true,
-    size: Size = Size(width = Fixed(200u), height = Fit),
+    size: Size = Size(width = Fixed(200u), height = Fit()),
     spacing: Dp = 16.dp,
     background: BackgroundStyles = BackgroundStyles.Color(
         color = ColorStyles(light = ColorStyle.Solid(Color.Red)),
@@ -203,7 +206,7 @@ internal fun previewTextComponentStyle(
     horizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER,
     backgroundColor: ColorStyles? = null,
     visible: Boolean = true,
-    size: Size = Size(width = Fill, height = Fit),
+    size: Size = Size(width = Fill, height = Fit()),
     padding: Padding = zero,
     margin: Padding = zero,
     tabIndex: Int? = null,

@@ -1,15 +1,516 @@
+## 10.19.1
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* fix(paywalls): add user context to custom web checkout URLs (#4107) via Cesar de la Vega (@vegaro)
+* fix(paywalls): keep the subscribe button working after a cancelled purchase (#4071) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* fix(checkpoints): Fix checkpoint resolution config races (#4058) via Cesar de la Vega (@vegaro)
+* Improve Checkpoints APIs (#4108) via Toni Rico (@tonidero)
+* ci(danger): Clean up API notifications after move to main-only posts (#4101) via Álvaro Brey (@AlvaroBrey)
+
+## 10.19.0
+## RevenueCat SDK
+### ✨ New Features
+* feat(singular): add $singularDeviceId subscriber attribute for Singular V2 (#4072) via Guillem Corominas (@guillemcorominas)
+* Add `awaitShowManageSubscriptions` (#4040) via Cesar de la Vega (@vegaro)
+
+## RevenueCatUI SDK
+### Paywallsv2
+#### ✨ New Features
+* feat(paywalls): warm the web_views of the current offering and every placement's (#3938) via Álvaro Brey (@AlvaroBrey)
+#### 🐞 Bugfixes
+* Fix(Paywalls): Avoid POSIX localizations (#4048) via Jacob Rakidzich (@JZDesign)
+* Read `zero_decimal_place_countries` from workflow screens (#4061) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Rework CheckpointParams into a Builder with a Kotlin DSL (#4085) via Toni Rico (@tonidero)
+* Add tolerance to flaky ImageComponentView_Preview_Margin_Padding Emerge snapshot (#4100) via Álvaro Brey (@AlvaroBrey)
+* chore: don't run danger on main (#4079) via Cesar de la Vega (@vegaro)
+* chore(ads): remove experimental flag from ads apis (#4068) via Peter Porfy (@peterporfy)
+* Add rc.entries and rc.fromEntries custom operators (#4062) via Antonio Pallares (@ajpallares)
+* Announce public API changes from main only (#4083) via Facundo Menzella (@facumenzella)
+* Add rc.semverCompare custom operator (#4077) via Antonio Pallares (@ajpallares)
+* Add rc.split custom operator (#4066) via Antonio Pallares (@ajpallares)
+* Sort placements when prewarming paywall web views (#4074) via Álvaro Brey (@AlvaroBrey)
+* Refresh the doc comments that describe an absent variable as null (#4076) via Antonio Pallares (@ajpallares)
+* Raise an error for unresolved variables instead of degrading to null (#4043) via Antonio Pallares (@ajpallares)
+* Set or unset subscriber attributes from the checkpoint tester (#4046) via Toni Rico (@tonidero)
+* perf(paywalls): warm a paywall's first page before its later ones (#3966) via Álvaro Brey (@AlvaroBrey)
+* Add rc.length operator for strings and arrays (#4050) via Antonio Pallares (@ajpallares)
+* Add rc.lower and rc.upper custom operators (#4051) via Antonio Pallares (@ajpallares)
+* Update baseline profiles (#4067) via RevenueCat Git Bot (@RCGitBot)
+* Update sdks-common-config orb to v4.6.1 (#4063) via Antonio Pallares (@ajpallares)
+* Add rc.rootVar operator for root scope access (#4049) via Antonio Pallares (@ajpallares)
+* Add Scope plumbing and custom operator extension point (#4047) via Antonio Pallares (@ajpallares)
+* refactor(paywalls): share one component-config lookup across asset pre-download (#4018) via Álvaro Brey (@AlvaroBrey)
+* paywalls: Add webview cache warming engine (#3897) via Álvaro Brey (@AlvaroBrey)
+* Validate checkpoint identifiers (#4024) via Cesar de la Vega (@vegaro)
+
+## 10.18.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Don't jitter developer-initiated subscriber attribute posts in foreground (#4041) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Rename `session_id` to `app_session_id` in checkpoint events (#4039) via Cesar de la Vega (@vegaro)
+* Evaluate checkpoint audiences before resolving workflows (#3971) via Cesar de la Vega (@vegaro)
+
+## 10.18.0
+## RevenueCat SDK
+### ✨ New Features
+* Track checkpoint hits through the analytics events pipeline (#3994) via Cesar de la Vega (@vegaro)
+* Add public Purchases.showManageSubscriptions() API (#3434) via Facundo Menzella (@facumenzella)
+* feat(ads): ad reward tracking with admob adapter (#3885) via Peter Porfy (@peterporfy)
+
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* Fix product change mode in workflow paywalls (#4016) via Cesar de la Vega (@vegaro)
+* Fix font scaling setting on workflow paywalls (#3977) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* build(deps): bump fastlane from 2.237.0 to 2.238.0 (#3979) via dependabot[bot] (@dependabot[bot])
+* build(deps): bump fastlane-plugin-revenuecat_internal from `7fbbe66` to `7dd9ab9` (#4025) via dependabot[bot] (@dependabot[bot])
+* feat(checkpoints): Add the app's subscriber attributes as a rules dimension (#3996) via Toni Rico (@tonidero)
+* Announce a public API change in the SDK API feed once per PR (#3991) via Álvaro Brey (@AlvaroBrey)
+* feat(checkpoints): Add date and record collection rules dimension values (#3978) via Toni Rico (@tonidero)
+
+## 10.17.0
+## RevenueCat SDK
+### ✨ New Features
+* feat(ads): fire reward-verification tracking events from the poll (#3884) via Peter Porfy (@peterporfy)
+### 🐞 Bugfixes
+* fix(paywalls): don't leave a hidden package selected by default (#3915) via Facundo Menzella (@facumenzella)
+### 📦 Dependency Updates
+* [RENOVATE] Update dependency revenuecat to v4.6.0 (#3973) via RevenueCat Git Bot (@RCGitBot)
+
+## RevenueCatUI SDK
+### ✨ New Features
+* Support headless offering checkpoints (#3951) via Cesar de la Vega (@vegaro)
+### 🐞 Bugfixes
+* fix(paywalls): Expose compose-foundation-layout so PaywallFooter is callable without extra setup (#3961) via Álvaro Brey (@AlvaroBrey)
+* Fix multi-page paywall state after dismissal (#3944) via Cesar de la Vega (@vegaro)
+* fix(paywalls): Prevent an invisible leftover header from blocking taps on workflow paywalls (#3947) via Álvaro Brey (@AlvaroBrey)
+### Paywallsv2
+#### ✨ New Features
+* feat(paywalls): Preboot the WebView engine when a paywall has a web_view component (#3904) via Álvaro Brey (@AlvaroBrey)
+
+### 🔄 Other Changes
+* refactor(ads): expose Outcome from the reward-verification poller (#3883) via Peter Porfy (@peterporfy)
+* ci(danger): fail PRs that grow a suppression baseline (#3982) via Álvaro Brey (@AlvaroBrey)
+* Report public API changes on PRs and in the SDK API feed (#3976) via Álvaro Brey (@AlvaroBrey)
+* feat(ads): expose AdTracker API for reward-verification events (#3892) via Peter Porfy (@peterporfy)
+* feat(ads): wire-encode reward-verification events (#3891) via Peter Porfy (@peterporfy)
+* feat(ads): add reward-verification event data types (#3890) via Peter Porfy (@peterporfy)
+* Update baseline profiles (#3974) via RevenueCat Git Bot (@RCGitBot)
+* feat(checkpoints): Add StoreDimensionProvider with store.country (#3969) via Toni Rico (@tonidero)
+* Deserialize audience rules for rules engine evaluation (#3970) via Cesar de la Vega (@vegaro)
+* refactor(checkpoints): Reuse CustomVariableValue for checkpoint custom variables (#3960) via Toni Rico (@tonidero)
+* feat(checkpoints): Evaluate checkpoint custom variables as custom.* dimensions (#3949) via Toni Rico (@tonidero)
+* build: apply the AGP 9 config migrations that already work on AGP 8 (#3963) via Álvaro Brey (@AlvaroBrey)
+* build: move baseline profiles to the plugin's default source dir (#3931) via Álvaro Brey (@AlvaroBrey)
+* refactor(checkpoints): Add DeviceDimensionProvider (#3943) via Toni Rico (@tonidero)
+
+## 10.16.2
+## RevenueCat SDK
+### 🐞 Bugfixes
+* fix: don't share a MessageDigest across coroutines in FontLoader and DefaultFileCache (#3930) via Tarek M. Ben Lechhab (@bilqisium)
+* Fix misleading ui_config warnings for projects without paywalls (#3926) via Rick (@rickvdl)
+* fix: Declare kotlinx-coroutines-android as a dependency (#3916) via Álvaro Brey (@AlvaroBrey)
+* fix(paywalls): prewarm the current offering's workflow assets on load (#3910) via Álvaro Brey (@AlvaroBrey)
+
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* Default missing text localizations to empty instead of fallback paywall (#3903) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* ci: install mise Ruby 3.3.0 so CI honors Gemfile.lock (#3952) via Álvaro Brey (@AlvaroBrey)
+* refactor(checkpoints): Local rule evaluation foundation (#3942) via Toni Rico (@tonidero)
+* refactor(paywalls): move image warming to `purchases-ui` and use a ServiceLoader to reach it (#3913) via Álvaro Brey (@AlvaroBrey)
+* build: fix api-tester customEntitlementComputation variant resolution after Kover bump (#3945) via Álvaro Brey (@AlvaroBrey)
+* feat(checkpoints): expose CheckpointParams customProperties as paywall custom variables (#3941) via Toni Rico (@tonidero)
+* Ingest audiences config topic (#3936) via Cesar de la Vega (@vegaro)
+* build: update Kover to 0.9.9 (#3932) via Álvaro Brey (@AlvaroBrey)
+* build: update Metalava to 0.5.0 (#3935) via Álvaro Brey (@AlvaroBrey)
+* refactor(checkpoints): Cleanup to offeringIdByWorkflowId map + custom checkpoint screen in checkpoint tester (#3919) via Toni Rico (@tonidero)
+* refactor(paywalls): collect web_view assets in the existing predownload walk (#3902) via Álvaro Brey (@AlvaroBrey)
+* Update baseline profiles (#3927) via RevenueCat Git Bot (@RCGitBot)
+* Fix flaky cached offerings integration test and cover the fully-offline case (#3920) via Álvaro Brey (@AlvaroBrey)
+* chore: stop persisting ProductEntitlementMapping.originalSource to disk (#3917) via Álvaro Brey (@AlvaroBrey)
+* refactor(checkpoints): Resolve a checkpoint's workflow from its rules (#3914) via Toni Rico (@tonidero)
+* Ingest checkpoint rules remote config (#3907) via Cesar de la Vega (@vegaro)
+* refactor(checkpoints): Implement checkpoint use cases in `CheckpointTester` (#3900) via Toni Rico (@tonidero)
+* refactor(checkpoints): Move the checkpoints API to the RevenueCatUI module (#3909) via Toni Rico (@tonidero)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `b4e1e7f` to `7fbbe66` (#3908) via dependabot[bot] (@dependabot[bot])
+* refactor(checkpoints): Create empty `CheckpointTester` project (#3898) via Toni Rico (@tonidero)
+* refactor(checkpoints): Checkpoints wiring and sample usage in paywall tester - SDK-4423 (#3863) via Toni Rico (@tonidero)
+* refactor(checkpoints): Checkpoints workflow presenter UI - SDK-4423 (#3889) via Toni Rico (@tonidero)
+
+## 10.16.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Stop background re-syncing /v1/config on every getOfferings for projects without paywalls (#3896) via Toni Rico (@tonidero)
+* fix: avoid OutOfMemoryError when caching large offerings responses (#3872) via Álvaro Brey (@AlvaroBrey)
+* fix: reduce memory reading cached responses and recover from corrupted cache entries (#3873) via Álvaro Brey (@AlvaroBrey)
+* fix: make interface default methods usable from Java in all published modules (#3874) via Álvaro Brey (@AlvaroBrey)
+
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* fix(paywalls): apply tab state rules on workflow-backed paywalls (#3875) via Álvaro Brey (@AlvaroBrey)
+
+### 🔄 Other Changes
+* Update exit offer Maestro assertions (#3901) via Cesar de la Vega (@vegaro)
+* Only error-log an unresolvable ui_config when one is published (#3894) via Toni Rico (@tonidero)
+* Add missing Maestro tests for workflow paywalls (#3827) via Cesar de la Vega (@vegaro)
+* refactor(checkpoints): Checkpoints core engine - SDK-4423 (#3888) via Toni Rico (@tonidero)
+* Ingest empty checkpoint remote config (#3895) via Cesar de la Vega (@vegaro)
+* Checkpoints public API v0 (Internally annotated APIs only) - SDK-4418 (#3887) via Toni Rico (@tonidero)
+* test: cover workflow config failures before launch and after restart (#3843) via Cesar de la Vega (@vegaro)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `dd577ee` to `b4e1e7f` (#3893) via dependabot[bot] (@dependabot[bot])
+* Add a Maestro flow for the config kill switch tripping mid-session (#3878) via Rick (@rickvdl)
+* build(deps): bump danger from 9.6.0 to 9.6.1 (#3880) via dependabot[bot] (@dependabot[bot])
+* build(deps): bump fastlane-plugin-revenuecat_internal from `3421c88` to `dd577ee` (#3879) via dependabot[bot] (@dependabot[bot])
+* Update baseline profiles (#3877) via RevenueCat Git Bot (@RCGitBot)
+* Bound blob downloads with per-source timeouts (#3749) via Antonio Pallares (@ajpallares)
+* Re-tier HTTP request timeouts around per-host memory (#3746) via Antonio Pallares (@ajpallares)
+* fix(remote-config): improve logging when remote config is disabled through to killswitch (#3870) via Rick (@rickvdl)
+
+## 10.16.0
+## RevenueCat SDK
+### 🐞 Bugfixes
+* fix: exclude pending purchases from offline entitlements calculation (#3847) via Toni Rico (@tonidero)
+### 📦 Dependency Updates
+* [RENOVATE] Update dependency revenuecat to v4.5.1 (#3833) via RevenueCat Git Bot (@RCGitBot)
+
+## RevenueCatUI SDK
+### ✨ New Features
+* feat: add onUrlOpened to PaywallListener (#3859) via Toni Rico (@tonidero)
+* Add onWebCheckoutOpened to PaywallListener (#3809) via Álvaro Brey (@AlvaroBrey)
+* feat(paywalls): Support Custom components (#3787) via Jacob Rakidzich (@JZDesign)
+### 🐞 Bugfixes
+* FIX: Web View Scroll Arbitration  (#3856) via Jacob Rakidzich (@JZDesign)
+* fix(paywalls): render price for products with no billing period (#3850) via Cesar de la Vega (@vegaro)
+* fix(paywalls): stop Fill content collapsing to zero under an unbounded ancestor (#3837) via Álvaro Brey (@AlvaroBrey)
+### Paywallsv2
+#### ✨ New Features
+* Enable support for multipage paywalls (#3864) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* fix(remote-config): clear last attempt timestamp for cooldown after successful response (#3861) via Rick (@rickvdl)
+* fix(maestro): tap the relabeled Continue buttons in the workflow flows (#3866) via Antonio Pallares (@ajpallares)
+* Fix test value for Last-Refreshed-At header (#3862) via swehner (@swehner)
+* Send workflow `trace_id` on paywall events (#3860) via Cesar de la Vega (@vegaro)
+* Send workflow trace_id on transactions (#3858) via Cesar de la Vega (@vegaro)
+* feat(remote-config): use the server clock for X-RC-Last-Refresh-Time (#3855) via Toni Rico (@tonidero)
+* feat(remote-config): device connectivity pre-check for API source failover (#3840) via Toni Rico (@tonidero)
+* feat(remote-config): send X-RC-Last-Refresh-Time on config requests (#3853) via Toni Rico (@tonidero)
+* fix: render default paywall when workflow config is transiently unavailable (#3852) via Cesar de la Vega (@vegaro)
+* test(remote-config): de-flake the inline workflows blob integration test (#3854) via Toni Rico (@tonidero)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `d392939` to `3421c88` (#3848) via dependabot[bot] (@dependabot[bot])
+* refactor(remote-config): increase API failover restart interval to 2 hours (#3846) via Toni Rico (@tonidero)
+* fix(paywalls): tighten web_view gesture-arbitration probe, track pointer id (#3842) via Álvaro Brey (@AlvaroBrey)
+* refactor(remote-config): add API sources failover with health check endpoint support (#3812) via Toni Rico (@tonidero)
+* refactor: move rules engine into core SDK as internal (#3838) via Antonio Pallares (@ajpallares)
+* Update baseline profiles (#3835) via RevenueCat Git Bot (@RCGitBot)
+
+## 10.15.1
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix crash when a paywall component tree fails to decode (#3826) via Álvaro Brey (@AlvaroBrey)
+* fix(RevenueCatUI): host web_view in a FrameLayout to prevent off-screen RenderThread crash (#3829) via Álvaro Brey (@AlvaroBrey)
+* Hide autoplay web_view video until it plays (#3824) via Álvaro Brey (@AlvaroBrey)
+### Paywalls_v2
+#### 🐞 Bugfixes
+* feat(RevenueCatUI): arbitrate web_view drag gestures with the paywall scroll (#3823) via Álvaro Brey (@AlvaroBrey)
+* fix(paywalls): misc webviewComponent bug fixes and debug improvements (#3819) via Álvaro Brey (@AlvaroBrey)
+
+### 🔄 Other Changes
+* build(deps): bump fastlane-plugin-revenuecat_internal from `b52fca5` to `d392939` (#3828) via dependabot[bot] (@dependabot[bot])
+* fix(paywall-tester): make ApiKeyButton look and behave like a button (#3825) via Álvaro Brey (@AlvaroBrey)
+
+## 10.15.0
+## RevenueCat SDK
+### 🐞 Bugfixes
+* [EXTERNAL] Remove -dontoptimize from Amazon consumer ProGuard rules (#3646) via @tsushanth (#3815) via Álvaro Brey (@AlvaroBrey)
+### 📦 Dependency Updates
+* [RENOVATE] Update dependency revenuecat to v4.5.0 (#3807) via RevenueCat Git Bot (@RCGitBot)
+
+## RevenueCatUI SDK
+### Paywalls_v2
+#### ✨ New Features
+* feat(RevenueCatUI): Enable tab state store and state-driven overrides (#3664) via Álvaro Brey (@AlvaroBrey)
+
+### 🔄 Other Changes
+* Isolate paywall web_view storage in a dedicated WebView profile (#3816) via Álvaro Brey (@AlvaroBrey)
+* refactor(paywalls): use kotlinx.serialization for web_view transport envelope (#3814) via Álvaro Brey (@AlvaroBrey)
+* feat(paywalls): web_view Compose component, unreachable until activation (7) (#3786) via Jacob Rakidzich (@JZDesign)
+* feat(paywalls): web_view JavaScript bridge (6b) (#3798) via Jacob Rakidzich (@JZDesign)
+* Update baseline profiles (#3808) via RevenueCat Git Bot (@RCGitBot)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `dfd0b8a` to `b52fca5` (#3811) via dependabot[bot] (@dependabot[bot])
+* feat(RevenueCatUI): evaluate state conditions in the override resolver (PWENG-57) (#3661) via Álvaro Brey (@AlvaroBrey)
+* feat(RevenueCatUI): add presentation-session state store (PWENG-57) (#3660) via Álvaro Brey (@AlvaroBrey)
+* feat(paywalls): web_view navigation policy and origin helpers (5) (#3783) via Jacob Rakidzich (@JZDesign)
+* feat(paywalls): web_view transport envelope + JSON hardening (4) (#3782) via Jacob Rakidzich (@JZDesign)
+* feat(paywalls): web_view schema component, not yet registered (3) (#3781) via Jacob Rakidzich (@JZDesign)
+* Run Maestro workflow tests on CI (#3804) via Cesar de la Vega (@vegaro)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `9b928b6` to `dfd0b8a` (#3810) via dependabot[bot] (@dependabot[bot])
+* Chore: Add default size to Fit size constraints (#3778) via Jacob Rakidzich (@JZDesign)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `dab6765` to `9b928b6` (#3806) via dependabot[bot] (@dependabot[bot])
+
+## 10.14.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* fix: store ETag cache payload verbatim to avoid OOM on large responses (#3774) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* fix(remote-config): lazy-decode workflows cache to reduce memory (#3793) via Toni Rico (@tonidero)
+* Eagerly prewarm offering's workflow assets (#3775) via Cesar de la Vega (@vegaro)
+* fix(remote-config): Avoid redundant offerings reload on disabled paywall re-presentation (#3802) via Toni Rico (@tonidero)
+* test: Remove backend golden response verification (#3801) via Toni Rico (@tonidero)
+* feat(remote-config): source API base host from remote-config sources (#3715) via Antonio Pallares (@ajpallares)
+* Open the default paywall for offerings without a workflow (#3790) via Cesar de la Vega (@vegaro)
+* refactor(remote-config): RCContainer improvements (#3791) via bisho (@bisho)
+* Add Android workflow paywall Maestro flows (local only) (#3797) via Cesar de la Vega (@vegaro)
+* Trust user CAs in debug builds of paywalls tester for proxying (#3795) via Cesar de la Vega (@vegaro)
+* feat(remote-config): add internal usesRemoteConfigAPISources dangerous setting (#3792) via Antonio Pallares (@ajpallares)
+
+## 10.14.0
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Improve memory usage on ETags by making `HTTPResult` body lazy (#3764) via Cesar de la Vega (@vegaro)
+* Coalesce `onPaywallConfigReady` so `getOfferings` readiness runs once (#3747) via Cesar de la Vega (@vegaro)
+* Fix ui_config font/color decoding bug (#3742) via Cesar de la Vega (@vegaro)
+### 📦 Dependency Updates
+* [RENOVATE] Update dependency revenuecat to v4.4.0 (#3753) via RevenueCat Git Bot (@RCGitBot)
+### Remote-config
+#### 🐞 Bugfixes
+* fix(remote-config): use a dedicated fallback endpoint (#3750) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### Paywallv2
+#### 🐞 Bugfixes
+* Reset bottom sheet content identity when switching sheets (#3767) via Cesar de la Vega (@vegaro)
+### Paywalls_v2
+#### ✨ New Features
+* [PW-870] Support transparent overlapping sticky footers (#3720) via Toni Rico (@tonidero)
+#### 🐞 Bugfixes
+* fix(paywalls): don't let image backgrounds affect layout size (#3730) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* feat(remote-config): force app_start on the first config request (#3773) via Antonio Pallares (@ajpallares)
+* ci: pin automatic-bump job to Ruby 3.2.0 (#3789) via Antonio Pallares (@ajpallares)
+* fix(remote-config): skip decoding paywall components under workflows to save memory (#3772) via Toni Rico (@tonidero)
+* fix(remote-config): cache remote-config paywall data in memory to avoid loading flash (#3759) via Toni Rico (@tonidero)
+* fix(remote-config): verify remote config signature over the decoded config element (#3788) via Toni Rico (@tonidero)
+* feat(remote-config): send fetch_context on config endpoint requests (#3768) via Antonio Pallares (@ajpallares)
+* Make HTTPResult visibility back to internal (#3770) via Toni Rico (@tonidero)
+* fix: avoid HTTPResult copy re-parsing payload in ETag cache (#3765) via Toni Rico (@tonidero)
+* fix(remote-config): throttle failed refresh attempts (#3756) via Rick (@rickvdl)
+* chore(ci): api-check: show diff when api-check fails, only check api files (#3761) via Álvaro Brey (@AlvaroBrey)
+* Add Ruby to mise for local dev (#3758) via Álvaro Brey (@AlvaroBrey)
+* Fail fast for missing workflow mappings in paywalls (#3760) via Cesar de la Vega (@vegaro)
+* Upgrade Dokka to 2.2.0 and migrate to Gradle plugin v2 DSL (#3731) via Álvaro Brey (@AlvaroBrey)
+* Use mise for Java in CI (#3727) via Álvaro Brey (@AlvaroBrey)
+* refactor(remote-config): Clarify prefetch remote-config blobs in the server-provided order (#3755) via Toni Rico (@tonidero)
+* perf(remote-config): run /v1/config on a dedicated dispatcher to overlap getOfferings (#3751) via Toni Rico (@tonidero)
+* build(deps): bump fastlane from 2.236.1 to 2.237.0 (#3744) via dependabot[bot] (@dependabot[bot])
+* build(deps): bump excon from 0.112.0 to 1.5.0 (#3752) via dependabot[bot] (@dependabot[bot])
+* Document why host failover ignores device-connectivity errors (#3740) via Antonio Pallares (@ajpallares)
+* Update baseline profiles (#3754) via RevenueCat Git Bot (@RCGitBot)
+* fix(remote-config): require all UI config fields except custom_variables (#3748) via Antonio Pallares (@ajpallares)
+* fix(remote-config): require UI config for workflows (#3739) via Rick (@rickvdl)
+* Drop `ENABLE_REMOTE_CONFIG`, and gate the config layer on useWorkflows (#3728) via Cesar de la Vega (@vegaro)
+* Remove dead workflows code (#3736) via Cesar de la Vega (@vegaro)
+* refactor(remote-config): Add `awaitTopicAndPrefetchBlobsReady` to `RemoteConfigManager` (#3732) via Toni Rico (@tonidero)
+* fix(remote-config): don't sync a cold read for the previous user on identity change (#3722) via Toni Rico (@tonidero)
+* Experimental IAM configuration option (#3726) via Dave DeLong (@davedelong)
+* ci: Bump sdks-common-config orb version (#3734) via Toni Rico (@tonidero)
+
+## 10.13.0
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Handle button sheet destination without an inline sheet (#3733) via Monika Mateska (@MonikaMateska)
+* [EXTERNAL] fix(events): catch FileNotFoundException in openBufferedReader to prevent TOCTOU crash (#3704) contributed by @tsushanth (#3719) via Toni Rico (@tonidero)
+* fix(paywalls): pre-download Paywalls V2 icons from the full base URL path (#3713) via Tarek M. Ben Lechhab (@bilqisium)
+
+## RevenueCatUI SDK
+### Paywalls_v2
+#### ✨ New Features
+* feat(paywalls): add state-driven paywalls data layer (PWENG-57) (#3656) via Álvaro Brey (@AlvaroBrey)
+
+### 🔄 Other Changes
+* Fall back to the offerings paywall when the workflow fetch fails (#3709) via Cesar de la Vega (@vegaro)
+* Serve workflows from the config endpoint (#3716) via Cesar de la Vega (@vegaro)
+* Add `WorkflowsConfigProvider` (#3723) via Cesar de la Vega (@vegaro)
+* refactor(workflows): render workflows with ui_config from the config endpoint (#3721) via Cesar de la Vega (@vegaro)
+* UI Config via config endpoint (#3711) via Cesar de la Vega (@vegaro)
+* refactor(remote-config): Add `mergeItemsBlobData` to `RemoteConfigManager` (#3725) via Toni Rico (@tonidero)
+* Rename workflow analytics events to singular (#3670) via Cesar de la Vega (@vegaro)
+* Remove bc7 flavor and billingclient dimension (#3717) via Toni Rico (@tonidero)
+* Add ForbiddenPublicEnum detekt rule (#3707) via Cesar de la Vega (@vegaro)
+* fix(remote-config): Remote-config fixes/improvements (#3714) via Toni Rico (@tonidero)
+* First pass at local encrypted storage (#3680) via Dave DeLong (@davedelong)
+* refactor(remote-config): Disable in CEC mode + add observability logs (#3705) via Toni Rico (@tonidero)
+* refactor(remote-config): add RemoteConfigManager read facade (topic/body) (#3703) via Toni Rico (@tonidero)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3706) via RevenueCat Git Bot (@RCGitBot)
+* refactor(remote-config): Disable /v1/config for the session on a 4xx response (#3700) via Toni Rico (@tonidero)
+* Enable Gradle build cache for local/worktree builds (#3523) via Cesar de la Vega (@vegaro)
+* refactor(remote-config): Re-arm blob sources only when exhausted + in-memory blob-store index (#3698) via Toni Rico (@tonidero)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3701) via RevenueCat Git Bot (@RCGitBot)
+* refactor(remote-config): Wire the blob fetcher into RemoteConfigManager (prefetch, re-arm, clear) (#3683) via Toni Rico (@tonidero)
+* feat(remote-config): support fallback base URL for the config endpoint (#3697) via Antonio Pallares (@ajpallares)
+
+## 10.12.0
+## RevenueCat SDK
+### ✨ New Features
+* refactor(ads): move reward verification primitives to core (#3637) via Peter Porfy (@peterporfy)
+
+### 🔄 Other Changes
+* refactor(remote-config): perform remote config requests behind `ENABLE_REMOTE_CONFIG` flag (#3691) via Toni Rico (@tonidero)
+* refactor(remote-config): Add `RemoteConfigBlobFetcher` (#3679) via Toni Rico (@tonidero)
+* feat(ads): support multi grant rewards (#3657) via Peter Porfy (@peterporfy)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3692) via RevenueCat Git Bot (@RCGitBot)
+* feat(remote-config): drive RemoteConfigSourceProvider from the topic store (#3677) via Antonio Pallares (@ajpallares)
+* refactor(remote-config): prefer lowest priority number for source ordering (#3690) via Antonio Pallares (@ajpallares)
+* refactor(remote-config): user-scoped invalidation (#3621) via Toni Rico (@tonidero)
+* refactor(remote-config): persist the full topic index as the source of truth (#3673) via Toni Rico (@tonidero)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `d64c337` to `dab6765` (#3684) via dependabot[bot] (@dependabot[bot])
+* test(remote-config): tolerate extra topics in production config test (#3688) via Antonio Pallares (@ajpallares)
+* refactor(remote-config): Support per-element compression in RC config format (#3672) via Toni Rico (@tonidero)
+* feat(remote-config): add stable content hash to ConfigTopic (#3676) via Antonio Pallares (@ajpallares)
+* Remove Claude Code GitHub workflow (#3681) via Cesar de la Vega (@vegaro)
+* build(deps): bump faraday from 1.10.5 to 1.10.6 (#3678) via dependabot[bot] (@dependabot[bot])
+* build(deps): bump fastlane-plugin-revenuecat_internal from `70bf5c7` to `d64c337` (#3674) via dependabot[bot] (@dependabot[bot])
+* feat(remote-config): add RemoteConfigSourceProvider for source failover (#3667) via Antonio Pallares (@ajpallares)
+* refactor(remote-config): fix remote config signature verification + add integration tests (#3659) via Toni Rico (@tonidero)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#3668) via RevenueCat Git Bot (@RCGitBot)
+* Update baseline profiles (#3669) via RevenueCat Git Bot (@RCGitBot)
+* refactor(remote-config): inline blob store + extraction (#3615) via Toni Rico (@tonidero)
+* Add WeightedSourceSelector for remote config source selection (#3643) via Antonio Pallares (@ajpallares)
+* refactor(remote-config): /v1/config path, app_user_id body, refresh dedupe (#3648) via Toni Rico (@tonidero)
+* refactor(remote-config): manifest persistence, request body handling (#3612) via Toni Rico (@tonidero)
+
+## 10.11.0
+## RevenueCatUI SDK
+### ✨ New Features
+* Preview paywalls via deep link (#3550) via Dave DeLong (@davedelong)
+
+### 🔄 Other Changes
+* fix: align rules-engine-internal with json-logic-js (undefined & missing_some) (#3634) via Antonio Pallares (@ajpallares)
+* Add `presented_workflow_id` and `presented_step_id` to `/receipts` (#3603) via Cesar de la Vega (@vegaro)
+* refactor(remote-config): Migrate config to opaque-manifest wire format (#3641) via Toni Rico (@tonidero)
+* Emit `workflows_close` on workflow abandonment (#3626) via Facundo Menzella (@facumenzella)
+* build(deps): bump nokogiri from 1.19.3 to 1.19.4 (#3638) via dependabot[bot] (@dependabot[bot])
+* build(deps): bump danger from 9.5.3 to 9.6.0 (#3635) via dependabot[bot] (@dependabot[bot])
+* Enable mise for JDK management (#3632) via Álvaro Brey (@AlvaroBrey)
+* Normalize cache keys on `getWorkflow` to workflow id (#3604) via Cesar de la Vega (@vegaro)
+* feat(workflows): drive paywall-event gating by step screen_type (#3620) via Facundo Menzella (@facumenzella)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3631) via RevenueCat Git Bot (@RCGitBot)
+* Bump sdks-common-config orb to 4.1.0 (#3629) via Álvaro Brey (@AlvaroBrey)
+* refactor(remote-config): wire-format models (#3610) via Toni Rico (@tonidero)
+* refactor(remote-config): Trusted-entitlements signing for the binary remote config response (#3601) via Toni Rico (@tonidero)
+* refactor(remote-config): Support RC Container Format for remote config request, remove stale implementation temporarily (#3607) via Toni Rico (@tonidero)
+* refactor(remote-config): RC Container Format v1 support (#3534) via Toni Rico (@tonidero)
+* Migrate update_error_codes to the outputs parameter (#3625) via Álvaro Brey (@AlvaroBrey)
+* Update sdks-common-config orb to 3.21.2 (#3624) via Antonio Pallares (@ajpallares)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3623) via RevenueCat Git Bot (@RCGitBot)
+* Report ad event capture_method (adapter vs manual) (#3616) via Pol Miro (@polmiro)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#3618) via RevenueCat Git Bot (@RCGitBot)
+* [AUTOMATIC] Update golden test files for backend integration tests (#3617) via RevenueCat Git Bot (@RCGitBot)
+* Removes stale paywall template screenshots if necessary (#3595) via JayShortway (@JayShortway)
+
+## 10.10.0
+## RevenueCatUI SDK
+### ✨ New Features
+* Add Slovenian support for paywalls (#3605) via Monika Mateska (@MonikaMateska)
+### 🐞 Bugfixes
+* Lazy-load paywall components and optimize parsing (#3589) via Alexander Repty (@alexrepty)
+
+### 🔄 Other Changes
+* chore: Add 3-day Dependabot cooldown, excluding fastlane plugin (#3609) via Toni Rico (@tonidero)
+* Adds Cursor Cloud Agent environment (#3606) via JayShortway (@JayShortway)
+* Add `paywall_id` and `workflow_id` to paywall events and other fixes (#3596) via Cesar de la Vega (@vegaro)
+* WFL-303 | Add fallback URL for workflows (#3608) via Rosie Watson (@RosieWatson)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `d911a06` to `70bf5c7` (#3602) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC] Update generated error codes (#3600) via RevenueCat Git Bot (@RCGitBot)
+* Fix legacy paywalls when workflows are enabled (#3598) via Cesar de la Vega (@vegaro)
+* Tests for verifing paywall callbacks fire from any workflow step (#3512) via Cesar de la Vega (@vegaro)
+* Danger: block manual edits to generated error codes (#3599) via Álvaro Brey (@AlvaroBrey)
+* Update baseline profiles (#3554) via RevenueCat Git Bot (@RCGitBot)
+* Add update-error-codes workflow (#3591) via Álvaro Brey (@AlvaroBrey)
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#3597) via RevenueCat Git Bot (@RCGitBot)
+* URL-encode offering IDs in `PaywallComponentsTemplatePreviewRecorder` (#3586) via JayShortway (@JayShortway)
+* test(workflow): add test for trigger type mismatch in WorkflowNavigator (#3387) via Facundo Menzella (@facumenzella)
+
+## 10.9.1
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* fix(paywalls): clamp negative margins/padding to zero (#3559) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* build(deps): bump fastlane from 2.236.0 to 2.236.1 (#3588) via dependabot[bot] (@dependabot[bot])
+* [AUTOMATIC][Paywalls V2] Updates paywall-preview-resources submodule (#3587) via RevenueCat Git Bot (@RCGitBot)
+* Revives update-paywall-templates workflow (#3585) via JayShortway (@JayShortway)
+* Add internal RulesEngine evaluate API surface (#3575) via Antonio Pallares (@ajpallares)
+* Adopt generated PurchasesErrorCode (#3582) via Álvaro Brey (@AlvaroBrey)
+* Inject workflows for multipage paywall preview in RC App (#3579) via Cesar de la Vega (@vegaro)
+* Change multipage paywalls compiler flag to `@InternalRevenueCatAPI` `DangerousSetting` (#3573) via Cesar de la Vega (@vegaro)
+
+## 10.9.0
+## RevenueCat SDK
+### ✨ New Features
+* Log reward verification failure reason (#3535) via Pol Miro (@polmiro)
+### 🐞 Bugfixes
+* fix(test-store): don’t mention Play Store in error logs when the Test Store is used (#3538) via Rick (@rickvdl)
+### Galaxy Store
+#### ✨ New Features
+* [Galaxy]: Add Samsung IAP billing permission to Galaxy manifest (#3539) via Will Taylor (@fire-at-will)
+
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix paywall crash when a downloaded font file fails to load (#3568) via Toni Rico (@tonidero)
+* Look for embedded paywall fonts in public/assets (#3571) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Fade the multipage paywall header during page transitions (#3525) via Cesar de la Vega (@vegaro)
+* Wire workflows fetching and add cache persistence (#3508) via Cesar de la Vega (@vegaro)
+* Remove workflow details fallback on 4xx errors (#3567) via Cesar de la Vega (@vegaro)
+* Align paywall-rendering-validation density with iOS (#3577) via JayShortway (@JayShortway)
+* Exclude rules-engine-internal from public sealed/data class detekt rules (#3581) via Antonio Pallares (@ajpallares)
+* Add Danger check to discourage large PRs (#3543) via Toni Rico (@tonidero)
+* Use the `log` operator to strengthen rules-engine fixtures (#3564) via Antonio Pallares (@ajpallares)
+* build(deps): bump fastlane from 2.235.0 to 2.236.0 (#3570) via dependabot[bot] (@dependabot[bot])
+* Add JSON Logic `log` operator (#3561) via Antonio Pallares (@ajpallares)
+* Add JSON Logic iteration operators (`none`, `map`, `filter`, `reduce`) (#3553) via Antonio Pallares (@ajpallares)
+* AdMob reward verification doc & test fixes (#3565) via Pol Miro (@polmiro)
+* Clean up changelogs from workflows PRs (#3566) via Cesar de la Vega (@vegaro)
+* AdMob reward verification (#3465) via Pol Miro (@polmiro)
+* Remove workflows fallback on 4xx errors (#3562) via Cesar de la Vega (@vegaro)
+* Wire workflow step lifecycle events in PaywallViewModel (#3487) via Cesar de la Vega (@vegaro)
+* Replace workflows `forceStale` flag with a `forceRefresh` param (#3541) via Cesar de la Vega (@vegaro)
+* Stale-while-revalidate for the workflow detail fetch (#3540) via Cesar de la Vega (@vegaro)
+* Represent ±Infinity in test fixtures via test-only variables (#3556) via Antonio Pallares (@ajpallares)
+* Fix `X ms is denormalized` crash in AmazonBillingTest (#3558) via Cesar de la Vega (@vegaro)
+* Add JSON Logic min and max operators (#3552) via Antonio Pallares (@ajpallares)
+* Remove test-galaxy CI job (#3549) via Will Taylor (@fire-at-will)
+* Persist workflow detail envelopes for recovery when backend is down (#3537) via Cesar de la Vega (@vegaro)
+* Add JSON Logic iteration operators (`some`, `all`) (#3551) via Antonio Pallares (@ajpallares)
+* Migrate base RulesEngineInternal operator unit tests to JSON predicate fixtures (#3545) via Antonio Pallares (@ajpallares)
+* Remove Samsung IAP SDK version warning log (#3546) via Will Taylor (@fire-at-will)
+* Make PaywallViewModel dispatcher injectable to fix flaky tests (#3544) via Cesar de la Vega (@vegaro)
+
 ## 10.8.0
 ## RevenueCat SDK
 ### ✨ New Features
 * Add presented offering context to custom paywall events (#3424) via Rick (@rickvdl)
-* Add Workflows list endpoint (#3509) via Cesar de la Vega (@vegaro)
-
-## RevenueCatUI SDK
-### Paywalls_v2
-#### 🐞 Bugfixes
-* Fix 1px seam between sliding multipage paywall pages (#3526) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
+* Fix 1px seam between sliding multipage paywall pages (#3526) via Cesar de la Vega (@vegaro)
+* Add Workflows list endpoint (#3509) via Cesar de la Vega (@vegaro)
 * refactor: extract Offering.presentedOfferingContext() helper and apply across SDK (#3513) via Rick (@rickvdl)
 * Add JSON Logic string + array operators (#3485) via Antonio Pallares (@ajpallares)
 * Add ForbiddenPublicSealedClass detekt rule (#3503) via Toni Rico (@tonidero)
@@ -23,17 +524,13 @@
 
 ## 10.7.0
 ## RevenueCat SDK
-### 🐞 Bugfixes
-* Add BuildConfig to RevenueCat to gate workflow prewarming (#3505) via Facundo Menzella (@facumenzella)
 ### Galaxy Store
 #### ✨ New Features
 * [Galaxy Store]: Upgrade Samsung IAP SDK to version 6.5.2 + use Maven distribution (#3492) via Will Taylor (@fire-at-will)
 
-## RevenueCatUI SDK
-### 🐞 Bugfixes
-* Remove `workflow_trigger` interaction event (#3467) via Cesar de la Vega (@vegaro)
-
 ### 🔄 Other Changes
+* Add BuildConfig to RevenueCat to gate workflow prewarming (#3505) via Facundo Menzella (@facumenzella)
+* Remove `workflow_trigger` interaction event (#3467) via Cesar de la Vega (@vegaro)
 * build(deps): bump fastlane from 2.234.0 to 2.235.0 (#3506) via dependabot[bot] (@dependabot[bot])
 * [Galaxy Store]: Remove @Experimental annotations from Galaxy Module (#3494) via Will Taylor (@fire-at-will)
 * Update baseline profiles (#3504) via RevenueCat Git Bot (@RCGitBot)
@@ -43,12 +540,8 @@
 ### 🐞 Bugfixes
 * Fix RTL layout issues in paywall components (#3493) via Tarek M. Ben Lechhab (@bilqisium)
 
-## RevenueCatUI SDK
-### Paywallv2
-#### 🐞 Bugfixes
-* Rebuild workflow step states on color scheme change (#3419) via Cesar de la Vega (@vegaro)
-
 ### 🔄 Other Changes
+* Rebuild workflow step states on color scheme change (#3419) via Cesar de la Vega (@vegaro)
 * Update baseline profiles (#3490) via RevenueCat Git Bot (@RCGitBot)
 * [AUTOMATIC] Update golden test files for backend integration tests (#3491) via RevenueCat Git Bot (@RCGitBot)
 * [AUTOMATIC] Update golden test files for backend integration tests (#3479) via RevenueCat Git Bot (@RCGitBot)
@@ -59,15 +552,13 @@
 * [RENOVATE] Update dependency gradle to v8.14.5 (#3459) via RevenueCat Git Bot (@RCGitBot)
 
 ## RevenueCatUI SDK
-### ✨ New Features
-* Pre-warm image cache for workflow step states (#3447) via Cesar de la Vega (@vegaro)
 ### Paywallv2
-#### ✨ New Features
-* Add `close_workflow` button action (#3453) via Cesar de la Vega (@vegaro)
 #### 🐞 Bugfixes
 * Fix preload VideoComponent fallback override images (#3449) via Cesar de la Vega (@vegaro)
 
 ### 🔄 Other Changes
+* Add `close_workflow` button action (#3453) via Cesar de la Vega (@vegaro)
+* Pre-warm image cache for workflow step states (#3447) via Cesar de la Vega (@vegaro)
 * Select blob source by priority and weighted random (#3458) via Toni Rico (@tonidero)
 * [AUTOMATIC] Update golden test files for backend integration tests (#3473) via RevenueCat Git Bot (@RCGitBot)
 * Clean up unreferenced topic files after successful remote-config refresh (#3439) via Toni Rico (@tonidero)
@@ -88,12 +579,12 @@
 ## RevenueCatUI SDK
 ### 🐞 Bugfixes
 * Fix: dismiss was called before onPurchaseComplete callback invocation (#3353) via Jacob Rakidzich (@JZDesign)
-* Propagate default package across workflow steps (#3431) via Cesar de la Vega (@vegaro)
 ### Paywallv2
 #### ✨ New Features
 * feat: Allow disabling of automatic font scaling (#3438) via Jacob Rakidzich (@JZDesign)
 
 ### 🔄 Other Changes
+* Propagate default package across workflow steps (#3431) via Cesar de la Vega (@vegaro)
 * Extract `PaywallComponentsImagePreDownloader` (#3448) via Cesar de la Vega (@vegaro)
 * Simplify `WorkflowTransitionState` with explicit from/to step fields (#3441) via Cesar de la Vega (@vegaro)
 
@@ -104,14 +595,13 @@
 
 ## RevenueCatUI SDK
 ### Paywallv2
-#### ✨ New Features
-* Add slide transition to workflow paywalls (#3418) via Cesar de la Vega (@vegaro)
-* Workflow state & ViewModel infrastructure (#3416) via Cesar de la Vega (@vegaro)
 #### 🐞 Bugfixes
 * Fix paywall layout direction for RTL locale overrides (PWENG-39) (#3425) via Monika Mateska (@MonikaMateska)
 * Apply ripple shape clip on a sibling Box to avoid clipping content (#3395) via Toni Rico (@tonidero)
 
 ### 🔄 Other Changes
+* Add slide transition to workflow paywalls (#3418) via Cesar de la Vega (@vegaro)
+* Workflow state & ViewModel infrastructure (#3416) via Cesar de la Vega (@vegaro)
 * build(deps): bump fastlane-plugin-revenuecat_internal from `21e02ec` to `af7bb5c` (#3442) via dependabot[bot] (@dependabot[bot])
 * Abstract workflow page transition animation behind sealed class  (#3430) via Cesar de la Vega (@vegaro)
 * Add `single_step_fallback_id` field to `PublishedWorkflow` (#3436) via Cesar de la Vega (@vegaro)
@@ -140,12 +630,8 @@
 ### 🐞 Bugfixes
 * Fix null Placements when offering_ids_by_placement is absent (#3254) via Dan Pannasch (@dpannasch)
 
-## RevenueCatUI SDK
-### Paywallv2
-#### ✨ New Features
-* Wire multipage workflow navigation into PaywallViewModel (#3381) via Cesar de la Vega (@vegaro)
-
 ### 🔄 Other Changes
+* Wire multipage workflow navigation into PaywallViewModel (#3381) via Cesar de la Vega (@vegaro)
 * Add `triggerType` to `WorkflowTrigger` (#3393) via Cesar de la Vega (@vegaro)
 * Extract private function `NavigateTo.toPaywallAction` (#3392) via Cesar de la Vega (@vegaro)
 * Bump revenucatui-tests gradle cache key (#3391) via Toni Rico (@tonidero)
@@ -167,12 +653,8 @@
 * fix: move Google BillingClient connection off the main thread (#3369) via Toni Rico (@tonidero)
 * [EXTERNAL] fix(google): guard showInAppMessages against BillingClient runtime crashes (#3367) by @matteinn (#3368) via Monika Mateska (@MonikaMateska)
 
-## RevenueCatUI SDK
-### Paywallv2
-#### 🐞 Bugfixes
-* Add Workflows network layer (#3300) via Cesar de la Vega (@vegaro)
-
 ### 🔄 Other Changes
+* Add Workflows network layer (#3300) via Cesar de la Vega (@vegaro)
 * Fix `revenuecat.useWorkflowsEndpoint` compiler flag (#3374) via Cesar de la Vega (@vegaro)
 * Create paywall from workflow response. Add `USE_WORKFLOWS_ENDPOINT` BuildConfig (#3350) via Cesar de la Vega (@vegaro)
 * Refactor: Remove unnecessary lint suppressions (#3373) via cursor[bot] (@cursor[bot])

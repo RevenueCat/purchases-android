@@ -178,6 +178,38 @@ class SharedPreferencesManagerTest {
     }
 
     @Test
+    fun `getSharedPreferences copies RevenueCat keys without modifying the legacy preferences`() {
+        every { mockLegacyPrefs.all } returns mapOf(
+            REVENUECAT_KEY_1 to "value1",
+            REVENUECAT_KEY_2 to "value2",
+            NON_REVENUECAT_KEY to "should_stay",
+        )
+
+        val manager = SharedPreferencesManager(mockContext)
+        manager.getSharedPreferences()
+
+        // RevenueCat-prefixed keys are copied into the dedicated store...
+        verify { mockRevenueCatEditor.putString(REVENUECAT_KEY_1, "value1") }
+        verify { mockRevenueCatEditor.putString(REVENUECAT_KEY_2, "value2") }
+        // ...but the legacy (default) store is never edited, preserving the host app's data even if a value
+        // failed to migrate (the version flag prevents retry).
+        verify(exactly = 0) { mockLegacyEditor.remove(any()) }
+        verify(exactly = 0) { mockLegacyEditor.apply() }
+    }
+
+    @Test
+    fun `getSharedPreferences does not touch legacy preferences when nothing to migrate`() {
+        every { mockLegacyPrefs.all } returns mapOf(NON_REVENUECAT_KEY to "value")
+
+        val manager = SharedPreferencesManager(mockContext)
+        manager.getSharedPreferences()
+
+        // No RevenueCat keys to migrate, so the legacy store is not edited at all.
+        verify(exactly = 0) { mockLegacyEditor.remove(any()) }
+        verify(exactly = 0) { mockLegacyEditor.apply() }
+    }
+
+    @Test
     fun `getSharedPreferences handles migration failure gracefully`() {
         every { mockLegacyPrefs.all } returns mapOf(REVENUECAT_KEY_1 to "value1")
 

@@ -29,16 +29,23 @@ internal fun Project.configureAndroidLibrary() {
 
         defaultConfig {
             minSdk = obtainMinSdkVersion()
-            targetSdk = targetSdkVersion
             testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
             consumerProguardFiles("consumer-rules.pro")
+            // AGP 9 defaults this to compileSdk, tightening the published floor from 1 to 36.
+            aarMetadata.minCompileSdk = 1
         }
 
+        // AGP 9 removes targetSdk from a library's defaultConfig.
         testOptions {
+            targetSdk = targetSdkVersion
             unitTests.isIncludeAndroidResources = true
             unitTests.all {
                 it.maxHeapSize = "1024m"
             }
+        }
+
+        lint {
+            targetSdk = targetSdkVersion
         }
 
         compileOptions {
@@ -60,6 +67,9 @@ internal fun Project.configureAndroidLibrary() {
         }
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_1_8)
+            // Emits interface default bodies as real JVM default methods, so adding a method to a
+            // public interface is not source-breaking for Java implementors. Keeps DefaultImpls: ABI-safe.
+            freeCompilerArgs.add("-Xjvm-default=all-compatibility")
             val kotlinLanguageVersion = libs.getVersion("kotlinLanguage")
             languageVersion.set(
                 KotlinVersion.fromVersion(kotlinLanguageVersion),

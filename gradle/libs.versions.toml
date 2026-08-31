@@ -19,8 +19,7 @@ annotationExperimental = "1.5.1"
 appcompat = "1.4.1"
 assertJ = "3.22.0"
 browser = "1.8.0"
-bc8 = "8.3.0"
-bc7 = "7.1.1"
+billingClient = "8.3.0"
 composeBom = "2024.09.00"
 composeAnnotation = "1.9.0"
 coil = "2.4.0"
@@ -32,7 +31,8 @@ datastorePreference = "1.0.0"
 dependencyGraph = "0.9"
 detekt = "1.23.8"
 detektRulesCompose = "0.4.10"
-dokka = "1.8.10"
+dokka = "2.2.0"
+dokkaAnalysisKotlin = "2.2.0"
 emergeGradlePlugin = "4.4.0"
 emergeSnapshots = "1.5.0"
 espresso = "3.6.1"
@@ -47,12 +47,12 @@ kotlinLanguage = "1.8"
 # Can't update until we use more recent kotlin. 1.6.0 uses Kotlin 1.9.0
 kotlinxSerializationJSON = "1.5.1"
 samsungIap = "6.5.2"
-kover = "0.7.0"
+kover = "0.9.9"
 legacyCoreUi = "1.0.0"
 lifecycle = "2.5.0"
 material = "1.6.0"
 mavenPublish = "0.33.0"
-metalava = "0.4.0-alpha03"
+metalava = "0.5.0"
 mockk = "1.13.11"
 mockwebserver = "4.2.0"
 multidex = "2.0.1"
@@ -65,6 +65,7 @@ testLibraries = "1.6.1"
 tink = "1.8.0"
 viewmodelCompose = "2.4.0"
 window = "1.1.0"
+webkit = "1.16.0"
 junit = "1.2.1"
 uiautomator = "2.3.0"
 benchmarkMacroJunit4 = "1.3.4"
@@ -85,6 +86,7 @@ androidx-browser = { module = "androidx.browser:browser", version.ref = "browser
 androidx-cardview = { module = "androidx.cardview:cardview", version.ref = "androidxCardView" }
 androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "androidxConstraintLayout" }
 androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
+androidx-webkit = { module = "androidx.webkit:webkit", version.ref = "webkit" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreference" }
 androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragment" }
 androidx-legacy-core-ui = { module = "androidx.legacy:legacy-support-core-ui", version.ref = "legacyCoreUi" }
@@ -112,8 +114,7 @@ androidx-test-runner = { module = "androidx.test:runner", version.ref = "testLib
 assertJ = { module = "org.assertj:assertj-core", version.ref = "assertJ" }
 amazon-appstore-sdk = { module = "com.amazon.device:amazon-appstore-sdk", version.ref = "amazon" }
 samsung-iap = { module = "com.samsung.developer:iap", version.ref = "samsungIap" }
-billing-bc8 = { module = "com.android.billingclient:billing", version.ref = "bc8" }
-billing-bc7 = { module = "com.android.billingclient:billing", version.ref = "bc7" }
+billing = { module = "com.android.billingclient:billing", version.ref = "billingClient" }
 
 coil-base = { module = "io.coil-kt:coil-base", version.ref = "coil" }
 coil-compose = { module = "io.coil-kt:coil-compose", version.ref = "coil" }
@@ -125,6 +126,7 @@ commonmark-strikethrough = { module = "org.commonmark:commonmark-ext-gfm-striket
 
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-constraintlayout = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraintlayout" }
+compose-foundation-layout = { module = "androidx.compose.foundation:foundation-layout" }
 compose-material = { module = "androidx.compose.material:material" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-material3Adaptive = { module = "androidx.compose.material3.adaptive:adaptive" }
@@ -138,6 +140,7 @@ compose-window-size = { module = "androidx.compose.material3:material3-window-si
 compose-annotations = { module = "androidx.compose.runtime:runtime-annotation", version.ref = "composeAnnotation" }
 
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
 detekt-api = { module = "io.gitlab.arturbosch.detekt:detekt-api", version.ref = "detekt" }
@@ -146,6 +149,7 @@ detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", 
 detekt-libraries = { module = "io.gitlab.arturbosch.detekt:detekt-rules-libraries", version.ref = "detekt"}
 detekt-test = { module = "io.gitlab.arturbosch.detekt:detekt-test", version.ref = "detekt" }
 
+dokka-analysisKotlinSymbols = { module = "org.jetbrains.dokka:analysis-kotlin-symbols", version.ref = "dokka" }
 dokka-base = { module = "org.jetbrains.dokka:dokka-base", version.ref = "dokka" }
 dokka-baseTestUtils = { module = "org.jetbrains.dokka:dokka-base-test-utils", version.ref = "dokka" }
 dokka-core = { module = "org.jetbrains.dokka:dokka-core", version.ref = "dokka" }

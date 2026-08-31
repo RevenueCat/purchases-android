@@ -149,27 +149,6 @@ class EventsFileHelperTest {
 
     @OptIn(InternalRevenueCatAPI::class)
     @Test
-    fun `debugEventCallback is called when removeFirstLinesFromFile encounters FileNotFoundException`() {
-        val receivedEvents = mutableListOf<DebugEvent>()
-        eventsFileHelper = EventsFileHelper(
-            fileHelper,
-            "nonexistent_path/nonexistent_file.jsonl",
-            { it.toString() },
-            { TestEvent(it) },
-        )
-        eventsFileHelper.debugEventCallback = { receivedEvents.add(it) }
-
-        // Calling clear on a nonexistent file should trigger the FileNotFoundException path
-        eventsFileHelper.clear(1)
-
-        assertThat(receivedEvents).hasSize(1)
-        assertThat(receivedEvents.first().name).isEqualTo(DebugEventName.REMOVE_LINES_EXCEPTION)
-        assertThat(receivedEvents.first().properties["exceptionType"]).isEqualTo("FileNotFoundException")
-        assertThat(receivedEvents.first().properties["message"]).isNotNull
-    }
-
-    @OptIn(InternalRevenueCatAPI::class)
-    @Test
     fun `debugEventCallback message is truncated to 80 characters`() {
         val receivedEvents = mutableListOf<DebugEvent>()
         val longMessage = "A".repeat(120)

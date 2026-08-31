@@ -103,6 +103,10 @@ class MainActivity : ComponentActivity(), PaywallResultHandler {
         override fun onRestoreError(error: PurchasesError) {
             Log.d(TAG, "onRestoreError: ${error.message}")
         }
+
+        override fun onUrlOpened(url: String) {
+            Log.d(TAG, "onUrlOpened: $url")
+        }
     }
 
     fun launchCustomerCenter() {

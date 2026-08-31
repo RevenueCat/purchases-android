@@ -131,4 +131,5 @@ private fun BackendErrorCode.toPurchasesErrorCode(): PurchasesErrorCode {
 internal data class SubscriberAttributeError(
     val keyName: String,
     val message: String,
+    val backendErrorCode: Int? = null,
 )

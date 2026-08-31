@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
@@ -23,14 +24,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -47,6 +53,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
@@ -156,8 +163,19 @@ internal fun CarouselComponentView(
         }
     }
 
+    // A Fit carousel sizes to its tallest page, but each page is measured before that height is
+    // known, so a Fill page wraps its own (smaller) content instead of matching. Pin the Fill pages
+    // to the measured height; leave the Pager unpinned so it keeps tracking the tallest page as
+    // content grows (async WebView), which avoids latching to the first frame.
+    // A SubcomposeLayout single pass would avoid this measure -> recompose reflow, but it would
+    // compose every page (WebViews included) twice, so it isn't worth it for one settle frame.
+    val density = LocalDensity.current
+    var pagerHeightPx by remember(carouselState.pages) { mutableIntStateOf(0) }
+    val fillPageModifier = fillPageModifierOrEmpty(carouselState.size.height, pagerHeightPx, density)
+
     Column(
         modifier = modifier
+            .size(carouselState.size)
             .padding(carouselState.margin)
             .applyIfNotNull(shadowStyle) { shadow(it, carouselState.shape) }
             .applyIfNotNull(backgroundColorStyle) { background(it, carouselState.shape) }
@@ -189,12 +207,15 @@ internal fun CarouselComponentView(
             beyondViewportPageCount = pageCount,
             pageSpacing = carouselState.pageSpacing,
             verticalAlignment = carouselState.pageAlignment,
+            modifier = Modifier.onSizeChanged { pagerHeightPx = it.height },
         ) { page ->
+            val pageStyle = carouselState.pages[page % pageCount]
             StackComponentView(
-                style = carouselState.pages[page % pageCount],
+                style = pageStyle,
                 state = state,
                 clickHandler = clickHandler,
                 componentInteractionTracker = componentInteractionTracker,
+                modifier = pageHeightModifier(pageStyle.size.height, fillPageModifier),
             )
         }
 
@@ -411,6 +432,19 @@ internal fun nextAutoAdvanceTargetPage(
     }
 }
 
+// Only a Fit carousel leaves pages unbounded at measure time; Fixed/Fill already bound them.
+private fun fillPageModifierOrEmpty(carouselHeight: SizeConstraint, measuredHeightPx: Int, density: Density): Modifier =
+    if (carouselHeight is SizeConstraint.Fit && measuredHeightPx > 0) {
+        Modifier.height(with(density) { measuredHeightPx.toDp() })
+    } else {
+        Modifier
+    }
+
+// Pin only Fill pages: a Fit/Fixed page resolves its own height, and pinning it would feed a
+// sibling's height back into itself.
+private fun pageHeightModifier(pageHeight: SizeConstraint, fillPageModifier: Modifier): Modifier =
+    if (pageHeight is SizeConstraint.Fill) fillPageModifier else Modifier
+
 private fun getInitialPage(carouselState: CarouselComponentState) = if (carouselState.loop) {
     // When looping, we use a very large number of pages to allow for "infinite" scrolling
     // We need to calculate the initial page index in the middle of that large number of pages to make the carousel
@@ -475,7 +509,7 @@ private fun previewCarouselComponentStyle(
     initialPageIndex: Int = 0,
     alignment: Alignment.Vertical = Alignment.CenterVertically,
     visible: Boolean = true,
-    size: Size = Size(width = SizeConstraint.Fit, height = SizeConstraint.Fit),
+    size: Size = Size(width = SizeConstraint.Fit(), height = SizeConstraint.Fit()),
     sidePagePeek: Dp = 20.dp,
     spacing: Dp = 8.dp,
     backgroundColor: Color = Color.LightGray,

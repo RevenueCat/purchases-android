@@ -45,3 +45,7 @@ revenuecat:
     active: true
     excludes: [ '**/examples/**' ]
     ignoreAnnotated: [ 'InternalRevenueCatAPI' ]
+  ForbiddenPublicEnum:
+    active: true
+    excludes: [ '**/examples/**' ]
+    ignoreAnnotated: [ 'InternalRevenueCatAPI' ]

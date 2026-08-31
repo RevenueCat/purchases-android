@@ -4,6 +4,7 @@ import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.models.InAppMessageType
 import io.mockk.Runs
 import io.mockk.every
@@ -74,6 +75,37 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `onAppForegrounded refreshes remote config if stale`() {
+        mockOfferingsManagerAppForeground()
+        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(appInBackground = false)
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        verify(exactly = 1) {
+            mockRemoteConfigManager.refreshRemoteConfigIfStale(
+                appInBackground = false,
+                appUserID = appUserId,
+                fetchContext = RemoteConfigFetchContext.AppStart,
+            )
+        }
+    }
+
+    @Test
+    fun `onAppForegrounded passes foreground fetch context after the first foreground`() {
+        mockOfferingsManagerAppForeground()
+        purchases.purchasesOrchestrator.state = purchases.purchasesOrchestrator.state.copy(
+            appInBackground = false,
+            firstTimeInForeground = false,
+        )
+        Purchases.sharedInstance.purchasesOrchestrator.onAppForegrounded()
+        verify(exactly = 1) {
+            mockRemoteConfigManager.refreshRemoteConfigIfStale(
+                appInBackground = false,
+                appUserID = appUserId,
+                fetchContext = RemoteConfigFetchContext.Foreground,
+            )
+        }
+    }
+
+    @Test
     fun `don't force update of caches when app foregrounded not for the first time`() {
         every {
             mockCache.isCustomerInfoCacheStale(appInBackground = false, appUserID = appUserId)
@@ -130,9 +162,10 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
         verify(exactly = 0) {
             mockCustomerInfoHelper.retrieveCustomerInfo(any(), any(), any(), any(), callback = any())
         }
+        verify(exactly = 0) { mockRemoteConfigManager.refreshRemoteConfigIfStale(any(), any(), any()) }
         verify(exactly = 0) { mockOfferingsManager.onAppForeground(any()) }
         verify(exactly = 0) { mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any()) }
-        verify(exactly = 0) { mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any()) }
+        verify(exactly = 0) { mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), any()) }
         verify(exactly = 0) { mockOfflineEntitlementsManager.updateProductEntitlementMappingCacheIfStale() }
         verify(exactly = 0) { mockEventsManager.flushEvents(any()) }
         verify(exactly = 0) { mockAdEventsManager.flushEvents(any()) }
@@ -146,7 +179,7 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
         Purchases.sharedInstance.purchasesOrchestrator.onAppBackgrounded()
         assertThat(purchases.purchasesOrchestrator.state.appInBackground).isTrue
         assertThat(appConfig.isAppBackgrounded).isTrue
-        verify(exactly = 0) { mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any()) }
+        verify(exactly = 0) { mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), any()) }
         verify(exactly = 0) { mockEventsManager.flushEvents(any()) }
         verify(exactly = 0) { mockAdEventsManager.flushEvents(any()) }
     }

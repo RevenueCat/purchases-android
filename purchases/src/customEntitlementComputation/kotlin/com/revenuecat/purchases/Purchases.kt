@@ -124,7 +124,12 @@ public class Purchases internal constructor(
      * Call close when you are done with this instance of Purchases
      */
     public fun close() {
+        notifyLifecycleClosed()
         purchasesOrchestrator.close()
+    }
+
+    private fun notifyLifecycleClosed() {
+        serviceDispatcher.close(this)
     }
 
     /**
@@ -205,6 +210,8 @@ public class Purchases internal constructor(
 
     // region Static
     public companion object {
+        @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+        internal var serviceDispatcher: PurchasesServiceDispatcher = PurchasesServices.default()
 
         /**
          * DO NOT MODIFY. This is used internally by the Hybrid SDKs to indicate which platform is
@@ -348,6 +355,7 @@ public class Purchases internal constructor(
             ).also {
                 @SuppressLint("RestrictedApi")
                 sharedInstance = it
+                serviceDispatcher.initialize(it)
             }
         }
 

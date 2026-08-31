@@ -58,6 +58,7 @@ internal class ButtonComponentState(
             is ButtonComponentStyle.Action.NavigateBack -> PaywallAction.External.NavigateBack
             is ButtonComponentStyle.Action.CloseWorkflow -> PaywallAction.External.CloseWorkflow
             is ButtonComponentStyle.Action.NavigateTo -> toPaywallAction(localeId)
+            is ButtonComponentStyle.Action.NoOp -> null
 
             is ButtonComponentStyle.Action.PurchasePackage ->
                 PaywallAction.External.PurchasePackage(
@@ -71,7 +72,7 @@ internal class ButtonComponentState(
                 customUrl = null,
                 openMethod = openMethod,
                 autoDismiss = autoDismiss,
-                packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+                paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
                     rcPackage = rcPackage,
                     packageParam = null,
                 ),
@@ -81,7 +82,7 @@ internal class ButtonComponentState(
                 customUrl = null,
                 openMethod = openMethod,
                 autoDismiss = autoDismiss,
-                packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend,
+                paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.DoNotAppend,
             )
 
             is ButtonComponentStyle.Action.CustomWebCheckout -> {
@@ -90,9 +91,11 @@ internal class ButtonComponentState(
                     customUrl = urlString,
                     openMethod = openMethod,
                     autoDismiss = autoDismiss,
-                    packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+                    paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
                         rcPackage = rcPackage,
                         packageParam = packageParam,
+                        appUserIdParam = appUserIdParam,
+                        envParam = envParam,
                     ),
                 )
             }

@@ -115,7 +115,7 @@ class VideoComponentTests {
 
         val size = Size(
             width = SizeConstraint.Fill,
-            height = SizeConstraint.Fit,
+            height = SizeConstraint.Fit(),
         )
 
         val mask = MaskShape.Rectangle(

@@ -6,10 +6,27 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FontStyle
 import com.revenuecat.purchases.paywalls.parseRGBAColor
+import kotlinx.serialization.SerializationException
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.Test
 
 internal class UiConfigTests {
+
+    private val emptyAppConfig = UiConfig.AppConfig(colors = emptyMap(), fonts = emptyMap())
+    private val emptyVariableConfig = UiConfig.VariableConfig(
+        variableCompatibilityMap = emptyMap(),
+        functionCompatibilityMap = emptyMap(),
+    )
+
+    // The minimum set of required fields (everything except the optional `custom_variables`) as a JSON fragment,
+    // so individual tests can focus on the field they exercise without repeating the full scaffold.
+    // language=json
+    private val requiredFieldsJson = """
+        "app": { "colors": {}, "fonts": {} },
+        "variable_config": { "variable_compatibility_map": {}, "function_compatibility_map": {} },
+        "localizations": {}
+    """.trimIndent()
 
     @Test
     fun `Should properly deserialize UiConfig`() {
@@ -205,6 +222,8 @@ internal class UiConfigTests {
         // language=json
         val serialized = """
             {
+              "app": { "colors": {}, "fonts": {} },
+              "variable_config": { "variable_compatibility_map": {}, "function_compatibility_map": {} },
               "localizations": {
                 "en_US": {
                   "monthly": "monthly",
@@ -218,6 +237,8 @@ internal class UiConfigTests {
             }
             """.trimIndent()
         val expected = UiConfig(
+            app = emptyAppConfig,
+            variableConfig = emptyVariableConfig,
             localizations = mapOf(
                 LocaleId("en_US") to mapOf(
                     VariableLocalizationKey.MONTHLY to "monthly"
@@ -243,6 +264,8 @@ internal class UiConfigTests {
         // language=json
         val serialized = """
             {
+              "app": { "colors": {}, "fonts": {} },
+              "variable_config": { "variable_compatibility_map": {}, "function_compatibility_map": {} },
               "localizations": {
                 "en_US": {
                   "day": "DAY",
@@ -296,6 +319,8 @@ internal class UiConfigTests {
             }
             """.trimIndent()
         val expected = UiConfig(
+            app = emptyAppConfig,
+            variableConfig = emptyVariableConfig,
             localizations = mapOf(
                 LocaleId("en_US") to VariableLocalizationKey.values().associateWith { key -> key.name },
             ),
@@ -315,6 +340,9 @@ internal class UiConfigTests {
         // language=json
         val serialized = """
             {
+              "app": { "colors": {}, "fonts": {} },
+              "variable_config": { "variable_compatibility_map": {}, "function_compatibility_map": {} },
+              "localizations": {},
               "custom_variables": {
                 "user_name": {
                   "type": "string",
@@ -366,6 +394,9 @@ internal class UiConfigTests {
         // language=json
         val serialized = """
             {
+              "app": { "colors": {}, "fonts": {} },
+              "variable_config": { "variable_compatibility_map": {}, "function_compatibility_map": {} },
+              "localizations": {},
               "custom_variables": {
                 "discount_percent": {
                   "type": "number",
@@ -398,10 +429,16 @@ internal class UiConfigTests {
         // language=json
         val serialized = """
             {
+              "app": { "colors": {}, "fonts": {} },
+              "variable_config": { "variable_compatibility_map": {}, "function_compatibility_map": {} },
+              "localizations": {},
               "custom_variables": {}
             }
             """.trimIndent()
         val expected = UiConfig(
+            app = emptyAppConfig,
+            localizations = emptyMap(),
+            variableConfig = emptyVariableConfig,
             customVariables = emptyMap(),
         )
 
@@ -415,17 +452,81 @@ internal class UiConfigTests {
     @Test
     fun `Should default custom_variables to empty map when not present`() {
         // Arrange
-        // language=json
-        val serialized = """
-            {
-              "app": {}
-            }
-            """.trimIndent()
+        val serialized = "{ $requiredFieldsJson }"
 
         // Act
         val actual = JsonTools.json.decodeFromString<UiConfig>(serialized)
 
         // Assert
         assertThat(actual.customVariables).isEmpty()
+    }
+
+    @Test
+    fun `Should throw when app is missing`() {
+        // Arrange
+        // language=json
+        val serialized = """
+            {
+              "variable_config": { "variable_compatibility_map": {}, "function_compatibility_map": {} },
+              "localizations": {}
+            }
+            """.trimIndent()
+
+        // Act & Assert
+        assertThatExceptionOfType(SerializationException::class.java).isThrownBy {
+            JsonTools.json.decodeFromString<UiConfig>(serialized)
+        }
+    }
+
+    @Test
+    fun `Should throw when localizations is missing`() {
+        // Arrange
+        // language=json
+        val serialized = """
+            {
+              "app": { "colors": {}, "fonts": {} },
+              "variable_config": { "variable_compatibility_map": {}, "function_compatibility_map": {} }
+            }
+            """.trimIndent()
+
+        // Act & Assert
+        assertThatExceptionOfType(SerializationException::class.java).isThrownBy {
+            JsonTools.json.decodeFromString<UiConfig>(serialized)
+        }
+    }
+
+    @Test
+    fun `Should throw when variable_config is missing`() {
+        // Arrange
+        // language=json
+        val serialized = """
+            {
+              "app": { "colors": {}, "fonts": {} },
+              "localizations": {}
+            }
+            """.trimIndent()
+
+        // Act & Assert
+        assertThatExceptionOfType(SerializationException::class.java).isThrownBy {
+            JsonTools.json.decodeFromString<UiConfig>(serialized)
+        }
+    }
+
+    @Test
+    fun `Should throw when app colors or fonts are missing`() {
+        // Arrange
+        // language=json
+        val serialized = """
+            {
+              "app": {},
+              "variable_config": { "variable_compatibility_map": {}, "function_compatibility_map": {} },
+              "localizations": {}
+            }
+            """.trimIndent()
+
+        // Act & Assert
+        assertThatExceptionOfType(SerializationException::class.java).isThrownBy {
+            JsonTools.json.decodeFromString<UiConfig>(serialized)
+        }
     }
 }

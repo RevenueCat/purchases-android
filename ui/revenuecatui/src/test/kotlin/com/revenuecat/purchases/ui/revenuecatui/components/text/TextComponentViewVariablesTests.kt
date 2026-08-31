@@ -61,7 +61,10 @@ internal class TextComponentViewVariablesTests(
         val storefrontCountryCode: String,
         val variableLocalizations: NonEmptyMap<String, NonEmptyMap<VariableLocalizationKey, String>>,
         val date: Date = Date(),
-        val variableConfig: VariableConfig = VariableConfig(),
+        val variableConfig: VariableConfig = VariableConfig(
+            variableCompatibilityMap = emptyMap(),
+            functionCompatibilityMap = emptyMap(),
+        ),
     ) {
         constructor(
              packages: List<Package>,
@@ -70,7 +73,10 @@ internal class TextComponentViewVariablesTests(
              variableLocalizations: NonEmptyMap<VariableLocalizationKey, String>,
              variablesLocale: String = locale,
              date: Date = Date(),
-             variableConfig: VariableConfig = VariableConfig(),
+             variableConfig: VariableConfig = VariableConfig(
+                 variableCompatibilityMap = emptyMap(),
+                 functionCompatibilityMap = emptyMap(),
+             ),
         ): this(
             packages = packages,
             locale = locale,
@@ -892,7 +898,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_PERIOD_ABBREVIATED.identifier} }}",
                 Args(
@@ -901,7 +907,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_DAY.identifier} }}",
                 Args(
@@ -910,7 +916,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_WEEK.identifier} }}",
                 Args(
@@ -919,7 +925,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_MONTH.identifier} }}",
                 Args(
@@ -928,7 +934,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PRICE_PER_YEAR.identifier} }}",
                 Args(
@@ -937,7 +943,7 @@ internal class TextComponentViewVariablesTests(
                     storefrontCountryCode = "US",
                     variableLocalizations = variableLocalizationKeysForEnUs(),
                 ),
-                ""
+                "\$200.00"
             ), arrayOf(
                 "{{ ${Variable.PRODUCT_PERIOD.identifier} }}",
                 Args(
@@ -1254,7 +1260,8 @@ internal class TextComponentViewVariablesTests(
                     variableConfig = VariableConfig(
                         variableCompatibilityMap = mapOf(
                             "name_variable_from_the_year_5202" to "product.store_product_name"
-                        )
+                        ),
+                        functionCompatibilityMap = emptyMap(),
                     )
                 ),
                 "Annual"

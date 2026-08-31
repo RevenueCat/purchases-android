@@ -9,10 +9,10 @@ import android.os.Build
 import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
+import com.revenuecat.purchases.common.networking.APISourceFailover
 import com.revenuecat.purchases.common.networking.ConnectionErrorReason
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.Endpoint
@@ -21,6 +21,8 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.MapConverter
 import com.revenuecat.purchases.common.networking.NullPointerReadingErrorStreamException
+import com.revenuecat.purchases.common.networking.RCContainer
+import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -29,11 +31,9 @@ import com.revenuecat.purchases.interfaces.StorefrontProvider
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import org.json.JSONException
-import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.IOException
 import java.io.InputStream
-import java.io.InputStreamReader
 import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
@@ -70,6 +70,7 @@ internal class HTTPClient(
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     val signingManager: SigningManager,
     private val storefrontProvider: StorefrontProvider,
+    private val apiSourceFailover: APISourceFailover?,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     private val mapConverter: MapConverter = MapConverter(),
     private val localeProvider: LocaleProvider,
@@ -81,25 +82,45 @@ internal class HTTPClient(
     internal companion object {
         // This will be used when we could not reach the server due to connectivity or any other issues.
         const val NO_STATUS_CODE = -1
+
+        // Accept header value requesting the RC Container Format response.
+        const val RC_FORMAT_ACCEPT = "application/x-rc-format"
+
+        // Request header advertising which per-element codecs the SDK can decode. Dedicated to RC Container
+        // Format body compression so it never collides with the transport-level Accept-Encoding.
+        const val RC_FORMAT_ACCEPT_ENCODING_HEADER = "Accept-RC-Element-Encoding"
+
+        // Per-element codecs the SDK can decode, advertised so the server never picks one we can't
+        // (e.g. brotli/zstd). "gzip" implies "identity" is also acceptable.
+        const val RC_FORMAT_ACCEPT_ENCODING = "gzip"
+
+        // Defensive cap on API source attempts within one request, in case the source list is re-armed
+        // (topic rebuild or interval restart) while a request is walking it.
+        const val MAX_API_SOURCE_ATTEMPTS = 5
     }
 
     private val enableExtraRequestLogging = BuildConfig.ENABLE_EXTRA_REQUEST_LOGGING && appConfig.isDebugBuild
-
-    private fun buffer(inputStream: InputStream): BufferedReader {
-        return BufferedReader(InputStreamReader(inputStream))
-    }
 
     private fun buffer(outputStream: OutputStream): BufferedWriter {
         return BufferedWriter(OutputStreamWriter(outputStream))
     }
 
     @Throws(IOException::class)
-    private fun readFully(inputStream: InputStream): String {
-        return buffer(inputStream).readText()
+    private fun readBytesFully(inputStream: InputStream): ByteArray {
+        return inputStream.readBytes()
     }
 
+    /** A human-readable rendering of a response body for logging: byte size for RC Format, text otherwise. */
+    private fun ByteArray.describeForLogging(endpoint: Endpoint, responseCode: Int): String =
+        if (endpoint.expectsRCFormatResponse && RCHTTPStatusCodes.isSuccessful(responseCode)) {
+            "<rc-format: $size bytes>"
+        } else {
+            String(this, Charsets.UTF_8)
+        }
+
     @Suppress("TooGenericExceptionCaught")
-    private fun getInputStream(connection: HttpURLConnection): InputStream? {
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal fun getInputStream(connection: HttpURLConnection): InputStream? {
         return try {
             connection.inputStream
         } catch (e: Exception) {
@@ -138,7 +159,7 @@ internal class HTTPClient(
      * @throws JSONException Thrown for any JSON errors, not thrown for returned HTTP error codes
      * @throws IOException Thrown for any unexpected errors, not thrown for returned HTTP error codes
      */
-    @Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod", "InstanceOfCheckForException")
+    @Suppress("LongParameterList", "LongMethod", "CyclomaticComplexMethod")
     @Throws(JSONException::class, IOException::class)
     fun performRequest(
         baseURL: URL,
@@ -173,44 +194,150 @@ internal class HTTPClient(
             )
         }
 
-        val isMainBackend = fallbackURLIndex == 0
+        val isMainBackend = fallbackURLIndex == 0 && !endpoint.targetsFallbackHost
 
+        var source = apiSourceFailover?.currentSource(endpoint, baseURL, isFallbackAttempt = !isMainBackend)
+        var sourceAttempts = 0
+
+        while (true) {
+            sourceAttempts++
+            val outcome = performAttempt(
+                requestBaseURL = source?.url ?: baseURL,
+                isFallbackURL = fallbackURLIndex > 0,
+                isMainBackend = isMainBackend,
+                fallbackAvailable = canUseFallback(),
+                endpoint = endpoint,
+                body = body,
+                postFieldsToSign = postFieldsToSign,
+                requestHeaders = requestHeaders,
+                refreshETag = refreshETag,
+            )
+            if (outcome.canFailOverToNextSource) {
+                val nextSource = sourceToRetryOn(source, sourceAttempts, endpoint, outcome.connectionException)
+                if (nextSource != null) {
+                    source = nextSource
+                    continue
+                }
+            }
+            return when (outcome) {
+                is AttemptOutcome.Failed -> {
+                    if (!canUseFallback()) {
+                        throw outcome.exception
+                    }
+                    // Unlike iOS, we keep failing over on every connection-level IOException here, including
+                    // ones that may be caused by the device being offline. A DeviceConnectivityChecker exists
+                    // (API source failover uses it to skip health checks while offline), but this long-standing
+                    // fallback-host path intentionally doesn't consult it yet to avoid changing default-on
+                    // behavior.
+                    var fallbackResult = performRequestToFallbackURL()
+                    if (RCHTTPStatusCodes.isServerError(fallbackResult.responseCode) && canUseFallback()) {
+                        fallbackResult = performRequestToFallbackURL()
+                    }
+                    fallbackResult
+                }
+
+                is AttemptOutcome.Completed -> {
+                    val result = outcome.result
+                    when {
+                        result == null -> {
+                            log(LogIntent.WARNING) { NetworkStrings.ETAG_RETRYING_CALL }
+                            performRequest(
+                                baseURL,
+                                endpoint,
+                                body,
+                                postFieldsToSign,
+                                requestHeaders,
+                                refreshETag = true,
+                                fallbackBaseURLs,
+                                fallbackURLIndex,
+                            )
+                        }
+
+                        RCHTTPStatusCodes.isServerError(result.responseCode) && canUseFallback() ->
+                            // Handle server errors with fallback URLs
+                            performRequestToFallbackURL()
+
+                        else -> result
+                    }
+                }
+            }
+        }
+    }
+
+    /** The result of one request attempt against a single host. */
+    private sealed interface AttemptOutcome {
+        /** [result] is null when an ETag cache miss requires retrying with a refreshed ETag. */
+        data class Completed(val result: HTTPResult?) : AttemptOutcome
+
+        data class Failed(val exception: IOException) : AttemptOutcome
+
+        /** Whether this outcome is a failure that API sources may recover from by switching hosts. */
+        val canFailOverToNextSource: Boolean
+            get() = when (this) {
+                is Failed -> true
+                is Completed -> result?.let { RCHTTPStatusCodes.isServerError(it.responseCode) } == true
+            }
+
+        /** The connection-level failure this attempt hit, or null when the host actually responded. */
+        val connectionException: IOException?
+            get() = (this as? Failed)?.exception
+    }
+
+    /**
+     * Performs one request attempt against [requestBaseURL], recording its timeout bookkeeping and
+     * diagnostics. Connection-level failures come back as [AttemptOutcome.Failed] instead of throwing.
+     */
+    @Suppress("LongParameterList", "InstanceOfCheckForException")
+    private fun performAttempt(
+        requestBaseURL: URL,
+        isFallbackURL: Boolean,
+        isMainBackend: Boolean,
+        fallbackAvailable: Boolean,
+        endpoint: Endpoint,
+        body: Map<String, Any?>?,
+        postFieldsToSign: List<Pair<String, String>>?,
+        requestHeaders: Map<String, String>,
+        refreshETag: Boolean,
+    ): AttemptOutcome {
         var callSuccessful = false
         val requestStartTime = dateProvider.now
         var callResult: HTTPResult? = null
         var requestResult: HTTPTimeoutManager.RequestResult = HTTPTimeoutManager.RequestResult.OTHER_RESULT
         var exceptionHit: IOException? = null
+        var responseCode: Int? = null
 
         try {
             callResult = performCall(
-                baseURL,
-                fallbackURLIndex > 0,
+                requestBaseURL,
+                isFallbackURL,
                 endpoint,
                 body,
                 postFieldsToSign,
                 requestHeaders,
                 refreshETag,
+                onResponseReceived = { responseCode = it },
             )
             callSuccessful = true
-
-            if (isMainBackend && callResult?.let { RCHTTPStatusCodes.isSuccessful(it.responseCode) } == true) {
-                requestResult = HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND
-            }
         } catch (e: IOException) {
             exceptionHit = e
-            if (e is SocketTimeoutException && isMainBackend && canUseFallback()) {
-                requestResult = HTTPTimeoutManager.RequestResult.TIMEOUT_ON_MAIN_BACKEND_FOR_FALLBACK_SUPPORTED_ENDPOINT
-                callResult = performRequestToFallbackURL()
-            } else if (canUseFallback()) {
-                callResult = performRequestToFallbackURL()
-            } else {
-                throw e
+            // With remote-config API sources enabled, record a timeout for any main-source attempt that timed
+            // out, regardless of fallback-URL support. When disabled, keep the legacy behavior of only arming
+            // the fail-fast memory for endpoints that support fallback URLs.
+            val timedOutOnMainSource = e is SocketTimeoutException && isMainBackend
+            val shouldArmFailFastMemory = appConfig.usesRemoteConfigAPISources || fallbackAvailable
+            if (timedOutOnMainSource && shouldArmFailFastMemory) {
+                requestResult = HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT
             }
         } finally {
-            timeoutManager.recordRequestResult(requestResult)
+            // The timeoutManager tracks how fast a host answers, so a non-error response clears the
+            // entry even when parsing or verifying that response fails afterwards.
+            if (isMainBackend && responseCode?.let { RCHTTPStatusCodes.isSuccessful(it) } == true) {
+                requestResult = HTTPTimeoutManager.RequestResult.SUCCESS_ON_MAIN_BACKEND
+            }
+            timeoutManager.recordRequestResult(requestBaseURL.host, requestResult)
 
             trackHttpRequestPerformedIfNeeded(
-                baseURL,
+                requestBaseURL,
                 endpoint,
                 requestStartTime,
                 callSuccessful,
@@ -219,23 +346,28 @@ internal class HTTPClient(
                 connectionException = exceptionHit,
             )
         }
-        if (callResult == null) {
-            log(LogIntent.WARNING) { NetworkStrings.ETAG_RETRYING_CALL }
-            callResult = performRequest(
-                baseURL,
-                endpoint,
-                body,
-                postFieldsToSign,
-                requestHeaders,
-                refreshETag = true,
-                fallbackBaseURLs,
-                fallbackURLIndex,
-            )
-        } else if (RCHTTPStatusCodes.isServerError(callResult.responseCode) && canUseFallback()) {
-            // Handle server errors with fallback URLs
-            callResult = performRequestToFallbackURL()
+        return exceptionHit?.let { AttemptOutcome.Failed(it) } ?: AttemptOutcome.Completed(callResult)
+    }
+
+    /**
+     * The next source to retry [endpoint]'s failed request on, or null when the request didn't target an
+     * API [source], the attempt cap is reached, or [APISourceFailover] decides against failing over (the
+     * source's health check passed, or every source is already unhealthy).
+     */
+    private fun sourceToRetryOn(
+        source: APISourceFailover.ResolvedSource?,
+        sourceAttempts: Int,
+        endpoint: Endpoint,
+        connectionException: IOException?,
+    ): APISourceFailover.ResolvedSource? {
+        val decision = source
+            ?.takeIf { sourceAttempts < MAX_API_SOURCE_ATTEMPTS }
+            ?.let { apiSourceFailover?.onRequestFailure(it, connectionException) }
+        return (decision as? APISourceFailover.FailureDecision.RetryNextSource)?.next?.also {
+            log(LogIntent.DEBUG) {
+                NetworkStrings.RETRYING_CALL_WITH_NEXT_API_SOURCE.format(endpoint.name, it.url)
+            }
         }
-        return callResult
     }
 
     @Suppress("ThrowsCount", "LongParameterList", "LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth")
@@ -247,6 +379,7 @@ internal class HTTPClient(
         postFieldsToSign: List<Pair<String, String>>?,
         requestHeaders: Map<String, String>,
         refreshETag: Boolean,
+        onResponseReceived: (responseCode: Int) -> Unit,
     ): HTTPResult? {
         val jsonBody = body?.let { mapConverter.convertToJSON(it) }
         val path = endpoint.getPath(useFallback = isFallbackURL)
@@ -265,13 +398,14 @@ internal class HTTPClient(
         }
 
         try {
+            val requestURL = URL(baseURL, path)
             fullURL = if (appConfig.runningTests &&
                 forceServerErrorStrategy?.shouldForceServerError(baseURL, endpoint) == true
             ) {
                 warnLog { "Forcing server error for request to ${URL(baseURL, path)}" }
                 URL(forceServerErrorStrategy.serverErrorURL)
             } else {
-                URL(baseURL, path)
+                forceServerErrorStrategy?.modifyRequestURL(requestURL, endpoint) ?: requestURL
             }
 
             nonce = if (shouldAddNonce) signingManager.createRandomNonce() else null
@@ -285,6 +419,7 @@ internal class HTTPClient(
                 nonce,
                 shouldSignResponse,
                 postFieldsToSignHeader,
+                endpoint,
             )
 
             val httpRequest = HTTPRequest(fullURL, headers, jsonBody)
@@ -294,8 +429,16 @@ internal class HTTPClient(
             }
 
             val timeout = timeoutManager.getTimeoutForRequest(
-                isFallback = isFallbackURL,
+                // Keyed by the base URL's host, matching what `performAttempt` records the result under.
+                host = baseURL.host,
+                // Endpoints the domain layer aims at a fallback host are fallback attempts from the first
+                // try, even though the fallback walk hasn't advanced the index.
+                isFallback = isFallbackURL || endpoint.targetsFallbackHost,
                 fallbackAvailable = endpoint.supportsFallbackBaseURLs && appConfig.fallbackBaseURLs.isNotEmpty(),
+                isProxied = appConfig.hasProxyURL,
+                // The re-tiered fail-fast timeouts for main-API requests only apply when API sources are
+                // enabled. Blob-source downloads opt in independently of this setting.
+                reTieredTimeoutsEnabled = appConfig.usesRemoteConfigAPISources,
             )
 
             connection = getConnection(httpRequest, timeout)
@@ -305,14 +448,17 @@ internal class HTTPClient(
 
         val inputStream = getInputStream(connection)
 
-        val payload: String?
+        val payloadBytes: ByteArray?
         val responseCode: Int
         try {
             debugLog { NetworkStrings.API_REQUEST_STARTED.format(connection.requestMethod, path) }
             responseCode = connection.responseCode
-            payload = inputStream?.let { readFully(it) }
+            payloadBytes = inputStream?.let { readBytesFully(it) }
             if (enableExtraRequestLogging) {
-                debugLog { "HTTP response:\\n  status code: $responseCode \\n  body: $payload" }
+                debugLog {
+                    "HTTP response:\\n  status code: $responseCode \\n  " +
+                        "body: ${payloadBytes?.describeForLogging(endpoint, responseCode)}"
+                }
             }
         } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
             if (enableExtraRequestLogging) {
@@ -325,9 +471,28 @@ internal class HTTPClient(
         }
 
         debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
-        if (payload == null) {
+        // The response arrived in full. Everything below only inspects it, so failures from here on say
+        // nothing about how responsive the host is.
+        onResponseReceived(responseCode)
+
+        if (payloadBytes == null &&
+            (responseCode != RCHTTPStatusCodes.NO_CONTENT || !endpoint.expectsRCFormatResponse)
+        ) {
             throw IOException(NetworkStrings.HTTP_RESPONSE_PAYLOAD_NULL)
         }
+        // A 204 No Content response legitimately has no body, so a missing payload is treated as empty bytes.
+        val bodyBytes = payloadBytes ?: ByteArray(0)
+
+        // RC Format endpoints expose successful responses as raw bytes; everything else (including error
+        // responses, which are still JSON) is decoded as UTF-8 text.
+        val payload: HTTPResult.Payload = if (
+            endpoint.expectsRCFormatResponse && RCHTTPStatusCodes.isSuccessful(responseCode)
+        ) {
+            HTTPResult.Payload.RCFormat(bodyBytes)
+        } else {
+            HTTPResult.Payload.Text(String(bodyBytes, Charsets.UTF_8))
+        }
+        val payloadText = payload.text
 
         // Notify listener if present
         if (appConfig.runningTests) {
@@ -352,11 +517,12 @@ internal class HTTPClient(
                             nonce,
                             shouldSignResponse,
                             postFieldsToSignHeader,
+                            endpoint,
                         ),
                         requestBody = jsonBody?.toString(),
                         responseCode = responseCode,
                         responseHeaders = responseHeaders,
-                        responseBody = payload,
+                        responseBody = payloadText.orEmpty(),
                     )
                 } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
                     // Don't let listener errors break the request
@@ -368,7 +534,15 @@ internal class HTTPClient(
         val verificationResult = if (shouldSignResponse &&
             RCHTTPStatusCodes.isSuccessful(responseCode)
         ) {
-            verifyResponse(path, connection, payload, nonce, postFieldsToSignHeader)
+            if (endpoint.expectsRCFormatResponse) {
+                if (responseCode == RCHTTPStatusCodes.NO_CONTENT && bodyBytes.isEmpty()) {
+                    verifyRCFormatNoContentResponse(path, connection, nonce)
+                } else {
+                    verifyRCFormatResponse(path, connection, bodyBytes, nonce)
+                }
+            } else {
+                verifyResponse(path, connection, payloadText, nonce, postFieldsToSignHeader)
+            }
         } else {
             VerificationResult.NOT_REQUESTED
         }
@@ -380,17 +554,30 @@ internal class HTTPClient(
         }
 
         val isLoadShedderResponse = getLoadShedderHeader(connection)
-        return eTagManager.getHTTPResultFromCacheOrBackend(
-            responseCode,
-            payload,
-            getETagHeader(connection),
-            fullURL.toString(),
-            refreshETag,
-            getRequestDateHeader(connection),
-            verificationResult,
-            isLoadShedderResponse,
-            isFallbackURL,
-        )
+        // RC Container Format endpoints are not ETag-cached: build the result directly and skip the cache.
+        return if (endpoint.expectsRCFormatResponse) {
+            HTTPResult(
+                responseCode,
+                payload,
+                HTTPResult.Origin.BACKEND,
+                getRequestDateHeader(connection),
+                verificationResult,
+                isLoadShedderResponse,
+                isFallbackURL,
+            )
+        } else {
+            eTagManager.getHTTPResultFromCacheOrBackend(
+                responseCode,
+                payloadText.orEmpty(),
+                getETagHeader(connection),
+                fullURL.toString(),
+                refreshETag,
+                getRequestDateHeader(connection),
+                verificationResult,
+                isLoadShedderResponse,
+                isFallbackURL,
+            )
+        }
     }
 
     private fun toCurlRequest(httpRequest: HTTPRequest): String {
@@ -466,10 +653,17 @@ internal class HTTPClient(
         nonce: String?,
         shouldSignResponse: Boolean,
         postFieldsToSignHeader: String?,
+        endpoint: Endpoint,
     ): Map<String, String> {
         return mapOf(
             "Content-Type" to "application/json",
-            "X-Platform" to getXPlatformHeader(),
+            "Accept" to if (endpoint.expectsRCFormatResponse) RC_FORMAT_ACCEPT else null,
+            // Advertise supported per-element codecs for RC Container Format responses (gzip-only on Android).
+            // Uses a dedicated header (not standard Accept-Encoding) so it only governs per-element body
+            // compression and never the HTTP transport encoding.
+            RC_FORMAT_ACCEPT_ENCODING_HEADER to
+                if (endpoint.expectsRCFormatResponse) RC_FORMAT_ACCEPT_ENCODING else null,
+            "X-Platform" to appConfig.store.platformName,
             "X-Platform-Flavor" to appConfig.platformInfo.flavor,
             "X-Platform-Flavor-Version" to appConfig.platformInfo.version,
             "X-Platform-Version" to Build.VERSION.SDK_INT.toString(),
@@ -492,7 +686,14 @@ internal class HTTPClient(
             "X-Billing-Client-Sdk-Version" to BuildConfig.BILLING_CLIENT_VERSION,
         )
             .plus(authenticationHeaders)
-            .plus(eTagManager.getETagHeaders(fullURL.toString(), shouldSignResponse, refreshETag))
+            // RC Container Format endpoints are not ETag-cached, so they send no If-None-Match header.
+            .plus(
+                if (endpoint.expectsRCFormatResponse) {
+                    emptyMap()
+                } else {
+                    eTagManager.getETagHeaders(fullURL.toString(), shouldSignResponse, refreshETag)
+                },
+            )
             .filterNotNullValues()
     }
 
@@ -512,11 +713,6 @@ internal class HTTPClient(
         }
     }
 
-    private fun getXPlatformHeader() = when (appConfig.store) {
-        Store.AMAZON -> "amazon"
-        else -> "android"
-    }
-
     private fun verifyResponse(
         urlPath: String,
         connection: URLConnection,
@@ -528,10 +724,64 @@ internal class HTTPClient(
             urlPath = urlPath,
             signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
             nonce = nonce,
-            body = payload,
+            bodyBytes = payload?.toByteArray(),
             requestTime = getRequestTimeHeader(connection),
             eTag = getETagHeader(connection),
             postFieldsToSignHeader = postFieldsToSignHeader,
+        )
+    }
+
+    /**
+     * Verifies an RC Container Format response. The backend signs the leading config element's (element 0)
+     * **uncompressed** bytes — the config part / `main_body` — so we verify the signature over
+     * [RCContainer.config], which is the element already decoded by the container. Per-element compression is
+     * transparent to the signature (as it is to the element checksum), so a codec change never invalidates a
+     * signed config. The per-element container checksums are untrusted lookup hints, not a trust anchor: inline
+     * blob elements are not signed and are instead authenticated transitively by hashing against the `blob_ref`
+     * in the signed config. This endpoint is not ETag-cached and sends no post params, but the signature does
+     * cover the request [nonce].
+     */
+    private fun verifyRCFormatResponse(
+        urlPath: String,
+        connection: URLConnection,
+        payloadBytes: ByteArray,
+        nonce: String?,
+    ): VerificationResult {
+        val bodyBytes = try {
+            RCContainer.parse(payloadBytes).config
+        } catch (e: RCContainerFormatException) {
+            errorLog(e) { NetworkStrings.VERIFICATION_ERROR.format(urlPath) }
+            return VerificationResult.FAILED
+        }
+        return signingManager.verifyResponse(
+            urlPath = urlPath,
+            signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
+            nonce = nonce,
+            bodyBytes = bodyBytes,
+            requestTime = getRequestTimeHeader(connection),
+            eTag = getETagHeader(connection),
+            postFieldsToSignHeader = null,
+        )
+    }
+
+    /**
+     * Verifies a `204 No Content` RC Container Format response. There is no body to sign, but the signature still
+     * covers the request context (api key, [nonce], path, request time), so the empty response remains replay-
+     * and tamper-evident. This endpoint emits no ETag, so the empty body is the only signed payload component.
+     */
+    private fun verifyRCFormatNoContentResponse(
+        urlPath: String,
+        connection: URLConnection,
+        nonce: String?,
+    ): VerificationResult {
+        return signingManager.verifyResponse(
+            urlPath = urlPath,
+            signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
+            nonce = nonce,
+            bodyBytes = ByteArray(0),
+            requestTime = getRequestTimeHeader(connection),
+            eTag = getETagHeader(connection),
+            postFieldsToSignHeader = null,
         )
     }
 
@@ -541,7 +791,9 @@ internal class HTTPClient(
     }
 
     private fun getRequestDateHeader(connection: URLConnection): Date? {
-        return getRequestTimeHeader(connection)?.toLong()?.let {
+        // toLongOrNull: a non-numeric header degrades to no date. Throwing here would escape every catch on the
+        // request path (they cover IOException and friends) and be rethrown on the main thread by the Dispatcher.
+        return getRequestTimeHeader(connection)?.toLongOrNull()?.let {
             Date(it)
         }
     }

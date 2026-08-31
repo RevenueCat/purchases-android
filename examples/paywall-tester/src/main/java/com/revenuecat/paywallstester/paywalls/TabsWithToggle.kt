@@ -64,7 +64,7 @@ internal fun tabsWithToggle(font: FontAlias? = null): SampleData.Components {
                                 fontWeight = FontWeight.BOLD,
                                 fontSize = 28,
                                 horizontalAlignment = LEADING,
-                                size = Size(width = Fill, height = Fit),
+                                size = Size(width = Fill, height = Fit()),
                                 margin = Padding(top = 32.0, bottom = 40.0, leading = 16.0, trailing = 16.0),
                             ),
                             // Tabs
@@ -75,7 +75,7 @@ internal fun tabsWithToggle(font: FontAlias? = null): SampleData.Components {
                                             TextComponent(
                                                 text = LocalizationKey("switch"),
                                                 color = textColor,
-                                                size = Size(width = Fit, height = Fit),
+                                                size = Size(width = Fit(), height = Fit()),
                                                 fontName = font,
                                                 margin = Padding(trailing = 16.0),
                                             ),
@@ -96,7 +96,7 @@ internal fun tabsWithToggle(font: FontAlias? = null): SampleData.Components {
                                             ),
                                         ),
                                         dimension = Horizontal(alignment = VerticalAlignment.CENTER, CENTER),
-                                        size = Size(width = Fit, height = Fit),
+                                        size = Size(width = Fit(), height = Fit()),
                                         shape = Shape.Pill,
                                         backgroundColor = ColorScheme(
                                             light = ColorInfo.Hex(Color.LightGray.toArgb()),
@@ -117,7 +117,7 @@ internal fun tabsWithToggle(font: FontAlias? = null): SampleData.Components {
                                                             color = textColor,
                                                             fontName = font,
                                                             horizontalAlignment = LEADING,
-                                                            size = Size(width = Fill, height = Fit),
+                                                            size = Size(width = Fill, height = Fit()),
                                                             margin = Padding(
                                                                 top = 8.0,
                                                                 bottom = 8.0,
@@ -130,7 +130,7 @@ internal fun tabsWithToggle(font: FontAlias? = null): SampleData.Components {
                                                             color = textColor,
                                                             fontName = font,
                                                             horizontalAlignment = LEADING,
-                                                            size = Size(width = Fill, height = Fit),
+                                                            size = Size(width = Fill, height = Fit()),
                                                             margin = Padding(
                                                                 top = 8.0,
                                                                 bottom = 8.0,
@@ -168,7 +168,7 @@ internal fun tabsWithToggle(font: FontAlias? = null): SampleData.Components {
                                                             color = textColor,
                                                             fontName = font,
                                                             horizontalAlignment = LEADING,
-                                                            size = Size(width = Fill, height = Fit),
+                                                            size = Size(width = Fill, height = Fit()),
                                                             margin = Padding(
                                                                 top = 8.0,
                                                                 bottom = 8.0,
@@ -181,7 +181,7 @@ internal fun tabsWithToggle(font: FontAlias? = null): SampleData.Components {
                                                             color = textColor,
                                                             fontName = font,
                                                             horizontalAlignment = LEADING,
-                                                            size = Size(width = Fill, height = Fit),
+                                                            size = Size(width = Fill, height = Fit()),
                                                             margin = Padding(
                                                                 top = 8.0,
                                                                 bottom = 8.0,
@@ -218,7 +218,7 @@ internal fun tabsWithToggle(font: FontAlias? = null): SampleData.Components {
                                         color = textColor,
                                         fontName = font,
                                         horizontalAlignment = LEADING,
-                                        size = Size(width = Fill, height = Fit),
+                                        size = Size(width = Fill, height = Fit()),
                                         margin = Padding(top = 48.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
                                     ),
                                     StackComponent(
@@ -233,7 +233,7 @@ internal fun tabsWithToggle(font: FontAlias? = null): SampleData.Components {
                                             ),
                                         ),
                                         dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
-                                        size = Size(width = Fit, height = Fit),
+                                        size = Size(width = Fit(), height = Fit()),
                                         backgroundColor = ColorScheme(
                                             light = ColorInfo.Hex(Color(red = 5, green = 124, blue = 91).toArgb()),
                                         ),
@@ -248,7 +248,7 @@ internal fun tabsWithToggle(font: FontAlias? = null): SampleData.Components {
                                     ),
                                 ),
                                 dimension = Vertical(alignment = LEADING, distribution = END),
-                                size = Size(width = Fill, height = Fit),
+                                size = Size(width = Fill, height = Fit()),
                                 padding = Padding(top = 16.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
                             ),
                         ),

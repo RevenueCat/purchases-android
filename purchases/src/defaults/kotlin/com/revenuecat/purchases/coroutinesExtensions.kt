@@ -1,11 +1,18 @@
 package com.revenuecat.purchases
 
+import android.content.Context
 import com.revenuecat.purchases.CacheFetchPolicy.CACHED_OR_FETCHED
+import com.revenuecat.purchases.ads.events.AdCaptureMethod
+import com.revenuecat.purchases.ads.rewardverification.Poller
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
+import com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.data.LogInResult
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
+import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.util.Locale
@@ -32,6 +39,68 @@ public suspend fun Purchases.awaitCustomerInfo(
             onError = { continuation.safeResumeWithException(PurchasesException(it)) },
         )
     }
+}
+
+/**
+ * Opens the subscription management page for the current user.
+ *
+ * Coroutine friendly version of [Purchases.showManageSubscriptions].
+ *
+ * @param context Context used to start the subscription management page. An application
+ * context is sufficient.
+ *
+ * @throws [PurchasesException] with a [PurchasesError] if the subscription management page could not be opened.
+ */
+@JvmSynthetic
+@Throws(PurchasesException::class)
+public suspend fun Purchases.awaitShowManageSubscriptions(context: Context) {
+    suspendCancellableCoroutine { continuation ->
+        showManageSubscriptions(
+            context,
+            object : ManageSubscriptionsCallback {
+                override fun onSuccess() {
+                    continuation.safeResume(Unit)
+                }
+
+                override fun onError(error: PurchasesError) {
+                    continuation.safeResumeWithException(PurchasesException(error))
+                }
+            },
+        )
+    }
+}
+
+/**
+ * Polls the backend until reward verification completes or the attempt budget is exhausted.
+ *
+ * Coroutine friendly version of [Purchases.pollRewardVerification].
+ *
+ * Pass [trackingMetadata] to track reward-verification events for the ad it belongs to; omit it to
+ * poll without tracking.
+ *
+ * @return The [RewardVerificationResult] (verified reward or a failed result).
+ */
+@JvmSynthetic
+@OptIn(InternalRevenueCatAPI::class)
+public suspend fun Purchases.awaitPollRewardVerification(
+    clientTransactionId: String,
+    trackingMetadata: RewardedAdTrackingMetadata? = null,
+): RewardVerificationResult {
+    return awaitPollRewardVerification(clientTransactionId, trackingMetadata, AdCaptureMethod.MANUAL)
+}
+
+/**
+ * [awaitPollRewardVerification] overload that stamps the capture method that initiated the poll.
+ */
+@JvmSynthetic
+@InternalRevenueCatAPI
+@OptIn(InternalRevenueCatAPI::class)
+public suspend fun Purchases.awaitPollRewardVerification(
+    clientTransactionId: String,
+    trackingMetadata: RewardedAdTrackingMetadata?,
+    captureMethod: AdCaptureMethod,
+): RewardVerificationResult {
+    return pollRewardVerification(clientTransactionId, trackingMetadata, captureMethod) { Poller.poll(it) }
 }
 
 /**
@@ -205,6 +274,35 @@ public suspend fun Purchases.awaitCustomerCenterConfigData(): CustomerCenterConf
                 continuation.safeResumeWithException(PurchasesException(error))
             }
         })
+    }
+}
+
+/**
+ * Fetches reward verification status for a single client transaction id.
+ *
+ * @throws [RewardVerificationException] (a [PurchasesException] subtype) with a [PurchasesError] if an error
+ * occurs while fetching the status. Inspect [RewardVerificationException.isServerError] to distinguish transient
+ * HTTP 5xx failures (retryable) from deterministic ones.
+ */
+@JvmSynthetic
+@Throws(RewardVerificationException::class)
+@InternalRevenueCatAPI
+public suspend fun Purchases.awaitGetRewardVerificationResult(
+    clientTransactionId: String,
+): RewardVerificationPollStatus {
+    return suspendCancellableCoroutine { continuation ->
+        getRewardVerificationResult(
+            clientTransactionId = clientTransactionId,
+            callback = object : GetRewardVerificationResultCallback {
+                override fun onReceived(result: RewardVerificationPollStatus) {
+                    continuation.safeResume(result)
+                }
+
+                override fun onError(error: RewardVerificationError) {
+                    continuation.safeResumeWithException(RewardVerificationException(error.error, error.isServerError))
+                }
+            },
+        )
     }
 }
 

@@ -22,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -61,7 +62,12 @@ internal fun SimpleBottomSheetScaffold(
         ) {
             BackHandler { sheetState.hide() }
 
-            sheetState.content()
+            // Key the content by the sheet's identity so switching to a different sheet gives it a
+            // fresh composition instead of reusing the previous sheet's views (e.g. a playing video)
+            // when the switch happens before the exit animation completes.
+            key(sheetState.contentKey) {
+                sheetState.content()
+            }
         }
     }
 }
@@ -76,6 +82,15 @@ internal class SimpleSheetState {
     var content: @Composable () -> Unit by mutableStateOf({})
         private set
 
+    /**
+     * A stable identity for the current [content]. Used to key the content in the scaffold so that
+     * switching to a different sheet resets the content's composition identity, instead of reusing
+     * the previous sheet's views (e.g. a playing video) via positional identity.
+     */
+    @get:JvmSynthetic
+    var contentKey: Any? by mutableStateOf(null)
+        private set
+
     @get:JvmSynthetic
     var visible by mutableStateOf(false)
         private set
@@ -85,10 +100,12 @@ internal class SimpleSheetState {
     fun show(
         backgroundBlur: Boolean,
         content: @Composable () -> Unit,
+        contentKey: Any? = null,
         onDismiss: (() -> Unit)? = null,
     ) {
         this.backgroundBlur = backgroundBlur
         this.content = content
+        this.contentKey = contentKey
         this.onDismiss = onDismiss
         visible = true
     }

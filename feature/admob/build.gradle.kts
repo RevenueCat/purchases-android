@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.revenuecat.public.library)
+    alias(libs.plugins.poko)
 }
 
 metalava {
@@ -11,17 +12,6 @@ android {
 
     defaultConfig {
         missingDimensionStrategy("apis", "defaults")
-    }
-
-    flavorDimensions += "billingclient"
-    productFlavors {
-        create("bc8") {
-            dimension = "billingclient"
-            isDefault = true
-        }
-        create("bc7") {
-            dimension = "billingclient"
-        }
     }
 
     testOptions {

@@ -11,6 +11,7 @@ internal fun Purchases.Companion.configureSdk(
     entitlementVerificationMode: EntitlementVerificationMode? = null,
     forceServerErrorStrategy: ForceServerErrorStrategy? = null,
     forceSigningErrors: Boolean = false,
+    dangerousSettings: DangerousSettings? = null,
 ) {
     Purchases.configure(
         PurchasesConfiguration.Builder(context, Constants.apiKey)
@@ -18,6 +19,9 @@ internal fun Purchases.Companion.configureSdk(
             .apply {
                 if (entitlementVerificationMode != null) {
                     entitlementVerificationMode(entitlementVerificationMode)
+                }
+                if (dangerousSettings != null) {
+                    dangerousSettings(dangerousSettings)
                 }
             }
             .build(),

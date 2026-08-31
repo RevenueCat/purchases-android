@@ -134,8 +134,6 @@ public open class DeviceCache(
 
     private val offeringsResponseCacheKey: String by lazy { "$apiKeyPrefix.offeringsResponse" }
 
-    private val workflowsListResponseCacheKey: String by lazy { "$apiKeyPrefix.workflowsListResponse" }
-
     internal fun startEditing(): SharedPreferences.Editor {
         return preferences.edit()
     }
@@ -595,39 +593,20 @@ public open class DeviceCache(
         return getJSONObjectOrNull(offeringsResponseCacheKey)
     }
 
+    /**
+     * Serializing a [JSONObject] here instead of storing [offeringsResponse] as received would cost a
+     * contiguous allocation of several times the response size, which OOMs on low-heap devices.
+     */
     @Synchronized
-    internal fun cacheOfferingsResponse(offeringsResponse: JSONObject) {
+    internal fun cacheOfferingsResponse(offeringsResponse: String) {
         preferences.edit()
-            .putString(
-                offeringsResponseCacheKey,
-                offeringsResponse.toString(),
-            ).apply()
+            .putString(offeringsResponseCacheKey, offeringsResponse)
+            .apply()
     }
 
     @Synchronized
     internal fun clearOfferingsResponseCache() {
         preferences.edit().remove(offeringsResponseCacheKey).apply()
-    }
-
-    // endregion
-
-    // region workflows list response
-
-    @Synchronized
-    internal fun getWorkflowsListResponseCache(): String? {
-        return preferences.getString(workflowsListResponseCacheKey, null)
-    }
-
-    @Synchronized
-    internal fun cacheWorkflowsListResponse(payload: String) {
-        preferences.edit()
-            .putString(workflowsListResponseCacheKey, payload)
-            .apply()
-    }
-
-    @Synchronized
-    internal fun clearWorkflowsListResponseCache() {
-        preferences.edit().remove(workflowsListResponseCacheKey).apply()
     }
 
     // endregion

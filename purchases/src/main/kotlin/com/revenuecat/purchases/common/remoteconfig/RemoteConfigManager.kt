@@ -1,119 +1,945 @@
 package com.revenuecat.purchases.common.remoteconfig
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.GetRemoteConfigErrorHandlingBehavior
+import com.revenuecat.purchases.common.JsonProvider
+import com.revenuecat.purchases.common.between
+import com.revenuecat.purchases.common.caching.cacheDuration
 import com.revenuecat.purchases.common.caching.isCacheStale
+import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.safeResume
-import com.revenuecat.purchases.common.safeResumeWithException
+import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.networking.RCContainer
+import com.revenuecat.purchases.common.networking.RCContainerFormatException
+import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.common.warnLog
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import java.util.Date
-import kotlin.random.Random
+import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.minutes
 
+/**
+ * Orchestrates a single `/v1/config` sync: replays the persisted opaque manifest, then on `204` keeps the cache
+ * untouched and on `200` persists the fresh server manifest plus the full per-topic item index — the
+ * configuration (incl. each item's inline content) is the source of truth, and persisting it is the **entire**
+ * sync commit, advancing the manifest unconditionally. Only then, gated on a successful persist, it writes the
+ * inlined blobs the resolved config still wants, prunes the rest, and best-effort prefetches the remaining
+ * wanted blobs over the network ([RemoteConfigBlobFetcher], resolving blob source URLs through
+ * [RemoteConfigSourceProvider]); a missing or un-parseable blob is recoverable later (re-fetched next sync / on
+ * demand) and never blocks the commit. It reports which prefetch blobs are now cached locally on the next
+ * request. (Live API base-URL rerouting from the `sources` topic is out of scope — a future phase.)
+ *
+ * The manifest is opaque (stored and replayed verbatim); the active-topic set and removed-topic detection come
+ * from the response's [RemoteConfiguration.activeTopics]. The manager is topic-agnostic: it never interprets item
+ * shapes or branches on topic name — consumer topics are read lazily by providers through the manager.
+ *
+ * The `200` path runs on [scope]: persistence is synchronous, but the launch lets [clearCache] cancel the
+ * in-flight parse/persist. Blob prefetch runs on the fetcher's own worker pool (not [scope]). Identity changes
+ * call [clearCache], which bumps an epoch so a late `/v1/config` response (its HTTP request cannot be
+ * socket-cancelled) is dropped instead of persisting over the freshly wiped cache. [clearCache] also rebinds
+ * the current app user atomically with that bump, so a cold on-demand read triggered right after an identity
+ * change never fetches for the previous user (the cached app user ID the [appUserIDProvider] reads can still
+ * lag the change for a window).
+ *
+ * Overlapping refreshes are deduped: only one [refreshRemoteConfig] runs at a time. A call made while one is
+ * already in flight is skipped (the backend collapses concurrent requests but still fires every callback, which
+ * would otherwise parse and persist the same response more than once).
+ *
+ * Consumers read through the facade: [topic] for a topic's committed item index (metadata only) and [blobData]
+ * for a resolved item's blob payload (fetched on demand). Both run on [ioDispatcher] so callers never touch disk
+ * on their own thread. When either read finds no committed data it calls [awaitConfigForRead] rather than
+ * failing — waiting for a refresh in progress, or triggering one on demand when none is and the committed
+ * configuration has aged past the refresh cadence (a cold read fetches its own data; a read against freshly
+ * committed configuration treats absence as the server's answer) — unless the endpoint is [isDisabled] or no app
+ * user is known yet.
+ */
 @OptIn(InternalRevenueCatAPI::class)
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "TooManyFunctions")
 internal class RemoteConfigManager(
     private val backend: Backend,
-    private val topicFetcher: TopicFetcher,
     private val diskCache: RemoteConfigDiskCache,
+    private val blobStore: RemoteConfigBlobStore,
     private val dateProvider: DateProvider = DefaultDateProvider(),
-    private val random: Random = Random.Default,
-    dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val topicStore: RemoteConfigTopicStore,
+    private val sourceProvider: RemoteConfigSourceProvider,
+    private val blobFetcher: RemoteConfigBlobFetcher,
+    private val appUserIDProvider: () -> String? = { null },
+    private val cacheDurationProvider: (Boolean) -> Duration = ::cacheDuration,
+    private val enabled: Boolean = true,
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + dispatcher)
+    private val isRefreshing = AtomicBoolean(false)
+
+    // Bumped by clearCache() on every identity change. A request captures the epoch when it starts; once it
+    // changes, the in-flight request's callbacks drop their result (the /v1/config request itself cannot be
+    // socket-cancelled), so an old user's response can never persist over the wiped cache.
+    private val epoch = AtomicInteger(0)
+
+    // Serializes a sync's "re-check epoch + persist" against clearCache()'s "bump epoch + wipe". persist() is
+    // synchronous, so cancellation can't interrupt it; this lock makes the two critical sections atomic so a
+    // late persist either runs fully before the wipe or sees the bumped epoch and skips — never writes after it.
+    private val cacheLock = Any()
 
     @Volatile
-    private var cache: CacheEntry? = null
+    private var lastRefreshedAt: Date? = null
 
-    fun updateRemoteConfigIfNeeded(
+    @Volatile
+    private var lastRefreshAttemptAt: Date? = null
+
+    // Forces requests to report AppStart until the session's first config is committed, regardless of the caller's
+    // context, so the backend always sees app_start on a fresh app open. Guarded by [cacheLock]; set only once config
+    // is durably committed (persisted from a 200 or the fallback) or confirmed current (204), so a failed request or
+    // an undecodable/unpersistable 200 keeps forcing AppStart until a later attempt actually commits config.
+    private var hasCommittedInitialConfig = false
+
+    // The app user a cold on-demand read should sync for, rebound by clearCache() under [cacheLock] atomically
+    // with the epoch bump, so it can never lag the identity change the way [appUserIDProvider] (backed by the
+    // device cache) can. Null until the first identity change; awaitConfigForRead() falls back to the provider
+    // for that pre-first-change bootstrap window, where it is accurate and no transition is racing.
+    @Volatile
+    private var currentAppUserID: String? = null
+
+    // Completion signal for the single in-flight refresh, so a read that finds no cached data can wait for the
+    // refresh already in progress instead of failing. Created under [cacheLock] when a refresh starts, completed
+    // (never cancelled, so waiting reads never throw) at every terminal point and by clearCache(); null when no
+    // refresh is in flight. isRefreshing keeps its skip semantics; this only adds an awaitable handle.
+    @Volatile
+    private var refreshCompletion: CompletableDeferred<Unit>? = null
+
+    /**
+     * Whether `/v1/config` is disabled for this SDK configuration (the customEntitlementComputation flavor
+     * constructs the manager with `enabled = false`). While disabled, no config request is issued — and, since
+     * blob prefetch only runs after a successful persist, no blob fetch happens either — and all reads return
+     * `null`. Immutable for the manager's lifetime.
+     */
+    val isDisabled: Boolean
+        get() = !enabled
+
+    // A monotonic commit token, bumped on every mutation of the committed state: a successful persist() and an
+    // identity-change clearCache(). Handed to listeners so an async in-memory warm can
+    // store-if-newer and never clobber a fresher commit (see RemoteConfigCommitListener). Distinct from `epoch`,
+    // which only advances on identity change and can't order a disk warm against an ordinary version bump.
+    private val generation = AtomicInteger(0)
+
+    /** The current commit generation; see [generation]. */
+    val configGeneration: Int
+        get() = generation.get()
+
+    private val listeners = CopyOnWriteArrayList<RemoteConfigCommitListener>()
+
+    /** Registers a [RemoteConfigCommitListener]; safe to call at construction/wiring time. */
+    fun registerListener(listener: RemoteConfigCommitListener) {
+        listeners.add(listener)
+    }
+
+    fun refreshRemoteConfigIfStale(
         appInBackground: Boolean,
-        completion: ((PurchasesError?) -> Unit)? = null,
+        appUserID: String,
+        fetchContext: RemoteConfigFetchContext,
     ) {
-        if (!cache?.cachedAt.isCacheStale(appInBackground, dateProvider)) {
-            completion?.invoke(null)
-            return
-        }
-        scope.launch {
-            val error = refresh(appInBackground)
-            completion?.invoke(error)
+        if (lastRefreshedAt.isCacheStale(appInBackground, dateProvider, cacheDurationProvider)) {
+            refreshRemoteConfig(appInBackground, appUserID, fetchContext, staleGated = true)
+        } else {
+            verboseLog {
+                "Committed remote configuration is still fresh; skipping the ${fetchContext.wireName} refresh."
+            }
         }
     }
 
-    private suspend fun refresh(appInBackground: Boolean): PurchasesError? {
-        val response = try {
-            getRemoteConfig(appInBackground)
-        } catch (e: PurchasesException) {
-            errorLog { "Failed to fetch remote config: ${e.error}" }
-            return e.error
+    fun refreshRemoteConfig(
+        appInBackground: Boolean,
+        appUserID: String,
+        fetchContext: RemoteConfigFetchContext,
+    ) {
+        refreshRemoteConfig(appInBackground, appUserID, fetchContext, staleGated = false)
+    }
+
+    private fun refreshRemoteConfig(
+        appInBackground: Boolean,
+        appUserID: String,
+        fetchContext: RemoteConfigFetchContext,
+        staleGated: Boolean,
+    ) {
+        if (isDisabled) {
+            debugLog { "Remote config is disabled for this SDK configuration. Skipping refresh." }
+            return
         }
-        val source = response.blobSources.selectWeighted(random)
-        val referenced = buildReferenceSet(response.manifest)
-        val tasks = response.manifest.topics.mapNotNull { (topic, entries) ->
-            val entry = entries[DEFAULT_ENTRY_ID] ?: return@mapNotNull null
-            TopicTask(topic, DEFAULT_ENTRY_ID, entry)
-        }
-        val firstError: PurchasesError? = if (source == null || tasks.isEmpty()) {
-            null
-        } else {
-            coroutineScope {
-                tasks.map { task ->
-                    async {
-                        topicFetcher.fetchTopicIfNeeded(
-                            topic = task.topic,
-                            entryId = task.entryId,
-                            topicEntry = task.entry,
-                            source = source,
-                        )
+        var requestEpoch = 0
+        var requestAppUserID = appUserID
+        var requestFetchContext = fetchContext
+        // Acquire the in-flight guard and capture the epoch together under the lock that also guards
+        // clearCache()'s epoch bump + guard release. Otherwise an identity change could slip its bump
+        // between getAndSet(true) and epoch.get(), stranding this request with a stale epoch: its
+        // callbacks would drop on the mismatch and never release the guard, freezing all future syncs.
+        // The user is snapshotted here too, so the (user, epoch) pair the request carries is consistent:
+        // any clearCache() that would change the user also bumps the epoch under this same lock, so it
+        // either lands fully before this capture (we see its new user) or after (the epoch mismatch drops
+        // our response) — never a stale user paired with the post-clear epoch. currentAppUserID (bound by
+        // clearCache) wins; the passed appUserID is only the pre-first-identity-change bootstrap fallback.
+        // Read only in-memory state under the lock — never appUserIDProvider(), which can re-enter clearCache().
+        val shouldRefresh = synchronized(cacheLock) {
+            val now = dateProvider.now
+            when {
+                isRefreshing.get() -> {
+                    debugLog { "Remote config refresh already in progress. Skipping." }
+                    false
+                }
+                staleGated && !isRefreshAttemptCooldownElapsed(now) -> {
+                    debugLog { "Remote config refresh was attempted recently. Skipping stale-gated refresh." }
+                    false
+                }
+                else -> {
+                    if (staleGated) {
+                        lastRefreshAttemptAt = now
                     }
-                }.awaitAll().firstNotNullOfOrNull { it }
-            }
-        }
-        if (firstError == null) {
-            // Only cache when at least one topic was actually fetched — empty sources, empty topics,
-            // and missing default entryIds are treated as no-op refreshes that don't populate the cache.
-            if (source != null && tasks.isNotEmpty()) {
-                val previousResponse = cache?.response
-                topicFetcher.cleanupUnreferencedTopics(referenced)
-                cache = CacheEntry(response, dateProvider.now)
-                if (previousResponse != response) {
-                    diskCache.write(response)
+                    isRefreshing.set(true)
+                    requestEpoch = epoch.get()
+                    requestAppUserID = currentAppUserID ?: appUserID
+                    requestFetchContext = fetchContextForRequest(fetchContext)
+                    refreshCompletion = CompletableDeferred()
+                    true
                 }
             }
         }
-        return firstError
+        if (!shouldRefresh) {
+            return
+        }
+        issueConfigRequest(appInBackground, requestEpoch, requestAppUserID, requestFetchContext)
     }
 
-    private suspend fun getRemoteConfig(appInBackground: Boolean): RemoteConfigResponse =
-        suspendCancellableCoroutine { cont ->
-            backend.getRemoteConfig(
-                appInBackground = appInBackground,
-                onSuccess = { cont.safeResume(it) },
-                onError = { cont.safeResumeWithException(PurchasesException(it)) },
+    /**
+     * Issues the `/v1/config` request for a sync that already owns the in-flight guard, replaying the persisted
+     * sync bookkeeping the server diffs against: the opaque manifest, the last successful refresh time, and the
+     * prefetch blobs actually held.
+     */
+    private fun issueConfigRequest(
+        appInBackground: Boolean,
+        requestEpoch: Int,
+        requestAppUserID: String,
+        requestFetchContext: RemoteConfigFetchContext,
+    ) {
+        val persisted = diskCache.read()
+        val storedBlobs = blobStore.cachedRefs()
+        val domain = persisted?.domain ?: DEFAULT_DOMAIN
+        logRefreshStart(persisted, appInBackground)
+        backend.getRemoteConfig(
+            appInBackground = appInBackground,
+            appUserID = requestAppUserID,
+            fetchContext = requestFetchContext,
+            domain = domain,
+            // Opaque manifest replayed verbatim; null on the first run when nothing is persisted yet.
+            manifest = persisted?.manifest,
+            lastRefreshTime = persisted?.lastRefreshTime?.let(::Date),
+            // Report only the prefetch blobs we actually hold, so the server stops re-inlining them.
+            prefetchedBlobs = persisted?.prefetchBlobs?.filter { storedBlobs.contains(it) } ?: emptyList(),
+            onSuccess = { container, requestDate, _ ->
+                handleMainRefreshSuccess(requestEpoch, persisted, container, requestDate)
+            },
+            onError = { error, behavior ->
+                handleMainRefreshError(
+                    requestEpoch,
+                    appInBackground,
+                    domain,
+                    hasCachedConfig = persisted != null,
+                    error,
+                    behavior,
+                )
+            },
+        )
+    }
+
+    private fun isRefreshAttemptCooldownElapsed(now: Date): Boolean {
+        val lastAttempt = lastRefreshAttemptAt
+        return lastAttempt == null || Duration.between(lastAttempt, now) >= REFRESH_ATTEMPT_COOLDOWN
+    }
+
+    // Overrides a request's context to AppStart until the session's first config is committed. Must be called within
+    // [cacheLock].
+    private fun fetchContextForRequest(requested: RemoteConfigFetchContext): RemoteConfigFetchContext {
+        return if (hasCommittedInitialConfig) requested else RemoteConfigFetchContext.AppStart
+    }
+
+    /**
+     * Handles a successful **main** `/v1/config` response: a `204` keeps the cache (bookkeeping only), a `200`
+     * parses the config element and commits it (on [scope] so [clearCache] can cancel the parse/persist). Drops
+     * the result if the epoch changed meanwhile (an identity change already reset the guard via [clearCache]).
+     *
+     * [requestDate] is the server's own request time, which is what gets persisted and replayed as the refresh
+     * time — never a device-clock value the server cannot interpret. Null when the response carried no such header.
+     */
+    private fun handleMainRefreshSuccess(
+        requestEpoch: Int,
+        persisted: PersistedRemoteConfigurationState?,
+        container: RCContainer?,
+        requestDate: Date?,
+    ) {
+        if (epoch.get() != requestEpoch) {
+            // The cache was cleared (identity change) after this request started. Drop the stale
+            // response and leave isRefreshing alone: clearCache() reset it, or a newer refresh owns it.
+            return
+        }
+        if (requestDate == null) {
+            // Not fatal — the previous value carries forward — but it means the server stopped telling us its own
+            // time, so the refresh time replayed on later requests is frozen. Surfaced here rather than swallowed
+            // because nothing else makes this observable in the field.
+            warnLog {
+                "Remote config response carried no ${HTTPResult.REQUEST_TIME_HEADER_NAME} header. Keeping the " +
+                    "previous refresh time; the server cannot see how fresh this client's configuration is."
+            }
+        }
+        if (container == null) {
+            handleNotModified(requestEpoch, requestDate)
+            return
+        }
+        scope.launch {
+            try {
+                val response = RemoteConfiguration.parse(container.config)
+                synchronized(cacheLock) {
+                    if (epoch.get() != requestEpoch) return@launch
+                    persist(
+                        previous = persisted,
+                        response = response,
+                        container = container,
+                        requestDate = requestDate,
+                    )
+                }
+            } catch (e: SerializationException) {
+                errorLog(e) {
+                    "Failed to parse remote config response. Keeping the cached configuration."
+                }
+            } catch (e: RCContainerFormatException) {
+                errorLog(e) {
+                    "Failed to decode remote config response. Keeping the cached configuration."
+                }
+            } finally {
+                releaseGuardIfOwned(requestEpoch)
+            }
+        }
+    }
+
+    /**
+     * Handles a failure of the **main** `/v1/config` request. Prefers cached data over the fallback: only when
+     * the request fails with a retryable error AND nothing is cached yet (cold start) is the fallback endpoint
+     * tried, using the same [domain] the main request used. Any cached config wins (keep it), and a 4xx
+     * (`SHOULD_NOT_TRY_FALLBACK`) is never retried against the fallback — the endpoint intentionally refused
+     * the request, so the fallback would refuse it too. The next scheduled sync retries the main endpoint.
+     */
+    private fun handleMainRefreshError(
+        requestEpoch: Int,
+        appInBackground: Boolean,
+        domain: String,
+        hasCachedConfig: Boolean,
+        error: PurchasesError,
+        behavior: GetRemoteConfigErrorHandlingBehavior,
+    ) {
+        if (behavior == GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY && !hasCachedConfig) {
+            fetchFromFallback(requestEpoch, appInBackground, domain)
+        } else {
+            handleRefreshError(requestEpoch, error)
+        }
+    }
+
+    /**
+     * The cold-start fallback: the main `/v1/config` request failed with a retryable error and no config is
+     * cached, so fetch the plain-JSON [RemoteConfiguration] from the fallback endpoint (for the same [domain] the
+     * main request used) and commit it. There is never persisted state on this path, so the commit passes
+     * `previous = null`. The in-flight guard captured by the originating [refreshRemoteConfig] is **kept held**
+     * across this call — the fallback continues that same sync/epoch and releases the guard at its own terminal
+     * points (success `finally` / `onError`). Does nothing if the epoch changed meanwhile (an identity change
+     * already reset the guard via [clearCache]).
+     */
+    private fun fetchFromFallback(
+        requestEpoch: Int,
+        appInBackground: Boolean,
+        domain: String,
+    ) {
+        if (epoch.get() != requestEpoch) return
+        verboseLog { "Main remote config request failed with no cached config; trying the fallback endpoint." }
+        backend.getRemoteConfigFallback(
+            appInBackground = appInBackground,
+            domain = domain,
+            onSuccess = { response, _ ->
+                if (epoch.get() != requestEpoch) {
+                    // Identity changed after the fallback started; clearCache() reset the guard. Drop the result.
+                    return@getRemoteConfigFallback
+                }
+                scope.launch {
+                    try {
+                        synchronized(cacheLock) {
+                            if (epoch.get() != requestEpoch) return@launch
+                            // No persisted state exists on the fallback path (it only runs on a cold start). The
+                            // fallback host is not the main API, so its request time is not borrowed as the refresh
+                            // time: the value is only meaningful to the endpoint that issued it.
+                            persist(previous = null, response = response, container = null, requestDate = null)
+                        }
+                    } finally {
+                        releaseGuardIfOwned(requestEpoch)
+                    }
+                }
+            },
+            onError = { error -> handleRefreshError(requestEpoch, error) },
+        )
+    }
+
+    /**
+     * Handles a `204 Not Modified`: the cached configuration is confirmed current, so keep it and advance the refresh
+     * bookkeeping — including the persisted refresh time, since a 204 is as much a successful refresh as a 200. Runs
+     * on [scope] (like the 200 path) because that persist must not happen on the backend callback thread.
+     *
+     * The in-memory bookkeeping is unconditional: the configuration is already durably committed from an earlier
+     * request, so a failed timestamp write must not hold back [hasCommittedInitialConfig], nor [lastRefreshedAt]
+     * (which would re-arm the staleness gate immediately). It only costs the next request a staler header value.
+     */
+    private fun handleNotModified(requestEpoch: Int, requestDate: Date?) {
+        debugLog { "Remote config unchanged (204 Not Modified)." }
+        scope.launch {
+            try {
+                synchronized(cacheLock) {
+                    if (epoch.get() != requestEpoch) return@launch
+                    lastRefreshedAt = dateProvider.now
+                    lastRefreshAttemptAt = null
+                    hasCommittedInitialConfig = true
+                    // Only the server's own time is worth persisting, so a response without it writes nothing and
+                    // the previous value carries forward. Re-read instead of reusing the request's snapshot, and
+                    // skip when nothing is persisted: a 204 must never resurrect a cache that was wiped meanwhile.
+                    if (requestDate != null) {
+                        diskCache.read()?.let { diskCache.write(it.copy(lastRefreshTime = requestDate.time)) }
+                    }
+                }
+            } finally {
+                releaseGuardIfOwned(requestEpoch)
+            }
+        }
+    }
+
+    private fun logRefreshStart(persisted: PersistedRemoteConfigurationState?, appInBackground: Boolean) {
+        verboseLog {
+            "Refreshing remote config (domain=${persisted?.domain ?: DEFAULT_DOMAIN}, " +
+                "manifest present=${persisted?.manifest != null}, appInBackground=$appInBackground)."
+        }
+    }
+
+    private fun handleRefreshError(requestEpoch: Int, error: PurchasesError) {
+        if (releaseGuardIfOwned(requestEpoch)) {
+            errorLog(error)
+        }
+    }
+
+    /**
+     * Wipes the cache on an identity change so configuration never bleeds across users (offerings-parity), and
+     * rebinds [currentAppUserID] to [appUserID] atomically with the epoch bump. Binding the new identity here —
+     * rather than reading it back through [appUserIDProvider] — closes the window where a cold on-demand read
+     * could sync for the previous user: the device-cache-backed provider can still return the old user until the
+     * caller finishes caching the new one, but the epoch is already bumped, so that stale-user response would not
+     * be dropped and would repopulate the freshly wiped cache for the wrong user.
+     */
+    fun clearCache(appUserID: String) {
+        scope.coroutineContext.cancelChildren()
+        synchronized(cacheLock) {
+            epoch.incrementAndGet()
+            currentAppUserID = appUserID
+            isRefreshing.set(false)
+            lastRefreshedAt = null
+            lastRefreshAttemptAt = null
+            completeRefresh()
+            diskCache.clear()
+            blobStore.clear()
+            sourceProvider.clear()
+            // Identity change wiped the committed state: advance the generation and tell listeners to drop
+            // their in-memory caches. A warm started for an older generation is rejected by store-if-newer.
+            val invalidatedGeneration = generation.incrementAndGet()
+            listeners.forEach { it.onConfigInvalidated(invalidatedGeneration) }
+        }
+    }
+
+    fun close() {
+        scope.cancel()
+        synchronized(cacheLock) {
+            isRefreshing.set(false)
+            completeRefresh()
+        }
+    }
+
+    /**
+     * Atomically releases the in-flight guard iff this request still owns the sync (its captured
+     * [requestEpoch] is still current), under [cacheLock] so the epoch check and the release happen as one
+     * step — paired with clearCache()'s bump+release and a refresh's acquire+capture. Prevents releasing the
+     * guard out from under a newer owner (clearCache() or a newer refresh), which would let a duplicate
+     * refresh start. Returns true if this call released the guard (it still owned the sync).
+     */
+    private fun releaseGuardIfOwned(requestEpoch: Int): Boolean = synchronized(cacheLock) {
+        val owned = epoch.get() == requestEpoch
+        if (owned) {
+            isRefreshing.set(false)
+            completeRefresh()
+        }
+        owned
+    }
+
+    private fun completeRefresh() {
+        refreshCompletion?.complete(Unit)
+        refreshCompletion = null
+    }
+
+    /**
+     * Makes a best effort to have the configuration loaded before a read that found no cached data gives up:
+     * - a refresh already in progress → wait for it (a read during the initial sync sees its result);
+     * - otherwise trigger a sync on demand and wait for it, so a cold read fetches its own data instead of
+     *   returning `null` — **unless** the committed configuration is still fresh, the endpoint is [isDisabled],
+     *   or no app user is known yet, in which case it gives up without a network call.
+     *
+     * The on-demand sync is issued as foreground (`appInBackground = false`): a read is blocking on the result,
+     * so it wants the un-jittered, prompt request. The user it syncs for is snapshotted atomically with the
+     * epoch inside [refreshRemoteConfig] (the identity [clearCache] bound wins); the value resolved here is only
+     * the pre-first-identity-change bootstrap and the "is any user known" gate, so a read racing an identity
+     * change can never fetch and persist the previous user's config.
+     */
+    private suspend fun awaitConfigForRead() {
+        if (awaitInFlightRefresh()) {
+            verboseLog { "Cold remote config read waiting on the refresh already in progress." }
+            return
+        }
+        // Nothing in flight: trigger a sync on demand, unless the endpoint is disabled or no user is known yet.
+        // This value is only the bootstrap fallback + the "user known" gate; refreshRemoteConfig re-resolves the
+        // effective user under the lock (preferring the clearCache-bound [currentAppUserID]) when it runs.
+        val appUserID = (currentAppUserID ?: appUserIDProvider())?.takeIf { it.isNotBlank() }
+        if (!isDisabled && appUserID != null) {
+            verboseLog { "Cold remote config read requesting an on-demand sync." }
+            refreshRemoteConfigIfStale(
+                appInBackground = false,
+                appUserID = appUserID,
+                fetchContext = RemoteConfigFetchContext.Read,
             )
+            // Join whatever is now in flight — the sync we just triggered, or one a concurrent caller started.
+            awaitInFlightRefresh()
+        } else {
+            verboseLog {
+                "Cold remote config read skipped on-demand sync " +
+                    "(disabled=$isDisabled, user known=${appUserID != null})."
+            }
+        }
+    }
+
+    /**
+     * Suspends until the refresh already in progress finishes; returns `true` if there was one to await, `false`
+     * when none was in flight. The handle is captured under [cacheLock] but awaited outside it, so this never
+     * holds the lock across suspension.
+     */
+    private suspend fun awaitInFlightRefresh(): Boolean {
+        val completion = synchronized(cacheLock) { refreshCompletion } ?: return false
+        completion.await()
+        return true
+    }
+
+    /**
+     * A topic's persisted item index (metadata only — inline `metadata` + `blob_ref`, no blob bytes), or `null`
+     * when nothing is cached for [topic] even after a refresh, or when the endpoint is [isDisabled].
+     *
+     * When the topic isn't committed yet, [awaitConfigForRead] first waits for a refresh in progress — or
+     * triggers one on demand, subject to its freshness gate — and then re-reads before giving up, so a read
+     * during the initial sync (or before any sync) returns fresh data instead of `null`, mirroring [blobData]. A
+     * committed topic returns immediately, never delayed by an unrelated in-flight refresh. Use [blobData] for a
+     * resolved item payload that also resolves the referenced blob. Reads disk on [ioDispatcher].
+     */
+    suspend fun topic(topic: RemoteConfigTopic): ConfigTopic? = withContext(ioDispatcher) {
+        committedTopic(topic)
+    }
+
+    /**
+     * A topic's already-committed item index, or `null` when nothing is committed for [topic] yet or the
+     * endpoint is [isDisabled]. Unlike [topic], this **never** waits for or triggers a `/v1/config` sync: it is
+     * a pure read of whatever is currently committed (in-memory snapshot / disk). Used by cache-warming, which
+     * must not kick off a network fetch (e.g. on a cold-disk SDK init, before any user is known). Once a topic
+     * is committed, subsequent [blobData]/[mergeItemsBlobData] reads for its items also resolve without
+     * triggering a sync. Reads disk on [ioDispatcher].
+     */
+    suspend fun committedTopicOrNull(topic: RemoteConfigTopic): ConfigTopic? = withContext(ioDispatcher) {
+        if (isDisabled) null else topicStore.topic(topic)
+    }
+
+    /**
+     * Waits for the refresh that is currently in flight, if any, then returns the latest committed [topic].
+     * Unlike [topic], this never starts a refresh. This lets a consumer avoid treating a stale-but-committed
+     * empty topic as authoritative while AppStart is already fetching a newer configuration.
+     */
+    suspend fun committedTopicAfterInFlightRefresh(topic: RemoteConfigTopic): ConfigTopic? =
+        withContext(ioDispatcher) {
+            awaitInFlightRefresh()
+            if (isDisabled) null else topicStore.topic(topic)
         }
 
-    private fun buildReferenceSet(manifest: Manifest): Map<Topic, Set<String>> =
-        manifest.topics.mapValues { (_, entries) ->
-            entries.values.map { it.blobRef }.toSet()
+    /**
+     * Like [topic], but additionally waits for the topic's `prefetch`-marked blobs to finish caching before
+     * returning: the config request must be committed **and** every item in [topic] flagged `prefetch` must have
+     * its referenced blob resolved (already inlined-and-cached, or downloaded now). Inlined blobs are cached
+     * synchronously when the topic commits, so this only adds a wait on the **non-inlined** prefetch blobs, which
+     * the per-sync prefetch enqueues fire-and-forget at LOW priority.
+     *
+     * This is best-effort: a prefetch blob that fails to download does not block the return (it stays recoverable
+     * on demand / next sync). Returns the committed [ConfigTopic], or `null` when nothing is cached for [topic]
+     * even after a refresh, or when the endpoint is [isDisabled] — in which case the fetcher is never touched.
+     * Runs on [ioDispatcher].
+     *
+     * The blob wait can suspend for a while, so after it the committed topic is re-read: if a [clearCache]
+     * (identity change) or a newer sync committed a different topic meanwhile, the snapshot we waited on no longer
+     * matches the current user, so the wait is repeated against the fresh topic instead of returning stale data.
+     * The re-read goes through [committedTopic], so a wipe that cleared the cache mid-wait self-primes a fresh sync
+     * for the new user before comparing. Converges once the committed topic stops changing (it re-reads null → the
+     * cache was wiped with nothing re-committed, and returns null).
+     */
+    suspend fun awaitTopicAndPrefetchBlobsReady(topic: RemoteConfigTopic): ConfigTopic? =
+        withContext(ioDispatcher) {
+            var committed = committedTopic(topic)
+            while (committed != null) {
+                // Only the prefetch-marked items matter here; on-demand items are resolved lazily by blobData reads.
+                val prefetchRefs = committed.values
+                    .filter { it.prefetch }
+                    .mapNotNull { it.blobRef }
+                if (prefetchRefs.isNotEmpty()) {
+                    verboseLog { "Awaiting ${prefetchRefs.size} prefetch blob(s) for topic '${topic.wireName}'." }
+                    // Joins/boosts any in-flight LOW-priority prefetch; already-cached (inlined) refs return at once.
+                    blobFetcher.ensureDownloaded(prefetchRefs)
+                }
+                // Re-read: if the committed topic is unchanged the snapshot we waited on is still current, so return
+                // it. If it changed under us (identity change wiped it → null, or a newer sync committed a different
+                // topic) loop: a null exits with null, a different topic re-awaits its own prefetch blobs.
+                val latest = committedTopic(topic)
+                if (latest == committed) break
+                verboseLog { "Committed '${topic.wireName}' changed during prefetch wait; re-awaiting." }
+                committed = latest
+            }
+            committed
         }
 
-    private data class TopicTask(val topic: Topic, val entryId: String, val entry: TopicEntry)
+    /**
+     * Reads a topic's committed item index, waiting for (or triggering) a refresh once on a miss. Assumes it is
+     * already running on [ioDispatcher] (its callers wrap it), so it doesn't switch context itself.
+     */
+    private suspend fun committedTopic(topic: RemoteConfigTopic): ConfigTopic? {
+        if (isDisabled) {
+            verboseLog { "Remote config disabled; skipping topic read '${topic.wireName}'." }
+            return null
+        }
+        // A committed topic returns immediately; only a miss waits for (or triggers) a refresh, then re-reads.
+        val result = topicStore.topic(topic) ?: run {
+            awaitConfigForRead()
+            topicStore.topic(topic)
+        }
+        return result.also {
+            verboseLog {
+                val state = it?.let { committed -> "${committed.size} items" } ?: "not cached"
+                "Reading remote config topic '${topic.wireName}': $state."
+            }
+        }
+    }
 
-    private data class CacheEntry(val response: RemoteConfigResponse, val cachedAt: Date)
+    /**
+     * The resolved blob payload for `itemKey` in [topic], parsed from JSON into [T], or `null` when the item
+     * is unknown, has no `blob_ref`, its blob can't be resolved, or its bytes don't deserialize into [T]. [T]
+     * must be a concrete `@Serializable` type; parsing uses [JsonTools.json] (not [JsonProvider.defaultJson],
+     * whose `classDiscriminator` is overridden for [com.revenuecat.purchases.common.events.BackendEvent] and
+     * would break any topic payload relying on the default `type` discriminator, e.g. paywall components). For
+     * non-JSON payloads use the `transform` overload, which also documents the resolution and waiting rules.
+     */
+    suspend inline fun <reified T> blobData(topic: RemoteConfigTopic, itemKey: String): T? =
+        blobData(topic, itemKey) { bytes ->
+            try {
+                JsonTools.json.decodeFromString<T>(bytes.decodeToString())
+            } catch (e: SerializationException) {
+                errorLog(e) { "Failed to parse remote config blob for item '$itemKey' as JSON." }
+                null
+            }
+        }
+
+    /**
+     * Resolves the blob payload bytes for `itemKey` in [topic] and maps them through [transform], or `null`
+     * when the item is unknown or its blob can't be resolved. Use this for non-JSON blobs the caller parses
+     * itself; the reified overload is the JSON convenience built on top of it.
+     *
+     * Owns the `blob_ref` rule: an item with **no** `blob_ref` resolves to `null` (its inline metadata is
+     * exposed only through [topic], never as a payload); otherwise the referenced blob is resolved on demand
+     * (HIGH priority, joining any in-flight prefetch of the same ref) and read back.
+     *
+     * When the item isn't committed yet, [awaitConfigForRead] first waits for a refresh in progress — or
+     * triggers one on demand, subject to its freshness gate — and then re-reads before giving up, so a read
+     * during the initial sync (or before any sync) returns fresh data instead of `null`. A committed item returns
+     * immediately, never delayed by an unrelated in-flight refresh.
+     *
+     * Returns `null` without any read when the endpoint is [isDisabled]. Runs on [ioDispatcher].
+     */
+    suspend fun <T> blobData(
+        topic: RemoteConfigTopic,
+        itemKey: String,
+        transform: (ByteArray) -> T?,
+    ): T? = withContext(ioDispatcher) {
+        resolveBlobBytes(topic, itemKey)?.let(transform)
+    }
+
+    /**
+     * Resolves the blobs for every key in [itemKeys] within [topic] **concurrently**, builds a single JSON
+     * object mapping **each item key to that item's parsed blob JSON**, and decodes it into a single [T]. Use
+     * this to assemble one object from several items in a topic: given items `wf1 -> {"a":...}` and
+     * `wf2 -> {"b":...}`, the merged object is `{"wf1": {"a":...}, "wf2": {"b":...}}`, so [T] declares a field
+     * per item key.
+     *
+     * This is **all-or-nothing**: if any requested item is unknown, has no `blob_ref`, or its blob can't be
+     * resolved, the call returns `null` (a partial object is never produced) and warn-logs the missing keys.
+     * It also returns `null` if any resolved blob isn't valid JSON, or the merged object doesn't deserialize
+     * into [T]. Duplicate keys are de-duplicated; an empty [itemKeys] returns `null` without any read; [T] must
+     * be a concrete `@Serializable` type and parsing uses [JsonTools.json] (see [blobData] for why not
+     * [JsonProvider.defaultJson]).
+     *
+     * Each item resolves through the same path as the single-key [blobData] (see its KDoc for the `blob_ref`,
+     * on-demand fetch, and waiting rules) — this only fans them out. The fan-out is safe: a shared in-flight
+     * `/v1/config` refresh is deduped across all keys, and the blob fetcher dedupes concurrent downloads of the
+     * same ref. When the endpoint is [isDisabled] the call returns `null` immediately without any read. Runs
+     * on [ioDispatcher].
+     */
+    suspend inline fun <reified T> mergeItemsBlobData(topic: RemoteConfigTopic, itemKeys: Collection<String>): T? =
+        mergeItemsBlobData(topic, itemKeys) { merged ->
+            try {
+                JsonTools.json.decodeFromJsonElement<T>(merged)
+            } catch (e: SerializationException) {
+                errorLog(e) { "Failed to decode merged remote config blobs from topic '${topic.wireName}' as JSON." }
+                null
+            }
+        }
+
+    /**
+     * Resolves + merges the [itemKeys] blobs (see the reified [mergeItemsBlobData] for the merge shape and rules)
+     * and maps the resulting keyed JSON object through [transform] — resolution, merge, and [transform] all run
+     * on [ioDispatcher] so JSON decoding never runs on the caller's thread. Returns `null` when the merged
+     * object can't be built (any item unresolvable or non-JSON). The non-inline worker behind the reified
+     * overload; kept non-`private` so the `inline` function can call it.
+     */
+    suspend fun <T> mergeItemsBlobData(
+        topic: RemoteConfigTopic,
+        itemKeys: Collection<String>,
+        transform: (JsonObject) -> T?,
+    ): T? = withContext(ioDispatcher) {
+        mergedBlobObject(topic, itemKeys)?.let(transform)
+    }
+
+    /**
+     * Resolves every item in [itemKeys] concurrently and builds a JSON object keyed by item key, each mapping
+     * to that item's parsed blob JSON, or `null` if any item can't be resolved or any resolved blob isn't valid
+     * JSON. Assumes it is already running on [ioDispatcher] (its only caller wraps it), so it doesn't switch
+     * context itself.
+     */
+    @Suppress("ReturnCount")
+    private suspend fun mergedBlobObject(topic: RemoteConfigTopic, itemKeys: Collection<String>): JsonObject? {
+        if (isDisabled) {
+            verboseLog { "Remote config disabled; skipping merged read for topic '${topic.wireName}'." }
+            return null
+        }
+        val keys = itemKeys.distinct()
+        if (keys.isEmpty()) {
+            verboseLog { "No item keys requested for merged remote config read in topic '${topic.wireName}'." }
+            return null
+        }
+        val resolved = coroutineScope {
+            keys.associateWith { key -> async { resolveBlobBytes(topic, key) } }
+                .mapValues { (_, deferred) -> deferred.await() }
+        }
+        val missing = resolved.filterValues { it == null }.keys
+        if (missing.isNotEmpty()) {
+            warnLog {
+                "Could not resolve remote config blob(s) for ${missing.size} of ${resolved.size} " +
+                    "requested item(s) in topic '${topic.wireName}': $missing. Returning null."
+            }
+            return null
+        }
+        val merged = LinkedHashMap<String, JsonElement>()
+        for (key in keys) {
+            val element = try {
+                JsonProvider.defaultJson.parseToJsonElement(resolved.getValue(key)!!.decodeToString())
+            } catch (e: SerializationException) {
+                errorLog(e) { "Remote config blob for item '$key' in topic '${topic.wireName}' is not valid JSON." }
+                return null
+            }
+            // Nest each item's blob JSON under its item key.
+            merged[key] = element
+        }
+        return JsonObject(merged)
+    }
+
+    /**
+     * Resolves an item's referenced-blob bytes, or `null` when the endpoint is [isDisabled], the item is
+     * unknown, or it has no `blob_ref`.
+     */
+    private suspend fun resolveBlobBytes(topic: RemoteConfigTopic, itemKey: String): ByteArray? {
+        if (isDisabled) {
+            verboseLog { "Remote config disabled; skipping read of item '$itemKey'." }
+            return null
+        }
+        verboseLog { "Reading remote config blob (topic='${topic.wireName}', item='$itemKey')." }
+        val ref = committedItem(topic, itemKey)?.blobRef
+        return when {
+            ref == null -> {
+                verboseLog { "Remote config item '$itemKey' is missing or has no blob ref; returning null." }
+                null
+            }
+            blobFetcher.ensureDownloaded(ref) -> {
+                blobStore.read(ref).also { bytes ->
+                    if (bytes != null) {
+                        verboseLog { "Resolved '$itemKey' from remote config blob '$ref' (${bytes.size} bytes)." }
+                    } else {
+                        warnLog { "Remote config blob '$ref' for item '$itemKey' downloaded but read back null." }
+                    }
+                }
+            }
+            else -> {
+                warnLog { "Failed to resolve remote config blob '$ref' for item '$itemKey'." }
+                null
+            }
+        }
+    }
+
+    /** The committed item for [itemKey], waiting for or triggering a sync once when it is not cached yet. */
+    private suspend fun committedItem(topic: RemoteConfigTopic, itemKey: String): RemoteConfiguration.ConfigItem? {
+        topicStore.topic(topic)?.get(itemKey)?.let { return it }
+        verboseLog { "Remote config item '$itemKey' not committed yet; awaiting config." }
+        awaitConfigForRead()
+        return topicStore.topic(topic)?.get(itemKey).also {
+            if (it == null) verboseLog { "Remote config item '$itemKey' not found in topic '${topic.wireName}'." }
+        }
+    }
+
+    private fun persist(
+        previous: PersistedRemoteConfigurationState?,
+        response: RemoteConfiguration,
+        // Null on the fallback path (plain-JSON response with no inlined blob elements to extract); the wanted
+        // blobs are then fetched over the network by prefetchBlobs instead.
+        container: RCContainer?,
+        // The server's own request time. Null when the response carried no such header, or on the fallback path.
+        requestDate: Date?,
+    ) {
+        debugLog {
+            val changed = response.topics.entries.joinToString { (name, topic) ->
+                "$name -> items=${topic.keys}"
+            }
+            "Received remote config: active topics=${response.activeTopics}; changed topics: " +
+                "[${changed.ifEmpty { "none" }}]."
+        }
+        val previousTopics = previous?.topics ?: emptyMap()
+        // Changed topics (present in the response) overwrite their item index; unchanged active topics keep their
+        // carried-forward index (the server omits them); topics no longer active are pruned.
+        val mergedTopics = (previousTopics + response.topics)
+            .filterKeys { it in response.activeTopics }
+        // Blobs the current config still wants: the prefetch set plus any active-topic blob ref.
+        val blobRefsToKeep = response.prefetchBlobs.toSet() + mergedTopics.toTopicBlobRefs().values.flatten()
+
+        // Persist the configuration first: the full topic index (incl. each item's inline content) plus the
+        // manifest the server diffs against is the source of truth, and persisting it IS the entire commit (the
+        // manifest advances unconditionally). Inline blobs are recoverable over the network, so only touch the
+        // blob store once the state is durably committed — a failed persist never orphans or evicts blobs.
+        val persisted = diskCache.write(
+            PersistedRemoteConfigurationState(
+                domain = response.domain,
+                manifest = response.manifest,
+                activeTopics = response.activeTopics,
+                prefetchBlobs = response.prefetchBlobs,
+                topics = mergedTopics,
+                // Server time only: a response without it carries the last server-supplied value forward rather
+                // than substituting a device-clock reading the server cannot compare against its own.
+                lastRefreshTime = requestDate?.time ?: previous?.lastRefreshTime,
+            ),
+        )
+
+        if (persisted) {
+            // The staleness gate measures elapsed *local* time (isCacheStale subtracts from dateProvider.now), so
+            // it stays on the device clock and is deliberately not the value persisted above.
+            lastRefreshedAt = dateProvider.now
+            lastRefreshAttemptAt = null
+            hasCommittedInitialConfig = true
+            debugLog {
+                "Persisted remote config (domain=${response.domain}, ${response.activeTopics.size} active topics, " +
+                    "${blobRefsToKeep.size} blobs wanted)."
+            }
+            container?.let { extractInlineBlobs(it, blobRefsToKeep) }
+            blobStore.retainOnly(blobRefsToKeep)
+            prefetchBlobs(response, mergedTopics)
+            // A new version is committed: advance the generation and let listeners re-warm their in-memory
+            // caches. Runs under cacheLock (both persist callers hold it), so the bump+notify is serialized
+            // against clearCache()'s bump+notify.
+            val committedGeneration = generation.incrementAndGet()
+            listeners.forEach { it.onConfigCommitted(committedGeneration) }
+        } else {
+            errorLog { "Skipping remote config blob sync: failed to persist the configuration." }
+        }
+    }
+
+    /**
+     * Best-effort, topic-agnostic warm of the blobs the committed config wants prefetched: the server's
+     * [RemoteConfiguration.prefetchBlobs] plus any item flagged `prefetch`. Re-arms the blob source provider
+     * first **only if a prior cycle exhausted its sources** (otherwise failover progress is kept, so a
+     * known-bad higher-priority source isn't re-tried every sync), then hands the not-yet-cached refs to the
+     * fetcher's LOW-priority queue. Runs on the manager's IO scope (inside [persist]), so it never blocks the
+     * main thread; a failed download is tolerated (re-fetched next sync / on demand).
+     */
+    private fun prefetchBlobs(response: RemoteConfiguration, mergedTopics: Map<String, ConfigTopic>) {
+        sourceProvider.restartIfExhausted(RemoteConfigSourceHandle.Purpose.BLOB)
+        val refs = buildList {
+            addAll(response.prefetchBlobs)
+            mergedTopics.values.forEach { topic ->
+                topic.values.forEach { item -> if (item.prefetch) item.blobRef?.let(::add) }
+            }
+        }.distinct()
+        val toPrefetch = refs.filterNot { blobStore.contains(it) }
+        verboseLog { "Prefetching ${toPrefetch.size} remote config blob(s)." }
+        blobFetcher.prefetch(toPrefetch)
+    }
+
+    /** Caches inlined content elements the config still wants, whose bytes match their content-address ref. */
+    private fun extractInlineBlobs(container: RCContainer, refsToKeep: Set<String>) {
+        // Decide by ref before decoding so a blob we don't need (not referenced, or already cached) is never
+        // decompressed, and decode one at a time so the whole uncompressed payload is never held at once —
+        // inline blobs can be large.
+        container.contentElements.forEach { element ->
+            val ref = element.checksumBase64()
+            if (ref !in refsToKeep || blobStore.contains(ref)) return@forEach
+            val decoded = try {
+                element.decode()
+            } catch (e: RCContainerFormatException) {
+                errorLog(e) { "Skipping remote config blob '$ref': could not decode or verify its content." }
+                return@forEach
+            }
+            // write() logs its own error on failure; only report success when it actually stored the blob.
+            if (blobStore.write(ref, decoded)) {
+                verboseLog { "Stored inlined remote config blob '$ref' (${decoded.size} bytes)." }
+            }
+        }
+    }
 
     private companion object {
-        const val DEFAULT_ENTRY_ID = "default"
+        private const val DEFAULT_DOMAIN = "app"
+        private val REFRESH_ATTEMPT_COOLDOWN = 1.minutes
     }
 }
+
+/** The blob refs each topic's items reference, keyed by topic name (empty list for inline-only topics). */
+internal fun Map<String, ConfigTopic>.toTopicBlobRefs(): Map<String, List<String>> =
+    mapValues { (_, topic) -> topic.values.mapNotNull { it.blobRef } }

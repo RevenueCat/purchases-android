@@ -10,6 +10,8 @@
 #     https://docs.fastlane.tools/plugins/available-plugins
 #
 
+require "cgi"
+
 # Uncomment the line if you want fastlane to automatically update itself
 # update_fastlane
 
@@ -35,12 +37,16 @@ default_platform(:android)
 
 # Hack to work around a Fastlane quirk where plugin actions are run from the parent of the current working directory.
 # We switch to the first subdirectory, then run the action. The action will run from the parent of the subdirectory, which is
-# our actual current working directory. The obvious limitation is that this doesn't work if the current working directory
-# does not have any subdirectories.
+# our actual current working directory.
 # This is only needed when our current working directory is not the ./fastlane directory.
 # https://docs.fastlane.tools/advanced/fastlane/#directory-behavior
 def run_plugin_action_in_current_directory(&block)
-  Dir.chdir(Dir["*/"].first.chomp("/"), &block)
+  first_subdirectory = Dir["*/"].first
+  if first_subdirectory.nil?
+    block.call
+  else
+    Dir.chdir(first_subdirectory.chomp("/"), &block)
+  end
 end
 
 platform :android do
@@ -55,6 +61,7 @@ platform :android do
     fields = %w[
       PAYWALL_TESTER_API_KEY_A
       PURCHASE_TESTER_API_KEY
+      MAESTRO_TEST_STORE_API_KEY
       BACKEND_INTEGRATION_API_KEY
       BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY
       REVENUECAT_API_KEY
@@ -260,46 +267,15 @@ platform :android do
     UI.verbose("Deploying #{version}")
     gradle(
       tasks: [
-        "publish --no-daemon --no-parallel"
+        # --no-build-cache: always build released artifacts fresh (see deploy_specific_package).
+        "publish --no-daemon --no-parallel --no-build-cache"
       ],
       properties: gradle_properties
     )
 
-    UI.verbose("Deploying purchases Billing Client 7 version")
-    deploy_specific_package(
-      "defaultsBc7Release",
-      "purchases-bc7",
-      "purchases",
-      gradle_properties
-    )
-
-    UI.verbose("Deploying purchases-ui Billing Client 7 version")
-    deploy_specific_package(
-      "defaultsBc7Release",
-      "purchases-ui-bc7",
-      "ui:revenuecatui",
-      gradle_properties
-    )
-
-    UI.verbose("Deploying amazon Billing Client 7 version")
-    deploy_specific_package(
-      "defaultsBc7Release",
-      "purchases-store-amazon-bc7",
-      "feature:amazon",
-      gradle_properties
-    )
-
-    UI.verbose("Deploying galaxy Billing Client 7 version")
-    deploy_specific_package(
-      "defaultsBc7Release",
-      "purchases-store-galaxy-bc7",
-      "feature:galaxy",
-      gradle_properties
-    )
-
     UI.verbose("Deploying Custom Entitlements Computation version")
     deploy_specific_package(
-      "customEntitlementComputationBc8Release",
+      "customEntitlementComputationRelease",
       "purchases-custom-entitlement-computation",
       "purchases",
       gradle_properties
@@ -307,7 +283,7 @@ platform :android do
 
     UI.verbose("Deploying Debug view version")
     deploy_specific_package(
-      "defaultsBc8Debug",
+      "defaultsDebug",
       "purchases-debug-view",
       "ui:debugview",
       gradle_properties
@@ -323,7 +299,9 @@ platform :android do
     command = module_to_deploy == nil ? "publish" : "#{module_to_deploy}:publish"
     gradle(
       tasks: [
-        "#{command} --no-daemon --no-parallel"
+        # --no-build-cache: always build released artifacts fresh, even though the
+        # build cache is enabled globally. Cheap insurance for an infrequent build.
+        "#{command} --no-daemon --no-parallel --no-build-cache"
       ],
       properties: gradle_properties
     )
@@ -384,7 +362,7 @@ platform :android do
   desc "Build purchase tester app bundle"
   lane :build_purchase_tester_bundle do
     build_bundle(
-      build_task: 'examples:purchase-tester:bundleBc8',
+      build_task: 'examples:purchase-tester:bundle',
       env_prefix: 'PURCHASE_TESTER',
       extra_properties: {
         purchaseTesterSupportedStores: 'google'
@@ -396,7 +374,7 @@ platform :android do
   desc "Build paywall tester app bundle"
   lane :build_paywall_tester_bundle do
     build_bundle(
-      build_task: 'examples:paywall-tester:bundleBc8',
+      build_task: 'examples:paywall-tester:bundle',
       env_prefix: 'PAYWALL_TESTER',
       gradle_properties_prefix: 'paywallTester',
       extra_properties: {
@@ -411,7 +389,7 @@ platform :android do
   desc "Build RCT tester app bundle"
   lane :build_rct_tester_bundle do
     build_bundle(
-      build_task: 'examples:rcttester:bundleBc8',
+      build_task: 'examples:rcttester:bundle',
       env_prefix: 'RCT_TESTER',
       gradle_properties_prefix: 'rcTester'
     )
@@ -429,7 +407,7 @@ platform :android do
     UI.user_error!("LOAD_SHEDDER_REVENUECAT_API_KEY environment variable is not set") if ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'].to_s.empty?
 
     gradle(
-      task: ':purchases:testDefaultsBc8DebugUnitTest',
+      task: ':purchases:testDefaultsDebugUnitTest',
       flags: '--tests "com.revenuecat.purchases.backend_integration_tests.*"',
       properties: {
         "minSdkVersion" => 23,
@@ -437,87 +415,6 @@ platform :android do
         "BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY" => ENV['LOAD_SHEDDER_REVENUECAT_API_KEY'],
       }
     )
-  end
-
-  desc "Run backend integration tests and create PR if golden files change"
-  lane :update_golden_requests_backend_integration_tests do |options|
-    run_backend_integration_tests
-
-    golden_files_path = "purchases/src/test/resources/backend_integration_tests_golden/"
-    
-    # Ensure we're in the project root for git operations
-    project_root = File.basename(Dir.pwd) == "fastlane" ? ".." : "."
-    
-    Dir.chdir(project_root) do
-      # Check if there are changes to golden test files (modified tracked files or new untracked files)
-      has_modified_files = false
-      has_untracked_files = false
-      
-      # Check for modified tracked files
-      begin
-        sh("git", "diff", "--quiet", golden_files_path)
-      rescue
-        has_modified_files = true
-      end
-      
-      # Check for untracked files in the golden files directory
-      untracked_files = sh("git", "ls-files", "--others", "--exclude-standard", golden_files_path).strip
-      has_untracked_files = !untracked_files.empty?
-      
-      has_changes = has_modified_files || has_untracked_files
-
-      if has_changes
-        UI.message("Golden test files have been modified. Creating PR...")
-
-        # Get the current branch name (the branch that triggered the workflow)
-        current_branch = sh("git", "rev-parse", "--abbrev-ref", "HEAD").strip
-        UI.message("Current branch: #{current_branch}")
-
-        # Create a unique branch name for the PR
-        timestamp = Time.now.strftime("%Y%m%d-%H%M%S")
-        pr_branch_name = "update-golden-requests-#{current_branch}-#{timestamp}"
-
-        UI.message("Creating branch: #{pr_branch_name}")
-
-        # Create or checkout the branch
-        run_plugin_action_in_current_directory do
-          create_or_checkout_branch(branch_name: pr_branch_name)
-        end
-
-        # Stage only the golden files
-        sh("git", "add", golden_files_path)
-
-        commit_message = "[Automated] Update golden test files for backend integration tests"
-        title = "[AUTOMATIC] Update golden test files for backend integration tests"
-        body = "This PR automatically updates the golden test files in `#{golden_files_path}` based on the latest backend integration test results.\n\n" \
-               "Generated from branch: `#{current_branch}`\n\n" \
-               "Please review the changes to ensure they are expected."
-
-        # Commit only the staged golden files
-        sh("git", "commit", "-m", commit_message)
-
-        # Push the branch
-        sh("git", "push", "-u", "origin", pr_branch_name)
-
-        # Create PR against the current branch (not main)
-        run_plugin_action_in_current_directory do
-          create_pr_if_necessary(
-            github_pr_token: ENV["GITHUB_TOKEN"],
-            repo_name: repo_name,
-            base_branch: current_branch,
-            head_branch: pr_branch_name,
-            title: title,
-            body: body,
-            labels: ["pr:other"],
-            team_reviewers: ["coresdk"]
-          )
-        end
-
-        UI.success("PR created successfully!")
-      else
-        UI.success("Golden test files verification passed - no changes detected")
-      end
-    end
   end
 
   desc "Build and run purchases module integration tests on emulator"
@@ -555,7 +452,7 @@ platform :android do
         UI.message("Attempt #{attempt} of #{max_retries}")
 
         gradle(
-          task: ":purchases:connectedDefaultsBc8ReleaseAndroidTest",
+          task: ":purchases:connectedDefaultsReleaseAndroidTest",
           properties: { "testBuildType" => "release", "minSdkVersion" => 23 }.merge(test_properties)
         )
 
@@ -597,7 +494,7 @@ platform :android do
     }
 
     gradle(
-      task: ":purchases:connectedCustomEntitlementComputationBc8ReleaseAndroidTest",
+      task: ":purchases:connectedCustomEntitlementComputationReleaseAndroidTest",
       properties: { "testBuildType" => "release", "minSdkVersion" => 23 }.merge(test_properties)
     )
   end
@@ -898,9 +795,11 @@ DESC
     begin
       record_paparazzi_screenshots(gradle_module: ":ui:revenuecatui", tests: "PaywallComponentsTemplatePreviewRecorder", output_dir: tmp_dir)
       # Loop over all PNG files in the tmp_dir, parse the offering ID from the file names, and move them into the target repository.
+      produced_offering_ids = []
       sh("find #{tmp_dir} -name '*.png'").split("\n").each do |file_path|
-        if file_path =~ /\_\_\_(.*?)\_\_\_/
-          offering_id = $1
+        if file_path =~ /___([0-9A-Za-z%.-]+)___/
+          offering_id = CGI.unescape($1).force_encoding("UTF-8")
+          produced_offering_ids << offering_id
           target_dir = "#{target_repository_path}/screenshots/templates/#{offering_id}"
           sh("mkdir -p \"#{target_dir}\"")
           sh("mv \"#{file_path}\" \"#{target_dir}/android.png\"")
@@ -908,6 +807,11 @@ DESC
           UI.user_error!("No offering ID found in file: #{File.basename(file_path)}")
         end
       end
+
+      remove_stale_android_template_screenshots(
+        target_repository_path: target_repository_path,
+        produced_offering_ids: produced_offering_ids
+      )
     ensure
       sh("rm -rf #{tmp_dir}")
     end
@@ -925,6 +829,29 @@ DESC
     end
   end
 
+  # Removes android.png screenshots (and now-empty directories) for paywalls that were not rendered in this run, Only
+  # touches android.png, so it never deletes screenshots owned by other platforms (e.g. ios.png, mac-*.png).
+  private_lane :remove_stale_android_template_screenshots do |options|
+    target_repository_path = options[:target_repository_path] || UI.user_error!("No target_repository_path provided")
+    produced_offering_ids = options[:produced_offering_ids] || UI.user_error!("No produced_offering_ids provided")
+
+    UI.user_error!("No Android screenshots were produced; refusing to prune stale screenshots.") if produced_offering_ids.empty?
+
+    templates_dir = "#{target_repository_path}/screenshots/templates"
+    Dir.glob("#{templates_dir}/*/android.png").each do |existing|
+      offering_id = File.basename(File.dirname(existing)).force_encoding("UTF-8")
+      next if produced_offering_ids.include?(offering_id)
+      UI.message("Removing stale Android screenshot: #{existing}")
+      File.delete(existing)
+    end
+
+    # Remove any empty directories.
+    Dir.glob("#{templates_dir}/*").each do |dir|
+      next unless File.directory?(dir)
+      Dir.rmdir(dir) if Dir.empty?(dir)
+    end
+  end
+
   desc "Records Paparazzi screenshots for a given gradle_module"
   lane :record_paparazzi_screenshots do |options|
     gradle_module = options[:gradle_module] || UI.user_error!("No gradle_module provided")
@@ -932,7 +859,7 @@ DESC
 
     sh("rm -rf #{paparazzi_output_dir}")
     gradle_args = {
-      task: "#{gradle_module}:recordPaparazziBc8Debug",
+      task: "#{gradle_module}:recordPaparazziDebug",
     }
     gradle_args[:flags] = "--tests=\"#{options[:tests]}\"" if options[:tests]
     # This is not yet supported in the Paparazzi version we're using.
@@ -949,8 +876,8 @@ DESC
   lane :generate_baseline_profiles do
     branch_name = "actions/baseline-profiles"
     profile_files = [
-      "purchases/src/main/baseline-prof.txt",
-      "ui/revenuecatui/src/main/baseline-prof.txt",
+      "purchases/src/main/generated/baselineProfiles/baseline-prof.txt",
+      "ui/revenuecatui/src/main/generated/baselineProfiles/baseline-prof.txt",
     ]
 
     Dir.chdir("..") do

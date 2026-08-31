@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.events
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.Config as RevenueCatConfig
 import com.revenuecat.purchases.common.JsonProvider
 import kotlinx.serialization.encodeToString
 import org.assertj.core.api.Assertions.assertThat
@@ -18,10 +19,14 @@ class WorkflowEventsRequestSerializationTest {
                 id = "evt_id",
                 version = BackendEvent.WORKFLOW_EVENT_SCHEMA_VERSION,
                 type = BackendEvent.WORKFLOW_EVENT_TYPE,
-                eventName = "workflows_step_started",
+                eventName = "workflow_step_started",
                 timestampMs = 123456789L,
                 appUserID = "appUserID",
-                context = BackendEvent.Workflows.Context(locale = "en_US"),
+                context = BackendEvent.Workflows.Context(
+                    platform = "android",
+                    sdkVersion = RevenueCatConfig.frameworkVersion,
+                    locale = "en_US",
+                ),
                 properties = BackendEvent.Workflows.Properties(
                     workflowId = "wfl_abc",
                     stepId = "step-1",
@@ -44,10 +49,14 @@ class WorkflowEventsRequestSerializationTest {
                         "\"id\":\"evt_id\"," +
                         "\"version\":1," +
                         "\"type\":\"workflows\"," +
-                        "\"event_name\":\"workflows_step_started\"," +
+                        "\"event_name\":\"workflow_step_started\"," +
                         "\"timestamp_ms\":123456789," +
                         "\"app_user_id\":\"appUserID\"," +
-                        "\"context\":{\"locale\":\"en_US\"}," +
+                        "\"context\":{" +
+                            "\"platform\":\"android\"," +
+                            "\"sdk_version\":\"${RevenueCatConfig.frameworkVersion}\"," +
+                            "\"locale\":\"en_US\"" +
+                        "}," +
                         "\"properties\":{" +
                             "\"workflow_id\":\"wfl_abc\"," +
                             "\"step_id\":\"step-1\"," +
@@ -100,9 +109,13 @@ class WorkflowEventsRequestSerializationTest {
                     id = "evt_id",
                     version = BackendEvent.WORKFLOW_EVENT_SCHEMA_VERSION,
                     type = BackendEvent.WORKFLOW_EVENT_TYPE,
-                    eventName = "workflows_step_started",
+                    eventName = "workflow_step_started",
                     timestampMs = 123456789L,
                     appUserID = "appUserID",
+                    context = BackendEvent.Workflows.Context(
+                        platform = "android",
+                        sdkVersion = RevenueCatConfig.frameworkVersion,
+                    ),
                     properties = BackendEvent.Workflows.Properties(
                         workflowId = "wfl_abc",
                         stepId = "step-1",

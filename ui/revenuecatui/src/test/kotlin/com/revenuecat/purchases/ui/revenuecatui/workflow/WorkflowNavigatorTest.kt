@@ -9,7 +9,6 @@ import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTrigger
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
-import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import org.assertj.core.api.Assertions.assertThat
 
 import org.junit.Test
@@ -89,7 +88,6 @@ class WorkflowNavigatorTest {
             "step-4" to step4,
         ),
         screens = emptyMap(),
-        uiConfig = UiConfig(),
         metadata = emptyMap(),
     )
 
@@ -99,7 +97,6 @@ class WorkflowNavigatorTest {
         initialStepId = "step-1",
         steps = mapOf("step-1" to step1, "step-2" to step2, "step-3" to step3),
         screens = emptyMap(),
-        uiConfig = UiConfig(),
         metadata = emptyMap(),
     )
 
@@ -131,6 +128,14 @@ class WorkflowNavigatorTest {
     fun `triggerAction with unknown componentId returns null and does not navigate`() {
         val navigator = WorkflowNavigator(workflow)
         val result = navigator.triggerAction("btn-unknown", WorkflowTriggerType.ON_PRESS)
+        assertThat(result).isNull()
+        assertThat(navigator.currentStep).isEqualTo(step1)
+    }
+
+    @Test
+    fun `triggerAction with mismatched trigger type returns null and does not navigate`() {
+        val navigator = WorkflowNavigator(workflow)
+        val result = navigator.triggerAction("btn-next", WorkflowTriggerType.UNKNOWN)
         assertThat(result).isNull()
         assertThat(navigator.currentStep).isEqualTo(step1)
     }
@@ -426,7 +431,6 @@ class WorkflowNavigatorTest {
             initialStepId = "step-1",
             steps = mapOf("step-1" to step1Loop, "step-2" to step2Loop),
             screens = emptyMap(),
-            uiConfig = UiConfig(),
             metadata = emptyMap(),
         )
         val navigator = WorkflowNavigator(loopWorkflow)

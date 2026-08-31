@@ -11,11 +11,12 @@ internal fun Purchases.Companion.configureSdk(
     entitlementVerificationMode: EntitlementVerificationMode? = null,
     forceServerErrorStrategy: ForceServerErrorStrategy? = null,
     forceSigningErrors: Boolean = false,
+    dangerousSettings: DangerousSettings? = null,
 ) {
     Purchases.configure(
         PurchasesConfiguration.Builder(context, Constants.apiKey)
             .appUserID(appUserID)
-            .dangerousSettings(DangerousSettings(customEntitlementComputation = true))
+            .dangerousSettings(dangerousSettings ?: DangerousSettings(customEntitlementComputation = true))
             .apply {
                 if (entitlementVerificationMode != null) {
                     entitlementVerificationMode(entitlementVerificationMode)

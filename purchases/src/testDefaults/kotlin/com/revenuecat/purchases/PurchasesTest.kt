@@ -5,21 +5,33 @@
 
 package com.revenuecat.purchases
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.Looper
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.Purchase
+import com.revenuecat.purchases.common.Constants
+import com.revenuecat.purchases.common.Delay
+import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.CustomerInfoFactory
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.ReceiptInfo
 import com.revenuecat.purchases.common.ReplaceProductInfo
 import com.revenuecat.purchases.common.SharedConstants
+import com.revenuecat.purchases.checkpoints.CheckpointEvent
 import com.revenuecat.purchases.common.events.FeatureEvent
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetCustomerCenterConfigCallback
+import com.revenuecat.purchases.interfaces.GetRewardVerificationResultCallback
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.LogInCallback
+import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
@@ -52,11 +64,31 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifyAll
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
+import com.revenuecat.purchases.ads.events.AdCaptureMethod
+import com.revenuecat.purchases.ads.events.AdEvent
+import com.revenuecat.purchases.ads.events.types.AdFormat
+import com.revenuecat.purchases.ads.events.types.AdMediatorName
+import com.revenuecat.purchases.ads.events.types.AdRewardFailureReason
+import com.revenuecat.purchases.ads.rewardverification.Outcome
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult as PollResult
+import com.revenuecat.purchases.ads.rewardverification.VerifiedReward as PollReward
+import com.revenuecat.purchases.ads.rewardverification.RewardVerificationPollLauncher
+import com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.runBlocking
+import java.util.Date
 import org.json.JSONObject
 import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.net.URL
 import java.util.Locale
@@ -662,6 +694,28 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     @Test
+    fun `login successful with new appUserID refreshes remote config`() {
+        val mockCreated = Random.nextBoolean()
+        every { mockIdentityManager.currentAppUserID } returns "oldAppUserID"
+
+        every {
+            mockIdentityManager.logIn(any(), onSuccess = captureLambda(), any())
+        } answers {
+            lambda<(CustomerInfo, Boolean) -> Unit>().captured.invoke(mockInfo, mockCreated)
+        }
+
+        val mockCompletion = mockk<LogInCallback>(relaxed = true)
+        val newAppUserID = "newAppUserID"
+        mockOfferingsManagerFetchOfferings(newAppUserID)
+
+        purchases.logIn(newAppUserID, mockCompletion)
+
+        verify(exactly = 1) {
+            mockRemoteConfigManager.refreshRemoteConfig(false, newAppUserID, RemoteConfigFetchContext.IdentityChange)
+        }
+    }
+
+    @Test
     fun `logout called with identified user makes right calls`() {
         val appUserID = "fakeUserID"
         every {
@@ -687,6 +741,22 @@ internal class PurchasesTest : BasePurchasesTest() {
         }
         verify(exactly = 1) {
             mockBackupManager.dataChanged()
+        }
+    }
+
+    @Test
+    fun `logout refreshes remote config`() {
+        val appUserID = "fakeUserID"
+        every {
+            mockCache.cleanupOldAttributionData()
+        } just Runs
+        mockIdentityManagerLogout()
+        mockOfferingsManagerFetchOfferings()
+
+        purchases.logOut()
+
+        verify(exactly = 1) {
+            mockRemoteConfigManager.refreshRemoteConfig(false, appUserID, RemoteConfigFetchContext.IdentityChange)
         }
     }
 
@@ -761,9 +831,54 @@ internal class PurchasesTest : BasePurchasesTest() {
     // region syncAttributesAndOfferingsIfNeeded
 
     @Test
+    fun `syncing attributes and offerings posts attributes without delay when foregrounded`() {
+        purchases.purchasesOrchestrator.state =
+            purchases.purchasesOrchestrator.state.copy(appInBackground = false)
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), any(), any())
+        } just Runs
+
+        purchases.syncAttributesAndOfferingsIfNeededWith({ fail("Expected to succeed") }, {})
+
+        verify(exactly = 1) {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+                currentAppUserID = any(),
+                delay = Delay.NONE,
+                syncedAttribute = any(),
+                completion = any(),
+            )
+        }
+    }
+
+    @Test
+    fun `syncing attributes and offerings posts attributes with delay when backgrounded`() {
+        purchases.purchasesOrchestrator.state =
+            purchases.purchasesOrchestrator.state.copy(appInBackground = true)
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), any(), any())
+        } just Runs
+
+        purchases.syncAttributesAndOfferingsIfNeededWith({ fail("Expected to succeed") }, {})
+
+        verify(exactly = 1) {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+                currentAppUserID = any(),
+                delay = Delay.DEFAULT,
+                syncedAttribute = any(),
+                completion = any(),
+            )
+        }
+    }
+
+    @Test
     fun `syncing attributes and offerings calls success callback when process completes successfully`() {
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), captureLambda())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+                any(),
+                any(),
+                any(),
+                captureLambda(),
+            )
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }
@@ -791,7 +906,12 @@ internal class PurchasesTest : BasePurchasesTest() {
     @Test
     fun `syncing attributes and offerings calls error callback when called twice within 60 seconds`() {
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), captureLambda())
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+                any(),
+                any(),
+                any(),
+                captureLambda(),
+            )
         } answers {
             lambda<() -> Unit>().captured.invoke()
         }
@@ -813,6 +933,8 @@ internal class PurchasesTest : BasePurchasesTest() {
         verify(exactly = 5) {
             mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
                 currentAppUserID = any(),
+                delay = any(),
+                syncedAttribute = any(),
                 completion = any(),
             )
         }
@@ -1466,6 +1588,21 @@ internal class PurchasesTest : BasePurchasesTest() {
 
     // region track events
 
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `resolving checkpoint tracks checkpoint hit`() = runTest {
+        val timestamp = Date(1699270688995)
+        val event = slot<CheckpointEvent>()
+        every { mockDateProvider.now } returns timestamp
+        every { mockEventsManager.track(capture(event)) } just Runs
+
+        purchases.resolveCheckpoint("onboarding_complete")
+
+        assertThat(event.captured.identifier).isEqualTo("onboarding_complete")
+        assertThat(event.captured.timestamp).isEqualTo(timestamp)
+        verify(exactly = 1) { mockEventsManager.track(event.captured) }
+    }
+
     @Test
     fun `track purchase initiated event caches it`() {
         val event = mockk<PaywallEvent>().apply {
@@ -1880,6 +2017,422 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(receivedError).isEqualTo(expectedError)
     }
 
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `getRewardVerificationResult returns result from backend on success`() {
+        val expectedResult = RewardVerificationPollStatus.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10))
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(RewardVerificationPollStatus) -> Unit>().captured.invoke(expectedResult)
+        }
+
+        var receivedResult: RewardVerificationPollStatus? = null
+        purchases.getRewardVerificationResult(
+            clientTransactionId = "ct_1",
+            callback = object : GetRewardVerificationResultCallback {
+                override fun onReceived(result: RewardVerificationPollStatus) {
+                    receivedResult = result
+                }
+
+                override fun onError(error: RewardVerificationError) {
+                    fail("should be success")
+                }
+            },
+        )
+
+        assertThat(receivedResult).isEqualTo(expectedResult)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `generateRewardVerificationToken builds custom data with impression id and unique transaction id`() {
+        val token = purchases.generateRewardVerificationToken(impressionId = "imp-1")
+
+        val payload = JSONObject(token.customData)
+        assertThat(payload.getString("api_key")).isEqualTo(purchases.purchasesOrchestrator.currentConfiguration.apiKey)
+        assertThat(payload.getString("client_transaction_id")).isEqualTo(token.clientTransactionId)
+        assertThat(payload.getString("impression_id")).isEqualTo("imp-1")
+        assertThat(token.clientTransactionId).isNotBlank()
+        assertThat(token.appUserID).isEqualTo(appUserId)
+
+        // Each call mints a distinct client transaction id so concurrent verifications don't collide.
+        assertThat(purchases.generateRewardVerificationToken(impressionId = "imp-1").clientTransactionId)
+            .isNotEqualTo(token.clientTransactionId)
+    }
+
+    @Test
+    fun `pollRewardVerification invalidates virtual currencies cache on verified virtual currency reward`() {
+        every { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() } returns Unit
+
+        val result = runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                trackingMetadata = null,
+                captureMethod = AdCaptureMethod.MANUAL,
+                poll = { Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList()) },
+            )
+        }
+
+        assertThat(result.verifiedReward).isEqualTo(PollReward.VirtualCurrency(code = "gems", amount = 5))
+        verify(exactly = 1) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
+    }
+
+    @Test
+    fun `pollRewardVerification does not invalidate virtual currencies cache on non virtual currency reward`() {
+        runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                trackingMetadata = null,
+                captureMethod = AdCaptureMethod.MANUAL,
+                poll = { Outcome.Verified(PollReward.NoReward, moreRewards = emptyList()) },
+            )
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_2",
+                trackingMetadata = null,
+                captureMethod = AdCaptureMethod.MANUAL,
+                poll = { Outcome.Failed.ExhaustedWhilePending },
+            )
+        }
+
+        verify(exactly = 0) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `awaitPollRewardVerification polls the backend and returns the verified reward`() = runTest {
+        mockVerifiedVirtualCurrencyRewardBackend()
+        every { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() } returns Unit
+
+        val result = purchases.awaitPollRewardVerification("ct_1")
+
+        assertThat(result.verifiedReward).isEqualTo(PollReward.VirtualCurrency(code = "coins", amount = 10))
+        verify(exactly = 1) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `reward verification poll launcher delivers the result to the callback`() {
+        val launcher = RewardVerificationPollLauncher(
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
+        )
+        val expected = PollResult.verified(PollReward.VirtualCurrency(code = "coins", amount = 10))
+
+        var delivered: PollResult? = null
+        launcher.launch(poll = { expected }, onCompleted = { delivered = it })
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(delivered?.verifiedReward).isEqualTo(PollReward.VirtualCurrency(code = "coins", amount = 10))
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `closing the reward verification poll launcher cancels an in-flight poll`() {
+        val launcher = RewardVerificationPollLauncher(
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined),
+        )
+        val gate = CompletableDeferred<PollResult>()
+
+        var delivered: PollResult? = null
+        launcher.launch(poll = { gate.await() }, onCompleted = { delivered = it })
+
+        launcher.close()
+        gate.complete(PollResult.verified(PollReward.VirtualCurrency(code = "coins", amount = 10)))
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(delivered).isNull()
+    }
+
+    @Test
+    fun `pollRewardVerification invalidates virtual currencies cache for a reward in moreRewards`() {
+        every { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() } returns Unit
+
+        runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                trackingMetadata = null,
+                captureMethod = AdCaptureMethod.MANUAL,
+                poll = {
+                    Outcome.Verified(
+                        reward = PollReward.NoReward,
+                        moreRewards = listOf(PollReward.VirtualCurrency(code = "gems", amount = 5)),
+                    )
+                },
+            )
+        }
+
+        verify(exactly = 1) { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() }
+    }
+
+    @Test
+    fun `pollRewardVerification refreshes customer info on verified entitlement reward`() {
+        mockCustomerInfoHelper()
+
+        val result = runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                trackingMetadata = null,
+                captureMethod = AdCaptureMethod.MANUAL,
+                poll = {
+                    Outcome.Verified(
+                        reward = PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
+                        moreRewards = emptyList(),
+                    )
+                },
+            )
+        }
+
+        assertThat(result.failed).isFalse
+        verify(exactly = 1) {
+            mockCustomerInfoHelper.retrieveCustomerInfo(
+                appUserId,
+                CacheFetchPolicy.FETCH_CURRENT,
+                any(),
+                any(),
+                any(),
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun `pollRewardVerification returns failed when entitlement customer info refresh fails`() {
+        mockCustomerInfoHelper(
+            errorGettingCustomerInfo = PurchasesError(PurchasesErrorCode.StoreProblemError, "Broken"),
+        )
+
+        val result = runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                trackingMetadata = null,
+                captureMethod = AdCaptureMethod.MANUAL,
+                poll = {
+                    Outcome.Verified(
+                        reward = PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
+                        moreRewards = emptyList(),
+                    )
+                },
+            )
+        }
+
+        assertThat(result.failed).isTrue
+    }
+
+    private val testTrackingMetadata = RewardedAdTrackingMetadata(
+        networkName = "Google AdMob",
+        mediatorName = AdMediatorName.AD_MOB,
+        adFormat = AdFormat.REWARDED,
+        placement = "rewarded_video",
+        adUnitId = "ad-unit-999",
+        impressionId = "impression-789",
+    )
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun pollWithTracking(poll: suspend (String) -> Outcome): List<AdEvent> {
+        val trackedEvents = mutableListOf<AdEvent>()
+        every { mockAdEventsManager.track(any()) } answers { trackedEvents.add(firstArg<AdEvent>()) }
+        every { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() } returns Unit
+        runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                trackingMetadata = testTrackingMetadata,
+                captureMethod = AdCaptureMethod.MANUAL,
+                poll = poll,
+            )
+        }
+        return trackedEvents
+    }
+
+    @Test
+    fun `pollRewardVerification with tracking metadata fires earned then verified when nothing is granted`() {
+        val tracked = pollWithTracking { Outcome.Verified(PollReward.NoReward, moreRewards = emptyList()) }
+
+        assertThat(tracked).hasSize(2)
+        assertThat(tracked[0]).isInstanceOf(AdEvent.RewardEarnedUnverified::class.java)
+        assertThat(tracked[1]).isInstanceOf(AdEvent.RewardVerified::class.java)
+    }
+
+    @Test
+    fun `pollRewardVerification with tracking metadata fires one granted event for a single reward`() {
+        val tracked = pollWithTracking {
+            Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList())
+        }
+
+        assertThat(tracked).hasSize(3)
+        assertThat(tracked[0]).isInstanceOf(AdEvent.RewardEarnedUnverified::class.java)
+        assertThat(tracked[1]).isInstanceOf(AdEvent.RewardVerified::class.java)
+        val granted = tracked[2] as AdEvent.RewardGranted
+        assertThat(granted.reward).isEqualTo(VerifiedReward.VirtualCurrency(code = "gems", amount = 5))
+    }
+
+    @Test
+    fun `pollRewardVerification with tracking metadata fires one granted event per reward on multi-grant`() {
+        val tracked = pollWithTracking {
+            Outcome.Verified(
+                reward = PollReward.VirtualCurrency(code = "gems", amount = 5),
+                moreRewards = listOf(PollReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L))),
+            )
+        }
+
+        assertThat(tracked).hasSize(4)
+        val grantedRewards = tracked.filterIsInstance<AdEvent.RewardGranted>().map { it.reward }
+        assertThat(grantedRewards).containsExactly(
+            VerifiedReward.VirtualCurrency(code = "gems", amount = 5),
+            VerifiedReward.Entitlement(identifier = "pro", expiresAt = Date(1_800_000_000_000L)),
+        )
+    }
+
+    @Test
+    fun `pollRewardVerification with tracking metadata fires failed to verify with the mapped reason`() {
+        val tracked = pollWithTracking { Outcome.Failed.BackendRejected("rejected", "no_reward_rule") }
+
+        assertThat(tracked).hasSize(2)
+        assertThat(tracked[0]).isInstanceOf(AdEvent.RewardEarnedUnverified::class.java)
+        val failed = tracked[1] as AdEvent.RewardFailedToVerify
+        assertThat(failed.failureReason.value).isEqualTo("no_reward_rule")
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `pollRewardVerification tracks failed to verify with Cancelled reason when poll is cancelled`() {
+        val tracked = mutableListOf<AdEvent>()
+        every { mockAdEventsManager.track(any()) } answers { tracked.add(firstArg<AdEvent>()) }
+
+        assertThatThrownBy {
+            runBlocking {
+                purchases.pollRewardVerification(
+                    clientTransactionId = "ct_1",
+                    trackingMetadata = testTrackingMetadata,
+                    captureMethod = AdCaptureMethod.MANUAL,
+                    poll = { throw CancellationException() },
+                )
+            }
+        }.isInstanceOf(CancellationException::class.java)
+
+        assertThat(tracked).hasSize(2)
+        assertThat(tracked[0]).isInstanceOf(AdEvent.RewardEarnedUnverified::class.java)
+        val failed = tracked[1] as AdEvent.RewardFailedToVerify
+        assertThat(failed.failureReason).isEqualTo(AdRewardFailureReason.Cancelled)
+    }
+
+    @Test
+    fun `pollRewardVerification tracks nothing when trackingMetadata is absent`() {
+        every { mockAdEventsManager.track(any()) } just Runs
+        every { mockVirtualCurrencyManager.invalidateVirtualCurrenciesCache() } returns Unit
+
+        runBlocking {
+            purchases.pollRewardVerification(
+                clientTransactionId = "ct_1",
+                trackingMetadata = null,
+                captureMethod = AdCaptureMethod.MANUAL,
+                poll = { Outcome.Verified(PollReward.VirtualCurrency(code = "gems", amount = 5), moreRewards = emptyList()) },
+            )
+        }
+
+        verify(exactly = 0) { mockAdEventsManager.track(any<AdEvent.RewardEarnedUnverified>()) }
+        verify(exactly = 0) { mockAdEventsManager.track(any<AdEvent.RewardVerified>()) }
+        verify(exactly = 0) { mockAdEventsManager.track(any<AdEvent.RewardGranted>()) }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun mockVerifiedVirtualCurrencyRewardBackend() {
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(RewardVerificationPollStatus) -> Unit>().captured.invoke(
+                RewardVerificationPollStatus.Verified(VerifiedReward.VirtualCurrency(code = "coins", amount = 10)),
+            )
+        }
+    }
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `getRewardVerificationResult returns error from backend on error`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError, "Unknown backend error")
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                onSuccess = any(),
+                onError = captureLambda(),
+            )
+        } answers {
+            lambda<(RewardVerificationError) -> Unit>().captured.invoke(
+                RewardVerificationError(expectedError, false),
+            )
+        }
+
+        var receivedError: PurchasesError? = null
+        purchases.getRewardVerificationResult(
+            clientTransactionId = "ct_1",
+            callback = object : GetRewardVerificationResultCallback {
+                override fun onReceived(result: RewardVerificationPollStatus) {
+                    fail("should be error")
+                }
+
+                override fun onError(error: RewardVerificationError) {
+                    receivedError = error.error
+                }
+            },
+        )
+
+        assertThat(receivedError).isEqualTo(expectedError)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `awaitGetRewardVerificationResult returns backend result`() = runTest {
+        val expectedResult = RewardVerificationPollStatus.PENDING
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                onSuccess = captureLambda(),
+                onError = any(),
+            )
+        } answers {
+            lambda<(RewardVerificationPollStatus) -> Unit>().captured.invoke(expectedResult)
+        }
+
+        val result = purchases.awaitGetRewardVerificationResult(clientTransactionId = "ct_1")
+
+        assertThat(result).isEqualTo(expectedResult)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `awaitGetRewardVerificationResult throws backend error`() = runTest {
+        val expectedError = PurchasesError(PurchasesErrorCode.UnknownBackendError, "Unknown backend error")
+        every {
+            mockBackend.getRewardVerificationResult(
+                appUserID = appUserId,
+                clientTransactionId = "ct_1",
+                onSuccess = any(),
+                onError = captureLambda(),
+            )
+        } answers {
+            lambda<(RewardVerificationError) -> Unit>().captured.invoke(
+                RewardVerificationError(expectedError, false),
+            )
+        }
+
+        val thrown = runCatching {
+            purchases.awaitGetRewardVerificationResult(clientTransactionId = "ct_1")
+        }.exceptionOrNull()
+
+        assertThat(thrown).isInstanceOf(PurchasesException::class.java)
+        assertThat((thrown as PurchasesException).error).isEqualTo(expectedError)
+    }
+
     // region parseAsWebPurchaseRedemption
 
     @Test
@@ -1934,6 +2487,200 @@ internal class PurchasesTest : BasePurchasesTest() {
     }
 
     // endregion redeemWebPurchase
+
+    // region showManageSubscriptions
+
+    // These tests assert on the Intent handed to Context.startActivity. Whether a real device
+    // actually resolves that Intent to the Play Store app cannot be covered here, since it depends
+    // on which packages are installed. That part is verified manually on an emulator running a
+    // Play Store system image: tapping "Show manage subscriptions" in paywall-tester's App Info
+    // screen opens the Google Play Subscriptions page and onSuccess is reported.
+
+    @Test
+    fun `showManageSubscriptions opens management URL from CustomerInfo`() {
+        every { mockInfo.managementURL } returns Uri.parse("https://billing.stripe.com/portal/session/1234")
+
+        val context = mockk<Context>(relaxed = true)
+        val intentSlot = slot<Intent>()
+        every { context.startActivity(capture(intentSlot)) } just Runs
+
+        purchases.showManageSubscriptions(context)
+
+        assertThat(intentSlot.captured.data.toString()).isEqualTo("https://billing.stripe.com/portal/session/1234")
+        assertThat(intentSlot.captured.action).isEqualTo(Intent.ACTION_VIEW)
+    }
+
+    @Test
+    fun `showManageSubscriptions opens the management page in a new task`() {
+        every { mockInfo.managementURL } returns Uri.parse("https://app.revenuecat.com/manage")
+
+        val context = mockk<Context>(relaxed = true)
+        val intentSlot = slot<Intent>()
+        every { context.startActivity(capture(intentSlot)) } just Runs
+
+        purchases.showManageSubscriptions(context)
+
+        assertThat(intentSlot.captured.flags and Intent.FLAG_ACTIVITY_NEW_TASK)
+            .isEqualTo(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+
+    @Test
+    fun `showManageSubscriptions uses store default URL when CustomerInfo has no management URL`() {
+        every { mockInfo.managementURL } returns null
+
+        val context = mockk<Context>(relaxed = true)
+        val intentSlot = slot<Intent>()
+        every { context.startActivity(capture(intentSlot)) } just Runs
+
+        purchases.showManageSubscriptions(context)
+
+        assertThat(intentSlot.captured.data.toString()).isEqualTo(Constants.GOOGLE_PLAY_MANAGEMENT_URL)
+    }
+
+    @Test
+    fun `showManageSubscriptions uses Amazon store default URL when configured store is Amazon`() {
+        buildPurchases(anonymous = false, store = Store.AMAZON)
+        every { mockInfo.managementURL } returns null
+
+        val context = mockk<Context>(relaxed = true)
+        val intentSlot = slot<Intent>()
+        every { context.startActivity(capture(intentSlot)) } just Runs
+
+        purchases.showManageSubscriptions(context)
+
+        assertThat(intentSlot.captured.data.toString()).isEqualTo(Constants.AMAZON_STORE_MANAGEMENT_URL)
+    }
+
+    @Test
+    fun `showManageSubscriptions calls success callback after opening URL`() {
+        every { mockInfo.managementURL } returns Uri.parse("https://app.revenuecat.com/manage")
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.startActivity(any()) } just Runs
+
+        var successCalled = false
+        var errorReceived: PurchasesError? = null
+        purchases.showManageSubscriptions(
+            context,
+            object : ManageSubscriptionsCallback {
+                override fun onSuccess() { successCalled = true }
+                override fun onError(error: PurchasesError) { errorReceived = error }
+            },
+        )
+
+        assertThat(successCalled).isTrue()
+        assertThat(errorReceived).isNull()
+    }
+
+    @Test
+    fun `showManageSubscriptions calls error callback when CustomerInfo fetch fails`() {
+        val fetchError = PurchasesError(PurchasesErrorCode.NetworkError, "Network error")
+        mockCustomerInfoHelper(errorGettingCustomerInfo = fetchError)
+
+        val context = mockk<Context>(relaxed = true)
+
+        var successCalled = false
+        var errorReceived: PurchasesError? = null
+        purchases.showManageSubscriptions(
+            context,
+            object : ManageSubscriptionsCallback {
+                override fun onSuccess() { successCalled = true }
+                override fun onError(error: PurchasesError) { errorReceived = error }
+            },
+        )
+
+        assertThat(successCalled).isFalse()
+        assertThat(errorReceived?.code).isEqualTo(PurchasesErrorCode.NetworkError)
+    }
+
+    @Test
+    fun `showManageSubscriptions calls error callback when store has no management URL`() {
+        buildPurchases(anonymous = false, store = Store.TEST_STORE)
+        every { mockInfo.managementURL } returns null
+
+        val context = mockk<Context>(relaxed = true)
+
+        var successCalled = false
+        var errorReceived: PurchasesError? = null
+        purchases.showManageSubscriptions(
+            context,
+            object : ManageSubscriptionsCallback {
+                override fun onSuccess() { successCalled = true }
+                override fun onError(error: PurchasesError) { errorReceived = error }
+            },
+        )
+
+        assertThat(successCalled).isFalse()
+        assertThat(errorReceived?.code).isEqualTo(PurchasesErrorCode.UnsupportedError)
+        verify(exactly = 0) { context.startActivity(any()) }
+    }
+
+    @Test
+    fun `showManageSubscriptions calls error callback when no activity can handle the intent`() {
+        every { mockInfo.managementURL } returns Uri.parse("https://app.revenuecat.com/manage")
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.startActivity(any()) } throws ActivityNotFoundException("no handler")
+
+        var successCalled = false
+        var errorReceived: PurchasesError? = null
+        purchases.showManageSubscriptions(
+            context,
+            object : ManageSubscriptionsCallback {
+                override fun onSuccess() { successCalled = true }
+                override fun onError(error: PurchasesError) { errorReceived = error }
+            },
+        )
+
+        assertThat(successCalled).isFalse()
+        assertThat(errorReceived?.code).isEqualTo(PurchasesErrorCode.UnknownError)
+    }
+
+    @Test
+    fun `showManageSubscriptions logs the underlying detail when no activity can handle the intent`() {
+        every { mockInfo.managementURL } returns Uri.parse("https://app.revenuecat.com/manage")
+
+        val context = mockk<Context>(relaxed = true)
+        every { context.startActivity(any()) } throws ActivityNotFoundException("no handler")
+
+        val loggedErrors = recordErrorLogs { purchases.showManageSubscriptions(context) }
+
+        assertThat(loggedErrors).anyMatch { it.contains("Cannot open subscription management URL: no handler") }
+    }
+
+    @Test
+    fun `showManageSubscriptions logs the underlying detail when store has no management URL`() {
+        buildPurchases(anonymous = false, store = Store.TEST_STORE)
+        every { mockInfo.managementURL } returns null
+
+        val context = mockk<Context>(relaxed = true)
+
+        val loggedErrors = recordErrorLogs { purchases.showManageSubscriptions(context) }
+
+        assertThat(loggedErrors).anyMatch { it.contains("No management URL found for current subscription") }
+    }
+
+    private fun recordErrorLogs(block: () -> Unit): List<String> {
+        val loggedErrors = mutableListOf<String>()
+        val previousLogHandler = currentLogHandler
+        currentLogHandler = object : LogHandler {
+            override fun v(tag: String, msg: String) = Unit
+            override fun d(tag: String, msg: String) = Unit
+            override fun i(tag: String, msg: String) = Unit
+            override fun w(tag: String, msg: String) = Unit
+            override fun e(tag: String, msg: String, throwable: Throwable?) {
+                loggedErrors.add(msg)
+            }
+        }
+        try {
+            block()
+        } finally {
+            currentLogHandler = previousLogHandler
+        }
+        return loggedErrors
+    }
+
+    // endregion showManageSubscriptions
 
     // region Paywall fonts
 

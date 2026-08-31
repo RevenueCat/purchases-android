@@ -9,14 +9,20 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
+import com.revenuecat.purchases.common.BackendErrorCode
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.ReplaceProductInfo
-import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.SubscriberAttributeError
+import com.revenuecat.purchases.common.subscriberattributes.DeviceIdentifiersFetcher
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.google.billingResponseToPurchasesError
 import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
 import com.revenuecat.purchases.models.Period
@@ -28,6 +34,10 @@ import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.models.SubscriptionOptions
 import com.revenuecat.purchases.strings.PurchaseStrings
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttribute
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
+import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
+import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.createMockOneTimeProductDetails
 import com.revenuecat.purchases.utils.createMockProductDetailsFreeTrial
@@ -40,6 +50,8 @@ import com.revenuecat.purchases.utils.stubPricingPhase
 import com.revenuecat.purchases.utils.stubStoreProduct
 import com.revenuecat.purchases.utils.stubSubscriptionOption
 import io.mockk.Runs
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -49,6 +61,7 @@ import io.mockk.verify
 import io.mockk.verifyAll
 import io.mockk.verifyOrder
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.After
 import org.junit.Assert.fail
 import org.junit.Test
@@ -57,6 +70,7 @@ import org.robolectric.annotation.Config
 import java.util.Collections.emptyList
 import java.util.Date
 import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.runBlocking
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -2818,6 +2832,17 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         verifyClose()
     }
 
+    @Test
+    fun `when closing instance, the remote config manager is closed`() {
+        mockCloseActions()
+
+        purchases.close()
+
+        verify(exactly = 1) {
+            mockRemoteConfigManager.close()
+        }
+    }
+
     // endregion
 
     // region getWorkflow
@@ -2825,57 +2850,87 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `getWorkflow delivers the manager success result to the caller`() {
-        val expected = WorkflowDataResult(workflow = mockk(), enrolledVariants = null)
-        val successSlot = slot<(WorkflowDataResult) -> Unit>()
-        every {
-            mockWorkflowManager.getWorkflow(
-                appUserID = appUserId,
-                workflowId = "wf_1",
-                appInBackground = any(),
-                onSuccess = capture(successSlot),
-                onError = any(),
-                callbackDispatcher = any(),
-            )
-        } answers { successSlot.captured(expected) }
+        val expected = mockk<PublishedWorkflow>()
+        coEvery { mockWorkflowManager.getWorkflow("wf_1") } returns expected
 
-        var received: WorkflowDataResult? = null
-        var receivedError: PurchasesError? = null
-        purchases.purchasesOrchestrator.getWorkflow(
-            workflowId = "wf_1",
-            onSuccess = { received = it },
-            onError = { receivedError = it },
-        )
+        val result = runBlocking { purchases.purchasesOrchestrator.getWorkflow("wf_1") }
 
-        assertThat(received).isEqualTo(expected)
-        assertThat(receivedError).isNull()
+        assertThat(result).isEqualTo(expected)
     }
 
     @OptIn(InternalRevenueCatAPI::class)
     @Test
-    fun `getWorkflow delivers the manager error to the caller`() {
+    fun `getWorkflow surfaces the manager error to the caller`() {
         val expectedError = PurchasesError(PurchasesErrorCode.UnknownError, "boom")
-        val errorSlot = slot<(PurchasesError) -> Unit>()
-        every {
-            mockWorkflowManager.getWorkflow(
-                appUserID = appUserId,
-                workflowId = "wf_1",
-                appInBackground = any(),
-                onSuccess = any(),
-                onError = capture(errorSlot),
-                callbackDispatcher = any(),
-            )
-        } answers { errorSlot.captured(expectedError) }
+        coEvery { mockWorkflowManager.getWorkflow("wf_1") } throws PurchasesException(expectedError)
 
-        var received: WorkflowDataResult? = null
-        var receivedError: PurchasesError? = null
-        purchases.purchasesOrchestrator.getWorkflow(
-            workflowId = "wf_1",
-            onSuccess = { received = it },
-            onError = { receivedError = it },
-        )
+        val thrown = runBlocking {
+            runCatching { purchases.purchasesOrchestrator.getWorkflow("wf_1") }.exceptionOrNull()
+        }
 
-        assertThat(receivedError).isEqualTo(expectedError)
-        assertThat(received).isNull()
+        assertThat(thrown).isInstanceOf(PurchasesException::class.java)
+        assertThat((thrown as PurchasesException).error).isEqualTo(expectedError)
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    @Test
+    fun `getWorkflow returns ConfigurationError and never calls manager when uiPreviewMode is true`() {
+        buildPurchases(anonymous = true, uiPreviewMode = true)
+
+        val thrown = runBlocking {
+            runCatching { purchases.purchasesOrchestrator.getWorkflow("wf_1") }.exceptionOrNull()
+        }
+
+        assertThat(thrown).isInstanceOf(PurchasesException::class.java)
+        assertThat((thrown as PurchasesException).error.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        coVerify(exactly = 0) { mockWorkflowManager.getWorkflow(any()) }
+    }
+
+    // endregion
+
+    // region getUiConfig
+
+    @Test
+    fun `getUiConfig delivers the provider's result to the caller`() {
+        val expected = emptyUiConfig()
+        coEvery { mockUiConfigProvider.getUiConfig() } returns expected
+
+        val received = runBlocking { purchases.purchasesOrchestrator.getUiConfig() }
+
+        assertThat(received).isEqualTo(expected)
+    }
+
+    @Test
+    fun `getUiConfig throws UnknownError when the provider returns null`() {
+        coEvery { mockUiConfigProvider.getUiConfig() } returns null
+
+        assertThatExceptionOfType(PurchasesException::class.java)
+            .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getUiConfig() } }
+            .extracting { it.code }
+            .isEqualTo(PurchasesErrorCode.UnknownError)
+    }
+
+    @Test
+    fun `getUiConfig propagates a provider failure to the caller without wrapping it`() {
+        val failure = RuntimeException("boom")
+        coEvery { mockUiConfigProvider.getUiConfig() } throws failure
+
+        assertThatExceptionOfType(RuntimeException::class.java)
+            .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getUiConfig() } }
+            .isSameAs(failure)
+    }
+
+    @Test
+    fun `getUiConfig throws ConfigurationError and never calls the provider when uiPreviewMode is true`() {
+        buildPurchases(anonymous = true, uiPreviewMode = true)
+
+        assertThatExceptionOfType(PurchasesException::class.java)
+            .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getUiConfig() } }
+            .extracting { it.code }
+            .isEqualTo(PurchasesErrorCode.ConfigurationError)
+        coVerify(exactly = 0) {
+            mockUiConfigProvider.getUiConfig()
+        }
     }
 
     // endregion
@@ -2901,6 +2956,215 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         }
     }
 
+    @Test
+    fun `syncAttributesAndOfferingsIfNeeded refreshes remote config`() {
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+                appUserId,
+                any(),
+                any(),
+                captureLambda(),
+            )
+        } answers { lambda<() -> Unit>().captured.invoke() }
+        every {
+            mockOfferingsManager.getOfferings(appUserId, false, any(), any(), fetchCurrent = true)
+        } just Runs
+
+        purchases.purchasesOrchestrator.syncAttributesAndOfferingsIfNeeded(
+            object : SyncAttributesAndOfferingsCallback {
+                override fun onSuccess(offerings: Offerings) {}
+                override fun onError(error: PurchasesError) {}
+            },
+        )
+
+        verify(exactly = 1) {
+            mockRemoteConfigManager.refreshRemoteConfig(false, appUserId, RemoteConfigFetchContext.Read)
+        }
+    }
+
+    @Test
+    fun `syncAttributesAndOfferingsIfNeeded returns attribute sync error without fetching offerings`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
+        assertAttributeSyncErrorBlocksOfferings(expectedError)
+    }
+
+    @Test
+    fun `syncAttributesAndOfferingsIfNeeded fetches offerings for reserved attribute 7263 error`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.InvalidSubscriberAttributesError)
+        buildPurchasesWithAttributeSyncError(
+            expectedError,
+            listOf(
+                SubscriberAttributeError(
+                    "\$idfv",
+                    "IDFV cannot be modified.",
+                    BackendErrorCode.BackendInvalidSubscriberAttributes.value,
+                ),
+            ),
+        )
+        every {
+            mockOfferingsManager.getOfferings(appUserId, false, any(), any(), fetchCurrent = true)
+        } just Runs
+
+        purchases.purchasesOrchestrator.syncAttributesAndOfferingsIfNeeded(
+            object : SyncAttributesAndOfferingsCallback {
+                override fun onSuccess(offerings: Offerings) {}
+                override fun onError(error: PurchasesError) = fail("Expected offerings to be fetched")
+            },
+        )
+
+        verify(exactly = 1) {
+            mockOfferingsManager.getOfferings(appUserId, false, any(), any(), fetchCurrent = true)
+        }
+    }
+
+    @Test
+    fun `syncAttributesAndOfferingsIfNeeded returns custom attribute 7263 error`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.InvalidSubscriberAttributesError)
+        assertAttributeSyncErrorBlocksOfferings(
+            expectedError,
+            listOf(
+                SubscriberAttributeError(
+                    "favorite_color",
+                    "Value is too long.",
+                    BackendErrorCode.BackendInvalidSubscriberAttributes.value,
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun `syncAttributesAndOfferingsIfNeeded returns mixed attribute 7263 error`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.InvalidSubscriberAttributesError)
+        assertAttributeSyncErrorBlocksOfferings(
+            expectedError,
+            listOf(
+                SubscriberAttributeError(
+                    "\$idfv",
+                    "IDFV cannot be modified.",
+                    BackendErrorCode.BackendInvalidSubscriberAttributes.value,
+                ),
+                SubscriberAttributeError(
+                    "favorite_color",
+                    "Value is too long.",
+                    BackendErrorCode.BackendInvalidSubscriberAttributes.value,
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun `syncAttributesAndOfferingsIfNeeded returns 7263 error without attribute details`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.InvalidSubscriberAttributesError)
+        assertAttributeSyncErrorBlocksOfferings(expectedError)
+    }
+
+    @Test
+    fun `syncAttributesAndOfferingsIfNeeded returns reserved attribute 7264 error`() {
+        val expectedError = PurchasesError(PurchasesErrorCode.InvalidSubscriberAttributesError)
+        assertAttributeSyncErrorBlocksOfferings(
+            expectedError,
+            listOf(
+                SubscriberAttributeError(
+                    "\$idfv",
+                    "IDFV cannot be modified.",
+                    BackendErrorCode.BackendInvalidSubscriberAttributesBody.value,
+                ),
+            ),
+        )
+    }
+
+    private fun assertAttributeSyncErrorBlocksOfferings(
+        expectedError: PurchasesError,
+        attributeErrors: List<SubscriberAttributeError> = emptyList(),
+    ) {
+        buildPurchasesWithAttributeSyncError(expectedError, attributeErrors)
+        every {
+            mockOfferingsManager.getOfferings(appUserId, false, any(), any(), fetchCurrent = true)
+        } just Runs
+
+        var receivedError: PurchasesError? = null
+        purchases.purchasesOrchestrator.syncAttributesAndOfferingsIfNeeded(
+            object : SyncAttributesAndOfferingsCallback {
+                override fun onSuccess(offerings: Offerings) = fail("Expected attribute sync to fail")
+
+                override fun onError(error: PurchasesError) {
+                    receivedError = error
+                }
+            },
+        )
+
+        assertThat(receivedError).isEqualTo(expectedError)
+        verify(exactly = 0) {
+            mockOfferingsManager.getOfferings(appUserId, false, any(), any(), fetchCurrent = true)
+        }
+    }
+
+    private fun buildPurchasesWithAttributeSyncError(
+        error: PurchasesError,
+        attributeErrors: List<SubscriberAttributeError> = emptyList(),
+    ) {
+        val subscriberAttribute = SubscriberAttribute("key", "value", isSynced = false)
+        val subscriberAttributesCache = mockk<SubscriberAttributesCache>()
+        val subscriberAttributesPoster = mockk<SubscriberAttributesPoster>()
+
+        every {
+            subscriberAttributesCache.getUnsyncedSubscriberAttributes()
+        } returns mapOf(appUserId to mapOf("key" to subscriberAttribute))
+        every {
+            subscriberAttributesPoster.postSubscriberAttributes(
+                any(),
+                appUserId,
+                any(),
+                any(),
+                captureLambda(),
+            )
+        } answers {
+            lambda<(PurchasesError, Boolean, List<SubscriberAttributeError>) -> Unit>().captured.invoke(
+                error,
+                false,
+                attributeErrors,
+            )
+        }
+
+        val subscriberAttributesManager = SubscriberAttributesManager(
+            subscriberAttributesCache,
+            subscriberAttributesPoster,
+            mockk<DeviceIdentifiersFetcher>(),
+            automaticDeviceIdentifierCollectionEnabled = true,
+        )
+        buildPurchases(
+            anonymous = false,
+            subscriberAttributesManager = subscriberAttributesManager,
+        )
+    }
+
+    @Test
+    fun `syncAttributesAndOfferingsIfNeeded does not refresh remote config when rate limited`() {
+        every {
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+                appUserId,
+                any(),
+                any(),
+                captureLambda(),
+            )
+        } answers { lambda<() -> Unit>().captured.invoke() }
+        every {
+            mockOfferingsManager.getOfferings(appUserId, false, any(), any(), any())
+        } just Runs
+
+        val callback = object : SyncAttributesAndOfferingsCallback {
+            override fun onSuccess(offerings: Offerings) {}
+            override fun onError(error: PurchasesError) {}
+        }
+        // The rate limiter allows 5 calls per minute; the 6th takes the rate-limited early-return branch,
+        // which serves cached offerings and must not force a remote config refresh.
+        repeat(6) { purchases.purchasesOrchestrator.syncAttributesAndOfferingsIfNeeded(callback) }
+
+        verify(exactly = 5) {
+            mockRemoteConfigManager.refreshRemoteConfig(false, appUserId, RemoteConfigFetchContext.Read)
+        }
+    }
+
     // endregion
 
     @Test
@@ -2915,7 +3179,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     // region Private Methods
     private fun mockSynchronizeSubscriberAttributesForAllUsers() {
         every {
-            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId)
+            mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(appUserId, any(), any())
         } just Runs
     }
 
@@ -2937,6 +3201,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     private fun verifyClose() {
         verify {
             mockBackend.close()
+            mockRemoteConfigManager.close()
             mockBillingAbstract.close()
         }
         assertThat(purchases.updatedCustomerInfoListener).isNull()

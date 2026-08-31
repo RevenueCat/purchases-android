@@ -282,7 +282,7 @@ class TextComponentViewTests {
         // Arrange
         val textId = localizations.getValue(localeIdEnUs).keys.first()
         val color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
-        val size = Size(Fit, Fit)
+        val size = Size(Fit(), Fit())
         val largeTextComponent = TextComponent(text = textId, color = color, fontSize = 28, size = size)
         val smallTextComponent = TextComponent(text = textId, color = color, fontSize = 13, size = size)
         val state = FakePaywallState(
@@ -335,7 +335,7 @@ class TextComponentViewTests {
     fun `Should properly set the font weight`(): Unit = with(composeTestRule) {
         // Arrange
         val color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
-        val size = Size(Fit, Fit)
+        val size = Size(Fit(), Fit())
         val blackWeightComponent = TextComponent(
             text = selectedLocalizationKey,
             color = color,
@@ -1012,7 +1012,7 @@ class TextComponentViewTests {
             horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
             backgroundColor = null,
             visible = true,
-            size = Size(SizeConstraint.Fit, SizeConstraint.Fit),
+            size = Size(SizeConstraint.Fit(), SizeConstraint.Fit()),
             padding = PaddingValues(0.dp),
             margin = PaddingValues(0.dp),
             rcPackage = null,
@@ -1071,7 +1071,7 @@ class TextComponentViewTests {
                 horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
                 backgroundColor = null,
                 visible = true,
-                size = Size(SizeConstraint.Fit, SizeConstraint.Fit),
+                size = Size(SizeConstraint.Fit(), SizeConstraint.Fit()),
                 padding = PaddingValues(0.dp),
                 margin = PaddingValues(0.dp),
                 rcPackage = null,
@@ -1139,7 +1139,7 @@ class TextComponentViewTests {
                 horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
                 backgroundColor = null,
                 visible = true,
-                size = Size(SizeConstraint.Fit, SizeConstraint.Fit),
+                size = Size(SizeConstraint.Fit(), SizeConstraint.Fit()),
                 padding = PaddingValues(0.dp),
                 margin = PaddingValues(0.dp),
                 rcPackage = null,

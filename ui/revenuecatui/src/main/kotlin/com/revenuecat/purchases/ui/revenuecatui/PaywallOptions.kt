@@ -3,8 +3,12 @@ package com.revenuecat.purchases.ui.revenuecatui
 import android.os.Parcelable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.common.CustomVariableKeyValidator
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
 import dev.drewhamilton.poko.Poko
@@ -57,6 +61,8 @@ public class PaywallOptions internal constructor(
      * `{{ $custom.key }}` placeholders in the paywall configuration.
      */
     public val customVariables: Map<String, CustomVariableValue> = emptyMap(),
+    internal val injectedWorkflow: PublishedWorkflow? = null,
+    internal val injectedWorkflowUiConfig: UiConfig = emptyUiConfig(),
 ) {
     public companion object {
         private const val hashMultiplier = 31
@@ -72,6 +78,8 @@ public class PaywallOptions internal constructor(
         dismissRequest = builder.dismissRequest,
         dismissRequestWithExitOffering = builder.dismissRequestWithExitOffering,
         customVariables = builder.customVariables,
+        injectedWorkflow = builder.injectedWorkflow,
+        injectedWorkflowUiConfig = builder.injectedWorkflowUiConfig,
     )
 
     // Only key fields that affect the paywall's identity and rendering logic are used in hashCode.
@@ -82,6 +90,8 @@ public class PaywallOptions internal constructor(
         result = hashMultiplier * result + shouldDisplayDismissButton.hashCode()
         result = hashMultiplier * result + mode.hashCode()
         result = hashMultiplier * result + customVariables.hashCode()
+        result = hashMultiplier * result + injectedWorkflow.hashCode()
+        result = hashMultiplier * result + injectedWorkflowUiConfig.hashCode()
         return result
     }
 
@@ -97,6 +107,8 @@ public class PaywallOptions internal constructor(
             this.purchaseLogic != other.purchaseLogic -> false
             this.mode != other.mode -> false
             this.customVariables != other.customVariables -> false
+            this.injectedWorkflow != other.injectedWorkflow -> false
+            this.injectedWorkflowUiConfig != other.injectedWorkflowUiConfig -> false
             else -> this.dismissRequest == other.dismissRequest
         }
     }
@@ -111,6 +123,8 @@ public class PaywallOptions internal constructor(
         dismissRequest: () -> Unit = this.dismissRequest,
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = this.dismissRequestWithExitOffering,
         customVariables: Map<String, CustomVariableValue> = this.customVariables,
+        injectedWorkflow: PublishedWorkflow? = this.injectedWorkflow,
+        injectedWorkflowUiConfig: UiConfig = this.injectedWorkflowUiConfig,
     ): PaywallOptions = PaywallOptions(
         offeringSelection = offeringSelection,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
@@ -121,6 +135,8 @@ public class PaywallOptions internal constructor(
         dismissRequest = dismissRequest,
         dismissRequestWithExitOffering = dismissRequestWithExitOffering,
         customVariables = customVariables,
+        injectedWorkflow = injectedWorkflow,
+        injectedWorkflowUiConfig = injectedWorkflowUiConfig,
     )
 
     @Suppress("TooManyFunctions")
@@ -135,6 +151,8 @@ public class PaywallOptions internal constructor(
         internal var mode: PaywallMode = PaywallMode.default
         internal var dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null
         internal var customVariables: Map<String, CustomVariableValue> = emptyMap()
+        internal var injectedWorkflow: PublishedWorkflow? = null
+        internal var injectedWorkflowUiConfig: UiConfig = emptyUiConfig()
 
         public fun setOffering(offering: Offering?): Builder = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
@@ -196,8 +214,45 @@ public class PaywallOptions internal constructor(
             this.customVariables = CustomVariableKeyValidator.validateAndFilter(variables)
         }
 
+        /**
+         * Injects a pre-built workflow (multipage paywall) to render locally without fetching
+         * it from the backend, together with the [Offering] it renders against. Internal
+         * RevenueCat use only (e.g. mobile app preview).
+         *
+         * The workflow's screens resolve their packages from [offering]; pass the single
+         * offering the workflow references (prefer single-offering workflows in preview), or
+         * null for workflows without an associated offering. This sets the offering for you,
+         * so there's no need to also call [setOffering]. Optionally pass [uiConfig] to style the
+         * injected workflow, since it no longer ships with its own `ui_config`.
+         */
+        @InternalRevenueCatAPI
+        public fun injectedWorkflow(
+            workflow: PublishedWorkflow,
+            offering: Offering?,
+            uiConfig: UiConfig = emptyUiConfig(),
+        ): Builder = apply {
+            this.injectedWorkflow = workflow
+            this.injectedWorkflowUiConfig = uiConfig
+            this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
+                ?: OfferingSelection.None
+        }
+
         public fun build(): PaywallOptions {
             return PaywallOptions(this)
         }
     }
 }
+
+/**
+ * An explicitly empty [UiConfig] for locally-injected workflows and previews that don't fetch a remote `ui_config`.
+ * The remote fetch path no longer falls back to a default config, so this is only for in-memory construction.
+ */
+internal fun emptyUiConfig(): UiConfig =
+    UiConfig(
+        app = UiConfig.AppConfig(colors = emptyMap(), fonts = emptyMap()),
+        localizations = emptyMap(),
+        variableConfig = UiConfig.VariableConfig(
+            variableCompatibilityMap = emptyMap(),
+            functionCompatibilityMap = emptyMap(),
+        ),
+    )

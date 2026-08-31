@@ -29,6 +29,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDel
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateStore
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
 
 @Stable
@@ -43,17 +44,20 @@ internal fun rememberUpdatedStackComponentState(
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
     customVariablesProvider = { paywallState.mergedCustomVariables },
+    stateStoreProvider = { paywallState.stateStore },
 )
 
 @Stable
 @JvmSynthetic
 @Composable
+@Suppress("LongParameterList")
 private fun rememberUpdatedStackComponentState(
     style: StackComponentStyle,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
     selectedOfferEligibilityProvider: () -> OfferEligibility,
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
+    stateStoreProvider: () -> PaywallStateStore,
 ): StackComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
     val layoutDirection = LocalLayoutDirection.current
@@ -67,6 +71,7 @@ private fun rememberUpdatedStackComponentState(
             selectedTabIndexProvider = selectedTabIndexProvider,
             selectedOfferEligibilityProvider = selectedOfferEligibilityProvider,
             customVariablesProvider = customVariablesProvider,
+            stateStoreProvider = stateStoreProvider,
         )
     }.apply {
         update(
@@ -86,6 +91,7 @@ internal class StackComponentState(
     private val selectedTabIndexProvider: () -> Int,
     private val selectedOfferEligibilityProvider: () -> OfferEligibility,
     private val customVariablesProvider: () -> Map<String, CustomVariableValue> = { emptyMap() },
+    private val stateStoreProvider: () -> PaywallStateStore = { PaywallStateStore(emptyMap()) },
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
@@ -109,6 +115,7 @@ internal class StackComponentState(
             conditionContext = ConditionContext(
                 selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
                 customVariables = customVariablesProvider(),
+                stateReader = stateStoreProvider()::currentValueOrDefault,
             ),
         )
     }

@@ -64,7 +64,7 @@ constructor(
     @SerialName("horizontal_alignment")
     public val horizontalAlignment: HorizontalAlignment = CENTER,
     @get:JvmSynthetic
-    public val size: Size = Size(width = Fill, height = Fit),
+    public val size: Size = Size(width = Fill, height = Fit()),
     @get:JvmSynthetic
     public val padding: Padding = zero,
     @get:JvmSynthetic

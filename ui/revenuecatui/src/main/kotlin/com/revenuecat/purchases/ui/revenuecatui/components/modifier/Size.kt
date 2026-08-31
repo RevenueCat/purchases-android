@@ -78,7 +78,7 @@ private fun Size_Preview(size: Size) {
 @Preview("FitFit")
 @Composable
 private fun Size_Preview_FitFit() {
-    Size_Preview(size = Size(width = Fit, height = Fit))
+    Size_Preview(size = Size(width = Fit(), height = Fit()))
 }
 
 @Preview("FillFill")
@@ -90,13 +90,13 @@ private fun Size_Preview_FillFill() {
 @Preview("FillFit")
 @Composable
 private fun Size_Preview_FillFit() {
-    Size_Preview(size = Size(width = Fill, height = Fit))
+    Size_Preview(size = Size(width = Fill, height = Fit()))
 }
 
 @Preview("FitFill")
 @Composable
 private fun Size_Preview_FitFill() {
-    Size_Preview(size = Size(width = Fit, height = Fill))
+    Size_Preview(size = Size(width = Fit(), height = Fill))
 }
 
 @Preview("FixedFixed")
@@ -118,7 +118,7 @@ private fun Size_Preview_HorizontalAlignment() {
                 // With requiredWidth + Fit, the horizontalAlignment applies.
                 .requiredWidth(150.dp)
                 .size(
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                     horizontalAlignment = Alignment.End,
                 ),
             contentAlignment = Alignment.Center,
@@ -141,7 +141,7 @@ private fun Size_Preview_VerticalAlignment() {
                 // With requiredHeight + Fit, the verticalAlignment applies.
                 .requiredHeight(150.dp)
                 .size(
-                    size = Size(width = Fit, height = Fit),
+                    size = Size(width = Fit(), height = Fit()),
                     verticalAlignment = Alignment.Bottom,
                 ),
             contentAlignment = Alignment.Center,

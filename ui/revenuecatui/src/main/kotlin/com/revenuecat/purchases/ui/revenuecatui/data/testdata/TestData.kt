@@ -366,6 +366,19 @@ internal object TestData {
                 period = Period(value = 6, unit = Period.Unit.MONTH, iso8601 = "P6M"),
             ),
         )
+        val customLifetime = Package(
+            packageType = PackageType.CUSTOM,
+            identifier = "custom_lifetime",
+            offering = "offering",
+            product = TestStoreProduct(
+                id = "com.revenuecat.custom_lifetime_product",
+                name = "Custom Lifetime",
+                title = "Custom Lifetime (App name)",
+                price = Price(amountMicros = 1_000_000_000, currencyCode = "USD", formatted = "$1,000"),
+                description = "Custom Lifetime",
+                period = null,
+            ),
+        )
         val unknown = Package(
             packageType = PackageType.UNKNOWN,
             identifier = "Unknown",
@@ -497,7 +510,7 @@ internal class MockResourceProvider(
     override fun getAssetFontPaths(names: List<String>): Map<String, String>? {
         val foundPaths = names.associateWith { name ->
             val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
-            "${ResourceProvider.ASSETS_FONTS_DIR}/$nameWithExtension"
+            "fonts/$nameWithExtension"
         }
 
         return foundPaths.filter { assetPaths.contains(it.value) }
@@ -521,6 +534,7 @@ internal class MockViewModel(
     validationWarning: PaywallWarning? = null,
     private val allowsPurchases: Boolean = false,
     private val shouldErrorOnUnsupportedMethods: Boolean = true,
+    private val webCheckoutUrl: String? = null,
 ) : ViewModel(), PaywallViewModel {
     override val resourceProvider: ResourceProvider
         get() = MockResourceProvider()
@@ -596,6 +610,9 @@ internal class MockViewModel(
         refreshStateIfColorsChangedCallCount++
     }
 
+    override fun onPaywallPresented() = Unit
+    override fun onPaywallDismissed() = Unit
+
     var selectPackageCallCount = 0
         private set
     var selectPackageCallParams = mutableListOf<TemplateConfiguration.PackageInfo>()
@@ -619,7 +636,19 @@ internal class MockViewModel(
     override fun getWebCheckoutUrl(launchWebCheckout: PaywallAction.External.LaunchWebCheckout): String? {
         getWebCheckoutUrlCallCount++
         getWebCheckoutUrlParams.add(launchWebCheckout)
-        return null
+        return webCheckoutUrl
+    }
+
+    var notifyWebCheckoutOpenedCallCount = 0
+        private set
+    override fun notifyWebCheckoutOpened() {
+        notifyWebCheckoutOpenedCallCount++
+    }
+
+    var notifyUrlOpenedParams = mutableListOf<String>()
+        private set
+    override fun notifyUrlOpened(url: String) {
+        notifyUrlOpenedParams.add(url)
     }
 
     var invalidateCustomerInfoCacheCallCount = 0

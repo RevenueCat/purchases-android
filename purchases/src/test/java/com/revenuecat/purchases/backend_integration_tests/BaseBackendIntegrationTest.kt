@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.networking.ETagPayloadStore
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import io.mockk.Runs
@@ -26,6 +27,7 @@ import org.junit.Assume
 import org.junit.Before
 import org.junit.BeforeClass
 import org.junit.Rule
+import org.junit.rules.TemporaryFolder
 import org.junit.rules.TestName
 import org.junit.runner.RunWith
 import java.io.File
@@ -60,6 +62,9 @@ internal abstract class BaseBackendIntegrationTest {
 
     @get:Rule
     val testName = TestName()
+
+    @get:Rule
+    val temporaryFolder = TemporaryFolder()
 
     lateinit var appConfig: AppConfig
     lateinit var dispatcher: Dispatcher
@@ -106,18 +111,25 @@ internal abstract class BaseBackendIntegrationTest {
             every { isAppBackgrounded } returns false
             every { fallbackBaseURLs } returns listOf(AppConfig.fallbackURL)
             every { runningTests } returns true
+            every { hasProxyURL } returns false
+            every { usesRemoteConfigAPISources } returns false
         }
         dispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor(), runningIntegrationTests = true)
         diagnosticsDispatcher = Dispatcher(Executors.newSingleThreadScheduledExecutor(), runningIntegrationTests = true)
         sharedPreferencesEditor = mockk<SharedPreferences.Editor>().apply {
             every { putString(any(), any()) } returns this
+            every { remove(any()) } returns this
             every { apply() } just Runs
         }
         sharedPreferences = mockk<SharedPreferences>().apply {
             every { getString(any(), any()) } answers { secondArg() as String? }
             every { edit() } returns sharedPreferencesEditor
         }
-        eTagManager = ETagManager(mockk(), lazy { sharedPreferences })
+        eTagManager = ETagManager(
+            mockk(),
+            lazy { sharedPreferences },
+            payloadStore = ETagPayloadStore(temporaryFolder.newFolder()),
+        )
         signingManager = spyk(SigningManager(signatureVerificationMode, appConfig, apiKey()))
         deviceCache = DeviceCache(sharedPreferences, apiKey())
         httpClient = HTTPClient(
@@ -126,6 +138,7 @@ internal abstract class BaseBackendIntegrationTest {
             diagnosticsTrackerIfEnabled = null,
             signingManager,
             deviceCache,
+            apiSourceFailover = null,
             localeProvider = DefaultLocaleProvider(),
             forceServerErrorStrategy = forceServerErrorStrategy,
             requestResponseListener = goldenFileRecorder

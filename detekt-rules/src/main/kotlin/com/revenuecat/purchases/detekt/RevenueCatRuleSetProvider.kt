@@ -9,6 +9,9 @@ class RevenueCatRuleSetProvider : RuleSetProvider {
 
     override fun instance(config: Config): RuleSet = RuleSet(
         ruleSetId,
-        listOf(ForbiddenPublicSealedClass(config)),
+        listOf(
+            ForbiddenPublicSealedClass(config),
+            ForbiddenPublicEnum(config),
+        ),
     )
 }

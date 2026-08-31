@@ -22,8 +22,21 @@ public class DangerousSettings internal constructor(
     internal val uiPreviewMode: Boolean = false,
 
     internal val applyObfuscatedAccountIdToSubscriptionChanges: Boolean = false,
+
+    /**
+     * Whether main-API requests resolve their base host from the remote-config API sources
+     * instead of the static [AppConfig] base URL. Disabled by default; enabled in tests while
+     * remote-config-driven host resolution is being validated.
+     */
+    internal val usesRemoteConfigAPISources: Boolean = false,
 ) : Parcelable {
-    public constructor(autoSyncPurchases: Boolean = true) : this(autoSyncPurchases, false, false, false)
+    public constructor(autoSyncPurchases: Boolean = true) : this(
+        autoSyncPurchases = autoSyncPurchases,
+        customEntitlementComputation = false,
+        uiPreviewMode = false,
+        applyObfuscatedAccountIdToSubscriptionChanges = false,
+        usesRemoteConfigAPISources = false,
+    )
 
     public companion object {
         /**

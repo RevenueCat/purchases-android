@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.paywalls.components.common
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.utils.serializers.DefaultLocaleIdSerializer
 import com.revenuecat.purchases.utils.serializers.EmptyObjectToNullSerializer
 import com.revenuecat.purchases.utils.serializers.GoogleListSerializer
 import com.revenuecat.purchases.utils.serializers.URLSerializer
@@ -30,8 +31,9 @@ public class PaywallComponentsData(
     @SerialName("components_localizations")
     public val componentsLocalizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>>,
     @get:JvmSynthetic
+    @Serializable(with = DefaultLocaleIdSerializer::class)
     @SerialName("default_locale")
-    public val defaultLocaleIdentifier: LocaleId,
+    public val defaultLocaleIdentifier: LocaleId = DefaultLocaleIdSerializer.FALLBACK,
     @get:JvmSynthetic
     public val revision: Int = 0,
     @get:JvmSynthetic
@@ -48,9 +50,13 @@ public class PaywallComponentsData(
     @get:JvmSynthetic
     @SerialName("automatically_scale_font_size")
     public val automaticallyScaleFontSize: Boolean = true,
+    @get:JvmSynthetic
+    @Serializable(with = StateDeclarationMapSerializer::class)
+    @SerialName("state_declarations")
+    public val stateDeclarations: Map<String, StateDeclaration>? = null,
 )
 
 @OptIn(InternalRevenueCatAPI::class)
-private object ProductChangeConfigSerializer : EmptyObjectToNullSerializer<ProductChangeConfig>(
+internal object ProductChangeConfigSerializer : EmptyObjectToNullSerializer<ProductChangeConfig>(
     ProductChangeConfig.serializer(),
 )

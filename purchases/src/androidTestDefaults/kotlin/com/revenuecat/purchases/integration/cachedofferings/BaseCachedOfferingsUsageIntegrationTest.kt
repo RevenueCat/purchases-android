@@ -10,6 +10,7 @@ import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.awaitOfferings
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
 import com.revenuecat.purchases.helpers.mockQueryProductDetails
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -20,6 +21,35 @@ import org.junit.Test
 import java.net.URL
 
 abstract class BaseCachedOfferingsUsageIntegrationTest : BasePurchasesIntegrationTest() {
+
+    private companion object {
+        const val UNREACHABLE_URL = "http://localhost:100/unreachable-address"
+
+        /**
+         * These tests restart the SDK twice against the real backend, and `getOfferings` only returns once the
+         * `/v1/config` paywall data is ready, which can include downloading config blobs from the config CDN.
+         * `runTest`'s 10s default is a deadlock guard, not a latency budget, and it is too tight for that.
+         */
+        const val BACKEND_TEST_TIMEOUT_MS = 60_000L
+    }
+
+    /** The RevenueCat API is unreachable. The config CDN, a different host, still is. */
+    private val apiUnreachable = object : ForceServerErrorStrategy {
+        override val serverErrorURL: String
+            get() = UNREACHABLE_URL
+
+        override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean = true
+    }
+
+    /** Nothing is reachable: neither the API nor any direct download (config blobs). */
+    private val fullyOffline = object : ForceServerErrorStrategy {
+        override val serverErrorURL: String
+            get() = UNREACHABLE_URL
+
+        override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean = true
+
+        override fun shouldForceConnectionFailure(url: String): Boolean = true
+    }
 
     @get:Rule
     var instantExecutorRule = InstantTaskExecutorRule()
@@ -36,7 +66,9 @@ abstract class BaseCachedOfferingsUsageIntegrationTest : BasePurchasesIntegratio
     }
 
     @Test
-    fun cachedOfferingsAreUsedWhenCachedOfferingsAndServerErrorWith5xx() = runTest {
+    fun cachedOfferingsAreUsedWhenCachedOfferingsAndServerErrorWith5xx() = runTest(
+        dispatchTimeoutMs = BACKEND_TEST_TIMEOUT_MS,
+    ) {
         val networkOfferings = Purchases.sharedInstance.awaitOfferings()
 
         simulateSdkRestart(activity, forceServerErrorsStrategy = ForceServerErrorStrategy.failAll)
@@ -47,20 +79,31 @@ abstract class BaseCachedOfferingsUsageIntegrationTest : BasePurchasesIntegratio
     }
 
     @Test
-    fun cachedOfferingsAreUsedWhenCachedOfferingsAndServerCannotBeReached() = runTest {
+    fun cachedOfferingsAreUsedWhenCachedOfferingsAndServerCannotBeReached() = runTest(
+        dispatchTimeoutMs = BACKEND_TEST_TIMEOUT_MS,
+    ) {
         val networkOfferings = Purchases.sharedInstance.awaitOfferings()
 
-        simulateSdkRestart(
-            activity,
-            forceServerErrorsStrategy = object : ForceServerErrorStrategy {
-                override val serverErrorURL: String
-                    get() = "http://localhost:100/unreachable-address"
+        simulateSdkRestart(activity, forceServerErrorsStrategy = apiUnreachable)
 
-                override fun shouldForceServerError(baseURL: URL, endpoint: Endpoint): Boolean {
-                    return true
-                }
-            },
-        )
+        val cachedOfferings = Purchases.sharedInstance.awaitOfferings()
+
+        assertThat(cachedOfferings).isEqualTo(networkOfferings)
+    }
+
+    /**
+     * Unlike the test above, this one keeps `runTest`'s tight default budget on purpose: with no host reachable
+     * there is nothing legitimate left to wait for, so it also guards against the paywall-config readiness gate
+     * stranding or slowing down a `getOfferings` that the disk cache can already answer.
+     */
+    @Test
+    fun cachedOfferingsAreUsedWhenFullyOffline() = runTest {
+        val networkOfferings = Purchases.sharedInstance.awaitOfferings()
+
+        // Config blobs cached by the first fetch would let the readiness gate resolve without the network,
+        // hiding the very wait this test exists to catch.
+        RemoteConfigBlobStore(activity).clear()
+        simulateSdkRestart(activity, forceServerErrorsStrategy = fullyOffline)
 
         val cachedOfferings = Purchases.sharedInstance.awaitOfferings()
 
@@ -68,7 +111,9 @@ abstract class BaseCachedOfferingsUsageIntegrationTest : BasePurchasesIntegratio
     }
 
     @Test
-    fun cachedOfferingsAreNotUsedWhenCachedOfferingsAndErrorWith4xx() = runTest {
+    fun cachedOfferingsAreNotUsedWhenCachedOfferingsAndErrorWith4xx() = runTest(
+        dispatchTimeoutMs = BACKEND_TEST_TIMEOUT_MS,
+    ) {
         Purchases.sharedInstance.awaitOfferings()
 
         simulateSdkRestart(

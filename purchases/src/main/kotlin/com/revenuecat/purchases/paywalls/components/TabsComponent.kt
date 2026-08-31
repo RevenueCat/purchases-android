@@ -6,6 +6,7 @@ import androidx.compose.runtime.Immutable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
 import com.revenuecat.purchases.paywalls.components.properties.Border
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Padding
@@ -76,7 +77,7 @@ public class TabsComponent(
     @get:JvmSynthetic
     public val visible: Boolean? = null,
     @get:JvmSynthetic
-    public val size: Size = Size(width = Fill, height = Fit),
+    public val size: Size = Size(width = Fill, height = Fit()),
     @get:JvmSynthetic
     public val padding: Padding = Padding.zero,
     @get:JvmSynthetic
@@ -101,6 +102,9 @@ public class TabsComponent(
     public val defaultTabId: String? = null,
     @get:JvmSynthetic
     public val overrides: List<ComponentOverride<PartialTabsComponent>> = emptyList(),
+    @get:JvmSynthetic
+    @SerialName("state_updates")
+    public val stateUpdates: List<StateUpdate>? = null,
 ) : PaywallComponent {
     @InternalRevenueCatAPI
     @Poko

@@ -6,6 +6,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.Dispatcher
@@ -17,10 +18,11 @@ import com.revenuecat.purchases.common.infoLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
-import com.revenuecat.purchases.common.workflows.WorkflowsCache
+import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
@@ -31,14 +33,16 @@ import java.util.UUID
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class IdentityManager(
+    private val appConfig: AppConfig,
     private val deviceCache: DeviceCache,
     private val subscriberAttributesCache: SubscriberAttributesCache,
     private val subscriberAttributesManager: SubscriberAttributesManager,
     private val offeringsCache: OfferingsCache,
-    private val workflowsCache: WorkflowsCache?,
+    private val remoteConfigManager: RemoteConfigManager,
     private val backend: Backend,
     private val offlineEntitlementsManager: OfflineEntitlementsManager,
     private val dispatcher: Dispatcher,
+    private val paywallAssetWarming: PaywallAssetWarming,
     private val uiPreviewMode: Boolean = false,
 ) {
     companion object {
@@ -103,8 +107,7 @@ internal class IdentityManager(
                         log(LogIntent.USER) {
                             IdentityStrings.ALIAS_OLD_USER_ID_TO_CURRENT_SUCCESSFUL.format(oldAppUserID, newAppUserID)
                         }
-                        offeringsCache.clearCache()
-                        workflowsCache?.clearCache()
+                        clearRemoteConfigThenOfferingsCaches(newAppUserID)
                         deviceCache.clearCustomerInfoCache(newAppUserID)
                         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     }
@@ -146,7 +149,10 @@ internal class IdentityManager(
 
         log(LogIntent.USER) { IdentityStrings.LOGGING_IN.format(currentAppUserID, newAppUserID) }
         val oldAppUserID = currentAppUserID
-        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(newAppUserID) {
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+            newAppUserID,
+            Delay.jitterOnlyIfInBackground(appConfig.isAppBackgrounded),
+        ) {
             backend.logIn(
                 oldAppUserID,
                 newAppUserID,
@@ -156,13 +162,13 @@ internal class IdentityManager(
                             IdentityStrings.LOG_IN_SUCCESSFUL.format(newAppUserID, created)
                         }
                         deviceCache.clearCachesForAppUserID(oldAppUserID)
-                        offeringsCache.clearCache()
-                        workflowsCache?.clearCache()
+                        clearRemoteConfigThenOfferingsCaches(newAppUserID)
                         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(oldAppUserID)
 
                         deviceCache.cacheAppUserID(newAppUserID)
                         deviceCache.cacheCustomerInfo(newAppUserID, customerInfo)
                         copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserID, newAppUserID)
+                        clearPaywallWebViewStorageIfUserChanged(oldAppUserID, newAppUserID)
                         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
                     }
                     onSuccess(customerInfo, created)
@@ -204,7 +210,10 @@ internal class IdentityManager(
             completion(PurchasesError(PurchasesErrorCode.LogOutWithAnonymousUserError))
             return
         }
-        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(currentAppUserID) {
+        subscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(
+            currentAppUserID,
+            Delay.jitterOnlyIfInBackground(appConfig.isAppBackgrounded),
+        ) {
             resetAndSaveUserID(generateRandomID())
             log(LogIntent.USER) { IdentityStrings.LOG_OUT_SUCCESSFUL }
             completion(null)
@@ -222,6 +231,28 @@ internal class IdentityManager(
     // endregion
 
     // region Private functions
+
+    /**
+     * Clears the remote-config caches and then the offerings cache on an identity change, always in this
+     * order. The order is load-bearing: [remoteConfigManager]'s clearCache synchronously invalidates the
+     * in-memory workflow / ui_config caches, whereas clearing the offerings cache makes the current offering
+     * null. If offerings were cleared first, a concurrent getOfferings / paywall present in the gap would see
+     * no current offering (so WorkflowsConfigProvider.isWarmForCurrentOffering reports "warm") and the
+     * memory-first reads would serve the previous user's per-user config (app_user_id / enrolled_variants).
+     * Clearing remote config first drops those caches so no stale read is possible. Callers already hold the
+     * [IdentityManager] monitor.
+     */
+    private fun clearRemoteConfigThenOfferingsCaches(newAppUserID: String) {
+        remoteConfigManager.clearCache(newAppUserID)
+        offeringsCache.clearCache()
+    }
+
+    // Anonymous is exempt: signing in mid-flow is the multipage paywall case, same customer either side.
+    private fun clearPaywallWebViewStorageIfUserChanged(oldAppUserID: String, newAppUserID: String) {
+        if (oldAppUserID != newAppUserID && !isUserIDAnonymous(oldAppUserID)) {
+            paywallAssetWarming.clearWebViewStorage()
+        }
+    }
 
     private fun copySubscriberAttributesToNewUserIfOldIsAnonymous(oldAppUserId: String, newAppUserId: String) {
         if (isUserIDAnonymous(oldAppUserId)) {
@@ -258,9 +289,9 @@ internal class IdentityManager(
 
     @Synchronized
     private fun resetAndSaveUserID(newUserID: String) {
+        clearPaywallWebViewStorageIfUserChanged(currentAppUserID, newUserID)
         deviceCache.clearCachesForAppUserID(currentAppUserID)
-        offeringsCache.clearCache()
-        workflowsCache?.clearCache()
+        clearRemoteConfigThenOfferingsCaches(newUserID)
         subscriberAttributesCache.clearSubscriberAttributesIfSyncedForSubscriber(currentAppUserID)
         offlineEntitlementsManager.resetOfflineCustomerInfoCache()
         deviceCache.cacheAppUserID(newUserID)

@@ -158,11 +158,11 @@ private fun OfferingsListScreen(
             allOfferings.filter { offering ->
                 offering.identifier.lowercase().contains(query) ||
                     offering.paywall?.templateName?.lowercase()?.contains(query) == true ||
-                    offering.paywallComponents?.data?.templateName?.lowercase()?.contains(query) == true
+                    offering.paywallComponents?.dataOrNull?.templateName?.lowercase()?.contains(query) == true
             }
         }
         filtered.groupBy { offering ->
-            offering.paywallComponents?.data?.templateName?.let { "V2 — $it" }
+            offering.paywallComponents?.dataOrNull?.templateName?.let { "V2 — $it" }
                 ?: offering.paywall?.templateName?.let { "Template $it" }
                 ?: "No paywall"
         }.toSortedMap(
@@ -335,6 +335,10 @@ private fun OfferingsListScreen(
                     override fun onRestoreError(error: PurchasesError) {
                         Log.e("PaywallDialog", "onRestoreError: ${error.message}")
                     }
+
+                    override fun onUrlOpened(url: String) {
+                        Log.d("PaywallDialog", "onUrlOpened: $url")
+                    }
                 })
                 .build(),
         )
@@ -422,7 +426,7 @@ private fun OfferingRow(
 ) {
     val subtitle = if (showSubtitle) {
         offering.paywall?.let { "Template ${it.templateName}" }
-            ?: offering.paywallComponents?.let { "Components ${it.data.templateName}" }
+            ?: offering.paywallComponents?.dataOrNull?.templateName?.let { "Components $it" }
             ?: "No paywall"
     } else {
         null

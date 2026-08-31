@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="OK">V redu</string>
+    <string name="all_plans">Vse naročnine</string>
+    <string name="privacy">Zasebnost</string>
+    <string name="privacy_policy">Pravilnik o zasebnosti</string>
+    <string name="restore">Obnovi</string>
+    <string name="restore_purchases">Obnovi nakupe</string>
+    <string name="terms">Pogoji</string>
+    <string name="terms_and_conditions">Pogoji in določila</string>
+    <string name="annual">Letno</string>
+    <string name="semester">6 mesecev</string>
+    <string name="quarter">3 meseci</string>
+    <string name="bimonthly">2 meseca</string>
+    <string name="monthly">Mesečno</string>
+    <string name="weekly">Tedensko</string>
+    <string name="lifetime">Doživljenjsko</string>
+    <string name="package_discount">%1$d%% popusta</string>
+    <string name="continue_cta">Nadaljuj</string>
+    <string name="default_offer_details_with_intro_offer">Začnite {{ sub_offer_duration }} preizkusno obdobje, nato {{ total_price_and_per_month }}.</string>
+    <string name="no_browser_cannot_open_link">Ni nameščenega brskalnika. Povezave ni mogoče odpreti.</string>
+    <string name="cannot_open_link">Neveljavna povezava. Ni mogoče odpreti.</string>
+    <string name="revenuecatui_purchase">Kupi</string>
+    <string name="revenuecatui_restore_purchases">@string/restore_purchases</string>
+</resources>

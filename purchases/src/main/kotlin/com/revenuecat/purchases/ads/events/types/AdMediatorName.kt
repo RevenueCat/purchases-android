@@ -1,11 +1,8 @@
 package com.revenuecat.purchases.ads.events.types
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
-
 /**
  * Common ad mediator names.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmInline
 public value class AdMediatorName internal constructor(internal val value: String) {
     public companion object {

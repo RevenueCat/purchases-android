@@ -12,21 +12,26 @@ import com.revenuecat.purchases.PostReceiptInitiationSource
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.api.BuildConfig
+import com.revenuecat.purchases.RewardVerificationError
+import com.revenuecat.purchases.RewardVerificationPollStatus
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.backendName
+import com.revenuecat.purchases.common.caching.WorkflowMetadata
 import com.revenuecat.purchases.common.events.EventsRequest
 import com.revenuecat.purchases.common.networking.Endpoint
+import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.PostReceiptResponse
+import com.revenuecat.purchases.common.networking.RCContainer
+import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
+import com.revenuecat.purchases.common.networking.RewardVerificationResponse
 import com.revenuecat.purchases.common.networking.WebBillingProductsResponse
 import com.revenuecat.purchases.common.networking.buildPostReceiptResponse
 import com.revenuecat.purchases.common.offlineentitlements.ProductEntitlementMapping
-import com.revenuecat.purchases.common.remoteconfig.RemoteConfigResponse
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
-import com.revenuecat.purchases.common.workflows.WorkflowDetailResponse
-import com.revenuecat.purchases.common.workflows.WorkflowJsonParser
-import com.revenuecat.purchases.common.workflows.WorkflowsListResponse
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterRoot
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
@@ -44,6 +49,7 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 import java.net.URL
+import java.util.Date
 
 internal const val ATTRIBUTES_ERROR_RESPONSE_KEY = "attributes_error_response"
 internal const val ATTRIBUTE_ERRORS_KEY = "attribute_errors"
@@ -59,8 +65,12 @@ internal typealias CallbackCacheKey = List<String>
 
 /** @suppress */
 @OptIn(InternalRevenueCatAPI::class)
+internal typealias OfferingsSuccessCallback = (JSONObject, HTTPResponseOriginalSource, responsePayload: String) -> Unit
+
+/** @suppress */
+@OptIn(InternalRevenueCatAPI::class)
 internal typealias OfferingsCallback = Pair<
-    (JSONObject, HTTPResponseOriginalSource) -> Unit,
+    OfferingsSuccessCallback,
     (PurchasesError, errorHandlingBehavior: GetOfferingsErrorHandlingBehavior) -> Unit,
     >
 
@@ -101,12 +111,19 @@ internal typealias VirtualCurrenciesCallback = Pair<(VirtualCurrencies) -> Unit,
 
 internal typealias WebBillingProductsCallback = Pair<(WebBillingProductsResponse) -> Unit, (PurchasesError) -> Unit>
 
-internal typealias RemoteConfigCallback = Pair<(RemoteConfigResponse) -> Unit, (PurchasesError) -> Unit>
-
 @OptIn(InternalRevenueCatAPI::class)
-internal typealias WorkflowDetailCallback = Pair<(WorkflowDetailResponse) -> Unit, (PurchasesError) -> Unit>
+internal typealias RewardVerificationResultCallback =
+    Pair<(RewardVerificationPollStatus) -> Unit, (RewardVerificationError) -> Unit>
 
-internal typealias WorkflowsListCallback = Pair<(WorkflowsListResponse) -> Unit, (PurchasesError) -> Unit>
+internal typealias RemoteConfigCallback = Pair<
+    (RCContainer?, requestDate: Date?, VerificationResult) -> Unit,
+    (PurchasesError, errorHandlingBehavior: GetRemoteConfigErrorHandlingBehavior) -> Unit,
+    >
+
+internal typealias RemoteConfigFallbackCallback = Pair<
+    (RemoteConfiguration, VerificationResult) -> Unit,
+    (PurchasesError) -> Unit,
+    >
 
 internal enum class PostReceiptErrorHandlingBehavior {
     SHOULD_BE_MARKED_SYNCED,
@@ -119,6 +136,15 @@ internal enum class GetOfferingsErrorHandlingBehavior {
     SHOULD_NOT_FALLBACK,
 }
 
+internal enum class GetRemoteConfigErrorHandlingBehavior {
+    // 5xx, transport, or parse failures: the endpoint may recover, so a cold start may try the fallback endpoint.
+    SHOULD_RETRY,
+
+    // A 4xx client error: the endpoint intentionally refused the request (bad shape, feature not provisioned,
+    // auth rejection), so the fallback endpoint would refuse it too. The next scheduled sync still retries.
+    SHOULD_NOT_TRY_FALLBACK,
+}
+
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions")
 internal class Backend(
@@ -127,6 +153,7 @@ internal class Backend(
     private val eventsDispatcher: Dispatcher,
     private val httpClient: HTTPClient,
     private val backendHelper: BackendHelper,
+    private val remoteConfigDispatcher: Dispatcher = dispatcher,
 ) {
     companion object {
         private const val APP_USER_ID = "app_user_id"
@@ -190,19 +217,20 @@ internal class Backend(
     @Volatile var webBillingProductsCallbacks = mutableMapOf<String, MutableList<WebBillingProductsCallback>>()
 
     @get:Synchronized @set:Synchronized
-    @Volatile var workflowDetailCallbacks =
-        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<WorkflowDetailCallback>>()
-
-    @get:Synchronized @set:Synchronized
-    @Volatile var workflowsListCallbacks =
-        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<WorkflowsListCallback>>()
+    @Volatile var rewardVerificationResultCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<RewardVerificationResultCallback>>()
 
     @get:Synchronized @set:Synchronized
     @Volatile var remoteConfigCallbacks =
         mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<RemoteConfigCallback>>()
 
+    @get:Synchronized @set:Synchronized
+    @Volatile var remoteConfigFallbackCallbacks =
+        mutableMapOf<BackgroundAwareCallbackCacheKey, MutableList<RemoteConfigFallbackCallback>>()
+
     fun close() {
         this.dispatcher.close()
+        this.remoteConfigDispatcher.close()
     }
 
     fun getCustomerInfo(
@@ -267,7 +295,7 @@ internal class Backend(
             }
         }
         synchronized(this@Backend) {
-            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            val delay = Delay.jitterOnlyIfInBackground(appInBackground)
             callbacks.addBackgroundAwareCallback(call, dispatcher, cacheKey, onSuccess to onError, delay)
         }
     }
@@ -282,6 +310,7 @@ internal class Backend(
         receiptInfo: ReceiptInfo,
         initiationSource: PostReceiptInitiationSource,
         paywallPostReceiptData: PaywallPostReceiptData?,
+        workflowMetadata: WorkflowMetadata? = null,
         // This reflects the value at the time of the purchase, which might come from the LocalTransactionMetadataStore
         purchasesAreCompletedBy: PurchasesAreCompletedBy,
         onSuccess: PostReceiptDataSuccessCallback,
@@ -319,6 +348,8 @@ internal class Backend(
             "proration_mode" to receiptInfo.replacementMode?.backendName(store = appConfig.store),
             "initiation_source" to initiationSource.postReceiptFieldValue,
             "paywall" to paywallPostReceiptData?.toMap(),
+            "presented_workflow_id" to workflowMetadata?.workflowId,
+            "presented_step_id" to workflowMetadata?.stepId,
             "sdk_originated" to receiptInfo.sdkOriginated,
             "payload_version" to POST_RECEIPT_PAYLOAD_VERSION,
         ).filterNotNullValues()
@@ -395,7 +426,7 @@ internal class Backend(
     fun getOfferings(
         appUserID: String,
         appInBackground: Boolean,
-        onSuccess: (JSONObject, HTTPResponseOriginalSource) -> Unit,
+        onSuccess: OfferingsSuccessCallback,
         onError: (PurchasesError, GetOfferingsErrorHandlingBehavior) -> Unit,
     ) {
         val endpoint = Endpoint.GetOfferings(appUserID)
@@ -427,7 +458,7 @@ internal class Backend(
                 }?.forEach { (onSuccess, onError) ->
                     if (result.isSuccessful()) {
                         try {
-                            onSuccess(result.body, result.originalDataSource)
+                            onSuccess(result.body, result.originalDataSource, result.payloadText)
                         } catch (e: JSONException) {
                             val errorBehavior = GetOfferingsErrorHandlingBehavior.SHOULD_FALLBACK_TO_CACHED_OFFERINGS
                             onError(e.toPurchasesError().also { errorLog(it) }, errorBehavior)
@@ -447,7 +478,7 @@ internal class Backend(
             }
         }
         synchronized(this@Backend) {
-            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            val delay = Delay.jitterOnlyIfInBackground(appInBackground)
             offeringsCallbacks.addBackgroundAwareCallback(call, dispatcher, cacheKey, onSuccess to onError, delay)
         }
     }
@@ -769,7 +800,7 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         try {
                             val customerCenterRoot = json.decodeFromString<CustomerCenterRoot>(
-                                result.payload,
+                                result.payloadText,
                             )
                             onSuccessHandler(customerCenterRoot.customerCenter)
                         } catch (e: SerializationException) {
@@ -988,134 +1019,8 @@ internal class Backend(
         }
 
         synchronized(this@Backend) {
-            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            val delay = Delay.jitterOnlyIfInBackground(appInBackground)
             virtualCurrenciesCallbacks.addBackgroundAwareCallback(
-                call,
-                dispatcher,
-                cacheKey,
-                onSuccess to onError,
-                delay,
-            )
-        }
-    }
-
-    @Suppress("LongParameterList")
-    fun getWorkflow(
-        appUserID: String,
-        workflowId: String,
-        appInBackground: Boolean,
-        onSuccess: (WorkflowDetailResponse) -> Unit,
-        onError: (PurchasesError) -> Unit,
-        callbackDispatcher: Dispatcher = dispatcher,
-    ) {
-        val endpoint = Endpoint.GetWorkflow(appUserID, workflowId)
-        val path = endpoint.getPath()
-        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
-        val call = object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPResult {
-                return httpClient.performRequest(
-                    appConfig.baseURL,
-                    endpoint,
-                    body = null,
-                    postFieldsToSign = null,
-                    backendHelper.authenticationHeaders,
-                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
-                )
-            }
-
-            override fun onError(error: PurchasesError) {
-                synchronized(this@Backend) {
-                    workflowDetailCallbacks.remove(cacheKey)
-                }?.forEach { (_, onErrorHandler) ->
-                    onErrorHandler(error)
-                }
-            }
-
-            override fun onCompletion(result: HTTPResult) {
-                synchronized(this@Backend) {
-                    workflowDetailCallbacks.remove(cacheKey)
-                }?.forEach { (onSuccessHandler, onErrorHandler) ->
-                    if (result.isSuccessful()) {
-                        try {
-                            onSuccessHandler(
-                                WorkflowJsonParser.parseWorkflowDetailResponse(result.payload),
-                            )
-                        } catch (e: SerializationException) {
-                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
-                        } catch (e: IllegalArgumentException) {
-                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
-                        }
-                    } else {
-                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
-                    }
-                }
-            }
-        }
-        synchronized(this@Backend) {
-            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
-            workflowDetailCallbacks.addBackgroundAwareCallback(
-                call,
-                callbackDispatcher,
-                cacheKey,
-                onSuccess to onError,
-                delay,
-            )
-        }
-    }
-
-    fun getWorkflows(
-        appUserID: String,
-        appInBackground: Boolean,
-        type: String? = null,
-        onSuccess: (WorkflowsListResponse) -> Unit,
-        onError: (PurchasesError) -> Unit,
-    ) {
-        val endpoint = Endpoint.GetWorkflows(appUserID, type)
-        val path = endpoint.getPath()
-        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
-        val call = object : Dispatcher.AsyncCall() {
-            override fun call(): HTTPResult {
-                return httpClient.performRequest(
-                    appConfig.baseURL,
-                    endpoint,
-                    body = null,
-                    postFieldsToSign = null,
-                    backendHelper.authenticationHeaders,
-                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
-                )
-            }
-
-            override fun onError(error: PurchasesError) {
-                synchronized(this@Backend) {
-                    workflowsListCallbacks.remove(cacheKey)
-                }?.forEach { (_, onErrorHandler) ->
-                    onErrorHandler(error)
-                }
-            }
-
-            override fun onCompletion(result: HTTPResult) {
-                synchronized(this@Backend) {
-                    workflowsListCallbacks.remove(cacheKey)
-                }?.forEach { (onSuccessHandler, onErrorHandler) ->
-                    if (result.isSuccessful()) {
-                        try {
-                            onSuccessHandler(
-                                WorkflowJsonParser.parseWorkflowsListResponse(result.payload),
-                            )
-                        } catch (e: SerializationException) {
-                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
-                        } catch (e: IllegalArgumentException) {
-                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
-                        }
-                    } else {
-                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
-                    }
-                }
-            }
-        }
-        synchronized(this@Backend) {
-            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
-            workflowsListCallbacks.addBackgroundAwareCallback(
                 call,
                 dispatcher,
                 cacheKey,
@@ -1160,7 +1065,7 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         try {
                             val productsResponse = json.decodeFromString<WebBillingProductsResponse>(
-                                result.payload,
+                                result.payloadText,
                             )
                             onSuccessHandler(productsResponse)
                         } catch (e: SerializationException) {
@@ -1185,30 +1090,122 @@ internal class Backend(
         }
     }
 
+    fun getRewardVerificationResult(
+        appUserID: String,
+        clientTransactionId: String,
+        onSuccess: (RewardVerificationPollStatus) -> Unit,
+        onError: (RewardVerificationError) -> Unit,
+    ) {
+        val endpoint = Endpoint.GetRewardVerification(
+            userId = appUserID,
+            clientTransactionId = clientTransactionId,
+        )
+        val path = endpoint.getPath()
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground = false)
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    appConfig.baseURL,
+                    endpoint,
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                    fallbackBaseURLs = appConfig.fallbackBaseURLs,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    rewardVerificationResultCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(RewardVerificationError(error, isServerError = false))
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    rewardVerificationResultCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            val response = json.decodeFromString<RewardVerificationResponse>(
+                                result.payloadText,
+                            )
+                            onSuccessHandler(response.toRewardVerificationPollStatus())
+                        } catch (e: SerializationException) {
+                            onErrorHandler(
+                                RewardVerificationError(e.toPurchasesError().also { errorLog(it) }, false),
+                            )
+                        } catch (e: IllegalArgumentException) {
+                            onErrorHandler(
+                                RewardVerificationError(e.toPurchasesError().also { errorLog(it) }, false),
+                            )
+                        }
+                    } else {
+                        onErrorHandler(
+                            RewardVerificationError(
+                                result.toPurchasesError().also { errorLog(it) },
+                                isServerError = RCHTTPStatusCodes.isServerError(result.responseCode),
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+
+        synchronized(this@Backend) {
+            rewardVerificationResultCallbacks.addBackgroundAwareCallback(
+                call,
+                dispatcher,
+                cacheKey,
+                onSuccess to onError,
+                Delay.NONE,
+            )
+        }
+    }
+
+    @Suppress("LongParameterList")
     fun getRemoteConfig(
         appInBackground: Boolean,
-        onSuccess: (RemoteConfigResponse) -> Unit,
-        onError: (PurchasesError) -> Unit,
+        appUserID: String,
+        fetchContext: RemoteConfigFetchContext,
+        domain: String,
+        manifest: String?,
+        lastRefreshTime: Date?,
+        prefetchedBlobs: List<String>,
+        // The server's own request time, so the caller can replay it rather than a device-clock value.
+        onSuccess: (RCContainer?, Date?, VerificationResult) -> Unit,
+        onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit,
     ) {
-        val endpoint = Endpoint.GetRemoteConfig
+        val endpoint = Endpoint.GetRemoteConfig(domain)
         val path = endpoint.getPath()
-        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path), appInBackground)
+        // Include the app user in the key: the path carries the domain but not the app_user_id (sent in the
+        // request body), so concurrent calls for different users must not be deduped onto a single shared request.
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(path, appUserID), appInBackground)
 
-        val overrideURL = BuildConfig.REMOTE_CONFIG_BASE_URL
-            .takeIf { it.isNotEmpty() && appConfig.isDebugBuild }
-            ?.let { runCatching { URL(it) }.getOrNull() }
-        val baseURL = overrideURL ?: appConfig.baseURL
-        val fallbackBaseURLs = if (overrideURL != null) emptyList() else appConfig.fallbackBaseURLs
+        val baseURL = appConfig.baseURL
+        // The manifest is an opaque token replayed verbatim; omitted on the first run when there is none.
+        val body = buildMap<String, Any?> {
+            put(APP_USER_ID, appUserID)
+            put("fetch_context", fetchContext.wireName)
+            manifest?.let { put("manifest", it) }
+            put("prefetched_blobs", prefetchedBlobs)
+        }
+        // This endpoint is not ETag-cached, but the header the ETag path uses carries exactly what the server needs
+        // here, so it is reused verbatim: epoch millis, omitted entirely when there has been no successful refresh.
+        val requestHeaders = lastRefreshTime?.let {
+            backendHelper.authenticationHeaders +
+                (HTTPRequest.LAST_REFRESH_TIME_HEADER_NAME to it.time.toString())
+        } ?: backendHelper.authenticationHeaders
 
         val call = object : Dispatcher.AsyncCall() {
             override fun call(): HTTPResult {
                 return httpClient.performRequest(
                     baseURL,
                     endpoint,
-                    body = null,
+                    body = body,
                     postFieldsToSign = null,
-                    backendHelper.authenticationHeaders,
-                    fallbackBaseURLs = fallbackBaseURLs,
+                    requestHeaders,
                 )
             }
 
@@ -1216,7 +1213,8 @@ internal class Backend(
                 synchronized(this@Backend) {
                     remoteConfigCallbacks.remove(cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
-                    onErrorHandler(error)
+                    // Transport/IO failure: no HTTP status, the endpoint may recover on a future sync.
+                    onErrorHandler(error, GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
                 }
             }
 
@@ -1225,12 +1223,114 @@ internal class Backend(
                     remoteConfigCallbacks.remove(cacheKey)
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->
                     if (result.isSuccessful()) {
+                        if (result.responseCode == RCHTTPStatusCodes.NO_CONTENT) {
+                            // 204: nothing changed, no container to parse.
+                            onSuccessHandler(null, result.requestDate, result.verificationResult)
+                            return@forEach
+                        }
+                        val payload = result.payload
+                        if (payload !is HTTPResult.Payload.RCFormat) {
+                            onErrorHandler(
+                                PurchasesError(
+                                    PurchasesErrorCode.UnknownError,
+                                    "Expected an RC Container Format payload for remote config.",
+                                ).also { errorLog(it) },
+                                // A 2xx with an unexpected payload is not a client error; keep retrying.
+                                GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+                            )
+                            return@forEach
+                        }
                         try {
-                            val response = json.decodeFromString<RemoteConfigResponse>(result.payload)
-                            onSuccessHandler(response)
+                            onSuccessHandler(
+                                RCContainer.parse(payload.bytes),
+                                result.requestDate,
+                                result.verificationResult,
+                            )
+                        } catch (e: RCContainerFormatException) {
+                            // Parse failure of an otherwise-successful response; keep retrying.
+                            onErrorHandler(
+                                e.toPurchasesError().also { errorLog(it) },
+                                GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
+                            )
+                        }
+                    } else {
+                        // A 4xx means the endpoint intentionally refused, so don't retry against the fallback.
+                        // Any other non-success (5xx) may recover, so a cold start may try the fallback.
+                        val isClientError = !RCHTTPStatusCodes.isSuccessful(result.responseCode) &&
+                            !RCHTTPStatusCodes.isServerError(result.responseCode)
+                        val behavior = if (isClientError) {
+                            GetRemoteConfigErrorHandlingBehavior.SHOULD_NOT_TRY_FALLBACK
+                        } else {
+                            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY
+                        }
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) }, behavior)
+                    }
+                }
+            }
+        }
+
+        synchronized(this@Backend) {
+            val delay = Delay.jitterOnlyIfInBackground(appInBackground)
+            remoteConfigCallbacks.addBackgroundAwareCallback(
+                call,
+                remoteConfigDispatcher,
+                cacheKey,
+                onSuccess to onError,
+                delay,
+            )
+        }
+    }
+
+    fun getRemoteConfigFallback(
+        appInBackground: Boolean,
+        domain: String,
+        onSuccess: (RemoteConfiguration, VerificationResult) -> Unit,
+        onError: (PurchasesError) -> Unit,
+    ) {
+        val fallbackURL = appConfig.fallbackBaseURLs.firstOrNull()
+        if (fallbackURL == null) {
+            onError(
+                PurchasesError(
+                    PurchasesErrorCode.UnknownError,
+                    "No fallback base URL configured for remote config.",
+                ).also { errorLog(it) },
+            )
+            return
+        }
+        val endpoint = Endpoint.GetRemoteConfigFallback(domain)
+        val cacheKey = BackgroundAwareCallbackCacheKey(listOf(endpoint.getPath()), appInBackground)
+
+        val call = object : Dispatcher.AsyncCall() {
+            override fun call(): HTTPResult {
+                return httpClient.performRequest(
+                    fallbackURL,
+                    endpoint,
+                    // A null body makes this a GET (getConnection only switches to POST when a body is present).
+                    body = null,
+                    postFieldsToSign = null,
+                    backendHelper.authenticationHeaders,
+                )
+            }
+
+            override fun onError(error: PurchasesError) {
+                synchronized(this@Backend) {
+                    remoteConfigFallbackCallbacks.remove(cacheKey)
+                }?.forEach { (_, onErrorHandler) ->
+                    onErrorHandler(error)
+                }
+            }
+
+            override fun onCompletion(result: HTTPResult) {
+                synchronized(this@Backend) {
+                    remoteConfigFallbackCallbacks.remove(cacheKey)
+                }?.forEach { (onSuccessHandler, onErrorHandler) ->
+                    if (result.isSuccessful()) {
+                        try {
+                            onSuccessHandler(
+                                RemoteConfiguration.parse(result.payloadText.encodeToByteArray()),
+                                result.verificationResult,
+                            )
                         } catch (e: SerializationException) {
-                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
-                        } catch (e: IllegalArgumentException) {
                             onErrorHandler(e.toPurchasesError().also { errorLog(it) })
                         }
                     } else {
@@ -1241,10 +1341,10 @@ internal class Backend(
         }
 
         synchronized(this@Backend) {
-            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
-            remoteConfigCallbacks.addBackgroundAwareCallback(
+            val delay = Delay.jitterOnlyIfInBackground(appInBackground)
+            remoteConfigFallbackCallbacks.addBackgroundAwareCallback(
                 call,
-                dispatcher,
+                remoteConfigDispatcher,
                 cacheKey,
                 onSuccess to onError,
                 delay,

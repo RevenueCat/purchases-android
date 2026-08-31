@@ -5,9 +5,11 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.common.currentLogHandler
+import com.revenuecat.purchases.common.md5Hex
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.models.Checksum
 import com.revenuecat.purchases.models.toHexString
+import com.revenuecat.purchases.utils.DEFAULT_CONNECTION_TIMEOUT_MS
 import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
 import com.revenuecat.purchases.utils.UrlConnection
 import com.revenuecat.purchases.utils.UrlConnectionFactory
@@ -130,7 +132,11 @@ internal class DefaultFileRepository(
     private fun downloadFile(url: URL): UrlConnection = try {
         verboseLog { "Downloading remote file from $url" }
 
-        val connection = urlConnectionFactory.createConnection(url.toString())
+        val connection = urlConnectionFactory.createConnection(
+            url.toString(),
+            DEFAULT_CONNECTION_TIMEOUT_MS,
+            DEFAULT_CONNECTION_TIMEOUT_MS,
+        )
 
         if (connection.responseCode != HttpURLConnection.HTTP_OK) {
             connection.disconnect()
@@ -199,10 +205,6 @@ internal class DefaultFileCache(
         private const val BUFFER_SIZE = 256 * 1024 // 256KB
     }
 
-    private val md: MessageDigest by lazy {
-        MessageDigest.getInstance("MD5")
-    }
-
     private val cacheDir: File by lazy {
         val dir = File(context.cacheDir, subDir)
         if (!dir.exists()) {
@@ -212,7 +214,7 @@ internal class DefaultFileCache(
     }
 
     override fun generateLocalFilesystemURI(remoteURL: URL, checksum: Checksum?): URI? {
-        val urlHash = md5Hex(remoteURL.toString().toByteArray())
+        val urlHash = remoteURL.toString().toByteArray().md5Hex()
         // Use checksum value as part of the file name (like iOS)
         val fileName = File(urlHash).name + (checksum?.value ?: "")
         if (fileName.isEmpty()) return null
@@ -263,9 +265,6 @@ internal class DefaultFileCache(
             tempFile.delete()
         }
     }
-
-    private fun md5Hex(bytes: ByteArray): String =
-        md.digest(bytes).joinToString("") { "%02x".format(it) }
 
     @Throws(IOException::class)
     private fun streamToFile(inputStream: InputStream, file: File) {

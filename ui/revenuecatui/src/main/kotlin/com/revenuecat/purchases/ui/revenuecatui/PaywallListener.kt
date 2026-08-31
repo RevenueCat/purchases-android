@@ -6,6 +6,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 
+@Suppress("TooManyFunctions")
 public interface PaywallListener {
     /**
      * Called when a package purchase is about to be initiated, before the payment sheet is displayed.
@@ -39,4 +40,20 @@ public interface PaywallListener {
     public fun onRestoreStarted() {}
     public fun onRestoreCompleted(customerInfo: CustomerInfo) {}
     public fun onRestoreError(error: PurchasesError) {}
+
+    /**
+     * Called when the user taps a web checkout CTA and the external payment URL was opened.
+     * Distinct from cancellation: the user has not cancelled, they left to pay externally.
+     */
+    public fun onWebCheckoutOpened() {}
+
+    /**
+     * Called after the paywall successfully opened a URL, either from a button with a URL destination or from a
+     * link inside a text component. Called for all opening methods: in-app browser, external browser and deep link.
+     *
+     * Not called for web checkout URLs. Use [onWebCheckoutOpened] for those.
+     *
+     * @param url The URL that was opened.
+     */
+    public fun onUrlOpened(url: String) {}
 }

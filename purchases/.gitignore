@@ -1,2 +1,3 @@
 /build
 /test_artifacts
+/src/test/resources/backend_integration_tests_golden/

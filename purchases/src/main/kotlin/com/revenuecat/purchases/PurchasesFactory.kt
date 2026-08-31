@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.annotation.VisibleForTesting
 import androidx.core.os.UserManagerCompat
-import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -18,8 +17,10 @@ import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.PlatformInfo
 import com.revenuecat.purchases.common.SharedPreferencesManager
+import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.caching.LocalTransactionMetadataStore
+import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsFileHelper
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsHelper
@@ -29,46 +30,59 @@ import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.EventsManager
 import com.revenuecat.purchases.common.isDeviceProtectedStorageCompat
+import com.revenuecat.purchases.common.localrules.DeviceDimensionProvider
+import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
+import com.revenuecat.purchases.common.localrules.RulesEngineLoggerBridge
+import com.revenuecat.purchases.common.localrules.StoreDimensionProvider
+import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.networking.APISourceFailover
+import com.revenuecat.purchases.common.networking.DeviceConnectivityChecker
 import com.revenuecat.purchases.common.networking.ETagManager
+import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
+import com.revenuecat.purchases.common.networking.SourceHealthChecker
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offerings.OfferingsFactory
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineCustomerInfoCalculator
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.offlineentitlements.PurchasedProductsFetcher
+import com.revenuecat.purchases.common.remoteconfig.DefaultRemoteConfigSourceProvider
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobFetcher
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigBlobStore
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigDiskCache
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopicStore
+import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.common.warnLog
-import com.revenuecat.purchases.common.workflows.FileCachedWorkflowCdnFetcher
-import com.revenuecat.purchases.common.workflows.WorkflowDetailResolver
+import com.revenuecat.purchases.common.workflows.WorkflowAssetPrewarmer
 import com.revenuecat.purchases.common.workflows.WorkflowManager
-import com.revenuecat.purchases.common.workflows.WorkflowsCache
+import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.paywalls.FontLoader
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
+import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.paywalls.PaywallPresentedCache
 import com.revenuecat.purchases.paywalls.events.PaywallStoredEvent
-import com.revenuecat.purchases.storage.DefaultFileCache
+import com.revenuecat.purchases.rules.RulesEngine
 import com.revenuecat.purchases.storage.DefaultFileRepository
 import com.revenuecat.purchases.strings.ConfigureStrings
 import com.revenuecat.purchases.strings.Emojis
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesPoster
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
-import com.revenuecat.purchases.utils.CoilImageDownloader
+import com.revenuecat.purchases.utils.DefaultUrlConnectionFactory
 import com.revenuecat.purchases.utils.EventsFileHelper
 import com.revenuecat.purchases.utils.IsDebugBuildProvider
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
-import com.revenuecat.purchases.utils.PaywallComponentsImagePreDownloader
+import com.revenuecat.purchases.utils.OfferingWebViewPrewarmer
 import com.revenuecat.purchases.utils.PurchaseParamsValidator
-import com.revenuecat.purchases.utils.WorkflowAssetPreDownloader
+import com.revenuecat.purchases.utils.UrlConnectionFactory
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
+import com.revenuecat.purchases.utils.prewarmTargetOfferingIds
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.NonCancellable
 import java.net.URL
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
@@ -82,7 +96,6 @@ internal class PurchasesFactory(
     @OptIn(
         ExperimentalPreviewRevenueCatPurchasesAPI::class,
         InternalRevenueCatAPI::class,
-        ExperimentalCoroutinesApi::class,
     )
     @Suppress("LongMethod", "LongParameterList", "CyclomaticComplexMethod")
     fun createPurchases(
@@ -165,6 +178,13 @@ internal class PurchasesFactory(
                 createEventsExecutor(),
                 runningIntegrationTests = runningIntegrationTests,
             )
+            // `/v1/config` gets its own thread so it overlaps `getOfferings` instead of serializing behind it
+            // on the backend dispatcher. Kept separate even when the app supplied its own `service`, since
+            // sharing that executor would re-serialize the two requests.
+            val remoteConfigDispatcher = Dispatcher(
+                createRemoteConfigExecutor(),
+                runningIntegrationTests = runningIntegrationTests,
+            )
 
             var diagnosticsFileHelper: DiagnosticsFileHelper? = null
             var diagnosticsHelper: DiagnosticsHelper? = null
@@ -197,14 +217,37 @@ internal class PurchasesFactory(
             val cache = DeviceCache(prefs, apiKey)
 
             val localeProvider = DefaultLocaleProvider()
+
+            // The config layer is on everywhere except the customEntitlementComputation flavor, which doesn't
+            // serve paywalls this way. The manager is always constructed; when disabled it never touches the
+            // network or disk, so the whole graph below stays non-null in both flavors.
+            val remoteConfigEnabled = !appConfig.customEntitlementComputation
+            val remoteConfigDiskCache = RemoteConfigDiskCache(contextForStorage)
+            // Gated here, not just in the manager: the API source provider reads this store directly (bypassing
+            // the manager's isDisabled gates), and a disk cache left behind by a pre-CEC install of the app must
+            // not feed API-source failover.
+            val remoteConfigTopicStore = RemoteConfigTopicStore { topic ->
+                if (remoteConfigEnabled) remoteConfigDiskCache.read()?.topics?.get(topic.wireName) else null
+            }
+            val apiSourceProvider = DefaultRemoteConfigSourceProvider(remoteConfigTopicStore)
+            val apiSourceFailover = APISourceFailover(
+                appConfig,
+                apiSourceProvider,
+                SourceHealthChecker(),
+                DeviceConnectivityChecker(application),
+            )
+
+            val timeoutManager = HTTPTimeoutManager(appConfig)
             val httpClient = HTTPClient(
                 appConfig,
                 eTagManager,
                 diagnosticsTracker,
                 signingManager,
                 cache,
+                apiSourceFailover,
                 localeProvider = localeProvider,
                 forceServerErrorStrategy = forceServerErrorStrategy,
+                timeoutManager = timeoutManager,
             )
             val backendHelper = BackendHelper(apiKey, backendDispatcher, appConfig, httpClient)
             val backend = Backend(
@@ -213,12 +256,10 @@ internal class PurchasesFactory(
                 eventsDispatcher,
                 httpClient,
                 backendHelper,
+                remoteConfigDispatcher,
             )
-            val coilImageDownloader = CoilImageDownloader(application)
             val fileRepository = DefaultFileRepository(application)
-            val paywallComponentsImagePreDownloader = PaywallComponentsImagePreDownloader(
-                coilImageDownloader = coilImageDownloader,
-            )
+            val paywallAssetWarming = PaywallAssetWarming(application)
 
             val purchasesStateProvider = PurchasesStateCache(PurchasesState())
 
@@ -269,18 +310,91 @@ internal class PurchasesFactory(
                 localeProvider = localeProvider,
             )
 
-            val workflowsCache = if (BuildConfig.USE_WORKFLOWS_ENDPOINT) WorkflowsCache(deviceCache = cache) else null
+            val remoteConfigBlobStore = RemoteConfigBlobStore(contextForStorage)
+            val remoteConfigManager = RemoteConfigManager(
+                backend = backend,
+                diskCache = remoteConfigDiskCache,
+                blobStore = remoteConfigBlobStore,
+                topicStore = remoteConfigTopicStore,
+                sourceProvider = apiSourceProvider,
+                blobFetcher = RemoteConfigBlobFetcher(
+                    remoteConfigBlobStore,
+                    apiSourceProvider,
+                    timeoutManager,
+                    urlConnectionFactory = blobUrlConnectionFactory(forceServerErrorStrategy),
+                ),
+                // Bootstrap source for a cold on-demand read's self-triggered sync (see blobData()); after
+                // the first identity change the manager syncs for the user clearCache() binds instead.
+                appUserIDProvider = { cache.getCachedAppUserID() },
+                enabled = remoteConfigEnabled,
+            )
+
+            val fontLoader = FontLoader(
+                context = contextForStorage,
+            )
+            val offeringFontPreDownloader = OfferingFontPreDownloader(
+                context = contextForStorage,
+                fontLoader = fontLoader,
+            )
+
+            // Single shared instances so the in-memory caches the render path reads synchronously are the same
+            // ones the manager warms on commit.
+            val uiConfigProvider = UiConfigProvider(remoteConfigManager)
+            val workflowAssetPrewarmer = WorkflowAssetPrewarmer(
+                uiConfigProvider,
+                paywallAssetWarming,
+                offeringFontPreDownloader,
+            )
+            val workflowsConfigProvider = WorkflowsConfigProvider(
+                remoteConfigManager,
+                currentOfferingIdProvider = { offeringsCache.cachedOfferings?.current?.identifier },
+                prewarmOfferingIdsProvider = {
+                    offeringsCache.cachedOfferings?.prewarmTargetOfferingIds().orEmpty()
+                },
+                onWorkflowLoaded = workflowAssetPrewarmer::onWorkflowLoaded,
+            )
+            val checkpointsConfigProvider = CheckpointsConfigProvider(remoteConfigManager)
+            val audiencesConfigProvider = AudiencesConfigProvider(remoteConfigManager)
+            remoteConfigManager.registerListener(uiConfigProvider)
+            remoteConfigManager.registerListener(workflowsConfigProvider)
+            // Cold-start-with-warm-disk: preload the in-memory caches from whatever is already committed on
+            // disk without triggering a network config sync. A subsequent network commit re-warms with a
+            // higher generation and supersedes this (store-if-newer). A no-op when the manager is disabled:
+            // committed reads return null without touching disk.
+            val initialGeneration = remoteConfigManager.configGeneration
+            uiConfigProvider.warmAsync(initialGeneration)
+            workflowsConfigProvider.warmAsync(initialGeneration)
 
             val identityManager = IdentityManager(
+                appConfig,
                 cache,
                 subscriberAttributesCache,
                 subscriberAttributesManager,
                 offeringsCache,
-                workflowsCache,
+                remoteConfigManager,
                 backend,
                 offlineEntitlementsManager,
                 dispatcher,
+                paywallAssetWarming,
                 uiPreviewMode = appConfig.uiPreviewMode,
+            )
+
+            // Built after the identity manager so a dimension source reads the app user ID from this instance
+            // rather than from whichever one is the singleton by the time a checkpoint is resolved. The evaluator
+            // is a leaf, only consumed from there, so where it is built is otherwise unconstrained.
+            RulesEngine.setLogger(RulesEngineLoggerBridge)
+            val localRulesEvaluator = LocalRulesEvaluator(
+                providers = listOf(
+                    DeviceDimensionProvider(appConfig, localeProvider),
+                    // Only read during a checkpoint evaluation, so the instance is configured by then. Same
+                    // reasoning as CheckpointWorkflowResolverImpl's getOfferings.
+                    StoreDimensionProvider { Purchases.sharedInstance.awaitStorefrontCountryCode() },
+                    SubscriberAttributesDimensionProvider {
+                        subscriberAttributesCache.getAllStoredSubscriberAttributes(
+                            identityManager.currentAppUserID,
+                        )
+                    },
+                ),
             )
 
             val customerInfoUpdateHandler = CustomerInfoUpdateHandler(
@@ -358,53 +472,26 @@ internal class PurchasesFactory(
                 diagnosticsTracker,
             )
 
-            val fontLoader = FontLoader(
-                context = contextForStorage,
+            // Workflows are served from the `/v1/config` layer: WorkflowManager stays the consumer-facing seam,
+            // but behind it sit the RemoteConfig stack (sync + blob store + on-demand fetch) and the
+            // WorkflowsConfigProvider. Lifecycle (foreground refresh, identity clearCache, teardown) is driven
+            // through remoteConfigManager, which the orchestrator and IdentityManager already own.
+            val workflowManager = WorkflowManager(
+                workflowsConfigProvider,
+                uiConfigProvider,
+                workflowAssetPrewarmer,
+                enabled = remoteConfigEnabled,
             )
-
-            val offeringFontPreDownloader = OfferingFontPreDownloader(
-                context = contextForStorage,
-                fontLoader = fontLoader,
-            )
-
-            val workflowManager = workflowsCache?.let {
-                WorkflowManager(
-                    backend = backend,
-                    workflowDetailResolver = WorkflowDetailResolver(
-                        workflowCdnFetcher = FileCachedWorkflowCdnFetcher(
-                            // Dedicated FileRepository instance with a concurrency-limited scope, so workflow
-                            // CDN downloads are capped without affecting the instances used for images/video.
-                            fileRepository = DefaultFileRepository(
-                                fileCacheManager = DefaultFileCache(contextForStorage, "rc_compiled_workflows"),
-                                ioScope = CoroutineScope(
-                                    Dispatchers.IO.limitedParallelism(MAX_CONCURRENT_WORKFLOW_CDN_FETCHES) +
-                                        NonCancellable,
-                                ),
-                            ),
-                        ),
-                    ),
-                    workflowAssetPreDownloader = WorkflowAssetPreDownloader(
-                        paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
-                        offeringFontPreDownloader = offeringFontPreDownloader,
-                    ),
-                    workflowsCache = it,
-                    prefetchDispatcher = Dispatcher(
-                        createConcurrentExecutor(),
-                        runningIntegrationTests = runningIntegrationTests,
-                    ),
-                )
-            }
 
             val offeringsManager = OfferingsManager(
                 offeringsCache,
                 backend,
                 OfferingsFactory(billing, offeringParser, dispatcher, appConfig),
-                OfferingImagePreDownloader(
-                    coilImageDownloader = coilImageDownloader,
-                    paywallComponentsImagePreDownloader = paywallComponentsImagePreDownloader,
-                ),
+                OfferingImagePreDownloader(assetWarming = paywallAssetWarming),
                 diagnosticsTracker,
                 offeringFontPreDownloader = offeringFontPreDownloader,
+                offeringWebViewPrewarmer = OfferingWebViewPrewarmer(assetWarming = paywallAssetWarming),
+                dispatcher = dispatcher,
                 uiPreviewMode = appConfig.uiPreviewMode,
                 workflowManager = workflowManager,
             )
@@ -475,6 +562,12 @@ internal class PurchasesFactory(
                 purchaseParamsValidator = purchaseParamsValidator,
                 workflowManager = workflowManager,
                 fileRepository = fileRepository,
+                remoteConfigManager = remoteConfigManager,
+                uiConfigProvider = uiConfigProvider,
+                workflowsConfigProvider = workflowsConfigProvider,
+                checkpointsConfigProvider = checkpointsConfigProvider,
+                audiencesConfigProvider = audiencesConfigProvider,
+                localRulesEvaluator = localRulesEvaluator,
             )
 
             return Purchases(purchasesOrchestrator)
@@ -543,6 +636,11 @@ internal class PurchasesFactory(
         }
     }
 
+    private fun blobUrlConnectionFactory(strategy: ForceServerErrorStrategy?): UrlConnectionFactory =
+        DefaultUrlConnectionFactory().let { default ->
+            strategy?.let { ForcedFailureUrlConnectionFactory(default, it) } ?: default
+        }
+
     private fun Context.getApplication() = applicationContext as Application
 
     private fun Context.hasPermission(permission: String): Boolean {
@@ -557,10 +655,8 @@ internal class PurchasesFactory(
         return Executors.newSingleThreadScheduledExecutor(LowPriorityThreadFactory("revenuecat-events-thread"))
     }
 
-    // Bounded pool for backend calls that are issued many-at-a-time (workflow detail prefetch), so
-    // they run concurrently instead of serializing on the single-threaded default executor.
-    private fun createConcurrentExecutor(): ExecutorService {
-        return Executors.newScheduledThreadPool(CONCURRENT_BACKEND_CALLS)
+    private fun createRemoteConfigExecutor(): ExecutorService {
+        return Executors.newSingleThreadScheduledExecutor()
     }
 
     private class LowPriorityThreadFactory(private val threadName: String) : ThreadFactory {
@@ -576,12 +672,6 @@ internal class PurchasesFactory(
     }
 
     companion object {
-        private const val CONCURRENT_BACKEND_CALLS = 4
-
-        // Caps concurrent workflow CDN downloads on the dedicated workflows FileRepository scope, the
-        // same way CONCURRENT_BACKEND_CALLS caps concurrent workflow detail fetches on prefetchDispatcher.
-        private const val MAX_CONCURRENT_WORKFLOW_CDN_FETCHES = 4
-
         @VisibleForTesting
         internal fun shouldInitializeDiagnostics(
             diagnosticsEnabled: Boolean,

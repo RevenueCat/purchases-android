@@ -20,6 +20,9 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
+import com.revenuecat.purchases.paywalls.components.common.StateUpdateValue
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.CornerRadiuses
@@ -37,6 +40,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.TwoDimensionalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
+import kotlinx.serialization.json.JsonPrimitive
 import java.net.URL
 
 @Suppress("LongMethod")
@@ -72,6 +76,12 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
             id = "sample_tabs_with_buttons_paywall_id",
             templateName = "template",
             assetBaseURL = URL("https://assets.pawwalls.com"),
+            stateDeclarations = mapOf(
+                "selectedTab" to StateDeclaration(
+                    type = StateDeclaration.ValueType.STRING,
+                    defaultValue = JsonPrimitive("tab-0"),
+                ),
+            ),
             componentsConfig = ComponentsConfig(
                 base = PaywallComponentsConfig(
                     stack = StackComponent(
@@ -83,7 +93,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                 fontWeight = FontWeight.BOLD,
                                 fontSize = 28,
                                 horizontalAlignment = LEADING,
-                                size = Size(width = Fill, height = Fit),
+                                size = Size(width = Fill, height = Fit()),
                                 margin = Padding(top = 32.0, bottom = 40.0, leading = 16.0, trailing = 16.0),
                             ),
                             // Tabs
@@ -99,7 +109,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                                         TextComponent(
                                                             text = LocalizationKey("tab-$index"),
                                                             color = textColor,
-                                                            size = Size(width = Fit, height = Fit),
+                                                            size = Size(width = Fit(), height = Fit()),
                                                             fontName = font,
                                                             overrides = listOf(boldWhenSelectedOverride),
                                                             padding = Padding(
@@ -110,13 +120,13 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                                             ),
                                                         ),
                                                     ),
-                                                    size = Size(width = Fit, height = Fit),
+                                                    size = Size(width = Fit(), height = Fit()),
                                                     overrides = listOf(cyanBackgroundWhenSelectedOverride),
                                                 ),
                                             )
                                         },
                                         dimension = Horizontal(alignment = VerticalAlignment.CENTER, CENTER),
-                                        size = Size(width = Fit, height = Fit),
+                                        size = Size(width = Fit(), height = Fit()),
                                         shape = Shape.Pill,
                                         backgroundColor = ColorScheme(
                                             light = ColorInfo.Hex(Color.LightGray.toArgb()),
@@ -136,7 +146,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                                             color = textColor,
                                                             fontName = font,
                                                             horizontalAlignment = LEADING,
-                                                            size = Size(width = Fill, height = Fit),
+                                                            size = Size(width = Fill, height = Fit()),
                                                             margin = Padding(
                                                                 top = 8.0,
                                                                 bottom = 8.0,
@@ -149,7 +159,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                                             color = textColor,
                                                             fontName = font,
                                                             horizontalAlignment = LEADING,
-                                                            size = Size(width = Fill, height = Fit),
+                                                            size = Size(width = Fill, height = Fit()),
                                                             margin = Padding(
                                                                 top = 8.0,
                                                                 bottom = 8.0,
@@ -187,7 +197,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                                             color = textColor,
                                                             fontName = font,
                                                             horizontalAlignment = LEADING,
-                                                            size = Size(width = Fill, height = Fit),
+                                                            size = Size(width = Fill, height = Fit()),
                                                             margin = Padding(
                                                                 top = 8.0,
                                                                 bottom = 8.0,
@@ -200,7 +210,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                                             color = textColor,
                                                             fontName = font,
                                                             horizontalAlignment = LEADING,
-                                                            size = Size(width = Fill, height = Fit),
+                                                            size = Size(width = Fill, height = Fit()),
                                                             margin = Padding(
                                                                 top = 8.0,
                                                                 bottom = 8.0,
@@ -238,7 +248,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                                             color = textColor,
                                                             fontName = font,
                                                             horizontalAlignment = LEADING,
-                                                            size = Size(width = Fill, height = Fit),
+                                                            size = Size(width = Fill, height = Fit()),
                                                             margin = Padding(
                                                                 top = 8.0,
                                                                 bottom = 8.0,
@@ -251,7 +261,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                                             color = textColor,
                                                             fontName = font,
                                                             horizontalAlignment = LEADING,
-                                                            size = Size(width = Fill, height = Fit),
+                                                            size = Size(width = Fill, height = Fit()),
                                                             margin = Padding(
                                                                 top = 8.0,
                                                                 bottom = 8.0,
@@ -278,6 +288,12 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                         ),
                                     ),
                                 ),
+                                stateUpdates = listOf(
+                                    StateUpdate.Set(
+                                        key = "selectedTab",
+                                        value = StateUpdateValue.PayloadReference,
+                                    ),
+                                ),
                                 size = Size(width = Fill, height = Fill),
                             ),
 
@@ -288,8 +304,22 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                         color = textColor,
                                         fontName = font,
                                         horizontalAlignment = LEADING,
-                                        size = Size(width = Fill, height = Fit),
+                                        size = Size(width = Fill, height = Fit()),
                                         margin = Padding(top = 48.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
+                                        overrides = listOf(
+                                            ComponentOverride(
+                                                conditions = listOf(
+                                                    ComponentOverride.Condition.State(
+                                                        operator = ComponentOverride.EqualityOperator.EQUALS,
+                                                        name = "selectedTab",
+                                                        value = JsonPrimitive("tab-1"),
+                                                    ),
+                                                ),
+                                                properties = PartialTextComponent(
+                                                    text = LocalizationKey("offer-tab-1"),
+                                                ),
+                                            ),
+                                        ),
                                     ),
                                     StackComponent(
                                         components = listOf(
@@ -303,7 +333,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                             ),
                                         ),
                                         dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
-                                        size = Size(width = Fit, height = Fit),
+                                        size = Size(width = Fit(), height = Fit()),
                                         backgroundColor = ColorScheme(
                                             light = ColorInfo.Hex(Color(red = 5, green = 124, blue = 91).toArgb()),
                                         ),
@@ -318,7 +348,7 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                                     ),
                                 ),
                                 dimension = Vertical(alignment = LEADING, distribution = END),
-                                size = Size(width = Fill, height = Fit),
+                                size = Size(width = Fill, height = Fit()),
                                 padding = Padding(top = 16.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
                             ),
                         ),
@@ -346,6 +376,9 @@ internal fun tabsWithButtons(font: FontAlias? = null): SampleData.Components {
                     ),
                     LocalizationKey("offer") to LocalizationData.Text(
                         "Try 7 days free, then $19.98/year. Cancel anytime.",
+                    ),
+                    LocalizationKey("offer-tab-1") to LocalizationData.Text(
+                        "Tab 2 selected: try annual at $9.99/year.",
                     ),
                     LocalizationKey("cta") to LocalizationData.Text("Continue"),
                     LocalizationKey("terms") to LocalizationData.Text("Privacy & Terms"),

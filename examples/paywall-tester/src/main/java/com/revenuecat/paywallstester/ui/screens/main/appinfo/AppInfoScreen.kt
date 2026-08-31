@@ -38,6 +38,9 @@ import com.revenuecat.paywallstester.Constants
 import com.revenuecat.paywallstester.MainActivity
 import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewModel.UiState
 import com.revenuecat.paywallstester.ui.screens.main.createCustomerCenterListener
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
 import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
 import com.revenuecat.purchases.ui.revenuecatui.views.CustomerCenterView
 import kotlinx.coroutines.Dispatchers
@@ -50,11 +53,12 @@ import java.io.File
 @SuppressWarnings("LongMethod")
 @Composable
 fun AppInfoScreen(
+    tappedOnCustomerCenter: () -> Unit,
+    tappedOnCheckpoints: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: AppInfoScreenViewModel = viewModel<AppInfoScreenViewModelImpl>(
         factory = AppInfoScreenViewModelImpl.Factory,
     ),
-    tappedOnCustomerCenter: () -> Unit,
 ) {
     var isDebugBottomSheetVisible by remember { mutableStateOf(false) }
     var showLogInDialog by remember { mutableStateOf(false) }
@@ -143,6 +147,32 @@ fun AppInfoScreen(
             activity.launchCustomerCenter()
         }) {
             Text(text = "Customer Center (Activity)")
+        }
+        Button(onClick = {
+            tappedOnCheckpoints()
+        }) {
+            Text(text = "Checkpoints")
+        }
+        Button(onClick = {
+            Purchases.sharedInstance.showManageSubscriptions(
+                context,
+                object : ManageSubscriptionsCallback {
+                    override fun onSuccess() {
+                        Log.d("PaywallTester", "showManageSubscriptions opened the management page")
+                    }
+
+                    override fun onError(error: PurchasesError) {
+                        Log.e("PaywallTester", "showManageSubscriptions failed: $error")
+                        Toast.makeText(
+                            context,
+                            "Manage subscriptions failed: ${error.message}",
+                            Toast.LENGTH_LONG,
+                        ).show()
+                    }
+                },
+            )
+        }) {
+            Text(text = "Show manage subscriptions")
         }
         Spacer(modifier = Modifier.weight(1f))
         Button(onClick = { viewModel.refresh() }) {
@@ -239,7 +269,7 @@ private fun ApiKeyDialog(onApiKeyClick: (String) -> Unit, onDismissed: () -> Uni
                     apiKey = Constants.GOOGLE_API_KEY_A,
                     onClick = onApiKeyClick,
                 )
-
+                Spacer(Modifier.size(8.dp))
                 ApiKeyButton(
                     label = Constants.GOOGLE_API_KEY_B_LABEL,
                     apiKey = Constants.GOOGLE_API_KEY_B,
@@ -264,8 +294,11 @@ private fun ApiKeyDialog(onApiKeyClick: (String) -> Unit, onDismissed: () -> Uni
 
 @Composable
 private fun ApiKeyButton(label: String, apiKey: String, onClick: (String) -> Unit) {
-    TextButton(onClick = { onClick(apiKey) }) {
-        Column {
+    Button(
+        onClick = { onClick(apiKey) },
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(Modifier.fillMaxWidth()) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
@@ -332,6 +365,7 @@ fun AppInfoScreenPreview() {
             override fun refresh() {}
         },
         tappedOnCustomerCenter = {},
+        tappedOnCheckpoints = {},
     )
 }
 

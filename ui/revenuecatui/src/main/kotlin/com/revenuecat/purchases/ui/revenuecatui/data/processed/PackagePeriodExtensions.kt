@@ -9,6 +9,13 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 internal val Package.isLifetime: Boolean
     get() = packageType == PackageType.LIFETIME
 
+/**
+ * Whether the product has no billing period, which is the case for all non-subscription products.
+ * Price variables render the plain price for these instead of appending a period.
+ */
+internal val Package.hasNoBillingPeriod: Boolean
+    get() = product.period == null
+
 internal val Package.periodUnitLocalizationKey: VariableLocalizationKey?
     get() = if (isLifetime) VariableLocalizationKey.LIFETIME else product.period?.periodUnitLocalizationKey
 

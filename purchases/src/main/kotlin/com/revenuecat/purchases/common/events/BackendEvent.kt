@@ -2,10 +2,13 @@ package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.events.CustomerCenterDisplayMode
 import com.revenuecat.purchases.customercenter.events.CustomerCenterEventType
 import com.revenuecat.purchases.utils.Event
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -100,6 +103,8 @@ internal sealed class BackendEvent : Event {
         val darkMode: Boolean,
         @SerialName("locale")
         val localeIdentifier: String,
+        @SerialName("workflow_id")
+        val workflowID: String? = null,
         @SerialName("presented_offering_context")
         val presentedOfferingContext: PresentedOfferingContextData? = null,
         @SerialName("exit_offer_type")
@@ -162,18 +167,32 @@ internal sealed class BackendEvent : Event {
         val targetingRevision: Int? = null,
         @SerialName("targeting_rule_id")
         val targetingRuleId: String? = null,
+        @SerialName("paywall_id")
+        val paywallID: String? = null,
+        @SerialName("workflow_id")
+        val workflowID: String? = null,
+        @SerialName("trace_id")
+        val traceId: String? = null,
     ) {
         companion object {
             fun fromContext(
                 context: PresentedOfferingContext,
+                paywallId: String? = null,
+                workflowId: String? = null,
+                traceId: String? = null,
             ): PresentedOfferingContextData? {
-                if (context.placementIdentifier == null && context.targetingContext == null) {
+                val hasPlacement = context.placementIdentifier != null || context.targetingContext != null
+                val hasAttribution = paywallId != null || workflowId != null || traceId != null
+                if (!hasPlacement && !hasAttribution) {
                     return null
                 }
                 return PresentedOfferingContextData(
                     placementIdentifier = context.placementIdentifier,
                     targetingRevision = context.targetingContext?.revision,
                     targetingRuleId = context.targetingContext?.ruleId,
+                    paywallID = paywallId,
+                    workflowID = workflowId,
+                    traceId = traceId,
                 )
             }
         }
@@ -212,10 +231,28 @@ internal sealed class BackendEvent : Event {
     ) : BackendEvent()
 
     /**
+     * Represents a checkpoint hit.
+     */
+    @Serializable
+    @SerialName("checkpoint")
+    data class Checkpoint(
+        val id: String,
+        val version: Int,
+        val type: String,
+        val identifier: String,
+        @SerialName("app_user_id")
+        val appUserID: String,
+        @SerialName("app_session_id")
+        val appSessionID: String,
+        val timestamp: Long,
+    ) : BackendEvent()
+
+    /**
      * Wire shape for workflow lifecycle events. Matches khepri's WorkflowsEvent schema.
      */
     @Serializable
     @SerialName("workflows")
+    @OptIn(ExperimentalSerializationApi::class)
     data class Workflows(
         val id: String,
         val version: Int,
@@ -226,14 +263,25 @@ internal sealed class BackendEvent : Event {
         val timestampMs: Long,
         @SerialName("app_user_id")
         val appUserID: String,
+        @EncodeDefault(EncodeDefault.Mode.ALWAYS)
         val context: Context = Context(),
         val properties: Properties,
     ) : BackendEvent() {
 
         @Serializable
+        @OptIn(ExperimentalSerializationApi::class, InternalRevenueCatAPI::class)
         data class Context(
+            @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+            val platform: String = WORKFLOW_CONTEXT_PLATFORM,
+            @SerialName("sdk_version")
+            @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+            val sdkVersion: String = Config.frameworkVersion,
             val locale: String? = null,
-        )
+        ) {
+            private companion object {
+                const val WORKFLOW_CONTEXT_PLATFORM = "android"
+            }
+        }
 
         @Serializable
         data class Properties(
@@ -312,6 +360,8 @@ internal sealed class BackendEvent : Event {
         val appUserID: String,
         @SerialName("app_session_id")
         val appSessionID: String,
+        @SerialName("capture_method")
+        val captureMethod: String? = null,
 
         // Revenue event only fields
         @SerialName("revenue_micros")
@@ -322,6 +372,20 @@ internal sealed class BackendEvent : Event {
         // Failed to load event only fields
         @SerialName("mediator_error_code")
         val mediatorErrorCode: Int? = null,
+
+        // Reward event only fields
+        @SerialName("reward_verification_enabled")
+        val rewardVerificationEnabled: Boolean? = null,
+        @SerialName("reward_type")
+        val rewardType: String? = null,
+        @SerialName("reward_virtual_currency_code")
+        val rewardVirtualCurrencyCode: String? = null,
+        @SerialName("reward_virtual_currency_amount")
+        val rewardVirtualCurrencyAmount: Int? = null,
+        @SerialName("reward_entitlement_id")
+        val rewardEntitlementId: String? = null,
+        @SerialName("reward_failure_reason")
+        val rewardFailureReason: String? = null,
     ) : BackendEvent()
 
     /**
@@ -347,6 +411,16 @@ internal sealed class BackendEvent : Event {
          * Defines the version number of the custom paywall event schema.
          */
         const val CUSTOM_PAYWALL_EVENT_SCHEMA_VERSION = 1
+
+        /**
+         * Defines the version number of the checkpoint event schema.
+         */
+        const val CHECKPOINT_EVENT_SCHEMA_VERSION = 1
+
+        /**
+         * Defines the type identifier for checkpoint hit events.
+         */
+        const val CHECKPOINT_EVENT_TYPE = "checkpoint_hit"
 
         /**
          * Defines the version number of the workflow event schema.

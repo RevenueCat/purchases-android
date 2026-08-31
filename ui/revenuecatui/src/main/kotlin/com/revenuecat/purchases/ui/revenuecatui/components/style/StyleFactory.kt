@@ -27,6 +27,7 @@ import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
@@ -47,9 +48,11 @@ import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTabsPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelineItemPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedTimelinePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedVideoPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedWebViewPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.imageForAllLocales
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.stringForAllLocales
+import com.revenuecat.purchases.ui.revenuecatui.components.ktx.stringForAllLocalesOrEmpty
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
@@ -80,7 +83,6 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.errorIfNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.flatMap
-import com.revenuecat.purchases.ui.revenuecatui.helpers.flatMapError
 import com.revenuecat.purchases.ui.revenuecatui.helpers.flatten
 import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.mapError
@@ -187,7 +189,8 @@ internal class StyleFactory(
             var topWindowInsetsApplied = false
 
             /**
-             * Whether the first visual component in the tree is a full-width image or video (a "hero image").
+             * Whether the first visual component in the tree is a full-width image, video or web_view (a
+             * "hero image").
              * This is tracked separately from [topWindowInsetsApplied] because a hero image can appear
              * outside a ZLayer (e.g. directly in a Vertical stack), in which case it doesn't affect
              * top window insets application but still needs to be detected for header padding logic.
@@ -200,9 +203,9 @@ internal class StyleFactory(
             private var stillLookingForHeaderMedia = true
 
             /**
-             * This will be called for every component in the tree, and will determine whether we have a header image
-             * or video that needs special top-window-insets treatment. A header image is found if the first
-             * non-container component is an image component with a Fill width and a ZLayer parent stack.
+             * This will be called for every component in the tree, and will determine whether we have header media
+             * that needs special top-window-insets treatment. Header media is found if the first non-container
+             * component is an image, video or web_view component with a Fill width and a ZLayer parent stack.
              */
             fun handleHeaderMediaViewWindowInsets(component: PaywallComponent) {
                 when (component) {
@@ -221,18 +224,14 @@ internal class StyleFactory(
                         }
                     }
 
-                    is ImageComponent -> {
+                    is ImageComponent,
+                    is VideoComponent,
+                    is WebViewComponent,
+                    -> {
                         if (stillLookingForHeaderMedia) {
-                            ignoreTopWindowInsets = component.isHeaderImage
-                            heroImageDetected = component.isHeaderImage
-                        }
-                        stillLookingForHeaderMedia = false
-                    }
-
-                    is VideoComponent -> {
-                        if (stillLookingForHeaderMedia) {
-                            ignoreTopWindowInsets = component.isHeaderVideo
-                            heroImageDetected = component.isHeaderVideo
+                            val isHero = component.isHeaderMedia
+                            ignoreTopWindowInsets = isHero
+                            heroImageDetected = isHero
                         }
                         stillLookingForHeaderMedia = false
                     }
@@ -243,25 +242,20 @@ internal class StyleFactory(
             }
 
             private val PaywallComponent.isHeaderMedia: Boolean
-                get() = isHeaderImage || isHeaderVideo
+                get() = when (this) {
+                    is ImageComponent -> size.width.isFill
+                    is VideoComponent -> size.width.isFill
+                    is WebViewComponent -> size.width.isFill
+                    else -> false
+                }
 
-            private val PaywallComponent.isHeaderImage: Boolean
-                get() = this is ImageComponent &&
-                    when (size.width) {
-                        is SizeConstraint.Fill -> true
-                        is SizeConstraint.Fit,
-                        is SizeConstraint.Fixed,
-                        -> false
-                    }
-
-            private val PaywallComponent.isHeaderVideo: Boolean
-                get() = this is VideoComponent &&
-                    when (size.width) {
-                        is SizeConstraint.Fill -> true
-                        is SizeConstraint.Fit,
-                        is SizeConstraint.Fixed,
-                        -> false
-                    }
+            private val SizeConstraint.isFill: Boolean
+                get() = when (this) {
+                    is SizeConstraint.Fill -> true
+                    is SizeConstraint.Fit,
+                    is SizeConstraint.Fixed,
+                    -> false
+                }
         }
 
         val windowInsetsState = WindowInsetsState()
@@ -573,11 +567,33 @@ internal class StyleFactory(
             is TabsComponent -> createTabsComponentStyle(component)
             is VideoComponent -> createVideoComponentStyle(component)
             is FallbackHeaderComponent -> Result.Success(null)
+            is WebViewComponent -> createWebViewComponentStyle(component)
             is CountdownComponent -> createCountdownComponentStyle(
                 component,
             )
         }
     }
+
+    private fun StyleFactoryScope.createWebViewComponentStyle(
+        component: WebViewComponent,
+    ): Result<WebViewComponentStyle, NonEmptyList<PaywallValidationError>> =
+        component.overrides
+            .toPresentedOverrides(stripRules) { partial -> Result.Success(PresentedWebViewPartial(partial)) }
+            .mapError { nonEmptyListOf(it) }
+            .map { presentedOverrides ->
+                WebViewComponentStyle(
+                    url = component.url,
+                    visible = component.visible ?: DEFAULT_VISIBILITY,
+                    size = component.size,
+                    componentId = component.id,
+                    overrides = presentedOverrides,
+                    rcPackage = rcPackage,
+                    resolvedOffer = resolvedOffer,
+                    tabIndex = tabControlIndex,
+                    offerEligibility = offerEligibility,
+                    ignoreTopWindowInsets = ignoreTopWindowInsets,
+                )
+            }
 
     private fun StyleFactoryScope.createCountdownComponentStyle(
         component: CountdownComponent,
@@ -663,24 +679,28 @@ internal class StyleFactory(
                     offerConfig = component.playStoreOffer,
                 )
 
+                // Resolved before the package is recorded, so that default-package selection can evaluate
+                // visibility the same way the renderer does.
+                val presentedOverridesResult = component.overrides
+                    .toPresentedOverrides(stripRules) { partial ->
+                        PresentedPackagePartial(from = partial)
+                    }
+                    .mapError { nonEmptyListOf(it) }
+                val packageOfferEligibility = calculateOfferEligibility(resolvedOffer, rcPackage)
+
                 withSelectedScope(
                     packageInfo = AvailablePackages.Info(
                         pkg = rcPackage,
                         isSelectedByDefault = component.isSelectedByDefault,
                         resolvedOffer = resolvedOffer,
+                        visible = component.visible ?: DEFAULT_VISIBILITY,
+                        visibilityOverrides = (presentedOverridesResult as? Result.Success)?.value.orEmpty(),
+                        offerEligibility = packageOfferEligibility,
                     ),
                     // If a tab control contains a package, which is already an edge case, the package should not
                     // visually become "selected" if its tab control parent is.
                     tabControlIndex = null,
                 ) {
-                    val packageOfferEligibility = offerEligibility
-
-                    val presentedOverridesResult = component.overrides
-                        .toPresentedOverrides(stripRules) { partial ->
-                            PresentedPackagePartial(from = partial)
-                        }
-                        .mapError { nonEmptyListOf(it) }
-
                     val (stackComponentStyleResult, purchaseButtons) = withCount(
                         predicate = { it is PurchaseButtonComponent },
                     ) {
@@ -726,8 +746,16 @@ internal class StyleFactory(
         return when (action) {
             is ButtonComponent.Action.NavigateBack -> Result.Success(ButtonComponentStyle.Action.NavigateBack)
             is ButtonComponent.Action.RestorePurchases -> Result.Success(ButtonComponentStyle.Action.RestorePurchases)
-            is ButtonComponent.Action.NavigateTo -> convertDestination(action.destination)
-                .map { destination -> destination?.let { ButtonComponentStyle.Action.NavigateTo(it) } }
+            is ButtonComponent.Action.NavigateTo -> {
+                val destination = action.destination
+                // A sheet destination with no inline content: render the button, no-op on tap (web parity).
+                if (destination is ButtonComponent.Destination.Sheet && destination.stack == null) {
+                    Result.Success(ButtonComponentStyle.Action.NoOp)
+                } else {
+                    convertDestination(destination)
+                        .map { converted -> converted?.let { ButtonComponentStyle.Action.NavigateTo(it) } }
+                }
+            }
             is ButtonComponent.Action.WorkflowTrigger -> Result.Success(ButtonComponentStyle.Action.WorkflowTrigger)
             is ButtonComponent.Action.CloseWorkflow -> Result.Success(ButtonComponentStyle.Action.CloseWorkflow)
             // Returning null here, which will result in this button being hidden.
@@ -782,6 +810,8 @@ internal class StyleFactory(
                     openMethod = method.openMethod ?: ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
                     rcPackage = rcPackage,
                     packageParam = method.customUrl.packageParam,
+                    appUserIdParam = method.customUrl.appUserIdParam,
+                    envParam = method.customUrl.envParam,
                 )
             }
 
@@ -822,19 +852,28 @@ internal class StyleFactory(
                 destination.method,
                 componentInteractionValue = "navigate_to_url",
             )
-            is ButtonComponent.Destination.Sheet ->
-                createStackComponentStyle(destination.stack)
-                    .map { it.applyBottomWindowInsetsIfNecessary(shouldApply = true) }
-                    .map { it.applyHorizontalWindowInsetsIfNecessary(shouldApply = true) }
-                    .map { stackComponentStyle ->
-                        ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
-                            id = destination.id,
-                            name = destination.name,
-                            stack = stackComponentStyle,
-                            backgroundBlur = destination.backgroundBlur,
-                            size = destination.size,
-                        )
-                    }
+            is ButtonComponent.Destination.Sheet -> {
+                val rawStack = destination.stack
+                if (rawStack == null) {
+                    // Unreachable: a content-less sheet is mapped to NoOp before reaching here. Log in
+                    // case that invariant ever breaks, and hide the button rather than crash.
+                    Logger.e("Sheet destination reached convertDestination without a stack.")
+                    Result.Success(null)
+                } else {
+                    createStackComponentStyle(rawStack)
+                        .map { it.applyBottomWindowInsetsIfNecessary(shouldApply = true) }
+                        .map { it.applyHorizontalWindowInsetsIfNecessary(shouldApply = true) }
+                        .map { stackComponentStyle ->
+                            ButtonComponentStyle.Action.NavigateTo.Destination.Sheet(
+                                id = destination.id,
+                                name = destination.name,
+                                stack = stackComponentStyle,
+                                backgroundBlur = destination.backgroundBlur,
+                                size = destination.size,
+                            )
+                        }
+                }
+            }
             // Returning null here, which will result in this button being hidden.
             is ButtonComponent.Destination.Unknown,
             -> Result.Success(null)
@@ -895,8 +934,8 @@ internal class StyleFactory(
             size = component.size,
             spacing = (component.spacing ?: DEFAULT_SPACING).dp,
             background = background,
-            padding = component.padding.toPaddingValues(),
-            margin = component.margin.toPaddingValues(),
+            padding = component.padding.toPaddingValues(warnIfNegative = true),
+            margin = component.margin.toPaddingValues(warnIfNegative = true),
             shape = component.shape ?: DEFAULT_SHAPE,
             border = borderStyles,
             shadow = shadowStyles,
@@ -917,19 +956,8 @@ internal class StyleFactory(
         component: TextComponent,
     ): Result<TextComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Get our texts from the localization dictionary.
-        first = localizations.stringForAllLocales(component.text)
-            .flatMapError { errors ->
-                val lidExistsInAnyLocale = localizations.any { (_, dict) -> dict.containsKey(component.text) }
-                // If the lid exists in some locales but not all, it's a real localization/translation
-                // issue, so we propagate the error. If it exists in NO locales, it's an orphan text_lid
-                // from a frontend bug (e.g. a badge added only in an override state).
-                if (lidExistsInAnyLocale) {
-                    Result.Error(errors)
-                } else {
-                    Logger.w("Missing text for text_lid '${component.text.value}', using empty string.")
-                    Result.Success(localizations.mapValues { "" })
-                }
-            },
+        // Match iOS behavior by rendering missing base localizations as empty text instead of invalidating the paywall.
+        first = Result.Success(localizations.stringForAllLocalesOrEmpty(component.text)),
         second = component.overrides
             // Map all overrides to PresentedOverrides.
             .toPresentedOverrides(stripRules) {
@@ -962,8 +990,8 @@ internal class StyleFactory(
             backgroundColor = backgroundColor,
             visible = component.visible ?: DEFAULT_VISIBILITY,
             size = component.size,
-            padding = component.padding.toPaddingValues(),
-            margin = component.margin.toPaddingValues(),
+            padding = component.padding.toPaddingValues(warnIfNegative = true),
+            margin = component.margin.toPaddingValues(warnIfNegative = true),
             rcPackage = rcPackage,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
@@ -998,8 +1026,8 @@ internal class StyleFactory(
             sources,
             visible = component.visible ?: DEFAULT_VISIBILITY,
             size = component.size,
-            padding = component.padding.toPaddingValues(),
-            margin = component.margin.toPaddingValues(),
+            padding = component.padding.toPaddingValues(warnIfNegative = true),
+            margin = component.margin.toPaddingValues(warnIfNegative = true),
             shape = component.maskShape?.toShape(),
             border = border,
             shadow = shadow,
@@ -1053,8 +1081,8 @@ internal class StyleFactory(
             shadow = shadow,
             visible = component.visible ?: DEFAULT_VISIBILITY,
             size = component.size,
-            padding = component.padding?.toPaddingValues() ?: PaddingValues(),
-            margin = component.margin?.toPaddingValues() ?: PaddingValues(),
+            padding = component.padding?.toPaddingValues(warnIfNegative = true) ?: PaddingValues(),
+            margin = component.margin?.toPaddingValues(warnIfNegative = true) ?: PaddingValues(),
             rcPackage = rcPackage,
             resolvedOffer = resolvedOffer,
             tabIndex = tabControlIndex,
@@ -1091,8 +1119,8 @@ internal class StyleFactory(
                 visible = component.visible ?: DEFAULT_VISIBILITY,
                 size = component.size,
                 color = colorStyles,
-                padding = component.padding.toPaddingValues(),
-                margin = component.margin.toPaddingValues(),
+                padding = component.padding.toPaddingValues(warnIfNegative = true),
+                margin = component.margin.toPaddingValues(warnIfNegative = true),
                 iconBackground = background,
                 rcPackage = rcPackage,
                 resolvedOffer = resolvedOffer,
@@ -1119,8 +1147,8 @@ internal class StyleFactory(
             iconAlignment = component.iconAlignment,
             visible = component.visible ?: DEFAULT_VISIBILITY,
             size = component.size,
-            padding = component.padding.toPaddingValues(),
-            margin = component.margin.toPaddingValues(),
+            padding = component.padding.toPaddingValues(warnIfNegative = true),
+            margin = component.margin.toPaddingValues(warnIfNegative = true),
             items = items,
             rcPackage = rcPackage,
             resolvedOffer = resolvedOffer,
@@ -1145,7 +1173,7 @@ internal class StyleFactory(
             if (connectorColor != null) {
                 TimelineComponentStyle.ConnectorStyle(
                     width = connector.width,
-                    margin = connector.margin.toPaddingValues(),
+                    margin = connector.margin.toPaddingValues(warnIfNegative = true),
                     color = connectorColor,
                 )
             } else {
@@ -1191,8 +1219,8 @@ internal class StyleFactory(
             pagePeek = component.pagePeek?.dp ?: 0.dp,
             pageSpacing = (component.pageSpacing ?: DEFAULT_SPACING).dp,
             background = background,
-            padding = component.padding.toPaddingValues(),
-            margin = component.margin.toPaddingValues(),
+            padding = component.padding.toPaddingValues(warnIfNegative = true),
+            margin = component.margin.toPaddingValues(warnIfNegative = true),
             shape = component.shape ?: DEFAULT_SHAPE,
             border = borderStyles,
             shadow = shadowStyles,
@@ -1278,8 +1306,8 @@ internal class StyleFactory(
                     TabsComponentStyle(
                         visible = component.visible ?: DEFAULT_VISIBILITY,
                         size = component.size,
-                        padding = component.padding.toPaddingValues(),
-                        margin = component.margin.toPaddingValues(),
+                        padding = component.padding.toPaddingValues(warnIfNegative = true),
+                        margin = component.margin.toPaddingValues(warnIfNegative = true),
                         background = backgroundColor,
                         shape = component.shape ?: DEFAULT_SHAPE,
                         border = border,
@@ -1287,6 +1315,7 @@ internal class StyleFactory(
                         control = control,
                         tabs = tabs,
                         overrides = overrides,
+                        stateUpdates = component.stateUpdates,
                     )
                 }
             }
@@ -1330,7 +1359,7 @@ internal class StyleFactory(
             withTabIndex(tabIndex) {
                 withTabControl(control) {
                     createStackComponentStyle(componentTab.stack)
-                        .map { stack -> TabsComponentStyle.Tab(stack) }
+                        .map { stack -> TabsComponentStyle.Tab(id = componentTab.id, stack = stack) }
                 }
             }
         }

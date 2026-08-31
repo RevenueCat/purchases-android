@@ -1,13 +1,14 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, com.revenuecat.purchases.InternalRevenueCatAPI::class)
+@file:OptIn(InternalRevenueCatAPI::class)
 @file:Suppress("LongParameterList")
 
 package com.revenuecat.purchases.ads.events
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.VerifiedReward
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
+import com.revenuecat.purchases.ads.events.types.AdRewardFailureReason
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.FeatureEvent
 import java.util.UUID
@@ -18,6 +19,10 @@ internal enum class AdEventType(val value: String) {
     REVENUE("rc_ads_ad_revenue"),
     LOADED("rc_ads_ad_loaded"),
     FAILED_TO_LOAD("rc_ads_ad_failed_to_load"),
+    REWARD_EARNED_UNVERIFIED("rc_ads_ad_reward_sdk_earned"),
+    REWARD_VERIFIED("rc_ads_ad_reward_sdk_verified"),
+    REWARD_GRANTED("rc_ads_ad_reward_sdk_granted"),
+    REWARD_FAILED_TO_VERIFY("rc_ads_ad_reward_sdk_failed_to_verify"),
 }
 
 internal sealed interface AdEvent : FeatureEvent {
@@ -31,6 +36,7 @@ internal sealed interface AdEvent : FeatureEvent {
     val placement: String?
     val adUnitId: String
     val impressionId: String?
+    val captureMethod: AdCaptureMethod
 
     class Displayed(
         override val id: String = UUID.randomUUID().toString(),
@@ -43,6 +49,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String,
+        override val captureMethod: AdCaptureMethod,
     ) : AdEvent
 
     class Open(
@@ -56,6 +63,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String,
+        override val captureMethod: AdCaptureMethod,
     ) : AdEvent
 
     class Revenue(
@@ -69,6 +77,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String,
+        override val captureMethod: AdCaptureMethod,
         val revenueMicros: Long,
         val currency: String,
         val precision: AdRevenuePrecision,
@@ -85,6 +94,7 @@ internal sealed interface AdEvent : FeatureEvent {
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String,
+        override val captureMethod: AdCaptureMethod,
     ) : AdEvent
 
     class FailedToLoad(
@@ -97,8 +107,68 @@ internal sealed interface AdEvent : FeatureEvent {
         override val placement: String?,
         override val adUnitId: String,
         override val impressionId: String? = null,
+        override val captureMethod: AdCaptureMethod,
         val mediatorErrorCode: Int?,
     ) : AdEvent {
         override val networkName: String? = null
     }
+
+    class RewardEarnedUnverified(
+        override val id: String = UUID.randomUUID().toString(),
+        override val eventVersion: Int = BackendEvent.AD_EVENT_SCHEMA_VERSION,
+        override val type: AdEventType = AdEventType.REWARD_EARNED_UNVERIFIED,
+        override val timestamp: Long = System.currentTimeMillis(),
+        override val networkName: String?,
+        override val mediatorName: AdMediatorName,
+        override val adFormat: AdFormat,
+        override val placement: String?,
+        override val adUnitId: String,
+        override val impressionId: String,
+        override val captureMethod: AdCaptureMethod,
+        val rewardVerificationEnabled: Boolean,
+    ) : AdEvent
+
+    class RewardVerified(
+        override val id: String = UUID.randomUUID().toString(),
+        override val eventVersion: Int = BackendEvent.AD_EVENT_SCHEMA_VERSION,
+        override val type: AdEventType = AdEventType.REWARD_VERIFIED,
+        override val timestamp: Long = System.currentTimeMillis(),
+        override val networkName: String?,
+        override val mediatorName: AdMediatorName,
+        override val adFormat: AdFormat,
+        override val placement: String?,
+        override val adUnitId: String,
+        override val impressionId: String,
+        override val captureMethod: AdCaptureMethod,
+    ) : AdEvent
+
+    class RewardGranted(
+        override val id: String = UUID.randomUUID().toString(),
+        override val eventVersion: Int = BackendEvent.AD_EVENT_SCHEMA_VERSION,
+        override val type: AdEventType = AdEventType.REWARD_GRANTED,
+        override val timestamp: Long = System.currentTimeMillis(),
+        override val networkName: String?,
+        override val mediatorName: AdMediatorName,
+        override val adFormat: AdFormat,
+        override val placement: String?,
+        override val adUnitId: String,
+        override val impressionId: String,
+        override val captureMethod: AdCaptureMethod,
+        val reward: VerifiedReward,
+    ) : AdEvent
+
+    class RewardFailedToVerify(
+        override val id: String = UUID.randomUUID().toString(),
+        override val eventVersion: Int = BackendEvent.AD_EVENT_SCHEMA_VERSION,
+        override val type: AdEventType = AdEventType.REWARD_FAILED_TO_VERIFY,
+        override val timestamp: Long = System.currentTimeMillis(),
+        override val networkName: String?,
+        override val mediatorName: AdMediatorName,
+        override val adFormat: AdFormat,
+        override val placement: String?,
+        override val adUnitId: String,
+        override val impressionId: String,
+        override val captureMethod: AdCaptureMethod,
+        val failureReason: AdRewardFailureReason,
+    ) : AdEvent
 }

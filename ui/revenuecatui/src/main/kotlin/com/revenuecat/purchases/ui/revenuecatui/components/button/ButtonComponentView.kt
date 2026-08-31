@@ -140,13 +140,22 @@ internal fun ButtonComponentView(
                     onStackClick = onStackClick@{
                         val paywallAction = buttonState.action ?: return@onStackClick
                         myActionInProgress = true
-                        state.update(actionInProgress = true)
-                        if (style.action.isPurchaseRelated()) {
+                        state.update(clickScopedActionInProgress = true)
+                        val actionForClick = if (style.action.isPurchaseRelated()) {
                             val currentPackage = packageForPurchaseButtonInteraction(style.action, state)
                             val componentUrl = resolvedWebCheckoutInteractionUrl(
                                 paywallAction = paywallAction,
                                 state = state,
                             )
+                            // Resolve the URL once and carry it on the action: PaywallViewModel reuses it instead of
+                            // resolving again, so the interaction event and the URL opened for checkout cannot differ.
+                            val resolvedAction = if (
+                                paywallAction is PaywallAction.External.LaunchWebCheckout && componentUrl != null
+                            ) {
+                                paywallAction.copy(resolvedUrl = componentUrl)
+                            } else {
+                                paywallAction
+                            }
                             componentInteractionTracker.track(
                                 paywallPurchaseButtonAction(
                                     componentName = style.componentName,
@@ -156,6 +165,7 @@ internal fun ButtonComponentView(
                                     currentProductIdentifier = currentPackage?.product?.paywallProductIdentifier(),
                                 ),
                             )
+                            resolvedAction
                         } else {
                             val urlForEvent = paywallAction.navigationUrlForComponentInteraction()
                             val interaction = style.action.componentInteraction(urlForEvent)
@@ -169,11 +179,17 @@ internal fun ButtonComponentView(
                                     ),
                                 )
                             }
+                            paywallAction
                         }
                         coroutineScope.launch {
-                            onClick(paywallAction)
-                            myActionInProgress = false
-                            state.update(actionInProgress = false)
+                            // `state` outlives this composition-scoped coroutine, so skipping the reset
+                            // on cancellation leaves every button on the paywall disabled.
+                            try {
+                                onClick(actionForClick)
+                            } finally {
+                                myActionInProgress = false
+                                state.update(clickScopedActionInProgress = false)
+                            }
                         }
                     },
                 )
@@ -337,14 +353,14 @@ private fun previewButtonComponentStyle(
             previewTextComponentStyle(
                 text = "Restore purchases",
                 backgroundColor = ColorStyles(light = ColorStyle.Solid(Color.Yellow)),
-                size = Size(width = Fit, height = Fit),
+                size = Size(width = Fit(), height = Fit()),
                 padding = Padding(top = 8.0, bottom = 8.0, leading = 8.0, trailing = 8.0),
                 margin = Padding(top = 0.0, bottom = 24.0, leading = 0.0, trailing = 24.0),
             ),
         ),
         dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = START),
         visible = true,
-        size = Size(width = Fit, height = Fit),
+        size = Size(width = Fit(), height = Fit()),
         spacing = 16.dp,
         background = BackgroundStyles.Color(color = ColorStyles(light = ColorStyle.Solid(Color.Red))),
         padding = PaddingValues(all = 16.dp),

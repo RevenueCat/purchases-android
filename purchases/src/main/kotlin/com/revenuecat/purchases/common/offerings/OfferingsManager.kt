@@ -9,19 +9,20 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
-import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
-import com.revenuecat.purchases.utils.optNullableString
+import com.revenuecat.purchases.utils.OfferingWebViewPrewarmer
+import com.revenuecat.purchases.utils.prewarmTargetOfferings
 import org.json.JSONObject
 import java.util.Date
 import kotlin.time.Duration
@@ -35,11 +36,13 @@ internal class OfferingsManager(
     private val offeringImagePreDownloader: OfferingImagePreDownloader,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val offeringFontPreDownloader: OfferingFontPreDownloader,
+    private val offeringWebViewPrewarmer: OfferingWebViewPrewarmer,
+    private val dispatcher: Dispatcher,
     private val uiPreviewMode: Boolean = false,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
-    private val workflowManager: WorkflowManager? = null,
+    private val workflowManager: WorkflowManager,
 ) {
 
     private val emptyOfferings: Offerings = Offerings(current = null, all = emptyMap())
@@ -157,9 +160,7 @@ internal class OfferingsManager(
             null,
             null,
         )
-        val dispatchSuccess = { dispatch { onSuccess?.invoke(cachedOfferings) } }
-        workflowManager?.getWorkflowsList(appUserID, appInBackground, onComplete = dispatchSuccess)
-            ?: dispatchSuccess()
+        workflowManager.onPaywallConfigReady(onComplete = { dispatch { onSuccess?.invoke(cachedOfferings) } })
         if (isCacheStale) {
             log(LogIntent.DEBUG) {
                 if (appInBackground) {
@@ -198,13 +199,11 @@ internal class OfferingsManager(
         backend.getOfferings(
             appUserID,
             appInBackground,
-            { body, originalDataSource ->
+            { body, originalDataSource, responsePayload ->
                 createAndCacheOfferings(
-                    appUserID = appUserID,
-                    appInBackground = appInBackground,
                     offeringsJSON = body,
                     originalDataSource = originalDataSource,
-                    loadedFromDiskCache = false,
+                    responsePayloadToCache = responsePayload,
                     onError,
                     onSuccess,
                 )
@@ -217,22 +216,13 @@ internal class OfferingsManager(
                             handleErrorFetchingOfferings(backendError, onError)
                         } else {
                             warnLog { OfferingStrings.ERROR_FETCHING_OFFERINGS_USING_DISK_CACHE }
-                            val originalDataSource = cachedOfferingsResponse.optNullableString(
-                                OfferingsCache.ORIGINAL_SOURCE_KEY,
-                            )?.let {
-                                try {
-                                    HTTPResponseOriginalSource.valueOf(it)
-                                } catch (e: IllegalArgumentException) {
-                                    errorLog(e) { "Invalid original data source for cached offerings" }
-                                    null
-                                }
-                            } ?: HTTPResponseOriginalSource.MAIN
                             createAndCacheOfferings(
-                                appUserID = appUserID,
-                                appInBackground = appInBackground,
                                 offeringsJSON = cachedOfferingsResponse,
-                                originalDataSource = originalDataSource,
-                                loadedFromDiskCache = true,
+                                // Unknown: the source of the response that originally populated the
+                                // disk cache is not persisted, because persisting it is what forced the
+                                // response body to be re-serialized on every write.
+                                originalDataSource = null,
+                                responsePayloadToCache = null,
                                 onError,
                                 onSuccess,
                             )
@@ -247,14 +237,14 @@ internal class OfferingsManager(
     }
 
     private fun createAndCacheOfferings(
-        appUserID: String,
-        appInBackground: Boolean,
         offeringsJSON: JSONObject,
-        originalDataSource: HTTPResponseOriginalSource,
-        loadedFromDiskCache: Boolean,
+        originalDataSource: HTTPResponseOriginalSource?,
+        /** Null when this parse came from the disk cache; see [OfferingsCache.cacheOfferings]. */
+        responsePayloadToCache: String?,
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((OfferingsResultData) -> Unit)? = null,
     ) {
+        val loadedFromDiskCache = responsePayloadToCache == null
         offeringsFactory.createOfferings(
             offeringsJSON,
             originalDataSource,
@@ -263,17 +253,21 @@ internal class OfferingsManager(
                 handleErrorFetchingOfferings(error, onError)
             },
             onSuccess = { offeringsResultData ->
-                offeringsResultData.offerings.current?.let {
-                    offeringImagePreDownloader.preDownloadOfferingImages(it)
-                }
+                val current = offeringsResultData.offerings.current
+                current?.let(offeringImagePreDownloader::preDownloadOfferingImages)
                 offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
-                offeringsCache.cacheOfferings(offeringsResultData.offerings, offeringsJSON)
-                val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
-                if (!loadedFromDiskCache) {
-                    workflowManager?.forceWorkflowsListCacheStale()
-                }
-                workflowManager?.getWorkflowsList(appUserID, appInBackground, onComplete = dispatchSuccess)
-                    ?: dispatchSuccess()
+                offeringsCache.cacheOfferings(offeringsResultData.offerings, responsePayloadToCache)
+                workflowManager.onPaywallConfigReady(
+                    onComplete = { dispatch { onSuccess?.invoke(offeringsResultData) } },
+                )
+                // Enqueued, not just written last: dispatch() only posts the callback, so running this
+                // inline would hold the backend response thread for a component-tree decode per target.
+                dispatcher.enqueue({
+                    val prewarmTargets = offeringsResultData.offerings.prewarmTargetOfferings()
+                    prewarmTargets.filterNot { it.identifier == current?.identifier }
+                        .forEach(offeringImagePreDownloader::preDownloadOfferingImages)
+                    offeringWebViewPrewarmer.prewarmWebViews(prewarmTargets)
+                })
             },
         )
     }

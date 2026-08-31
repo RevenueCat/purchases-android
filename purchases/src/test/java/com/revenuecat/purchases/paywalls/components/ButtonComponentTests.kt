@@ -3,6 +3,8 @@ package com.revenuecat.purchases.paywalls.components
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
+import com.revenuecat.purchases.paywalls.components.common.StateUpdateValue
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -12,6 +14,7 @@ import org.junit.Test
 import org.junit.experimental.runners.Enclosed
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import kotlinx.serialization.json.JsonPrimitive
 
 @RunWith(Enclosed::class)
 internal class ButtonComponentTests {
@@ -57,7 +60,10 @@ internal class ButtonComponentTests {
                                 "type": "text"
                               }
                             ]
-                          }
+                          },
+                          "state_updates": [
+                            { "set": "planComparisonOpen", "to": true }
+                          ]
                         }
                         """.trimIndent(),
                         expected = ButtonComponent(
@@ -70,7 +76,13 @@ internal class ButtonComponentTests {
                                         name = "Text",
                                     )
                                 ),
-                            )
+                            ),
+                            stateUpdates = listOf(
+                                StateUpdate.Set(
+                                    key = "planComparisonOpen",
+                                    value = StateUpdateValue.Literal(JsonPrimitive(true)),
+                                ),
+                            ),
                         )
                     ),
                 ),
@@ -411,7 +423,7 @@ internal class ButtonComponentTests {
                                     backgroundBlur = true,
                                     size = Size(
                                         width = SizeConstraint.Fill,
-                                        height = SizeConstraint.Fit,
+                                        height = SizeConstraint.Fit(),
                                     )
                                 )
                             ),
@@ -425,6 +437,32 @@ internal class ButtonComponentTests {
                                 ),
                             )
                         )
+                    ),
+                ),
+                arrayOf(
+                    "navigate_to - sheet without inline sheet",
+                    Args(
+                        json = """
+                        {
+                          "type": "button",
+                          "action": {
+                            "type": "navigate_to",
+                            "destination": "sheet"
+                          },
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          }
+                        }
+                        """.trimIndent(),
+                        // A missing inline sheet must decode (not throw) as a content-less sheet
+                        // destination, so the button still renders. Rendering treats it as a no-op tap.
+                        expected = ButtonComponent(
+                            action = ButtonComponent.Action.NavigateTo(
+                                destination = ButtonComponent.Destination.Sheet(),
+                            ),
+                            stack = StackComponent(components = emptyList()),
+                        ),
                     ),
                 ),
                 arrayOf(
@@ -856,7 +894,7 @@ internal class ButtonComponentTests {
                                 backgroundBlur = true,
                                 size = Size(
                                     width = SizeConstraint.Fill,
-                                    height = SizeConstraint.Fit,
+                                    height = SizeConstraint.Fit(),
                                 )
                             )
                         )

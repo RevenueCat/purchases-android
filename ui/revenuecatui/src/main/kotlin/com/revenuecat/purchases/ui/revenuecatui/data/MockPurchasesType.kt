@@ -7,8 +7,10 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.events.FeatureEvent
-import com.revenuecat.purchases.common.workflows.WorkflowDataResult
+import com.revenuecat.purchases.common.workflows.PublishedWorkflow
+import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreProduct
@@ -20,6 +22,7 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
  */
 @Suppress("TooManyFunctions")
 internal class MockPurchasesType(
+    override val appUserID: String = "",
     override val preferredUILocaleOverride: String? = null,
     override val purchasesAreCompletedBy: PurchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
     override val storefrontCountryCode: String? = null,
@@ -60,7 +63,13 @@ internal class MockPurchasesType(
         // No-op for mock - return success to simulate success
         return CreateSupportTicketResult(success = true)
     }
-    override suspend fun awaitGetWorkflow(workflowId: String): WorkflowDataResult {
+    override suspend fun awaitGetWorkflow(workflowId: String): PublishedWorkflow {
         throw NotImplementedError("Mock implementation for previews only")
     }
+
+    override suspend fun awaitGetUiConfig(): UiConfig {
+        throw NotImplementedError("Mock implementation for previews only")
+    }
+
+    override suspend fun resolveWorkflow(offeringId: String): WorkflowResolution = WorkflowResolution.NoWorkflow
 }

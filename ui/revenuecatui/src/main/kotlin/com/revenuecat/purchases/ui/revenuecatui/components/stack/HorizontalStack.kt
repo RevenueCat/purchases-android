@@ -85,7 +85,7 @@ private class HorizontalStackScopeImpl(
 ) : HorizontalStackScope {
     private var hasAnyItemsWithFillWidth = false
     val shouldApplyFillSpacers: Boolean
-        get() = width != Fit && !hasAnyItemsWithFillWidth
+        get() = width !is Fit && !hasAnyItemsWithFillWidth
     var rowContent: @Composable RowScope.() -> Unit = {}
 
     override fun items(

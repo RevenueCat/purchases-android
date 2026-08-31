@@ -2,6 +2,7 @@ package com.revenuecat.paywallstester
 
 import android.app.Application
 import android.util.Log
+import android.widget.Toast
 import com.revenuecat.paywallstester.data.ApiKeyStore
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.DebugEventListener
@@ -11,6 +12,10 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointCompletedContext
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointHitContext
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointListener
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpointListener
 
 private const val TAG = "MainApplication"
 
@@ -27,6 +32,20 @@ class MainApplication : Application() {
         configurePurchases(apiKey)
         Purchases.sharedInstance.debugEventListener = DebugEventListener { event ->
             Log.d(TAG, "DebugEvent: ${event.name} ${event.properties}")
+        }
+        Purchases.sharedInstance.checkpointListener = object : CheckpointListener {
+            override fun onCheckpointHit(context: CheckpointHitContext) {
+                Log.d(TAG, "CheckpointListener: onCheckpointHit: $context")
+                Toast.makeText(
+                    this@MainApplication,
+                    "Checkpoint hit: ${context.identifier}",
+                    Toast.LENGTH_SHORT,
+                ).show()
+            }
+
+            override fun onCheckpointCompleted(context: CheckpointCompletedContext) {
+                Log.d(TAG, "CheckpointListener: onCheckpointCompleted: ${context.result}")
+            }
         }
         Purchases.sharedInstance.customerCenterListener =
             object : CustomerCenterListener {

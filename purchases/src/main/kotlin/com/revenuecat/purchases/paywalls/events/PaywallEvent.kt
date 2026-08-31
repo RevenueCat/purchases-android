@@ -174,6 +174,14 @@ public data class PaywallEvent(
         val productIdentifier: String? = null,
         val errorCode: Int? = null,
         val errorMessage: String? = null,
+        val workflowId: String? = null,
+        val stepId: String? = null,
+        /**
+         * Identifies a single traversal of a workflow, so a presentation's paywall events can be
+         * correlated with its workflow events. Sent inside `presented_offering_context`; `null` for
+         * standalone paywalls.
+         */
+        val traceId: String? = null,
     )
 
     internal fun toPaywallPostReceiptData(): PaywallPostReceiptData {
@@ -185,6 +193,7 @@ public data class PaywallEvent(
             darkMode = data.darkMode,
             localeIdentifier = data.localeIdentifier,
             offeringId = data.presentedOfferingContext.offeringIdentifier,
+            traceId = data.traceId,
         )
     }
 }
@@ -208,6 +217,9 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
     private const val PRODUCT_IDENTIFIER_INDEX = 10
     private const val ERROR_CODE_INDEX = 11
     private const val ERROR_MESSAGE_INDEX = 12
+    private const val WORKFLOW_ID_INDEX = 14
+    private const val STEP_ID_INDEX = 15
+    private const val TRACE_ID_INDEX = 16
 
     private val nullableStringSerializer = String.serializer().nullable
     private val nullableIntSerializer = Int.serializer().nullable
@@ -229,6 +241,9 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
         element("errorMessage", nullableStringSerializer.descriptor)
         // Legacy field for backward compatibility
         element("offeringIdentifier", String.serializer().descriptor)
+        element("workflowId", nullableStringSerializer.descriptor)
+        element("stepId", nullableStringSerializer.descriptor)
+        element("traceId", nullableStringSerializer.descriptor)
     }
 
     override fun serialize(encoder: Encoder, value: PaywallEvent.Data) {
@@ -268,6 +283,15 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
             }
             value.errorMessage?.let {
                 encodeStringElement(descriptor, ERROR_MESSAGE_INDEX, it)
+            }
+            value.workflowId?.let {
+                encodeStringElement(descriptor, WORKFLOW_ID_INDEX, it)
+            }
+            value.stepId?.let {
+                encodeStringElement(descriptor, STEP_ID_INDEX, it)
+            }
+            value.traceId?.let {
+                encodeStringElement(descriptor, TRACE_ID_INDEX, it)
             }
         }
     }
@@ -329,6 +353,15 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
         val errorMessage = jsonObject["errorMessage"]?.let {
             decoder.json.decodeFromJsonElement(String.serializer(), it)
         }
+        val workflowId = jsonObject["workflowId"]?.let {
+            decoder.json.decodeFromJsonElement(String.serializer(), it)
+        }
+        val stepId = jsonObject["stepId"]?.let {
+            decoder.json.decodeFromJsonElement(String.serializer(), it)
+        }
+        val traceId = jsonObject["traceId"]?.let {
+            decoder.json.decodeFromJsonElement(String.serializer(), it)
+        }
 
         return PaywallEvent.Data(
             paywallIdentifier = paywallIdentifier,
@@ -344,6 +377,9 @@ internal object PaywallEventDataSerializer : KSerializer<PaywallEvent.Data> {
             productIdentifier = productIdentifier,
             errorCode = errorCode,
             errorMessage = errorMessage,
+            workflowId = workflowId,
+            stepId = stepId,
+            traceId = traceId,
         )
     }
 }

@@ -23,6 +23,13 @@ internal data class PaywallPostReceiptData(
     val localeIdentifier: String,
     @SerialName("offering_id")
     val offeringId: String,
+    /**
+     * Identifies a single traversal of a workflow, so the resulting transaction can be attributed to
+     * the run that produced it. Sent nested here rather than as a top-level receipt param because the
+     * post-receipt body rejects unknown top-level keys. `null` for standalone paywalls.
+     */
+    @SerialName("trace_id")
+    val traceId: String? = null,
 ) {
     companion object {
         val json = Json.Default

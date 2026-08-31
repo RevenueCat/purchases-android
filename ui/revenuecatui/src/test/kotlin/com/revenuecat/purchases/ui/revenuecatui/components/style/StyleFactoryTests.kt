@@ -15,6 +15,7 @@ import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialPackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
+import com.revenuecat.purchases.paywalls.components.PartialWebViewComponent
 import com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.TabControlButtonComponent
@@ -22,6 +23,7 @@ import com.revenuecat.purchases.paywalls.components.TabControlComponent
 import com.revenuecat.purchases.paywalls.components.TabControlToggleComponent
 import com.revenuecat.purchases.paywalls.components.TabsComponent
 import com.revenuecat.purchases.paywalls.components.TextComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -119,6 +121,54 @@ class StyleFactoryTests {
     }
 
     @Test
+    fun `Should create a WebViewComponentStyle for a WebViewComponent`() {
+        val size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit())
+        val component = WebViewComponent(
+            url = "https://paywalls.revenuecat.com/{{ custom.animal }}.html",
+            id = "promo_web_view",
+            protocolVersion = 1,
+            visible = false,
+            size = size,
+        )
+
+        val result = styleFactory.create(component)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as WebViewComponentStyle
+        assertThat(style.url).isEqualTo("https://paywalls.revenuecat.com/{{ custom.animal }}.html")
+        assertThat(style.visible).isFalse()
+        assertThat(style.size).isEqualTo(size)
+        assertThat(style.componentId).isEqualTo("promo_web_view")
+        assertThat(style.overrides).isEmpty()
+    }
+
+    @Test
+    fun `WebViewComponentStyle overrides are populated from component overrides`() {
+        // Arrange
+        val webViewComponent = WebViewComponent(
+            url = "https://paywalls.revenuecat.com/index.html",
+            id = "promo_web_view",
+            protocolVersion = 1,
+            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Selected),
+                    properties = PartialWebViewComponent(visible = false),
+                ),
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(webViewComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as WebViewComponentStyle
+        assertThat(style.overrides).hasSize(1)
+        assertThat(style.overrides[0].properties.partial.visible).isFalse()
+    }
+
+    @Test
     fun `Should create a StackComponentStyle with children for a StackComponent with children`() {
         // Arrange
         val stackComponent = StackComponent(
@@ -195,7 +245,7 @@ class StyleFactoryTests {
     }
 
     @Test
-    fun `Should fail to create a TextComponentStyle if localized text is missing`() {
+    fun `Should use empty string if localized base text is missing`() {
         // Arrange
         val otherLocale = LocaleId("nl_NL")
         val defaultLocale = LocaleId("en_US")
@@ -207,7 +257,7 @@ class StyleFactoryTests {
             text = localizationKey,
             color = ColorScheme(light = ColorInfo.Hex(Color.White.toArgb())),
         )
-        val incorrectStyleFactory = StyleFactory(
+        val styleFactory = StyleFactory(
             localizations = nonEmptyMapOf(
                 defaultLocale to nonEmptyMapOf(
                     localizationKey to LocalizationData.Text(expectedText)
@@ -223,14 +273,13 @@ class StyleFactoryTests {
         )
 
         // Act
-        val result = incorrectStyleFactory.create(component)
+        val result = styleFactory.create(component)
 
         // Assert
-        assertThat(result.isError).isTrue()
-        val errors = result.errorOrNull()!!
-        assertThat(errors.size).isEqualTo(1)
-        val error = errors[0]
-        assertThat(error).isInstanceOf(PaywallValidationError.MissingStringLocalization::class.java)
+        assertThat(result.isSuccess).isTrue()
+        val style = (result as Result.Success).value.componentStyle as TextComponentStyle
+        assertThat(style.texts[defaultLocale]).isEqualTo(expectedText)
+        assertThat(style.texts[otherLocale]).isEmpty()
     }
 
     @Test
@@ -1131,6 +1180,38 @@ class StyleFactoryTests {
     }
 
     @Test
+    fun `Custom web checkout purchase button should carry configured query parameter names into the style action`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                PurchaseButtonComponent(
+                    stack = StackComponent(components = emptyList()),
+                    method = PurchaseButtonComponent.Method.CustomWebCheckout(
+                        customUrl = PurchaseButtonComponent.CustomUrl(
+                            urlLid = LOCALIZATION_KEY_TEXT_1,
+                            packageParam = "rc_package",
+                            appUserIdParam = "rc_app_user_id",
+                            envParam = "rc_environment",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val stackComponentStyle = (result as Result.Success).value.componentStyle as StackComponentStyle
+        val purchaseButtonStyle = stackComponentStyle.children.single() as ButtonComponentStyle
+        val purchaseAction = purchaseButtonStyle.action as ButtonComponentStyle.Action.CustomWebCheckout
+        assertThat(purchaseAction.packageParam).isEqualTo("rc_package")
+        assertThat(purchaseAction.appUserIdParam).isEqualTo("rc_app_user_id")
+        assertThat(purchaseAction.envParam).isEqualTo("rc_environment")
+    }
+
+    @Test
     fun `Should ignore top window insets for the first full-width image in the first z-stack`() {
         // Arrange
         val imageUrls = ThemeImageUrls(
@@ -1148,7 +1229,7 @@ class StyleFactoryTests {
                     components = listOf(
                         ImageComponent(
                             source = imageUrls,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                         ),
                     ),
                     dimension = Dimension.ZLayer(
@@ -1158,7 +1239,7 @@ class StyleFactoryTests {
 
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1203,7 +1284,7 @@ class StyleFactoryTests {
                         ImageComponent(
                             source = imageUrls,
                             // Width is not Fill.
-                            size = Size(width = SizeConstraint.Fixed(200u), height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fixed(200u), height = SizeConstraint.Fit()),
                         ),
                     ),
                     dimension = Dimension.ZLayer(
@@ -1213,7 +1294,7 @@ class StyleFactoryTests {
 
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1255,11 +1336,11 @@ class StyleFactoryTests {
             components = listOf(
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                 ),
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1299,11 +1380,11 @@ class StyleFactoryTests {
                 ImageComponent(
                     source = imageUrls,
                     // Width is not Fill.
-                    size = Size(width = SizeConstraint.Fixed(200u), height = SizeConstraint.Fit),
+                    size = Size(width = SizeConstraint.Fixed(200u), height = SizeConstraint.Fit()),
                 ),
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1324,6 +1405,169 @@ class StyleFactoryTests {
         assertThat(firstImage.ignoreTopWindowInsets).isFalse()
         val secondImage = style.children[1] as ImageComponentStyle
         assertThat(secondImage.ignoreTopWindowInsets).isFalse()
+    }
+
+    private fun heroWebViewComponent(width: SizeConstraint = SizeConstraint.Fill) = WebViewComponent(
+        url = "https://bundle-hash.components.revenuecat-static.com/index.html",
+        id = "hero_web_view",
+        protocolVersion = 1,
+        size = Size(width = width, height = SizeConstraint.Fit(default = 400u)),
+    )
+
+    private fun textComponent() = TextComponent(
+        text = LOCALIZATION_KEY_TEXT_1,
+        color = ColorScheme(light = ColorInfo.Hex(Color.Yellow.toArgb())),
+    )
+
+    @Test
+    fun `Should ignore top window insets for the first full-width web_view in the first z-stack`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                StackComponent(
+                    components = listOf(heroWebViewComponent()),
+                    dimension = Dimension.ZLayer(
+                        alignment = TwoDimensionalAlignment.TOP,
+                    )
+                ),
+                textComponent(),
+            ),
+            dimension = Dimension.Vertical(
+                alignment = HorizontalAlignment.LEADING,
+                distribution = FlexDistribution.CENTER,
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val styleResult = (result as Result.Success).value
+        assertThat(styleResult.heroImageDetected).isTrue()
+        val style = styleResult.componentStyle as StackComponentStyle
+        // The root stack should not apply top window insets (the ZLayer child handles it).
+        assertThat(style.applyTopWindowInsets).isFalse()
+        val firstZStack = style.children[0] as StackComponentStyle
+        assertThat(firstZStack.applyTopWindowInsets).isTrue()
+        val webView = firstZStack.children[0] as WebViewComponentStyle
+        assertThat(webView.ignoreTopWindowInsets).isTrue()
+    }
+
+    @Test
+    fun `Should not ignore top window insets for the first web_view in the first z-stack if it is not full-width`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                StackComponent(
+                    components = listOf(heroWebViewComponent(width = SizeConstraint.Fixed(200u))),
+                    dimension = Dimension.ZLayer(
+                        alignment = TwoDimensionalAlignment.TOP,
+                    )
+                ),
+                textComponent(),
+            ),
+            dimension = Dimension.Vertical(
+                alignment = HorizontalAlignment.LEADING,
+                distribution = FlexDistribution.CENTER,
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val styleResult = (result as Result.Success).value
+        assertThat(styleResult.heroImageDetected).isFalse()
+        val style = styleResult.componentStyle as StackComponentStyle
+        assertThat(style.applyTopWindowInsets).isTrue()
+        val firstZStack = style.children[0] as StackComponentStyle
+        assertThat(firstZStack.applyTopWindowInsets).isFalse()
+        val webView = firstZStack.children[0] as WebViewComponentStyle
+        assertThat(webView.ignoreTopWindowInsets).isFalse()
+    }
+
+    @Test
+    fun `Should ignore top window insets for the first full-width web_view in the root`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                heroWebViewComponent(),
+                textComponent(),
+            ),
+            dimension = Dimension.Vertical(
+                alignment = HorizontalAlignment.LEADING,
+                distribution = FlexDistribution.CENTER,
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val styleResult = (result as Result.Success).value
+        assertThat(styleResult.heroImageDetected).isTrue()
+        val style = styleResult.componentStyle as StackComponentStyle
+        assertThat(style.applyTopWindowInsets).isTrue()
+        val webView = style.children[0] as WebViewComponentStyle
+        assertThat(webView.ignoreTopWindowInsets).isTrue()
+    }
+
+    @Test
+    fun `Should not ignore top window insets for a web_view that is not the first component`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                textComponent(),
+                heroWebViewComponent(),
+            ),
+            dimension = Dimension.Vertical(
+                alignment = HorizontalAlignment.LEADING,
+                distribution = FlexDistribution.CENTER,
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val styleResult = (result as Result.Success).value
+        assertThat(styleResult.heroImageDetected).isFalse()
+        val style = styleResult.componentStyle as StackComponentStyle
+        assertThat(style.applyTopWindowInsets).isTrue()
+        val webView = style.children[1] as WebViewComponentStyle
+        assertThat(webView.ignoreTopWindowInsets).isFalse()
+    }
+
+    @Test
+    fun `Should ignore top window insets for a full-width web_view preceded by a FallbackHeaderComponent`() {
+        // Arrange
+        // FallbackHeaderComponent is injected as the first element of the body stack by the dashboard.
+        // It should not prematurely stop hero detection.
+        val stackComponent = StackComponent(
+            components = listOf(
+                FallbackHeaderComponent,
+                heroWebViewComponent(),
+            ),
+            dimension = Dimension.Vertical(
+                alignment = HorizontalAlignment.LEADING,
+                distribution = FlexDistribution.CENTER,
+            )
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val styleResult = (result as Result.Success).value
+        assertThat(styleResult.heroImageDetected).isTrue()
+        val style = styleResult.componentStyle as StackComponentStyle
+        val webView = style.children[0] as WebViewComponentStyle
+        assertThat(webView.ignoreTopWindowInsets).isTrue()
     }
 
     @Test
@@ -1478,7 +1722,7 @@ class StyleFactoryTests {
                     components = listOf(
                         ImageComponent(
                             source = imageUrls,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit),
+                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
                         ),
                     ),
                     dimension = Dimension.ZLayer(

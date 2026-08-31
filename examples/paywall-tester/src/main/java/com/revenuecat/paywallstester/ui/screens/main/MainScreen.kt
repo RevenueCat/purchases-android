@@ -31,6 +31,7 @@ fun MainScreen(
     navigateToPaywallCondensedFooterScreen: (Offering?) -> Unit,
     navigateToPaywallByPlacementScreen: (String) -> Unit,
     navigateToCustomerCenterScreen: () -> Unit,
+    navigateToCheckpointsScreen: () -> Unit,
     navController: NavHostController = rememberNavController(),
 ) {
     Scaffold(
@@ -43,6 +44,7 @@ fun MainScreen(
             navigateToPaywallCondensedFooterScreen = navigateToPaywallCondensedFooterScreen,
             navigateToPaywallByPlacementScreen = navigateToPaywallByPlacementScreen,
             navigateToCustomerCenterScreen = navigateToCustomerCenterScreen,
+            navigateToCheckpointsScreen = navigateToCheckpointsScreen,
             modifier = Modifier.padding(paddingValues)
                 .consumeWindowInsets(paddingValues),
         )
@@ -58,6 +60,7 @@ fun MainScreenPreview() {
         navigateToPaywallCondensedFooterScreen = {},
         navigateToPaywallByPlacementScreen = {},
         navigateToCustomerCenterScreen = {},
+        navigateToCheckpointsScreen = {},
     )
 }
 
@@ -77,6 +80,7 @@ private fun MainNavHost(
     navigateToPaywallCondensedFooterScreen: (Offering?) -> Unit,
     navigateToPaywallByPlacementScreen: (String) -> Unit,
     navigateToCustomerCenterScreen: () -> Unit,
+    navigateToCheckpointsScreen: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     NavHost(
@@ -87,6 +91,7 @@ private fun MainNavHost(
         composable(Tab.AppInfo.route) {
             AppInfoScreen(
                 tappedOnCustomerCenter = navigateToCustomerCenterScreen,
+                tappedOnCheckpoints = navigateToCheckpointsScreen,
             )
         }
         composable(Tab.Paywalls.route) {

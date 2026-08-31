@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ads.events
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.VerifiedReward
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdFormat
@@ -9,6 +10,11 @@ import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdOpenedData
 import com.revenuecat.purchases.ads.events.types.AdRevenueData
 import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
+import com.revenuecat.purchases.ads.events.types.AdRewardEarnedUnverifiedData
+import com.revenuecat.purchases.ads.events.types.AdRewardFailedToVerifyData
+import com.revenuecat.purchases.ads.events.types.AdRewardFailureReason
+import com.revenuecat.purchases.ads.events.types.AdRewardGrantedData
+import com.revenuecat.purchases.ads.events.types.AdRewardVerifiedData
 import com.revenuecat.purchases.common.events.EventsManager
 import io.mockk.Runs
 import io.mockk.every
@@ -19,8 +25,9 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
+import java.util.Date
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 class AdTrackerTest {
 
     private lateinit var eventsManager: EventsManager
@@ -57,6 +64,27 @@ class AdTrackerTest {
         assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-123456")
         assertThat(eventSlot.captured.impressionId).isEqualTo("impression-123")
         assertThat(eventSlot.captured.type).isEqualTo(AdEventType.DISPLAYED)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
+    }
+
+    @Test
+    fun `internal trackAdDisplayed overload stamps the given capture method`() {
+        val eventSlot = slot<AdEvent.Displayed>()
+        every { eventsManager.track(capture(eventSlot)) } just Runs
+
+        adTracker.trackAdDisplayed(
+            data = AdDisplayedData(
+                networkName = "Google AdMob",
+                mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.BANNER,
+                placement = "banner_home",
+                adUnitId = "ca-app-pub-123456",
+                impressionId = "impression-123",
+            ),
+            captureMethod = AdCaptureMethod.ADAPTER,
+        )
+
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ADAPTER)
     }
 
     @Test
@@ -104,6 +132,7 @@ class AdTrackerTest {
         assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-789012")
         assertThat(eventSlot.captured.impressionId).isEqualTo("impression-456")
         assertThat(eventSlot.captured.type).isEqualTo(AdEventType.OPENED)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
     }
 
     @Test
@@ -137,6 +166,7 @@ class AdTrackerTest {
         assertThat(eventSlot.captured.currency).isEqualTo("USD")
         assertThat(eventSlot.captured.precision).isEqualTo(AdRevenuePrecision.EXACT)
         assertThat(eventSlot.captured.type).isEqualTo(AdEventType.REVENUE)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
     }
 
     @Test
@@ -186,6 +216,7 @@ class AdTrackerTest {
         assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-789012")
         assertThat(eventSlot.captured.impressionId).isEqualTo("impression-456")
         assertThat(eventSlot.captured.type).isEqualTo(AdEventType.LOADED)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
     }
 
     @Test
@@ -213,5 +244,211 @@ class AdTrackerTest {
         assertThat(eventSlot.captured.impressionId).isNull()
         assertThat(eventSlot.captured.mediatorErrorCode).isEqualTo(123)
         assertThat(eventSlot.captured.type).isEqualTo(AdEventType.FAILED_TO_LOAD)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
+    }
+
+    @Test
+    fun `trackAdRewardEarnedUnverified tracks reward earned unverified event`() {
+        val eventSlot = slot<AdEvent.RewardEarnedUnverified>()
+        every { eventsManager.track(capture(eventSlot)) } just Runs
+
+        adTracker.trackAdRewardEarnedUnverified(
+            data = AdRewardEarnedUnverifiedData(
+                networkName = "Google AdMob",
+                mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.REWARDED,
+                placement = "rewarded_video",
+                adUnitId = "ca-app-pub-123456",
+                impressionId = "impression-123",
+                rewardVerificationEnabled = true,
+            ),
+            captureMethod = AdCaptureMethod.MANUAL,
+        )
+
+        verify(exactly = 1) { eventsManager.track(any<AdEvent.RewardEarnedUnverified>()) }
+
+        assertThat(eventSlot.captured.networkName).isEqualTo("Google AdMob")
+        assertThat(eventSlot.captured.mediatorName).isEqualTo(AdMediatorName.AD_MOB)
+        assertThat(eventSlot.captured.adFormat).isEqualTo(AdFormat.REWARDED)
+        assertThat(eventSlot.captured.placement).isEqualTo("rewarded_video")
+        assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-123456")
+        assertThat(eventSlot.captured.impressionId).isEqualTo("impression-123")
+        assertThat(eventSlot.captured.rewardVerificationEnabled).isTrue()
+        assertThat(eventSlot.captured.type).isEqualTo(AdEventType.REWARD_EARNED_UNVERIFIED)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
+    }
+
+    @Test
+    fun `trackAdRewardEarnedUnverified stamps the given capture method`() {
+        val eventSlot = slot<AdEvent.RewardEarnedUnverified>()
+        every { eventsManager.track(capture(eventSlot)) } just Runs
+
+        adTracker.trackAdRewardEarnedUnverified(
+            data = AdRewardEarnedUnverifiedData(
+                networkName = "Google AdMob",
+                mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.REWARDED,
+                placement = "rewarded_video",
+                adUnitId = "ca-app-pub-123456",
+                impressionId = "impression-123",
+                rewardVerificationEnabled = true,
+            ),
+            captureMethod = AdCaptureMethod.ADAPTER,
+        )
+
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ADAPTER)
+    }
+
+    @Test
+    fun `trackAdRewardVerified tracks reward verified event`() {
+        val eventSlot = slot<AdEvent.RewardVerified>()
+        every { eventsManager.track(capture(eventSlot)) } just Runs
+
+        adTracker.trackAdRewardVerified(
+            data = AdRewardVerifiedData(
+                networkName = "Google AdMob",
+                mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.REWARDED,
+                placement = "rewarded_video",
+                adUnitId = "ca-app-pub-123456",
+                impressionId = "impression-123",
+            ),
+            captureMethod = AdCaptureMethod.MANUAL,
+        )
+
+        verify(exactly = 1) { eventsManager.track(any<AdEvent.RewardVerified>()) }
+
+        assertThat(eventSlot.captured.networkName).isEqualTo("Google AdMob")
+        assertThat(eventSlot.captured.mediatorName).isEqualTo(AdMediatorName.AD_MOB)
+        assertThat(eventSlot.captured.adFormat).isEqualTo(AdFormat.REWARDED)
+        assertThat(eventSlot.captured.placement).isEqualTo("rewarded_video")
+        assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-123456")
+        assertThat(eventSlot.captured.impressionId).isEqualTo("impression-123")
+        assertThat(eventSlot.captured.type).isEqualTo(AdEventType.REWARD_VERIFIED)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
+    }
+
+    @Test
+    fun `trackAdRewardVerified stamps the given capture method`() {
+        val eventSlot = slot<AdEvent.RewardVerified>()
+        every { eventsManager.track(capture(eventSlot)) } just Runs
+
+        adTracker.trackAdRewardVerified(
+            data = AdRewardVerifiedData(
+                networkName = "Google AdMob",
+                mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.REWARDED,
+                placement = "rewarded_video",
+                adUnitId = "ca-app-pub-123456",
+                impressionId = "impression-123",
+            ),
+            captureMethod = AdCaptureMethod.ADAPTER,
+        )
+
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ADAPTER)
+    }
+
+    @Test
+    fun `trackAdRewardGranted tracks reward granted event`() {
+        val eventSlot = slot<AdEvent.RewardGranted>()
+        every { eventsManager.track(capture(eventSlot)) } just Runs
+
+        adTracker.trackAdRewardGranted(
+            data = AdRewardGrantedData(
+                networkName = "Google AdMob",
+                mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.REWARDED,
+                placement = "rewarded_video",
+                adUnitId = "ca-app-pub-123456",
+                impressionId = "impression-123",
+                reward = VerifiedReward.VirtualCurrency(code = "GLD", amount = 100),
+            ),
+            captureMethod = AdCaptureMethod.MANUAL,
+        )
+
+        verify(exactly = 1) { eventsManager.track(any<AdEvent.RewardGranted>()) }
+
+        assertThat(eventSlot.captured.networkName).isEqualTo("Google AdMob")
+        assertThat(eventSlot.captured.mediatorName).isEqualTo(AdMediatorName.AD_MOB)
+        assertThat(eventSlot.captured.adFormat).isEqualTo(AdFormat.REWARDED)
+        assertThat(eventSlot.captured.placement).isEqualTo("rewarded_video")
+        assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-123456")
+        assertThat(eventSlot.captured.impressionId).isEqualTo("impression-123")
+        assertThat(eventSlot.captured.reward).isEqualTo(VerifiedReward.VirtualCurrency(code = "GLD", amount = 100))
+        assertThat(eventSlot.captured.type).isEqualTo(AdEventType.REWARD_GRANTED)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
+    }
+
+    @Test
+    fun `trackAdRewardGranted stamps the given capture method`() {
+        val eventSlot = slot<AdEvent.RewardGranted>()
+        every { eventsManager.track(capture(eventSlot)) } just Runs
+
+        adTracker.trackAdRewardGranted(
+            data = AdRewardGrantedData(
+                networkName = "Google AdMob",
+                mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.REWARDED,
+                placement = "rewarded_video",
+                adUnitId = "ca-app-pub-123456",
+                impressionId = "impression-123",
+                reward = VerifiedReward.Entitlement(identifier = "premium", expiresAt = Date(0)),
+            ),
+            captureMethod = AdCaptureMethod.ADAPTER,
+        )
+
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ADAPTER)
+    }
+
+    @Test
+    fun `trackAdRewardFailedToVerify tracks reward failed to verify event`() {
+        val eventSlot = slot<AdEvent.RewardFailedToVerify>()
+        every { eventsManager.track(capture(eventSlot)) } just Runs
+
+        adTracker.trackAdRewardFailedToVerify(
+            data = AdRewardFailedToVerifyData(
+                networkName = "Google AdMob",
+                mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.REWARDED,
+                placement = "rewarded_video",
+                adUnitId = "ca-app-pub-123456",
+                impressionId = "impression-123",
+                failureReason = AdRewardFailureReason.Timeout,
+            ),
+            captureMethod = AdCaptureMethod.MANUAL,
+        )
+
+        verify(exactly = 1) { eventsManager.track(any<AdEvent.RewardFailedToVerify>()) }
+
+        assertThat(eventSlot.captured.networkName).isEqualTo("Google AdMob")
+        assertThat(eventSlot.captured.mediatorName).isEqualTo(AdMediatorName.AD_MOB)
+        assertThat(eventSlot.captured.adFormat).isEqualTo(AdFormat.REWARDED)
+        assertThat(eventSlot.captured.placement).isEqualTo("rewarded_video")
+        assertThat(eventSlot.captured.adUnitId).isEqualTo("ca-app-pub-123456")
+        assertThat(eventSlot.captured.impressionId).isEqualTo("impression-123")
+        assertThat(eventSlot.captured.failureReason).isEqualTo(AdRewardFailureReason.Timeout)
+        assertThat(eventSlot.captured.type).isEqualTo(AdEventType.REWARD_FAILED_TO_VERIFY)
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.MANUAL)
+    }
+
+    @Test
+    fun `trackAdRewardFailedToVerify stamps the given capture method`() {
+        val eventSlot = slot<AdEvent.RewardFailedToVerify>()
+        every { eventsManager.track(capture(eventSlot)) } just Runs
+
+        adTracker.trackAdRewardFailedToVerify(
+            data = AdRewardFailedToVerifyData(
+                networkName = "Google AdMob",
+                mediatorName = AdMediatorName.AD_MOB,
+                adFormat = AdFormat.REWARDED,
+                placement = "rewarded_video",
+                adUnitId = "ca-app-pub-123456",
+                impressionId = "impression-123",
+                failureReason = AdRewardFailureReason.BackendError("no_reward_rule"),
+            ),
+            captureMethod = AdCaptureMethod.ADAPTER,
+        )
+
+        assertThat(eventSlot.captured.captureMethod).isEqualTo(AdCaptureMethod.ADAPTER)
     }
 }

@@ -18,7 +18,9 @@ internal class OfferingFontPreDownloader(
     private val fontLoader: FontLoader,
 ) {
 
-    private val assetsFontsDir = "fonts"
+    // Directories within the app's assets where embedded fonts may be bundled, searched in order.
+    // "public/assets" is a likely location for Capacitor apps that use our paywalls SDK to place their fonts.
+    private val assetsFontsDirs = listOf("fonts", "public/assets")
 
     // GenericFontFamily names as defined by Compose. Restated here because we don't include any Compose dependencies.
     private val genericFonts = setOf(
@@ -79,8 +81,10 @@ internal class OfferingFontPreDownloader(
     private fun Context.getAssetFontPath(name: String): String? {
         val nameWithExtension = if (name.endsWith(".ttf")) name else "$name.ttf"
 
-        return resources.assets.list(assetsFontsDir)
-            ?.find { it == nameWithExtension }
-            ?.let { "$assetsFontsDir/$it" }
+        return assetsFontsDirs.firstNotNullOfOrNull { dir ->
+            resources.assets.list(dir)
+                ?.find { it == nameWithExtension }
+                ?.let { "$dir/$it" }
+        }
     }
 }
