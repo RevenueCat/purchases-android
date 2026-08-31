@@ -13,19 +13,12 @@ class E2ETestsApplication : Application() {
         super.onCreate()
         Purchases.logLevel = LogLevel.DEBUG
 
-        // Workflow E2E builds configure Purchases from the first Activity so Maestro launch arguments can select
-        // the initial debug-only failure strategy and apply the app locale right after configuration. The default
-        // build configures eagerly, keeping the test_store_annual_purchase flow unchanged.
-        if (BuildConfig.CONFIGURE_PURCHASES_ON_FIRST_ACTIVITY) {
-            registerActivityLifecycleCallbacks(ConfigureOnFirstActivity())
-        } else {
-            configurePurchases(
-                PurchasesConfiguration.Builder(context = this, apiKey = BuildConfig.API_KEY).build(),
-            )
-        }
+        // Configure from the first Activity so Maestro launch arguments can select the initial debug-only failure
+        // strategy and app locale before the SDK starts. Flows without launch arguments use the default configuration.
+        registerActivityLifecycleCallbacks(ConfigurePurchasesOnFirstActivity())
     }
 
-    private inner class ConfigureOnFirstActivity : ActivityLifecycleCallbacksAdapter() {
+    private inner class ConfigurePurchasesOnFirstActivity : ActivityLifecycleCallbacksAdapter() {
         override fun onActivityPreCreated(activity: Activity, savedInstanceState: Bundle?) {
             if (!Purchases.isConfigured) {
                 configurePurchases(

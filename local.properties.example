@@ -20,11 +20,9 @@
 
 ## ──────────────────────────────────────────────
 ## E2E Tester — Maestro flows (maestro/e2e_tests/ and maestro/workflows/)
-## Test-store key for the shared Maestro RevenueCat project.
-## Configure Purchases from the first Activity so Maestro launch arguments are available.
+## Test-store key for the automated_sdk_tests RevenueCat project.
 ## ──────────────────────────────────────────────
 #MAESTRO_TEST_STORE_API_KEY=your_test_store_key
-#E2E_CONFIGURE_PURCHASES_ON_FIRST_ACTIVITY=false
 
 ## ──────────────────────────────────────────────
 ## AdMob Sample (examples/admob-sample)

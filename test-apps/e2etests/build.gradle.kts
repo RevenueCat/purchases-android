@@ -36,11 +36,6 @@ android {
             "API_KEY",
             "\"${resolveProperty("MAESTRO_TEST_STORE_API_KEY", "api_key_to_replace")}\"",
         )
-        buildConfigField(
-            "boolean",
-            "CONFIGURE_PURCHASES_ON_FIRST_ACTIVITY",
-            resolveProperty("E2E_CONFIGURE_PURCHASES_ON_FIRST_ACTIVITY", "false").toBoolean().toString(),
-        )
     }
 
     buildTypes {
