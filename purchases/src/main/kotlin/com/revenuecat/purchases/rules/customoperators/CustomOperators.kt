@@ -29,6 +29,10 @@ internal object CustomOperators {
 
         "rc.semverCompare" -> SemverOperator.opSemverCompare(args, vars)
 
+        "rc.slice" -> SliceOperator.opSlice(args, vars)
+
+        "rc.sortBy" -> SortByOperator.opSortBy(args, vars)
+
         "rc.split" -> SplitOperator.opSplit(args, vars)
 
         else -> throw EvaluationException.UnsupportedOperator(op)
