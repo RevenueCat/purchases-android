@@ -25,6 +25,8 @@ internal object CustomOperators {
         "rc.lower" -> CaseOperators.opLower(args, vars)
         "rc.upper" -> CaseOperators.opUpper(args, vars)
 
+        "rc.regexMatch" -> RegexOperators.opRegexMatch(args, vars)
+
         "rc.rootVar" -> RootVarOperator.opRootVar(args, vars)
 
         "rc.semverCompare" -> SemverOperator.opSemverCompare(args, vars)
