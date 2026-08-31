@@ -32,10 +32,17 @@ internal object LengthOperator {
      */
     fun opLength(args: Value, vars: Scope): Value =
         when (val input = Operators.firstArgEvaluated(args, vars)) {
-            is Value.StringValue -> Value.IntValue(input.value.length.toLong())
+            is Value.StringValue -> Value.IntValue(stringLength(input.value).toLong())
             is Value.ArrayValue -> Value.IntValue(input.items.size.toLong())
             else -> throw EvaluationException.TypeMismatch(
                 "operator 'rc.length' expected string or array, got $input",
             )
         }
+
+    /**
+     * The unit strings are measured in. `rc.indexOf` reports positions through
+     * this too, so a change here moves both operators at once and no rule can
+     * end up mixing two units.
+     */
+    fun stringLength(string: String): Int = string.length
 }

@@ -20,6 +20,8 @@ internal object CustomOperators {
         "rc.entries" -> EntriesOperators.opEntries(args, vars)
         "rc.fromEntries" -> EntriesOperators.opFromEntries(args, vars)
 
+        "rc.indexOf" -> IndexOfOperator.opIndexOf(args, vars)
+
         "rc.length" -> LengthOperator.opLength(args, vars)
 
         "rc.lower" -> CaseOperators.opLower(args, vars)
