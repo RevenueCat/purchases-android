@@ -69,8 +69,8 @@ internal object IndexOfOperator {
      * the needle occurs is a match, so it is searched over UTF-16 code units
      * like `in` and `rc.split`. *How far in* that is, is a count, so the text
      * before the match is measured with [LengthOperator.stringLength] — the
-     * same function behind `rc.length`. The two operators therefore always
-     * report positions in the same unit, including if that unit ever changes.
+     * same function behind `rc.length`, so both operators state positions in
+     * one unit.
      */
     private fun position(needle: String, haystack: String): Int {
         if (needle.isEmpty()) return 0

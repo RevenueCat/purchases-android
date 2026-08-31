@@ -40,9 +40,9 @@ internal object LengthOperator {
         }
 
     /**
-     * The unit strings are measured in. `rc.indexOf` reports positions through
-     * this too, so a change here moves both operators at once and no rule can
-     * end up mixing two units.
+     * The one place the engine measures a string. `rc.indexOf` reports
+     * positions through this too, so every length and position handed back to
+     * a rule is stated in the same unit.
      */
     fun stringLength(string: String): Int = string.length
 }
