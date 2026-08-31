@@ -75,6 +75,40 @@ internal object RegexOperators {
         return matched?.let { Value.StringValue(it.value) } ?: Value.Null
     }
 
+    /**
+     * `{"rc.regexReplace": [input, pattern, replacement]}` — every match
+     * replaced, left to right.
+     *
+     * The replacement is literal text. `$1` is not a backreference: the three
+     * engines do not agree on the template vocabulary — `$&` means the match
+     * in JS, throws here, and is literal in ICU — so none of it is exposed.
+     * Build a replacement out of captures with `rc.regexExtract` and `cat`
+     * instead.
+     *
+     * All operands must be strings and the pattern must compile, otherwise
+     * [EvaluationException.TypeMismatch].
+     */
+    fun opRegexReplace(args: Value, vars: Scope): Value {
+        val operatorName = "rc.regexReplace"
+        val evaluated = Operators.evalArgs(args, vars)
+        checkArity(evaluated.size, listOf(TERNARY), operatorName)
+
+        val operands = operands(evaluated, operatorName)
+        val replacement = evaluated[TERNARY - 1]
+        if (replacement !is Value.StringValue) {
+            throw EvaluationException.TypeMismatch(
+                "operator '$operatorName' expected a string replacement, got $replacement",
+            )
+        }
+
+        return Value.StringValue(
+            operands.regex.replace(
+                operands.input,
+                Regex.escapeReplacement(replacement.value),
+            ),
+        )
+    }
+
     /** Reads the optional group argument, defaulting to the whole match. */
     private fun group(value: Value?, operatorName: String): Int = when {
         value == null -> 0
