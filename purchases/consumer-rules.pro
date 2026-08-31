@@ -7,6 +7,12 @@
     public static ** valueOf(java.lang.String);
 }
 
+# The framework instantiates Parcelables reflectively through the CREATOR field. AOSP's default
+# proguard files include an equivalent rule, but apps aren't guaranteed to use them, so be explicit.
+-keepclassmembers class com.revenuecat.** implements android.os.Parcelable {
+    public static final ** CREATOR;
+}
+
 -keep class androidx.lifecycle.DefaultLifecycleObserver
 -dontwarn com.google.errorprone.annotations.CanIgnoreReturnValue
 -dontwarn com.google.errorprone.annotations.Immutable
