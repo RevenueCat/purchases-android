@@ -42,21 +42,28 @@ internal object AccessorOperators {
      *  [Scope.current] as well.
      */
     fun opVar(args: Value, vars: Scope): Value =
-        resolveVar(args = args, target = vars.current, vars = vars, operatorName = "var")
+        resolveVar(
+            args = args,
+            lookup = { lookupInScope(vars, it) },
+            vars = vars,
+            operatorName = "var",
+        )
 
     /**
      * Shared lookup for `var` and `rc.rootVar`. Path and default args
-     * evaluate against [Scope.current]; the final lookup walks [target].
+     * evaluate against [Scope.current]; [lookup] performs the final
+     * resolution, which differs per operator — `var` also sees `rc.let`
+     * bindings, while `rc.rootVar` reads the root and nothing else.
      */
     @Suppress("ReturnCount")
     fun resolveVar(
         args: Value,
-        target: Value,
+        lookup: (String) -> Value?,
         vars: Scope,
         operatorName: String,
     ): Value {
         val (path, default) = resolveVarArgs(args, vars, operatorName)
-        val found = lookupVar(target, path)
+        val found = lookup(path)
         if (found != null) return found
         // json-logic-js coerces an `undefined` default to `null`.
         if (default is Value.Undefined) return Value.Null
@@ -95,7 +102,7 @@ internal object AccessorOperators {
         val missing = mutableListOf<Value>()
         for (key in keys) {
             val path = keyAsPath(key) ?: continue
-            if (isMissing(varLookup(vars.current, path))) {
+            if (isMissing(lookupInScope(vars, path) ?: Value.Null)) {
                 missing += Value.StringValue(path)
             }
         }
@@ -233,21 +240,28 @@ internal object AccessorOperators {
     }
 
     /**
+     * The lookup `var` and `missing` share: the active data first, then any
+     * names an enclosing `rc.let` bound. Data wins, so a bound name can never
+     * mask a field the scope actually has, and a predicate with no `rc.let`
+     * around it resolves exactly as it did before bindings existed.
+     */
+    fun lookupInScope(vars: Scope, path: String): Value? =
+        lookupVar(vars.current, path)
+            ?: if (vars.bindings.isEmpty() || path.isEmpty()) {
+                null
+            } else {
+                lookupPath(Value.ObjectValue(vars.bindings), path)
+            }
+
+    /**
      * Resolve [path] the way `var` does. Empty path returns the entire
      * data scope; a resolving path returns its value (including explicit
      * [Value.Null]); a non-resolving path returns `null`.
      */
-    private fun lookupVar(vars: Value, path: String): Value? {
+    fun lookupVar(vars: Value, path: String): Value? {
         if (path.isEmpty()) return vars
         return lookupPath(vars, path)
     }
-
-    /**
-     * Like [lookupVar], but maps a non-resolving path to [Value.Null]
-     * instead of `null` — the shape `missing` needs.
-     */
-    private fun varLookup(vars: Value, path: String): Value =
-        lookupVar(vars, path) ?: Value.Null
 
     /**
      * Mirrors `String(path).split(".")` in json-logic-js — preserves empty
