@@ -66,7 +66,22 @@ private val parser = Parser.builder()
  * underline tags that span across multiple AST nodes.
  */
 internal class MarkdownState {
-    var underlineDepth = 0
+    private val underlineStartPositions = mutableListOf<Int>()
+
+    val underlineDepth: Int
+        get() = underlineStartPositions.size
+
+    fun startUnderline(position: Int) {
+        underlineStartPositions.add(position)
+    }
+
+    fun endUnderline(): Int? {
+        return if (underlineStartPositions.isEmpty()) {
+            null
+        } else {
+            underlineStartPositions.removeAt(underlineStartPositions.lastIndex)
+        }
+    }
 }
 
 internal object MarkdownTagDefinitions {
@@ -588,13 +603,17 @@ internal fun AnnotatedString.Builder.handleInlineHTML(tag: String, state: Markdo
     // Handle <u> and </u> tags for underline support
     when (tag) {
         MarkdownTagDefinitions.UNDERLINE_OPEN_TAG -> {
-            pushStyle(SpanStyle(textDecoration = TextDecoration.Underline))
-            state.underlineDepth++
+            state.startUnderline(length)
         }
         MarkdownTagDefinitions.UNDERLINE_CLOSE_TAG -> {
-            if (state.underlineDepth > 0) {
-                pop()
-                state.underlineDepth--
+            state.endUnderline()?.let { start ->
+                if (start < length) {
+                    addStyle(
+                        style = SpanStyle(textDecoration = TextDecoration.Underline),
+                        start = start,
+                        end = length,
+                    )
+                }
             }
         }
     }
@@ -602,8 +621,9 @@ internal fun AnnotatedString.Builder.handleInlineHTML(tag: String, state: Markdo
 
 /**
  * Processes text content, handling `<u>...</u>` underline tags.
- * Pushes/pops underline style when encountering opening/closing tags,
- * allowing underlines to span across multiple AST nodes (e.g., `<u>**bold**</u>`).
+ * Applies underline style only after encountering a matching closing tag,
+ * allowing underlines to span across multiple AST nodes (e.g., `<u>**bold**</u>`)
+ * without underlining content after an unclosed tag.
  */
 internal fun AnnotatedString.Builder.appendTextWithUnderlines(
     text: String,
@@ -616,15 +636,11 @@ internal fun AnnotatedString.Builder.appendTextWithUnderlines(
 
         when {
             openIdx == 0 -> {
-                pushStyle(SpanStyle(textDecoration = TextDecoration.Underline))
-                state.underlineDepth++
+                handleInlineHTML(MarkdownTagDefinitions.UNDERLINE_OPEN_TAG, state)
                 remaining = remaining.substring(MarkdownTagDefinitions.UNDERLINE_OPEN_TAG.length)
             }
             closeIdx == 0 -> {
-                if (state.underlineDepth > 0) {
-                    pop()
-                    state.underlineDepth--
-                }
+                handleInlineHTML(MarkdownTagDefinitions.UNDERLINE_CLOSE_TAG, state)
                 remaining = remaining.substring(MarkdownTagDefinitions.UNDERLINE_CLOSE_TAG.length)
             }
             openIdx > 0 && (closeIdx < 0 || openIdx < closeIdx) -> {

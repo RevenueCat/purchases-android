@@ -88,16 +88,17 @@ class MarkdownTests {
     }
 
     @Test
-    fun `appendTextWithUnderlines with unclosed tag`() {
+    fun `opening underline tag without closing tag does not underline output text`() {
         val state = MarkdownState()
         val result = buildAnnotatedString {
             appendTextWithUnderlines("Hello <u>world", state)
         }
 
-        // Unclosed tag should still start underlining from the tag
         assertEquals("Hello world", result.text)
-
-        // The underline style was pushed but never popped
+        val underlineSpans = result.spanStyles.filter {
+            it.item.textDecoration == TextDecoration.Underline
+        }
+        assertTrue(underlineSpans.isEmpty())
         assertEquals(1, state.underlineDepth)
     }
 
@@ -161,7 +162,7 @@ class MarkdownTests {
         val underlineSpans = result.spanStyles.filter {
             it.item.textDecoration == TextDecoration.Underline
         }
-        assertEquals(1, underlineSpans.size)
+        assertTrue(underlineSpans.isEmpty())
     }
 
     @Test
@@ -233,16 +234,16 @@ class MarkdownTests {
     fun `MarkdownState tracks underline depth correctly`() {
         val state = MarkdownState()
 
-        state.underlineDepth++
+        state.startUnderline(0)
         assertEquals(1, state.underlineDepth)
 
-        state.underlineDepth++
+        state.startUnderline(1)
         assertEquals(2, state.underlineDepth)
 
-        state.underlineDepth--
+        assertEquals(1, state.endUnderline())
         assertEquals(1, state.underlineDepth)
 
-        state.underlineDepth--
+        assertEquals(0, state.endUnderline())
         assertEquals(0, state.underlineDepth)
     }
 
@@ -294,6 +295,29 @@ class MarkdownTests {
             it.item.fontStyle == FontStyle.Italic
         }
         assertTrue(italicSpans.isNotEmpty())
+    }
+
+    @Test
+    fun `closing underline inside bold does not pop bold style`() {
+        val state = MarkdownState()
+        val result = buildAnnotatedString {
+            appendTextWithUnderlines("<u>", state)
+            pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
+            append("underlined bold")
+            appendTextWithUnderlines("</u>", state)
+            append(" bold")
+            pop()
+        }
+
+        val underlineSpan = result.spanStyles.single {
+            it.item.textDecoration == TextDecoration.Underline
+        }
+        assertEquals("underlined bold", result.text.substring(underlineSpan.start, underlineSpan.end))
+
+        val boldSpan = result.spanStyles.single {
+            it.item.fontWeight == FontWeight.Bold
+        }
+        assertEquals("underlined bold bold", result.text.substring(boldSpan.start, boldSpan.end))
     }
 
     @Test
