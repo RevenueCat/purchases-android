@@ -1,6 +1,6 @@
 # Opens a workflow paywall (offering `default_workflows`), navigates all three screens via the
 # "Continue" button, purchases on the last one, then asserts the entitlement unlocks.
-# Run on CI by the `run-maestro-workflow-tests` job.
+# Run on CI by the `run-maestro-tests` job.
 #
 # Run locally against the test store:
 #   maestro test -e MAESTRO_STORE=test_store maestro/workflows/open_workflow.yaml
