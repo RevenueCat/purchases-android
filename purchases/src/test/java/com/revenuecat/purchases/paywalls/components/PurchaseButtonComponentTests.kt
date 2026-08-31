@@ -266,7 +266,7 @@ internal class PurchaseButtonComponentTests(
                 ),
             ),
             arrayOf(
-                "method - custom_web_checkout",
+                "method - custom_web_checkout - all params",
                 Args(
                     json = """
                         {
@@ -279,7 +279,9 @@ internal class PurchaseButtonComponentTests(
                             "type": "custom_web_checkout",
                             "custom_url": {
                                "url_lid": "123",
-                               "package_param": "rc_package" 
+                               "package_param": "rc_package",
+                               "app_user_id_param": "rc_app_user_id",
+                               "env_param": "rc_environment"
                             },
                             "auto_dismiss": true,
                             "open_method": "in_app_browser"
@@ -292,9 +294,76 @@ internal class PurchaseButtonComponentTests(
                             customUrl = PurchaseButtonComponent.CustomUrl(
                                 urlLid = LocalizationKey("123"),
                                 packageParam = "rc_package",
+                                appUserIdParam = "rc_app_user_id",
+                                envParam = "rc_environment",
                             ),
                             autoDismiss = true,
                             openMethod = ButtonComponent.UrlMethod.IN_APP_BROWSER,
+                        )
+                    )
+                ),
+            ),
+            arrayOf(
+                "method - custom_web_checkout - optional params missing",
+                Args(
+                    json = """
+                        {
+                          "type": "purchase_button",
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "method": {
+                            "type": "custom_web_checkout",
+                            "custom_url": {
+                               "url_lid": "123"
+                            }
+                          }
+                        }
+                        """.trimIndent(),
+                    expected = PurchaseButtonComponent(
+                        stack = StackComponent(components = listOf()),
+                        method = PurchaseButtonComponent.Method.CustomWebCheckout(
+                            customUrl = PurchaseButtonComponent.CustomUrl(
+                                urlLid = LocalizationKey("123"),
+                                packageParam = null,
+                                appUserIdParam = null,
+                                envParam = null,
+                            ),
+                        )
+                    )
+                ),
+            ),
+            arrayOf(
+                "method - custom_web_checkout - optional params null",
+                Args(
+                    json = """
+                        {
+                          "type": "purchase_button",
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "method": {
+                            "type": "custom_web_checkout",
+                            "custom_url": {
+                               "url_lid": "123",
+                               "package_param": null,
+                               "app_user_id_param": null,
+                               "env_param": null
+                            }
+                          }
+                        }
+                        """.trimIndent(),
+                    expected = PurchaseButtonComponent(
+                        stack = StackComponent(components = listOf()),
+                        method = PurchaseButtonComponent.Method.CustomWebCheckout(
+                            customUrl = PurchaseButtonComponent.CustomUrl(
+                                urlLid = LocalizationKey("123"),
+                                packageParam = null,
+                                appUserIdParam = null,
+                                envParam = null,
+                            ),
                         )
                     )
                 ),

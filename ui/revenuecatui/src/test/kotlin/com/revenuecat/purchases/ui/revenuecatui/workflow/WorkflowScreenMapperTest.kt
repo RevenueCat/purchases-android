@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.workflows.WorkflowScreen
+import com.revenuecat.purchases.models.StoreReplacementMode
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
@@ -13,6 +14,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -47,6 +49,13 @@ class WorkflowScreenMapperTest {
         ),
     )
 
+    private val zeroDecimalPlaceCountries = listOf("TW", "MX")
+
+    private val productChangeConfig = ProductChangeConfig(
+        upgradeReplacementMode = StoreReplacementMode.CHARGE_FULL_PRICE,
+        downgradeReplacementMode = StoreReplacementMode.DEFERRED,
+    )
+
     private val screen = WorkflowScreen(
         name = "Test Screen",
         templateName = "template_v2",
@@ -56,6 +65,8 @@ class WorkflowScreenMapperTest {
         componentsLocalizations = localizations,
         defaultLocaleIdentifier = defaultLocaleId,
         offeringIdentifier = "offering_id",
+        zeroDecimalPlaceCountries = zeroDecimalPlaceCountries,
+        productChangeConfig = productChangeConfig,
         stateDeclarations = stateDeclarations,
     )
 
@@ -71,7 +82,19 @@ class WorkflowScreenMapperTest {
         assertThat(data.componentsLocalizations).isEqualTo(screen.componentsLocalizations)
         assertThat(data.defaultLocaleIdentifier).isEqualTo(screen.defaultLocaleIdentifier)
         assertThat(data.revision).isEqualTo(screen.revision)
+        assertThat(data.zeroDecimalPlaceCountries).isEqualTo(zeroDecimalPlaceCountries)
+        assertThat(data.productChangeConfig).isEqualTo(productChangeConfig)
         assertThat(data.stateDeclarations).isEqualTo(stateDeclarations)
+    }
+
+    @Test
+    fun `toPaywallComponentsData maps automaticallyScaleFontSize`() {
+        val data = WorkflowScreenMapper.toPaywallComponentsData(
+            screen = screen.copy(automaticallyScaleFontSize = false),
+            screenId = "screen_abc",
+        )
+
+        assertThat(data.automaticallyScaleFontSize).isFalse()
     }
 
     @Test

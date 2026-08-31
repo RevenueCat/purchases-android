@@ -22,6 +22,7 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
  */
 @Suppress("TooManyFunctions")
 internal class MockPurchasesType(
+    override val appUserID: String = "",
     override val preferredUILocaleOverride: String? = null,
     override val purchasesAreCompletedBy: PurchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
     override val storefrontCountryCode: String? = null,

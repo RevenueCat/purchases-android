@@ -876,8 +876,8 @@ DESC
   lane :generate_baseline_profiles do
     branch_name = "actions/baseline-profiles"
     profile_files = [
-      "purchases/src/main/baseline-prof.txt",
-      "ui/revenuecatui/src/main/baseline-prof.txt",
+      "purchases/src/main/generated/baselineProfiles/baseline-prof.txt",
+      "ui/revenuecatui/src/main/generated/baselineProfiles/baseline-prof.txt",
     ]
 
     Dir.chdir("..") do

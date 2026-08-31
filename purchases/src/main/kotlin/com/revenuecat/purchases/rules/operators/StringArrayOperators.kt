@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.rules.operators
 
+import com.revenuecat.purchases.rules.Scope
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.rules.jsArrayElementString
 import com.revenuecat.purchases.rules.jsString
@@ -33,7 +34,7 @@ internal object StringArrayOperators {
      * `function(a, b)` (needle, haystack); missing or extra operands
      * short-circuit to `false`.
      */
-    fun opIn(args: Value, vars: Value): Value {
+    fun opIn(args: Value, vars: Scope): Value {
         val evaluated = Operators.evalArgs(args, vars)
         val needle = evaluated.firstOrNull() ?: Value.Null
         val haystack = if (evaluated.size >= BINARY_OPERAND_COUNT) {
@@ -63,7 +64,7 @@ internal object StringArrayOperators {
      * `Array.prototype.join` on the argument list: `null` → `""`).
      * 0 args returns `""`.
      */
-    fun opCat(args: Value, vars: Value): Value {
+    fun opCat(args: Value, vars: Scope): Value {
         val evaluated = Operators.evalArgs(args, vars)
         return Value.StringValue(evaluated.joinToString(separator = "") { jsArrayElementString(it) })
     }
@@ -80,7 +81,7 @@ internal object StringArrayOperators {
      * `source` is `undefined`, which stringifies to `"undefined"` (not
      * `"null"`).
      */
-    fun opSubstr(args: Value, vars: Value): Value {
+    fun opSubstr(args: Value, vars: Scope): Value {
         val evaluated = Operators.evalArgs(args, vars)
         val source = evaluated.firstOrNull() ?: Value.Undefined
         val start = if (evaluated.size >= BINARY_OPERAND_COUNT) {
@@ -147,7 +148,7 @@ internal object StringArrayOperators {
      * operands are spliced in; non-array operands are appended as
      * single elements.
      */
-    fun opMerge(args: Value, vars: Value): Value {
+    fun opMerge(args: Value, vars: Scope): Value {
         val evaluated = Operators.evalArgs(args, vars)
         val merged = mutableListOf<Value>()
         for (item in evaluated) {

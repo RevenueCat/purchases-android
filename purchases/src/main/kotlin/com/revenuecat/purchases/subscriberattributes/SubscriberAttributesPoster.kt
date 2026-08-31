@@ -15,6 +15,7 @@ internal class SubscriberAttributesPoster(
     fun postSubscriberAttributes(
         attributes: Map<String, Map<String, Any?>>,
         appUserID: String,
+        delay: Delay,
         onSuccessHandler: () -> Unit,
         onErrorHandler: (
             PurchasesError,
@@ -26,7 +27,7 @@ internal class SubscriberAttributesPoster(
             Endpoint.PostAttributes(appUserID),
             mapOf("attributes" to attributes),
             postFieldsToSign = null,
-            delay = Delay.DEFAULT,
+            delay = delay,
             { error ->
                 onErrorHandler(error, false, emptyList())
             },

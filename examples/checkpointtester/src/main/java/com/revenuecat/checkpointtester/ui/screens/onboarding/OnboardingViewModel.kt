@@ -75,17 +75,20 @@ class OnboardingViewModel : ViewModel() {
             val message = try {
                 val result = Purchases.sharedInstance.awaitCheckpoint(
                     "onboarding_complete",
-                    CheckpointParams("step" to Step.Personalize.name),
+                    CheckpointParams { customVariables { "step" to Step.Personalize.name } },
                 )
                 when (result) {
+                    is CheckpointResult.ReceivedOffering ->
+                        "Offering ${result.offering.identifier} returned for app-owned presentation."
                     is CheckpointResult.PaywallPresented -> when (val outcome = result.paywallOutcome) {
                         is CheckpointPaywallOutcome.Purchased -> "Purchased during onboarding."
                         is CheckpointPaywallOutcome.Restored -> "Restored during onboarding."
                         CheckpointPaywallOutcome.Dismissed -> "Paywall dismissed."
+                        CheckpointPaywallOutcome.WebCheckoutOpened -> "Left to pay via web checkout."
                         is CheckpointPaywallOutcome.Error -> "Paywall error: ${outcome.error.message}"
                         else -> "Unknown paywall outcome."
                     }
-                    is CheckpointResult.NoAction -> "No paywall shown (${result.reason.value})."
+                    is CheckpointResult.NoAction -> "No paywall shown (${result.reason})."
                     else -> "Unknown checkpoint result."
                 }
             } catch (e: PurchasesException) {

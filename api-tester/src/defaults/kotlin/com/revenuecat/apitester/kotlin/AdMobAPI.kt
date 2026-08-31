@@ -5,7 +5,6 @@ import com.google.android.gms.ads.AdLoader
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.nativead.NativeAdOptions
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.forNativeAdWithTracking
 import com.revenuecat.purchases.admob.loadAndTrackAd
@@ -18,7 +17,6 @@ import com.revenuecat.purchases.admob.loadAndTrackRewardedInterstitialAd
 @Suppress("unused", "UNUSED_VARIABLE")
 private class AdMobAPI {
 
-    @OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
     fun check(
         context: Context,
         adView: AdView,

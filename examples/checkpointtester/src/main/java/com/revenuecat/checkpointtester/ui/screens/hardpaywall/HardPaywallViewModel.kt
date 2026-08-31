@@ -43,18 +43,28 @@ class HardPaywallViewModel : ViewModel() {
             try {
                 val result = Purchases.sharedInstance.awaitCheckpoint(
                     "hard_paywall",
-                    CheckpointParams("gate" to "hard", "attempt" to _state.value.attempts),
+                    CheckpointParams {
+                        customVariables {
+                            "gate" to "hard"
+                            "attempt" to _state.value.attempts
+                        }
+                    },
                 )
                 when (result) {
+                    is CheckpointResult.ReceivedOffering -> stayLocked(
+                        "Offering ${result.offering.identifier} returned; app-owned UI is required.",
+                    )
                     is CheckpointResult.PaywallPresented -> when (val outcome = result.paywallOutcome) {
                         is CheckpointPaywallOutcome.Purchased -> unlock("Purchased. Access granted.")
                         is CheckpointPaywallOutcome.Restored -> unlock("Restored. Access granted.")
                         CheckpointPaywallOutcome.Dismissed -> stayLocked("Dismissed without purchasing.")
+                        CheckpointPaywallOutcome.WebCheckoutOpened ->
+                            stayLocked("Left to pay via web checkout; entitlements not confirmed yet.")
                         is CheckpointPaywallOutcome.Error -> stayLocked("Paywall error: ${outcome.error.message}")
                         else -> stayLocked("Unknown paywall outcome.")
                     }
                     // Nothing was served, so a hard gate has to keep the content locked.
-                    is CheckpointResult.NoAction -> stayLocked("No paywall to show (${result.reason.value}).")
+                    is CheckpointResult.NoAction -> stayLocked("No paywall to show (${result.reason}).")
                     else -> stayLocked("Unknown checkpoint result.")
                 }
             } catch (e: PurchasesException) {

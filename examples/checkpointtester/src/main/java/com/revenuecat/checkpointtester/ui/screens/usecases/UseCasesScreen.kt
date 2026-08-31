@@ -55,6 +55,11 @@ private val NAVIGATED_USE_CASES = listOf(
 
 private val INLINE_USE_CASES = listOf(
     InlineUseCase(
+        identifier = "offering_checkpoint",
+        title = "App-owned offering",
+        description = "A terminal offering workflow returns offering data without presenting RevenueCat UI.",
+    ),
+    InlineUseCase(
         identifier = "unknown_checkpoint",
         title = "No action",
         description = "An identifier the dashboard doesn't know about. " +

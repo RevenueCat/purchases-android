@@ -36,17 +36,28 @@ internal class LocalRulesEvaluator(
     /**
      * The first rule that matches, or `null` when none does.
      *
-     * A predicate the engine cannot evaluate (malformed JSON, an operator this SDK version does not implement) is
-     * not enough to fail the call on its own: a later rule may still match definitively, and it wins. Only when
-     * nothing matched does the first such failure surface, because then "no match" cannot be told apart from "we
-     * failed to ask". A predicate that reads a dimension this SDK version does not supply is not a failure at all
-     * — the engine resolves it to null, which is an ordinary non-match.
+     * A predicate the engine cannot evaluate (malformed JSON, an operator this SDK version does not implement, a
+     * dimension this SDK version does not supply) is not enough to fail the call on its own: a later rule may
+     * still match definitively, and it wins. Only when nothing matched does the first such failure surface,
+     * because then "no match" cannot be told apart from "we failed to ask".
+     *
+     * When a predicate must be resolved before it can be evaluated, a resolution failure fails the call immediately.
+     * [customVariables] are the caller's own values for this evaluation, readable under `custom.*`.
      */
+    suspend fun <Rule : LocalRule> match(
+        rules: List<Rule>,
+        customVariables: Map<String, RulesDimensionValue> = emptyMap(),
+    ): Result<Rule?> = match(rules, customVariables) { rule -> Result.success(rule.predicate) }
+
     @Suppress("ReturnCount")
-    suspend fun <Rule : LocalRule> match(rules: List<Rule>): Result<Rule?> {
+    suspend fun <Rule> match(
+        rules: List<Rule>,
+        customVariables: Map<String, RulesDimensionValue> = emptyMap(),
+        predicateFor: suspend (Rule) -> Result<String>,
+    ): Result<Rule?> {
         if (rules.isEmpty()) return Result.success(null)
 
-        val snapshot = dimensionResolver.snapshot().fold(
+        val snapshot = dimensionResolver.snapshot(customVariables).fold(
             onSuccess = { snapshot -> snapshot },
             onFailure = { error ->
                 return Result.failure(LocalRulesEvaluationException.DimensionResolution(error))
@@ -55,7 +66,8 @@ internal class LocalRulesEvaluator(
 
         var firstFailure: LocalRulesEvaluationException.PredicateEvaluation? = null
         for ((index, rule) in rules.withIndex()) {
-            val result = RulesEngine.evaluate(rule.predicate, snapshot.values)
+            val predicate = predicateFor(rule).getOrElse { error -> return Result.failure(error) }
+            val result = RulesEngine.evaluate(predicate, snapshot.values)
             val matches = result.getOrElse { error ->
                 if (firstFailure == null) {
                     firstFailure = LocalRulesEvaluationException.PredicateEvaluation(index, error)

@@ -8,9 +8,13 @@ import com.revenuecat.purchases.paywalls.components.common.ExitOffers
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
+import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfigSerializer
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.paywalls.components.common.StateDeclarationMapSerializer
+import com.revenuecat.purchases.utils.serializers.DefaultLocaleIdSerializer
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
+import com.revenuecat.purchases.utils.serializers.GoogleListSerializer
 import com.revenuecat.purchases.utils.serializers.JsonObjectToMapSerializer
 import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import com.revenuecat.purchases.utils.serializers.URLSerializer
@@ -125,10 +129,16 @@ public data class WorkflowScreen(
     @SerialName("components_config") val componentsConfig: ComponentsConfig,
     @SerialName("components_localizations")
     val componentsLocalizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>>,
-    @SerialName("default_locale") val defaultLocaleIdentifier: LocaleId,
+    @Serializable(with = DefaultLocaleIdSerializer::class)
+    @SerialName("default_locale") val defaultLocaleIdentifier: LocaleId = DefaultLocaleIdSerializer.FALLBACK,
     @SerialName("config") val config: JsonObject = JsonObject(emptyMap()),
     @SerialName("offering_identifier") val offeringIdentifier: String? = null,
+    @Serializable(with = GoogleListSerializer::class)
+    @SerialName("zero_decimal_place_countries") val zeroDecimalPlaceCountries: List<String> = emptyList(),
     @SerialName("exit_offers") val exitOffers: ExitOffers? = null,
+    @Serializable(with = ProductChangeConfigSerializer::class)
+    @SerialName("play_store_product_change_mode") val productChangeConfig: ProductChangeConfig? = null,
+    @SerialName("automatically_scale_font_size") val automaticallyScaleFontSize: Boolean = true,
     @Serializable(with = StateDeclarationMapSerializer::class)
     @SerialName("state_declarations") val stateDeclarations: Map<String, StateDeclaration>? = null,
 )

@@ -12,7 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -37,6 +37,25 @@ internal data class WorkflowHeaderPresentation(
     val headerStepId: String,
     val role: WorkflowHeaderTransitionRole,
 )
+
+/**
+ * Fades a header, reading the animation in the layout phase so frames cost no recomposition.
+ *
+ * Compose does not hit-test unplaced nodes, whereas an alpha 0 node stays interactive while being
+ * excluded from rendering and from the accessibility tree.
+ */
+internal fun Modifier.workflowHeaderFade(
+    role: WorkflowHeaderTransitionRole,
+    transitionState: WorkflowTransitionState,
+): Modifier = layout { measurable, constraints ->
+    val headerAlpha = headerAlpha(role, transitionState.animatable.value)
+    val placeable = measurable.measure(constraints)
+    layout(placeable.width, placeable.height) {
+        if (headerAlpha > 0f) {
+            placeable.placeWithLayer(x = 0, y = 0) { alpha = headerAlpha }
+        }
+    }
+}
 
 internal fun headerAlpha(role: WorkflowHeaderTransitionRole, progress: Float): Float = when (role) {
     WorkflowHeaderTransitionRole.ENTERING -> progress
@@ -97,11 +116,7 @@ internal fun LoadedWorkflowPaywall(
                 onClick = headerOnClick,
                 modifier = Modifier
                     .fillMaxWidth()
-                    // Read animatable.value inside graphicsLayer (draw phase), like workflowTransition,
-                    // so the fade stays in lock-step with the slide without recomposing every frame.
-                    .graphicsLayer {
-                        alpha = headerAlpha(headerPresentation.role, transitionState.animatable.value)
-                    },
+                    .workflowHeaderFade(headerPresentation.role, transitionState),
             )
         }
     }

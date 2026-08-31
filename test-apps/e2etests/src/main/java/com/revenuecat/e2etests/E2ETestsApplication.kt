@@ -43,10 +43,6 @@ class E2ETestsApplication : Application() {
     internal companion object {
         private const val APP_LOCALE_EXTRA_KEY = "app_locale"
         private const val FORCE_SERVER_ERROR_EXTRA_KEY = "force_server_error_strategy"
-
-        fun forceConfigKillSwitch() {
-            armRemoteConfigKillSwitchForE2ETests()
-        }
     }
 }
 

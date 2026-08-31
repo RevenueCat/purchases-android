@@ -20,13 +20,7 @@ internal fun configurePurchases(
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-internal fun armRemoteConfigKillSwitchForE2ETests() {
-    forceServerErrorStrategy.set(E2EForceServerErrorStrategy.RemoteConfigKillSwitch)
-}
-
-@OptIn(InternalRevenueCatAPI::class)
 private fun String?.toForceServerErrorStrategy(): E2EForceServerErrorStrategy = when (this) {
-    "remote_config_kill_switch" -> E2EForceServerErrorStrategy.RemoteConfigKillSwitch
     "remote_config_network_error" -> E2EForceServerErrorStrategy.RemoteConfigNetworkError
     else -> E2EForceServerErrorStrategy.Never
 }

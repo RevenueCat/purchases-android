@@ -21,15 +21,15 @@ import java.util.UUID
  * a call that was taken between two accessors.
  */
 internal class CheckpointPresentation(
-    val resolution: CheckpointResolution.Workflow,
+    val resolution: CheckpointResolution.MatchedWorkflow,
     val customVariables: Map<String, CustomVariableValue>,
 )
 
 /**
  * Runs a checkpoint hit end to end: fires listener events, asks the core module what the checkpoint resolves
- * to, and presents the resolved workflow through [CheckpointWorkflowActivity]. Owns the
- * one-presentation-at-a-time constraint and the pending call that routes the presented paywall's terminal
- * outcome back to the suspended [checkpoint] call.
+ * to, and either returns its data or presents the resolved workflow through [CheckpointWorkflowActivity]. Owns
+ * the one-presentation-at-a-time constraint and the pending call that routes a presented paywall's terminal
+ * outcome back to the suspended [checkpoint] call. Data-only results never claim that presentation slot.
  *
  * There is one instance per [Purchases] instance, held in its `checkpointManagerSlot` and reached through
  * [checkpointsManager], so the listener and any in-flight presentation die with the SDK instance that owns
@@ -39,7 +39,7 @@ internal class CheckpointsManager {
 
     private class PendingCall(
         val callId: String,
-        val resolution: CheckpointResolution.Workflow,
+        val resolution: CheckpointResolution.MatchedWorkflow,
         val customVariables: Map<String, CustomVariableValue>,
         val paywallFinished: CompletableDeferred<CheckpointPaywallOutcome>,
     ) {
@@ -70,19 +70,27 @@ internal class CheckpointsManager {
         identifier: String,
         params: CheckpointParams?,
     ): CheckpointResult = withContext(Dispatchers.Main) {
-        val checkpoint = CheckpointInfo(identifier, params ?: CheckpointParams())
-        checkpointListener?.onCheckpointHit(checkpoint)
-        val resolution = purchases.resolveCheckpoint(identifier, checkpoint.params.customProperties)
-        val result = when (resolution) {
-            is CheckpointResolution.Workflow ->
-                CheckpointResult.PaywallPresented(
-                    checkpoint,
-                    present(purchases, resolution, checkpoint.params.customVariables),
-                )
-            is CheckpointResolution.NoAction ->
-                CheckpointResult.NoAction(checkpoint, resolution.reason.toResultReason())
+        val customVariables = (params ?: CheckpointParams {}).customVariables
+        checkpointListener?.onCheckpointHit(CheckpointHitContext(identifier, customVariables))
+        if (!CheckpointIdentifierValidator.isValid(identifier)) {
+            Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(identifier))
+            val result = CheckpointResult.NoAction(CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER)
+            checkpointListener?.onCheckpointCompleted(CheckpointCompletedContext(identifier, customVariables, result))
+            return@withContext result
         }
-        checkpointListener?.onCheckpointCompleted(checkpoint, result)
+
+        val resolution = purchases.resolveCheckpoint(
+            identifier,
+            customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
+        )
+        val result = when (resolution) {
+            is CheckpointResolution.MatchedOffering -> CheckpointResult.ReceivedOffering(resolution.offering)
+            is CheckpointResolution.MatchedWorkflow ->
+                CheckpointResult.PaywallPresented(present(purchases, resolution, customVariables))
+            is CheckpointResolution.NoAction ->
+                CheckpointResult.NoAction(resolution.reason.toResultReason())
+        }
+        checkpointListener?.onCheckpointCompleted(CheckpointCompletedContext(identifier, customVariables, result))
         result
     }
 
@@ -110,7 +118,7 @@ internal class CheckpointsManager {
 
     private suspend fun present(
         purchases: Purchases,
-        resolution: CheckpointResolution.Workflow,
+        resolution: CheckpointResolution.MatchedWorkflow,
         customVariables: Map<String, CustomVariableValue>,
     ): CheckpointPaywallOutcome {
         val activity = purchases.currentActivity ?: presentationError(
@@ -177,7 +185,6 @@ private fun CheckpointResolution.NoAction.Reason.toResultReason(): CheckpointRes
         CheckpointResolution.NoAction.Reason.NO_MATCH -> CheckpointResult.NoAction.Reason.NO_MATCH
         CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE ->
             CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE
-        CheckpointResolution.NoAction.Reason.DISABLED -> CheckpointResult.NoAction.Reason.DISABLED
         CheckpointResolution.NoAction.Reason.UNKNOWN_CHECKPOINT ->
             CheckpointResult.NoAction.Reason.UNKNOWN_CHECKPOINT
     }

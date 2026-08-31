@@ -27,82 +27,51 @@ import java.net.URL
 class PaywallComponentAssetsTest {
 
     @Test
-    fun `collects a web_view's url and component id`() {
-        val config = configWith(webView(url = "https://example.com/index.html", id = "component-1"))
+    fun `collects a web_view's url`() {
+        val config = configWith(webView(url = "https://example.com/index.html"))
 
         val assets = config.collectAssets()
 
-        assertThat(assets.webViews).containsExactly(
-            WebViewAsset(
-                url = "https://example.com/index.html",
-                componentId = "component-1",
-                sizeToContentWidth = false,
-                sizeToContentHeight = false,
-            ),
-        )
-    }
-
-    @Test
-    fun `derives each fit axis independently`() {
-        val config = configWith(
-            webView(
-                id = "fit-height-only",
-                size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
-            ),
-        )
-
-        val webView = config.collectAssets().webViews.single()
-
-        assertThat(webView.sizeToContentWidth).isFalse()
-        assertThat(webView.sizeToContentHeight).isTrue()
-    }
-
-    @Test
-    fun `treats a fixed axis as not sizing to content`() {
-        val config = configWith(
-            webView(size = Size(width = SizeConstraint.Fixed(320u), height = SizeConstraint.Fixed(240u))),
-        )
-
-        val webView = config.collectAssets().webViews.single()
-
-        assertThat(webView.sizeToContentWidth).isFalse()
-        assertThat(webView.sizeToContentHeight).isFalse()
+        assertThat(assets.webViewUrls).containsExactly("https://example.com/index.html")
     }
 
     @Test
     fun `finds web_views nested anywhere in the tree`() {
         val config = PaywallComponentsConfig(
             stack = StackComponent(
-                components = listOf(StackComponent(components = listOf(webView(id = "nested")))),
+                components = listOf(StackComponent(components = listOf(webView(url = "https://a.example.com/x.html")))),
             ),
             background = transparentBackground,
-            header = HeaderComponent(StackComponent(components = listOf(webView(id = "in-header")))),
+            header = HeaderComponent(StackComponent(components = listOf(webView(url = "https://b.example.com/x.html")))),
             stickyFooter = StickyFooterComponent(
-                StackComponent(components = listOf(webView(id = "in-footer"))),
+                StackComponent(components = listOf(webView(url = "https://c.example.com/x.html"))),
             ),
         )
 
         val assets = config.collectAssets()
 
-        assertThat(assets.webViews.map { it.componentId })
-            .containsExactlyInAnyOrder("nested", "in-header", "in-footer")
+        assertThat(assets.webViewUrls).containsExactlyInAnyOrder(
+            "https://a.example.com/x.html",
+            "https://b.example.com/x.html",
+            "https://c.example.com/x.html",
+        )
     }
 
     @Test
-    fun `keeps two components sharing a url apart by component id`() {
+    fun `collapses two components sharing a url into one`() {
         val config = configWith(
             webView(url = "https://example.com/index.html", id = "first"),
             webView(url = "https://example.com/index.html", id = "second"),
         )
 
-        assertThat(config.collectAssets().webViews).hasSize(2)
+        assertThat(config.collectAssets().webViewUrls).containsExactly("https://example.com/index.html")
     }
 
     @Test
     fun `reports no web_views when the tree has none`() {
         val config = configWith()
 
-        assertThat(config.collectAssets().webViews).isEmpty()
+        assertThat(config.collectAssets().webViewUrls).isEmpty()
     }
 
     @Test
@@ -119,7 +88,7 @@ class PaywallComponentAssetsTest {
 
         val assets = config.collectAssets()
 
-        assertThat(assets.webViews.map { it.componentId }).containsExactly("component-1")
+        assertThat(assets.webViewUrls).containsExactly("https://example.com/index.html")
         assertThat(assets.imageUris.map { it.toString() }).containsExactly("https://example.com/stack.webp")
     }
 
@@ -134,12 +103,11 @@ class PaywallComponentAssetsTest {
     private fun webView(
         url: String = "https://example.com/index.html",
         id: String = "component-1",
-        size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill),
     ) = WebViewComponent(
         url = url,
         id = id,
         protocolVersion = WebViewComponent.SUPPORTED_PROTOCOL_VERSION,
-        size = size,
+        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill),
     )
 
     private fun imageUrls(webpLowRes: String) = ImageUrls(

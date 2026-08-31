@@ -1,5 +1,8 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.common.localrules
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import java.util.Date
 
 /**
@@ -7,24 +10,17 @@ import java.util.Date
  * the contract predicates are authored against, so a provider must not be able to invent one.
  *
  * Each entry becomes a real nested object in the evaluated scope, because the engine's `var` operator walks
- * nested objects by strict dot-path and has no flat-key fallback — `device.app_version` resolves *through*
+ * nested objects by strict dot-path and has no flat-key fallback — `device.appVersion` resolves *through*
  * `device`, it is never a literal key.
  */
 internal enum class RulesDimensionNamespace(val key: String) {
+    /** Values supplied by the caller for one evaluation; see [LocalRulesEvaluator.match]. */
+    Custom("custom"),
     Device("device"),
-}
+    Store("store"),
 
-/**
- * A scalar exposed to the rules engine.
- *
- * Keeps providers independent from the engine's own value representation, and encodes that a dimension is a
- * scalar: arrays and objects are deliberately not expressible yet.
- */
-internal sealed class RulesDimensionValue {
-    internal data class StringValue(val value: String) : RulesDimensionValue()
-    internal data class BoolValue(val value: Boolean) : RulesDimensionValue()
-    internal data class IntValue(val value: Long) : RulesDimensionValue()
-    internal data class DoubleValue(val value: Double) : RulesDimensionValue()
+    /** What the app has told the SDK about the customer; see `Purchases.setAttributes`. */
+    SubscriberAttributes("subscriberAttributes"),
 }
 
 /**
@@ -35,19 +31,17 @@ internal sealed class RulesDimensionValue {
  */
 internal interface RulesDimensionProvider {
 
-    /** Stable identifier, used only for diagnostics. */
-    val identifier: String
-
-    /** The root this provider's values are nested under. */
+    /** The root this provider's values are nested under, and the name it is reported under in diagnostics. */
     val namespace: RulesDimensionNamespace
 
     /**
-     * The complete current set of values relative to [namespace], keyed in lowercase snake_case (`app_version`);
+     * The complete current set of values relative to [namespace], keyed in camelCase (`appVersion`);
      * [RulesDimensionResolver] adds the namespace.
      *
-     * A value that is unavailable is omitted rather than guessed: an absent key resolves to null in the engine,
-     * which is a non-match rather than an error. Throwing is reserved for a systemic failure to produce this
-     * provider's values.
+     * A value that is unavailable is omitted rather than guessed: a predicate that reads an absent key fails as
+     * an unresolved variable, rather than being answered from a value we invented. A name no predicate could
+     * read is dropped by [RulesDimensionResolver], which applies that rule to every provider. Throwing is
+     * reserved for a systemic failure to produce this provider's values.
      *
      * [date] is the common reference instant for the evaluation. It does not indicate when the underlying values
      * were observed.

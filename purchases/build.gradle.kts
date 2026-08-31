@@ -282,7 +282,6 @@ dokka {
 
 baselineProfile {
     mergeIntoMain = true
-    baselineProfileOutputDir = "."
     filter {
         include("com.revenuecat.purchases.**")
         exclude("com.revenuecat.purchases.ui.revenuecatui.**")

@@ -9,6 +9,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.LogIntent
@@ -20,9 +21,10 @@ import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.strings.OfferingStrings
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
+import com.revenuecat.purchases.utils.OfferingWebViewPrewarmer
+import com.revenuecat.purchases.utils.prewarmTargetOfferings
 import org.json.JSONObject
 import java.util.Date
-import java.util.concurrent.atomic.AtomicInteger
 import kotlin.time.Duration
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -34,20 +36,16 @@ internal class OfferingsManager(
     private val offeringImagePreDownloader: OfferingImagePreDownloader,
     private val diagnosticsTrackerIfEnabled: DiagnosticsTracker?,
     private val offeringFontPreDownloader: OfferingFontPreDownloader,
+    private val offeringWebViewPrewarmer: OfferingWebViewPrewarmer,
+    private val dispatcher: Dispatcher,
     private val uiPreviewMode: Boolean = false,
     private val dateProvider: DateProvider = DefaultDateProvider(),
     // This is nullable due to: https://github.com/RevenueCat/purchases-flutter/issues/408
     private val mainHandler: Handler? = Handler(Looper.getMainLooper()),
-    private val workflowManager: WorkflowManager? = null,
+    private val workflowManager: WorkflowManager,
 ) {
 
     private val emptyOfferings: Offerings = Offerings(current = null, all = emptyMap())
-
-    // Bumped by an invalidating clearInMemoryOfferingsCache (the `/v1/config` kill-switch flow only). A fetch
-    // captures it when it starts and re-checks it right before writing to the cache: a fetch that began before such
-    // an invalidation (e.g. one parsed while remote config was still enabled, with paywall components skipped) must
-    // not clobber the cache the invalidation's own refetch is repopulating. See PurchasesOrchestrator.
-    private val cacheGeneration = AtomicInteger(0)
 
     val cachedCurrentOfferingIdentifier: String?
         get() = offeringsCache.cachedOfferings?.current?.identifier
@@ -162,8 +160,7 @@ internal class OfferingsManager(
             null,
             null,
         )
-        val dispatchSuccess = { dispatch { onSuccess?.invoke(cachedOfferings) } }
-        workflowManager?.onPaywallConfigReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
+        workflowManager.onPaywallConfigReady(onComplete = { dispatch { onSuccess?.invoke(cachedOfferings) } })
         if (isCacheStale) {
             log(LogIntent.DEBUG) {
                 if (appInBackground) {
@@ -176,19 +173,7 @@ internal class OfferingsManager(
         }
     }
 
-    /**
-     * Clears the in-memory offerings cache.
-     *
-     * [invalidateInFlightFetches] is only set by the `/v1/config` kill-switch flow: it bumps the cache generation
-     * so any fetch already in flight (parsed with the now-stale, pre-disable config, with paywall components
-     * skipped) drops its cache write instead of clobbering the offerings the kill-switch refetch is repopulating.
-     * All other callers leave it false to preserve previous behavior (a late in-flight write still lands) when
-     * remote config is disabled or workflows are off.
-     */
-    fun clearInMemoryOfferingsCache(invalidateInFlightFetches: Boolean = false) {
-        if (invalidateInFlightFetches) {
-            cacheGeneration.incrementAndGet()
-        }
+    fun clearInMemoryOfferingsCache() {
         offeringsCache.clearInMemoryOfferingsCache()
     }
 
@@ -211,9 +196,6 @@ internal class OfferingsManager(
             return
         }
         log(LogIntent.RC_SUCCESS) { OfferingStrings.OFFERINGS_START_UPDATE_FROM_NETWORK }
-        // Snapshot the cache generation at fetch start so a cache invalidation that races this fetch can drop its
-        // (now stale) write instead of clobbering the fresher offerings the invalidation's refetch is producing.
-        val fetchGeneration = cacheGeneration.get()
         backend.getOfferings(
             appUserID,
             appInBackground,
@@ -222,7 +204,6 @@ internal class OfferingsManager(
                     offeringsJSON = body,
                     originalDataSource = originalDataSource,
                     responsePayloadToCache = responsePayload,
-                    fetchGeneration = fetchGeneration,
                     onError,
                     onSuccess,
                 )
@@ -242,7 +223,6 @@ internal class OfferingsManager(
                                 // response body to be re-serialized on every write.
                                 originalDataSource = null,
                                 responsePayloadToCache = null,
-                                fetchGeneration = fetchGeneration,
                                 onError,
                                 onSuccess,
                             )
@@ -261,7 +241,6 @@ internal class OfferingsManager(
         originalDataSource: HTTPResponseOriginalSource?,
         /** Null when this parse came from the disk cache; see [OfferingsCache.cacheOfferings]. */
         responsePayloadToCache: String?,
-        fetchGeneration: Int,
         onError: ((PurchasesError) -> Unit)? = null,
         onSuccess: ((OfferingsResultData) -> Unit)? = null,
     ) {
@@ -274,33 +253,21 @@ internal class OfferingsManager(
                 handleErrorFetchingOfferings(error, onError)
             },
             onSuccess = { offeringsResultData ->
-                // Only handle this result if no invalidation happened since this fetch started. If the generation
-                // moved, this parse is stale: it ran while remote config was still enabled, so paywall components
-                // were skipped (hasPaywall == true but paywallComponents == null). Re-parse the same response JSON
-                // instead of delivering it. Remote config is guaranteed disabled by the time the guard fires
-                // (RemoteConfigManager flips isDisabled before bumping the generation that triggers the invalidating
-                // clear), so createOfferings now decodes the components. On the re-entry the generation matches, so
-                // the decoded result is cached and delivered to the original caller. This re-runs the store-product
-                // query; it is bounded to once per session because the kill-switch disable is one-shot.
-                if (cacheGeneration.get() == fetchGeneration) {
-                    offeringsResultData.offerings.current?.let {
-                        offeringImagePreDownloader.preDownloadOfferingImages(it)
-                    }
-                    offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
-                    offeringsCache.cacheOfferings(offeringsResultData.offerings, responsePayloadToCache)
-                    val dispatchSuccess = { dispatch { onSuccess?.invoke(offeringsResultData) } }
-                    workflowManager?.onPaywallConfigReady(onComplete = dispatchSuccess) ?: dispatchSuccess()
-                } else {
-                    log(LogIntent.DEBUG) { OfferingStrings.OFFERINGS_CACHE_INVALIDATED_SKIPPING_STALE_WRITE }
-                    createAndCacheOfferings(
-                        offeringsJSON = offeringsJSON,
-                        originalDataSource = originalDataSource,
-                        responsePayloadToCache = responsePayloadToCache,
-                        fetchGeneration = cacheGeneration.get(),
-                        onError = onError,
-                        onSuccess = onSuccess,
-                    )
-                }
+                val current = offeringsResultData.offerings.current
+                current?.let(offeringImagePreDownloader::preDownloadOfferingImages)
+                offeringFontPreDownloader.preDownloadOfferingFontsIfNeeded(offeringsResultData.offerings)
+                offeringsCache.cacheOfferings(offeringsResultData.offerings, responsePayloadToCache)
+                workflowManager.onPaywallConfigReady(
+                    onComplete = { dispatch { onSuccess?.invoke(offeringsResultData) } },
+                )
+                // Enqueued, not just written last: dispatch() only posts the callback, so running this
+                // inline would hold the backend response thread for a component-tree decode per target.
+                dispatcher.enqueue({
+                    val prewarmTargets = offeringsResultData.offerings.prewarmTargetOfferings()
+                    prewarmTargets.filterNot { it.identifier == current?.identifier }
+                        .forEach(offeringImagePreDownloader::preDownloadOfferingImages)
+                    offeringWebViewPrewarmer.prewarmWebViews(prewarmTargets)
+                })
             },
         )
     }

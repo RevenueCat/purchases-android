@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ads.events.types
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import dev.drewhamilton.poko.Poko
 
 /**
@@ -16,7 +15,6 @@ import dev.drewhamilton.poko.Poko
  * @property currency The currency code for the revenue (e.g., "USD").
  * @property precision The precision of the revenue value. See [AdRevenuePrecision].
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @Poko
 public class AdRevenueData(
     public val networkName: String?,
