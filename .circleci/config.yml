@@ -999,7 +999,10 @@ workflows:
       and:
         - not:
             equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ "main", << pipeline.git.branch >> ]
+        # TODO: drop the 11.0-dev clause before merging 11.0-dev into main.
+        - or:
+            - equal: [ "main", << pipeline.git.branch >> ]
+            - equal: [ "11.0-dev", << pipeline.git.branch >> ]
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - deploy-snapshot:
