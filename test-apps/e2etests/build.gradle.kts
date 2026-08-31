@@ -33,8 +33,8 @@ android {
 
         buildConfigField(
             "String",
-            "WORKFLOWS_API_KEY",
-            "\"${resolveProperty("E2E_WORKFLOWS_API_KEY", "workflows_api_key_to_replace")}\"",
+            "API_KEY",
+            "\"${resolveProperty("MAESTRO_TEST_STORE_API_KEY", "api_key_to_replace")}\"",
         )
     }
 
