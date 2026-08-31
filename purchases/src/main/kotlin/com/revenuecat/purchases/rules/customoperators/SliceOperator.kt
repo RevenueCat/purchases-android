@@ -11,8 +11,8 @@ private const val OPERATOR_NAME = "rc.slice"
 /** `rc.slice` — takes a run of elements out of an array. */
 internal object SliceOperator {
 
-    /** Argument count of the form that also carries a length. */
-    private const val ARGUMENTS_WITH_LENGTH = 3
+    private const val BINARY_OPERAND_COUNT = 2
+    private const val TERNARY_OPERAND_COUNT = 3
 
     /**
      * `{"rc.slice": [array, start]}` or
@@ -31,7 +31,7 @@ internal object SliceOperator {
     fun opSlice(args: Value, vars: Scope): Value {
         val evaluated = Operators.evalArgs(args, vars)
 
-        if (evaluated.size != 2 && evaluated.size != ARGUMENTS_WITH_LENGTH) {
+        if (evaluated.size != BINARY_OPERAND_COUNT && evaluated.size != TERNARY_OPERAND_COUNT) {
             throw EvaluationException.TypeMismatch(
                 "operator '$OPERATOR_NAME' expects 2 or 3 arguments, got ${evaluated.size}",
             )
@@ -50,7 +50,7 @@ internal object SliceOperator {
         val begin = if (start < 0) maxOf(items.size + start, 0) else minOf(start, items.size)
         val remaining = items.subList(begin, items.size).toList()
 
-        if (evaluated.size != ARGUMENTS_WITH_LENGTH) return Value.ArrayValue(remaining)
+        if (evaluated.size != TERNARY_OPERAND_COUNT) return Value.ArrayValue(remaining)
 
         val length = index(evaluated[2], "length")
         val count = if (length < 0) {
