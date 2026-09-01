@@ -48,6 +48,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateStore
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowScreenContext
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PackageConfigurationType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigurationFactory
@@ -366,6 +367,7 @@ internal fun Offering.toComponentsPaywallState(
     storefrontCountryCode: String?,
     dateProvider: () -> Date,
     purchases: PurchasesType,
+    workflowScreen: WorkflowScreenContext? = null,
     customVariables: Map<String, CustomVariableValue> = emptyMap(),
     defaultCustomVariables: Map<String, CustomVariableValue> = emptyMap(),
     stateStore: PaywallStateStore? = null,
@@ -396,6 +398,7 @@ internal fun Offering.toComponentsPaywallState(
         packages = validationResult.packages,
         customVariables = customVariables,
         defaultCustomVariables = defaultCustomVariables,
+        workflowScreen = workflowScreen,
         initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
         mainStackHasHeroImage = validationResult.mainStackHasHeroImage,
         purchases = purchases,

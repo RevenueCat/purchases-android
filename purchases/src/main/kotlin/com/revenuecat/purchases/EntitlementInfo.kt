@@ -242,7 +242,9 @@ public enum class Store {
     GALAXY,
     ;
 
-    internal val stringValue: String
+    /** Wire name for this store, as used by the backend and by the paywall web_view context. */
+    @InternalRevenueCatAPI
+    public val stringValue: String
         get() = when (this) {
             APP_STORE -> "app_store"
             MAC_APP_STORE -> "mac_app_store"
@@ -288,7 +290,9 @@ public enum class Store {
     }
 }
 
+@OptIn(InternalRevenueCatAPI::class)
 internal object StoreSerializer : EnumDeserializerWithDefault<Store>(
+    serialName = "com.revenuecat.purchases.Store",
     defaultValue = Store.UNKNOWN_STORE,
     typeForValue = { value -> value.stringValue },
 )
