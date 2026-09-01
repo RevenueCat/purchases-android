@@ -24,6 +24,9 @@ import java.util.regex.PatternSyntaxException
  *   malformed quantifier. JS accepts either, so an unescaped brace compiles
  *   in Funnels and throws on both devices.
  * - `$` matches before a trailing newline in ICU but not in JS.
+ * - An empty pattern does not compile in ICU at all, where JS reads it as a
+ *   match at every position. A desktop JVM accepts it, so this is one the
+ *   unit tests below cannot see.
  *
  * The one place the devices part company is an unknown escape such as `\q`:
  * this engine rejects the pattern, iOS reads it as a literal `q`. Escape only
