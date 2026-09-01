@@ -78,8 +78,6 @@ internal fun NativeScreen(onBack: () -> Unit) {
     DisposableEffect(Unit) {
         onDispose {
             loadJob?.cancel()
-            directAds.destroyAll()
-            preloadedAds.destroyAll()
         }
     }
 
@@ -89,9 +87,7 @@ internal fun NativeScreen(onBack: () -> Unit) {
         onModeChange = {
             loadJob?.cancel()
             directStatus = "No direct native ad loaded"
-            directAds.destroyAll()
             directAds = emptyList()
-            preloadedAds.destroyAll()
             preloadedAds = emptyList()
         },
     ) { mode ->
@@ -105,9 +101,7 @@ internal fun NativeScreen(onBack: () -> Unit) {
                 checked = adVariant == NativeAdVariant.VIDEO,
                 onCheckedChange = { useVideoAdUnit ->
                     loadJob?.cancel()
-                    directAds.destroyAll()
                     directAds = emptyList()
-                    preloadedAds.destroyAll()
                     preloadedAds = emptyList()
                     directStatus = "No direct native ad loaded"
                     adVariant = if (useVideoAdUnit) NativeAdVariant.VIDEO else NativeAdVariant.STANDARD
@@ -139,7 +133,6 @@ internal fun NativeScreen(onBack: () -> Unit) {
             ActionRow(
                 "Load + Show" to {
                     loadJob?.cancel()
-                    directAds.destroyAll()
                     directAds = emptyList()
                     loadJob = scope.launch {
                         directStatus = if (batchLoading) "Collecting batch Flow..." else "Loading native ad..."
@@ -189,7 +182,6 @@ internal fun NativeScreen(onBack: () -> Unit) {
                         label = "Poll + Show",
                         enabled = preloadState.started && preloadState.adsAvailable > 0,
                         onClick = {
-                            preloadedAds.destroyAll()
                             preloadedAds = emptyList()
                             val handled = pollNativeAds(preloadedAdCount, adVariant)
                             preloadState.refresh()
@@ -257,8 +249,6 @@ private fun NativeAdCountSetting(
 
 private data class HandledNativeResult(val ads: List<NativeAd>, val status: String)
 
-private fun List<NativeAd>.destroyAll() = forEach { it.destroy() }
-
 private fun pollNativeAds(numberOfAds: Int, adVariant: NativeAdVariant): HandledNativeResult? {
     var handledResult: HandledNativeResult? = null
     repeat(numberOfAds) {
@@ -308,7 +298,10 @@ private fun NativeAdCard(nativeAd: NativeAd) {
             adView
         },
         modifier = Modifier.fillMaxWidth(),
-        onRelease = NativeAdView::destroy,
+        onRelease = { adView ->
+            adView.destroy()
+            nativeAd.destroy()
+        },
     )
 }
 
