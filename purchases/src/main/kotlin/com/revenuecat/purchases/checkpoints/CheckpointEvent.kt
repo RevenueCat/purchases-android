@@ -29,6 +29,21 @@ internal enum class CheckpointHitResult {
 }
 
 /**
+ * Whether a checkpoint is one RevenueCat defines or one the app declares.
+ *
+ * Every checkpoint is [CUSTOM] today. [STANDARD] is declared so the backend vocabulary and this one stay in
+ * step, and so producing it later is a one-line change rather than a new type.
+ */
+@Serializable
+internal enum class CheckpointType {
+    @SerialName("standard")
+    STANDARD,
+
+    @SerialName("custom")
+    CUSTOM,
+}
+
+/**
  * Records that a checkpoint was hit and what it resolved to. This is persisted and sent through the shared
  * analytics events pipeline.
  *
@@ -38,6 +53,7 @@ internal enum class CheckpointHitResult {
 @OptIn(InternalRevenueCatAPI::class)
 internal data class CheckpointEvent(
     val identifier: String,
+    val checkpointType: CheckpointType,
     val result: CheckpointHitResult,
     val workflowId: String? = null,
     val offeringId: String? = null,
@@ -56,6 +72,7 @@ internal fun CheckpointResolution.toCheckpointEvent(identifier: String, timestam
     when (this) {
         is CheckpointResolution.MatchedWorkflow -> CheckpointEvent(
             identifier = identifier,
+            checkpointType = CheckpointType.CUSTOM,
             result = CheckpointHitResult.WORKFLOW,
             workflowId = workflow.id,
             offeringId = offering.identifier,
@@ -64,6 +81,7 @@ internal fun CheckpointResolution.toCheckpointEvent(identifier: String, timestam
         )
         is CheckpointResolution.MatchedOffering -> CheckpointEvent(
             identifier = identifier,
+            checkpointType = CheckpointType.CUSTOM,
             result = CheckpointHitResult.OFFERING,
             offeringId = offering.identifier,
             checkpointRuleId = checkpointRuleId,
@@ -73,6 +91,7 @@ internal fun CheckpointResolution.toCheckpointEvent(identifier: String, timestam
         // rather than about the rule that matched.
         is CheckpointResolution.NoAction -> CheckpointEvent(
             identifier = identifier,
+            checkpointType = CheckpointType.CUSTOM,
             result = reason.toCheckpointHitResult(),
             timestamp = timestamp,
         )

@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.events
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.checkpoints.CheckpointHitResult
+import com.revenuecat.purchases.checkpoints.CheckpointType
 import com.revenuecat.purchases.common.JsonProvider
 import kotlinx.serialization.encodeToString
 import org.assertj.core.api.Assertions.assertThat
@@ -28,6 +29,7 @@ class CheckpointEventsRequestSerializationTest {
                         "\"version\":1," +
                         "\"type\":\"checkpoint_hit\"," +
                         "\"identifier\":\"onboarding_complete\"," +
+                        "\"checkpoint_type\":\"custom\"," +
                         "\"app_user_id\":\"app_user_id\"," +
                         "\"app_session_id\":\"315107f4-98bf-4b68-a582-eb27bcb6e111\"," +
                         "\"timestamp\":1699270688995," +
@@ -84,6 +86,7 @@ class CheckpointEventsRequestSerializationTest {
         )
 
         assertThat(requestString).endsWith("\"timestamp\":1699270688995}]}")
+        assertThat(requestString).contains("\"checkpoint_type\":\"custom\"")
     }
 
     @Test
@@ -105,6 +108,7 @@ class CheckpointEventsRequestSerializationTest {
                 version = BackendEvent.CHECKPOINT_EVENT_SCHEMA_VERSION,
                 type = BackendEvent.CHECKPOINT_EVENT_TYPE,
                 identifier = "onboarding_complete",
+                checkpointType = CheckpointType.CUSTOM,
                 appUserID = "app_user_id",
                 appSessionID = "315107f4-98bf-4b68-a582-eb27bcb6e111",
                 timestamp = 1699270688995,
