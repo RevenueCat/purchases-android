@@ -69,6 +69,79 @@ See Google's
 [migration guide](https://developers.google.com/admob/android/next-gen/migration)
 for additional mediation-specific requirements.
 
+## Migrate from the legacy adapter
+
+`purchases-admob-next-gen` is not a drop-in binary replacement for `purchases-admob`. Migrate the underlying Google
+Mobile Ads SDK and the RevenueCat adapter together. Before starting, confirm that your app meets the requirements
+above and review Google's migration guide, especially if you use mediation.
+
+### Replace the dependencies
+
+Remove both legacy artifacts and add their Next-Gen replacements. Do not keep both SDK generations in the same app:
+
+```kotlin
+dependencies {
+    // Remove these legacy dependencies:
+    // implementation("com.revenuecat.purchases:purchases-admob:$revenueCatVersion")
+    // implementation("com.google.android.gms:play-services-ads:<version>")
+
+    implementation("com.revenuecat.purchases:purchases-admob-next-gen:$revenueCatVersion")
+    implementation("com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:1.3.0")
+}
+```
+
+If mediation adapters pull either legacy Google artifact back into the dependency graph, add the global exclusions
+shown in [Installation](#installation).
+
+### Update imports and initialization
+
+Update RevenueCat adapter imports from `com.revenuecat.purchases.admob` to
+`com.revenuecat.purchases.admob.nextgen`. Google Mobile Ads types move from `com.google.android.gms.ads` to
+`com.google.android.libraries.ads.mobile.sdk`; most requests, ads, and callbacks also use new Next-Gen types rather
+than direct equivalents of the legacy classes.
+
+Initialization is required before loading ads or calling other `MobileAds` APIs. Pass the AdMob app ID through
+`InitializationConfig`, initialize on a background thread, and wait for the callback before loading ads when your
+mediation setup requires every adapter to be ready. See [Initialize Google Mobile Ads Next-Gen](#initialize-google-mobile-ads-next-gen).
+
+### Update RevenueCat tracking calls
+
+Most RevenueCat helper names remain the same, but their Google SDK parameters change:
+
+| Format | Legacy adapter | Next-Gen adapter |
+| ------ | -------------- | ---------------- |
+| Banner | `AdView.loadAndTrackAd(AdRequest, ...)` | `AdView.loadAndTrackAd(BannerAdRequest, ...)` |
+| App open | `AdTracker.loadAndTrackAppOpenAd(...)` | `AdTracker.loadAndTrackAppOpenAd(...)` |
+| Interstitial | `AdTracker.loadAndTrackInterstitialAd(...)` | `AdTracker.loadAndTrackInterstitialAd(...)` |
+| Rewarded | `AdTracker.loadAndTrackRewardedAd(...)` | `AdTracker.loadAndTrackRewardedAd(...)` |
+| Rewarded interstitial | `AdTracker.loadAndTrackRewardedInterstitialAd(...)` | `AdTracker.loadAndTrackRewardedInterstitialAd(...)` |
+| Native | `AdLoader.Builder.forNativeAdWithTracking(...)` | `AdTracker.loadAndTrackNativeAd(...)` or `loadAndTrackNativeAds(...)` |
+
+`BannerAdRequest` is a Next-Gen subclass of `AdRequest` that includes banner-specific configuration. Its builder
+requires the ad unit ID and an `AdSize` (or list of sizes). In the legacy SDK those values were configured directly
+on `AdView`, which then loaded a generic `AdRequest`; Next-Gen `AdView.loadAd` receives the complete
+`BannerAdRequest` instead.
+
+For full-screen formats, build the ad unit ID into the Next-Gen `AdRequest` instead of passing `context` and
+`adUnitId` separately. Replace format-specific legacy load callbacks with `AdLoadCallback<AdType>`, and replace
+`FullScreenContentCallback` plus `OnPaidEventListener` with the corresponding format event callback, such as
+`InterstitialAdEventCallback` or `RewardedAdEventCallback`. Banner and native formats have their own event callback
+types, described in the examples below.
+
+The `enableRewardVerification` and verification-aware `show` helper names are unchanged; update their imports and ad
+types to the Next-Gen packages. Keep existing RevenueCat `placement` values when they represent the same ad slots so
+reporting remains consistent across the migration.
+
+### Review callback handling
+
+Google Mobile Ads Next-Gen invokes load and event callbacks on a background thread. Dispatch to the main thread
+before updating views or other UI-confined state.
+
+Pass event callbacks to the RevenueCat load helper. Assigning a loaded ad's callback property directly replaces the
+tracking wrapper. If a callback must change after loading, use the format's `setTrackingAdEventCallback` helper (and
+`setTrackingBannerAdRefreshCallback` for banners). Test every migrated format—including load failure, display,
+click, revenue, and reward delivery—before removing the legacy implementation.
+
 ## Initialize Google Mobile Ads Next-Gen
 
 Google Mobile Ads Next-Gen must be initialized before loading ads or calling other `MobileAds` APIs. Initialize it
