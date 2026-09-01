@@ -115,14 +115,14 @@ constructor(
     /**
      * Contains all [OneTimePurchaseOfferDetails]. Null for subscriptions or if no offer details exist.
      */
-    override val oneTimePurchaseOfferDetailsList: OneTimePurchaseOfferDetailsList?,
+    override val oneTimePurchaseOfferDetailsList: OneTimePurchaseOfferDetailsList? = null,
 
     /**
      * The default [OneTimePurchaseOfferDetails] that will be used when purchasing an INAPP product without specifying
      * a different option. Evaluates the cheapest offer excluding "rc-ignore-offer" and "rc-customer-center" tags.
      * Null for SUBS products or if no offer details exist.
      */
-    override val defaultOneTimeOffer: OneTimePurchaseOfferDetails?
+    override val defaultOneTimeOffer: OneTimePurchaseOfferDetails? = null
 
 ) : StoreProduct {
 
