@@ -39,8 +39,10 @@ import com.revenuecat.purchases.admob.nextgen.startAndTrack
 import com.revenuecat.sample.admob.nextgen.BuildConfig
 import com.revenuecat.sample.admob.nextgen.R
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val NATIVE_PRELOAD_ID = "sample-native"
 private const val MIN_NATIVE_BATCH_SIZE = 1
@@ -134,26 +136,21 @@ internal fun NativeScreen(onBack: () -> Unit) {
                 "Load + Show" to {
                     loadJob?.cancel()
                     directAds = emptyList()
+                    val requestedBatchLoading = batchLoading
+                    val requestedBatchSize = batchSize
+                    val requestedAdVariant = adVariant
+                    directStatus = if (requestedBatchLoading) "Collecting batch Flow..." else "Loading native ad..."
                     loadJob = scope.launch {
-                        directStatus = if (batchLoading) "Collecting batch Flow..." else "Loading native ad..."
-                        if (batchLoading) {
-                            Purchases.sharedInstance.adTracker.loadAndTrackNativeAds(
-                                nativeRequest(adVariant),
-                                maxNumberOfAds = batchSize,
-                                placement = adVariant.placement("batch"),
-                            ).collect { result ->
-                                val handled = handleNativeResult(result, directAds)
+                        val requestJob = coroutineContext[Job] ?: return@launch
+                        loadNativeResults(
+                            batchLoading = requestedBatchLoading,
+                            batchSize = requestedBatchSize,
+                            adVariant = requestedAdVariant,
+                        ) { result ->
+                            handleOrDestroyNativeResult(result, requestJob, directAds) { handled ->
                                 directAds = handled.ads
                                 directStatus = handled.status
                             }
-                        } else {
-                            val result = Purchases.sharedInstance.adTracker.loadAndTrackNativeAd(
-                                nativeRequest(adVariant),
-                                placement = adVariant.placement("single"),
-                            )
-                            val handled = handleNativeResult(result, directAds)
-                            directAds = handled.ads
-                            directStatus = handled.status
                         }
                     }
                 },
@@ -249,6 +246,44 @@ private fun NativeAdCountSetting(
 
 private data class HandledNativeResult(val ads: List<NativeAd>, val status: String)
 
+private suspend fun loadNativeResults(
+    batchLoading: Boolean,
+    batchSize: Int,
+    adVariant: NativeAdVariant,
+    onResult: (NativeAdLoadResult) -> Unit,
+) {
+    // Finish acquiring SDK-owned results after cancellation so stale successful ads can still be destroyed.
+    withContext(NonCancellable) {
+        if (batchLoading) {
+            Purchases.sharedInstance.adTracker.loadAndTrackNativeAds(
+                nativeRequest(adVariant),
+                maxNumberOfAds = batchSize,
+                placement = adVariant.placement("batch"),
+            ).collect(onResult)
+        } else {
+            onResult(
+                Purchases.sharedInstance.adTracker.loadAndTrackNativeAd(
+                    nativeRequest(adVariant),
+                    placement = adVariant.placement("single"),
+                ),
+            )
+        }
+    }
+}
+
+private fun handleOrDestroyNativeResult(
+    result: NativeAdLoadResult,
+    requestJob: Job,
+    currentAds: List<NativeAd>,
+    onHandled: (HandledNativeResult) -> Unit,
+) {
+    if (requestJob.isActive) {
+        onHandled(handleNativeResult(result, currentAds))
+    } else {
+        result.destroyLoadedAd()
+    }
+}
+
 private fun pollNativeAds(numberOfAds: Int, adVariant: NativeAdVariant): HandledNativeResult? {
     var handledResult: HandledNativeResult? = null
     repeat(numberOfAds) {
@@ -272,19 +307,35 @@ private fun handleNativeResult(result: NativeAdLoadResult, currentAds: List<Nati
             ads = currentAds + result.ad,
             status = "Loaded ${currentAds.size + 1} native ad(s)",
         )
-        is NativeAdLoadResult.CustomNativeAdSuccess -> HandledNativeResult(
-            currentAds,
-            "Google returned a custom-native result; tracked but not rendered",
-        )
-        is NativeAdLoadResult.BannerAdSuccess -> HandledNativeResult(
-            currentAds,
-            "Google returned banner inventory; tracked but not rendered here",
-        )
+        is NativeAdLoadResult.CustomNativeAdSuccess -> {
+            result.ad.destroy()
+            HandledNativeResult(
+                currentAds,
+                "Google returned a custom-native result; tracked but not rendered",
+            )
+        }
+        is NativeAdLoadResult.BannerAdSuccess -> {
+            result.ad.destroy()
+            HandledNativeResult(
+                currentAds,
+                "Google returned banner inventory; tracked but not rendered here",
+            )
+        }
         is NativeAdLoadResult.Failure -> HandledNativeResult(
             currentAds,
             "Native load failed: ${result.error.message}",
         )
         else -> HandledNativeResult(currentAds, "Unknown native result")
+    }
+}
+
+private fun NativeAdLoadResult.destroyLoadedAd() {
+    when (this) {
+        is NativeAdLoadResult.NativeAdSuccess -> ad.destroy()
+        is NativeAdLoadResult.CustomNativeAdSuccess -> ad.destroy()
+        is NativeAdLoadResult.BannerAdSuccess -> ad.destroy()
+        is NativeAdLoadResult.Failure -> Unit
+        else -> Unit
     }
 }
 
