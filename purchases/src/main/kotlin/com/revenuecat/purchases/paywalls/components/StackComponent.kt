@@ -112,5 +112,6 @@ public class PartialStackComponent(
 
 @OptIn(InternalRevenueCatAPI::class)
 internal object StackOverflowDeserializer : EnumDeserializerWithDefault<StackComponent.Overflow>(
+    serialName = "com.revenuecat.purchases.paywalls.components.StackComponent.Overflow",
     defaultValue = StackComponent.Overflow.NONE,
 )

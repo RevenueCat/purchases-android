@@ -24,6 +24,8 @@ internal object CustomOperators {
 
         "rc.length" -> LengthOperator.opLength(args, vars)
 
+        "rc.let" -> LetOperator.opLet(args, vars)
+
         "rc.lower" -> CaseOperators.opLower(args, vars)
         "rc.upper" -> CaseOperators.opUpper(args, vars)
 
