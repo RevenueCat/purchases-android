@@ -116,13 +116,9 @@ internal object RegexOperators {
 
         val regex = try {
             Regex(pattern.value)
-        } catch (e: PatternSyntaxException) {
-            // The exception's own message repeats the pattern and draws a caret
-            // under it across three lines, so take the parts worth one line.
-            val fault = e.description ?: "invalid pattern"
-            val at = if (e.index >= 0) " near index ${e.index}" else ""
+        } catch (_: PatternSyntaxException) {
             throw EvaluationException.TypeMismatch(
-                "operator '$operatorName' could not compile pattern '${pattern.value}': $fault$at",
+                "operator '$operatorName' could not compile pattern '${pattern.value}'",
             )
         }
 
