@@ -23,6 +23,7 @@ import com.revenuecat.purchases.common.SharedConstants
 import com.revenuecat.purchases.checkpoints.CheckpointEvent
 import com.revenuecat.purchases.checkpoints.CheckpointHitResult
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.checkpoints.CheckpointType
 import com.revenuecat.purchases.common.checkpoints.CheckpointRulesResolution
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
@@ -1611,6 +1612,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(event.captured.identifier).isEqualTo("onboarding_complete")
         assertThat(event.captured.timestamp).isEqualTo(timestamp)
         assertThat(event.captured.result).isEqualTo(CheckpointHitResult.UNKNOWN_CHECKPOINT)
+        assertThat(event.captured.checkpointType).isEqualTo(CheckpointType.CUSTOM)
         assertThat(event.captured.workflowId).isNull()
         assertThat(event.captured.offeringId).isNull()
         assertThat(event.captured.checkpointRuleId).isNull()

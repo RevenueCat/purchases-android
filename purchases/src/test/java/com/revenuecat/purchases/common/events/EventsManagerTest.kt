@@ -24,6 +24,7 @@ import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
 import com.revenuecat.purchases.ads.events.types.AdRewardFailureReason
 import com.revenuecat.purchases.checkpoints.CheckpointEvent
 import com.revenuecat.purchases.checkpoints.CheckpointHitResult
+import com.revenuecat.purchases.checkpoints.CheckpointType
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Dispatcher
@@ -100,6 +101,7 @@ class EventsManagerTest {
     )
     private val checkpointEvent = CheckpointEvent(
         identifier = "onboarding_complete",
+        checkpointType = CheckpointType.CUSTOM,
         result = CheckpointHitResult.PRESENT_UI,
         workflowId = "wf_123",
         offeringId = "offeringID",
@@ -193,7 +195,7 @@ class EventsManagerTest {
         eventsManager.track(checkpointEvent)
 
         checkFileContents(
-            """{"type":"checkpoint","event":{"id":"498207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"checkpoint_hit","identifier":"onboarding_complete","app_user_id":"testAppUserId","app_session_id":"$appSessionID","timestamp":1699270688995,"result":"present_ui","workflow_id":"wf_123","offering_id":"offeringID","checkpoint_rule_id":"rule_123"}}""" +
+            """{"type":"checkpoint","event":{"id":"498207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"checkpoint_hit","identifier":"onboarding_complete","checkpoint_type":"custom","app_user_id":"testAppUserId","app_session_id":"$appSessionID","timestamp":1699270688995,"result":"present_ui","workflow_id":"wf_123","offering_id":"offeringID","checkpoint_rule_id":"rule_123"}}""" +
                 "\n",
         )
     }

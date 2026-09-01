@@ -104,6 +104,7 @@ internal fun CheckpointEvent.toBackendStoredEvent(
         version = BackendEvent.CHECKPOINT_EVENT_SCHEMA_VERSION,
         type = BackendEvent.CHECKPOINT_EVENT_TYPE,
         identifier = identifier,
+        checkpointType = checkpointType,
         appUserID = appUserID,
         appSessionID = appSessionID,
         timestamp = timestamp.time,
