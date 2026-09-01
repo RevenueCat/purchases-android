@@ -9,13 +9,29 @@ import java.util.regex.PatternSyntaxException
 /**
  * Regular expression operators.
  *
- * The pattern is handed to the platform engine — `java.util.regex` here, ICU
- * on iOS, `RegExp` in Funnels — and those three disagree on parts of the
- * syntax. Patterns are authored by the backend, which is expected to stay
- * inside the subset they agree on: `\d`, `\w`, `\s` and `\b` are ASCII here
- * but Unicode-aware in ICU, `&&` inside a character class means set
- * intersection here and something else in JS, and `$` matches before a
- * trailing newline here but not in JS.
+ * The pattern is handed to the platform engine. This one and the iOS engine
+ * are both ICU — `java.util.regex` has wrapped ICU4C since Android 2.3, so it
+ * is not the OpenJDK engine a desktop JVM would use — and `RegExp` in Funnels
+ * is the one that differs. Patterns are authored by the backend, which is
+ * expected to stay inside the subset all three read the same way:
+ *
+ * - `\d`, `\w`, `\s` and `\b` cover Unicode in ICU and only ASCII in JS, so
+ *   `\d` matches an Arabic-Indic digit on a device and not in Funnels. Write
+ *   `[0-9]` for the ASCII meaning.
+ * - `&&` inside a character class is set intersection in ICU and two literal
+ *   ampersands in JS.
+ * - A literal `}` needs escaping as `\}` for ICU, which reads a bare one as a
+ *   malformed quantifier. JS accepts either, so an unescaped brace compiles
+ *   in Funnels and throws on both devices.
+ * - `$` matches before a trailing newline in ICU but not in JS.
+ *
+ * The one place the devices part company is an unknown escape such as `\q`:
+ * this engine rejects the pattern, iOS reads it as a literal `q`. Escape only
+ * what needs escaping.
+ *
+ * Note that the unit tests run on a desktop JVM, whose regex engine is not
+ * the ICU one that ships, so a fixture cannot prove device behavior for any
+ * of the above.
  *
  * No operator takes flags, since JS has no inline `(?i)`. Write `[aA]` for a
  * case-insensitive letter.
