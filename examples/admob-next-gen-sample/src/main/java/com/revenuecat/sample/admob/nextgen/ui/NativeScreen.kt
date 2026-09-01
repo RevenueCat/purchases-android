@@ -13,7 +13,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
@@ -67,7 +66,7 @@ internal fun NativeScreen(onBack: () -> Unit) {
     var batchSize by remember { mutableIntStateOf(MAX_NATIVE_BATCH_SIZE) }
     var directAds by remember { mutableStateOf(emptyList<NativeAd>()) }
     var preloadedAds by remember { mutableStateOf(emptyList<NativeAd>()) }
-    var preloadedAdCount by remember { mutableIntStateOf(0) }
+    var preferredPreloadedAdCount by remember { mutableStateOf<Int?>(null) }
     var loadJob by remember { mutableStateOf<Job?>(null) }
     val preloadState = rememberPreloaderUiState(
         NATIVE_PRELOAD_ID,
@@ -82,10 +81,6 @@ internal fun NativeScreen(onBack: () -> Unit) {
             directAds.destroyAll()
             preloadedAds.destroyAll()
         }
-    }
-
-    LaunchedEffect(preloadState.adsAvailable) {
-        preloadedAdCount = preloadState.adsAvailable
     }
 
     AdScreen(
@@ -170,6 +165,8 @@ internal fun NativeScreen(onBack: () -> Unit) {
                 },
             )
         } else {
+            val preloadedAdCount = preferredPreloadedAdCount?.coerceAtMost(preloadState.adsAvailable)
+                ?: preloadState.adsAvailable
             PreloaderPanel(
                 state = preloadState,
                 additionalMetrics = {
@@ -177,10 +174,12 @@ internal fun NativeScreen(onBack: () -> Unit) {
                         batchSize = preloadedAdCount,
                         maximum = preloadState.adsAvailable,
                         onDecrease = {
-                            preloadedAdCount = (preloadedAdCount - 1).coerceAtLeast(MIN_NATIVE_BATCH_SIZE)
+                            preferredPreloadedAdCount =
+                                (preloadedAdCount - 1).coerceAtLeast(MIN_NATIVE_BATCH_SIZE)
                         },
                         onIncrease = {
-                            preloadedAdCount = (preloadedAdCount + 1).coerceAtMost(preloadState.adsAvailable)
+                            preferredPreloadedAdCount =
+                                (preloadedAdCount + 1).coerceAtMost(preloadState.adsAvailable)
                         },
                     )
                 },
@@ -189,10 +188,9 @@ internal fun NativeScreen(onBack: () -> Unit) {
                         label = "Poll + Show",
                         enabled = preloadState.started && preloadState.adsAvailable > 0,
                         onClick = {
-                            val numberOfAds = preloadedAdCount.coerceAtMost(preloadState.adsAvailable)
                             preloadedAds.destroyAll()
                             preloadedAds = emptyList()
-                            val handled = pollNativeAds(numberOfAds, adVariant)
+                            val handled = pollNativeAds(preloadedAdCount, adVariant)
                             preloadState.refresh()
                             if (handled == null) {
                                 preloadState.message = "No buffered native result available"
