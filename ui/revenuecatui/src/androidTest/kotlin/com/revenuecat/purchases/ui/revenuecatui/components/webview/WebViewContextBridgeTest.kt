@@ -42,11 +42,7 @@ class WebViewContextBridgeTest {
                 ),
                 onLoadFailed = {},
                 contextSnapshotProvider = {
-                    webViewContextSnapshot(
-                        customVariables = mapOf("org" to CustomVariableValue.String("RevenueCat")),
-                        locale = "en-US",
-                        darkMode = false,
-                    )
+                    deviceContextSnapshot(mapOf("org" to CustomVariableValue.String("RevenueCat")))
                 },
             )
         }

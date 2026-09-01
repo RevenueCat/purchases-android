@@ -23,6 +23,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.viewinterop.AndroidView
@@ -44,6 +45,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.trackMainAxisUnbounded
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import kotlinx.coroutines.flow.drop
 import kotlinx.serialization.json.JsonObject
 
 @JvmSynthetic
@@ -81,7 +83,10 @@ internal fun WebViewComponentView(
     // PaywallState instance on every rebuild, so both reads go through State to stay current.
     val darkMode by rememberUpdatedState(isSystemInDarkTheme())
     val currentState by rememberUpdatedState(state)
-    val contextSnapshotProvider: () -> JsonObject = { webViewContextSnapshot(currentState, darkMode) }
+    val currentStyle by rememberUpdatedState(style)
+    val contextSnapshotProvider: () -> JsonObject = {
+        webViewContextSnapshot(currentState, currentStyle, darkMode)
+    }
 
     val identity = WebViewIdentity(
         resolvedUrl = resolvedUrl,
@@ -98,6 +103,15 @@ internal fun WebViewComponentView(
         var loadFailed by remember { mutableStateOf(false) }
         // Remembered inside key(identity) so a stale onRelease can only release its own view's bridge.
         val bridgeHolder = remember { WebViewBridgeHolder() }
+
+        // The handshake seeds the first snapshot, so only later changes need a push. The state
+        // instance is part of the key because the view model replaces it for some changes and
+        // mutates it in place for others.
+        LaunchedEffect(bridgeHolder) {
+            snapshotFlow { listOf(currentState, currentState.selectedPackageInfo?.uniqueId) }
+                .drop(1)
+                .collect { bridgeHolder.bridge?.pushContextNow() }
+        }
 
         // A `fill` axis genuinely unbounded at measure time (e.g. an ancestor scrolls, or a `Fit`-sized
         // container sits under one that does) would otherwise collapse to zero — `fillMaxWidth/Height`

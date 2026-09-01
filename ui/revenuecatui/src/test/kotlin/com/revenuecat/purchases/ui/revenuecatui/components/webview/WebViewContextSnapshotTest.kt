@@ -1,11 +1,14 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.helpers.FakePaywallState
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.double
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -17,11 +20,7 @@ internal class WebViewContextSnapshotTest {
 
     @Test
     fun `contains every section with its empty shape and no workflow key`() {
-        val snapshot = webViewContextSnapshot(
-            customVariables = emptyMap(),
-            locale = "en-US",
-            darkMode = true,
-        )
+        val snapshot = testContextSnapshot(darkMode = true)
 
         assertThat(snapshot.keys).containsExactly(
             "custom",
@@ -39,6 +38,8 @@ internal class WebViewContextSnapshotTest {
         assertThat(snapshot.getValue("selected_package")).isEqualTo(JsonNull)
         assertThat(snapshot.getValue("inputs").jsonObject).isEmpty()
     }
+
+    // --- custom ---
 
     @Test
     fun `custom carries every variable with its type intact`() {
@@ -67,23 +68,154 @@ internal class WebViewContextSnapshotTest {
         assertThat(Json.encodeToString(JsonObject.serializer(), custom)).isEqualTo("""{"broken":"NaN"}""")
     }
 
-    private fun snapshotWith(vararg variables: Pair<String, CustomVariableValue>) =
-        webViewContextSnapshot(
-            customVariables = variables.toMap(),
-            locale = "en-US",
-            darkMode = false,
-        ).getValue("custom").jsonObject
+    // --- offering, packages, selection ---
+
+    @Test
+    fun `offering carries its identifier and display name`() {
+        val offering = TestData.template7CustomPackageOffering
+
+        val snapshot = testContextSnapshot(offering = offering).getValue("offering").jsonObject
+
+        assertThat(snapshot.getValue("identifier").jsonPrimitive.content).isEqualTo(offering.identifier)
+        assertThat(snapshot.getValue("display_name").jsonPrimitive.content)
+            .isEqualTo(offering.serverDescription)
+    }
+
+    @Test
+    fun `packages carries every available package in order`() {
+        val offering = TestData.template7CustomPackageOffering
+
+        val packages = testContextSnapshot(offering = offering).getValue("packages").jsonArray
+
+        assertThat(packages.map { it.jsonObject.getValue("identifier").jsonPrimitive.content })
+            .isEqualTo(offering.availablePackages.map { it.identifier })
+    }
+
+    @Test
+    fun `packages omits display_name, which the offerings endpoint does not serve`() {
+        val packages = testContextSnapshot(offering = TestData.template7CustomPackageOffering)
+            .getValue("packages").jsonArray
+
+        assertThat(packages.first().jsonObject.keys).containsExactly("identifier", "products")
+    }
+
+    @Test
+    fun `package and selected_package differ when the component sits inside a package`() {
+        val offering = TestData.template7CustomPackageOffering
+        val componentPackage = offering.availablePackages.first()
+        val selected = offering.availablePackages.last()
+
+        val snapshot = testContextSnapshot(
+            offering = offering,
+            componentPackage = componentPackage,
+            selectedPackage = selected,
+        )
+
+        assertThat(identifierOf(snapshot, "package")).isEqualTo(componentPackage.identifier)
+        assertThat(identifierOf(snapshot, "selected_package")).isEqualTo(selected.identifier)
+    }
+
+    @Test
+    fun `selected_package is null when nothing is selected`() {
+        val snapshot = testContextSnapshot(offering = TestData.template7CustomPackageOffering)
+
+        assertThat(snapshot.getValue("selected_package")).isEqualTo(JsonNull)
+    }
+
+    // --- products ---
+
+    @Test
+    fun `product carries store, period and price`() {
+        val offering = TestData.template7CustomPackageOffering
+        val monthly = offering.monthly!!
+
+        val product = testContextSnapshot(
+            offering = offering,
+            componentPackage = monthly,
+            storefrontCountryCode = "ES",
+        ).productOfPackage()
+
+        assertThat(product.getValue("identifier").jsonPrimitive.content).isEqualTo(monthly.product.id)
+        assertThat(product.getValue("display_name").jsonPrimitive.content).isEqualTo(monthly.product.name)
+        assertThat(product.getValue("is_subscription").jsonPrimitive.boolean).isTrue()
+        assertThat(product.getValue("period").jsonPrimitive.content).isEqualTo(monthly.product.period!!.iso8601)
+        val store = product.getValue("store").jsonObject
+        assertThat(store.getValue("store_type").jsonPrimitive.content).isEqualTo("play_store")
+        assertThat(store.getValue("country").jsonPrimitive.content).isEqualTo("ES")
+        val price = product.getValue("price").jsonObject
+        assertThat(price.getValue("currency").jsonPrimitive.content).isEqualTo(monthly.product.price.currencyCode)
+        assertThat(price.getValue("amount").jsonPrimitive.double)
+            .isEqualTo(monthly.product.price.amountMicros / 1_000_000.0)
+    }
+
+    @Test
+    fun `store country is omitted until the storefront is known`() {
+        val offering = TestData.template7CustomPackageOffering
+
+        val store = testContextSnapshot(
+            offering = offering,
+            componentPackage = offering.monthly,
+            storefrontCountryCode = null,
+        ).productOfPackage().getValue("store").jsonObject
+
+        assertThat(store.keys).containsExactly("store_type")
+    }
+
+    @Test
+    fun `store type follows the configured store`() {
+        val offering = TestData.template7CustomPackageOffering
+
+        val store = testContextSnapshot(
+            offering = offering,
+            componentPackage = offering.monthly,
+            store = Store.AMAZON,
+        ).productOfPackage().getValue("store").jsonObject
+
+        assertThat(store.getValue("store_type").jsonPrimitive.content).isEqualTo("amazon")
+    }
+
+    @Test
+    fun `is_auto_renewing follows the base plan's recurrence mode`() {
+        val offering = TestData.template7CustomPackageOffering
+
+        val product = testContextSnapshot(
+            offering = offering,
+            componentPackage = offering.monthly,
+        ).productOfPackage()
+
+        assertThat(product.getValue("is_auto_renewing").jsonPrimitive.boolean).isTrue()
+    }
+
+    @Test
+    fun `is_auto_renewing is false for a prepaid base plan`() {
+        val product = testContextSnapshot(
+            componentPackage = prepaidPackage(),
+        ).productOfPackage()
+
+        assertThat(product.getValue("is_auto_renewing").jsonPrimitive.boolean).isFalse()
+    }
+
+    @Test
+    fun `a non-subscription reports no period and no renewal`() {
+        val offering = TestData.template7CustomPackageOffering
+
+        val product = testContextSnapshot(
+            offering = offering,
+            componentPackage = offering.lifetime,
+        ).productOfPackage()
+
+        assertThat(product.getValue("is_subscription").jsonPrimitive.boolean).isFalse()
+        assertThat(product).doesNotContainKey("period")
+        assertThat(product).doesNotContainKey("is_auto_renewing")
+    }
+
+    // --- device_meta ---
 
     @Test
     fun `device_meta carries host details`() {
         val before = System.currentTimeMillis()
 
-        val deviceMeta = webViewContextSnapshot(
-            customVariables = emptyMap(),
-            locale = "en-US",
-            darkMode = true,
-        )
-            .getValue("device_meta").jsonObject
+        val deviceMeta = testContextSnapshot(darkMode = true).getValue("device_meta").jsonObject
 
         assertThat(deviceMeta.getValue("is_preview").jsonPrimitive.boolean).isFalse()
         assertThat(deviceMeta.getValue("locale").jsonPrimitive.content).isEqualTo("en-US")
@@ -93,13 +225,39 @@ internal class WebViewContextSnapshotTest {
     }
 
     @Test
+    fun `package is the component's own when it sits inside a package, ignoring the selection`() {
+        val offering = TestData.template7CustomPackageOffering
+        val own = offering.availablePackages.first()
+        val selected = offering.availablePackages.last()
+        val state = FakePaywallState(packages = offering.availablePackages)
+            .apply { update(selectedPackageUniqueId = selected.identifier) }
+
+        val snapshot = webViewContextSnapshot(state, testWebViewStyle(rcPackage = own), darkMode = false)
+
+        assertThat(identifierOf(snapshot, "package")).isEqualTo(own.identifier)
+        assertThat(identifierOf(snapshot, "selected_package")).isEqualTo(selected.identifier)
+    }
+
+    @Test
+    fun `package follows the selection when the component is outside a package`() {
+        val offering = TestData.template7CustomPackageOffering
+        val selected = offering.availablePackages.last()
+        val state = FakePaywallState(packages = offering.availablePackages)
+            .apply { update(selectedPackageUniqueId = selected.identifier) }
+
+        val snapshot = webViewContextSnapshot(state, testWebViewStyle(rcPackage = null), darkMode = false)
+
+        assertThat(identifierOf(snapshot, "package")).isEqualTo(selected.identifier)
+    }
+
+    @Test
     fun `derives the custom variables from the paywall state`() {
         val state = FakePaywallState(
             components = emptyList(),
             customVariables = mapOf("org" to CustomVariableValue.String("RevenueCat")),
         )
 
-        val custom = webViewContextSnapshot(state, darkMode = false).getValue("custom").jsonObject
+        val custom = webViewContextSnapshot(state, testWebViewStyle(), darkMode = false).getValue("custom").jsonObject
 
         assertThat(custom.getValue("org").jsonPrimitive.content).isEqualTo("RevenueCat")
     }
@@ -107,9 +265,18 @@ internal class WebViewContextSnapshotTest {
     @Test
     fun `derives the locale from the paywall state as a BCP-47 tag`() {
         // The state carries the locale as an underscored `LocaleId`; the wire needs a tag.
-        val deviceMeta = webViewContextSnapshot(FakePaywallState(components = emptyList()), darkMode = false)
+        val deviceMeta = webViewContextSnapshot(FakePaywallState(components = emptyList()), testWebViewStyle(), darkMode = false)
             .getValue("device_meta").jsonObject
 
         assertThat(deviceMeta.getValue("locale").jsonPrimitive.content).isEqualTo("en-US")
     }
+
+    private fun snapshotWith(vararg variables: Pair<String, CustomVariableValue>) =
+        testContextSnapshot(customVariables = variables.toMap()).getValue("custom").jsonObject
+
+    private fun identifierOf(snapshot: JsonObject, key: String) =
+        snapshot.getValue(key).jsonObject.getValue("identifier").jsonPrimitive.content
+
+    private fun JsonObject.productOfPackage(): JsonObject =
+        getValue("package").jsonObject.getValue("products").jsonArray.single().jsonObject
 }
