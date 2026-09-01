@@ -6,7 +6,6 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -38,12 +37,6 @@ internal fun CheckpointResult.toGateResult(activeEntitlementsBefore: Set<String>
             virtualCurrencies = emptyList(),
             noWorkflowReason = CheckpointGateResult.NoWorkflowReason(reason.value),
             error = null,
-        )
-        is CheckpointResult.ReceivedOffering -> errorGateResult(
-            PurchasesError(
-                PurchasesErrorCode.ConfigurationError,
-                "Checkpoint resolved to an offering but no presenter is registered.",
-            ).also { Logger.e(it.toString()) },
         )
         is CheckpointResult.PaywallPresented -> paywallOutcome.toGateResult(activeEntitlementsBefore)
         else -> errorGateResult(

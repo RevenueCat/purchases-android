@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -21,9 +22,21 @@ import java.util.UUID
  * observe a call that was taken between two accessors.
  */
 internal class CheckpointPresentation(
-    val resolution: CheckpointResolution.MatchedWorkflow,
+    val content: CheckpointPaywallContent,
     val customVariables: Map<String, CustomVariableValue>,
 )
+
+/** What [CheckpointWorkflowPresenter] renders for a presented checkpoint. */
+internal sealed class CheckpointPaywallContent {
+
+    class Workflow(val resolution: CheckpointResolution.MatchedWorkflow) : CheckpointPaywallContent()
+
+    /**
+     * A matched offering. Until offering presenters exist, the offering's configured paywall is presented,
+     * falling back to the default paywall when it has none.
+     */
+    class OfferingPaywall(val offering: Offering) : CheckpointPaywallContent()
+}
 
 /**
  * Runs a checkpoint hit end to end: fires listener events, asks the core module what the checkpoint resolves
@@ -39,16 +52,16 @@ internal class CheckpointPresentation(
  */
 @Suppress("TooManyFunctions")
 internal class CheckpointsManager(
-    private val presenterFactory: (callId: String, manager: CheckpointsManager) -> CheckpointWorkflowPresenter =
-        { callId, manager -> CheckpointWorkflowPresenter(callId, manager) },
     // Owns the coroutines behind the callback-based gate API, so an un-awaited checkpoint lives and dies with
     // the Purchases instance holding this manager rather than with any caller scope.
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
+    private val presenterFactory: (callId: String, manager: CheckpointsManager) -> CheckpointWorkflowPresenter =
+        { callId, manager -> CheckpointWorkflowPresenter(callId, manager) },
 ) {
 
     private class PendingCall(
         val callId: String,
-        val resolution: CheckpointResolution.MatchedWorkflow,
+        val content: CheckpointPaywallContent,
         val customVariables: Map<String, CustomVariableValue>,
         val paywallFinished: CompletableDeferred<CheckpointPaywallOutcome>,
     ) {
@@ -93,9 +106,14 @@ internal class CheckpointsManager(
             customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
         )
         val result = when (resolution) {
-            is CheckpointResolution.MatchedOffering -> CheckpointResult.ReceivedOffering(resolution.offering)
-            is CheckpointResolution.MatchedWorkflow ->
-                CheckpointResult.PaywallPresented(present(purchases, resolution, customVariables))
+            // No offering presenter exists yet, so the offering's (or the default fallback) paywall is
+            // presented instead of returning the offering for app-owned presentation.
+            is CheckpointResolution.MatchedOffering -> CheckpointResult.PaywallPresented(
+                present(purchases, CheckpointPaywallContent.OfferingPaywall(resolution.offering), customVariables),
+            )
+            is CheckpointResolution.MatchedWorkflow -> CheckpointResult.PaywallPresented(
+                present(purchases, CheckpointPaywallContent.Workflow(resolution), customVariables),
+            )
             is CheckpointResolution.NoAction ->
                 CheckpointResult.NoAction(resolution.reason.toResultReason())
         }
@@ -126,7 +144,7 @@ internal class CheckpointsManager(
     }
 
     fun presentation(callId: String): CheckpointPresentation? =
-        withPendingCall(callId) { CheckpointPresentation(it.resolution, it.customVariables) }
+        withPendingCall(callId) { CheckpointPresentation(it.content, it.customVariables) }
 
     fun recordOutcome(callId: String, outcome: CheckpointPaywallOutcome) {
         withPendingCall(callId) { it.outcome = outcome }
@@ -148,14 +166,14 @@ internal class CheckpointsManager(
 
     private suspend fun present(
         purchases: Purchases,
-        resolution: CheckpointResolution.MatchedWorkflow,
+        content: CheckpointPaywallContent,
         customVariables: Map<String, CustomVariableValue>,
     ): CheckpointPaywallOutcome {
         val activity = purchases.currentActivity ?: presentationError(
             PurchasesErrorCode.ConfigurationError,
             "Cannot present checkpoint workflow: no started Activity found.",
         )
-        val call = PendingCall(UUID.randomUUID().toString(), resolution, customVariables, CompletableDeferred())
+        val call = PendingCall(UUID.randomUUID().toString(), content, customVariables, CompletableDeferred())
         val claimed = synchronized(this) { (pendingCall == null).also { if (it) pendingCall = call } }
         if (!claimed) {
             presentationError(

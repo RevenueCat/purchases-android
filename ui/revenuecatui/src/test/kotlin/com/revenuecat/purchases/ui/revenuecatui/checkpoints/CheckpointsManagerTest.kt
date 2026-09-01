@@ -122,33 +122,34 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `offering checkpoint returns without an activity or presentation`() = runTest(dispatcher) {
+    fun `offering checkpoint presents the fallback paywall and resolves when it finishes`() = runTest(dispatcher) {
         val offering = mockk<Offering>()
-        every { mockPurchases.currentActivity } returns null
         resolvesTo(CheckpointResolution.MatchedOffering(offering))
 
-        val result = checkpoint() as CheckpointResult.ReceivedOffering
+        var result: CheckpointResult? = null
+        val call = launch { result = checkpoint() }
 
-        assertThat(result.offering).isEqualTo(offering)
-        assertThat(presentedCallIds).isEmpty()
-        verifyOrder {
-            mockListener.onCheckpointHit(CheckpointHitContext(checkpointId, emptyMap()))
-            mockListener.onCheckpointCompleted(CheckpointCompletedContext(checkpointId, emptyMap(), result))
-        }
+        assertThat(result).isNull()
+        val content = manager.presentation(currentCallId())!!.content
+        assertThat((content as CheckpointPaywallContent.OfferingPaywall).offering).isEqualTo(offering)
+
+        finishPaywall(CheckpointPaywallOutcome.Dismissed)
+        call.join()
+
+        assertThat((result as CheckpointResult.PaywallPresented).paywallOutcome)
+            .isEqualTo(CheckpointPaywallOutcome.Dismissed)
     }
 
     @Test
-    fun `offering checkpoint completes while a UI checkpoint is being presented`() = runTest(dispatcher) {
-        val offering = mockk<Offering>()
+    fun `offering checkpoint cannot present while a UI checkpoint is being presented`() = runTest(dispatcher) {
         coEvery { mockPurchases.resolveCheckpoint(any(), any()) } returnsMany listOf(
             CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk()),
-            CheckpointResolution.MatchedOffering(offering),
+            CheckpointResolution.MatchedOffering(mockk()),
         )
         val presentedCall = launch { checkpoint() }
 
-        val offeringResult = checkpoint() as CheckpointResult.ReceivedOffering
+        assertThat(checkpointErrorCode()).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
 
-        assertThat(offeringResult.offering).isEqualTo(offering)
         assertThat(presentedCallIds).hasSize(1)
         presentedCall.cancel()
     }

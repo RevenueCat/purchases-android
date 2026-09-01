@@ -4,16 +4,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import io.mockk.every
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkObject
-import io.mockk.runs
-import io.mockk.unmockkObject
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.After
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -21,17 +14,6 @@ import org.robolectric.annotation.Config
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
 class CheckpointGateResultMappingTest {
-
-    @Before
-    fun setup() {
-        mockkObject(Logger)
-        every { Logger.e(any()) } just runs
-    }
-
-    @After
-    fun tearDown() {
-        unmockkObject(Logger)
-    }
 
     @Test
     fun `every no-action reason maps to its gate counterpart`() {
@@ -56,15 +38,6 @@ class CheckpointGateResultMappingTest {
             assertThat(gateResult.virtualCurrencies).isEmpty()
             assertThat(gateResult.error).isNull()
         }
-    }
-
-    @Test
-    fun `a received offering maps to an error and does not expose the offering`() {
-        val gateResult = CheckpointResult.ReceivedOffering(mockk()).toGateResult(activeEntitlementsBefore = null)
-
-        assertThat(gateResult.noWorkflowReason).isEqualTo(CheckpointGateResult.NoWorkflowReason.ERROR)
-        assertThat(gateResult.error?.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
-        assertThat(gateResult.entitlements).isEmpty()
     }
 
     @Test

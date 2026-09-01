@@ -14,6 +14,9 @@ public abstract class CheckpointResult internal constructor() {
     /**
      * The checkpoint selected [offering] without presenting RevenueCat-managed UI. The app decides how to use
      * the offering, including whether and where to present it.
+     *
+     * Not currently produced: until offering presenters exist, a matched offering presents its own paywall,
+     * falling back to the default paywall, and resolves as [PaywallPresented].
      */
     @Poko
     public class ReceivedOffering internal constructor(

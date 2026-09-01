@@ -3,7 +3,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import android.app.Activity
-import android.content.Intent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
@@ -43,7 +42,8 @@ class CheckpointGateTest {
 
     private lateinit var mockPurchases: Purchases
     private lateinit var mockActivity: Activity
-    private val startedIntents = mutableListOf<Intent>()
+    private lateinit var mockPresenter: CheckpointWorkflowPresenter
+    private val presentedCallIds = mutableListOf<String>()
 
     private lateinit var manager: CheckpointsManager
 
@@ -52,14 +52,17 @@ class CheckpointGateTest {
         Dispatchers.setMain(dispatcher)
         mockkObject(Logger)
         every { Logger.e(any()) } just runs
-        startedIntents.clear()
+        presentedCallIds.clear()
         mockActivity = mockk(relaxed = true)
-        every { mockActivity.startActivity(capture(startedIntents)) } just runs
+        mockPresenter = mockk(relaxed = true)
         mockPurchases = mockk {
             every { currentActivity } returns mockActivity
         }
         cachedCustomerInfoHasActive()
-        manager = CheckpointsManager()
+        manager = CheckpointsManager { callId, _ ->
+            presentedCallIds += callId
+            mockPresenter
+        }
     }
 
     @After
@@ -104,6 +107,23 @@ class CheckpointGateTest {
             .containsExactly(EntitlementGrant("pro", GrantMethod.PURCHASED))
         assertThat(gateResults.single().noWorkflowReason).isNull()
     }
+
+    @Test
+    fun `an offering checkpoint presents the fallback paywall and delivers what the user obtained`() =
+        runTest(dispatcher) {
+            resolvesTo(CheckpointResolution.MatchedOffering(mockk()))
+
+            val gateResults = mutableListOf<CheckpointGateResult>()
+            checkpointGate(gateResults)
+            assertThat(gateResults).isEmpty()
+
+            finishPaywall(CheckpointPaywallOutcome.Purchased(customerInfoWithActive("pro"), mockk()))
+
+            assertThat(gateResults.single().entitlements)
+                .containsExactly(EntitlementGrant("pro", GrantMethod.PURCHASED))
+            assertThat(gateResults.single().noWorkflowReason).isNull()
+            assertThat(gateResults.single().error).isNull()
+        }
 
     @Test
     fun `a missing cached customer info counts every entitlement active afterwards as granted`() =
@@ -175,11 +195,11 @@ class CheckpointGateTest {
         every { entitlements.active } returns identifiers.associateWith { mockk() }
     }
 
-    // Mirrors what CheckpointWorkflowActivity does: record the outcome for the launched call, then report the
+    // Mirrors what CheckpointWorkflowPresenter does: record the outcome for the presented call, then report the
     // paywall as finished.
     private fun finishPaywall(outcome: CheckpointPaywallOutcome) {
-        val callId = startedIntents.last().getStringExtra(CheckpointWorkflowActivity.EXTRA_CALL_ID)!!
+        val callId = presentedCallIds.last()
         manager.recordOutcome(callId, outcome)
-        manager.onActivityDestroyed(callId, isChangingConfigurations = false)
+        manager.onPresentationFinished(callId)
     }
 }

@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 /**
- * Runs the two identifiers that resolve deterministically, so neither is expected to present a paywall.
+ * Runs identifiers with deterministic resolutions: an offering (presents the fallback paywall), an unknown
+ * checkpoint, and a simulated error.
  */
 class UseCasesViewModel : ViewModel() {
 
