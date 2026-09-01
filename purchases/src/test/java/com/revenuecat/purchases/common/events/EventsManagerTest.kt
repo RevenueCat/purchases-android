@@ -103,6 +103,7 @@ class EventsManagerTest {
         result = CheckpointHitResult.PRESENT_UI,
         workflowId = "wf_123",
         offeringId = "offeringID",
+        checkpointRuleId = "rule_123",
         id = UUID.fromString("498207f4-87af-4b57-a581-eb27bcc6e009"),
         timestamp = Date(1699270688995),
     )
@@ -192,7 +193,7 @@ class EventsManagerTest {
         eventsManager.track(checkpointEvent)
 
         checkFileContents(
-            """{"type":"checkpoint","event":{"id":"498207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"checkpoint_hit","identifier":"onboarding_complete","app_user_id":"testAppUserId","app_session_id":"$appSessionID","timestamp":1699270688995,"result":"present_ui","workflow_id":"wf_123","offering_id":"offeringID"}}""" +
+            """{"type":"checkpoint","event":{"id":"498207f4-87af-4b57-a581-eb27bcc6e009","version":1,"type":"checkpoint_hit","identifier":"onboarding_complete","app_user_id":"testAppUserId","app_session_id":"$appSessionID","timestamp":1699270688995,"result":"present_ui","workflow_id":"wf_123","offering_id":"offeringID","checkpoint_rule_id":"rule_123"}}""" +
                 "\n",
         )
     }

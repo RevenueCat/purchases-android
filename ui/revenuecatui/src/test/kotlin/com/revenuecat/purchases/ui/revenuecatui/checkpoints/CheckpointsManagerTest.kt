@@ -122,7 +122,7 @@ class CheckpointsManagerTest {
     fun `offering checkpoint returns without an activity or presentation`() = runTest(dispatcher) {
         val offering = mockk<Offering>()
         every { mockPurchases.currentActivity } returns null
-        resolvesTo(CheckpointResolution.MatchedOffering(offering))
+        resolvesTo(CheckpointResolution.MatchedOffering(offering, checkpointRuleId = null))
 
         val result = checkpoint() as CheckpointResult.ReceivedOffering
 
@@ -138,8 +138,8 @@ class CheckpointsManagerTest {
     fun `offering checkpoint completes while a UI checkpoint is being presented`() = runTest(dispatcher) {
         val offering = mockk<Offering>()
         coEvery { mockPurchases.resolveCheckpoint(any(), any()) } returnsMany listOf(
-            CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk()),
-            CheckpointResolution.MatchedOffering(offering),
+            CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null),
+            CheckpointResolution.MatchedOffering(offering, checkpointRuleId = null),
         )
         val presentedCall = launch { checkpoint() }
 
@@ -449,7 +449,7 @@ class CheckpointsManagerTest {
     }
 
     private fun resolvesToWorkflow() {
-        resolvesTo(CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk()))
+        resolvesTo(CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null))
     }
 
     private fun capturesStartedIntents() {

@@ -110,6 +110,7 @@ internal fun CheckpointEvent.toBackendStoredEvent(
         result = result,
         workflowID = workflowId,
         offeringID = offeringId,
+        checkpointRuleID = checkpointRuleId,
     ),
 )
 
