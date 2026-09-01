@@ -11,12 +11,6 @@ import kotlinx.serialization.json.decodeFromJsonElement
 internal class AudiencesConfigProvider(
     private val manager: RemoteConfigManager,
 ) {
-    /**
-     * Reads [identifier]'s audience from the `audiences` topic's inline item metadata, or `null` when the item
-     * is unknown or malformed. Guarded by [readConsistent]: the read may suspend across a self-primed
-     * `/v1/config` sync, and an audience read against a generation that moved underneath may belong to the
-     * previous user.
-     */
     suspend fun getAudience(identifier: String): Audience? =
         manager.readConsistent(what = { "audience '$identifier'" }) { _ ->
             val metadata = manager.topic(RemoteConfigTopic.Audiences)
