@@ -40,6 +40,25 @@ class StoreProductConversionsTest {
     }
 
     @Test
+    fun `list of INAPP ProductDetails with oneTimePurchaseOfferDetails maps defaultOneTimeOffer and oneTimePurchaseOfferDetailsList`() {
+        val offerDetails = mockOneTimePurchaseOfferDetails(offerTokenProvided = "mock-offer-token")
+        val productDetail1 = mockProductDetails(
+            productId = "iap_1",
+            type = BillingClient.ProductType.INAPP,
+            oneTimePurchaseOfferDetails = offerDetails,
+            subscriptionOfferDetails = null
+        )
+
+        val storeProducts = listOf(productDetail1).toStoreProducts()
+        assertThat(storeProducts.size).isEqualTo(1)
+        val googleStoreProduct = storeProducts.first().googleProduct
+        assertThat(googleStoreProduct).isNotNull
+        assertThat(googleStoreProduct?.oneTimePurchaseOfferDetailsList).isNotNull
+        assertThat(googleStoreProduct?.defaultOneTimeOffer).isNotNull
+        assertThat(googleStoreProduct?.defaultOneTimeOffer?.offerToken).isEqualTo("mock-offer-token")
+    }
+
+    @Test
     fun `list of SUBS ProductDetails maps to StoreProducts`() {
         val productDetail1 = mockProductDetails(productId = "sub_1", type = BillingClient.ProductType.SUBS)
         val productDetails = listOf(productDetail1)

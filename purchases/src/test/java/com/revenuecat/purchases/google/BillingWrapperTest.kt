@@ -888,6 +888,11 @@ class BillingWrapperTest {
             ProductDetailsParams.newBuilder()
         } returns mockProductDetailsBuilder
 
+        val tokenSlot = slot<String>()
+        every {
+            mockProductDetailsBuilder.setOfferToken(capture(tokenSlot))
+        } returns mockProductDetailsBuilder
+
         val productDetailsSlot = slot<ProductDetails>()
         every {
             mockProductDetailsBuilder.setProductDetails(capture(productDetailsSlot))
@@ -918,10 +923,64 @@ class BillingWrapperTest {
             null,
         )
 
-        verify(exactly = 0) {
-            mockProductDetailsBuilder.setOfferToken(any())
+        assertThat(tokenSlot.isCaptured).isTrue
+        assertThat(tokenSlot.captured).isEqualTo("mockOfferToken")
+        assertThat(productDetailsSlot.isCaptured).isTrue
+        assertThat(productDetailsSlot.captured).isEqualTo(productDetails)
+    }
+
+    @Test
+    fun `properly sets ProductDetailsParams offerToken for inapp product with offerToken`() {
+        mockkStatic(BillingFlowParams::class)
+        mockkStatic(ProductDetailsParams::class)
+
+        val mockProductDetailsBuilder = mockk<ProductDetailsParams.Builder>(relaxed = true)
+        every {
+            ProductDetailsParams.newBuilder()
+        } returns mockProductDetailsBuilder
+
+        val tokenSlot = slot<String>()
+        every {
+            mockProductDetailsBuilder.setOfferToken(capture(tokenSlot))
+        } returns mockProductDetailsBuilder
+
+        val productDetailsSlot = slot<ProductDetails>()
+        every {
+            mockProductDetailsBuilder.setProductDetails(capture(productDetailsSlot))
+        } returns mockProductDetailsBuilder
+
+        val productId = "product_a"
+        val offerToken = "mock_inapp_offer_token"
+
+        val productDetails = mockProductDetails(
+            productId = productId,
+            type = inAppGoogleProductType,
+            oneTimePurchaseOfferDetails = mockOneTimePurchaseOfferDetails(offerTokenProvided = offerToken),
+            subscriptionOfferDetails = null
+        )
+        val purchasingData = GooglePurchasingData.InAppProduct(
+            productId = productId,
+            productDetails = productDetails,
+            selectedOfferToken = offerToken
+        )
+
+        every {
+            mockClient.launchBillingFlow(eq(mockActivity), any())
+        } answers {
+            billingClientOKResult
         }
 
+        billingClientStateListener!!.onBillingSetupFinished(billingClientOKResult)
+        wrapper.makePurchaseAsync(
+            mockActivity,
+            appUserId,
+            purchasingData,
+            null,
+            null,
+        )
+
+        assertThat(tokenSlot.isCaptured).isTrue
+        assertThat(tokenSlot.captured).isEqualTo(offerToken)
         assertThat(productDetailsSlot.isCaptured).isTrue
         assertThat(productDetailsSlot.captured).isEqualTo(productDetails)
     }
