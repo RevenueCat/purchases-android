@@ -44,7 +44,13 @@ class PaywallWebViewMediaPolicyTest {
                     sizeToContentHeight = false,
                 ),
                 onLoadFailed = {},
-                contextSnapshotProvider = { webViewContextSnapshot(locale = "en-US", darkMode = false) },
+                contextSnapshotProvider = {
+                    webViewContextSnapshot(
+                        customVariables = emptyMap(),
+                        locale = "en-US",
+                        darkMode = false,
+                    )
+                },
             )
             built = configured != null
             configured?.let {

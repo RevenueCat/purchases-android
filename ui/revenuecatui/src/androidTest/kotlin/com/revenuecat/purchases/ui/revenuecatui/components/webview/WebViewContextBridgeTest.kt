@@ -5,6 +5,7 @@ import android.os.SystemClock
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.webkit.WebViewFeature
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assume.assumeTrue
@@ -40,7 +41,13 @@ class WebViewContextBridgeTest {
                     sizeToContentHeight = true,
                 ),
                 onLoadFailed = {},
-                contextSnapshotProvider = { webViewContextSnapshot(locale = "en-US", darkMode = false) },
+                contextSnapshotProvider = {
+                    webViewContextSnapshot(
+                        customVariables = mapOf("org" to CustomVariableValue.String("RevenueCat")),
+                        locale = "en-US",
+                        darkMode = false,
+                    )
+                },
             )
         }
         assumeTrue(configured != null)
@@ -58,6 +65,7 @@ class WebViewContextBridgeTest {
                 """"payload":{"context":{""",
                 """"is_preview":false""",
                 """"locale":"en-US"""",
+                """"custom":{"org":"RevenueCat"}""",
             )
             assertThat(frames).doesNotContain("workflow")
         } finally {
