@@ -45,11 +45,10 @@ internal class PreloaderUiState(
         private set
     var adsAvailable by mutableIntStateOf(0)
         private set
-    var message by mutableStateOf("Preloader not started")
+    var message by mutableStateOf<String?>(null)
 
     init {
         refresh()
-        message = if (started) "Preloader started" else "Preloader not started"
     }
 
     fun refresh() {
@@ -60,7 +59,7 @@ internal class PreloaderUiState(
         adsAvailable = if (started) getNumAdsAvailable() else 0
 
         if (wasStarted != started) {
-            message = if (started) "Preloader started" else "Preloader stopped"
+            message = null
         }
     }
 
@@ -95,7 +94,7 @@ internal class PreloaderUiState(
 
     fun updateAfterStop(stopResult: Boolean) {
         refresh()
-        message = if (stopResult) "Preloader stopped" else "Preloader was not running"
+        message = if (stopResult) null else "Preloader was not running"
     }
 }
 
@@ -138,9 +137,9 @@ internal fun PreloaderPanel(
             BufferSizeSetting(state)
             MetricRow("Ads ready", state.adsAvailable.toString())
             additionalMetrics()
-            if (!state.message.isDefaultPreloaderMessage()) {
+            state.message?.let { message ->
                 Text(
-                    text = state.message,
+                    text = message,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -238,8 +237,4 @@ private fun MetricRow(label: String, value: String) {
         Text(label, style = MaterialTheme.typography.bodyMedium)
         Text(value, style = MaterialTheme.typography.titleMedium)
     }
-}
-
-private fun String.isDefaultPreloaderMessage(): Boolean {
-    return this == "Preloader started" || this == "Preloader not started" || this == "Preloader stopped"
 }
