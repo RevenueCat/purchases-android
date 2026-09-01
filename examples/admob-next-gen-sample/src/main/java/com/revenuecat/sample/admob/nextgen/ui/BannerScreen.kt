@@ -86,6 +86,7 @@ internal fun BannerScreen(activity: Activity, onBack: () -> Unit) {
             }
             LaunchedEffect(mode) {
                 status = "${mode.label} banner view is ready"
+                preloadState.message = null
             }
 
             Text("Preloaded banners are polled first, then registered with the existing AdView.")
