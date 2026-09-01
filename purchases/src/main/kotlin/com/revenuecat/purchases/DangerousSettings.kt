@@ -29,6 +29,8 @@ public class DangerousSettings internal constructor(
      * remote-config-driven host resolution is being validated.
      */
     internal val usesRemoteConfigAPISources: Boolean = false,
+
+    internal val allowTestStoreInReleaseBuild: Boolean = false,
 ) : Parcelable {
     public constructor(autoSyncPurchases: Boolean = true) : this(
         autoSyncPurchases = autoSyncPurchases,
@@ -36,6 +38,7 @@ public class DangerousSettings internal constructor(
         uiPreviewMode = false,
         applyObfuscatedAccountIdToSubscriptionChanges = false,
         usesRemoteConfigAPISources = false,
+        allowTestStoreInReleaseBuild = false,
     )
 
     public companion object {
@@ -51,6 +54,18 @@ public class DangerousSettings internal constructor(
             customEntitlementComputation = false,
             uiPreviewMode = true,
             applyObfuscatedAccountIdToSubscriptionChanges = false,
+        )
+
+        /**
+         * Creates a [DangerousSettings] that allows configuring the SDK with a Test Store API key
+         * in a release (non-debuggable) build, bypassing the safety check that otherwise blocks it.
+         *
+         * For RevenueCat-internal end-to-end testing only. Do not use in production apps.
+         */
+        @InternalRevenueCatAPI
+        @JvmStatic
+        public fun forTestStoreInReleaseBuild(): DangerousSettings = DangerousSettings(
+            allowTestStoreInReleaseBuild = true,
         )
     }
 }

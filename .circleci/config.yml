@@ -826,21 +826,28 @@ jobs:
       - android/start_emulator:
           avd_name: test-e2e-tester
           # Test Store API key for the automated_sdk_tests RevenueCat project.
-          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug -PMAESTRO_TEST_STORE_API_KEY=$MAESTRO_TEST_STORE_API_KEY
+          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug test-apps:e2etests:assembleRelease -PMAESTRO_TEST_STORE_API_KEY=$MAESTRO_TEST_STORE_API_KEY
       - android/restore_gradle_cache
-      - run:
-          name: Install E2E Tester on emulator
-          command: |
-            adb install test-apps/e2etests/build/outputs/apk/debug/e2etests-debug.apk
       - revenuecat/install-maestro
       - run:
-          name: Run Maestro tests
+          # The minified release build exercises the SDK's consumer R8 rules end-to-end.
+          name: Run Maestro tests on minified release build
           command: |
-            maestro test --format junit --output maestro/report.xml maestro/e2e_tests/ maestro/workflows/
+            adb install -r test-apps/e2etests/build/outputs/apk/release/e2etests-release.apk
+            maestro test --exclude-tags debug-only --format junit --output maestro/report.xml maestro/e2e_tests/ maestro/workflows/
+      - run:
+          # Flows tagged debug-only force server errors through configureForE2ETests, which only
+          # exists in the SDK's debug variant, so they run against the debug build.
+          name: Run Maestro debug-only tests
+          command: |
+            adb install -r test-apps/e2etests/build/outputs/apk/debug/e2etests-debug.apk
+            maestro test --include-tags debug-only --format junit --output maestro/debug-report.xml maestro/workflows/
       - store_artifacts:
           path: ~/.maestro/tests/
       - store_test_results:
           path: maestro/report.xml
+      - store_test_results:
+          path: maestro/debug-report.xml
 
   generate-baseline-profiles:
     description: "Generate baseline profiles using Gradle Managed Devices and open a PR"
