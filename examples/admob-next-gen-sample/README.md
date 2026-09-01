@@ -24,7 +24,7 @@ ADMOB_REWARDED_INTERSTITIAL_AD_UNIT_ID=...
 
 Each ad-format screen owns its direct and preloaded examples:
 
-- Banner: callback-based direct loading, preload/poll/register, refresh callbacks, and tracking-safe callback replacement.
+- Banner: callback-based direct loading, preload/poll/register, and banner lifecycle and refresh callbacks.
 - Interstitial and app open: suspending direct loads, preload buffers, and show-time placement overrides.
 - Rewarded and rewarded interstitial: direct/preloaded loading, ordinary reward callbacks, and RevenueCat reward verification.
 - Native: suspending single load, multi-ad `Flow`, preloading, and result-specific handling.

@@ -54,7 +54,7 @@ fun AdMobNextGenSample(
     }
 
     when (selectedScreen) {
-        SampleScreen.BANNER -> PlaceholderAdScreen(selectedScreen.title, onBack)
+        SampleScreen.BANNER -> BannerScreen(activity, onBack)
         SampleScreen.INTERSTITIAL -> PlaceholderAdScreen(selectedScreen.title, onBack)
         SampleScreen.APP_OPEN -> PlaceholderAdScreen(selectedScreen.title, onBack)
         SampleScreen.REWARDED -> PlaceholderAdScreen(selectedScreen.title, onBack)
