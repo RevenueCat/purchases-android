@@ -12,7 +12,7 @@ fun CheckpointGateResult.summary(): String {
     val noWorkflowReason = noWorkflowReason
     return when {
         entitlements.isNotEmpty() ->
-            "Obtained ${entitlements.joinToString { "${it.identifier} (${it.method})" }}."
+            "Obtained ${entitlements.joinToString { it.identifier }}."
         error != null && noWorkflowReason != null -> "Checkpoint failed: ${error.message}"
         error != null -> "Workflow finished with an error: ${error.message}"
         noWorkflowReason != null -> "No workflow served ($noWorkflowReason)."

@@ -34,7 +34,6 @@ internal fun CheckpointResult.toGateResult(activeEntitlementsBefore: Set<String>
     when (this) {
         is CheckpointResult.NoAction -> CheckpointGateResult(
             entitlements = emptyList(),
-            virtualCurrencies = emptyList(),
             noWorkflowReason = CheckpointGateResult.NoWorkflowReason(reason.value),
             error = null,
         )
@@ -47,9 +46,9 @@ internal fun CheckpointResult.toGateResult(activeEntitlementsBefore: Set<String>
 private fun CheckpointPaywallOutcome.toGateResult(activeEntitlementsBefore: Set<String>?): CheckpointGateResult =
     when (this) {
         is CheckpointPaywallOutcome.Purchased ->
-            workflowGateResult(entitlementGrants(customerInfo, activeEntitlementsBefore, GrantMethod.PURCHASED))
+            workflowGateResult(entitlementGrants(customerInfo, activeEntitlementsBefore))
         is CheckpointPaywallOutcome.Restored ->
-            workflowGateResult(entitlementGrants(customerInfo, activeEntitlementsBefore, GrantMethod.RESTORED))
+            workflowGateResult(entitlementGrants(customerInfo, activeEntitlementsBefore))
         is CheckpointPaywallOutcome.Error -> workflowGateResult(error = error)
         // Dismissed, WebCheckoutOpened, and any future outcome without an in-app grant signal.
         else -> workflowGateResult()
@@ -58,25 +57,22 @@ private fun CheckpointPaywallOutcome.toGateResult(activeEntitlementsBefore: Set<
 private fun entitlementGrants(
     customerInfo: CustomerInfo,
     activeEntitlementsBefore: Set<String>?,
-    method: GrantMethod,
 ): List<EntitlementGrant> = customerInfo.entitlements.active.keys
     .filter { activeEntitlementsBefore == null || it !in activeEntitlementsBefore }
     .sorted()
-    .map { EntitlementGrant(it, method) }
+    .map { EntitlementGrant(it) }
 
 private fun workflowGateResult(
     entitlements: List<EntitlementGrant> = emptyList(),
     error: PurchasesError? = null,
 ): CheckpointGateResult = CheckpointGateResult(
     entitlements = entitlements,
-    virtualCurrencies = emptyList(),
     noWorkflowReason = null,
     error = error,
 )
 
 internal fun errorGateResult(error: PurchasesError): CheckpointGateResult = CheckpointGateResult(
     entitlements = emptyList(),
-    virtualCurrencies = emptyList(),
     noWorkflowReason = CheckpointGateResult.NoWorkflowReason.ERROR,
     error = error,
 )

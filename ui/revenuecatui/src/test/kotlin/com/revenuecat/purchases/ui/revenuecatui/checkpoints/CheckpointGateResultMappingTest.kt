@@ -35,7 +35,6 @@ class CheckpointGateResultMappingTest {
 
             assertThat(gateResult.noWorkflowReason).isEqualTo(expected)
             assertThat(gateResult.entitlements).isEmpty()
-            assertThat(gateResult.virtualCurrencies).isEmpty()
             assertThat(gateResult.error).isNull()
         }
     }
@@ -46,7 +45,7 @@ class CheckpointGateResultMappingTest {
 
         val gateResult = CheckpointResult.PaywallPresented(outcome).toGateResult(setOf("plus"))
 
-        assertThat(gateResult.entitlements).containsExactly(EntitlementGrant("pro", GrantMethod.PURCHASED))
+        assertThat(gateResult.entitlements).containsExactly(EntitlementGrant("pro"))
         assertThat(gateResult.noWorkflowReason).isNull()
         assertThat(gateResult.error).isNull()
     }
@@ -58,18 +57,18 @@ class CheckpointGateResultMappingTest {
         val gateResult = CheckpointResult.PaywallPresented(outcome).toGateResult(activeEntitlementsBefore = null)
 
         assertThat(gateResult.entitlements).containsExactly(
-            EntitlementGrant("extra", GrantMethod.PURCHASED),
-            EntitlementGrant("pro", GrantMethod.PURCHASED),
+            EntitlementGrant("extra"),
+            EntitlementGrant("pro"),
         )
     }
 
     @Test
-    fun `a restore grants with the restored method`() {
+    fun `a restore grants the entitlements that were not active before`() {
         val outcome = CheckpointPaywallOutcome.Restored(customerInfoWithActive("pro"))
 
         val gateResult = CheckpointResult.PaywallPresented(outcome).toGateResult(emptySet())
 
-        assertThat(gateResult.entitlements).containsExactly(EntitlementGrant("pro", GrantMethod.RESTORED))
+        assertThat(gateResult.entitlements).containsExactly(EntitlementGrant("pro"))
     }
 
     @Test

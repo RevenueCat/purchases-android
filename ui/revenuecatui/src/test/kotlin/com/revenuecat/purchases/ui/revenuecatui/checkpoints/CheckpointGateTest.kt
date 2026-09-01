@@ -104,7 +104,7 @@ class CheckpointGateTest {
         finishPaywall(CheckpointPaywallOutcome.Purchased(customerInfoWithActive("plus", "pro"), mockk()))
 
         assertThat(gateResults.single().entitlements)
-            .containsExactly(EntitlementGrant("pro", GrantMethod.PURCHASED))
+            .containsExactly(EntitlementGrant("pro"))
         assertThat(gateResults.single().noWorkflowReason).isNull()
     }
 
@@ -120,7 +120,7 @@ class CheckpointGateTest {
             finishPaywall(CheckpointPaywallOutcome.Purchased(customerInfoWithActive("pro"), mockk()))
 
             assertThat(gateResults.single().entitlements)
-                .containsExactly(EntitlementGrant("pro", GrantMethod.PURCHASED))
+                .containsExactly(EntitlementGrant("pro"))
             assertThat(gateResults.single().noWorkflowReason).isNull()
             assertThat(gateResults.single().error).isNull()
         }
@@ -137,7 +137,7 @@ class CheckpointGateTest {
             finishPaywall(CheckpointPaywallOutcome.Restored(customerInfoWithActive("pro")))
 
             assertThat(gateResults.single().entitlements)
-                .containsExactly(EntitlementGrant("pro", GrantMethod.RESTORED))
+                .containsExactly(EntitlementGrant("pro"))
         }
 
     @Test

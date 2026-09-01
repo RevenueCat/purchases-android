@@ -97,7 +97,7 @@ internal class CheckpointsViewModelImpl(
     @OptIn(InternalRevenueCatAPI::class)
     private fun CheckpointGateResult.describeWorkflow(): String = when {
         entitlements.isNotEmpty() ->
-            "Obtained ${entitlements.joinToString { "${it.identifier} (${it.method})" }}"
+            "Obtained ${entitlements.joinToString { it.identifier }}"
         error != null -> "Workflow error: ${error?.message}"
         else -> "Nothing obtained"
     }

@@ -6,33 +6,18 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointGateResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.EntitlementGrant
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.GrantMethod
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.VirtualCurrencyGrant
 
 @Suppress("unused", "UNUSED_VARIABLE")
 private class CheckpointGateResultAPI {
 
     fun checkGateResult(gateResult: CheckpointGateResult) {
         val entitlements: List<EntitlementGrant> = gateResult.entitlements
-        val virtualCurrencies: List<VirtualCurrencyGrant> = gateResult.virtualCurrencies
         val noWorkflowReason: CheckpointGateResult.NoWorkflowReason? = gateResult.noWorkflowReason
         val error: PurchasesError? = gateResult.error
     }
 
     fun checkEntitlementGrant(grant: EntitlementGrant) {
         val identifier: String = grant.identifier
-        val method: GrantMethod = grant.method
-    }
-
-    fun checkVirtualCurrencyGrant(grant: VirtualCurrencyGrant) {
-        val code: String = grant.code
-        val amount: Int = grant.amount
-        val method: GrantMethod = grant.method
-    }
-
-    fun checkGrantMethod() {
-        val purchased: GrantMethod = GrantMethod.PURCHASED
-        val restored: GrantMethod = GrantMethod.RESTORED
     }
 
     fun checkNoWorkflowReason() {

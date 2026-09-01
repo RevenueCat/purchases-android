@@ -10,7 +10,7 @@ import dev.drewhamilton.poko.Poko
  *
  * Invariants:
  * - [noWorkflowReason] is null exactly when a workflow was presented.
- * - [entitlements] and [virtualCurrencies] can only be non-empty when a workflow was presented.
+ * - [entitlements] can only be non-empty when a workflow was presented.
  * - [error] can accompany a null [noWorkflowReason]: the workflow was presented but something failed inside it,
  *   like a purchase.
  */
@@ -19,8 +19,6 @@ import dev.drewhamilton.poko.Poko
 public class CheckpointGateResult internal constructor(
     /** The entitlements the user obtained during this checkpoint. Empty when they obtained none. */
     public val entitlements: List<EntitlementGrant>,
-    /** The virtual currencies the user obtained during this checkpoint. Empty when they obtained none. */
-    public val virtualCurrencies: List<VirtualCurrencyGrant>,
     /** Why no workflow was presented for this checkpoint, or null when one was. */
     public val noWorkflowReason: NoWorkflowReason?,
     /**
@@ -77,38 +75,4 @@ public class CheckpointGateResult internal constructor(
 public class EntitlementGrant internal constructor(
     /** The entitlement identifier, as configured in the RevenueCat dashboard. */
     public val identifier: String,
-    /** How the user obtained the entitlement. */
-    public val method: GrantMethod,
 )
-
-/**
- * A virtual currency amount the user obtained during a checkpoint.
- */
-@InternalRevenueCatAPI
-@Poko
-public class VirtualCurrencyGrant internal constructor(
-    /** The virtual currency code, as configured in the RevenueCat dashboard. */
-    public val code: String,
-    /** The amount of the virtual currency the user obtained. */
-    public val amount: Int,
-    /** How the user obtained the virtual currency. */
-    public val method: GrantMethod,
-)
-
-/** How the user obtained an entitlement or virtual currency during a checkpoint. */
-@InternalRevenueCatAPI
-@Poko
-public class GrantMethod internal constructor(internal val value: String) {
-
-    override fun toString(): String = value
-
-    public companion object {
-        /** The user purchased a product that grants it. */
-        @JvmField
-        public val PURCHASED: GrantMethod = GrantMethod("PURCHASED")
-
-        /** The user restored a purchase that grants it. */
-        @JvmField
-        public val RESTORED: GrantMethod = GrantMethod("RESTORED")
-    }
-}

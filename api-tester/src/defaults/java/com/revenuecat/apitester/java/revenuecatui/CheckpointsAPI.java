@@ -10,8 +10,6 @@ import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointGateResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointsExtensionsKt;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.EntitlementGrant;
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.GrantMethod;
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.VirtualCurrencyGrant;
 
 import java.util.List;
 
@@ -22,7 +20,6 @@ final class CheckpointsAPI {
     static void check(Purchases purchases, CheckpointParams params) {
         CheckpointGateCallback callback = (CheckpointGateResult gateResult) -> {
             List<EntitlementGrant> entitlements = gateResult.getEntitlements();
-            List<VirtualCurrencyGrant> virtualCurrencies = gateResult.getVirtualCurrencies();
             CheckpointGateResult.NoWorkflowReason noWorkflowReason = gateResult.getNoWorkflowReason();
             PurchasesError error = gateResult.getError();
         };
@@ -31,14 +28,8 @@ final class CheckpointsAPI {
     }
 
     @OptIn(markerClass = InternalRevenueCatAPI.class)
-    static void checkGrants(EntitlementGrant entitlementGrant, VirtualCurrencyGrant virtualCurrencyGrant) {
+    static void checkGrants(EntitlementGrant entitlementGrant) {
         String identifier = entitlementGrant.getIdentifier();
-        GrantMethod entitlementMethod = entitlementGrant.getMethod();
-        String code = virtualCurrencyGrant.getCode();
-        int amount = virtualCurrencyGrant.getAmount();
-        GrantMethod virtualCurrencyMethod = virtualCurrencyGrant.getMethod();
-        GrantMethod purchased = GrantMethod.PURCHASED;
-        GrantMethod restored = GrantMethod.RESTORED;
     }
 
     @OptIn(markerClass = InternalRevenueCatAPI.class)
