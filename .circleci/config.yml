@@ -57,14 +57,6 @@ parameters:
     default: alpha
 
 commands:
-  android-dependencies:
-    steps:
-      - android/restore_gradle_cache
-      - run:
-          name: Download Dependencies
-          command: ./gradlew androidDependencies
-      - android/save_gradle_cache
-
   prepare-signing-key:
     steps:
       - run:
@@ -145,7 +137,7 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/accept_licenses
-      - android-dependencies
+      - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
           name: Build sample app
@@ -162,7 +154,7 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/accept_licenses
-      - android-dependencies
+      - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
           name: Build sample app
@@ -179,7 +171,7 @@ jobs:
       - revenuecat/install-gem-unix-dependencies:
           cache-version: v1
       - android/accept_licenses
-      - android-dependencies
+      - android/restore_gradle_cache
       - android/restore_build_cache
       - run:
           name: Build sample app
@@ -353,7 +345,7 @@ jobs:
           command: sudo pip install awscli
       - run:
           name: Deploy to S3
-          command: aws s3 sync ~/project/docs/10.20.0-SNAPSHOT s3://purchases-docs/android/10.20.0-SNAPSHOT --delete
+          command: aws s3 sync ~/project/docs/11.0.0-SNAPSHOT s3://purchases-docs/android/11.0.0-SNAPSHOT --delete
       - run:
           name: Update index.html
           command: aws s3 cp ~/project/docs/index.html s3://purchases-docs/android/index.html
@@ -975,7 +967,10 @@ workflows:
       and:
         - not:
             equal: [ scheduled_pipeline, << pipeline.trigger_source >> ]
-        - equal: [ "main", << pipeline.git.branch >> ]
+        # TODO: drop the 11.0-dev clause before merging 11.0-dev into main.
+        - or:
+            - equal: [ "main", << pipeline.git.branch >> ]
+            - equal: [ "11.0-dev", << pipeline.git.branch >> ]
         - equal: [ "default", << pipeline.parameters.action >> ]
     jobs:
       - deploy-snapshot:
