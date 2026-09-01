@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ads.events.types
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import dev.drewhamilton.poko.Poko
 
 /**
@@ -12,7 +11,6 @@ import dev.drewhamilton.poko.Poko
  * @property adUnitId The ad unit ID.
  * @property mediatorErrorCode The mediator error code.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @Poko
 public class AdFailedToLoadData(
     public val mediatorName: AdMediatorName,

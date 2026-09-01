@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogHandler
+import com.revenuecat.purchases.assertErrorLog
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.remoteconfig.ConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
@@ -36,7 +37,7 @@ internal class WorkflowsConfigProviderTest {
 
     @Before
     fun setUp() {
-        // Default: endpoint live. Tests exercising the 4xx kill switch override this to true.
+        // Default: remote config enabled. Tests exercising the disabled manager override this to true.
         every { manager.isDisabled } returns false
         currentLogHandler = object : LogHandler {
             override fun v(tag: String, msg: String) {}
@@ -316,41 +317,28 @@ internal class WorkflowsConfigProviderTest {
     }
 
     @Test
-    fun `resolveWorkflow returns Disabled when the topic cannot be read and remote config is disabled`() = runTest {
+    fun `resolveWorkflow returns Unavailable with an error log when the manager is disabled`() {
         every { manager.configGeneration } returns 0
         coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns null
-        // A 4xx kill switch: the offering's components were skipped, so the caller can reload to recover them.
         every { manager.isDisabled } returns true
 
-        assertThat(provider.resolveWorkflow(CURRENT_OFFERING)).isEqualTo(WorkflowResolution.Disabled)
+        assertErrorLog(
+            "Workflows are unavailable: remote config is disabled for this SDK configuration.",
+        ) {
+            runTest {
+                assertThat(provider.resolveWorkflow(CURRENT_OFFERING)).isEqualTo(WorkflowResolution.Unavailable)
+            }
+        }
+        // The topic is never read: the gate short-circuits before any config access.
+        coVerify(exactly = 0) { manager.topic(any()) }
     }
 
     @Test
-    fun `resolveWorkflow returns Disabled from a warm cache when remote config is disabled`() = runTest {
-        // Race: on a 4xx kill switch the disabled flag is set before the workflow cache is invalidated, so a
-        // concurrent resolution can still see a warm cache. The warm-cache fast path must honor isDisabled and
-        // yield Disabled (→ offerings reload) instead of the stale Found/NoWorkflow, or the components skipped
-        // while workflows were enabled are never recovered.
-        stubTopic()
-        stubWorkflowBody(WF_PREFETCH)
-        stubWorkflowBody(WF_CURRENT)
-        provider.warm(generation = 0)
-        assertThat(provider.isWarmForCurrentOffering()).isTrue
-
-        every { manager.isDisabled } returns true
-
-        // CURRENT_OFFERING maps to WF_CURRENT in the warm cache, so the fast path would return Found without the
-        // isDisabled guard; OTHER_OFFERING is unmapped and would return NoWorkflow. Both must yield Disabled.
-        assertThat(provider.resolveWorkflow(CURRENT_OFFERING)).isEqualTo(WorkflowResolution.Disabled)
-        assertThat(provider.resolveWorkflow("unmapped_off")).isEqualTo(WorkflowResolution.Disabled)
-    }
-
-    @Test
-    fun `resolveWorkflow returns Unavailable when the topic cannot be read and remote config is not disabled`() =
+    fun `resolveWorkflow returns Unavailable when the topic cannot be read`() =
         runTest {
             every { manager.configGeneration } returns 0
             coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns null
-            // A transient failure: reloading would recover nothing, so the caller surfaces an error.
+            // A transient failure: the caller falls back to the offering's default paywall.
             every { manager.isDisabled } returns false
 
             assertThat(provider.resolveWorkflow(CURRENT_OFFERING)).isEqualTo(WorkflowResolution.Unavailable)
@@ -376,12 +364,12 @@ internal class WorkflowsConfigProviderTest {
     }
 
     @Test
-    fun `warm notifies onCurrentWorkflowLoaded with only the current offering's workflow`() = runTest {
+    fun `warm does not announce a workflow outside the prewarm set`() = runTest {
         var announcedId: String? = null
         val providerWithListener = WorkflowsConfigProvider(
             manager,
             currentOfferingIdProvider = { currentOfferingId },
-            onCurrentWorkflowLoaded = { workflowId, _ -> announcedId = workflowId },
+            onWorkflowLoaded = { workflowId, _ -> announcedId = workflowId },
             scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
         stubTopic()
@@ -390,19 +378,57 @@ internal class WorkflowsConfigProviderTest {
 
         providerWithListener.warm(generation = 0)
 
-        // Mirrors the offerings path: only the current offering's workflow is announced for asset prewarming.
-        // WF_PREFETCH's bytes are cached too, but a prefetch-only workflow (not the current offering's) is not
-        // the paywall about to be shown, so its assets are not warmed.
+        // WF_PREFETCH's bytes are cached, but it sits behind no offering this customer could be served.
         assertThat(announcedId).isEqualTo(WF_CURRENT)
     }
 
+    // A project using placements gets one current offering per placement, and each can have its own workflow.
     @Test
-    fun `warm notifies onCurrentWorkflowLoaded even when the workflow body was not byte-warmed`() = runTest {
+    fun `warm announces the workflow behind every offering in the prewarm set`() = runTest {
+        val announced = mutableListOf<String>()
+        val providerWithListener = WorkflowsConfigProvider(
+            manager,
+            currentOfferingIdProvider = { currentOfferingId },
+            prewarmOfferingIdsProvider = { setOf(CURRENT_OFFERING, OTHER_OFFERING) },
+            onWorkflowLoaded = { workflowId, _ -> announced += workflowId },
+            scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+        )
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        stubWorkflowBody(WF_CURRENT)
+        stubWorkflowBody(WF_OTHER)
+
+        providerWithListener.warm(generation = 0)
+
+        assertThat(announced).containsExactlyInAnyOrder(WF_CURRENT, WF_OTHER)
+    }
+
+    @Test
+    fun `warm announces each workflow once when the current offering is also in the prewarm set`() = runTest {
+        val announced = mutableListOf<String>()
+        val providerWithListener = WorkflowsConfigProvider(
+            manager,
+            currentOfferingIdProvider = { currentOfferingId },
+            prewarmOfferingIdsProvider = { setOf(CURRENT_OFFERING) },
+            onWorkflowLoaded = { workflowId, _ -> announced += workflowId },
+            scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
+        )
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        stubWorkflowBody(WF_CURRENT)
+
+        providerWithListener.warm(generation = 0)
+
+        assertThat(announced).containsExactly(WF_CURRENT)
+    }
+
+    @Test
+    fun `warm notifies onWorkflowLoaded even when the workflow body was not byte-warmed`() = runTest {
         var announcedId: String? = null
         val providerWithListener = WorkflowsConfigProvider(
             manager,
             currentOfferingIdProvider = { currentOfferingId },
-            onCurrentWorkflowLoaded = { workflowId, _ -> announcedId = workflowId },
+            onWorkflowLoaded = { workflowId, _ -> announcedId = workflowId },
             scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
         stubTopic()
@@ -422,13 +448,13 @@ internal class WorkflowsConfigProviderTest {
 
     // Cold start: warm() runs before the offerings response, so it has no current offering to announce.
     @Test
-    fun `prewarmCurrentOfferingAssets announces once the offering is known after a warm that had none`() = runTest {
+    fun `prewarmOfferingAssets announces once the offering is known after a warm that had none`() = runTest {
         var announcedId: String? = null
         currentOfferingId = null
         val providerWithListener = WorkflowsConfigProvider(
             manager,
             currentOfferingIdProvider = { currentOfferingId },
-            onCurrentWorkflowLoaded = { workflowId, _ -> announcedId = workflowId },
+            onWorkflowLoaded = { workflowId, _ -> announcedId = workflowId },
             scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
         stubTopic()
@@ -441,34 +467,34 @@ internal class WorkflowsConfigProviderTest {
         assertThat(providerWithListener.isWarmForCurrentOffering()).isTrue
 
         currentOfferingId = CURRENT_OFFERING
-        providerWithListener.prewarmCurrentOfferingAssets()
+        providerWithListener.prewarmOfferingAssets()
 
         assertThat(announcedId).isEqualTo(WF_CURRENT)
     }
 
     @Test
-    fun `prewarmCurrentOfferingAssets does not announce when nothing has been warmed yet`() = runTest {
+    fun `prewarmOfferingAssets does not announce when nothing has been warmed yet`() = runTest {
         var announced = false
         val providerWithListener = WorkflowsConfigProvider(
             manager,
             currentOfferingIdProvider = { currentOfferingId },
-            onCurrentWorkflowLoaded = { _, _ -> announced = true },
+            onWorkflowLoaded = { _, _ -> announced = true },
             scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
 
-        providerWithListener.prewarmCurrentOfferingAssets()
+        providerWithListener.prewarmOfferingAssets()
 
         assertThat(announced).isFalse
     }
 
     @Test
-    fun `warm does not notify onCurrentWorkflowLoaded when the current offering has no workflow`() = runTest {
+    fun `warm does not notify onWorkflowLoaded when the current offering has no workflow`() = runTest {
         var announced = false
         currentOfferingId = "offering_without_workflow"
         val providerWithListener = WorkflowsConfigProvider(
             manager,
             currentOfferingIdProvider = { currentOfferingId },
-            onCurrentWorkflowLoaded = { _, _ -> announced = true },
+            onWorkflowLoaded = { _, _ -> announced = true },
             scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler)),
         )
         stubTopic()

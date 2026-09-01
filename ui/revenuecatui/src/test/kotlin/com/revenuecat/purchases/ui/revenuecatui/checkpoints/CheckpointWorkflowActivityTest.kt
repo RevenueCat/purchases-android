@@ -97,7 +97,7 @@ class CheckpointWorkflowActivityTest {
 
         launchActivity<CheckpointWorkflowActivity>(intentFor("call-id-from-a-previous-process"))
 
-        assertThat(mockPurchases.checkpointsManager.resolution(liveCallId)).isNotNull
+        assertThat(mockPurchases.checkpointsManager.presentation(liveCallId)).isNotNull
     }
 
     private fun intentFor(callId: String) = Intent(
@@ -114,7 +114,7 @@ class CheckpointWorkflowActivityTest {
         }
         every { mockPurchases.currentActivity } returns launchingActivity
         coEvery { mockPurchases.resolveCheckpoint(any(), any()) } returns
-            CheckpointResolution.Workflow(mockk(), mockk(), mockk())
+            CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk())
 
         CoroutineScope(dispatcher).launch {
             mockPurchases.checkpointsManager.checkpoint(mockPurchases, "test_checkpoint", null)

@@ -41,15 +41,17 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
         // when the pending call no longer exists.
         val manager = if (Purchases.isConfigured) Purchases.sharedInstance.checkpointsManager else null
         this.manager = manager
-        val resolution = id?.let { manager?.resolution(it) }
-        if (id == null || manager == null || resolution == null) {
+        val presentation = id?.let { manager?.presentation(it) }
+        if (id == null || manager == null || presentation == null) {
             Logger.w("Checkpoint call '$id' no longer exists. Closing the checkpoint workflow.")
             finish()
             return
         }
         manager.onPresentationStarted(id, this)
+        val resolution = presentation.resolution
         val options = PaywallOptions.Builder(dismissRequest = ::finish)
             .injectedWorkflow(resolution.workflow, resolution.offering, resolution.uiConfig)
+            .setCustomVariables(presentation.customVariables)
             .setListener(outcomeListener)
             .build()
         setContent {
@@ -66,7 +68,7 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
     // them.
     private val outcomeListener = object : PaywallListener {
         override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
-            recordOutcome(CheckpointPaywallOutcome.Purchased(customerInfo))
+            recordOutcome(CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
         }
 
         override fun onRestoreCompleted(customerInfo: CustomerInfo) {
@@ -81,6 +83,10 @@ internal class CheckpointWorkflowActivity : ComponentActivity() {
 
         override fun onRestoreError(error: PurchasesError) {
             recordOutcome(CheckpointPaywallOutcome.Error(error))
+        }
+
+        override fun onWebCheckoutOpened() {
+            recordOutcome(CheckpointPaywallOutcome.WebCheckoutOpened)
         }
     }
 

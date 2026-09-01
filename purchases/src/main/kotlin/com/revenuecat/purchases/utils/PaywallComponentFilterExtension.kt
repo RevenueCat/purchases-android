@@ -22,7 +22,6 @@ import com.revenuecat.purchases.paywalls.components.TimelineComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.WebViewComponent
 
-/** Returns this component and every descendant, breadth-first. */
 @OptIn(InternalRevenueCatAPI::class)
 internal fun PaywallComponent.flatten(): List<PaywallComponent> = filter { true }
 

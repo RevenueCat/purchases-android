@@ -3,6 +3,7 @@ package com.revenuecat.purchases.rules.operators
 import com.revenuecat.purchases.rules.Evaluator
 import com.revenuecat.purchases.rules.RulesEngine
 import com.revenuecat.purchases.rules.RulesEngine.EvaluationException
+import com.revenuecat.purchases.rules.Scope
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.rules.jsString
 import com.revenuecat.purchases.rules.jsToNumber
@@ -30,17 +31,44 @@ internal object AccessorOperators {
      * Variable lookup uses **strict JSON Logic dot-path semantics on
      * nested objects**. There is no flat-key fallback (i.e. we do not also
      * try the literal dotted string as a single key in the top-level map).
+     *
+     * A path that does not resolve and carries no default throws
+     * [RulesEngine.EvaluationException.UnresolvedVariable] rather than
+     * degrading to [Value.Null]. A key that *is* present but holds an explicit
+     * null is a known value, not a missing one, and resolves normally.
+     *
+     * @param vars The JSON Logic evaluation scope — [Scope.current] is the
+     *  data `var` reads from; path/default args evaluate against
+     *  [Scope.current] as well.
+     */
+    fun opVar(args: Value, vars: Scope): Value =
+        resolveVar(
+            args = args,
+            lookup = { lookupInScope(vars, it) },
+            vars = vars,
+            operatorName = "var",
+        )
+
+    /**
+     * Shared lookup for `var` and `rc.rootVar`. Path and default args
+     * evaluate against [Scope.current]; [lookup] performs the final
+     * resolution, which differs per operator — `var` also sees `rc.let`
+     * bindings, while `rc.rootVar` reads the root and nothing else.
      */
     @Suppress("ReturnCount")
-    fun opVar(args: Value, vars: Value): Value {
-        val (path, default) = resolveVarArgs(args, vars)
-        val found = lookupVar(vars, path)
+    fun resolveVar(
+        args: Value,
+        lookup: (String) -> Value?,
+        vars: Scope,
+        operatorName: String,
+    ): Value {
+        val (path, default) = resolveVarArgs(args, vars, operatorName)
+        val found = lookup(path)
         if (found != null) return found
         // json-logic-js coerces an `undefined` default to `null`.
         if (default is Value.Undefined) return Value.Null
         if (default != null) return default
-        RulesEngine.logger.warn("missing variable: $path")
-        return Value.Null
+        throw RulesEngine.EvaluationException.UnresolvedVariable(path)
     }
 
     /**
@@ -61,7 +89,7 @@ internal object AccessorOperators {
      *   are unpacked as the key list — this is how
      *   `{"missing": {"merge": [["a"], ["b"]]}}` is meant to behave.
      */
-    fun opMissing(args: Value, vars: Value): Value {
+    fun opMissing(args: Value, vars: Scope): Value {
         val evaluatedArgs: List<Value> = when (args) {
             is Value.ArrayValue -> args.items.map { Evaluator.evaluateValue(it, vars) }
             // Singleton shorthand: `{"missing": "a"}` ≡ `{"missing": ["a"]}`.
@@ -74,7 +102,7 @@ internal object AccessorOperators {
         val missing = mutableListOf<Value>()
         for (key in keys) {
             val path = keyAsPath(key) ?: continue
-            if (isMissing(varLookup(vars, path))) {
+            if (isMissing(lookupInScope(vars, path) ?: Value.Null)) {
                 missing += Value.StringValue(path)
             }
         }
@@ -89,7 +117,7 @@ internal object AccessorOperators {
      * Used to express "any 2 of these 5 fields must be present" style
      * requirements.
      */
-    fun opMissingSome(args: Value, vars: Value): Value {
+    fun opMissingSome(args: Value, vars: Scope): Value {
         val evaluated = Operators.evalArgs(args, vars)
         if (evaluated.size != 2) {
             throw EvaluationException.TypeMismatch(
@@ -168,21 +196,21 @@ internal object AccessorOperators {
      * resolve to a dynamic path string.
      *
      */
-    private fun resolveVarArgs(args: Value, vars: Value): Pair<String, Value?> {
+    private fun resolveVarArgs(args: Value, vars: Scope, operatorName: String): Pair<String, Value?> {
         if (args is Value.ArrayValue) {
             val evaluated = args.items.map { Evaluator.evaluateValue(it, vars) }
-            return parseVarArrayArgs(evaluated)
+            return parseVarArrayArgs(evaluated, operatorName)
         }
         val evaluated = Evaluator.evaluateValue(args, vars)
         return pathSegment(evaluated) to null
     }
 
-    private fun parseVarArrayArgs(items: List<Value>): Pair<String, Value?> {
+    private fun parseVarArrayArgs(items: List<Value>, operatorName: String): Pair<String, Value?> {
         val path = pathSegment(items.firstOrNull())
         val default = if (items.size >= 2) items[1] else null
         if (items.size > 2) {
             RulesEngine.logger.warn(
-                "var: ignoring ${items.size - 2} extra arg(s); expected [path] or [path, default]",
+                "$operatorName: ignoring ${items.size - 2} extra arg(s); expected [path] or [path, default]",
             )
         }
         return path to default
@@ -212,21 +240,34 @@ internal object AccessorOperators {
     }
 
     /**
+     * The lookup `var` and `missing` share: the active data first, then any
+     * names an enclosing `rc.let` bound. Data wins, so a bound name can never
+     * mask a field the scope actually has, and a predicate with no `rc.let`
+     * around it resolves exactly as it did before bindings existed.
+     *
+     * The first path segment decides which of the two owns the whole lookup.
+     * Once the data has that segment, a missing descendant stays missing
+     * instead of being answered by a binding of the same name, which would
+     * otherwise pull a value out of an unrelated object.
+     */
+    @Suppress("ReturnCount")
+    fun lookupInScope(vars: Scope, path: String): Value? {
+        val found = lookupVar(vars.current, path)
+        if (found != null) return found
+        if (vars.bindings.isEmpty() || path.isEmpty()) return null
+        if (lookupVar(vars.current, path.substringBefore('.')) != null) return null
+        return lookupPath(Value.ObjectValue(vars.bindings), path)
+    }
+
+    /**
      * Resolve [path] the way `var` does. Empty path returns the entire
      * data scope; a resolving path returns its value (including explicit
      * [Value.Null]); a non-resolving path returns `null`.
      */
-    private fun lookupVar(vars: Value, path: String): Value? {
+    fun lookupVar(vars: Value, path: String): Value? {
         if (path.isEmpty()) return vars
         return lookupPath(vars, path)
     }
-
-    /**
-     * Like [lookupVar], but maps a non-resolving path to [Value.Null]
-     * instead of `null` — the shape `missing` needs.
-     */
-    private fun varLookup(vars: Value, path: String): Value =
-        lookupVar(vars, path) ?: Value.Null
 
     /**
      * Mirrors `String(path).split(".")` in json-logic-js — preserves empty

@@ -13,6 +13,7 @@ import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.emptyUiConfig
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -22,7 +23,9 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.uiConfigWithFonts
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
-import com.revenuecat.purchases.utils.PaywallComponentsImagePreDownloader
+import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
+import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.utils.collectAssets
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -40,7 +43,7 @@ import java.net.URL
 class WorkflowAssetPrewarmerTest {
 
     private val mockUiConfigProvider: UiConfigProvider = mockk()
-    private val imagePreDownloader: PaywallComponentsImagePreDownloader = mockk(relaxed = true)
+    private val assetWarming: PaywallAssetWarming = mockk(relaxed = true)
     private val fontPreDownloader: OfferingFontPreDownloader = mockk(relaxed = true)
     private val uiConfig = emptyUiConfig()
     private lateinit var prewarmer: WorkflowAssetPrewarmer
@@ -52,17 +55,9 @@ class WorkflowAssetPrewarmerTest {
     fun setUp() {
         currentLogHandler = NoOpLogHandler
         coEvery { mockUiConfigProvider.getUiConfig() } returns uiConfig
-        // canUsePaywallUI is false in this module's tests (RevenueCatUI is not on the classpath), so the
-        // walk has to be enabled explicitly.
-        prewarmer = prewarmer(shouldCollectAssets = true)
+        every { assetWarming.isAvailable } returns true
+        prewarmer = WorkflowAssetPrewarmer(mockUiConfigProvider, assetWarming, fontPreDownloader)
     }
-
-    private fun prewarmer(shouldCollectAssets: Boolean) = WorkflowAssetPrewarmer(
-        uiConfigProvider = mockUiConfigProvider,
-        paywallComponentsImagePreDownloader = imagePreDownloader,
-        offeringFontPreDownloader = fontPreDownloader,
-        shouldCollectAssets = shouldCollectAssets,
-    )
 
     @After
     fun tearDown() {
@@ -71,16 +66,14 @@ class WorkflowAssetPrewarmerTest {
 
     // region render path (preDownloadWorkflowAssets)
 
-    // The walk decodes every screen's component tree. Without the paywalls SDK there is nothing to warm
-    // into, so doing it anyway is pure cost on the workflow load path.
     @Test
     fun `preDownloadWorkflowAssets skips the component walk but still downloads fonts when disabled`() {
-        val screenConfig = emptyComponentsConfig()
-        val workflow = createWorkflow("wf_1", screens = mapOf("screen_1" to createScreen(screenConfig)))
+        every { assetWarming.isAvailable } returns false
+        val workflow = createWorkflow("wf_1", screens = mapOf("screen_1" to createScreen(emptyComponentsConfig())))
 
-        prewarmer(shouldCollectAssets = false).preDownloadWorkflowAssets(workflow, uiConfig)
+        prewarmer.preDownloadWorkflowAssets(workflow, uiConfig)
 
-        verify(exactly = 0) { imagePreDownloader.preDownloadImages(any()) }
+        verify(exactly = 0) { assetWarming.warmImages(any()) }
         verify(exactly = 1) { fontPreDownloader.preDownloadFontsIfNeeded(uiConfig.app.fonts.values) }
     }
 
@@ -97,10 +90,76 @@ class WorkflowAssetPrewarmerTest {
 
         val fontsSlot = slot<Collection<UiConfig.AppConfig.FontsConfig>>()
         verify(exactly = 1) {
-            imagePreDownloader.preDownloadImages(screenConfig.collectAssets())
+            assetWarming.warmImages(screenConfig.collectAssets().imageUris)
             fontPreDownloader.preDownloadFontsIfNeeded(capture(fontsSlot))
         }
         assertThat(fontsSlot.captured).containsExactly(font)
+    }
+
+    @Test
+    fun `preDownloadWorkflowAssets warms the web_view bundles across a workflow's screens`() {
+        val workflow = createWorkflow(
+            "wf_1",
+            screens = mapOf(
+                "screen_1" to createScreen(webViewComponentsConfig("https://a.example.com/i.html")),
+                "screen_2" to createScreen(webViewComponentsConfig("https://b.example.com/i.html")),
+                "screen_3" to createScreen(emptyComponentsConfig()),
+            ),
+        )
+
+        prewarmer.preDownloadWorkflowAssets(workflow, emptyUiConfig())
+
+        verify(exactly = 1) {
+            assetWarming.warmWebViewUrls(
+                setOf("https://a.example.com/i.html", "https://b.example.com/i.html"),
+            )
+        }
+    }
+
+    @Test
+    fun `preDownloadWorkflowAssets warms the first page's bundle ahead of later pages`() {
+        val workflow = createWorkflow(
+            "wf_1",
+            screens = linkedMapOf(
+                "screen_second" to createScreen(webViewComponentsConfig("https://second.example.com/i.html")),
+                "screen_first" to createScreen(webViewComponentsConfig("https://first.example.com/i.html")),
+            ),
+            steps = mapOf(
+                "step_1" to WorkflowStep(
+                    id = "step_1",
+                    type = "screen",
+                    screenId = "screen_first",
+                    triggers = listOf(
+                        WorkflowTrigger(
+                            name = "next",
+                            type = WorkflowTriggerType.ON_PRESS,
+                            actionId = "action_1",
+                            componentId = "component-1",
+                        ),
+                    ),
+                    triggerActions = mapOf("action_1" to WorkflowTriggerAction.Step("step_2")),
+                ),
+                "step_2" to WorkflowStep(id = "step_2", type = "screen", screenId = "screen_second"),
+            ),
+        )
+        val urls = slot<Collection<String>>()
+
+        prewarmer.preDownloadWorkflowAssets(workflow, emptyUiConfig())
+
+        verify { assetWarming.warmWebViewUrls(capture(urls)) }
+        assertThat(urls.captured)
+            .containsExactly("https://first.example.com/i.html", "https://second.example.com/i.html")
+    }
+
+    @Test
+    fun `preDownloadWorkflowAssets finds no web_view bundles when no screen has one`() {
+        val workflow = createWorkflow("wf_1", screens = mapOf("screen_1" to createScreen(emptyComponentsConfig())))
+        val urls = slot<Collection<String>>()
+
+        prewarmer.preDownloadWorkflowAssets(workflow, emptyUiConfig())
+
+        verify { assetWarming.warmWebViewUrls(capture(urls)) }
+        assertThat(urls.captured).isEmpty()
     }
 
     @Test
@@ -111,32 +170,48 @@ class WorkflowAssetPrewarmerTest {
         prewarmer.preDownloadWorkflowAssets(workflow, uiConfig)
         prewarmer.preDownloadWorkflowAssets(workflow, uiConfig)
 
-        verify(exactly = 1) { imagePreDownloader.preDownloadImages(screenConfig.collectAssets()) }
+        verify(exactly = 1) { assetWarming.warmImages(screenConfig.collectAssets().imageUris) }
+    }
+
+    @Test
+    fun `preDownloadWorkflowAssets warms every screen's images in a single call`() {
+        val workflow = createWorkflow(
+            "wf_1",
+            screens = mapOf(
+                "screen_1" to createScreen(emptyComponentsConfig()),
+                "screen_2" to createScreen(emptyComponentsConfig()),
+                "screen_3" to createScreen(emptyComponentsConfig()),
+            ),
+        )
+
+        prewarmer.preDownloadWorkflowAssets(workflow, uiConfig)
+
+        verify(exactly = 1) { assetWarming.warmImages(any()) }
     }
 
     // endregion render path
 
-    // region load path (onCurrentWorkflowLoaded)
+    // region load path (onWorkflowLoaded)
 
     @Test
-    fun `onCurrentWorkflowLoaded decodes and prewarms the workflow, resolving ui_config once`() = runTest {
+    fun `onWorkflowLoaded decodes and prewarms the workflow, resolving ui_config once`() = runTest {
         val screenConfig = emptyComponentsConfig()
         val workflow = createWorkflow("wf_1", screens = mapOf("screen_1" to createScreen(screenConfig)))
 
-        prewarmer.onCurrentWorkflowLoaded("wf_1") { workflow }
+        prewarmer.onWorkflowLoaded("wf_1") { workflow }
 
-        verify(exactly = 1) { imagePreDownloader.preDownloadImages(screenConfig.collectAssets()) }
+        verify(exactly = 1) { assetWarming.warmImages(screenConfig.collectAssets().imageUris) }
         verify(exactly = 1) { fontPreDownloader.preDownloadFontsIfNeeded(any()) }
         coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
     }
 
     @Test
-    fun `onCurrentWorkflowLoaded dedups by id before decoding on a re-warm`() = runTest {
+    fun `onWorkflowLoaded dedups by id before decoding on a re-warm`() = runTest {
         var decodeCount = 0
         val decode: suspend (String) -> PublishedWorkflow? = { id -> decodeCount++; createWorkflow(id) }
 
-        prewarmer.onCurrentWorkflowLoaded("wf_1", decode)
-        prewarmer.onCurrentWorkflowLoaded("wf_1", decode)
+        prewarmer.onWorkflowLoaded("wf_1", decode)
+        prewarmer.onWorkflowLoaded("wf_1", decode)
 
         // Second warm never decodes wf_1 again (dedup happens before the transient decode).
         assertThat(decodeCount).isEqualTo(1)
@@ -144,26 +219,26 @@ class WorkflowAssetPrewarmerTest {
     }
 
     @Test
-    fun `onCurrentWorkflowLoaded skips when ui_config is unavailable, then retries on the next warm`() = runTest {
+    fun `onWorkflowLoaded skips when ui_config is unavailable, then retries on the next warm`() = runTest {
         coEvery { mockUiConfigProvider.getUiConfig() } returns null
 
-        prewarmer.onCurrentWorkflowLoaded("wf_1") { id -> createWorkflow(id) }
+        prewarmer.onWorkflowLoaded("wf_1") { id -> createWorkflow(id) }
         verify(exactly = 0) { fontPreDownloader.preDownloadFontsIfNeeded(any()) }
 
         // ui_config now available: the workflow was not marked warmed, so it is retried.
         coEvery { mockUiConfigProvider.getUiConfig() } returns uiConfig
-        prewarmer.onCurrentWorkflowLoaded("wf_1") { id -> createWorkflow(id) }
+        prewarmer.onWorkflowLoaded("wf_1") { id -> createWorkflow(id) }
         verify(exactly = 1) { fontPreDownloader.preDownloadFontsIfNeeded(any()) }
     }
 
     @Test
-    fun `onCurrentWorkflowLoaded skips a workflow that fails to decode without marking it warmed`() = runTest {
+    fun `onWorkflowLoaded skips a workflow that fails to decode without marking it warmed`() = runTest {
         // First warm: decode returns null (bytes missing / parse fail) -> skipped, not marked.
-        prewarmer.onCurrentWorkflowLoaded("wf_1") { null }
+        prewarmer.onWorkflowLoaded("wf_1") { null }
         verify(exactly = 0) { fontPreDownloader.preDownloadFontsIfNeeded(any()) }
 
         // Second warm: decode now succeeds -> warmed (proves the failed attempt did not mark it).
-        prewarmer.onCurrentWorkflowLoaded("wf_1") { id -> createWorkflow(id) }
+        prewarmer.onWorkflowLoaded("wf_1") { id -> createWorkflow(id) }
         verify(exactly = 1) { fontPreDownloader.preDownloadFontsIfNeeded(any()) }
     }
 
@@ -176,24 +251,43 @@ class WorkflowAssetPrewarmerTest {
 
         // ...so the load path skips it before decoding — the concrete win of the shared dedup set.
         var decodeCount = 0
-        prewarmer.onCurrentWorkflowLoaded("wf_1") { id -> decodeCount++; createWorkflow(id) }
+        prewarmer.onWorkflowLoaded("wf_1") { id -> decodeCount++; createWorkflow(id) }
 
         assertThat(decodeCount).isEqualTo(0)
     }
 
-    private fun createWorkflow(id: String, screens: Map<String, WorkflowScreen> = emptyMap()): PublishedWorkflow =
+    private fun createWorkflow(
+        id: String,
+        screens: Map<String, WorkflowScreen> = emptyMap(),
+        steps: Map<String, WorkflowStep> = emptyMap(),
+    ): PublishedWorkflow =
         PublishedWorkflow(
             id = id,
             displayName = "Workflow $id",
             initialStepId = "step_1",
-            steps = emptyMap(),
+            steps = steps,
             screens = screens,
         )
 
-    // A real config rather than a mock: the prewarmer traverses it via collectAssets().
     private fun emptyComponentsConfig(): PaywallComponentsConfig =
         PaywallComponentsConfig(
             stack = StackComponent(components = emptyList()),
+            background = Background.Color(ColorScheme(light = ColorInfo.Alias(ColorAlias("")))),
+            stickyFooter = null,
+        )
+
+    private fun webViewComponentsConfig(url: String): PaywallComponentsConfig =
+        PaywallComponentsConfig(
+            stack = StackComponent(
+                components = listOf(
+                    WebViewComponent(
+                        url = url,
+                        id = "component-1",
+                        protocolVersion = WebViewComponent.SUPPORTED_PROTOCOL_VERSION,
+                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill),
+                    ),
+                ),
+            ),
             background = Background.Color(ColorScheme(light = ColorInfo.Alias(ColorAlias("")))),
             stickyFooter = null,
         )

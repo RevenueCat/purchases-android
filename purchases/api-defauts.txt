@@ -36,8 +36,9 @@ package com.revenuecat.purchases {
     method @KotlinOnly @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses={com.revenuecat.purchases.PurchasesException.class}) public static suspend Object? awaitGetVirtualCurrencies(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies>) throws com.revenuecat.purchases.PurchasesException;
     method @KotlinOnly @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses={com.revenuecat.purchases.PurchasesTransactionException.class}) public static suspend Object? awaitLogIn(com.revenuecat.purchases.Purchases, String appUserID, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.data.LogInResult>) throws com.revenuecat.purchases.PurchasesTransactionException;
     method @KotlinOnly @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses={com.revenuecat.purchases.PurchasesTransactionException.class}) public static suspend Object? awaitLogOut(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.CustomerInfo>) throws com.revenuecat.purchases.PurchasesTransactionException;
-    method @KotlinOnly @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmSynthetic public static suspend Object? awaitPollRewardVerification(com.revenuecat.purchases.Purchases, String clientTransactionId, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult>);
+    method @KotlinOnly @kotlin.jvm.JvmSynthetic public static suspend Object? awaitPollRewardVerification(com.revenuecat.purchases.Purchases, String clientTransactionId, optional com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata? trackingMetadata, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult>);
     method @KotlinOnly @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses={com.revenuecat.purchases.PurchasesException.class}) public static suspend Object? awaitSetAppstackAttributionParams(com.revenuecat.purchases.Purchases, java.util.Map<java.lang.String,java.lang.String> data, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.Offerings>) throws com.revenuecat.purchases.PurchasesException;
+    method @KotlinOnly @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses={com.revenuecat.purchases.PurchasesException.class}) public static suspend Object? awaitShowManageSubscriptions(com.revenuecat.purchases.Purchases, android.content.Context context, kotlin.coroutines.Continuation<? super java.lang.Void>) throws com.revenuecat.purchases.PurchasesException;
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.Throws(exceptionClasses=PurchasesException::class) public static suspend Object? awaitStorefrontLocale(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super java.util.Locale>) throws com.revenuecat.purchases.PurchasesException;
     method @KotlinOnly @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses={com.revenuecat.purchases.PurchasesException.class}) public static suspend Object? awaitSyncAttributesAndOfferingsIfNeeded(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.Offerings>) throws com.revenuecat.purchases.PurchasesException;
     method @KotlinOnly @kotlin.jvm.JvmSynthetic @kotlin.jvm.Throws(exceptionClasses={com.revenuecat.purchases.PurchasesException.class}) public static suspend Object? awaitSyncPurchases(com.revenuecat.purchases.Purchases, kotlin.coroutines.Continuation<? super com.revenuecat.purchases.CustomerInfo>) throws com.revenuecat.purchases.PurchasesException;
@@ -375,7 +376,7 @@ package com.revenuecat.purchases {
     method public void close();
     method public void collectDeviceIdentifiers();
     method public static com.revenuecat.purchases.Purchases configure(com.revenuecat.purchases.PurchasesConfiguration configuration);
-    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken generateRewardVerificationToken(String impressionId);
+    method public com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken generateRewardVerificationToken(String impressionId);
     method @InaccessibleFromKotlin @Deprecated @kotlin.jvm.Synchronized public boolean getAllowSharingPlayStoreAccount();
     method public void getAmazonLWAConsentStatus(com.revenuecat.purchases.interfaces.GetAmazonLWAConsentStatusCallback callback);
     method @InaccessibleFromKotlin @kotlin.jvm.Synchronized public String getAppUserID();
@@ -419,7 +420,8 @@ package com.revenuecat.purchases {
     method public boolean overridePreferredUILocale(String? localeString);
     method public static com.revenuecat.purchases.WebPurchaseRedemption? parseAsWebPurchaseRedemption(android.content.Intent intent);
     method public static com.revenuecat.purchases.WebPurchaseRedemption? parseAsWebPurchaseRedemption(String string);
-    method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public void pollRewardVerification(String clientTransactionId, com.revenuecat.purchases.interfaces.PollRewardVerificationCallback callback);
+    method public void pollRewardVerification(String clientTransactionId, com.revenuecat.purchases.interfaces.PollRewardVerificationCallback callback);
+    method public void pollRewardVerification(String clientTransactionId, com.revenuecat.purchases.interfaces.PollRewardVerificationCallback callback, optional com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata? trackingMetadata);
     method public void purchase(com.revenuecat.purchases.PurchaseParams purchaseParams, com.revenuecat.purchases.interfaces.PurchaseCallback callback);
     method @Deprecated public void purchasePackage(android.app.Activity activity, com.revenuecat.purchases.Package packageToPurchase, com.revenuecat.purchases.interfaces.PurchaseCallback listener);
     method @Deprecated public void purchaseProduct(android.app.Activity activity, com.revenuecat.purchases.models.StoreProduct storeProduct, com.revenuecat.purchases.interfaces.PurchaseCallback callback);
@@ -461,6 +463,7 @@ package com.revenuecat.purchases {
     method @InaccessibleFromKotlin public static void setProxyURL(java.net.URL?);
     method @InaccessibleFromKotlin @kotlin.jvm.Synchronized public void setPurchasesAreCompletedBy(com.revenuecat.purchases.PurchasesAreCompletedBy);
     method public void setPushToken(String? fcmToken);
+    method public void setSingularDeviceID(String? singularDeviceID);
     method public void setSolarEngineAccountId(String? solarEngineAccountId);
     method public void setSolarEngineDistinctId(String? solarEngineDistinctId);
     method public void setSolarEngineVisitorId(String? solarEngineVisitorId);
@@ -468,6 +471,8 @@ package com.revenuecat.purchases {
     method @InaccessibleFromKotlin @kotlin.jvm.Synchronized public void setUpdatedCustomerInfoListener(com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener?);
     method public void showInAppMessagesIfNeeded(android.app.Activity activity);
     method public void showInAppMessagesIfNeeded(android.app.Activity activity, optional java.util.List<? extends com.revenuecat.purchases.models.InAppMessageType> inAppMessageTypes);
+    method public void showManageSubscriptions(android.content.Context context);
+    method public void showManageSubscriptions(android.content.Context context, optional com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback? callback);
     method @Deprecated public void syncAmazonPurchase(String productID, String receiptID, String amazonUserID, String? isoCurrencyCode, Double? price);
     method public void syncAmazonPurchase(String productID, String receiptID, String amazonUserID, String? isoCurrencyCode, Double? price, long purchaseTime);
     method public void syncAttributesAndOfferingsIfNeeded(com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback callback);
@@ -476,7 +481,7 @@ package com.revenuecat.purchases {
     method public void syncPurchases(optional com.revenuecat.purchases.interfaces.SyncPurchasesCallback? listener);
     method public void trackCustomPaywallImpression();
     method public void trackCustomPaywallImpression(optional com.revenuecat.purchases.paywalls.events.CustomPaywallImpressionParams params);
-    property @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public com.revenuecat.purchases.ads.events.AdTracker adTracker;
+    property public com.revenuecat.purchases.ads.events.AdTracker adTracker;
     property @Deprecated @kotlin.jvm.Synchronized public boolean allowSharingPlayStoreAccount;
     property @kotlin.jvm.Synchronized public String appUserID;
     property public com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies? cachedVirtualCurrencies;
@@ -734,7 +739,7 @@ package com.revenuecat.purchases {
 
 package com.revenuecat.purchases.ads.events {
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final class AdTracker {
+  public final class AdTracker {
     method public void trackAdDisplayed(com.revenuecat.purchases.ads.events.types.AdDisplayedData data);
     method public void trackAdFailedToLoad(com.revenuecat.purchases.ads.events.types.AdFailedToLoadData data);
     method public void trackAdLoaded(com.revenuecat.purchases.ads.events.types.AdLoadedData data);
@@ -746,7 +751,7 @@ package com.revenuecat.purchases.ads.events {
 
 package com.revenuecat.purchases.ads.events.types {
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdDisplayedData {
+  @dev.drewhamilton.poko.Poko public final class AdDisplayedData {
     ctor @KotlinOnly public AdDisplayedData(String? networkName, com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName, com.revenuecat.purchases.ads.events.types.AdFormat adFormat, String? placement, String adUnitId, String impressionId);
     method @InaccessibleFromKotlin public String getAdUnitId();
     method @InaccessibleFromKotlin public String getImpressionId();
@@ -760,7 +765,7 @@ package com.revenuecat.purchases.ads.events.types {
     property public String? placement;
   }
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdFailedToLoadData {
+  @dev.drewhamilton.poko.Poko public final class AdFailedToLoadData {
     ctor @KotlinOnly public AdFailedToLoadData(com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName, com.revenuecat.purchases.ads.events.types.AdFormat adFormat, String? placement, String adUnitId, Integer? mediatorErrorCode);
     method @InaccessibleFromKotlin public String getAdUnitId();
     method @InaccessibleFromKotlin public Integer? getMediatorErrorCode();
@@ -772,7 +777,7 @@ package com.revenuecat.purchases.ads.events.types {
     property public String? placement;
   }
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmInline public final value class AdFormat {
+  @kotlin.jvm.JvmInline public final value class AdFormat {
     field public static final com.revenuecat.purchases.ads.events.types.AdFormat.Companion Companion;
   }
 
@@ -787,7 +792,7 @@ package com.revenuecat.purchases.ads.events.types {
     property public com.revenuecat.purchases.ads.events.types.AdFormat REWARDED_INTERSTITIAL;
   }
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdLoadedData {
+  @dev.drewhamilton.poko.Poko public final class AdLoadedData {
     ctor @KotlinOnly public AdLoadedData(String? networkName, com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName, com.revenuecat.purchases.ads.events.types.AdFormat adFormat, String? placement, String adUnitId, String impressionId);
     method @InaccessibleFromKotlin public String getAdUnitId();
     method @InaccessibleFromKotlin public String getImpressionId();
@@ -801,7 +806,7 @@ package com.revenuecat.purchases.ads.events.types {
     property public String? placement;
   }
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmInline public final value class AdMediatorName {
+  @kotlin.jvm.JvmInline public final value class AdMediatorName {
     field public static final com.revenuecat.purchases.ads.events.types.AdMediatorName.Companion Companion;
   }
 
@@ -811,7 +816,7 @@ package com.revenuecat.purchases.ads.events.types {
     property public com.revenuecat.purchases.ads.events.types.AdMediatorName APP_LOVIN;
   }
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdOpenedData {
+  @dev.drewhamilton.poko.Poko public final class AdOpenedData {
     ctor @KotlinOnly public AdOpenedData(String? networkName, com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName, com.revenuecat.purchases.ads.events.types.AdFormat adFormat, String? placement, String adUnitId, String impressionId);
     method @InaccessibleFromKotlin public String getAdUnitId();
     method @InaccessibleFromKotlin public String getImpressionId();
@@ -825,7 +830,7 @@ package com.revenuecat.purchases.ads.events.types {
     property public String? placement;
   }
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class AdRevenueData {
+  @dev.drewhamilton.poko.Poko public final class AdRevenueData {
     ctor @KotlinOnly public AdRevenueData(String? networkName, com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName, com.revenuecat.purchases.ads.events.types.AdFormat adFormat, String? placement, String adUnitId, String impressionId, long revenueMicros, String currency, com.revenuecat.purchases.ads.events.types.AdRevenuePrecision precision);
     method @InaccessibleFromKotlin public String getAdUnitId();
     method @InaccessibleFromKotlin public String getCurrency();
@@ -844,7 +849,7 @@ package com.revenuecat.purchases.ads.events.types {
     property public long revenueMicros;
   }
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @kotlin.jvm.JvmInline public final value class AdRevenuePrecision {
+  @kotlin.jvm.JvmInline public final value class AdRevenuePrecision {
     field public static final com.revenuecat.purchases.ads.events.types.AdRevenuePrecision.Companion Companion;
   }
 
@@ -860,7 +865,7 @@ package com.revenuecat.purchases.ads.events.types {
 
 package com.revenuecat.purchases.ads.rewardverification {
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public final class RewardVerificationResult {
+  public final class RewardVerificationResult {
     method @InaccessibleFromKotlin public boolean getFailed();
     method @InaccessibleFromKotlin public java.util.List<com.revenuecat.purchases.ads.rewardverification.VerifiedReward> getMoreRewards();
     method @InaccessibleFromKotlin public com.revenuecat.purchases.ads.rewardverification.VerifiedReward? getVerifiedReward();
@@ -875,7 +880,7 @@ package com.revenuecat.purchases.ads.rewardverification {
     property public com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult failed;
   }
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI @dev.drewhamilton.poko.Poko public final class RewardVerificationToken {
+  @dev.drewhamilton.poko.Poko public final class RewardVerificationToken {
     ctor public RewardVerificationToken(String customData, String clientTransactionId, String appUserID);
     method @InaccessibleFromKotlin public String getAppUserID();
     method @InaccessibleFromKotlin public String getClientTransactionId();
@@ -885,7 +890,21 @@ package com.revenuecat.purchases.ads.rewardverification {
     property public String customData;
   }
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public interface VerifiedReward {
+  @dev.drewhamilton.poko.Poko public final class RewardedAdTrackingMetadata {
+    ctor @KotlinOnly public RewardedAdTrackingMetadata(String? networkName, com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName, com.revenuecat.purchases.ads.events.types.AdFormat adFormat, String? placement, String adUnitId, String impressionId);
+    method @InaccessibleFromKotlin public String getAdUnitId();
+    method @InaccessibleFromKotlin public String getImpressionId();
+    method @InaccessibleFromKotlin public String? getNetworkName();
+    method @InaccessibleFromKotlin public String? getPlacement();
+    property public com.revenuecat.purchases.ads.events.types.AdFormat adFormat;
+    property public String adUnitId;
+    property public String impressionId;
+    property public com.revenuecat.purchases.ads.events.types.AdMediatorName mediatorName;
+    property public String? networkName;
+    property public String? placement;
+  }
+
+  public interface VerifiedReward {
   }
 
   @dev.drewhamilton.poko.Poko public static final class VerifiedReward.Entitlement implements com.revenuecat.purchases.ads.rewardverification.VerifiedReward {
@@ -1126,7 +1145,12 @@ package com.revenuecat.purchases.interfaces {
     method public void onReceived(com.revenuecat.purchases.CustomerInfo customerInfo, boolean created);
   }
 
-  @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public fun interface PollRewardVerificationCallback {
+  public interface ManageSubscriptionsCallback {
+    method public void onError(com.revenuecat.purchases.PurchasesError error);
+    method public void onSuccess();
+  }
+
+  public fun interface PollRewardVerificationCallback {
     method public void onCompleted(com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult result);
   }
 

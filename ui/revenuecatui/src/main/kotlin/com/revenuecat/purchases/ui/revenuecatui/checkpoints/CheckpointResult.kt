@@ -1,19 +1,30 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offering
 import dev.drewhamilton.poko.Poko
 
+/**
+ * What a checkpoint resolved to, returned by
+ * [com.revenuecat.purchases.ui.revenuecatui.checkpoints.awaitCheckpoint].
+ */
 @InternalRevenueCatAPI
 public abstract class CheckpointResult internal constructor() {
 
-    public abstract val checkpoint: CheckpointInfo
+    /**
+     * The checkpoint selected [offering] without presenting RevenueCat-managed UI. The app decides how to use
+     * the offering, including whether and where to present it.
+     */
+    @Poko
+    public class ReceivedOffering internal constructor(
+        public val offering: Offering,
+    ) : CheckpointResult()
 
     /**
      * A checkpoint-triggered paywall was presented and finished with [paywallOutcome].
      */
     @Poko
     public class PaywallPresented internal constructor(
-        override val checkpoint: CheckpointInfo,
         public val paywallOutcome: CheckpointPaywallOutcome,
     ) : CheckpointResult()
 
@@ -22,31 +33,39 @@ public abstract class CheckpointResult internal constructor() {
      */
     @Poko
     public class NoAction internal constructor(
-        override val checkpoint: CheckpointInfo,
         public val reason: Reason,
     ) : CheckpointResult() {
 
+        /** The reason nothing was served for the checkpoint. */
         @Poko
-        public class Reason internal constructor(public val value: String) {
+        public class Reason internal constructor(internal val value: String) {
+
+            override fun toString(): String = value
 
             public companion object {
+                /** The checkpoint is configured, but no targeting rule matched. */
                 @JvmField
                 public val NO_MATCH: Reason = Reason("NO_MATCH")
 
+                /** The customer was assigned to a holdout. */
                 @JvmField
                 public val HOLDOUT: Reason = Reason("HOLDOUT")
 
+                /** The customer reached the configured frequency cap. */
                 @JvmField
                 public val FREQUENCY_CAPPED: Reason = Reason("FREQUENCY_CAPPED")
 
+                /** The configuration needed to serve the checkpoint could not be read. */
                 @JvmField
                 public val CONFIGURATION_UNAVAILABLE: Reason = Reason("CONFIGURATION_UNAVAILABLE")
 
-                @JvmField
-                public val DISABLED: Reason = Reason("DISABLED")
-
+                /** The checkpoint identifier is not configured in the RevenueCat dashboard. */
                 @JvmField
                 public val UNKNOWN_CHECKPOINT: Reason = Reason("UNKNOWN_CHECKPOINT")
+
+                /** The checkpoint identifier is invalid. */
+                @JvmField
+                public val INVALID_CHECKPOINT_IDENTIFIER: Reason = Reason("INVALID_CHECKPOINT_IDENTIFIER")
             }
         }
     }

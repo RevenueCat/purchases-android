@@ -3,6 +3,8 @@ package com.revenuecat.purchases.utils
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.PaywallAssetWarmer
+import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.components.VideoComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
@@ -38,7 +40,10 @@ class OfferingVideoPredownloaderTest {
         fileRepository = mockk(relaxed = true)
         predownloader = OfferingVideoPredownloader(
             context = mockk(relaxed = true),
-            canShowPaywalls = true,
+            assetWarming = PaywallAssetWarming(
+                context = mockk(relaxed = true),
+                warmerProvider = { mockk<PaywallAssetWarmer>(relaxed = true) },
+            ),
             fileRepository = fileRepository,
         )
     }
@@ -55,6 +60,7 @@ class OfferingVideoPredownloaderTest {
     @Test
     fun `if the component tree fails to decode, it does not throw and prefetches nothing`() {
         val offering = mockk<Offering>().apply {
+            every { identifier } returns "broken"
             every { paywallComponents } returns Offering.PaywallComponents(
                 uiConfig = mockk(),
                 componentsHash = "hash",

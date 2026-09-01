@@ -1,0 +1,54 @@
+# Reopening an embedded workflow paywall after dismissing it from a later page must start a new
+# presentation on the initial page instead of retaining the previous presentation's page state.
+# Run on CI by the `run-maestro-workflow-tests` job.
+#
+# Run locally against the test store:
+#   maestro test -e MAESTRO_STORE=test_store maestro/workflows/workflow_reopens_at_initial_step.yaml
+
+appId: com.revenuecat.e2etests
+name: Reopening a workflow paywall starts at the initial page
+env:
+  MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
+
+---
+- launchApp:
+    clearState: true
+    arguments:
+      e2e_test_flow: open_workflow
+- extendedWaitUntil:
+    visible: "Present Paywall"
+    timeout: 15000
+- tapOn:
+    text: "Present Paywall"
+
+# Move the retained paywall ViewModel away from its initial workflow step.
+- extendedWaitUntil:
+    visible: "Start Your Free Week And Reclaim 30+ Minutes Daily"
+    timeout: 15000
+- tapOn:
+    text: "Continue 1/3"
+- extendedWaitUntil:
+    visible: "Most People Feel Calmer After Just 3 Sessions"
+    timeout: 15000
+- tapOn:
+    text: "Continue 2/3"
+- extendedWaitUntil:
+    visible: "People Who Meditate Daily Sleep 40% Better"
+    timeout: 15000
+
+# End the first presentation and reopen the same embedded paywall.
+- tapOn:
+    text: "Close Paywall"
+- extendedWaitUntil:
+    visible: "Present Paywall"
+    timeout: 15000
+- tapOn:
+    text: "Present Paywall"
+
+# A new presentation starts from page 1 and does not render stale later-page content.
+- extendedWaitUntil:
+    visible: "Start Your Free Week And Reclaim 30+ Minutes Daily"
+    timeout: 15000
+- assertNotVisible: "Most People Feel Calmer After Just 3 Sessions"
+- assertNotVisible: "People Who Meditate Daily Sleep 40% Better"
+- takeScreenshot: "workflow_reopens_at_initial_step - reopened page 1"

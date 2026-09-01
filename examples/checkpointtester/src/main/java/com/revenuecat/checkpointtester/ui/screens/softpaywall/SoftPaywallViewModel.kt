@@ -42,14 +42,17 @@ class SoftPaywallViewModel : ViewModel() {
             try {
                 val result = Purchases.sharedInstance.awaitCheckpoint("soft_paywall")
                 when (result) {
+                    is CheckpointResult.ReceivedOffering ->
+                        free("Offering ${result.offering.identifier} returned for app-owned presentation.")
                     is CheckpointResult.PaywallPresented -> when (val outcome = result.paywallOutcome) {
                         is CheckpointPaywallOutcome.Purchased -> upgraded("Purchased.")
                         is CheckpointPaywallOutcome.Restored -> upgraded("Restored.")
                         CheckpointPaywallOutcome.Dismissed -> free("Dismissed, staying on the free tier.")
+                        CheckpointPaywallOutcome.WebCheckoutOpened -> free("Left to pay via web checkout.")
                         is CheckpointPaywallOutcome.Error -> free("Paywall error: ${outcome.error.message}")
                         else -> free("Unknown paywall outcome.")
                     }
-                    is CheckpointResult.NoAction -> free("No paywall shown (${result.reason.value}).")
+                    is CheckpointResult.NoAction -> free("No paywall shown (${result.reason}).")
                     else -> free("Unknown checkpoint result.")
                 }
             } catch (e: PurchasesException) {

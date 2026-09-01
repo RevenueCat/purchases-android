@@ -34,11 +34,13 @@ import kotlinx.coroutines.launch
  * `appUserID` has dropped out of the read entirely: a workflow body is a shared, content-addressed blob, not a
  * per-user document. (Per-user data — A/B `enrolled_variants` — is being designed separately.)
  */
+@Suppress("TooManyFunctions")
 internal class WorkflowManager(
     private val workflowsConfigProvider: WorkflowsConfigProvider,
     private val uiConfigProvider: UiConfigProvider,
     private val workflowAssetPrewarmer: WorkflowAssetPrewarmer,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+    private val enabled: Boolean = true,
 ) {
 
     // Guards [inFlightReadiness] so that concurrent calls to [onPaywallConfigReady] see the same
@@ -66,13 +68,7 @@ internal class WorkflowManager(
         // passes through. No backend round-trip, no lazy offering→workflow conversion.
         val workflowId = workflowsConfigProvider.workflowIdForOfferingId(workflowOrOfferingId)
             ?: workflowOrOfferingId
-        val workflow = workflowsConfigProvider.getWorkflow(workflowId)
-            ?: throw PurchasesException(
-                PurchasesError(
-                    PurchasesErrorCode.UnknownError,
-                    "Workflow '$workflowId' is unavailable from remote config.",
-                ),
-            )
+        val workflow = getWorkflowBody(workflowId)
         val uiConfig = loadUiConfig(workflowId)
             ?: throw PurchasesException(
                 PurchasesError(
@@ -84,13 +80,32 @@ internal class WorkflowManager(
         // Warm the workflow's images and ui_config fonts in parallel with delivery, like the old fetch path did
         // on resolve; a prewarm failure must never fail the read itself. The fonts now come from the ui_config
         // topic rather than a uiConfig embedded in the workflow body.
+        prewarmWorkflowAssets(workflow, uiConfig)
+        return workflow
+    }
+
+    /** Prewarms presentation assets without changing delivery or failing the caller. */
+    fun prewarmWorkflowAssets(workflow: PublishedWorkflow, uiConfig: UiConfig) {
         scope.launch {
             runCatching {
                 workflowAssetPrewarmer.preDownloadWorkflowAssets(workflow, uiConfig)
             }.onFailure { errorLog(it) { "Failed to pre-download workflow assets" } }
         }
-        return workflow
     }
+
+    /**
+     * Loads a published workflow body by its workflow id without resolving offering aliases, loading UI config,
+     * or prewarming presentation assets. Checkpoint resolution uses this to inspect the workflow kind before it
+     * decides which additional dependencies, if any, are needed to serve it.
+     */
+    suspend fun getWorkflowBody(workflowId: String): PublishedWorkflow =
+        workflowsConfigProvider.getWorkflow(workflowId)
+            ?: throw PurchasesException(
+                PurchasesError(
+                    PurchasesErrorCode.UnknownError,
+                    "Workflow '$workflowId' is unavailable from remote config.",
+                ),
+            )
 
     /** Loads `ui_config` (memory-first), swallowing non-cancellation failures to null so the caller decides. */
     private suspend fun loadUiConfig(workflowId: String): UiConfig? =
@@ -138,9 +153,16 @@ internal class WorkflowManager(
      * cache next reads committed data.
      */
     fun onPaywallConfigReady(onComplete: () -> Unit) {
+        // The caches can never warm while remote config is off, so without this gate every getOfferings would
+        // take the async readiness path below instead of completing synchronously.
+        if (!enabled) {
+            debugLog { "Workflows are disabled for this SDK configuration; skipping paywall config readiness." }
+            onComplete()
+            return
+        }
         // warm() may already have run with no current offering (config commits before offerings land), and the
         // fast path below would then never re-run it. Deduped by workflow id, so a repeat call is free.
-        workflowsConfigProvider.prewarmCurrentOfferingAssets()
+        workflowsConfigProvider.prewarmOfferingAssets()
         if (uiConfigProvider.isWarm() && workflowsConfigProvider.isWarmForCurrentOffering()) {
             onComplete()
             return
@@ -176,9 +198,6 @@ internal class WorkflowManager(
             is UiConfigResolution.Found -> Unit
             UiConfigResolution.NotConfigured -> verboseLog {
                 "Remote config has no ui_config to resolve before getOfferings."
-            }
-            UiConfigResolution.Disabled -> debugLog {
-                "Remote config is disabled for this session; skipping ui_config readiness before getOfferings."
             }
             UiConfigResolution.Superseded -> verboseLog {
                 "ui_config was superseded by a newer config commit before getOfferings; the next read re-resolves it."

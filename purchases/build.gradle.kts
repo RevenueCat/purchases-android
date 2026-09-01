@@ -207,13 +207,11 @@ dependencies {
 
     compileOnly(libs.compose.annotations)
     compileOnly(libs.amazon.appstore.sdk)
-    compileOnly(libs.coil.base)
 
     debugImplementation(libs.androidx.annotation.experimental)
 
     dokkaPlugin(project(":dokka-hide-internal"))
 
-    testImplementation(libs.coil.base)
     testImplementation(libs.bundles.test)
     testImplementation(libs.billing)
     testImplementation(libs.coroutines.test)
@@ -284,7 +282,6 @@ dokka {
 
 baselineProfile {
     mergeIntoMain = true
-    baselineProfileOutputDir = "."
     filter {
         include("com.revenuecat.purchases.**")
         exclude("com.revenuecat.purchases.ui.revenuecatui.**")

@@ -4,11 +4,10 @@ package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.UiConfig
-import com.revenuecat.purchases.common.canUsePaywallUI
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
-import com.revenuecat.purchases.utils.PaywallComponentsImagePreDownloader
+import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.utils.collectAssets
 import kotlinx.coroutines.CancellationException
 
@@ -18,19 +17,16 @@ import kotlinx.coroutines.CancellationException
  *
  * - **Render path** — [preDownloadWorkflowAssets]: `WorkflowManager.getWorkflow` already has the decoded
  *   workflow and resolved `ui_config`, so it hands them straight in.
- * - **Load path** — [onCurrentWorkflowLoaded]: wired as [WorkflowsConfigProvider]'s load callback, it runs when
- *   the config layer loads the **current offering's** workflow — mirroring the offerings path, which
- *   pre-downloads only the current offering's assets, not every offering's. It dedups by id **before** decoding,
+ * - **Load path**, [onWorkflowLoaded]: runs for every offering the customer could be served next, as the
+ *   config layer loads each one. It dedups by id **before** decoding,
  *   then decodes **transiently** (via the decoder the provider hands it, which never populates the provider's
  *   retained decode cache — the workflows cache stays raw-bytes-only). Because both paths share
  *   [warmedWorkflowIds], a workflow already warmed on render is skipped here before it is ever decoded.
  */
 internal class WorkflowAssetPrewarmer(
     private val uiConfigProvider: UiConfigProvider,
-    private val paywallComponentsImagePreDownloader: PaywallComponentsImagePreDownloader,
+    private val assetWarming: PaywallAssetWarming,
     private val offeringFontPreDownloader: OfferingFontPreDownloader,
-    /** The only consumer of the walk is a no-op without the paywalls SDK, so the walk itself is skipped. */
-    private val shouldCollectAssets: Boolean = canUsePaywallUI,
 ) {
 
     // Ids whose assets have been enqueued, so neither path warms the same workflow twice. Never reset for the
@@ -45,16 +41,18 @@ internal class WorkflowAssetPrewarmer(
         synchronized(warmedWorkflowIds) {
             if (!warmedWorkflowIds.add(workflow.id)) return
         }
-        if (shouldCollectAssets) {
-            workflow.screens.values.forEach { screen ->
-                paywallComponentsImagePreDownloader.preDownloadImages(screen.componentsConfig.base.collectAssets())
-            }
+        if (assetWarming.isAvailable) {
+            val assets = workflow.screensInVisitOrder().map { it.componentsConfig.base.collectAssets() }
+            assetWarming.warmImages(assets.flatMapTo(mutableSetOf()) { it.imageUris })
+            assetWarming.warmWebViewUrls(
+                assets.flatMapTo(linkedSetOf<String>()) { it.webViewUrls },
+            )
         }
         offeringFontPreDownloader.preDownloadFontsIfNeeded(uiConfig.app.fonts.values)
     }
 
     /** Load-path callback for [WorkflowsConfigProvider]; see the class KDoc. */
-    suspend fun onCurrentWorkflowLoaded(
+    suspend fun onWorkflowLoaded(
         workflowId: String,
         transientDecode: suspend (String) -> PublishedWorkflow?,
     ) {

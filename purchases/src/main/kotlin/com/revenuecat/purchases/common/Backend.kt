@@ -122,7 +122,7 @@ internal typealias RemoteConfigCallback = Pair<
 
 internal typealias RemoteConfigFallbackCallback = Pair<
     (RemoteConfiguration, VerificationResult) -> Unit,
-    (PurchasesError, errorHandlingBehavior: GetRemoteConfigErrorHandlingBehavior) -> Unit,
+    (PurchasesError) -> Unit,
     >
 
 internal enum class PostReceiptErrorHandlingBehavior {
@@ -137,12 +137,12 @@ internal enum class GetOfferingsErrorHandlingBehavior {
 }
 
 internal enum class GetRemoteConfigErrorHandlingBehavior {
-    // 5xx, transport, or parse failures: the endpoint may recover, keep retrying on future syncs.
+    // 5xx, transport, or parse failures: the endpoint may recover, so a cold start may try the fallback endpoint.
     SHOULD_RETRY,
 
     // A 4xx client error: the endpoint intentionally refused the request (bad shape, feature not provisioned,
-    // auth rejection). Stop hitting it for the rest of the session.
-    SHOULD_DISABLE,
+    // auth rejection), so the fallback endpoint would refuse it too. The next scheduled sync still retries.
+    SHOULD_NOT_TRY_FALLBACK,
 }
 
 @OptIn(InternalRevenueCatAPI::class)
@@ -295,7 +295,7 @@ internal class Backend(
             }
         }
         synchronized(this@Backend) {
-            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            val delay = Delay.jitterOnlyIfInBackground(appInBackground)
             callbacks.addBackgroundAwareCallback(call, dispatcher, cacheKey, onSuccess to onError, delay)
         }
     }
@@ -478,7 +478,7 @@ internal class Backend(
             }
         }
         synchronized(this@Backend) {
-            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            val delay = Delay.jitterOnlyIfInBackground(appInBackground)
             offeringsCallbacks.addBackgroundAwareCallback(call, dispatcher, cacheKey, onSuccess to onError, delay)
         }
     }
@@ -1019,7 +1019,7 @@ internal class Backend(
         }
 
         synchronized(this@Backend) {
-            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            val delay = Delay.jitterOnlyIfInBackground(appInBackground)
             virtualCurrenciesCallbacks.addBackgroundAwareCallback(
                 call,
                 dispatcher,
@@ -1254,12 +1254,12 @@ internal class Backend(
                             )
                         }
                     } else {
-                        // A 4xx means the endpoint intentionally refused: disable it for the session. Any other
-                        // non-success (5xx) may recover, so keep retrying.
+                        // A 4xx means the endpoint intentionally refused, so don't retry against the fallback.
+                        // Any other non-success (5xx) may recover, so a cold start may try the fallback.
                         val isClientError = !RCHTTPStatusCodes.isSuccessful(result.responseCode) &&
                             !RCHTTPStatusCodes.isServerError(result.responseCode)
                         val behavior = if (isClientError) {
-                            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE
+                            GetRemoteConfigErrorHandlingBehavior.SHOULD_NOT_TRY_FALLBACK
                         } else {
                             GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY
                         }
@@ -1270,7 +1270,7 @@ internal class Backend(
         }
 
         synchronized(this@Backend) {
-            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            val delay = Delay.jitterOnlyIfInBackground(appInBackground)
             remoteConfigCallbacks.addBackgroundAwareCallback(
                 call,
                 remoteConfigDispatcher,
@@ -1285,7 +1285,7 @@ internal class Backend(
         appInBackground: Boolean,
         domain: String,
         onSuccess: (RemoteConfiguration, VerificationResult) -> Unit,
-        onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit,
+        onError: (PurchasesError) -> Unit,
     ) {
         val fallbackURL = appConfig.fallbackBaseURLs.firstOrNull()
         if (fallbackURL == null) {
@@ -1294,7 +1294,6 @@ internal class Backend(
                     PurchasesErrorCode.UnknownError,
                     "No fallback base URL configured for remote config.",
                 ).also { errorLog(it) },
-                GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
             )
             return
         }
@@ -1317,8 +1316,7 @@ internal class Backend(
                 synchronized(this@Backend) {
                     remoteConfigFallbackCallbacks.remove(cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
-                    // Transport/IO failure: no HTTP status, the endpoint may recover on a future sync.
-                    onErrorHandler(error, GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
+                    onErrorHandler(error)
                 }
             }
 
@@ -1333,30 +1331,17 @@ internal class Backend(
                                 result.verificationResult,
                             )
                         } catch (e: SerializationException) {
-                            // A 2xx body that doesn't parse is not a client error; keep retrying.
-                            onErrorHandler(
-                                e.toPurchasesError().also { errorLog(it) },
-                                GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
-                            )
+                            onErrorHandler(e.toPurchasesError().also { errorLog(it) })
                         }
                     } else {
-                        // A 4xx means the endpoint intentionally refused: disable it for the session. Any other
-                        // non-success (5xx) may recover, so keep retrying.
-                        val isClientError = !RCHTTPStatusCodes.isSuccessful(result.responseCode) &&
-                            !RCHTTPStatusCodes.isServerError(result.responseCode)
-                        val behavior = if (isClientError) {
-                            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE
-                        } else {
-                            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY
-                        }
-                        onErrorHandler(result.toPurchasesError().also { errorLog(it) }, behavior)
+                        onErrorHandler(result.toPurchasesError().also { errorLog(it) })
                     }
                 }
             }
         }
 
         synchronized(this@Backend) {
-            val delay = if (appInBackground) Delay.DEFAULT else Delay.NONE
+            val delay = Delay.jitterOnlyIfInBackground(appInBackground)
             remoteConfigFallbackCallbacks.addBackgroundAwareCallback(
                 call,
                 remoteConfigDispatcher,

@@ -4,12 +4,10 @@ import android.app.Activity
 import com.google.android.gms.ads.OnUserEarnedRewardListener
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.rewardverification.RewardVerificationManager
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
 import kotlin.jvm.JvmSynthetic
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun rewardVerificationListener(
     onAd: RewardedAd,
     rewardVerificationStarted: (() -> Unit)?,
@@ -24,7 +22,6 @@ private fun rewardVerificationListener(
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 private fun rewardVerificationListener(
     onAd: RewardedInterstitialAd,
     rewardVerificationStarted: (() -> Unit)?,
@@ -44,7 +41,6 @@ private fun rewardVerificationListener(
  *
  * Call after the ad has loaded and before showing it when using reward-verification APIs.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedAd.enableRewardVerification() {
     RewardVerificationManager.install(this)
@@ -55,7 +51,6 @@ public fun RewardedAd.enableRewardVerification() {
  *
  * Call after the ad has loaded and before showing it when using reward-verification APIs.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedInterstitialAd.enableRewardVerification() {
     RewardVerificationManager.install(this)
@@ -68,7 +63,6 @@ public fun RewardedInterstitialAd.enableRewardVerification() {
  * [enableRewardVerification] must be called before showing the ad with this overload.
  * Callback invocations are delivered on the main thread.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedAd.show(
     activity: Activity,
@@ -93,7 +87,6 @@ public fun RewardedAd.show(
  * [enableRewardVerification] must be called before showing the ad with this overload.
  * Callback invocations are delivered on the main thread.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedAd.show(
     activity: Activity,
@@ -119,7 +112,6 @@ public fun RewardedAd.show(
  * [enableRewardVerification] must be called before showing the ad with this overload.
  * Callback invocations are delivered on the main thread.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedInterstitialAd.show(
     activity: Activity,
@@ -145,7 +137,6 @@ public fun RewardedInterstitialAd.show(
  * [enableRewardVerification] must be called before showing the ad with this overload.
  * Callback invocations are delivered on the main thread.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 @JvmSynthetic
 public fun RewardedInterstitialAd.show(
     activity: Activity,

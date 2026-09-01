@@ -12,8 +12,11 @@ import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 @InternalRevenueCatAPI
 public sealed class CheckpointResolution {
 
+    /** The checkpoint selected [offering] without requiring RevenueCat-managed UI. */
+    public data class MatchedOffering(val offering: Offering) : CheckpointResolution()
+
     /** The checkpoint matched [workflow], which should be presented against [offering]. */
-    public data class Workflow(
+    public data class MatchedWorkflow(
         val workflow: PublishedWorkflow,
         val uiConfig: UiConfig,
         val offering: Offering,
@@ -28,9 +31,6 @@ public sealed class CheckpointResolution {
 
             /** The configuration needed to serve the checkpoint could not be read. */
             CONFIGURATION_UNAVAILABLE,
-
-            /** Checkpoints are turned off for this app. */
-            DISABLED,
 
             /** The identifier is not configured in the RevenueCat dashboard. */
             UNKNOWN_CHECKPOINT,

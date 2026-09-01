@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ads.rewardverification
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -13,7 +12,6 @@ import kotlinx.coroutines.withContext
  * out of [com.revenuecat.purchases.Purchases]. Polling runs off the main thread and the result is delivered
  * back on the main thread, like the SDK's other callback APIs.
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class RewardVerificationPollLauncher(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {

@@ -38,6 +38,9 @@ import com.revenuecat.paywallstester.Constants
 import com.revenuecat.paywallstester.MainActivity
 import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewModel.UiState
 import com.revenuecat.paywallstester.ui.screens.main.createCustomerCenterListener
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
 import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
 import com.revenuecat.purchases.ui.revenuecatui.views.CustomerCenterView
 import kotlinx.coroutines.Dispatchers
@@ -149,6 +152,27 @@ fun AppInfoScreen(
             tappedOnCheckpoints()
         }) {
             Text(text = "Checkpoints")
+        }
+        Button(onClick = {
+            Purchases.sharedInstance.showManageSubscriptions(
+                context,
+                object : ManageSubscriptionsCallback {
+                    override fun onSuccess() {
+                        Log.d("PaywallTester", "showManageSubscriptions opened the management page")
+                    }
+
+                    override fun onError(error: PurchasesError) {
+                        Log.e("PaywallTester", "showManageSubscriptions failed: $error")
+                        Toast.makeText(
+                            context,
+                            "Manage subscriptions failed: ${error.message}",
+                            Toast.LENGTH_LONG,
+                        ).show()
+                    }
+                },
+            )
+        }) {
+            Text(text = "Show manage subscriptions")
         }
         Spacer(modifier = Modifier.weight(1f))
         Button(onClick = { viewModel.refresh() }) {

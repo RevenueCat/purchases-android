@@ -11,6 +11,7 @@ import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.CustomerInfoFactory
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.PostReceiptDataErrorCallback
 import com.revenuecat.purchases.common.PostReceiptErrorHandlingBehavior
@@ -142,10 +143,26 @@ class SubscriberAttributesPosterTests {
         subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", "un@email.com").toBackendMap()),
             appUserID,
+            Delay.NONE,
             expectedOnSuccess,
             unexpectedOnError
         )
         assertThat(receivedOnSuccess).isTrue()
+    }
+
+    @Test
+    fun `postSubscriberAttributes enqueues the request with the given delay`() {
+        mockResponse(200)
+
+        subscriberAttributesPoster.postSubscriberAttributes(
+            mapOf("email" to SubscriberAttribute("email", "un@email.com").toBackendMap()),
+            appUserID,
+            Delay.LONG,
+            expectedOnSuccess,
+            unexpectedOnError
+        )
+
+        assertThat(dispatcher.calledDelay).isEqualTo(Delay.LONG)
     }
 
     @Test
@@ -155,6 +172,7 @@ class SubscriberAttributesPosterTests {
         subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", "un@email.com").toBackendMap()),
             appUserID,
+            Delay.NONE,
             expectedOnSuccess,
             unexpectedOnError
         )
@@ -177,6 +195,7 @@ class SubscriberAttributesPosterTests {
         subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null).toBackendMap()),
             appUserID,
+            Delay.NONE,
             expectedOnSuccess,
             unexpectedOnError
         )
@@ -190,6 +209,7 @@ class SubscriberAttributesPosterTests {
         subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
             appUserID,
+            Delay.NONE,
             unexpectedOnSuccess,
             expectedOnError
         )
@@ -213,6 +233,7 @@ class SubscriberAttributesPosterTests {
         subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
             appUserID,
+            Delay.NONE,
             unexpectedOnSuccess,
             expectedOnError
         )
@@ -222,6 +243,7 @@ class SubscriberAttributesPosterTests {
         assertThat(receivedAttributeErrors!!.size).isEqualTo(1)
         assertThat(receivedAttributeErrors!![0].keyName).isEqualTo("email")
         assertThat(receivedAttributeErrors!![0].message).isEqualTo("Value is not a valid email address.")
+        assertThat(receivedAttributeErrors!![0].backendErrorCode).isEqualTo(7263)
     }
 
     @Test
@@ -237,6 +259,7 @@ class SubscriberAttributesPosterTests {
         subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
             appUserID,
+            Delay.NONE,
             unexpectedOnSuccess,
             expectedOnError
         )
@@ -253,6 +276,7 @@ class SubscriberAttributesPosterTests {
         subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
             appUserID,
+            Delay.NONE,
             unexpectedOnSuccess,
             expectedOnError
         )
@@ -274,6 +298,7 @@ class SubscriberAttributesPosterTests {
         subscriberAttributesPoster.postSubscriberAttributes(
             mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
             appUserID,
+            Delay.NONE,
             unexpectedOnSuccess,
             expectedOnError
         )

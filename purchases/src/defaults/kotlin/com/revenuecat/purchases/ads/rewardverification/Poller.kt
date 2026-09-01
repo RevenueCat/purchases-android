@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ads.rewardverification
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
@@ -15,7 +14,7 @@ import kotlinx.coroutines.delay
 import kotlin.random.Random
 import com.revenuecat.purchases.VerifiedReward as CoreVerifiedReward
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 internal object Poller {
 
     private const val DEFAULT_MAX_ATTEMPTS: Int = 10
@@ -51,7 +50,7 @@ internal object Poller {
         jitterSeconds: () -> Double = defaultJitterSeconds,
         maxAttempts: Int = DEFAULT_MAX_ATTEMPTS,
         logFailure: (message: String, isError: Boolean) -> Unit = ::logFailureToLogcat,
-    ): RewardVerificationResult {
+    ): Outcome {
         val outcome = pollOutcome(
             clientTransactionId = clientTransactionId,
             fetcher = fetcher,
@@ -62,7 +61,7 @@ internal object Poller {
         if (outcome is Outcome.Failed) {
             logFailure(outcome.logMessage, outcome.isUnexpected)
         }
-        return outcome.toResult()
+        return outcome
     }
 
     private suspend fun pollOutcome(

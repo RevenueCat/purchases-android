@@ -36,6 +36,7 @@ internal enum class ReservedSubscriberAttribute(val value: String) {
     SOLAR_ENGINE_DISTINCT_ID("\$solarEngineDistinctId"),
     SOLAR_ENGINE_ACCOUNT_ID("\$solarEngineAccountId"),
     SOLAR_ENGINE_VISITOR_ID("\$solarEngineVisitorId"),
+    SINGULAR_DEVICE_ID("\$singularDeviceId"),
 
     /**
      * Integration IDs
@@ -85,6 +86,7 @@ internal sealed class SubscriberAttributeKey(val backendKey: String) {
         object SolarEngineDistinctId : AttributionIds(ReservedSubscriberAttribute.SOLAR_ENGINE_DISTINCT_ID)
         object SolarEngineAccountId : AttributionIds(ReservedSubscriberAttribute.SOLAR_ENGINE_ACCOUNT_ID)
         object SolarEngineVisitorId : AttributionIds(ReservedSubscriberAttribute.SOLAR_ENGINE_VISITOR_ID)
+        object Singular : AttributionIds(ReservedSubscriberAttribute.SINGULAR_DEVICE_ID)
     }
 
     sealed class IntegrationIds(backendKey: ReservedSubscriberAttribute) : SubscriberAttributeKey(

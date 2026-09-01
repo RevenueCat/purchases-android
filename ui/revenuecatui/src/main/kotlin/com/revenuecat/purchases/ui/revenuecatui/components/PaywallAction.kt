@@ -37,11 +37,18 @@ internal sealed interface PaywallAction {
             val customUrl: String?,
             val openMethod: ButtonComponent.UrlMethod,
             val autoDismiss: Boolean,
-            val packageParamBehavior: PackageParamBehavior,
+            val paramBehavior: ParamBehavior,
+            /** Set at click time so the interaction event and opened URL use the same resolved value. */
+            val resolvedUrl: String? = null,
         ) : External {
-            sealed interface PackageParamBehavior {
-                data class Append(val rcPackage: Package?, val packageParam: String?) : PackageParamBehavior
-                object DoNotAppend : PackageParamBehavior
+            sealed interface ParamBehavior {
+                data class Append(
+                    val rcPackage: Package?,
+                    val packageParam: String?,
+                    val appUserIdParam: String? = null,
+                    val envParam: String? = null,
+                ) : ParamBehavior
+                object DoNotAppend : ParamBehavior
             }
         }
 

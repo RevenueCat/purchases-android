@@ -40,12 +40,18 @@ class CustomCheckpointViewModel : ViewModel() {
         viewModelScope.launch {
             val result = try {
                 when (val result = Purchases.sharedInstance.awaitCheckpoint(checkpointIdentifier)) {
+                    is CheckpointResult.ReceivedOffering -> UiState(
+                        title = "Offering returned",
+                        detail = "Identifier: ${result.offering.identifier}. The app now owns presentation.",
+                        raw = result.toString(),
+                    )
                     is CheckpointResult.PaywallPresented -> UiState(
                         title = "Paywall presented",
                         detail = when (val outcome = result.paywallOutcome) {
                             is CheckpointPaywallOutcome.Purchased -> "Purchased."
                             is CheckpointPaywallOutcome.Restored -> "Restored."
                             CheckpointPaywallOutcome.Dismissed -> "Dismissed."
+                            CheckpointPaywallOutcome.WebCheckoutOpened -> "Left to pay via web checkout."
                             is CheckpointPaywallOutcome.Error -> "Paywall error: ${outcome.error.message}"
                             else -> "Unknown paywall outcome."
                         },
@@ -53,7 +59,7 @@ class CustomCheckpointViewModel : ViewModel() {
                     )
                     is CheckpointResult.NoAction -> UiState(
                         title = "No action",
-                        detail = "Reason: ${result.reason.value}",
+                        detail = "Reason: ${result.reason}",
                         raw = result.toString(),
                     )
                     else -> UiState(title = "Unknown checkpoint result.", raw = result.toString())

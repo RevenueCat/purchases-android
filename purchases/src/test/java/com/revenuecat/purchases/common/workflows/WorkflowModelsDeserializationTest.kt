@@ -4,10 +4,10 @@ package com.revenuecat.purchases.common.workflows
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.models.StoreReplacementMode
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.descriptors.elementNames
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -115,29 +115,194 @@ internal class WorkflowModelsDeserializationTest {
         assertThat(declaration?.defaultValue?.content).isEqualTo("monthly")
     }
 
-    /**
-     * A workflow screen and an offering's paywall are the same backend document decoded through two
-     * independent field lists, which is how `state_declarations` went missing.
-     *
-     * Add the field to [WorkflowScreen] or allow-list it below with a reason.
-     */
     @Test
-    @OptIn(ExperimentalSerializationApi::class)
-    fun `WorkflowScreen decodes every PaywallComponentsData field`() {
-        val notSentPerScreen = setOf(
-            // Supplied by WorkflowScreenMapper from the screens map key, not by the screen body.
-            "id",
-            // Absent from the backend's per-screen payload (serialize_paywalls_as_screens).
-            "zero_decimal_place_countries",
-            "play_store_product_change_mode",
-            // Sent per screen but not wired through yet: workflow-backed paywalls use the default.
-            "automatically_scale_font_size",
+    fun `WorkflowScreen reads automatically_scale_font_size`() {
+        val json = """
+            {
+              "template_name": "components",
+              "asset_base_url": "https://assets.pawwalls.com",
+              "components_config": {
+                "base": {
+                  "stack": {"type": "stack", "components": []},
+                  "background": {"type": "color", "value": {"light": {"type": "hex", "value": "#ffffff"}}}
+                }
+              },
+              "components_localizations": {"en_US": {}},
+              "default_locale": "en_US",
+              "automatically_scale_font_size": false
+            }
+        """.trimIndent()
+
+        val screen = JsonTools.json.decodeFromString(WorkflowScreen.serializer(), json)
+
+        assertThat(screen.automaticallyScaleFontSize).isFalse()
+    }
+
+    @Test
+    fun `WorkflowScreen reads play_store_product_change_mode`() {
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            workflowScreenJson(
+                productChangeConfig = """
+                    {
+                      "upgrade_replacement_mode": "charge_full_price",
+                      "downgrade_replacement_mode": "deferred"
+                    }
+                """.trimIndent(),
+            ),
         )
 
-        val missing = PaywallComponentsData.serializer().descriptor.elementNames.toSet() -
-            WorkflowScreen.serializer().descriptor.elementNames.toSet() -
-            notSentPerScreen
-
-        assertThat(missing).isEmpty()
+        assertThat(screen.productChangeConfig?.upgradeReplacementMode)
+            .isEqualTo(StoreReplacementMode.CHARGE_FULL_PRICE)
+        assertThat(screen.productChangeConfig?.downgradeReplacementMode)
+            .isEqualTo(StoreReplacementMode.DEFERRED)
     }
+
+    @Test
+    fun `WorkflowScreen treats empty play_store_product_change_mode as absent`() {
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            workflowScreenJson(productChangeConfig = "{}"),
+        )
+
+        assertThat(screen.productChangeConfig).isNull()
+    }
+
+    @Test
+    fun `WorkflowScreen reads zero_decimal_place_countries`() {
+        // The backend posts the field keyed by store; only the Google list applies here.
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            workflowScreenJson(
+                zeroDecimalPlaceCountries = "{\"apple\": [\"TWN\", \"MEX\"], \"google\": [\"TW\", \"MX\"]}",
+            ),
+        )
+
+        assertThat(screen.zeroDecimalPlaceCountries).containsExactly("TW", "MX")
+    }
+
+    @Test
+    fun `WorkflowScreen defaults zero_decimal_place_countries to empty when absent`() {
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            workflowScreenJson(),
+        )
+
+        assertThat(screen.zeroDecimalPlaceCountries).isEmpty()
+    }
+
+    private fun workflowScreenJson(
+        productChangeConfig: String? = null,
+        zeroDecimalPlaceCountries: String? = null,
+    ): String {
+        val optionalFields = listOfNotNull(
+            productChangeConfig?.let { "\"play_store_product_change_mode\": $it" },
+            zeroDecimalPlaceCountries?.let { "\"zero_decimal_place_countries\": $it" },
+        ).joinToString(",\n")
+
+        return """
+            {
+              "template_name": "components",
+              "asset_base_url": "https://assets.pawwalls.com",
+              "components_config": {
+                "base": {
+                  "stack": {"type": "stack", "components": []},
+                  "background": {"type": "color", "value": {"light": {"type": "hex", "value": "#ffffff"}}}
+                }
+              },
+              "components_localizations": {"en_US": {}},
+              "default_locale": "en_US"${if (optionalFields.isEmpty()) "" else ",\n$optionalFields"}
+            }
+        """.trimIndent()
+    }
+
+    // region default_locale
+
+    private fun screenJson(defaultLocaleFragment: String) = """
+        {
+          $defaultLocaleFragment
+          "template_name": "tmpl",
+          "asset_base_url": "https://assets.revenuecat.com",
+          "components_localizations": {},
+          "components_config": {
+            "base": {
+              "stack": {
+                "type": "stack", "components": [],
+                "dimension": { "type": "vertical", "alignment": "center", "distribution": "center" },
+                "size": { "width": { "type": "fill" }, "height": { "type": "fill" } },
+                "padding": { "top": 0, "bottom": 0, "leading": 0, "trailing": 0 },
+                "margin": { "top": 0, "bottom": 0, "leading": 0, "trailing": 0 }
+              },
+              "background": { "type": "color", "value": { "light": { "type": "hex", "value": "#FFFFFF" } } }
+            }
+          }
+        }
+    """.trimIndent()
+
+    @Test
+    fun `WorkflowScreen default_locale is preserved when present`() {
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            screenJson(""""default_locale": "es_ES","""),
+        )
+        assertThat(screen.defaultLocaleIdentifier).isEqualTo(LocaleId("es_ES"))
+    }
+
+    @Test
+    fun `WorkflowScreen default_locale falls back to en when null`() {
+        // The backend sends null for template-derived screens. Throwing here discards the whole
+        // workflow, not just this field, taking every screen in it down with the paywall.
+        val screen = JsonTools.json.decodeFromString(
+            WorkflowScreen.serializer(),
+            screenJson(""""default_locale": null,"""),
+        )
+        assertThat(screen.defaultLocaleIdentifier).isEqualTo(LocaleId("en"))
+    }
+
+    @Test
+    fun `WorkflowScreen default_locale falls back to en for non-string values`() {
+        // iOS only accepts a JSON string here, so coercing a number or bool into LocaleId("42")
+        // would hand the renderer a locale the other platforms never produce.
+        listOf("42", "1.5", "true", "{}", """{ "value": "es_ES" }""", """["es_ES"]""").forEach { value ->
+            val screen = JsonTools.json.decodeFromString(
+                WorkflowScreen.serializer(),
+                screenJson(""""default_locale": $value,"""),
+            )
+            assertThat(screen.defaultLocaleIdentifier)
+                .`as`("default_locale was coerced from: %s", value)
+                .isEqualTo(LocaleId("en"))
+        }
+    }
+
+    @Test
+    fun `WorkflowScreen default_locale falls back to en when missing`() {
+        val screen = JsonTools.json.decodeFromString(WorkflowScreen.serializer(), screenJson(""))
+        assertThat(screen.defaultLocaleIdentifier).isEqualTo(LocaleId("en"))
+    }
+
+    @Test
+    fun `workflow and offerings paths agree on default_locale`() {
+        // Both models describe the same screen; the workflow path only re-wraps what /offerings
+        // serves directly. They must not diverge on a shared field.
+        listOf(
+            """"default_locale": "es_ES",""",
+            """"default_locale": null,""",
+            """"default_locale": 42,""",
+            """"default_locale": true,""",
+            """"default_locale": {},""",
+            "",
+        ).forEach { fragment ->
+            val json = screenJson(fragment)
+            val fromWorkflow = JsonTools.json
+                .decodeFromString(WorkflowScreen.serializer(), json).defaultLocaleIdentifier
+            val fromOfferings = JsonTools.json
+                .decodeFromString(PaywallComponentsData.serializer(), json).defaultLocaleIdentifier
+
+            assertThat(fromWorkflow)
+                .`as`("default_locale diverged for fragment: %s", fragment.ifEmpty { "<omitted>" })
+                .isEqualTo(fromOfferings)
+        }
+    }
+
+    // endregion
 }

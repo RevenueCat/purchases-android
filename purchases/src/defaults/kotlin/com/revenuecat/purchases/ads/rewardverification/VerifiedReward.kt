@@ -1,13 +1,11 @@
 package com.revenuecat.purchases.ads.rewardverification
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import dev.drewhamilton.poko.Poko
 import java.util.Date
 
 /**
  * Reward payload delivered when server-side reward verification succeeds.
  */
-@ExperimentalPreviewRevenueCatPurchasesAPI
 public interface VerifiedReward {
 
     /**

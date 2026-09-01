@@ -1,11 +1,12 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.ads.rewardverification
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ads.events.types.AdRewardFailureReason
 
 // Internal poll result. The public [RewardVerificationResult] stays binary (verified/failed); these subtypes
 // capture *why* polling ended so the poller can log an actionable reason without adding public cases.
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal sealed interface Outcome {
     class Verified(val reward: VerifiedReward, val moreRewards: List<VerifiedReward>) : Outcome
 
@@ -13,6 +14,9 @@ internal sealed interface Outcome {
         val logMessage: String
 
         val isUnexpected: Boolean
+
+        // The reward-tracking equivalent of this failure, forwarded verbatim into AdRewardFailedToVerifyData.
+        val trackingFailureReason: AdRewardFailureReason
 
         // Logs the backend-provided message verbatim, falling back to the machine-readable failure
         // reason when no message is present so the actionable signal isn't lost.
@@ -26,6 +30,8 @@ internal sealed interface Outcome {
                         ?.let { "Reward verification was rejected by AdMob server-side verification (reason: $it)." }
                     ?: "Reward verification was rejected by AdMob server-side verification."
             override val isUnexpected: Boolean get() = false
+            override val trackingFailureReason: AdRewardFailureReason
+                get() = AdRewardFailureReason.BackendError(failureReason)
         }
 
         object ExhaustedWhilePending : Failed {
@@ -35,6 +41,7 @@ internal sealed interface Outcome {
                     "the AdMob Dashboard, the SSV callback URL is misconfigured in the AdMob Dashboard, AdMob " +
                     "delayed delivering the callback, or RevenueCat failed to process the SSV webhook."
             override val isUnexpected: Boolean get() = false
+            override val trackingFailureReason: AdRewardFailureReason get() = AdRewardFailureReason.Timeout
         }
 
         object ExhaustedWhileTransientErroring : Failed {
@@ -42,6 +49,7 @@ internal sealed interface Outcome {
                 get() = "Reward verification timed out after repeated transient errors while polling — " +
                     "typically unstable device network connectivity. The reward couldn't be verified."
             override val isUnexpected: Boolean get() = false
+            override val trackingFailureReason: AdRewardFailureReason get() = AdRewardFailureReason.NetworkError
         }
 
         object UnexpectedResponse : Failed {
@@ -50,6 +58,7 @@ internal sealed interface Outcome {
                     "doesn't recognize. Update to the latest SDK version; if you're already on the latest, " +
                     "contact RevenueCat support."
             override val isUnexpected: Boolean get() = true
+            override val trackingFailureReason: AdRewardFailureReason get() = AdRewardFailureReason.Unknown
         }
 
         class TerminalError(private val error: String) : Failed {
@@ -57,11 +66,21 @@ internal sealed interface Outcome {
                 get() = "Reward verification stopped after an unrecoverable error: $error. This is " +
                     "unexpected; if it persists, contact RevenueCat support with the error above."
             override val isUnexpected: Boolean get() = true
+            override val trackingFailureReason: AdRewardFailureReason get() = AdRewardFailureReason.Unknown
+        }
+
+        // The poll was cancelled before reaching a terminal status — e.g. the ad was dismissed or the SDK
+        // closed while polling was in flight. Never returned by Poller itself (cancellation propagates as a
+        // thrown CancellationException); callers that catch it synthesize this Outcome to track the attempt.
+        object Cancelled : Failed {
+            override val logMessage: String
+                get() = "Reward verification was cancelled before it could complete."
+            override val isUnexpected: Boolean get() = false
+            override val trackingFailureReason: AdRewardFailureReason get() = AdRewardFailureReason.Cancelled
         }
     }
 }
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
 internal fun Outcome.toResult(): RewardVerificationResult {
     return when (this) {
         is Outcome.Verified -> RewardVerificationResult.verified(reward, moreRewards)

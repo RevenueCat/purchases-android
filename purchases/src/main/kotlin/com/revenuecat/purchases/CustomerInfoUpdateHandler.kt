@@ -38,7 +38,11 @@ internal class CustomerInfoUpdateHandler constructor(
     private var lastSentCustomerInfo: CustomerInfo? = null
 
     fun cacheAndNotifyListeners(customerInfo: CustomerInfo) {
-        deviceCache.cacheCustomerInfo(identityManager.currentAppUserID, customerInfo)
+        cacheAndNotifyListeners(customerInfo, identityManager.currentAppUserID)
+    }
+
+    fun cacheAndNotifyListeners(customerInfo: CustomerInfo, appUserID: String) {
+        deviceCache.cacheCustomerInfo(appUserID, customerInfo)
         notifyListeners(customerInfo)
     }
 

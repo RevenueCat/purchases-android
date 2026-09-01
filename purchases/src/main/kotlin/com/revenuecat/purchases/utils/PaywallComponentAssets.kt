@@ -4,6 +4,8 @@ package com.revenuecat.purchases.utils
 
 import android.net.Uri
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
@@ -28,47 +30,36 @@ import com.revenuecat.purchases.paywalls.components.WebViewComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
-import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 
-/**
- * Everything in a paywall's component tree that can be warmed before it is displayed, gathered in a
- * single pass so each warming path picks what it needs instead of walking the tree again.
- */
 internal data class PaywallComponentAssets(
     val imageUris: Set<Uri>,
-    val webViews: Set<WebViewAsset>,
+    val webViewUrls: Set<String>,
 )
 
-internal data class WebViewAsset(
-    val url: String,
-    val componentId: String,
-    val sizeToContentWidth: Boolean,
-    val sizeToContentHeight: Boolean,
-)
+/**
+ * Null if this offering has no Paywalls V2 config or it cannot be decoded. `data` decodes lazily, so this is
+ * where that cost lands; every caller is best-effort asset warming, so a failure must not propagate.
+ */
+internal fun Offering.baseComponentsConfig(): PaywallComponentsConfig? =
+    paywallComponents?.data?.getOrElse { error ->
+        errorLog(error) { "Error deserializing paywall components data for '$identifier'. Skipping its assets." }
+        null
+    }?.componentsConfig?.base
 
 internal fun PaywallComponentsConfig.collectAssets(): PaywallComponentAssets {
     val imageUris = background.findImageUris().toMutableSet()
-    val webViews = mutableSetOf<WebViewAsset>()
+    val webViewUrls = linkedSetOf<String>()
 
     listOfNotNull(stack, header?.stack, stickyFooter?.stack).forEach { tree ->
         tree.flatten().forEach { component ->
             imageUris += component.findImageUris()
-            if (component is WebViewComponent) webViews += component.toWebViewAsset()
+            if (component is WebViewComponent) webViewUrls += component.url
         }
     }
 
-    return PaywallComponentAssets(imageUris = imageUris, webViews = webViews)
+    return PaywallComponentAssets(imageUris = imageUris, webViewUrls = webViewUrls)
 }
-
-private fun WebViewComponent.toWebViewAsset(): WebViewAsset = WebViewAsset(
-    url = url,
-    componentId = id,
-    // Overrides can only change `visible`, so size is always the base component's. Matches how
-    // WebViewComponentView derives the same two axes at render time.
-    sizeToContentWidth = size.width is SizeConstraint.Fit,
-    sizeToContentHeight = size.height is SizeConstraint.Fit,
-)
 
 /** Image URIs this component references directly; descendants are visited separately by [flatten]. */
 @Suppress("CyclomaticComplexMethod")
@@ -78,10 +69,8 @@ private fun PaywallComponent.findImageUris(): Set<Uri> =
             background.findImageUris() + overrides.imageUris { it.background.findImageUris() }
         }
         is IconComponent -> {
-            // appendEncodedPath, not path() (which replaces the base URL's path, dropping e.g.
-            // /icons) nor appendPath (which percent-encodes the segment). The result must match
-            // the URL IconComponentState builds at render time by raw concatenation, since the
-            // image cache is keyed by the exact URL string.
+            // Not path() (replaces the base path) nor appendPath (percent-encodes): the result must match
+            // IconComponentState's raw concatenation, since the image cache keys on the exact URL string.
             setOf(
                 Uri.parse(baseUrl)
                     .buildUpon()
@@ -114,7 +103,6 @@ private fun PaywallComponent.findImageUris(): Set<Uri> =
         is TabControlToggleComponent,
         is TextComponent,
         is TimelineComponent,
-        // Its bundle is warmed through PaywallComponentAssets.webViews instead.
         is WebViewComponent,
         -> emptySet()
     }
