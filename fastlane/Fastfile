@@ -581,6 +581,13 @@ platform :android do
     )
   end
 
+  desc "Builds an AdMob Next-Gen Integration Sample APK"
+  lane :build_admob_next_gen_integration_sample do |options|
+    gradle(
+      task: ":examples:admob-next-gen-sample:assembleDebug",
+    )
+  end
+
   desc <<-DESC
 Builds a Magic Weather APK and prompts for:
 * Gradle task
