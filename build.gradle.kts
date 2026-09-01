@@ -44,6 +44,22 @@ dokka {
     }
 }
 
+// Shared by detektAll and detektAllBaseline: both analyze the whole rootDir, so they must skip the same paths.
+// `.claude`, `.conductor` and `.codex` hold nested checkouts of this repo created by agent tooling (git worktrees, so
+// they contain full copies of every source file). Without these excludes, detekt reports issues from other branches
+// that aren't in the developer's working tree at all, failing detektAll and the detekt pre-commit hook for clean
+// changes. These only match nested copies: a worktree analyzes its own sources normally, because the patterns are
+// relative to the rootDir you run Gradle from.
+val detektExcludes = listOf(
+    "**/build/**",
+    "**/test/**/*.kt",
+    "**/testDefaults/**/*.kt",
+    "**/testCustomEntitlementComputation/**/*.kt",
+    "**/.claude/**",
+    "**/.conductor/**",
+    "**/.codex/**",
+)
+
 tasks.register<io.gitlab.arturbosch.detekt.Detekt>("detektAll") {
     description = "Runs over the whole codebase without the startup overhead for each module."
     buildUponDefaultConfig = true
@@ -51,12 +67,7 @@ tasks.register<io.gitlab.arturbosch.detekt.Detekt>("detektAll") {
     parallel = true
     setSource(files(rootDir))
     include("**/*.kt", "**/*.kts")
-    exclude(
-        "**/build/**",
-        "**/test/**/*.kt",
-        "**/testDefaults/**/*.kt",
-        "**/testCustomEntitlementComputation/**/*.kt",
-    )
+    exclude(detektExcludes)
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     baseline.set(file("$rootDir/config/detekt/detekt-baseline.xml"))
     reports {
@@ -76,10 +87,5 @@ tasks.register<io.gitlab.arturbosch.detekt.DetektCreateBaselineTask>("detektAllB
     config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
     baseline.set(file("$rootDir/config/detekt/detekt-baseline.xml"))
     include("**/*.kt", "**/*.kts")
-    exclude(
-        "**/build/**",
-        "**/test/**/*.kt",
-        "**/testDefaults/**/*.kt",
-        "**/testCustomEntitlementComputation/**/*.kt",
-    )
+    exclude(detektExcludes)
 }

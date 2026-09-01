@@ -104,6 +104,63 @@ internal class PaywallWebViewPrewarmerTest {
     }
 
     @Test
+    fun `warms a url again once the cache it was warmed into is cleared`() {
+        val prewarmer = prewarmer()
+        prewarmer.prewarm(context, URL)
+        finishMainFrameLoad(warmed.first())
+        idleFor(PaywallWebViewPrewarmer.SETTLE_GRACE_MS)
+
+        prewarmer.onCacheCleared()
+        prewarmer.prewarm(context, URL)
+
+        assertWarmCount(2)
+        assertThat(lastLoadedUrl()).isEqualTo(URL)
+    }
+
+    // A warm that straddles the clear cached against storage that is now gone, so it starts over.
+    @Test
+    fun `clearing the cache restarts the warms in flight ahead of the queue`() {
+        val prewarmer = prewarmer()
+        prewarmer.prewarmAll(URL, OTHER_URL)
+
+        prewarmer.onCacheCleared()
+        idle()
+
+        assertWarmCount(2)
+        assertThat(lastLoadedUrl()).isEqualTo(URL)
+        assertThat(prewarmer.warmingCount).isEqualTo(1)
+        assertThat(prewarmer.queuedCount).isEqualTo(1)
+    }
+
+    @Test
+    fun `clearing the cache does not requeue a url that is already waiting`() {
+        val prewarmer = prewarmer(maxConcurrent = 2)
+        prewarmer.prewarmAll(URL, OTHER_URL)
+        prewarmer.onDisplayStarted(THIRD_URL)
+
+        prewarmer.onCacheCleared()
+        idle()
+
+        assertThat(prewarmer.queuedCount + prewarmer.warmingCount).isEqualTo(2)
+    }
+
+    @Test
+    fun `a load that finished before the clear does not settle the restarted warm`() {
+        val prewarmer = prewarmer()
+        prewarmer.prewarm(context, URL)
+        // Arms settle(URL) without draining it, so it lands on the warm that replaces this one.
+        val released = warmed.first()
+        shadowOf(released).webViewClient.onPageFinished(released, URL)
+
+        prewarmer.onCacheCleared()
+        idle()
+        idleFor(PaywallWebViewPrewarmer.SETTLE_GRACE_MS)
+
+        assertWarmCount(2)
+        assertThat(prewarmer.warmingCount).isEqualTo(1)
+    }
+
+    @Test
     fun `ignores a url already in flight or queued`() {
         val prewarmer = prewarmer()
         prewarmer.prewarmAll(URL, OTHER_URL)

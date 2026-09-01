@@ -3,6 +3,8 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import androidx.compose.material3.ColorScheme
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.paywalls.PaywallData
@@ -46,6 +48,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.PaywallIconName
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateStore
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
+import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowScreenContext
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PackageConfigurationType
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.PaywallTemplate
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfigurationFactory
@@ -364,9 +367,11 @@ internal fun Offering.toComponentsPaywallState(
     storefrontCountryCode: String?,
     dateProvider: () -> Date,
     purchases: PurchasesType,
+    workflowScreen: WorkflowScreenContext? = null,
     customVariables: Map<String, CustomVariableValue> = emptyMap(),
     defaultCustomVariables: Map<String, CustomVariableValue> = emptyMap(),
     stateStore: PaywallStateStore? = null,
+    viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
 ): PaywallState.Loaded.Components {
     val showPricesWithDecimals = storefrontCountryCode?.let {
         !validationResult.zeroDecimalPlaceCountries.contains(it)
@@ -393,10 +398,12 @@ internal fun Offering.toComponentsPaywallState(
         packages = validationResult.packages,
         customVariables = customVariables,
         defaultCustomVariables = defaultCustomVariables,
+        workflowScreen = workflowScreen,
         initialSelectedTabIndex = validationResult.initialSelectedTabIndex,
         mainStackHasHeroImage = validationResult.mainStackHasHeroImage,
         purchases = purchases,
         stateStore = resolvedStateStore,
+        viewModelActionInProgress = viewModelActionInProgress,
     )
 }
 

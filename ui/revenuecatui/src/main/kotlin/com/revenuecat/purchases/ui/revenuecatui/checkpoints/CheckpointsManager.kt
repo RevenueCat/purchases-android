@@ -70,36 +70,27 @@ internal class CheckpointsManager {
         identifier: String,
         params: CheckpointParams?,
     ): CheckpointResult = withContext(Dispatchers.Main) {
-        val checkpoint = CheckpointInfo(identifier, params ?: CheckpointParams {})
-        checkpointListener?.onCheckpointHit(checkpoint)
+        val customVariables = (params ?: CheckpointParams {}).customVariables
+        checkpointListener?.onCheckpointHit(CheckpointHitContext(identifier, customVariables))
         if (!CheckpointIdentifierValidator.isValid(identifier)) {
             Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(identifier))
-            val result = CheckpointResult.NoAction(
-                checkpoint,
-                CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER,
-            )
-            checkpointListener?.onCheckpointCompleted(checkpoint, result)
+            val result = CheckpointResult.NoAction(CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER)
+            checkpointListener?.onCheckpointCompleted(CheckpointCompletedContext(identifier, customVariables, result))
             return@withContext result
         }
 
         val resolution = purchases.resolveCheckpoint(
             identifier,
-            checkpoint.params.customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
+            customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
         )
         val result = when (resolution) {
-            is CheckpointResolution.MatchedOffering -> CheckpointResult.ReceivedOffering(
-                checkpoint,
-                resolution.offering,
-            )
+            is CheckpointResolution.MatchedOffering -> CheckpointResult.ReceivedOffering(resolution.offering)
             is CheckpointResolution.MatchedWorkflow ->
-                CheckpointResult.PaywallPresented(
-                    checkpoint,
-                    present(purchases, resolution, checkpoint.params.customVariables),
-                )
+                CheckpointResult.PaywallPresented(present(purchases, resolution, customVariables))
             is CheckpointResolution.NoAction ->
-                CheckpointResult.NoAction(checkpoint, resolution.reason.toResultReason())
+                CheckpointResult.NoAction(resolution.reason.toResultReason())
         }
-        checkpointListener?.onCheckpointCompleted(checkpoint, result)
+        checkpointListener?.onCheckpointCompleted(CheckpointCompletedContext(identifier, customVariables, result))
         result
     }
 
@@ -194,7 +185,6 @@ private fun CheckpointResolution.NoAction.Reason.toResultReason(): CheckpointRes
         CheckpointResolution.NoAction.Reason.NO_MATCH -> CheckpointResult.NoAction.Reason.NO_MATCH
         CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE ->
             CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE
-        CheckpointResolution.NoAction.Reason.DISABLED -> CheckpointResult.NoAction.Reason.DISABLED
         CheckpointResolution.NoAction.Reason.UNKNOWN_CHECKPOINT ->
             CheckpointResult.NoAction.Reason.UNKNOWN_CHECKPOINT
     }

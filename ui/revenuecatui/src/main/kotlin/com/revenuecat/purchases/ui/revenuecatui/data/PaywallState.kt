@@ -5,6 +5,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -14,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.LocaleList
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
@@ -111,7 +113,7 @@ internal sealed interface PaywallState {
              * All locales that this paywall supports, with `locales.head` being the default one.
              */
             private val locales: NonEmptySet<LocaleId>,
-            private val storefrontCountryCode: String?,
+            val storefrontCountryCode: String?,
             private val dateProvider: () -> Date,
             private val packages: AvailablePackages,
             /**
@@ -126,10 +128,13 @@ internal sealed interface PaywallState {
             initialSelectedTabIndex: Int? = null,
             initialSheetState: SimpleSheetState = SimpleSheetState(),
             private val purchases: PurchasesType,
+            val workflowScreen: WorkflowScreenContext? = null,
             /**
              * Presentation-session store for state-driven paywalls, seeded from the paywall's declared state defaults.
              */
             val stateStore: PaywallStateStore = PaywallStateStore(emptyMap()),
+            /** The view model's gate, so every step of a workflow reads the one flag. */
+            private val viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
         ) : Loaded {
 
             /**
@@ -138,6 +143,8 @@ internal sealed interface PaywallState {
              */
             val mergedCustomVariables: Map<String, CustomVariableValue> =
                 defaultCustomVariables + customVariables
+
+            val store: Store get() = purchases.store
 
             data class AvailablePackages(
                 val packagesOutsideTabs: List<Info>,
@@ -306,6 +313,9 @@ internal sealed interface PaywallState {
             val currentDate: Date
                 get() = dateProvider()
 
+            val appUserID: String
+                get() = purchases.appUserID
+
             /**
              * The measured height of the header overlay in pixels. Set during the layout phase by
              * the custom Layout in [LoadedPaywallComponents] so that ZLayer stacks can read it
@@ -325,15 +335,23 @@ internal sealed interface PaywallState {
             var footerHeightPx: Int = 0
                 @JvmSynthetic internal set
 
-            var actionInProgress by mutableStateOf(false)
+            /** Raised and cleared by the button, for the actions that begin and end with the click. */
+            var clickScopedActionInProgress by mutableStateOf(false)
                 private set
+
+            /**
+             * Read live rather than mirrored, so an action that outlives the button that started it keeps
+             * the paywall disabled after [clickScopedActionInProgress] is cleared by the click's cancellation.
+             */
+            val actionInProgress: Boolean
+                get() = viewModelActionInProgress.value || clickScopedActionInProgress
 
             val sheet = initialSheetState
 
             fun update(
                 localeList: FrameworkLocaleList? = null,
                 selectedTabIndex: Int? = null,
-                actionInProgress: Boolean? = null,
+                clickScopedActionInProgress: Boolean? = null,
             ) {
                 if (localeList != null) localeId = LocaleList(localeList.toLanguageTags()).toLocaleId()
 
@@ -364,7 +382,9 @@ internal sealed interface PaywallState {
                         ?: visibleFallbackForHiddenDefaultOutsideTabs
                 }
 
-                if (actionInProgress != null) this.actionInProgress = actionInProgress
+                if (clickScopedActionInProgress != null) {
+                    this.clickScopedActionInProgress = clickScopedActionInProgress
+                }
             }
 
             fun update(selectedPackageUniqueId: String) {

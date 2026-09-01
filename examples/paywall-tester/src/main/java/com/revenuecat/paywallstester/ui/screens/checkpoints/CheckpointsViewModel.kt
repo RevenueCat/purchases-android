@@ -92,7 +92,7 @@ internal class CheckpointsViewModelImpl(
         )
         is CheckpointResult.NoAction -> CheckpointResultUi(
             title = "No action",
-            detail = "Reason: ${reason.value}",
+            detail = "Reason: $reason",
             isError = false,
             raw = toString(),
         )
@@ -110,6 +110,7 @@ internal class CheckpointsViewModelImpl(
         is CheckpointPaywallOutcome.Restored -> "Restored"
         is CheckpointPaywallOutcome.Error -> "Paywall error: ${error.message}"
         CheckpointPaywallOutcome.Dismissed -> "Dismissed"
+        CheckpointPaywallOutcome.WebCheckoutOpened -> "Web checkout opened"
         else -> toString()
     }
 }

@@ -10,5 +10,3 @@ internal fun configurePurchases(
 ) {
     Purchases.configure(configuration)
 }
-
-internal fun armRemoteConfigKillSwitchForE2ETests() = Unit

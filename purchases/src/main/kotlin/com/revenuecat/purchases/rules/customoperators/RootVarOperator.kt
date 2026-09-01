@@ -12,7 +12,7 @@ internal object RootVarOperator {
     fun opRootVar(args: Value, vars: Scope): Value =
         AccessorOperators.resolveVar(
             args = args,
-            target = vars.root,
+            lookup = { AccessorOperators.lookupVar(vars.root, it) },
             vars = vars,
             operatorName = "rc.rootVar",
         )

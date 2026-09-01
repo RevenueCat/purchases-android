@@ -80,11 +80,16 @@ public class PurchaseButtonComponent(
         public val urlLid: LocalizationKey,
         @SerialName("package_param")
         public val packageParam: String? = null,
+        @SerialName("app_user_id_param")
+        public val appUserIdParam: String? = null,
+        @SerialName("env_param")
+        public val envParam: String? = null,
     )
 }
 
 @OptIn(InternalRevenueCatAPI::class)
 private object ActionDeserializer : EnumDeserializerWithDefault<PurchaseButtonComponent.Action> (
+    serialName = "com.revenuecat.purchases.paywalls.components.PurchaseButtonComponent.Action",
     defaultValue = PurchaseButtonComponent.Action.IN_APP_CHECKOUT,
 )
 

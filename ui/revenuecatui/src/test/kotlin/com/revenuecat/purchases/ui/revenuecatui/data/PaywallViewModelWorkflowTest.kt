@@ -582,6 +582,38 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `each step's state carries the identity of the step it renders`() {
+        val wfl = workflow.copy(
+            steps = mapOf(
+                "step-1" to step1.copy(metadata = screenTypeMetadata(WorkflowScreenType.PAYWALL)),
+                "step-2" to step2.copy(type = "survey"),
+            ),
+        )
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, testOfferings, null, uiConfig)
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+
+        assertThat(vm.workflowScreenOf("step-1")).isEqualTo(
+            WorkflowScreenContext(
+                workflowId = "wfl-test",
+                stepId = "step-1",
+                stepType = "screen",
+                screenType = listOf(WorkflowScreenType.PAYWALL),
+            ),
+        )
+        assertThat(vm.workflowScreenOf("step-2")).isEqualTo(
+            WorkflowScreenContext(
+                workflowId = "wfl-test",
+                stepId = "step-2",
+                stepType = "survey",
+                screenType = null,
+            ),
+        )
+    }
+
+    @Test
     fun `back navigation returns step state with the selection the user left on it`() {
         val (fetchResult2, offerings2) = makeTwoPackageWorkflow()
         val vm = createVm()
@@ -2308,6 +2340,9 @@ class PaywallViewModelWorkflowTest {
 
     private fun List<FeatureEvent>.paywallEventsOfType(type: PaywallEventType) =
         filterIsInstance<PaywallEvent>().filter { it.type == type }
+
+    private fun PaywallViewModelImpl.workflowScreenOf(stepId: String): WorkflowScreenContext? =
+        workflowState.value?.stepStates?.get(stepId)?.workflowScreen
 
     @Test
     fun `step tagged paywall reports impression and close`() = runTest {

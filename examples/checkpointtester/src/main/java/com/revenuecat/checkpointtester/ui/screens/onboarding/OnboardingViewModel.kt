@@ -84,10 +84,11 @@ class OnboardingViewModel : ViewModel() {
                         is CheckpointPaywallOutcome.Purchased -> "Purchased during onboarding."
                         is CheckpointPaywallOutcome.Restored -> "Restored during onboarding."
                         CheckpointPaywallOutcome.Dismissed -> "Paywall dismissed."
+                        CheckpointPaywallOutcome.WebCheckoutOpened -> "Left to pay via web checkout."
                         is CheckpointPaywallOutcome.Error -> "Paywall error: ${outcome.error.message}"
                         else -> "Unknown paywall outcome."
                     }
-                    is CheckpointResult.NoAction -> "No paywall shown (${result.reason.value})."
+                    is CheckpointResult.NoAction -> "No paywall shown (${result.reason})."
                     else -> "Unknown checkpoint result."
                 }
             } catch (e: PurchasesException) {

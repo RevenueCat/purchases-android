@@ -810,6 +810,8 @@ internal class StyleFactory(
                     openMethod = method.openMethod ?: ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
                     rcPackage = rcPackage,
                     packageParam = method.customUrl.packageParam,
+                    appUserIdParam = method.customUrl.appUserIdParam,
+                    envParam = method.customUrl.envParam,
                 )
             }
 
