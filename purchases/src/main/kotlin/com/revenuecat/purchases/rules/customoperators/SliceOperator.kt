@@ -31,11 +31,8 @@ internal object SliceOperator {
     fun opSlice(args: Value, vars: Scope): Value {
         val evaluated = Operators.evalArgs(args, vars)
 
-        if (evaluated.size != BINARY_OPERAND_COUNT && evaluated.size != TERNARY_OPERAND_COUNT) {
-            throw EvaluationException.TypeMismatch(
-                "operator '$OPERATOR_NAME' expects 2 or 3 arguments, got ${evaluated.size}",
-            )
-        }
+        val allowed = listOf(BINARY_OPERAND_COUNT, TERNARY_OPERAND_COUNT)
+        Operators.checkArity(evaluated.size, allowed, OPERATOR_NAME)
 
         val source = evaluated[0]
         if (source !is Value.ArrayValue) {

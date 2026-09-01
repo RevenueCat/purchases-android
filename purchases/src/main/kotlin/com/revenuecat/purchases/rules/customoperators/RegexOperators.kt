@@ -32,7 +32,7 @@ internal object RegexOperators {
     fun opRegexMatch(args: Value, vars: Scope): Value {
         val operatorName = "rc.regexMatch"
         val evaluated = Operators.evalArgs(args, vars)
-        checkArity(evaluated.size, listOf(BINARY), operatorName)
+        Operators.checkArity(evaluated.size, listOf(BINARY), operatorName)
 
         val operands = operands(evaluated, operatorName)
         return Value.BoolValue(operands.regex.containsMatchIn(operands.input))
@@ -55,7 +55,7 @@ internal object RegexOperators {
     fun opRegexExtract(args: Value, vars: Scope): Value {
         val operatorName = "rc.regexExtract"
         val evaluated = Operators.evalArgs(args, vars)
-        checkArity(evaluated.size, listOf(BINARY, TERNARY), operatorName)
+        Operators.checkArity(evaluated.size, listOf(BINARY, TERNARY), operatorName)
 
         val operands = operands(evaluated, operatorName)
         val group = group(evaluated.getOrNull(TERNARY - 1), operatorName)
@@ -86,7 +86,7 @@ internal object RegexOperators {
     fun opRegexReplace(args: Value, vars: Scope): Value {
         val operatorName = "rc.regexReplace"
         val evaluated = Operators.evalArgs(args, vars)
-        checkArity(evaluated.size, listOf(TERNARY), operatorName)
+        Operators.checkArity(evaluated.size, listOf(TERNARY), operatorName)
 
         val operands = operands(evaluated, operatorName)
         val replacement = evaluated[TERNARY - 1]
@@ -114,16 +114,6 @@ internal object RegexOperators {
         else -> throw EvaluationException.TypeMismatch(
             "operator '$operatorName' expected a whole, non-negative group number, got $value",
         )
-    }
-
-    /** Rejects an argument count no overload accepts. */
-    fun checkArity(count: Int, allowed: List<Int>, operatorName: String) {
-        if (count !in allowed) {
-            val expected = allowed.joinToString(" or ")
-            throw EvaluationException.TypeMismatch(
-                "operator '$operatorName' expects $expected arguments, got $count",
-            )
-        }
     }
 
     /**

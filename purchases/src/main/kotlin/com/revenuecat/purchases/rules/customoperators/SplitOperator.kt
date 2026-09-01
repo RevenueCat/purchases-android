@@ -23,15 +23,10 @@ internal object SplitOperator {
      * Both operands must be strings and the separator must be non-empty,
      * otherwise [EvaluationException.TypeMismatch] is thrown.
      */
-    @Suppress("ThrowsCount")
     fun opSplit(args: Value, vars: Scope): Value {
         val evaluated = Operators.evalArgs(args, vars)
 
-        if (evaluated.size != ARGUMENT_COUNT) {
-            throw EvaluationException.TypeMismatch(
-                "operator 'rc.split' expects $ARGUMENT_COUNT arguments, got ${evaluated.size}",
-            )
-        }
+        Operators.checkArity(evaluated.size, listOf(ARGUMENT_COUNT), "rc.split")
 
         val input = evaluated[0]
         if (input !is Value.StringValue) {
