@@ -4,6 +4,7 @@ import com.revenuecat.purchases.rules.RulesEngine.EvaluationException
 import com.revenuecat.purchases.rules.Scope
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.rules.operators.Operators
+import com.revenuecat.purchases.rules.stringLength
 
 /**
  * `rc.length` — element count for arrays, UTF-16 code-unit count for
@@ -38,11 +39,4 @@ internal object LengthOperator {
                 "operator 'rc.length' expected string or array, got $input",
             )
         }
-
-    /**
-     * The one place the engine measures a string. `rc.indexOf` reports
-     * positions through this too, so every length and position handed back to
-     * a rule is stated in the same unit.
-     */
-    fun stringLength(string: String): Int = string.length
 }
