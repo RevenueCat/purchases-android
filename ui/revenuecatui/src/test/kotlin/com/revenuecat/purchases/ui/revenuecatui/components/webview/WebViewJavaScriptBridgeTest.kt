@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
 import android.net.Uri
 import android.os.Looper
+import android.webkit.ValueCallback
 import android.webkit.WebView
 import androidx.test.core.app.ApplicationProvider
 import androidx.webkit.WebMessageCompat
@@ -14,6 +15,11 @@ import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
 import io.mockk.verify
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonObjectBuilder
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -21,9 +27,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.Implementation
+import org.robolectric.annotation.Implements
+import org.robolectric.shadow.api.Shadow
 import org.robolectric.shadows.ShadowWebView
 
 @RunWith(RobolectricTestRunner::class)
+@Config(shadows = [RecordingShadowWebView::class])
 internal class WebViewJavaScriptBridgeTest {
 
     private val componentId = "promo_web_view"
@@ -63,6 +74,9 @@ internal class WebViewJavaScriptBridgeTest {
         sizeToContentHeight: Boolean = false,
         onDocumentReset: () -> Unit = {},
         onSecureMessagingUnsupported: () -> Unit = {},
+        contextSnapshotProvider: () -> JsonObject = {
+            webViewContextSnapshot(locale = "en-US", darkMode = false)
+        },
     ): WebViewJavaScriptBridge {
         val bridge = WebViewJavaScriptBridge(
             webView = webView,
@@ -73,6 +87,7 @@ internal class WebViewJavaScriptBridgeTest {
             onContentResize = { widthCssPx, heightCssPx -> resizes.add(widthCssPx to heightCssPx) },
             onDocumentReset = onDocumentReset,
             onSecureMessagingUnsupported = onSecureMessagingUnsupported,
+            contextSnapshotProvider = contextSnapshotProvider,
         )
         bridge.attach()
         navigateTo?.let { webView.loadUrl(it) }
@@ -82,6 +97,9 @@ internal class WebViewJavaScriptBridgeTest {
     private fun idleMainLooper() {
         shadowOf(Looper.getMainLooper()).idle()
     }
+
+    /** Every outbound script in delivery order; [ShadowWebView.getLastEvaluatedJavascript] keeps only the last. */
+    private fun scripts(): List<String> = Shadow.extract<RecordingShadowWebView>(webView).evaluatedScripts
 
     /**
      * Exercises the genuine production inbound path:
@@ -99,8 +117,20 @@ internal class WebViewJavaScriptBridgeTest {
         mockk(),
     )
 
-    private fun connectJson(protocolVersion: Int = 1) =
-        """{"channel":"rc-web-components","protocol_version":$protocolVersion,"kind":"connect","component_id":""}"""
+    /** Serializes an inbound frame, with the channel field every one of them carries. */
+    private fun frame(build: JsonObjectBuilder.() -> Unit): String = Json.encodeToString(
+        JsonObject.serializer(),
+        buildJsonObject {
+            put("channel", "rc-web-components")
+            build()
+        },
+    )
+
+    private fun connectJson(protocolVersion: Int = 1) = frame {
+        put("protocol_version", protocolVersion)
+        put("kind", "connect")
+        put("component_id", "")
+    }
 
     private fun WebViewJavaScriptBridge.connect(
         sourceOrigin: Uri = Uri.parse(expectedOrigin),
@@ -112,21 +142,27 @@ internal class WebViewJavaScriptBridgeTest {
 
     private fun appMessage(
         type: String,
-        payload: String? = null,
+        payload: JsonObject? = null,
         kind: String = "message",
         id: String? = null,
         componentId: String = this.componentId,
-    ): String {
-        val payloadField = payload?.let { ""","payload":$it""" } ?: ""
-        val idField = id?.let { ""","id":"$it"""" } ?: ""
-        return """
-            {"channel":"rc-web-components","protocol_version":1,"kind":"$kind","component_id":"$componentId","type":"$type"$payloadField$idField}
-            """.trimIndent()
+    ): String = frame {
+        put("protocol_version", 1)
+        put("kind", kind)
+        put("component_id", componentId)
+        put("type", type)
+        payload?.let { put("payload", it) }
+        id?.let { put("id", it) }
+    }
+
+    private fun sizePayload(width: Int? = null, height: Int? = null): JsonObject = buildJsonObject {
+        width?.let { put("width", it) }
+        height?.let { put("height", it) }
     }
 
     /** Sends a resize and pumps the looper; onContentResize lands in [resizes]. */
     private fun WebViewJavaScriptBridge.resize(heightCssPx: Int, componentId: String = this@WebViewJavaScriptBridgeTest.componentId) {
-        postFromWeb(appMessage(type = WebViewMessageType.RESIZE, payload = """{"height":$heightCssPx}""", componentId = componentId))
+        postFromWeb(appMessage(type = WebViewMessageType.RESIZE, payload = sizePayload(height = heightCssPx), componentId = componentId))
         idleMainLooper()
     }
 
@@ -137,7 +173,7 @@ internal class WebViewJavaScriptBridgeTest {
         val bridge = bridge()
         bridge.connect()
 
-        val script = shadowWebView.lastEvaluatedJavascript
+        val script = scripts().first()
         assertThat(script).contains("window.__rcWebComponentsReceive(")
         assertThat(script).contains("\"kind\":\"init\"")
         assertThat(script).contains("\"component_id\":\"promo_web_view\"")
@@ -150,9 +186,48 @@ internal class WebViewJavaScriptBridgeTest {
 
         bridge.connect()
 
-        val script = shadowWebView.lastEvaluatedJavascript
+        val script = scripts().first()
         assertThat(script).contains("\"kind\":\"init\"")
         assertThat(script).contains("\"component_id\":\"promo_web_view\"")
+    }
+
+    @Test
+    fun `handshake sends init then fit, with no separate context frame`() {
+        val bridge = bridge(sizeToContentHeight = true)
+        bridge.connect()
+
+        assertThat(scripts()).hasSize(2)
+        assertThat(scripts()[0]).contains("\"kind\":\"init\"")
+        assertThat(scripts()[1]).contains("\"type\":\"fit\"")
+        assertThat(scripts().none { it.contains("\"type\":\"context\"") }).isTrue()
+    }
+
+    @Test
+    fun `init carries the first snapshot for fixed-size components`() {
+        val bridge = bridge()
+        bridge.connect()
+
+        assertThat(scripts()).hasSize(1)
+        assertThat(scripts().single()).contains("\"kind\":\"init\"")
+    }
+
+    @Test
+    fun `init payload carries the shaped empty snapshot`() {
+        val bridge = bridge()
+        bridge.connect()
+
+        val script = scripts().single()
+        assertThat(script).contains("\"kind\":\"init\"")
+        assertThat(script).contains("\"payload\":{\"context\":{")
+        assertThat(script).contains("\"custom\":{}")
+        assertThat(script).contains("\"offering\":null")
+        assertThat(script).contains("\"packages\":[]")
+        assertThat(script).contains("\"package\":null")
+        assertThat(script).contains("\"selected_package\":null")
+        assertThat(script).contains("\"inputs\":{}")
+        assertThat(script).contains("\"is_preview\":false")
+        assertThat(script).contains("\"locale\":\"en-US\"")
+        assertThat(script).doesNotContain("\"workflow\"")
     }
 
     @Test
@@ -251,7 +326,7 @@ internal class WebViewJavaScriptBridgeTest {
             val bridge = bridge(navigateTo = case.navigateTo, sizeToContentHeight = true)
             bridge.connect()
             bridge.postFromWeb(
-                appMessage(type = WebViewMessageType.RESIZE, payload = """{"height":300}"""),
+                appMessage(type = WebViewMessageType.RESIZE, payload = sizePayload(height = 300)),
                 sourceOrigin = Uri.parse(case.sourceOrigin),
                 isMainFrame = case.isMainFrame,
             )
@@ -269,7 +344,7 @@ internal class WebViewJavaScriptBridgeTest {
         val bridge = bridge(navigateTo = "https://assets.example.com:443/promo/index.html")
         bridge.connect()
 
-        assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"kind\":\"init\"")
+        assertThat(scripts().first()).contains("\"kind\":\"init\"")
     }
 
     @Test
@@ -277,7 +352,7 @@ internal class WebViewJavaScriptBridgeTest {
         val bridge = bridge(navigateTo = "https://assets.example.com/promo/step-two.html")
         bridge.connect()
 
-        assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"kind\":\"init\"")
+        assertThat(scripts().first()).contains("\"kind\":\"init\"")
     }
 
     @Test
@@ -400,7 +475,7 @@ internal class WebViewJavaScriptBridgeTest {
         webView.loadUrl(expectedUrl)
         bridge.connect()
 
-        assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"kind\":\"init\"")
+        assertThat(scripts().first()).contains("\"kind\":\"init\"")
     }
 
     @Test
@@ -419,8 +494,7 @@ internal class WebViewJavaScriptBridgeTest {
         val bridge = bridge(sizeToContentHeight = true)
         bridge.connect()
 
-        val script = shadowWebView.lastEvaluatedJavascript
-        assertThat(script).contains("\"type\":\"fit\"")
+        val script = scripts().single { it.contains("\"type\":\"fit\"") }
         assertThat(script).contains("\"height\":true")
         assertThat(script).doesNotContain("\"width\":true")
     }
@@ -434,16 +508,15 @@ internal class WebViewJavaScriptBridgeTest {
 
         bridge.connect()
 
-        val script = shadowWebView.lastEvaluatedJavascript
-        assertThat(script).contains("\"type\":\"fit\"")
+        val script = scripts().single { it.contains("\"type\":\"fit\"") }
         assertThat(script).contains("\"height\":true")
     }
 
     @Test
     fun `ignores resize dimensions that are not json numbers`() {
         listOf(
-            "string height" to """{"height":"300"}""",
-            "boolean height" to """{"height":true}""",
+            "string height" to buildJsonObject { put("height", "300") },
+            "boolean height" to buildJsonObject { put("height", true) },
         ).forEach { (name, payload) ->
             resizes.clear()
             val bridge = bridge(sizeToContentHeight = true)
@@ -460,22 +533,22 @@ internal class WebViewJavaScriptBridgeTest {
             val name: String,
             val fitW: Boolean,
             val fitH: Boolean,
-            val payloads: List<String>,
+            val payloads: List<JsonObject>,
             val expected: List<Pair<Int?, Int?>>,
         )
         listOf(
-            Case("both fit axes", true, true, listOf("""{"width":320,"height":480}"""), listOf(320 to 480)),
-            Case("non-fit width ignored", false, true, listOf("""{"width":400,"height":500}"""), listOf(null to 500)),
+            Case("both fit axes", true, true, listOf(sizePayload(320, 480)), listOf(320 to 480)),
+            Case("non-fit width ignored", false, true, listOf(sizePayload(400, 500)), listOf(null to 500)),
             // Invalid width (negative) + oversized height → height clamped, width dropped.
-            Case("clamp/invalid", true, true, listOf("""{"width":-1,"height":99999}"""), listOf(null to 10_000)),
+            Case("clamp/invalid", true, true, listOf(sizePayload(-1, 99999)), listOf(null to 10_000)),
             Case(
                 "threshold",
                 true,
                 true,
                 listOf(
-                    """{"width":200,"height":300}""",
-                    """{"width":200,"height":300}""", // below 1px threshold → no callback
-                    """{"width":200,"height":301}""", // only changed axis delivered
+                    sizePayload(200, 300),
+                    sizePayload(200, 300), // below 1px threshold → no callback
+                    sizePayload(200, 301), // only changed axis delivered
                 ),
                 listOf(200 to 300, null to 301),
             ),
@@ -496,7 +569,7 @@ internal class WebViewJavaScriptBridgeTest {
         bridge.postFromWeb(
             appMessage(
                 type = WebViewMessageType.RESIZE,
-                payload = """{"height":250}""",
+                payload = sizePayload(height = 250),
                 kind = "request",
                 id = "resize-1",
             ),
@@ -513,7 +586,7 @@ internal class WebViewJavaScriptBridgeTest {
         bridge.postFromWeb(
             appMessage(
                 type = WebViewMessageType.RESIZE,
-                payload = """{"height":250}""",
+                payload = sizePayload(height = 250),
                 kind = "request",
                 // no id → must be dropped for response-correlation safety
             ),
@@ -531,7 +604,7 @@ internal class WebViewJavaScriptBridgeTest {
         bridge.onMainFrameNavigationStarted()
         bridge.connect()
 
-        assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"kind\":\"init\"")
+        assertThat(scripts().count { it.contains("\"kind\":\"init\"") }).isEqualTo(1)
     }
 
     @Test
@@ -539,10 +612,10 @@ internal class WebViewJavaScriptBridgeTest {
         val bridge = bridge()
         bridge.onMainFrameNavigationStarted()
         bridge.connect()
-        val afterFirst = shadowWebView.lastEvaluatedJavascript
+        val afterFirst = scripts().size
         bridge.connect()
 
-        assertThat(shadowWebView.lastEvaluatedJavascript).isEqualTo(afterFirst)
+        assertThat(scripts()).hasSize(afterFirst)
     }
 
     @Test
@@ -578,15 +651,34 @@ internal class WebViewJavaScriptBridgeTest {
         val bridge = bridge(sizeToContentHeight = true)
         bridge.onMainFrameNavigationStarted()
         bridge.connect()
-        assertThat(shadowWebView.lastEvaluatedJavascript).contains("\"type\":\"fit\"")
+        assertThat(scripts().count { it.contains("\"type\":\"fit\"") }).isEqualTo(1)
 
         bridge.onMainFrameNavigationStarted()
         webView.loadUrl("https://assets.example.com/promo/step-two.html")
         bridge.connect()
 
-        val script = shadowWebView.lastEvaluatedJavascript
-        assertThat(script).contains("\"type\":\"fit\"")
-        assertThat(script).contains("\"height\":true")
+        val fitScripts = scripts().filter { it.contains("\"type\":\"fit\"") }
+        assertThat(fitScripts).hasSize(2)
+        assertThat(fitScripts.last()).contains("\"height\":true")
+    }
+
+    @Test
+    fun `each document's init carries a fresh snapshot`() {
+        val bridge = bridge()
+        bridge.onMainFrameNavigationStarted()
+        bridge.connect()
+
+        bridge.onMainFrameNavigationStarted()
+        webView.loadUrl("https://assets.example.com/promo/step-two.html")
+        bridge.connect()
+
+        val initScripts = scripts().filter { it.contains("\"kind\":\"init\"") }
+        assertThat(initScripts).hasSize(2)
+        val timestamps = initScripts.map { script ->
+            Regex("\"updated_at\":(\\d+)").find(script)!!.groupValues[1].toLong()
+        }
+        assertThat(timestamps[0]).isGreaterThan(0)
+        assertThat(timestamps[1]).isGreaterThanOrEqualTo(timestamps[0])
     }
 
     @Test
@@ -654,5 +746,21 @@ internal class WebViewJavaScriptBridgeTest {
         bridge.connect()
         bridge.resize(300)
         assertThat(resizes).describedAs("channel reopened after reload").containsExactly(null to 300)
+    }
+}
+
+/**
+ * Records every evaluated script; [ShadowWebView] only keeps the last one. A shadow rather than a
+ * [WebView] subclass because Paparazzi's layoutlib jar shadows `android.jar` on the unit-test
+ * compile classpath with a `WebView` stub that lacks `evaluateJavascript`.
+ */
+@Implements(WebView::class)
+internal class RecordingShadowWebView : ShadowWebView() {
+    val evaluatedScripts = mutableListOf<String>()
+
+    @Implementation
+    override fun evaluateJavascript(script: String, callback: ValueCallback<String>?) {
+        evaluatedScripts += script
+        super.evaluateJavascript(script, callback)
     }
 }
