@@ -31,8 +31,7 @@ internal object SliceOperator {
     fun opSlice(args: Value, vars: Scope): Value {
         val evaluated = Operators.evalArgs(args, vars)
 
-        val allowed = listOf(BINARY_OPERAND_COUNT, TERNARY_OPERAND_COUNT)
-        Operators.checkArity(evaluated.size, allowed, OPERATOR_NAME)
+        Operators.checkArity(evaluated.size, listOf(BINARY_OPERAND_COUNT, TERNARY_OPERAND_COUNT), OPERATOR_NAME)
 
         val source = evaluated[0]
         if (source !is Value.ArrayValue) {
