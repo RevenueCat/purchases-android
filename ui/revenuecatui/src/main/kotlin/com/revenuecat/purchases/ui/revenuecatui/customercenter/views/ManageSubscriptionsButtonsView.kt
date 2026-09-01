@@ -22,7 +22,7 @@ internal fun ManageSubscriptionsButtonsView(
     associatedPurchaseInformation: PurchaseInformation?,
     supportedPaths: List<HelpPath>,
     localization: CustomerCenterConfigData.Localization,
-    contactEmail: String?,
+    contactEmail: String? = null,
     addContactButton: Boolean = false,
     addCreateTicketButton: Boolean = false,
     onAction: (CustomerCenterAction) -> Unit,
