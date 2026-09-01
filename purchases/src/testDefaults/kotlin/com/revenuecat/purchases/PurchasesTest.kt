@@ -1613,6 +1613,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         assertThat(event.captured.result).isEqualTo(CheckpointHitResult.UNKNOWN_CHECKPOINT)
         assertThat(event.captured.workflowId).isNull()
         assertThat(event.captured.offeringId).isNull()
+        assertThat(event.captured.checkpointRuleId).isNull()
         verify(exactly = 1) { mockEventsManager.track(event.captured) }
     }
 

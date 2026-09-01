@@ -33,7 +33,8 @@ class CheckpointEventsRequestSerializationTest {
                         "\"timestamp\":1699270688995," +
                         "\"result\":\"workflow\"," +
                         "\"workflow_id\":\"wf_123\"," +
-                        "\"offering_id\":\"offering_id\"" +
+                        "\"offering_id\":\"offering_id\"," +
+                        "\"checkpoint_rule_id\":\"rule_123\"" +
                     "}" +
                 "]" +
             "}",
@@ -47,6 +48,7 @@ class CheckpointEventsRequestSerializationTest {
         )
 
         assertThat(requestString).contains("\"result\":\"offering\",\"offering_id\":\"offering_id\"")
+        assertThat(requestString).contains("\"checkpoint_rule_id\":\"rule_123\"")
         assertThat(requestString).doesNotContain("workflow_id")
     }
 
@@ -60,19 +62,25 @@ class CheckpointEventsRequestSerializationTest {
 
         expectedResultValues.forEach { (result, expectedValue) ->
             val requestString = JsonProvider.defaultJson.encodeToString(
-                requestWith(result = result, workflowID = null, offeringID = null),
+                requestWith(
+                    result = result,
+                    workflowID = null,
+                    offeringID = null,
+                    checkpointRuleID = null,
+                ),
             )
 
             assertThat(requestString).contains("\"result\":\"$expectedValue\"")
             assertThat(requestString).doesNotContain("workflow_id")
             assertThat(requestString).doesNotContain("offering_id")
+            assertThat(requestString).doesNotContain("checkpoint_rule_id")
         }
     }
 
     @Test
     fun `omits the outcome fields when they are absent`() {
         val requestString = JsonProvider.defaultJson.encodeToString(
-            requestWith(result = null, workflowID = null, offeringID = null),
+            requestWith(result = null, workflowID = null, offeringID = null, checkpointRuleID = null),
         )
 
         assertThat(requestString).endsWith("\"timestamp\":1699270688995}]}")
@@ -89,6 +97,7 @@ class CheckpointEventsRequestSerializationTest {
         result: CheckpointHitResult? = CheckpointHitResult.WORKFLOW,
         workflowID: String? = "wf_123",
         offeringID: String? = "offering_id",
+        checkpointRuleID: String? = "rule_123",
     ) = EventsRequest(
         listOf(
             BackendEvent.Checkpoint(
@@ -102,6 +111,7 @@ class CheckpointEventsRequestSerializationTest {
                 result = result,
                 workflowID = workflowID,
                 offeringID = offeringID,
+                checkpointRuleID = checkpointRuleID,
             ),
         ),
     )
