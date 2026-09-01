@@ -104,11 +104,9 @@ internal fun WebViewComponentView(
         // Remembered inside key(identity) so a stale onRelease can only release its own view's bridge.
         val bridgeHolder = remember { WebViewBridgeHolder() }
 
-        // The handshake seeds the first snapshot, so only later changes need a push. The state
-        // instance is part of the key because the view model replaces it for some changes and
-        // mutates it in place for others.
+        // The handshake seeds the first snapshot, so only later changes need a push.
         LaunchedEffect(bridgeHolder) {
-            snapshotFlow { listOf(currentState, currentState.selectedPackageInfo?.uniqueId) }
+            snapshotFlow { webViewContextPushKey(currentState, darkMode) }
                 .drop(1)
                 .collect { bridgeHolder.bridge?.pushContextNow() }
         }
@@ -250,6 +248,16 @@ internal fun resolveAxis(
         }
         is Fixed -> constraint
     }
+
+/**
+ * The state instance is part of the key because the view model replaces it for some changes
+ * (custom variables, offering, storefront country) and mutates it in place for others.
+ */
+@JvmSynthetic
+internal fun webViewContextPushKey(
+    state: PaywallState.Loaded.Components,
+    darkMode: Boolean,
+): List<Any?> = listOf(state, state.selectedPackageInfo?.uniqueId, state.locale, darkMode)
 
 /** Holds the per-WebView bridge so factory and onRelease share one instance. */
 internal class WebViewBridgeHolder {

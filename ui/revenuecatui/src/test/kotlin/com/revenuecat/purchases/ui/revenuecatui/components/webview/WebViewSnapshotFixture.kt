@@ -15,9 +15,12 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowScreenContext
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
 
 /** A snapshot for tests that care about one section, or about the frames rather than the payload. */
 internal fun testContextSnapshot(
@@ -27,6 +30,7 @@ internal fun testContextSnapshot(
     selectedPackage: Package? = null,
     store: Store = Store.PLAY_STORE,
     storefrontCountryCode: String? = "US",
+    workflowScreen: WorkflowScreenContext? = null,
     locale: String = "en-US",
     darkMode: Boolean = false,
 ): JsonObject = webViewContextSnapshot(
@@ -37,6 +41,7 @@ internal fun testContextSnapshot(
         selectedPackage = selectedPackage,
         store = store,
         storefrontCountryCode = storefrontCountryCode,
+        workflowScreen = workflowScreen,
         locale = locale,
         darkMode = darkMode,
     ),
@@ -84,4 +89,20 @@ internal fun testWebViewStyle(rcPackage: Package? = null) = WebViewComponentStyl
     overrides = emptyList(),
     rcPackage = rcPackage,
     tabIndex = null,
+)
+
+internal fun offeringOf(vararg packages: Package): Offering = Offering(
+    identifier = "promo",
+    serverDescription = "Promo offering",
+    metadata = emptyMap(),
+    availablePackages = packages.toList(),
+)
+
+/** Pins the one value that moves, so a whole payload can be compared as a single string. */
+internal fun JsonObject.withFixedTimestamp(): JsonObject = JsonObject(
+    toMutableMap().apply {
+        val deviceMeta = getValue("device_meta").jsonObject.toMutableMap()
+        deviceMeta["updated_at"] = JsonPrimitive(0)
+        put("device_meta", JsonObject(deviceMeta))
+    },
 )
