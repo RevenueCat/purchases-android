@@ -2,7 +2,6 @@ package com.revenuecat.paywallstester.ui.screens.checkpoints
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.revenuecat.paywallstester.data.RecentCheckpointsStore
@@ -10,16 +9,13 @@ import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel
 import com.revenuecat.paywallstester.ui.screens.checkpoints.CheckpointsViewModel.UiState
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointGateResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.awaitCheckpoint
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 interface CheckpointsViewModel {
     data class CheckpointResultUi(
@@ -64,53 +60,45 @@ internal class CheckpointsViewModelImpl(
         if (checkpointIdentifier.isEmpty() || _state.value.waitingFor != null) return
         val updatedRecents = recentCheckpointsStore.recordUse(checkpointIdentifier)
         _state.update { it.copy(recents = updatedRecents, waitingFor = checkpointIdentifier) }
-        viewModelScope.launch {
-            val resultUi = try {
-                Purchases.sharedInstance.awaitCheckpoint(
-                    checkpointIdentifier,
-                    CheckpointParams { customVariables { "source" to "paywall-tester" } },
-                ).toUi()
-            } catch (e: PurchasesException) {
-                CheckpointResultUi(
-                    title = "Error",
-                    detail = "${e.code}: ${e.message}",
-                    isError = true,
-                    raw = e.error.toString(),
-                )
-            }
-            _state.update { it.copy(waitingFor = null, lastResult = resultUi) }
+        Purchases.sharedInstance.checkpoint(
+            checkpointIdentifier,
+            CheckpointParams { customVariables { "source" to "paywall-tester" } },
+        ) { gateResult ->
+            _state.update { it.copy(waitingFor = null, lastResult = gateResult.toUi()) }
         }
     }
 
     @OptIn(InternalRevenueCatAPI::class)
-    private fun CheckpointResult.toUi(): CheckpointResultUi = when (this) {
-        is CheckpointResult.PaywallPresented -> CheckpointResultUi(
-            title = "Paywall presented",
-            detail = paywallOutcome.describe(),
-            isError = false,
-            raw = toString(),
-        )
-        is CheckpointResult.NoAction -> CheckpointResultUi(
-            title = "No action",
-            detail = "Reason: $reason",
-            isError = false,
-            raw = toString(),
-        )
-        else -> CheckpointResultUi(
-            title = "Unknown result",
-            detail = "",
-            isError = false,
-            raw = toString(),
-        )
+    private fun CheckpointGateResult.toUi(): CheckpointResultUi {
+        val error = error
+        val noWorkflowReason = noWorkflowReason
+        return when {
+            error != null && noWorkflowReason != null -> CheckpointResultUi(
+                title = "Error",
+                detail = "${error.code}: ${error.message}",
+                isError = true,
+                raw = toString(),
+            )
+            noWorkflowReason != null -> CheckpointResultUi(
+                title = "No workflow served",
+                detail = "Reason: $noWorkflowReason",
+                isError = false,
+                raw = toString(),
+            )
+            else -> CheckpointResultUi(
+                title = "Workflow presented",
+                detail = describeWorkflow(),
+                isError = false,
+                raw = toString(),
+            )
+        }
     }
 
     @OptIn(InternalRevenueCatAPI::class)
-    private fun CheckpointPaywallOutcome.describe(): String = when (this) {
-        is CheckpointPaywallOutcome.Purchased -> "Purchased"
-        is CheckpointPaywallOutcome.Restored -> "Restored"
-        is CheckpointPaywallOutcome.Error -> "Paywall error: ${error.message}"
-        CheckpointPaywallOutcome.Dismissed -> "Dismissed"
-        CheckpointPaywallOutcome.WebCheckoutOpened -> "Web checkout opened"
-        else -> toString()
+    private fun CheckpointGateResult.describeWorkflow(): String = when {
+        entitlements.isNotEmpty() ->
+            "Obtained ${entitlements.joinToString { "${it.identifier} (${it.method})" }}"
+        error != null -> "Workflow error: ${error?.message}"
+        else -> "Nothing obtained"
     }
 }

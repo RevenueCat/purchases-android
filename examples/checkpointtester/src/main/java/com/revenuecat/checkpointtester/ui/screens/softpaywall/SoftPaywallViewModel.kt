@@ -1,18 +1,14 @@
 package com.revenuecat.checkpointtester.ui.screens.softpaywall
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import com.revenuecat.checkpointtester.checkpoints.summary
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.awaitCheckpoint
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 /**
  * Soft paywall: the result never blocks anything, it only decides which banner the always-visible content gets.
@@ -38,26 +34,11 @@ class SoftPaywallViewModel : ViewModel() {
     fun hit() {
         if (_state.value.running) return
         _state.update { it.copy(running = true, message = null, hasRun = true) }
-        viewModelScope.launch {
-            try {
-                val result = Purchases.sharedInstance.awaitCheckpoint("soft_paywall")
-                when (result) {
-                    is CheckpointResult.ReceivedOffering ->
-                        free("Offering ${result.offering.identifier} returned for app-owned presentation.")
-                    is CheckpointResult.PaywallPresented -> when (val outcome = result.paywallOutcome) {
-                        is CheckpointPaywallOutcome.Purchased -> upgraded("Purchased.")
-                        is CheckpointPaywallOutcome.Restored -> upgraded("Restored.")
-                        CheckpointPaywallOutcome.Dismissed -> free("Dismissed, staying on the free tier.")
-                        CheckpointPaywallOutcome.WebCheckoutOpened -> free("Left to pay via web checkout.")
-                        is CheckpointPaywallOutcome.Error -> free("Paywall error: ${outcome.error.message}")
-                        else -> free("Unknown paywall outcome.")
-                    }
-                    is CheckpointResult.NoAction -> free("No paywall shown (${result.reason}).")
-                    else -> free("Unknown checkpoint result.")
-                }
-            } catch (e: PurchasesException) {
-                // Even a failure is non-blocking here: the user keeps the free experience.
-                free("Checkpoint failed: ${e.message}")
+        Purchases.sharedInstance.checkpoint("soft_paywall") { gateResult ->
+            if (gateResult.entitlements.isNotEmpty()) {
+                upgraded(gateResult.summary())
+            } else {
+                free(gateResult.summary())
             }
         }
     }

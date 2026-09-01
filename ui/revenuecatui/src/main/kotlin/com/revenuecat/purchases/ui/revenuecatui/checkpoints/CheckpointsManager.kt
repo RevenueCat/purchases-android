@@ -9,7 +9,10 @@ import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
@@ -34,9 +37,13 @@ internal class CheckpointPresentation(
  * with a free presentation slot. A workflow that is already on screen keeps reporting to the manager that
  * presented it, exactly once, even if the SDK is reconfigured underneath it.
  */
+@Suppress("TooManyFunctions")
 internal class CheckpointsManager(
     private val presenterFactory: (callId: String, manager: CheckpointsManager) -> CheckpointWorkflowPresenter =
         { callId, manager -> CheckpointWorkflowPresenter(callId, manager) },
+    // Owns the coroutines behind the callback-based gate API, so an un-awaited checkpoint lives and dies with
+    // the Purchases instance holding this manager rather than with any caller scope.
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
 ) {
 
     private class PendingCall(
@@ -94,6 +101,28 @@ internal class CheckpointsManager(
         }
         checkpointListener?.onCheckpointCompleted(CheckpointCompletedContext(identifier, customVariables, result))
         result
+    }
+
+    /**
+     * Callback flavor of [checkpoint] behind the gate API: runs the checkpoint and reports what the user
+     * obtained while going through it. Never throws; failures fold into the result. [callback] is invoked
+     * exactly once, on the main thread, when the checkpoint finishes.
+     */
+    fun checkpointGate(
+        purchases: Purchases,
+        identifier: String,
+        params: CheckpointParams?,
+        callback: CheckpointGateCallback,
+    ) {
+        scope.launch {
+            val activeEntitlementsBefore = cachedActiveEntitlementIds(purchases)
+            val gateResult = try {
+                checkpoint(purchases, identifier, params).toGateResult(activeEntitlementsBefore)
+            } catch (e: PurchasesException) {
+                errorGateResult(e.error)
+            }
+            callback.onCheckpointFinished(gateResult)
+        }
     }
 
     fun presentation(callId: String): CheckpointPresentation? =

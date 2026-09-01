@@ -1,19 +1,15 @@
 package com.revenuecat.checkpointtester.ui.screens.onboarding
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import com.revenuecat.checkpointtester.checkpoints.summary
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.awaitCheckpoint
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 /**
  * Onboarding semantics: the checkpoint runs between the last input step and the final step, and the flow always
@@ -71,31 +67,12 @@ class OnboardingViewModel : ViewModel() {
     @OptIn(InternalRevenueCatAPI::class)
     private fun runCheckpointThenFinish() {
         _state.update { it.copy(running = true, message = null) }
-        viewModelScope.launch {
-            val message = try {
-                val result = Purchases.sharedInstance.awaitCheckpoint(
-                    "onboarding_complete",
-                    CheckpointParams { customVariables { "step" to Step.Personalize.name } },
-                )
-                when (result) {
-                    is CheckpointResult.ReceivedOffering ->
-                        "Offering ${result.offering.identifier} returned for app-owned presentation."
-                    is CheckpointResult.PaywallPresented -> when (val outcome = result.paywallOutcome) {
-                        is CheckpointPaywallOutcome.Purchased -> "Purchased during onboarding."
-                        is CheckpointPaywallOutcome.Restored -> "Restored during onboarding."
-                        CheckpointPaywallOutcome.Dismissed -> "Paywall dismissed."
-                        CheckpointPaywallOutcome.WebCheckoutOpened -> "Left to pay via web checkout."
-                        is CheckpointPaywallOutcome.Error -> "Paywall error: ${outcome.error.message}"
-                        else -> "Unknown paywall outcome."
-                    }
-                    is CheckpointResult.NoAction -> "No paywall shown (${result.reason})."
-                    else -> "Unknown checkpoint result."
-                }
-            } catch (e: PurchasesException) {
-                "Checkpoint failed: ${e.message}"
-            }
+        Purchases.sharedInstance.checkpoint(
+            "onboarding_complete",
+            CheckpointParams { customVariables { "step" to Step.Personalize.name } },
+        ) { gateResult ->
             // Whatever happened, onboarding completes: a paywall outcome must not strand the user mid-flow.
-            _state.update { it.copy(running = false, message = message, step = Step.Done) }
+            _state.update { it.copy(running = false, message = gateResult.summary(), step = Step.Done) }
         }
     }
 }
