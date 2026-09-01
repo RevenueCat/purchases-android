@@ -9,35 +9,13 @@ import java.util.regex.PatternSyntaxException
 /**
  * Regular expression operators.
  *
- * The pattern is handed to the platform engine. This one and the iOS engine
- * are both ICU — `java.util.regex` has wrapped ICU4C since Android 2.3, so it
- * is not the OpenJDK engine a desktop JVM would use — and `RegExp` in Funnels
- * is the one that differs. Patterns are authored by the backend, which is
- * expected to stay inside the subset all three read the same way:
+ * Patterns are compiled by [java.util.regex.Pattern], whose syntax is
+ * documented at
+ * https://developer.android.com/reference/java/util/regex/Pattern. A
+ * desktop JVM does not use the same engine, so these unit tests cannot
+ * prove device behavior.
  *
- * - `\d`, `\w`, `\s` and `\b` cover Unicode in ICU and only ASCII in JS, so
- *   `\d` matches an Arabic-Indic digit on a device and not in Funnels. Write
- *   `[0-9]` for the ASCII meaning.
- * - `&&` inside a character class is set intersection in ICU and two literal
- *   ampersands in JS.
- * - A literal `}` needs escaping as `\}` for ICU, which reads a bare one as a
- *   malformed quantifier. JS accepts either, so an unescaped brace compiles
- *   in Funnels and throws on both devices.
- * - `$` matches before a trailing newline in ICU but not in JS.
- * - An empty pattern does not compile in ICU at all, where JS reads it as a
- *   match at every position. A desktop JVM accepts it, so this is one the
- *   unit tests below cannot see.
- *
- * The one place the devices part company is an unknown escape such as `\q`:
- * this engine rejects the pattern, iOS reads it as a literal `q`. Escape only
- * what needs escaping.
- *
- * Note that the unit tests run on a desktop JVM, whose regex engine is not
- * the ICU one that ships, so a fixture cannot prove device behavior for any
- * of the above.
- *
- * No operator takes flags, since JS has no inline `(?i)`. Write `[aA]` for a
- * case-insensitive letter.
+ * No operator takes flags. Write `[aA]` for a case-insensitive letter.
  */
 internal object RegexOperators {
 
