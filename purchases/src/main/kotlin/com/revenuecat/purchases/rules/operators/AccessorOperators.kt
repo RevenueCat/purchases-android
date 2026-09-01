@@ -244,14 +244,20 @@ internal object AccessorOperators {
      * names an enclosing `rc.let` bound. Data wins, so a bound name can never
      * mask a field the scope actually has, and a predicate with no `rc.let`
      * around it resolves exactly as it did before bindings existed.
+     *
+     * The first path segment decides which of the two owns the whole lookup.
+     * Once the data has that segment, a missing descendant stays missing
+     * instead of being answered by a binding of the same name, which would
+     * otherwise pull a value out of an unrelated object.
      */
-    fun lookupInScope(vars: Scope, path: String): Value? =
-        lookupVar(vars.current, path)
-            ?: if (vars.bindings.isEmpty() || path.isEmpty()) {
-                null
-            } else {
-                lookupPath(Value.ObjectValue(vars.bindings), path)
-            }
+    @Suppress("ReturnCount")
+    fun lookupInScope(vars: Scope, path: String): Value? {
+        val found = lookupVar(vars.current, path)
+        if (found != null) return found
+        if (vars.bindings.isEmpty() || path.isEmpty()) return null
+        if (lookupVar(vars.current, path.substringBefore('.')) != null) return null
+        return lookupPath(Value.ObjectValue(vars.bindings), path)
+    }
 
     /**
      * Resolve [path] the way `var` does. Empty path returns the entire
