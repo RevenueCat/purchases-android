@@ -39,6 +39,25 @@ class CheckpointGateResultMappingTest {
         }
     }
 
+    /**
+     * The reason mapping cannot be compiler-exhaustive over a value-based constant class, so this guards the
+     * seam instead: a [CheckpointResult.NoAction.Reason] constant added without a declared
+     * [CheckpointGateResult.NoWorkflowReason] counterpart falls into the mapping's pass-through branch and
+     * produces a value that is not among the declared constants, failing here.
+     */
+    @Test
+    fun `every declared no-action reason maps to a declared no-workflow reason`() {
+        val declaredReasons = declaredConstants<CheckpointResult.NoAction.Reason>()
+        val declaredNoWorkflowReasons = declaredConstants<CheckpointGateResult.NoWorkflowReason>()
+        assertThat(declaredReasons).isNotEmpty
+
+        declaredReasons.forEach { reason ->
+            val gateResult = CheckpointResult.NoAction(reason).toGateResult(activeEntitlementsBefore = null)
+
+            assertThat(declaredNoWorkflowReasons).contains(gateResult.noWorkflowReason)
+        }
+    }
+
     @Test
     fun `a purchase grants the entitlements that were not active before`() {
         val outcome = CheckpointPaywallOutcome.Purchased(customerInfoWithActive("pro", "plus"), mockk())
@@ -118,4 +137,8 @@ class CheckpointGateResultMappingTest {
     private fun customerInfoWithActive(vararg identifiers: String): CustomerInfo = mockk {
         every { entitlements.active } returns identifiers.associateWith { mockk() }
     }
+
+    // The constants are @JvmField vals in the companion, compiled to public static fields on the class.
+    private inline fun <reified T : Any> declaredConstants(): List<T> =
+        T::class.java.fields.filter { it.type == T::class.java }.map { field -> field.get(null) as T }
 }

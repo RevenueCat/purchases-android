@@ -34,13 +34,35 @@ internal fun CheckpointResult.toGateResult(activeEntitlementsBefore: Set<String>
     when (this) {
         is CheckpointResult.NoAction -> CheckpointGateResult(
             entitlements = emptyList(),
-            noWorkflowReason = CheckpointGateResult.NoWorkflowReason(reason.value),
+            noWorkflowReason = reason.toNoWorkflowReason(),
             error = null,
         )
         is CheckpointResult.PaywallPresented -> paywallOutcome.toGateResult(activeEntitlementsBefore)
         else -> errorGateResult(
             PurchasesError(PurchasesErrorCode.UnknownError, "Unknown checkpoint result: $this"),
         )
+    }
+
+/**
+ * Each reason is mapped to its declared counterpart explicitly, never by assuming the two constant sets share
+ * string values. The compiler cannot prove exhaustiveness over a value-based constant class, so
+ * CheckpointGateResultMappingTest reflects over the declared [CheckpointResult.NoAction.Reason] constants and
+ * fails when one of them falls into the pass-through branch, which only exists for reason values a newer
+ * producer sends at runtime.
+ */
+private fun CheckpointResult.NoAction.Reason.toNoWorkflowReason(): CheckpointGateResult.NoWorkflowReason =
+    when (this) {
+        CheckpointResult.NoAction.Reason.NO_MATCH -> CheckpointGateResult.NoWorkflowReason.NO_MATCH
+        CheckpointResult.NoAction.Reason.HOLDOUT -> CheckpointGateResult.NoWorkflowReason.HOLDOUT
+        CheckpointResult.NoAction.Reason.FREQUENCY_CAPPED ->
+            CheckpointGateResult.NoWorkflowReason.FREQUENCY_CAPPED
+        CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE ->
+            CheckpointGateResult.NoWorkflowReason.CONFIGURATION_UNAVAILABLE
+        CheckpointResult.NoAction.Reason.UNKNOWN_CHECKPOINT ->
+            CheckpointGateResult.NoWorkflowReason.UNKNOWN_CHECKPOINT
+        CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER ->
+            CheckpointGateResult.NoWorkflowReason.INVALID_CHECKPOINT_IDENTIFIER
+        else -> CheckpointGateResult.NoWorkflowReason(value)
     }
 
 private fun CheckpointPaywallOutcome.toGateResult(activeEntitlementsBefore: Set<String>?): CheckpointGateResult =
