@@ -58,16 +58,9 @@ fun AdMobNextGenSample(
         SampleScreen.INTERSTITIAL -> InterstitialScreen(activity, onBack)
         SampleScreen.APP_OPEN -> AppOpenScreen(activity, onBack)
         SampleScreen.REWARDED -> RewardedScreen(activity, onBack)
-        SampleScreen.REWARDED_INTERSTITIAL -> PlaceholderAdScreen(selectedScreen.title, onBack)
+        SampleScreen.REWARDED_INTERSTITIAL -> RewardedInterstitialScreen(activity, onBack)
         SampleScreen.NATIVE -> NativeScreen(onBack)
         SampleScreen.DIAGNOSTICS -> DiagnosticsScreen(onBack)
-    }
-}
-
-@Composable
-private fun PlaceholderAdScreen(title: String, onBack: () -> Unit) {
-    SampleScaffold(title = title, onBack = onBack, contentPadding = PaddingValues(16.dp)) {
-        Text("This example will be added in a later layer of the sample stack.")
     }
 }
 

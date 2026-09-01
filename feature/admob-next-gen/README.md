@@ -3,6 +3,10 @@
 The `purchases-admob-next-gen` module integrates RevenueCat with the
 [Google Mobile Ads Next-Gen SDK](https://developers.google.com/admob/android/next-gen/quick-start).
 
+See the [AdMob Next-Gen sample](../../examples/admob-next-gen-sample/README.md) for a runnable Compose app that
+demonstrates direct loading and preloading for every supported format, plus placement overrides and reward
+verification.
+
 > [!IMPORTANT]
 > `purchases-admob-next-gen` and the legacy `purchases-admob` adapter are mutually exclusive.
 > Remove the legacy adapter and `com.google.android.gms:play-services-ads` before adding this module.
