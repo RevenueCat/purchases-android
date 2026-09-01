@@ -1,11 +1,11 @@
 package com.revenuecat.purchases.rules.customoperators
 
 import com.revenuecat.purchases.rules.RulesEngine.EvaluationException
+import com.revenuecat.purchases.rules.RulesEngineUtils
 import com.revenuecat.purchases.rules.Scope
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.rules.operators.Operators
 import com.revenuecat.purchases.rules.strictEq
-import com.revenuecat.purchases.rules.stringLength
 
 /** Name used in this operator's error messages. */
 private const val OPERATOR_NAME = "rc.indexOf"
@@ -66,8 +66,9 @@ internal object IndexOfOperator {
      * Two separate questions, deliberately answered by different units. *Where*
      * the needle occurs is a match, so it is searched over UTF-16 code units
      * like `in` and `rc.split`. *How far in* that is, is a count, so the text
-     * before the match is measured with [stringLength] — the same function
-     * behind `rc.length`, so both operators state positions in one unit.
+     * before the match is measured with [RulesEngineUtils.stringLength] — the
+     * same function behind `rc.length`, so both operators state positions in
+     * one unit.
      */
     private fun position(needle: String, haystack: String): Int {
         if (needle.isEmpty()) return 0
@@ -76,7 +77,7 @@ internal object IndexOfOperator {
         return if (start < 0) {
             NOT_FOUND
         } else {
-            stringLength(haystack.substring(0, start))
+            RulesEngineUtils.stringLength(haystack.substring(0, start))
         }
     }
 }

@@ -1,10 +1,10 @@
 package com.revenuecat.purchases.rules.customoperators
 
 import com.revenuecat.purchases.rules.RulesEngine.EvaluationException
+import com.revenuecat.purchases.rules.RulesEngineUtils
 import com.revenuecat.purchases.rules.Scope
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.rules.operators.Operators
-import com.revenuecat.purchases.rules.stringLength
 
 /**
  * `rc.length` — element count for arrays, UTF-16 code-unit count for
@@ -33,7 +33,7 @@ internal object LengthOperator {
      */
     fun opLength(args: Value, vars: Scope): Value =
         when (val input = Operators.firstArgEvaluated(args, vars)) {
-            is Value.StringValue -> Value.IntValue(stringLength(input.value).toLong())
+            is Value.StringValue -> Value.IntValue(RulesEngineUtils.stringLength(input.value).toLong())
             is Value.ArrayValue -> Value.IntValue(input.items.size.toLong())
             else -> throw EvaluationException.TypeMismatch(
                 "operator 'rc.length' expected string or array, got $input",
