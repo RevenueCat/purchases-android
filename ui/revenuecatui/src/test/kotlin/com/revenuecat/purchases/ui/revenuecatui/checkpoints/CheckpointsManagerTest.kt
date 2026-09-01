@@ -155,6 +155,103 @@ class CheckpointsManagerTest {
     }
 
     @Test
+    fun `a registered presenter presents a matched offering and its report resolves the checkpoint`() =
+        runTest(dispatcher) {
+            val offering = mockk<Offering>()
+            val customerInfo = mockk<CustomerInfo>()
+            val storeTransaction = mockk<StoreTransaction>()
+            var presented: Offering? = null
+            var completion: CheckpointOfferingCompletion? = null
+            manager.checkpointOfferingPresenter = CheckpointOfferingPresenter { presentedOffering, presentation ->
+                presented = presentedOffering
+                completion = presentation
+            }
+            resolvesTo(CheckpointResolution.MatchedOffering(offering))
+
+            var result: CheckpointResult? = null
+            val call = launch { result = checkpoint() }
+
+            assertThat(presented).isEqualTo(offering)
+            assertThat(result).isNull()
+            verify(exactly = 0) { mockActivity.startActivity(any()) }
+
+            completion!!.purchased(customerInfo, storeTransaction)
+            call.join()
+
+            assertThat((result as CheckpointResult.PaywallPresented).paywallOutcome)
+                .isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+        }
+
+    @Test
+    fun `only the presenter's first report counts`() = runTest(dispatcher) {
+        var completion: CheckpointOfferingCompletion? = null
+        manager.checkpointOfferingPresenter = CheckpointOfferingPresenter { _, presentation ->
+            completion = presentation
+        }
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk()))
+        var result: CheckpointResult? = null
+        val call = launch { result = checkpoint() }
+
+        completion!!.dismissed()
+        completion!!.purchased(mockk(), mockk())
+        call.join()
+
+        assertThat((result as CheckpointResult.PaywallPresented).paywallOutcome)
+            .isEqualTo(CheckpointPaywallOutcome.Dismissed)
+    }
+
+    @Test
+    fun `an app-owned presentation claims the one-presentation slot`() = runTest(dispatcher) {
+        manager.checkpointOfferingPresenter = CheckpointOfferingPresenter { _, _ -> }
+        coEvery { mockPurchases.resolveCheckpoint(any(), any()) } returnsMany listOf(
+            CheckpointResolution.MatchedOffering(mockk()),
+            CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk()),
+        )
+        val presenterCall = launch { checkpoint() }
+
+        assertThat(checkpointErrorCode()).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
+
+        presenterCall.cancel()
+    }
+
+    @Test
+    fun `a throwing presenter errors and releases the slot`() = runTest(dispatcher) {
+        manager.checkpointOfferingPresenter = CheckpointOfferingPresenter { _, _ -> error("Simulated.") }
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk()))
+
+        assertThat(checkpointErrorCode()).isEqualTo(PurchasesErrorCode.ConfigurationError)
+
+        manager.checkpointOfferingPresenter = null
+        var result: CheckpointResult? = null
+        val call = launch { result = checkpoint() }
+        finishPaywall(CheckpointPaywallOutcome.Dismissed)
+        call.join()
+        assertThat(result).isInstanceOf(CheckpointResult.PaywallPresented::class.java)
+    }
+
+    @Test
+    fun `cancelling an app-owned presentation releases the slot and ignores a late report`() = runTest(dispatcher) {
+        var completion: CheckpointOfferingCompletion? = null
+        manager.checkpointOfferingPresenter = CheckpointOfferingPresenter { _, presentation ->
+            completion = presentation
+        }
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk()))
+        val presenterCall = launch { checkpoint() }
+
+        presenterCall.cancel()
+        presenterCall.join()
+        // The pending call died with the caller, so this report must be a no-op.
+        completion!!.dismissed()
+
+        manager.checkpointOfferingPresenter = null
+        var result: CheckpointResult? = null
+        val secondCall = launch { result = checkpoint() }
+        finishPaywall(CheckpointPaywallOutcome.Dismissed)
+        secondCall.join()
+        assertThat(result).isInstanceOf(CheckpointResult.PaywallPresented::class.java)
+    }
+
+    @Test
     fun `every no-action reason maps to its result counterpart`() = runTest(dispatcher) {
         CheckpointResolution.NoAction.Reason.values().forEach { reason ->
             resolvesTo(CheckpointResolution.NoAction(reason))
