@@ -22,7 +22,6 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.loadAndTrackAppOpenAd
 import com.revenuecat.purchases.admob.nextgen.loadAndTrackInterstitialAd
 import com.revenuecat.purchases.admob.nextgen.pollAndTrackAd
-import com.revenuecat.purchases.admob.nextgen.setTrackingAdEventCallback
 import com.revenuecat.purchases.admob.nextgen.show
 import com.revenuecat.purchases.admob.nextgen.startAndTrack
 import com.revenuecat.sample.admob.nextgen.BuildConfig
@@ -87,10 +86,11 @@ internal fun InterstitialScreen(activity: Activity, onBack: () -> Unit) {
                             val result = Purchases.sharedInstance.adTracker.loadAndTrackInterstitialAd(
                                 AdRequest.Builder(BuildConfig.ADMOB_INTERSTITIAL_AD_UNIT_ID).build(),
                                 placement = "interstitial_load",
+                                adEventCallback = directEventCallback,
                             )
                         ) {
                             is AdLoadResult.Success -> {
-                                directAd = result.ad.also { it.setTrackingAdEventCallback(directEventCallback) }
+                                directAd = result.ad
                                 directStatus = "Direct interstitial ready"
                             }
                             is AdLoadResult.Failure -> directStatus = "Load failed: ${result.error.message}"
