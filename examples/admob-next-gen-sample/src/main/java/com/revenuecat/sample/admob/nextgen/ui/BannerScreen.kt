@@ -28,8 +28,6 @@ import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.common.PreloadConfiguration
 import com.revenuecat.purchases.admob.nextgen.loadAndTrackAd
 import com.revenuecat.purchases.admob.nextgen.pollAndTrackAd
-import com.revenuecat.purchases.admob.nextgen.setTrackingAdEventCallback
-import com.revenuecat.purchases.admob.nextgen.setTrackingBannerAdRefreshCallback
 import com.revenuecat.purchases.admob.nextgen.startAndTrack
 import com.revenuecat.sample.admob.nextgen.BuildConfig
 import kotlinx.coroutines.launch
@@ -98,10 +96,10 @@ internal fun BannerScreen(activity: Activity, onBack: () -> Unit) {
                         adView.loadAndTrackAd(
                             adRequest = bannerRequest(),
                             placement = "banner_direct",
+                            adEventCallback = eventCallback,
+                            bannerAdRefreshCallback = refreshCallback,
                             loadCallback = object : AdLoadCallback<BannerAd> {
                                 override fun onAdLoaded(ad: BannerAd) {
-                                    ad.setTrackingAdEventCallback(eventCallback)
-                                    ad.setTrackingBannerAdRefreshCallback(refreshCallback)
                                     if (active.get()) {
                                         scope.launch { updateStatus("Banner ready") }
                                     }
