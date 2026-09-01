@@ -2637,6 +2637,8 @@ class CustomerCenterViewModelTests {
             isTrial = false,
             isCancelled = false,
             isLifetime = false,
+            productIdentifier = "paywall_tester.subs:monthly",
+            purchaseHistoryEntryId = "subscription:paywall_tester.subs:monthly",
         )
 
         val model = CustomerCenterViewModelImpl(
@@ -2703,6 +2705,8 @@ class CustomerCenterViewModelTests {
             isTrial = false,
             isCancelled = false,
             isLifetime = false,
+            productIdentifier = "amazon_basic_monthly",
+            purchaseHistoryEntryId = "subscription:amazon_basic_monthly",
         )
 
         val model = CustomerCenterViewModelImpl(
@@ -2761,6 +2765,8 @@ class CustomerCenterViewModelTests {
             isTrial = false,
             isCancelled = false,
             isLifetime = false,
+            productIdentifier = "amazon_basic_monthly",
+            purchaseHistoryEntryId = "subscription:amazon_basic_monthly",
         )
 
         val model = CustomerCenterViewModelImpl(

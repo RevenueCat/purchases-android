@@ -52,10 +52,10 @@ internal data class PurchaseInformation(
     val refundedAt: Date? = null,
     val ownershipType: OwnershipType = OwnershipType.UNKNOWN,
     val isSandbox: Boolean = false,
-    val productIdentifier: String = "",
+    val productIdentifier: String,
     val storeTransactionId: String? = null,
     // Stable source identifier used to re-resolve purchase history details after customer info refreshes.
-    val purchaseHistoryEntryId: String = "",
+    val purchaseHistoryEntryId: String,
 ) {
 
     constructor(
