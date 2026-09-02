@@ -12,6 +12,7 @@ import com.revenuecat.purchases.rules.Value
  */
 internal object CustomOperators {
 
+    @Suppress("CyclomaticComplexMethod")
     fun dispatch(
         op: String,
         args: Value,
@@ -24,6 +25,8 @@ internal object CustomOperators {
 
         "rc.lower" -> CaseOperators.opLower(args, vars)
         "rc.upper" -> CaseOperators.opUpper(args, vars)
+
+        "rc.regexMatch" -> RegexOperators.opRegexMatch(args, vars)
 
         "rc.rootVar" -> RootVarOperator.opRootVar(args, vars)
 
