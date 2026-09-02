@@ -392,9 +392,7 @@ private fun Video(
         mutableStateOf<TextureVideoView?>(null)
     }
 
-    // The uri the view was last given. The factory runs once, so a source change while the paywall
-    // is on screen (a light/dark switch, for instance) has to be applied to the existing view or it
-    // keeps playing the previous asset.
+    // The uri the view was last given. The factory only applies it on creation.
     val appliedUri = remember {
         mutableStateOf<String?>(null)
     }
@@ -437,7 +435,7 @@ private fun Video(
                     autoPlay
                 }
 
-                // Recorded before the shadowing below, so the guard in `update` compares like for like.
+                // Set before the shadowing below, so the guard compares the same string.
                 appliedUri.value = videoUri
                 val videoUri = videoUri.toUri()
 
@@ -467,8 +465,8 @@ private fun Video(
             update = { view ->
                 videoView.value = view
                 view.setOnReadyCallback(onReady)
-                // Guarded: update runs on every recomposition, and setVideoURI re-prepares the
-                // player, so applying it unconditionally would restart playback constantly.
+                // update runs on every recomposition and setVideoURI re-prepares the player, so
+                // applying it unconditionally would restart playback constantly.
                 if (appliedUri.value != videoUri) {
                     appliedUri.value = videoUri
                     view.setVideoURI(videoUri.toUri())
