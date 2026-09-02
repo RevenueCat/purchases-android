@@ -71,7 +71,7 @@ class CarouselFillCollapseTest {
                 alignment = HorizontalAlignment.CENTER,
                 distribution = FlexDistribution.CENTER,
             ),
-            size = Size(width = Fill, height = Fill),
+            size = Size(width = Fill(), height = Fill()),
         )
         val page = StackComponent(
             components = listOf(content),
@@ -79,7 +79,7 @@ class CarouselFillCollapseTest {
                 alignment = HorizontalAlignment.CENTER,
                 distribution = FlexDistribution.CENTER,
             ),
-            size = Size(width = Fill, height = Fill),
+            size = Size(width = Fill(), height = Fill()),
         )
         // No explicit `size` — matches the schema default (Fit/Fit) and test_k's real config.
         val carousel = CarouselComponent(

@@ -80,7 +80,7 @@ internal class SizeTests {
                               "type": "fill"
                             }
                         """.trimIndent(),
-                        expected = SizeConstraint.Fill
+                        expected = SizeConstraint.Fill()
                     )
                 ),
                 arrayOf(
@@ -92,7 +92,7 @@ internal class SizeTests {
                               "value": null
                             }
                         """.trimIndent(),
-                        expected = SizeConstraint.Fill
+                        expected = SizeConstraint.Fill()
                     )
                 ),
                 arrayOf(
@@ -180,7 +180,7 @@ internal class SizeTests {
                         """.trimIndent(),
                         expected = Size(
                             width = SizeConstraint.Fit(),
-                            height = SizeConstraint.Fill,
+                            height = SizeConstraint.Fill(),
                         )
                     )
                 ),
@@ -200,7 +200,7 @@ internal class SizeTests {
                             }
                         """.trimIndent(),
                         expected = Size(
-                            width = SizeConstraint.Fill,
+                            width = SizeConstraint.Fill(),
                             height = SizeConstraint.Fixed(
                                 value = 123.toUInt()
                             ),
@@ -223,7 +223,7 @@ internal class SizeTests {
                         """.trimIndent(),
                         expected = Size(
                             width = SizeConstraint.Fit(default = 2u),
-                            height = SizeConstraint.Fill,
+                            height = SizeConstraint.Fill(),
                         )
                     )
                 ),
@@ -242,7 +242,7 @@ internal class SizeTests {
                             }
                         """.trimIndent(),
                         expected = Size(
-                            width = SizeConstraint.Fill,
+                            width = SizeConstraint.Fill(),
                             height = SizeConstraint.Fit(default = 2u),
                         )
                     )

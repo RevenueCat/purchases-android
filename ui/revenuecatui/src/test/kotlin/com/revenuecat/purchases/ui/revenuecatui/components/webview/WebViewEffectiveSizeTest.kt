@@ -48,27 +48,27 @@ internal class WebViewEffectiveSizeTest {
     @Test
     fun `non-fit axes ignore reported content sizes`() {
         val size = webViewEffectiveSize(
-            declaredSize = Size(width = Fill, height = Fixed(200u)),
+            declaredSize = Size(width = Fill(), height = Fixed(200u)),
             contentWidthCssPx = 320,
             contentHeightCssPx = 480,
         )
 
-        assertThat(size.width).isEqualTo(Fill)
+        assertThat(size.width).isEqualTo(Fill())
         assertThat(size.height).isEqualTo(Fixed(200u))
     }
 
     @Test
     fun `bounded fill axes are left untouched`() {
         val size = webViewEffectiveSize(
-            declaredSize = Size(width = Fill, height = Fill),
+            declaredSize = Size(width = Fill(), height = Fill()),
             contentWidthCssPx = 0,
             contentHeightCssPx = 0,
             widthAxisUnbounded = false,
             heightAxisUnbounded = false,
         )
 
-        assertThat(size.width).isEqualTo(Fill)
-        assertThat(size.height).isEqualTo(Fill)
+        assertThat(size.width).isEqualTo(Fill())
+        assertThat(size.height).isEqualTo(Fill())
     }
 
     @Test
@@ -79,7 +79,7 @@ internal class WebViewEffectiveSizeTest {
         // constraint through. Fill (unlike Fit) also carries no `default` field in the schema, so
         // there's nothing to fall back on but the hardcoded placeholder.
         val size = webViewEffectiveSize(
-            declaredSize = Size(width = Fill, height = Fill),
+            declaredSize = Size(width = Fill(), height = Fill()),
             contentWidthCssPx = 0,
             contentHeightCssPx = 0,
             widthAxisUnbounded = true,
@@ -93,7 +93,7 @@ internal class WebViewEffectiveSizeTest {
     @Test
     fun `unbounded fill axes use the reported content size once available`() {
         val size = webViewEffectiveSize(
-            declaredSize = Size(width = Fill, height = Fill),
+            declaredSize = Size(width = Fill(), height = Fill()),
             contentWidthCssPx = 320,
             contentHeightCssPx = 480,
             widthAxisUnbounded = true,
