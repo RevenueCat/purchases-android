@@ -32,7 +32,9 @@ internal fun ProductDetails.toStoreProduct(
             OneTimePurchaseOfferDetailsList(
                 this.oneTimePurchaseOfferDetailsList?.map {
                     it.toGoogleOneTimePurchaseOfferDetails(productId, this)
-                } ?: emptyList()
+                } ?: listOfNotNull(
+                    this.oneTimePurchaseOfferDetails?.toGoogleOneTimePurchaseOfferDetails(productId, this)
+                )
             )
         } else {
             null
