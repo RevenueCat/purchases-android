@@ -810,8 +810,8 @@ jobs:
       - android/save_build_cache:
           cache_prefix: ui-tests-v1
 
-  run-maestro-e2e-tests:
-    description: "Run Maestro tests for Paywall Tester app"
+  run-maestro-tests:
+    description: "Run Maestro tests for E2E Tester app"
     <<: *android-machine-emulator
     steps:
       - checkout
@@ -819,67 +819,35 @@ jobs:
           at: .
       - revenuecat/install-mise-tools:
           tools: java
-      - run:
-          name: Replace API_KEY (Using Test store API key from Production Integration Tests Android project)
-          working_directory: test-apps/e2etests/src/main/java/com/revenuecat/e2etests/
-          command: |
-            sed -i s/\"api_key_to_replace\"/\"$TEST_STORE_API_KEY\"/ Constants.kt
       - android/create_avd:
           avd_name: test-e2e-tester
           system_image: system-images;android-32;google_apis;x86_64
           install: true
       - android/start_emulator:
           avd_name: test-e2e-tester
-          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug
+          # Test Store API key for the automated_sdk_tests RevenueCat project.
+          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug test-apps:e2etests:assembleRelease -PMAESTRO_TEST_STORE_API_KEY=$MAESTRO_TEST_STORE_API_KEY
       - android/restore_gradle_cache
-      - run:
-          name: Install E2E Tester on emulator
-          command: |
-            adb install test-apps/e2etests/build/outputs/apk/debug/e2etests-debug.apk
       - revenuecat/install-maestro
       - run:
-          name: Run Maestro tests
+          # The minified release build exercises the SDK's consumer R8 rules end-to-end.
+          name: Run Maestro tests on minified release build
           command: |
-            maestro test --format junit --output maestro/report.xml maestro/e2e_tests/
+            adb install -r test-apps/e2etests/build/outputs/apk/release/e2etests-release.apk
+            maestro test --exclude-tags debug-only --format junit --output maestro/report.xml maestro/e2e_tests/ maestro/workflows/
+      - run:
+          # Flows tagged debug-only force server errors through configureForE2ETests, which only
+          # exists in the SDK's debug variant, so they run against the debug build.
+          name: Run Maestro debug-only tests
+          command: |
+            adb install -r test-apps/e2etests/build/outputs/apk/debug/e2etests-debug.apk
+            maestro test --include-tags debug-only --format junit --output maestro/debug-report.xml maestro/workflows/
       - store_artifacts:
           path: ~/.maestro/tests/
       - store_test_results:
           path: maestro/report.xml
-
-  run-maestro-workflow-tests:
-    description: "Run Maestro workflow (multipage paywall) tests for E2E Tester app"
-    <<: *android-machine-emulator
-    steps:
-      - checkout
-      - attach_workspace:
-          at: .
-      - revenuecat/install-mise-tools:
-          tools: java
-      - android/create_avd:
-          avd_name: test-e2e-workflow-tester
-          system_image: system-images;android-32;google_apis;x86_64
-          install: true
-      - android/start_emulator:
-          avd_name: test-e2e-workflow-tester
-          # The workflow project key is baked in at build time (BuildConfig.WORKFLOWS_API_KEY),
-          # which makes E2ETestsApplication configure against the workflow project. A single APK
-          # can only target one project, so this is built and run separately from
-          # run-maestro-e2e-tests.
-          post_emulator_launch_assemble_command: ./gradlew test-apps:e2etests:assembleDebug -PE2E_WORKFLOWS_API_KEY=$WORKFLOWS_TEST_STORE_API_KEY
-      - android/restore_gradle_cache
-      - run:
-          name: Install E2E Tester on emulator
-          command: |
-            adb install test-apps/e2etests/build/outputs/apk/debug/e2etests-debug.apk
-      - revenuecat/install-maestro
-      - run:
-          name: Run Maestro workflow tests
-          command: |
-            maestro test --format junit --output maestro/workflow-report.xml maestro/workflows/
-      - store_artifacts:
-          path: ~/.maestro/tests/
       - store_test_results:
-          path: maestro/workflow-report.xml
+          path: maestro/debug-report.xml
 
   generate-baseline-profiles:
     description: "Generate baseline profiles using Gradle Managed Devices and open a PR"
@@ -1114,11 +1082,7 @@ workflows:
       - emerge_size_analysis_tests:
           requires:
             - prepare-tests
-      - run-maestro-e2e-tests:
-          requires:
-            - prepare-tests
-          <<: *non-main-branches
-      - run-maestro-workflow-tests:
+      - run-maestro-tests:
           context:
             - maestro
           requires:
@@ -1149,8 +1113,7 @@ workflows:
             - assemble-purchase-tester
             - assemble-paywall-tester-release
             - run-backend-integration-tests
-            - run-maestro-e2e-tests
-            - run-maestro-workflow-tests
+            - run-maestro-tests
             - run-revenuecatui-ui-tests
             - run-integration-tests
             - run-purchases-integration-tests

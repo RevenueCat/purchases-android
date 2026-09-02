@@ -17,6 +17,9 @@ internal object SplitOperator {
      * ones, as strings. Numeric-looking fields are not coerced, so `"1,2"`
      * splits into `["1", "2"]`.
      *
+     * The separator is matched over UTF-16 code units, which is what
+     * `String.split` already does.
+     *
      * Both operands must be strings and the separator must be non-empty,
      * otherwise [EvaluationException.TypeMismatch] is thrown.
      */
