@@ -28,6 +28,7 @@ internal object CustomOperators {
 
         "rc.regexExtract" -> RegexOperators.opRegexExtract(args, vars)
         "rc.regexMatch" -> RegexOperators.opRegexMatch(args, vars)
+        "rc.regexReplace" -> RegexOperators.opRegexReplace(args, vars)
 
         "rc.rootVar" -> RootVarOperator.opRootVar(args, vars)
 
