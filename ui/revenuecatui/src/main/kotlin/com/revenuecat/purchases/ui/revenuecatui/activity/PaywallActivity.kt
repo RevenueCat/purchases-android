@@ -32,6 +32,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
@@ -193,6 +194,10 @@ internal class PaywallActivity : ComponentActivity() {
 
             override fun onUrlOpened(url: String) {
                 userListener?.onUrlOpened(url)
+            }
+
+            override fun onInteraction(event: PaywallInteractionEvent) {
+                userListener?.onInteraction(event)
             }
         }
 
