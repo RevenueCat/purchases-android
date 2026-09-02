@@ -25,7 +25,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class WebViewComponentStateTest {
 
-    private val size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit())
+    private val size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit())
 
     private fun styleWithOverrides(
         visible: Boolean,

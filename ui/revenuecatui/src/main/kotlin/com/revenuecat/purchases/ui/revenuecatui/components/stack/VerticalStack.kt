@@ -92,7 +92,7 @@ private class VerticalStackScopeImpl(
         items: List<ComponentStyle>,
         itemContent: @Composable ColumnScope.(index: Int, item: ComponentStyle) -> Unit,
     ) {
-        hasAnyItemsWithFillHeight = items.any { it.size.height == Fill }
+        hasAnyItemsWithFillHeight = items.any { it.size.height is Fill }
         columnContent = {
             items.forEachIndexed { index, item ->
                 val isLast = index == items.size - 1

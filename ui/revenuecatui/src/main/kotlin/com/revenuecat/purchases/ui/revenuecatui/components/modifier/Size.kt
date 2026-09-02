@@ -85,18 +85,21 @@ private fun Size_Preview_FitFit() {
 @Composable
 private fun Size_Preview_FillFill() {
     Size_Preview(size = Size(width = Fill, height = Fill))
+    Size_Preview(size = Size(width = Fill(), height = Fill()))
 }
 
 @Preview("FillFit")
 @Composable
 private fun Size_Preview_FillFit() {
     Size_Preview(size = Size(width = Fill, height = Fit()))
+    Size_Preview(size = Size(width = Fill(), height = Fit()))
 }
 
 @Preview("FitFill")
 @Composable
 private fun Size_Preview_FitFill() {
     Size_Preview(size = Size(width = Fit(), height = Fill))
+    Size_Preview(size = Size(width = Fit(), height = Fill()))
 }
 
 @Preview("FixedFixed")
