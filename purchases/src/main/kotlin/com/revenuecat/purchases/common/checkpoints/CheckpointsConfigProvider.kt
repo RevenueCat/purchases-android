@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.common.checkpoints
 
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.verboseLog
@@ -54,10 +55,13 @@ internal class CheckpointsConfigProvider(
      */
     private suspend fun classifyUnresolved(identifier: String): CheckpointRulesResolution {
         // First: committedTopicOrNull also returns null when the endpoint is disabled, which would otherwise be
-        // indistinguishable from an absent topic.
+        // indistinguishable from an absent topic. Checkpoints are never resolved with remote config off
+        // (customEntitlementComputation), so a call here is a wiring bug worth surfacing.
         if (manager.isDisabled) {
-            verboseLog { "Remote config is disabled (4xx); checkpoint '$identifier' cannot be resolved." }
-            return CheckpointRulesResolution.Disabled
+            errorLog {
+                "Checkpoint '$identifier' is unavailable: remote config is disabled for this SDK configuration."
+            }
+            return CheckpointRulesResolution.Unavailable
         }
         // A project with no checkpoints still gets checkpoint_rules committed as an empty item index, so only an
         // item-level miss on a committed topic means "not configured": an absent topic means nothing is committed

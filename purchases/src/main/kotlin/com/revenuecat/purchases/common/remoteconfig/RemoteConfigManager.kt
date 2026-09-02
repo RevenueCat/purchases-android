@@ -8,13 +8,11 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.GetRemoteConfigErrorHandlingBehavior
 import com.revenuecat.purchases.common.JsonProvider
-import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.between
 import com.revenuecat.purchases.common.caching.cacheDuration
 import com.revenuecat.purchases.common.caching.isCacheStale
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCContainerFormatException
@@ -91,6 +89,7 @@ internal class RemoteConfigManager(
     private val blobFetcher: RemoteConfigBlobFetcher,
     private val appUserIDProvider: () -> String? = { null },
     private val cacheDurationProvider: (Boolean) -> Duration = ::cacheDuration,
+    private val enabled: Boolean = true,
 ) {
     private val isRefreshing = AtomicBoolean(false)
 
@@ -130,22 +129,17 @@ internal class RemoteConfigManager(
     @Volatile
     private var refreshCompletion: CompletableDeferred<Unit>? = null
 
-    // Session-scoped kill-switch. Set when `/v1/config` returns a 4xx (the endpoint intentionally refused the
-    // request). While set, no config request is issued and — since blob prefetch only runs after a successful
-    // persist — no blob fetch happens either. Memory-only: an app restart re-enables the endpoint. Intentionally
-    // NOT reset by clearCache() (a 4xx is an endpoint/app-level fact, not per-user).
-    @Volatile
-    private var disabled = false
-
     /**
-     * Whether `/v1/config` has been disabled for this session after a 4xx client error. Consumers can read this
-     * to know the remote config endpoint is not being used. Resets only on app restart.
+     * Whether `/v1/config` is disabled for this SDK configuration (the customEntitlementComputation flavor
+     * constructs the manager with `enabled = false`). While disabled, no config request is issued — and, since
+     * blob prefetch only runs after a successful persist, no blob fetch happens either — and all reads return
+     * `null`. Immutable for the manager's lifetime.
      */
     val isDisabled: Boolean
-        get() = disabled
+        get() = !enabled
 
-    // A monotonic commit token, bumped on every mutation of the committed state: a successful persist(), an
-    // identity-change clearCache(), and the 4xx disable. Handed to listeners so an async in-memory warm can
+    // A monotonic commit token, bumped on every mutation of the committed state: a successful persist() and an
+    // identity-change clearCache(). Handed to listeners so an async in-memory warm can
     // store-if-newer and never clobber a fresher commit (see RemoteConfigCommitListener). Distinct from `epoch`,
     // which only advances on identity change and can't order a disk warm against an ordinary version bump.
     private val generation = AtomicInteger(0)
@@ -189,8 +183,8 @@ internal class RemoteConfigManager(
         fetchContext: RemoteConfigFetchContext,
         staleGated: Boolean,
     ) {
-        if (disabled) {
-            debugLog { "Remote config is disabled for this session (4xx). Skipping refresh." }
+        if (isDisabled) {
+            debugLog { "Remote config is disabled for this SDK configuration. Skipping refresh." }
             return
         }
         var requestEpoch = 0
@@ -350,7 +344,8 @@ internal class RemoteConfigManager(
      * Handles a failure of the **main** `/v1/config` request. Prefers cached data over the fallback: only when
      * the request fails with a retryable error AND nothing is cached yet (cold start) is the fallback endpoint
      * tried, using the same [domain] the main request used. Any cached config wins (keep it), and a 4xx
-     * (`SHOULD_DISABLE`) still disables the endpoint without a fallback.
+     * (`SHOULD_NOT_TRY_FALLBACK`) is never retried against the fallback — the endpoint intentionally refused
+     * the request, so the fallback would refuse it too. The next scheduled sync retries the main endpoint.
      */
     private fun handleMainRefreshError(
         requestEpoch: Int,
@@ -363,7 +358,7 @@ internal class RemoteConfigManager(
         if (behavior == GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY && !hasCachedConfig) {
             fetchFromFallback(requestEpoch, appInBackground, domain)
         } else {
-            handleRefreshError(requestEpoch, error, behavior)
+            handleRefreshError(requestEpoch, error)
         }
     }
 
@@ -405,7 +400,7 @@ internal class RemoteConfigManager(
                     }
                 }
             },
-            onError = { error, behavior -> handleRefreshError(requestEpoch, error, behavior) },
+            onError = { error -> handleRefreshError(requestEpoch, error) },
         )
     }
 
@@ -447,31 +442,9 @@ internal class RemoteConfigManager(
         }
     }
 
-    private fun handleRefreshError(
-        requestEpoch: Int,
-        error: PurchasesError,
-        behavior: GetRemoteConfigErrorHandlingBehavior,
-    ) {
-        if (behavior == GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE && !disabled) {
-            // A 4xx: disable the endpoint for the rest of the session. This is an endpoint-level fact, so set it
-            // regardless of epoch ownership (a late response for an old identity is still a valid signal that the
-            // endpoint refuses this app's requests). Reads now return null, so drop any in-memory caches too.
-            disabled = true
-            val invalidatedGeneration = generation.incrementAndGet()
-            listeners.forEach { it.onConfigInvalidated(invalidatedGeneration) }
-            // Distinct one-shot signal (this branch runs once, guarded by !disabled): lets consumers refetch
-            // offerings so paywall components — skipped while the endpoint was live — get decoded for the
-            // fallback render path.
-            listeners.forEach { it.onRemoteConfigDisabled(invalidatedGeneration) }
-        }
+    private fun handleRefreshError(requestEpoch: Int, error: PurchasesError) {
         if (releaseGuardIfOwned(requestEpoch)) {
-            if (behavior == GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE) {
-                log(LogIntent.RC_ERROR) {
-                    "Disabling remote config for this session after receiving a 4xx response. Error: $error"
-                }
-            } else {
-                errorLog(error)
-            }
+            errorLog(error)
         }
     }
 
@@ -492,8 +465,6 @@ internal class RemoteConfigManager(
             lastRefreshedAt = null
             lastRefreshAttemptAt = null
             completeRefresh()
-            // Intentionally NOT resetting `disabled`: a 4xx is an endpoint/app-level fact that outlives an
-            // identity change. It clears only on app restart.
             diskCache.clear()
             blobStore.clear()
             sourceProvider.clear()
@@ -537,9 +508,8 @@ internal class RemoteConfigManager(
      * Makes a best effort to have the configuration loaded before a read that found no cached data gives up:
      * - a refresh already in progress → wait for it (a read during the initial sync sees its result);
      * - otherwise trigger a sync on demand and wait for it, so a cold read fetches its own data instead of
-     *   returning `null` — **unless** the committed configuration is still fresh, the endpoint is [isDisabled]
-     *   (the 4xx session kill-switch), or no app user is known yet, in which case it gives up without a network
-     *   call.
+     *   returning `null` — **unless** the committed configuration is still fresh, the endpoint is [isDisabled],
+     *   or no app user is known yet, in which case it gives up without a network call.
      *
      * The on-demand sync is issued as foreground (`appInBackground = false`): a read is blocking on the result,
      * so it wants the un-jittered, prompt request. The user it syncs for is snapshotted atomically with the
@@ -556,7 +526,7 @@ internal class RemoteConfigManager(
         // This value is only the bootstrap fallback + the "user known" gate; refreshRemoteConfig re-resolves the
         // effective user under the lock (preferring the clearCache-bound [currentAppUserID]) when it runs.
         val appUserID = (currentAppUserID ?: appUserIDProvider())?.takeIf { it.isNotBlank() }
-        if (!disabled && appUserID != null) {
+        if (!isDisabled && appUserID != null) {
             verboseLog { "Cold remote config read requesting an on-demand sync." }
             refreshRemoteConfigIfStale(
                 appInBackground = false,
@@ -568,7 +538,7 @@ internal class RemoteConfigManager(
         } else {
             verboseLog {
                 "Cold remote config read skipped on-demand sync " +
-                    "(disabled=$disabled, user known=${appUserID != null})."
+                    "(disabled=$isDisabled, user known=${appUserID != null})."
             }
         }
     }
@@ -586,8 +556,7 @@ internal class RemoteConfigManager(
 
     /**
      * A topic's persisted item index (metadata only — inline `metadata` + `blob_ref`, no blob bytes), or `null`
-     * when nothing is cached for [topic] even after a refresh, or when the endpoint is [isDisabled] (the 4xx
-     * session kill-switch).
+     * when nothing is cached for [topic] even after a refresh, or when the endpoint is [isDisabled].
      *
      * When the topic isn't committed yet, [awaitConfigForRead] first waits for a refresh in progress — or
      * triggers one on demand, subject to its freshness gate — and then re-reads before giving up, so a read
@@ -608,7 +577,7 @@ internal class RemoteConfigManager(
      * triggering a sync. Reads disk on [ioDispatcher].
      */
     suspend fun committedTopicOrNull(topic: RemoteConfigTopic): ConfigTopic? = withContext(ioDispatcher) {
-        if (disabled) null else topicStore.topic(topic)
+        if (isDisabled) null else topicStore.topic(topic)
     }
 
     /**
@@ -619,7 +588,7 @@ internal class RemoteConfigManager(
     suspend fun committedTopicAfterInFlightRefresh(topic: RemoteConfigTopic): ConfigTopic? =
         withContext(ioDispatcher) {
             awaitInFlightRefresh()
-            if (disabled) null else topicStore.topic(topic)
+            if (isDisabled) null else topicStore.topic(topic)
         }
 
     /**
@@ -631,8 +600,8 @@ internal class RemoteConfigManager(
      *
      * This is best-effort: a prefetch blob that fails to download does not block the return (it stays recoverable
      * on demand / next sync). Returns the committed [ConfigTopic], or `null` when nothing is cached for [topic]
-     * even after a refresh, or when the endpoint is [isDisabled] (the 4xx session kill-switch) — in which case the
-     * fetcher is never touched. Runs on [ioDispatcher].
+     * even after a refresh, or when the endpoint is [isDisabled] — in which case the fetcher is never touched.
+     * Runs on [ioDispatcher].
      *
      * The blob wait can suspend for a while, so after it the committed topic is re-read: if a [clearCache]
      * (identity change) or a newer sync committed a different topic meanwhile, the snapshot we waited on no longer
@@ -670,8 +639,8 @@ internal class RemoteConfigManager(
      * already running on [ioDispatcher] (its callers wrap it), so it doesn't switch context itself.
      */
     private suspend fun committedTopic(topic: RemoteConfigTopic): ConfigTopic? {
-        if (disabled) {
-            verboseLog { "Remote config disabled (4xx); skipping topic read '${topic.wireName}'." }
+        if (isDisabled) {
+            verboseLog { "Remote config disabled; skipping topic read '${topic.wireName}'." }
             return null
         }
         // A committed topic returns immediately; only a miss waits for (or triggers) a refresh, then re-reads.
@@ -719,8 +688,7 @@ internal class RemoteConfigManager(
      * during the initial sync (or before any sync) returns fresh data instead of `null`. A committed item returns
      * immediately, never delayed by an unrelated in-flight refresh.
      *
-     * Returns `null` without any read when the endpoint is [isDisabled] (the 4xx session kill-switch). Runs on
-     * [ioDispatcher].
+     * Returns `null` without any read when the endpoint is [isDisabled]. Runs on [ioDispatcher].
      */
     suspend fun <T> blobData(
         topic: RemoteConfigTopic,
@@ -747,8 +715,8 @@ internal class RemoteConfigManager(
      * Each item resolves through the same path as the single-key [blobData] (see its KDoc for the `blob_ref`,
      * on-demand fetch, and waiting rules) — this only fans them out. The fan-out is safe: a shared in-flight
      * `/v1/config` refresh is deduped across all keys, and the blob fetcher dedupes concurrent downloads of the
-     * same ref. When the endpoint is [isDisabled] (the 4xx session kill-switch) the call returns `null`
-     * immediately without any read. Runs on [ioDispatcher].
+     * same ref. When the endpoint is [isDisabled] the call returns `null` immediately without any read. Runs
+     * on [ioDispatcher].
      */
     suspend inline fun <reified T> mergeItemsBlobData(topic: RemoteConfigTopic, itemKeys: Collection<String>): T? =
         mergeItemsBlobData(topic, itemKeys) { merged ->
@@ -783,8 +751,8 @@ internal class RemoteConfigManager(
      */
     @Suppress("ReturnCount")
     private suspend fun mergedBlobObject(topic: RemoteConfigTopic, itemKeys: Collection<String>): JsonObject? {
-        if (disabled) {
-            verboseLog { "Remote config disabled (4xx); skipping merged read for topic '${topic.wireName}'." }
+        if (isDisabled) {
+            verboseLog { "Remote config disabled; skipping merged read for topic '${topic.wireName}'." }
             return null
         }
         val keys = itemKeys.distinct()
@@ -823,8 +791,8 @@ internal class RemoteConfigManager(
      * unknown, or it has no `blob_ref`.
      */
     private suspend fun resolveBlobBytes(topic: RemoteConfigTopic, itemKey: String): ByteArray? {
-        if (disabled) {
-            verboseLog { "Remote config disabled (4xx); skipping read of item '$itemKey'." }
+        if (isDisabled) {
+            verboseLog { "Remote config disabled; skipping read of item '$itemKey'." }
             return null
         }
         verboseLog { "Reading remote config blob (topic='${topic.wireName}', item='$itemKey')." }

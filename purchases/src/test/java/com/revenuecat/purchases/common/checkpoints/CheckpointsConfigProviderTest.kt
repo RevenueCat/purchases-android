@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.checkpoints
 
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.NoOpLogHandler
+import com.revenuecat.purchases.assertErrorLog
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.remoteconfig.ConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
@@ -174,11 +175,17 @@ internal class CheckpointsConfigProviderTest {
     }
 
     @Test
-    fun `resolveCheckpoint reports Disabled when the endpoint is disabled`() = runTest {
+    fun `resolveCheckpoint reports Unavailable with an error log when the manager is disabled`() {
         returnNoBlob("app_open")
         every { manager.isDisabled } returns true
 
-        assertThat(provider.resolveCheckpoint("app_open")).isEqualTo(CheckpointRulesResolution.Disabled)
+        assertErrorLog(
+            "Checkpoint 'app_open' is unavailable: remote config is disabled for this SDK configuration.",
+        ) {
+            runTest {
+                assertThat(provider.resolveCheckpoint("app_open")).isEqualTo(CheckpointRulesResolution.Unavailable)
+            }
+        }
     }
 
     @Test

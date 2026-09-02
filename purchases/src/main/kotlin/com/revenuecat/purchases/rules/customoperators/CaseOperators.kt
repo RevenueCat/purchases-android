@@ -41,7 +41,7 @@ internal object CaseOperators {
      * `String(x).toLowerCase()` would accept them. Coercion makes data of
      * the wrong shape look like real data: an explicit `null` would lower
      * to `"null"` and compare equal to that string. Same reasoning as
-     * `rc.length` and `rc.entries`.
+     * `rc.entries`.
      */
     private fun stringArgument(args: Value, vars: Scope, operatorName: String): String {
         val input = Operators.firstArgEvaluated(args, vars)

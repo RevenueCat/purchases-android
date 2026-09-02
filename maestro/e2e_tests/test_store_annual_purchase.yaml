@@ -6,16 +6,20 @@ appId: com.revenuecat.e2etests
 - assertVisible: "Active Subscriptions: None"
 - assertVisible: "Entitlements: None"
 - tapOn: Offerings
-- tapOn: default
+- scrollUntilVisible:
+    element:
+      text: maestro_annual_purchase
+    direction: DOWN
+- tapOn: maestro_annual_purchase
 - tapOn: Show paywall
 - assertVisible: Get CatPrrro
 - tapOn: "12" # Annual package selector
 - tapOn: Subscribe now
-- assertVisible: ".*Product: test_yearly.*"
-- assertVisible: ".*Price: \\$11.99.*"
-- assertVisible: ".*Phase: \\$11.99 for P1Y.*"
+- assertVisible: ".*Product: pro_annual_subscription.*"
+- assertVisible: ".*Price: \\$49.99.*"
+- assertVisible: ".*Phase: \\$49.99 for P1Y.*"
 - tapOn: TEST VALID PURCHASE
 - tapOn: Customer Info
 - tapOn: Refresh
-- assertVisible: "Subscription: test_yearly"
-- assertVisible: "pro_cat: Active: true, Product: test_yearly"
+- assertVisible: "Subscription: pro_annual_subscription"
+- assertVisible: "pro: Active: true, Product: pro_annual_subscription"

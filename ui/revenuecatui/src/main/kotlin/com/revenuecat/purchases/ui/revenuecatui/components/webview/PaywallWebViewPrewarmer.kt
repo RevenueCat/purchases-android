@@ -94,6 +94,18 @@ internal class PaywallWebViewPrewarmer(
         warmedUrls.add(resolvedUrl)
     }
 
+    @MainThread
+    fun onCacheCleared() {
+        warmedUrls.clear()
+        // These loaded against the storage that just went away, so they start over rather than being trusted.
+        queue.addAll(0, inFlight.keys.filterNot { it in queue })
+        releaseInFlight()
+        // Posted so a settle already queued for a released warm runs first and no-ops on its absent url;
+        // inline it would settle the restarted warm instead. Released views post nothing new, because
+        // destroyPaywallWebView drops their client.
+        mainHandler.post(::startAvailable)
+    }
+
     /** Counterpart to [onDisplayStarted]. Warming resumes once the last component is gone. */
     @MainThread
     fun onDisplayEnded() {

@@ -122,30 +122,6 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `checkpoint resolves NoAction with CONFIGURATION_UNAVAILABLE when workflows are disabled`() = runTest {
-        resolver = CheckpointWorkflowResolverImpl(
-            workflowManager = null,
-            uiConfigProvider = null,
-            checkpointsConfigProvider = null,
-            audiencesConfigProvider = null,
-            localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
-            getOfferings = { mockOfferings },
-        )
-
-        assertThat(noActionReason(resolve()))
-            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
-    }
-
-    @Test
-    fun `checkpoint resolves NoAction with CONFIGURATION_UNAVAILABLE when remote config is disabled`() = runTest {
-        configureResolution(CheckpointRulesResolution.Disabled)
-
-        assertThat(noActionReason(resolve()))
-            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
-        coVerify(exactly = 0) { mockAudiencesConfigProvider.getAudience(any()) }
-    }
-
-    @Test
     fun `checkpoint resolves NoAction with UNKNOWN_CHECKPOINT when it is not configured`() = runTest {
         configureResolution(CheckpointRulesResolution.NotConfigured)
 
@@ -442,27 +418,6 @@ class CheckpointWorkflowResolverImplTest {
         assertThat(offeringsFetched).isEqualTo(1)
         coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
         coVerify(exactly = 1) { mockWorkflowManager.offeringIdByWorkflowId() }
-    }
-
-    @Test
-    fun `offering checkpoint resolves CONFIGURATION_UNAVAILABLE when no UI config provider is installed`() = runTest {
-        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns offeringWorkflow("wf1234", "default")
-        resolver = CheckpointWorkflowResolverImpl(
-            workflowManager = mockWorkflowManager,
-            uiConfigProvider = null,
-            checkpointsConfigProvider = mockCheckpointsConfigProvider,
-            audiencesConfigProvider = mockAudiencesConfigProvider,
-            localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
-            getOfferings = {
-                offeringsFetched++
-                mockOfferings
-            },
-        )
-
-        assertThat(noActionReason(resolve()))
-            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
-        assertThat(offeringsFetched).isZero()
-        coVerify(exactly = 0) { mockWorkflowManager.getWorkflowBody(any()) }
     }
 
     @Test

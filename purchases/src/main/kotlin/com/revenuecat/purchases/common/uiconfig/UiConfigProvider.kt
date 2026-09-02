@@ -2,6 +2,7 @@ package com.revenuecat.purchases.common.uiconfig
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.remoteconfig.GenerationGuardedCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
@@ -141,10 +142,11 @@ internal class UiConfigProvider(
      */
     private suspend fun classifyUnresolved(): UiConfigResolution {
         // First: committedTopicOrNull also returns null when the endpoint is disabled, which would otherwise be
-        // indistinguishable from an absent topic.
+        // indistinguishable from an absent topic. ui_config is never resolved with remote config off
+        // (customEntitlementComputation), so a call here is a wiring bug worth surfacing.
         if (manager.isDisabled) {
-            verboseLog { "Remote config is disabled (4xx); there is no ui_config to resolve." }
-            return UiConfigResolution.Disabled
+            errorLog { "ui_config is unavailable: remote config is disabled for this SDK configuration." }
+            return UiConfigResolution.Unavailable
         }
         val topic = manager.committedTopicOrNull(RemoteConfigTopic.UiConfig)
         val presentKeys = ITEM_KEYS.filter { topic?.containsKey(it) == true }

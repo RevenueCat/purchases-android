@@ -23,9 +23,9 @@ internal object EntriesOperators {
      * `{"rc.entries": ["a", "b"]}` uses only `"a"`. To pass a literal array
      * operand, wrap it: `{"rc.entries": [["a", "b"]]}`.
      *
-     * - **Object**: pairs sorted **lexicographically by key**, so both native
-     *   SDKs emit the same order whether or not the underlying map preserves
-     *   insertion order. This deliberately diverges from JS `Object.entries`
+     * - **Object**: pairs sorted **by key, in UTF-16 code unit order**, so both
+     *   native SDKs emit the same order whether or not the underlying map
+     *   preserves insertion order. This deliberately diverges from JS `Object.entries`
      *   insertion order; rules must not depend on insertion order.
      * - **Array**: index/value pairs with **string** keys (`"0"`, `"1"`, …),
      *   matching `Object.entries(["a","b"]) === [["0","a"],["1","b"]]`.
