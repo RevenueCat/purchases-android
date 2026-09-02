@@ -2,12 +2,10 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
@@ -102,14 +100,10 @@ private fun ConstrainedFillColumn(
     modifier: Modifier = Modifier,
     itemContent: @Composable (index: Int, item: ComponentStyle, modifier: Modifier) -> Unit,
 ) {
-    val arrangement: Arrangement.Vertical = if (dimension.distribution.usesAllAvailableSpace) {
-        Arrangement.spacedBy(spacing, Alignment.Top)
-    } else {
-        dimension.distribution.toVerticalArrangement(spacing)
-    }
     ConstrainedFillLayout(
         config = ConstrainedFillLayout.Config.Vertical(
-            arrangement = arrangement,
+            distribution = dimension.distribution,
+            arrangement = dimension.distribution.toVerticalArrangement(spacing),
             alignment = dimension.alignment.toAlignment(),
         ),
         fillConstraints = items.map { it.size.height as? Fill },

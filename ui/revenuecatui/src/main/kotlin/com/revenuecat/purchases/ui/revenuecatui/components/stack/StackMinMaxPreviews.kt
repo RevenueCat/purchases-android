@@ -47,6 +47,11 @@ private val childColors = listOf(
     ColorStyles(ColorStyle.Solid(Color(0xFF2563EB))),
     ColorStyles(ColorStyle.Solid(Color(0xFF16A34A))),
 )
+private val spaceDistributions = listOf(
+    FlexDistribution.SPACE_BETWEEN,
+    FlexDistribution.SPACE_AROUND,
+    FlexDistribution.SPACE_EVENLY,
+)
 
 @Preview(name = "Size · Fill constraints", widthDp = 320, heightDp = 430, showBackground = true)
 @Composable
@@ -159,6 +164,86 @@ private fun VerticalMaximumPreview() {
     )
 }
 
+@Preview(
+    name = "Stack · Horizontal uniform Fill distributions",
+    widthDp = 320,
+    heightDp = 450,
+    showBackground = true,
+)
+@Composable
+private fun HorizontalUniformFillDistributionsPreview() {
+    Column {
+        spaceDistributions.forEach { distribution ->
+            StackPreview(
+                title = "$distribution: max 50 × 2",
+                horizontal = true,
+                constraints = listOf(Fill(max = 50u), Fill(max = 50u)),
+                distribution = distribution,
+            )
+        }
+    }
+}
+
+@Preview(
+    name = "Stack · Horizontal nonuniform Fill distributions",
+    widthDp = 320,
+    heightDp = 450,
+    showBackground = true,
+)
+@Composable
+private fun HorizontalNonuniformFillDistributionsPreview() {
+    Column {
+        spaceDistributions.forEach { distribution ->
+            StackPreview(
+                title = "$distribution: max 30 + max 70",
+                horizontal = true,
+                constraints = listOf(Fill(max = 30u), Fill(max = 70u)),
+                distribution = distribution,
+            )
+        }
+    }
+}
+
+@Preview(
+    name = "Stack · Vertical uniform Fill distributions",
+    widthDp = 840,
+    heightDp = 330,
+    showBackground = true,
+)
+@Composable
+private fun VerticalUniformFillDistributionsPreview() {
+    Row {
+        spaceDistributions.forEach { distribution ->
+            StackPreview(
+                title = "$distribution: max 50 × 2",
+                horizontal = false,
+                constraints = listOf(Fill(max = 50u), Fill(max = 50u)),
+                distribution = distribution,
+            )
+        }
+    }
+}
+
+@Preview(
+    name = "Stack · Vertical nonuniform Fill distributions",
+    widthDp = 840,
+    heightDp = 330,
+    showBackground = true,
+)
+@Composable
+private fun VerticalNonuniformFillDistributionsPreview() {
+    Row {
+        spaceDistributions.forEach { distribution ->
+            StackPreview(
+                title = "$distribution: max 30 + max 70",
+                horizontal = false,
+                constraints = listOf(Fill(max = 30u), Fill(max = 70u)),
+                distribution = distribution,
+            )
+        }
+    }
+}
+
 @Composable
 private fun ConstraintGallery(cases: List<Pair<String, SizeConstraint>>) {
     Column(
@@ -248,6 +333,7 @@ private fun StackPreview(
     title: String,
     horizontal: Boolean,
     constraints: List<Fill>,
+    distribution: FlexDistribution = FlexDistribution.START,
 ) {
     val children = constraints.mapIndexed { index, constraint ->
         previewChild(
@@ -262,9 +348,9 @@ private fun StackPreview(
         )
     }
     val dimension = if (horizontal) {
-        Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START)
+        Dimension.Horizontal(VerticalAlignment.CENTER, distribution)
     } else {
-        Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START)
+        Dimension.Vertical(HorizontalAlignment.CENTER, distribution)
     }
     val size = if (horizontal) {
         Size(width = Fixed(240u), height = Fixed(72u))

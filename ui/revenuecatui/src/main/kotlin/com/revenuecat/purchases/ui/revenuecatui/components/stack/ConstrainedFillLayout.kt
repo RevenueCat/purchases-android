@@ -13,13 +13,16 @@ import androidx.compose.ui.layout.MeasureScope
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 
 internal object ConstrainedFillLayout {
     sealed interface Config {
         val orientation: Orientation
+        val distribution: FlexDistribution
 
         class Horizontal(
+            override val distribution: FlexDistribution,
             val arrangement: Arrangement.Horizontal,
             val alignment: Alignment.Vertical,
         ) : Config {
@@ -27,6 +30,7 @@ internal object ConstrainedFillLayout {
         }
 
         class Vertical(
+            override val distribution: FlexDistribution,
             val arrangement: Arrangement.Vertical,
             val alignment: Alignment.Horizontal,
         ) : Config {
@@ -53,6 +57,7 @@ internal object ConstrainedFillLayout {
                     mainAxisSize = measured.sumOf { it.mainAxisSize(config.orientation) } + totalSpacing,
                     constraints = constraints,
                     config = config,
+                    spacing = spacingPx,
                 )
             }
 
@@ -81,6 +86,7 @@ internal object ConstrainedFillLayout {
                 mainAxisSize = targetMainAxisSize,
                 constraints = constraints,
                 config = config,
+                spacing = spacingPx,
             )
         }
     }
@@ -115,6 +121,7 @@ private fun MeasureScope.layoutAndPlace(
     mainAxisSize: Int,
     constraints: Constraints,
     config: ConstrainedFillLayout.Config,
+    spacing: Int,
 ): MeasureResult {
     val orientation = config.orientation
     val resolvedMainAxisSize = mainAxisSize.coerceIn(
@@ -126,16 +133,13 @@ private fun MeasureScope.layoutAndPlace(
     }
         ?.coerceIn(constraints.crossAxisMin(orientation), constraints.crossAxisMax(orientation))
         ?: constraints.crossAxisMin(orientation)
-    val positions = IntArray(placeables.size)
     val sizes = placeables.map { it.mainAxisSize(orientation) }.toIntArray()
-    when (config) {
-        is ConstrainedFillLayout.Config.Horizontal -> with(config.arrangement) {
-            arrange(resolvedMainAxisSize, sizes, layoutDirection, positions)
-        }
-        is ConstrainedFillLayout.Config.Vertical -> with(config.arrangement) {
-            arrange(resolvedMainAxisSize, sizes, positions)
-        }
-    }
+    val positions = arrangeConstrainedFillItems(
+        config = config,
+        totalSize = resolvedMainAxisSize,
+        sizes = sizes,
+        spacing = spacing,
+    )
 
     val width = if (orientation == Orientation.Horizontal) resolvedMainAxisSize else resolvedCrossAxisSize
     val height = if (orientation == Orientation.Horizontal) resolvedCrossAxisSize else resolvedMainAxisSize
