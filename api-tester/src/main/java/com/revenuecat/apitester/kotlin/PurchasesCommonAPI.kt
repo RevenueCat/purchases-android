@@ -90,6 +90,10 @@ private class PurchasesCommonAPI {
         val updatedCustomerInfoListener: UpdatedCustomerInfoListener? = purchases.updatedCustomerInfoListener
         purchases.updatedCustomerInfoListener = UpdatedCustomerInfoListener { _: CustomerInfo? -> }
 
+        val addedCustomerInfoListener = UpdatedCustomerInfoListener { _: CustomerInfo? -> }
+        purchases.addUpdatedCustomerInfoListener(addedCustomerInfoListener)
+        purchases.removeUpdatedCustomerInfoListener(addedCustomerInfoListener)
+
         val inAppMessageTypeList = listOf<InAppMessageType>()
         purchases.showInAppMessagesIfNeeded(activity)
         purchases.showInAppMessagesIfNeeded(activity, inAppMessageTypeList)

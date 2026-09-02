@@ -371,6 +371,7 @@ package com.revenuecat.purchases {
   }
 
   public final class Purchases {
+    method public void addUpdatedCustomerInfoListener(com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener listener);
     method public static void canMakePayments(android.content.Context context, com.revenuecat.purchases.interfaces.Callback<java.lang.Boolean> callback);
     method public static void canMakePayments(android.content.Context context, optional java.util.List<? extends com.revenuecat.purchases.models.BillingFeature> features, com.revenuecat.purchases.interfaces.Callback<java.lang.Boolean> callback);
     method public void close();
@@ -405,7 +406,7 @@ package com.revenuecat.purchases {
     method @InaccessibleFromKotlin public java.util.Locale? getStorefrontLocale();
     method @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public void getStorefrontLocale(com.revenuecat.purchases.interfaces.GetStorefrontLocaleCallback callback);
     method @Deprecated public void getSubscriptionSkus(java.util.List<java.lang.String> productIds, com.revenuecat.purchases.interfaces.GetStoreProductsCallback callback);
-    method @InaccessibleFromKotlin @kotlin.jvm.Synchronized public com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener? getUpdatedCustomerInfoListener();
+    method @InaccessibleFromKotlin @Deprecated @kotlin.jvm.Synchronized public com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener? getUpdatedCustomerInfoListener();
     method public void getVirtualCurrencies(com.revenuecat.purchases.interfaces.GetVirtualCurrenciesCallback callback);
     method public void invalidateCustomerInfoCache();
     method public void invalidateVirtualCurrenciesCache();
@@ -426,7 +427,8 @@ package com.revenuecat.purchases {
     method @Deprecated public void purchasePackage(android.app.Activity activity, com.revenuecat.purchases.Package packageToPurchase, com.revenuecat.purchases.interfaces.PurchaseCallback listener);
     method @Deprecated public void purchaseProduct(android.app.Activity activity, com.revenuecat.purchases.models.StoreProduct storeProduct, com.revenuecat.purchases.interfaces.PurchaseCallback callback);
     method public void redeemWebPurchase(com.revenuecat.purchases.WebPurchaseRedemption webPurchaseRedemption, com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener listener);
-    method public void removeUpdatedCustomerInfoListener();
+    method @Deprecated public void removeUpdatedCustomerInfoListener();
+    method public void removeUpdatedCustomerInfoListener(com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener listener);
     method public void restorePurchases(com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback callback);
     method public void setAd(String? ad);
     method public void setAdGroup(String? adGroup);
@@ -468,7 +470,7 @@ package com.revenuecat.purchases {
     method public void setSolarEngineDistinctId(String? solarEngineDistinctId);
     method public void setSolarEngineVisitorId(String? solarEngineVisitorId);
     method public void setTenjinAnalyticsInstallationID(String? tenjinAnalyticsInstallationID);
-    method @InaccessibleFromKotlin @kotlin.jvm.Synchronized public void setUpdatedCustomerInfoListener(com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener?);
+    method @InaccessibleFromKotlin @Deprecated @kotlin.jvm.Synchronized public void setUpdatedCustomerInfoListener(com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener?);
     method public void showInAppMessagesIfNeeded(android.app.Activity activity);
     method public void showInAppMessagesIfNeeded(android.app.Activity activity, optional java.util.List<? extends com.revenuecat.purchases.models.InAppMessageType> inAppMessageTypes);
     method public void showManageSubscriptions(android.content.Context context);
@@ -494,7 +496,7 @@ package com.revenuecat.purchases {
     property public com.revenuecat.purchases.Store store;
     property @kotlin.jvm.Synchronized public String? storefrontCountryCode;
     property @com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI public java.util.Locale? storefrontLocale;
-    property @kotlin.jvm.Synchronized public com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener? updatedCustomerInfoListener;
+    property @Deprecated @kotlin.jvm.Synchronized public com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener? updatedCustomerInfoListener;
     field public static final com.revenuecat.purchases.Purchases.Companion Companion;
   }
 

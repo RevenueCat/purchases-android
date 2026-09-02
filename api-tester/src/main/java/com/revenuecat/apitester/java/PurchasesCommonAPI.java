@@ -85,6 +85,11 @@ final class PurchasesCommonAPI {
         purchases.setUpdatedCustomerInfoListener((CustomerInfo customerInfo) -> {
         });
 
+        final UpdatedCustomerInfoListener addedCustomerInfoListener = (CustomerInfo customerInfo) -> {
+        };
+        purchases.addUpdatedCustomerInfoListener(addedCustomerInfoListener);
+        purchases.removeUpdatedCustomerInfoListener(addedCustomerInfoListener);
+
         final String storefrontCountryCode = purchases.getStorefrontCountryCode();
         purchases.getStorefrontCountryCode(getStorefrontCallback);
 
