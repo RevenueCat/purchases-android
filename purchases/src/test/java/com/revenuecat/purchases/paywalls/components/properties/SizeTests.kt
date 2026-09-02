@@ -73,6 +73,32 @@ internal class SizeTests {
                     )
                 ),
                 arrayOf(
+                    "fit - minimum and maximum",
+                    Args(
+                        json = """
+                            {
+                              "type": "fit",
+                              "min": 20,
+                              "max": 100
+                            }
+                        """.trimIndent(),
+                        expected = SizeConstraint.Fit(min = 20u, max = 100u)
+                    )
+                ),
+                arrayOf(
+                    "fit - minimum greater than maximum",
+                    Args(
+                        json = """
+                            {
+                              "type": "fit",
+                              "min": 40,
+                              "max": 20
+                            }
+                        """.trimIndent(),
+                        expected = SizeConstraint.Fit(min = 40u, max = 20u)
+                    )
+                ),
+                arrayOf(
                     "fill - value absent",
                     Args(
                         json = """
@@ -93,6 +119,43 @@ internal class SizeTests {
                             }
                         """.trimIndent(),
                         expected = SizeConstraint.Fill()
+                    )
+                ),
+                arrayOf(
+                    "fill - minimum only",
+                    Args(
+                        json = """
+                            {
+                              "type": "fill",
+                              "min": 20
+                            }
+                        """.trimIndent(),
+                        expected = SizeConstraint.Fill(min = 20u)
+                    )
+                ),
+                arrayOf(
+                    "fill - maximum only",
+                    Args(
+                        json = """
+                            {
+                              "type": "fill",
+                              "max": 100
+                            }
+                        """.trimIndent(),
+                        expected = SizeConstraint.Fill(max = 100u)
+                    )
+                ),
+                arrayOf(
+                    "fill - minimum and maximum",
+                    Args(
+                        json = """
+                            {
+                              "type": "fill",
+                              "min": 20,
+                              "max": 100
+                            }
+                        """.trimIndent(),
+                        expected = SizeConstraint.Fill(min = 20u, max = 100u)
                     )
                 ),
                 arrayOf(
@@ -121,6 +184,20 @@ internal class SizeTests {
                         expected = SizeConstraint.Fixed(
                             value = 100.toUInt()
                         )
+                    )
+                ),
+                arrayOf(
+                    "fixed - minimum and maximum are ignored",
+                    Args(
+                        json = """
+                            {
+                              "type": "fixed",
+                              "value": 100,
+                              "min": 20,
+                              "max": 40
+                            }
+                        """.trimIndent(),
+                        expected = SizeConstraint.Fixed(value = 100u)
                     )
                 ),
                 arrayOf(
