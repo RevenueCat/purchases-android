@@ -141,6 +141,39 @@ class StackFillUnboundedCollapseTest {
         }
     }
 
+    @Test
+    fun `Fill child with maximum does not occupy its entire weighted slot`() {
+        val constrainedChild = StackComponent(
+            components = emptyList(),
+            size = Size(width = Fill(max = 20u), height = Fill()),
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+        )
+        val root = StackComponent(
+            components = listOf(constrainedChild),
+            dimension = Dimension.Horizontal(VerticalAlignment.TOP, FlexDistribution.START),
+            size = Size(width = Fixed(100u), height = Fixed(20u)),
+        )
+        val style = styleFactory.create(root).getOrThrow().componentStyle as StackComponentStyle
+
+        composeTestRule.setContent {
+            StackComponentView(
+                style = style,
+                state = FakePaywallState(components = emptyList()),
+                clickHandler = {},
+                modifier = Modifier.testTag("stack"),
+            )
+        }
+
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("stack").assertPixelColorEquals(
+            Color.Red,
+            startX = 5,
+            startY = 5,
+            width = 1,
+            height = 1,
+        )
+    }
+
     private fun assertScrollingFitStackKeepsFillChild(vertical: Boolean) {
         // A real leaf with actual content: an empty decorative box has zero intrinsic size and
         // would correctly measure to 0 under any unbounded constraint regardless of this fix

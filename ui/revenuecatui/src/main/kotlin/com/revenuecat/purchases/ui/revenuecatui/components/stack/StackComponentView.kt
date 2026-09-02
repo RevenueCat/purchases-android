@@ -621,7 +621,6 @@ private fun MainStackComponent(
                     // Skip weight() for a Fill child when this Row's width axis is unbounded (else it
                     // collapses to zero). See Modifier.trackMainAxisUnbounded; only tracked when a Fill
                     // child could be affected.
-                    val hasFillWidthChild = stackState.children.any { it.size.width == Fill }
                     val hasFillWidthChild = stackState.children.any { it.size.width is Fill }
                     val mainAxisUnbounded = remember { mutableStateOf(false) }
                     HorizontalStack(
@@ -639,14 +638,15 @@ private fun MainStackComponent(
                             },
                     ) {
                         items(stackState.children) { _, child ->
+                            val fillWidth = child.size.width as? Fill
                             ComponentView(
                                 style = child,
                                 state = state,
                                 onClick = clickHandler,
                                 componentInteractionTracker = componentInteractionTracker,
                                 modifier = Modifier
-                                    .conditional(child.size.width == Fill && !mainAxisUnbounded.value) {
-                                        Modifier.weight(1f)
+                                    .conditional(fillWidth != null && !mainAxisUnbounded.value) {
+                                        Modifier.weight(1f, fill = fillWidth?.max == null)
                                     }
                                     .conditional(
                                         stackState.applyTopWindowInsets && !child.shouldIgnoreTopWindowInsets,
@@ -661,7 +661,6 @@ private fun MainStackComponent(
 
                 is Dimension.Vertical -> {
                     // See the Horizontal branch above for why this exists.
-                    val hasFillHeightChild = stackState.children.any { it.size.height == Fill }
                     val hasFillHeightChild = stackState.children.any { it.size.height is Fill }
                     val mainAxisUnbounded = remember { mutableStateOf(false) }
                     VerticalStack(
