@@ -17,7 +17,6 @@ import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
-import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalArrangement
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
@@ -85,7 +84,7 @@ private class HorizontalStackScopeImpl(
 ) : HorizontalStackScope {
     private var hasAnyItemsWithFillWidth = false
     val shouldApplyFillSpacers: Boolean
-        get() = width !is Fit && !hasAnyItemsWithFillWidth
+        get() = width.allowsFlexDistribution && !hasAnyItemsWithFillWidth
     var rowContent: @Composable RowScope.() -> Unit = {}
 
     override fun items(

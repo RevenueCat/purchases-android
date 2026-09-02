@@ -17,7 +17,6 @@ import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
-import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalArrangement
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
@@ -85,7 +84,7 @@ private class VerticalStackScopeImpl(
 ) : VerticalStackScope {
     private var hasAnyItemsWithFillHeight = false
     val shouldApplyFillSpacers: Boolean
-        get() = height !is Fit && !hasAnyItemsWithFillHeight
+        get() = height.allowsFlexDistribution && !hasAnyItemsWithFillHeight
     var columnContent: @Composable ColumnScope.() -> Unit = {}
 
     override fun items(
