@@ -16,6 +16,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenter
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterNavigationListener
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterNavigationOptions
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.CustomerCenterOptions
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterNavigator
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 
 /**
@@ -100,6 +101,7 @@ public class CustomerCenterView : CompatComposeView {
             customerCenterListener?.onPromotionalOfferSucceeded(customerInfo, transaction)
         }
     }
+    private val navigator = CustomerCenterNavigator()
     private var navigationListener: CustomerCenterNavigationListener? = null
     private var lastNavigationUpdate: Pair<Boolean, String?>? = null
     private val internalNavigationListener = CustomerCenterNavigationListener { canNavigateBack, title ->
@@ -110,9 +112,10 @@ public class CustomerCenterView : CompatComposeView {
         CustomerCenterOptions.Builder()
             .setListener(internalListener)
             .setNavigationOptions(
-                CustomerCenterNavigationOptions.Builder()
-                    .setListener(internalNavigationListener)
-                    .build(),
+                CustomerCenterNavigationOptions(
+                    listener = internalNavigationListener,
+                    navigator = navigator,
+                ),
             )
             .build(),
     )
@@ -149,11 +152,16 @@ public class CustomerCenterView : CompatComposeView {
             navigationOptions = CustomerCenterNavigationOptions(
                 shouldShowTopBar = navigationOptions.shouldShowTopBar,
                 listener = internalNavigationListener,
+                navigator = navigator,
             ),
         )
         lastNavigationUpdate?.let { (canNavigateBack, title) ->
             navigationOptions.listener?.onNavigationChanged(canNavigateBack, title)
         }
+    }
+
+    public fun navigateBack() {
+        navigator.navigateBack()
     }
 
     override fun onBackPressed() {

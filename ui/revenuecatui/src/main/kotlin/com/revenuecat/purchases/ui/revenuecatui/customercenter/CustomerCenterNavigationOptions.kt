@@ -1,8 +1,11 @@
 package com.revenuecat.purchases.ui.revenuecatui.customercenter
 
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterNavigator
+
 public class CustomerCenterNavigationOptions internal constructor(
     internal val shouldShowTopBar: Boolean = true,
     internal val listener: CustomerCenterNavigationListener? = null,
+    internal val navigator: CustomerCenterNavigator? = null,
 ) {
 
     internal constructor(builder: Builder) : this(

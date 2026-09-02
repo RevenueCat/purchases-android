@@ -468,6 +468,7 @@ package com.revenuecat.purchases.ui.revenuecatui.views {
     method @InaccessibleFromKotlin public androidx.lifecycle.Lifecycle getLifecycle();
     method @InaccessibleFromKotlin public androidx.savedstate.SavedStateRegistry getSavedStateRegistry();
     method @InaccessibleFromKotlin public androidx.lifecycle.ViewModelStore getViewModelStore();
+    method public void navigateBack();
     method public void onBackPressed();
     method public void setCustomerCenterListener(com.revenuecat.purchases.customercenter.CustomerCenterListener? customerCenterListener);
     method public void setDismissHandler(kotlin.jvm.functions.Function0<kotlin.Unit>? dismissHandler);

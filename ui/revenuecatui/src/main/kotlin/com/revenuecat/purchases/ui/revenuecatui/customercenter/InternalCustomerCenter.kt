@@ -61,6 +61,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForT
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesDialog
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterAnimations
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterNavigator
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
@@ -144,6 +145,10 @@ internal fun InternalCustomerCenter(
     }
 
     BackHandler {
+        viewModel.onNavigationButtonPressed(context, onDismiss)
+    }
+
+    BindNavigator(navigator = options.navigationOptions.navigator) {
         viewModel.onNavigationButtonPressed(context, onDismiss)
     }
 
@@ -251,6 +256,21 @@ private fun InternalCustomerCenter(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun BindNavigator(
+    navigator: CustomerCenterNavigator?,
+    onNavigateBack: () -> Unit,
+) {
+    if (navigator == null) return
+
+    val currentOnNavigateBack by rememberUpdatedState(onNavigateBack)
+
+    DisposableEffect(navigator) {
+        navigator.onNavigateBack = { currentOnNavigateBack() }
+        onDispose { navigator.onNavigateBack = null }
     }
 }
 

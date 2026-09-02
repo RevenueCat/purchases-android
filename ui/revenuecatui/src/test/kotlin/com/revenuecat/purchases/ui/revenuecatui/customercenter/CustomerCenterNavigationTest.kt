@@ -9,9 +9,11 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCenterState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterNavigationState
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterNavigator
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Rule
@@ -255,11 +257,58 @@ class CustomerCenterNavigationTest {
     }
 
     @Test
+    fun `navigator routes back navigation through the view model`() {
+        var dismissed = false
+        val viewModel = viewModel(MutableStateFlow(successState()))
+        every { viewModel.onNavigationButtonPressed(any(), any()) } answers { secondArg<() -> Unit>().invoke() }
+        val navigator = CustomerCenterNavigator()
+
+        composeTestRule.setContent {
+            InternalCustomerCenter(
+                options = optionsWith(CustomerCenterNavigationOptions(navigator = navigator)),
+                viewModel = viewModel,
+                onDismiss = { dismissed = true },
+            )
+        }
+        composeTestRule.waitForIdle()
+
+        navigator.navigateBack()
+
+        verify(exactly = 1) { viewModel.onNavigationButtonPressed(any(), any()) }
+        assertThat(dismissed).isTrue()
+    }
+
+    @Test
+    fun `navigator is released when the customer center leaves the composition`() {
+        val viewModel = viewModel(MutableStateFlow(successState()))
+        val navigator = CustomerCenterNavigator()
+        val showCustomerCenter = mutableStateOf(true)
+
+        composeTestRule.setContent {
+            if (showCustomerCenter.value) {
+                InternalCustomerCenter(
+                    options = optionsWith(CustomerCenterNavigationOptions(navigator = navigator)),
+                    viewModel = viewModel,
+                    onDismiss = {},
+                )
+            }
+        }
+        composeTestRule.waitForIdle()
+
+        showCustomerCenter.value = false
+        composeTestRule.waitForIdle()
+        navigator.navigateBack()
+
+        verify(exactly = 0) { viewModel.onNavigationButtonPressed(any(), any()) }
+    }
+
+    @Test
     fun `navigation options default to showing the top bar and no listener`() {
         val navigationOptions = CustomerCenterOptions.Builder().build().navigationOptions
 
         assertThat(navigationOptions.shouldShowTopBar).isTrue()
         assertThat(navigationOptions.listener).isNull()
+        assertThat(navigationOptions.navigator).isNull()
     }
 
     @Test
