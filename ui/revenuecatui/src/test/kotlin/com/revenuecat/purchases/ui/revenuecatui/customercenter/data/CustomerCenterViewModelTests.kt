@@ -3226,6 +3226,107 @@ class CustomerCenterViewModelTests {
         )
     }
 
+    @Test
+    fun `shows history link for a promotional grant alongside an expired subscription`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { configData.support } returns CustomerCenterConfigData.Support(
+            displayPurchaseHistoryLink = true,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "promo_product" to subscriptionInfo("promo_product", Store.PROMOTIONAL, isActive = true),
+            "expired_paid" to subscriptionInfo("expired_paid", Store.PLAY_STORE, isActive = false),
+        )
+        every { customerInfo.activeSubscriptions } returns setOf("promo_product")
+
+        val model = setupViewModel()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(state.shouldShowPurchaseHistory).isTrue()
+    }
+
+    @Test
+    fun `shows history link for two expired subscriptions that still back active entitlements`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { configData.support } returns CustomerCenterConfigData.Support(
+            displayPurchaseHistoryLink = true,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "expired_a" to subscriptionInfo("expired_a", Store.PLAY_STORE, isActive = false),
+            "expired_b" to subscriptionInfo("expired_b", Store.PLAY_STORE, isActive = false),
+        )
+        every { customerInfo.activeSubscriptions } returns setOf()
+        every { customerInfo.entitlements } returns EntitlementInfos(
+            mapOf(
+                "ent_a" to entitlementInfoFor("expired_a"),
+                "ent_b" to entitlementInfoFor("expired_b"),
+            ),
+            VerificationResult.VERIFIED,
+        )
+
+        val model = setupViewModel()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(state.shouldShowPurchaseHistory).isTrue()
+    }
+
+    @Test
+    fun `hides history link when displayPurchaseHistoryLink is false despite qualifying purchases`(): Unit =
+        runBlocking {
+            setupPurchasesMock()
+            every { configData.support } returns CustomerCenterConfigData.Support(
+                displayPurchaseHistoryLink = false,
+                supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+            )
+            every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+                "active_paid" to subscriptionInfo("active_paid", Store.PLAY_STORE, isActive = true),
+                "expired_paid" to subscriptionInfo("expired_paid", Store.PLAY_STORE, isActive = false),
+            )
+            every { customerInfo.activeSubscriptions } returns setOf("active_paid")
+
+            val model = setupViewModel()
+            val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+            assertThat(state.shouldShowPurchaseHistory).isFalse()
+        }
+
+    private fun subscriptionInfo(
+        productIdentifier: String,
+        store: Store,
+        isActive: Boolean,
+    ) = SubscriptionInfo(
+        productIdentifier = productIdentifier,
+        purchaseDate = Date(System.currentTimeMillis() - 365L * 24 * 60 * 60 * 1000),
+        originalPurchaseDate = null,
+        expiresDate = if (isActive) {
+            Date(System.currentTimeMillis() + 30L * 24 * 60 * 60 * 1000)
+        } else {
+            Date(System.currentTimeMillis() - 30L * 24 * 60 * 60 * 1000)
+        },
+        store = store,
+        unsubscribeDetectedAt = null,
+        isSandbox = false,
+        billingIssuesDetectedAt = null,
+        gracePeriodExpiresDate = null,
+        ownershipType = OwnershipType.PURCHASED,
+        periodType = PeriodType.NORMAL,
+        refundedAt = null,
+        storeTransactionId = null,
+        requestDate = Date(),
+        autoResumeDate = null,
+        displayName = null,
+        price = null,
+        productPlanIdentifier = "monthly",
+        managementURL = null,
+    )
+
+    private fun entitlementInfoFor(productIdentifier: String): EntitlementInfo = mockk(relaxed = true) {
+        every { this@mockk.productIdentifier } returns productIdentifier
+        every { isActive } returns true
+        every { store } returns Store.PLAY_STORE
+    }
+
     // endregion
 
 }

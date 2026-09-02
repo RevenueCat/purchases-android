@@ -41,20 +41,10 @@ internal sealed class CustomerCenterState(
         @get:JvmSynthetic val virtualCurrencies: VirtualCurrencies? = null,
         @get:JvmSynthetic val showSupportTicketSuccessSnackbar: Boolean = false,
         @get:JvmSynthetic val isRefreshing: Boolean = false,
+        @get:JvmSynthetic val shouldShowPurchaseHistory: Boolean = false,
     ) : CustomerCenterState(navigationButtonType) {
         val currentDestination: CustomerCenterDestination
             get() = navigationState.currentDestination
-
-        val shouldShowPurchaseHistory: Boolean
-            get() {
-                if (customerCenterConfigData.support.displayPurchaseHistoryLink != true) return false
-                val activeSubscriptions = allPurchases.filter { it.isSubscription && !it.isExpired }
-                val inactiveSubscriptions = allPurchases.filter { it.isSubscription && it.isExpired }
-                val nonSubscriptions = allPurchases.filter { !it.isSubscription }
-                return (activeSubscriptions.isNotEmpty() && inactiveSubscriptions.isNotEmpty()) ||
-                    (activeSubscriptions.isEmpty() && inactiveSubscriptions.size > 1) ||
-                    nonSubscriptions.size > 2
-            }
     }
 }
 

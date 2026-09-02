@@ -56,6 +56,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurv
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PathUtils
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.shouldShowSeeAllPurchases
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.extensions.getLocalizedDescription
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
@@ -1148,6 +1149,8 @@ internal class CustomerCenterViewModelImpl(
                 noActiveScreenOffering = noActiveScreenOffering,
                 virtualCurrencies = virtualCurrencies,
                 isRefreshing = false,
+                shouldShowPurchaseHistory = customerCenterConfigData.support.displayPurchaseHistoryLink == true &&
+                    customerInfo.shouldShowSeeAllPurchases(),
             )
             val mainScreenPaths = computeMainScreenPaths(successState)
 
