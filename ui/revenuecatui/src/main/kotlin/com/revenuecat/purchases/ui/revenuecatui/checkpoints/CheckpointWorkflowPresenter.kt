@@ -226,10 +226,6 @@ internal class CheckpointWorkflowPresenter(
             @Suppress("DEPRECATION")
             window.navigationBarColor = Color.TRANSPARENT
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // Defaults to true (unlike the status bar counterpart) and would scrim 3-button navigation.
-            window.isNavigationBarContrastEnforced = false
-        }
         // The legacy dialog theme never requests light system bars, leaving light-on-light icons in light
         // mode; match enableEdgeToEdge's day/night-based appearance.
         val isDarkMode = window.context.resources.configuration.uiMode and

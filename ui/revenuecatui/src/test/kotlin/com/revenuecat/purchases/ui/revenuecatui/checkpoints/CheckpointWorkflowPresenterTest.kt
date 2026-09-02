@@ -253,7 +253,9 @@ class CheckpointWorkflowPresenterTest {
         assertThat(attributes.flags and WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR).isNotEqualTo(0)
         assertThat(attributes.flags and WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
             .isNotEqualTo(0)
-        assertThat(window.isNavigationBarContrastEnforced).isFalse
+        // Deliberately left at the platform default (true), matching enableEdgeToEdge()'s auto style: the
+        // system scrims 3-button navigation so the buttons stay readable over arbitrary paywall content.
+        assertThat(window.isNavigationBarContrastEnforced).isTrue
     }
 
     @Test
