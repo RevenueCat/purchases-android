@@ -36,7 +36,7 @@ internal class CheckpointPresentation(
  */
 internal class CheckpointsManager(
     private val presenterFactory: (callId: String, manager: CheckpointsManager) -> CheckpointWorkflowPresenter =
-        ::CheckpointWorkflowPresenter,
+        { callId, manager -> CheckpointWorkflowPresenter(callId, manager) },
 ) {
 
     private class PendingCall(
@@ -45,9 +45,9 @@ internal class CheckpointsManager(
         val customVariables: Map<String, CustomVariableValue>,
         val paywallFinished: CompletableDeferred<CheckpointPaywallOutcome>,
     ) {
-        // Kept on the call rather than the presented window so losing the window (configuration change)
-        // doesn't reset it.
-        var outcome: CheckpointPaywallOutcome = CheckpointPaywallOutcome.Dismissed
+        // Null until the paywall reports something; kept on the call rather than the presented window so
+        // losing the window (configuration change) doesn't reset it.
+        var outcome: CheckpointPaywallOutcome? = null
 
         // Only used to take an orphaned workflow window down when its call is abandoned.
         var presenter: CheckpointWorkflowPresenter? = null
@@ -105,7 +105,16 @@ internal class CheckpointsManager(
 
     fun onPresentationFinished(callId: String) {
         val finished = take(callId) ?: return
-        finished.paywallFinished.complete(finished.outcome)
+        // A paywall that went away without reporting anything was dismissed.
+        finished.paywallFinished.complete(finished.outcome ?: CheckpointPaywallOutcome.Dismissed)
+    }
+
+    // Like onPresentationFinished, for a presentation that failed: an outcome the paywall already reported
+    // (e.g. a purchase before the configuration change) still wins, but a workflow that failed before
+    // reporting anything surfaces as an error rather than a phantom dismissal.
+    fun onPresentationFailed(callId: String, error: PurchasesError) {
+        val failed = take(callId) ?: return
+        failed.paywallFinished.complete(failed.outcome ?: CheckpointPaywallOutcome.Error(error))
     }
 
     private suspend fun present(

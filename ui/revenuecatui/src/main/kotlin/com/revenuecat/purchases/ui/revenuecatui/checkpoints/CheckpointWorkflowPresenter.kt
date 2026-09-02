@@ -44,8 +44,9 @@ internal class CheckpointWorkflowPresenter(
     },
 ) {
 
-    // The only strong path to the host activity: nulled on every dismissal, so dropping it at host destroy is
-    // also the no-leak guarantee.
+    // Holds the workflow window and view hierarchy (and, through them, the host activity), so nulling it on
+    // every dismissal is the no-leak guarantee at host destroy. host below is only kept for identity checks
+    // in the lifecycle callbacks and is likewise nulled when the activity goes away.
     private var dialog: ComponentDialog? = null
     private var host: Activity? = null
     private var application: Application? = null
@@ -136,8 +137,10 @@ internal class CheckpointWorkflowPresenter(
                 show(activity)
             } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
                 // The suspended checkpoint() call must never hang on a failed re-present.
-                Logger.e("Failed to re-present checkpoint workflow after a configuration change: $e")
-                finish()
+                val message = "Failed to re-present checkpoint workflow after a configuration change: $e"
+                Logger.e(message)
+                teardown()
+                manager.onPresentationFailed(callId, PurchasesError(PurchasesErrorCode.ConfigurationError, message))
             }
         }
 

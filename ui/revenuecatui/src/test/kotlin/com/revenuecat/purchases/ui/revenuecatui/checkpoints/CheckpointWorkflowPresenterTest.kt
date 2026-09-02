@@ -10,6 +10,7 @@ import android.widget.EditText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -218,6 +219,19 @@ class CheckpointWorkflowPresenterTest {
         controller.recreate()
 
         assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+    }
+
+    @Test
+    fun `a failed re-present with no recorded outcome completes with an error instead of a dismissal`() {
+        launchCheckpoint()
+        contentFactory = { throw IllegalStateException("content failed") }
+
+        controller.recreate()
+
+        val outcome = paywallOutcome()
+        assertThat(outcome).isInstanceOf(CheckpointPaywallOutcome.Error::class.java)
+        assertThat((outcome as CheckpointPaywallOutcome.Error).error.code)
+            .isEqualTo(PurchasesErrorCode.ConfigurationError)
     }
 
     @Test
