@@ -432,11 +432,8 @@ internal class PurchasesOrchestrator(
         checkpointIdentifier: String,
         customVariables: Map<String, RulesDimensionValue>,
     ): CheckpointResolution {
-        // Captured before resolving: the timestamp is when the user reached the checkpoint, not when we
-        // finished evaluating it.
-        val hitTimestamp = dateProvider.now
         val resolution = checkpointWorkflowResolver.resolve(checkpointIdentifier, customVariables)
-        track(resolution.toCheckpointEvent(identifier = checkpointIdentifier, timestamp = hitTimestamp))
+        track(resolution.toCheckpointEvent(identifier = checkpointIdentifier, timestamp = dateProvider.now))
         return resolution
     }
 

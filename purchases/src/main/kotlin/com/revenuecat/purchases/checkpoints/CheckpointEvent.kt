@@ -46,9 +46,6 @@ internal enum class CheckpointType {
 /**
  * Records that a checkpoint was hit and what it resolved to. This is persisted and sent through the shared
  * analytics events pipeline.
- *
- * [timestamp] is when the user reached the checkpoint, not when the event was created, so hit volume over time
- * stays comparable with events recorded before the outcome was attached.
  */
 @OptIn(InternalRevenueCatAPI::class)
 internal data class CheckpointEvent(
@@ -63,8 +60,7 @@ internal data class CheckpointEvent(
 ) : FeatureEvent
 
 /**
- * Builds the hit event for a resolved checkpoint. [timestamp] is the moment the checkpoint was reached, captured
- * before resolution started.
+ * Builds the hit event for a resolved checkpoint.
  */
 @JvmSynthetic
 @OptIn(InternalRevenueCatAPI::class)
