@@ -3,7 +3,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import android.app.Activity
-import android.graphics.Color
 import android.os.Looper
 import android.view.View
 import android.view.WindowManager
@@ -33,7 +32,6 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ActivityController
-import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowDialog
 
 @RunWith(AndroidJUnit4::class)
@@ -235,46 +233,15 @@ class CheckpointWorkflowPresenterTest {
         assertThat(ShadowDialog.getShownDialogs()).hasSize(dialogsShown)
     }
 
-    // Robolectric sdk 35+ breaks the Paparazzi tests sharing this test JVM (see robolectric.properties), so
-    // this pins the window configuration at 34; the assertions are identical there.
+    // The window configuration itself is covered by EdgeToEdgeWindowTest; hardware acceleration is asserted
+    // here because only applyEdgeToEdge sets that flag, proving the presenter's window went through it.
     @Test
-    @Config(sdk = [34])
-    fun `the workflow window extends behind the system bars on modern APIs`() {
+    fun `the workflow window is configured edge to edge`() {
         launchCheckpoint()
 
         val window = ShadowDialog.getLatestDialog().window!!
-        val attributes = window.attributes
-        assertThat(attributes.fitInsetsTypes).isEqualTo(0)
-        assertThat(attributes.fitInsetsSides).isEqualTo(0)
-        assertThat(attributes.layoutInDisplayCutoutMode)
-            .isEqualTo(WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS)
-        assertThat(attributes.flags and WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN).isNotEqualTo(0)
-        @Suppress("DEPRECATION")
-        assertThat(attributes.flags and WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR).isNotEqualTo(0)
-        assertThat(attributes.flags and WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+        assertThat(window.attributes.flags and WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
             .isNotEqualTo(0)
-        // Deliberately left at the platform default (true), matching enableEdgeToEdge()'s auto style: the
-        // system scrims 3-button navigation so the buttons stay readable over arbitrary paywall content.
-        assertThat(window.isNavigationBarContrastEnforced).isTrue
-    }
-
-    @Test
-    @Config(sdk = [29])
-    @Suppress("DEPRECATION")
-    fun `the workflow window extends behind the system bars on legacy APIs`() {
-        launchCheckpoint()
-
-        val window = ShadowDialog.getLatestDialog().window!!
-        val systemUiVisibility = window.decorView.systemUiVisibility
-        assertThat(systemUiVisibility and View.SYSTEM_UI_FLAG_LAYOUT_STABLE).isNotEqualTo(0)
-        assertThat(systemUiVisibility and View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN).isNotEqualTo(0)
-        assertThat(systemUiVisibility and View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION).isNotEqualTo(0)
-        assertThat(window.attributes.flags and WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-            .isNotEqualTo(0)
-        assertThat(window.statusBarColor).isEqualTo(Color.TRANSPARENT)
-        assertThat(window.navigationBarColor).isEqualTo(Color.TRANSPARENT)
-        assertThat(window.attributes.layoutInDisplayCutoutMode)
-            .isEqualTo(WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES)
     }
 
     private fun launchCheckpoint(): Job = CoroutineScope(dispatcher).launch {

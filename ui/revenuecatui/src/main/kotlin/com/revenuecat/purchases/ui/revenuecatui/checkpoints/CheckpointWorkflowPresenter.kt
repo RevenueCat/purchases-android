@@ -3,17 +3,12 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 import android.app.Activity
 import android.app.Application
 import android.content.DialogInterface
-import android.content.res.Configuration
-import android.graphics.Color
-import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
-import android.view.WindowManager
 import androidx.activity.ComponentDialog
 import androidx.compose.ui.platform.ComposeView
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
@@ -24,7 +19,9 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.helpers.EDGE_TO_EDGE_WINDOW_THEME
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import com.revenuecat.purchases.ui.revenuecatui.helpers.applyEdgeToEdge
 
 /**
  * Presents the workflow resolved for a checkpoint in a dialog-owned [Window] over the current activity, so the
@@ -86,8 +83,8 @@ internal class CheckpointWorkflowPresenter(
             .setCustomVariables(presentation.customVariables)
             .setListener(outcomeListener)
             .build()
-        val dialog = ComponentDialog(activity, android.R.style.Theme_Translucent_NoTitleBar)
-        dialog.window?.let(::configureWindow)
+        val dialog = ComponentDialog(activity, EDGE_TO_EDGE_WINDOW_THEME)
+        dialog.window?.applyEdgeToEdge()
         // Back must never fall through to the dispatcher's cancel fallback; the paywall's own BackHandler
         // decides what back does.
         dialog.setCancelable(false)
@@ -193,55 +190,6 @@ internal class CheckpointWorkflowPresenter(
         awaitingRepresent = false
         pendingSavedState = null
         viewModelStore.clear()
-    }
-
-    // Hand-rolls what enableEdgeToEdge does for activity windows. The window frame itself already covers the
-    // system bar regions: the non-floating dialog theme makes PhoneWindow.generateLayout grant this window
-    // the same layout flags and fitInsetsTypes=0 an activity window gets.
-    private fun configureWindow(window: Window) {
-        // Forces decor installation so generateLayout() cannot overwrite the attributes set below.
-        window.decorView
-        // Hardware acceleration is not inherited from the host: under a software-rendered host (e.g. Unity)
-        // Compose's hardware bitmaps would crash without it.
-        window.addFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            window.attributes = window.attributes.apply {
-                layoutInDisplayCutoutMode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
-                } else {
-                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-                }
-            }
-        }
-        // <30: extends the frame behind the bars via the legacy systemUiVisibility flags; 30-34: stops the
-        // decor from padding the content; 35+: no-op (enforced).
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        // Legacy framework themes don't set windowDrawsSystemBarBackgrounds, without which the decor paints
-        // the bar regions black instead of transparent - including on 35+, where the bar color itself is
-        // already enforced transparent.
-        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            @Suppress("DEPRECATION")
-            window.statusBarColor = Color.TRANSPARENT
-            @Suppress("DEPRECATION")
-            window.navigationBarColor = Color.TRANSPARENT
-        }
-        // The legacy dialog theme never requests light system bars, leaving light-on-light icons in light
-        // mode; match enableEdgeToEdge's day/night-based appearance.
-        val isDarkMode = window.context.resources.configuration.uiMode and
-            Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightStatusBars = !isDarkMode
-            isAppearanceLightNavigationBars = !isDarkMode
-        }
-        window.setSoftInputMode(
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING
-            } else {
-                @Suppress("DEPRECATION")
-                WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
-            },
-        )
     }
 
     private val outcomeListener = object : PaywallListener {
