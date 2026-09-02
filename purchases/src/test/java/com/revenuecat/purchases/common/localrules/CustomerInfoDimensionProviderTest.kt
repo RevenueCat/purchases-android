@@ -271,7 +271,7 @@ class CustomerInfoDimensionProviderTest {
     }
 
     @Test
-    fun `a customer change while the customer info is being fetched fails the snapshot`() = runTest {
+    fun `an app user change while the customer info is being fetched fails the snapshot`() = runTest {
         var currentUser = APP_USER_ID
         val provider = CustomerInfoDimensionProvider(
             currentAppUserId = { currentUser },
@@ -284,16 +284,16 @@ class CustomerInfoDimensionProviderTest {
 
         val error = resolver(provider, currentAppUserId = { currentUser }).snapshot().exceptionOrNull()
 
-        assertThat(error).isInstanceOf(RulesDimensionResolutionException.CustomerChanged::class.java)
+        assertThat(error).isInstanceOf(RulesDimensionResolutionException.AppUserChanged::class.java)
     }
 
     @Test
-    fun `a customer info read broken by a customer change fails the snapshot instead of degrading it`() = runTest {
+    fun `a customer info read broken by an app user change fails the snapshot instead of degrading it`() = runTest {
         var currentUser = APP_USER_ID
         val provider = CustomerInfoDimensionProvider(
             currentAppUserId = { currentUser },
             customerInfo = {
-                // A logOut wiping the caches mid-fetch: the read fails *because* the customer changed, so the
+                // A logOut wiping the caches mid-fetch: the read fails *because* the app user changed, so the
                 // snapshot must not quietly carry on with only the identity dimensions.
                 currentUser = "another_user"
                 throw PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError, "Caches were cleared."))
@@ -302,7 +302,7 @@ class CustomerInfoDimensionProviderTest {
 
         val error = resolver(provider, currentAppUserId = { currentUser }).snapshot().exceptionOrNull()
 
-        assertThat(error).isInstanceOf(RulesDimensionResolutionException.CustomerChanged::class.java)
+        assertThat(error).isInstanceOf(RulesDimensionResolutionException.AppUserChanged::class.java)
     }
 
     @Test

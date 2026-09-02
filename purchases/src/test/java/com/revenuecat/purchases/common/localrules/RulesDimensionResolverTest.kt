@@ -95,7 +95,7 @@ class RulesDimensionResolverTest {
     }
 
     @Test
-    fun `a customer change while dimensions are collected fails the snapshot`() = runTest {
+    fun `an app user change while dimensions are collected fails the snapshot`() = runTest {
         var currentUser = "userA"
         val resolver = resolver(
             provider("platform" to string("android")),
@@ -111,12 +111,12 @@ class RulesDimensionResolverTest {
 
         val error = resolver.snapshot().exceptionOrNull()
 
-        assertThat(error).isInstanceOf(RulesDimensionResolutionException.CustomerChanged::class.java)
-        assertThat(error).hasMessage("the customer changed while dimensions were being collected")
+        assertThat(error).isInstanceOf(RulesDimensionResolutionException.AppUserChanged::class.java)
+        assertThat(error).hasMessage("the app user changed while dimensions were being collected")
     }
 
     @Test
-    fun `a customer that changed back by the end of collection does not fail the snapshot`() = runTest {
+    fun `an app user that changed back by the end of collection does not fail the snapshot`() = runTest {
         var currentUser = "userA"
         val resolver = resolver(
             object : RulesDimensionProvider {

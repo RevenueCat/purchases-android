@@ -29,8 +29,8 @@ internal sealed class RulesDimensionResolutionException(message: String) : Excep
         val path: String,
     ) : RulesDimensionResolutionException("two dimension sources supplied '$path'")
 
-    internal class CustomerChanged :
-        RulesDimensionResolutionException("the customer changed while dimensions were being collected")
+    internal class AppUserChanged :
+        RulesDimensionResolutionException("the app user changed while dimensions were being collected")
 }
 
 /**
@@ -92,7 +92,7 @@ internal class RulesDimensionResolver(
 
         // Checked once, at the end: a change at any point during collection is still a change here.
         if (currentAppUserId() != appUserId) {
-            return Result.failure(RulesDimensionResolutionException.CustomerChanged())
+            return Result.failure(RulesDimensionResolutionException.AppUserChanged())
         }
 
         return Result.success(

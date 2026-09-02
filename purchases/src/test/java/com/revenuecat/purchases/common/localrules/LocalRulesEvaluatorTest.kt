@@ -112,7 +112,7 @@ class LocalRulesEvaluatorTest {
     }
 
     @Test
-    fun `a customer change during the snapshot fails the evaluation`() = runTest {
+    fun `an app user change during the snapshot fails the evaluation`() = runTest {
         var currentUser = "userA"
         val flipping = object : RulesDimensionProvider {
             override val name = "identity_flipper"
@@ -126,7 +126,7 @@ class LocalRulesEvaluatorTest {
             .match(listOf(TestRule("only", matchingPredicate)))
 
         val error = result.exceptionOrNull() as LocalRulesEvaluationException.DimensionResolution
-        assertThat(error.reason).isInstanceOf(RulesDimensionResolutionException.CustomerChanged::class.java)
+        assertThat(error.reason).isInstanceOf(RulesDimensionResolutionException.AppUserChanged::class.java)
     }
 
     @Test
