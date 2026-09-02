@@ -36,7 +36,7 @@ internal class CheckpointPresentation(
  */
 internal class CheckpointsManager(
     private val presenterFactory: (callId: String, manager: CheckpointsManager) -> CheckpointWorkflowPresenter =
-        { callId, manager -> CheckpointWorkflowPresenter(callId, manager) },
+        ::CheckpointWorkflowPresenter,
 ) {
 
     private class PendingCall(
