@@ -4,6 +4,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -28,11 +29,13 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
+import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
@@ -211,19 +214,25 @@ private fun StackPreview(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(text = title)
-        StackComponentView(
-            style = previewStackComponentStyle(
-                children = children,
-                dimension = dimension,
-                size = size,
-                spacing = 0.dp,
-                background = containerBackground,
-                padding = PaddingValues(0.dp),
-                border = null,
-            ),
-            state = previewEmptyState(),
-            clickHandler = {},
-        )
+        Box(
+            modifier = Modifier
+                .size(size)
+                .border(1.dp, Color.Magenta)
+        ) {
+            StackComponentView(
+                style = previewStackComponentStyle(
+                    children = children,
+                    dimension = dimension,
+                    size = size,
+                    spacing = 0.dp,
+                    background = containerBackground,
+                    padding = PaddingValues(0.dp),
+                    border = null,
+                ),
+                state = previewEmptyState(),
+                clickHandler = {},
+            )
+        }
     }
 }
 
