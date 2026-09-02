@@ -27,10 +27,6 @@ internal fun ProductDetails.toStoreProduct(
         null
     }
 
-    val basePlan = subscriptionOptions?.basePlan
-    val basePlanPrice = basePlan?.fullPricePhase?.price
-    val price = createOneTimeProductPrice() ?: basePlanPrice ?: return null
-
     val oneTimePurchaseOfferDetailsList =
         if (productType.toRevenueCatProductType() == ProductType.INAPP) {
             OneTimePurchaseOfferDetailsList(
@@ -42,15 +38,24 @@ internal fun ProductDetails.toStoreProduct(
             null
         }
 
+    val basePlanSubscription = subscriptionOptions?.basePlan
+    val basePlanOneTimeOffer = oneTimePurchaseOfferDetailsList?.basePlan
+
+    val basePlanPrice = basePlanSubscription?.fullPricePhase?.price
+        ?: basePlanOneTimeOffer?.price
+        ?: createOneTimeProductPrice()
+        ?: return null
+
+
     return GoogleStoreProduct(
         productId = productId,
-        basePlanId = basePlan?.id,
+        basePlanId = basePlanSubscription?.id,
         type = productType.toRevenueCatProductType(),
-        price = price,
+        price = basePlanPrice,
         name = name,
         title = title,
         description = description,
-        period = basePlan?.billingPeriod,
+        period = basePlanSubscription?.billingPeriod,
         subscriptionOptions = subscriptionOptions,
         defaultOption = subscriptionOptions?.defaultOffer,
         productDetails = this,
@@ -89,6 +94,7 @@ internal fun ProductDetails.OneTimePurchaseOfferDetails.toGoogleOneTimePurchaseO
         offerId = this.offerId,
         offerToken = this.offerToken,
         offerTags = this.offerTags,
+        discountDisplayInfo = this.discountDisplayInfo,
         productDetails = productDetails,
         presentedOfferingContext = null,
     )

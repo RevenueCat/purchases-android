@@ -26,6 +26,12 @@ public class OneTimePurchaseOfferDetailsList(
         }
 
     /**
+     * The base plan [OneTimePurchaseOfferDetails] (the offer detail with null [discountDisplayInfo]).
+     */
+    public val basePlan: OneTimePurchaseOfferDetails?
+        get() = this.firstOrNull { it.discountDisplayInfo == null }
+
+    /**
      * Finds all [OneTimePurchaseOfferDetails] with a specific tag.
      */
     public fun withTag(tag: String): List<OneTimePurchaseOfferDetails> {
