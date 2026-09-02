@@ -432,9 +432,8 @@ internal class PurchasesOrchestrator(
         checkpointIdentifier: String,
         customVariables: Map<String, RulesDimensionValue>,
     ): CheckpointResolution {
-        // The timestamp is captured before resolving so it keeps meaning "when the user reached the checkpoint",
-        // while the event itself reports what the checkpoint resolved to. An identifier the dashboard doesn't know
-        // still emits a hit, so the backend keeps auto-registering checkpoints the SDK declares.
+        // Captured before resolving: the timestamp is when the user reached the checkpoint, not when we
+        // finished evaluating it.
         val hitTimestamp = dateProvider.now
         val resolution = checkpointWorkflowResolver.resolve(checkpointIdentifier, customVariables)
         track(resolution.toCheckpointEvent(identifier = checkpointIdentifier, timestamp = hitTimestamp))
