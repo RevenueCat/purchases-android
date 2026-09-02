@@ -58,10 +58,29 @@ class SubscriberDimensionsProviderTest {
     }
 
     @Test
+    fun `an explicit null is kept as null, at the root and inside an object`() = runTest {
+        // The backend stated the name and chose null for it, which a rule can compare against.
+        val dimensions = provider("""{"gone": null, "profile": {"tier": null, "age": 42}}""")
+            .dimensions(evaluationDate)
+
+        assertThat(dimensions).isEqualTo(
+            mapOf(
+                "gone" to RulesDimensionValue.NullValue,
+                "profile" to RulesDimensionValue.ObjectValue(
+                    mapOf(
+                        "tier" to RulesDimensionValue.NullValue,
+                        "age" to RulesDimensionValue.IntValue(42),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    @Test
     fun `a value no rule could read is dropped without dropping the others`() = runTest {
-        // An explicit null carries no value to compare, and an object list is the only collection a dimension
-        // can be — same treatment the backend predicate results get.
-        val dimensions = provider("""{"gone": null, "codes": [1, 2], "plan": "annual"}""")
+        // An object list is the only collection a dimension can be — same treatment the backend predicate
+        // results get.
+        val dimensions = provider("""{"codes": [1, 2], "mixed": [{"id": "a"}, null], "plan": "annual"}""")
             .dimensions(evaluationDate)
 
         assertThat(dimensions).containsOnlyKeys("plan")
@@ -121,17 +140,21 @@ class SubscriberDimensionsProviderTest {
     @Test
     fun `the dimensions are readable by a predicate`() = runTest {
         val values = resolver(
-            provider("""{"plan": "annual", "seats": 3, "profile": {"tier": "gold"}}"""),
+            provider("""{"plan": "annual", "seats": 3, "profile": {"tier": "gold"}, "gone": null}"""),
         ).snapshot().getOrThrow().values
 
         val matching = listOf(
             """{"==": [{"var": "plan"}, "annual"]}""",
             """{">": [{"var": "seats"}, 2]}""",
             """{"==": [{"var": "profile.tier"}, "gold"]}""",
+            // A null the backend stated is present: `var` resolves it rather than failing or using the default.
+            """{"==": [{"var": "gone"}, null]}""",
+            """{"==": [{"var": ["gone", "fallback"]}, null]}""",
         )
         val notMatching = listOf(
             """{"==": [{"var": "plan"}, "monthly"]}""",
             """{"!!": {"var": ["never_sent", false]}}""",
+            """{"!!": {"var": "gone"}}""",
         )
 
         for (predicate in matching) {

@@ -13,12 +13,13 @@ import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.longOrNull
 
 /**
- * `null` for a value no rule could read: an explicit JSON `null` (no value to compare) or an array of anything
- * but objects ([RulesDimensionValue.ObjectListValue] is the only collection a dimension can be). An entry an
- * object holds that can't be read is dropped from it, mirroring how absent record values behave.
+ * `null` for a value no rule could read: an array of anything but objects ([RulesDimensionValue.ObjectListValue]
+ * is the only collection a dimension can be). An entry an object holds that can't be read is dropped from it,
+ * mirroring how absent record values behave. An explicit JSON `null` is a value the source stated, and is kept
+ * as [RulesDimensionValue.NullValue].
  */
 internal fun JsonElement.asRulesDimensionValue(): RulesDimensionValue? = when (this) {
-    is JsonNull -> null
+    is JsonNull -> RulesDimensionValue.NullValue
     is JsonPrimitive -> when {
         isString -> RulesDimensionValue.StringValue(content)
         else -> booleanOrNull?.let { RulesDimensionValue.BoolValue(it) }

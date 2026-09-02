@@ -15,8 +15,9 @@ import java.util.Date
  * pre-evaluated predicate results for one evaluation.
  *
  * The names are the backend's to choose, and the root-name contract applies to it like any other source: one
- * that collides with an SDK-provided dimension fails the snapshot. A value no rule could read is dropped here,
- * and a cache that cannot be read at all contributes nothing.
+ * that collides with an SDK-provided dimension fails the snapshot. An explicit null is kept as null, since the
+ * backend stated it; a value no rule could read is dropped here, and a cache that cannot be read at all
+ * contributes nothing.
  */
 internal class SubscriberDimensionsProvider(
     private val cachedDimensionsJson: () -> String?,

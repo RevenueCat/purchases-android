@@ -79,7 +79,8 @@ internal class AudiencesConfigProvider(
             val result = element.asRulesDimensionValue()
             if (result == null) {
                 // Rules read these with a default (`{"var": ["backend.<hash>", false]}`), so a value shape this
-                // SDK version cannot represent degrades to the rule's default instead of failing the item.
+                // SDK version cannot represent degrades to the rule's default instead of failing the item. An
+                // explicit null is not such a shape: it reaches the rule as null, which is falsy.
                 warnLog { "Ignoring backend predicate result '$hash': its value can't be read by a rule." }
                 null
             } else {
