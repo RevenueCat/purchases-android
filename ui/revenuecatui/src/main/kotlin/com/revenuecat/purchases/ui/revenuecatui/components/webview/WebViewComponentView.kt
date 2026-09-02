@@ -13,6 +13,7 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -20,7 +21,9 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.viewinterop.AndroidView
@@ -42,6 +45,8 @@ import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 import com.revenuecat.purchases.ui.revenuecatui.extensions.trackMainAxisUnbounded
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
+import kotlinx.coroutines.flow.drop
+import kotlinx.serialization.json.JsonObject
 
 @JvmSynthetic
 @Composable
@@ -74,6 +79,15 @@ internal fun WebViewComponentView(
     val sizeToContentWidth = style.size.width is Fit
     val sizeToContentHeight = style.size.height is Fit
 
+    // AndroidView's factory captures this lambda once, and the view model hands out a new
+    // PaywallState instance on every rebuild, so both reads go through State to stay current.
+    val darkMode by rememberUpdatedState(isSystemInDarkTheme())
+    val currentState by rememberUpdatedState(state)
+    val currentStyle by rememberUpdatedState(style)
+    val contextSnapshotProvider: () -> JsonObject = {
+        webViewContextSnapshot(currentState, currentStyle, darkMode)
+    }
+
     val identity = WebViewIdentity(
         resolvedUrl = resolvedUrl,
         componentId = componentId,
@@ -89,6 +103,13 @@ internal fun WebViewComponentView(
         var loadFailed by remember { mutableStateOf(false) }
         // Remembered inside key(identity) so a stale onRelease can only release its own view's bridge.
         val bridgeHolder = remember { WebViewBridgeHolder() }
+
+        // The handshake seeds the first snapshot, so only later changes need a push.
+        LaunchedEffect(bridgeHolder) {
+            snapshotFlow { webViewContextPushKey(currentState, darkMode) }
+                .drop(1)
+                .collect { bridgeHolder.bridge?.pushContextNow() }
+        }
 
         // A `fill` axis genuinely unbounded at measure time (e.g. an ancestor scrolls, or a `Fit`-sized
         // container sits under one that does) would otherwise collapse to zero — `fillMaxWidth/Height`
@@ -137,6 +158,7 @@ internal fun WebViewComponentView(
                             onDocumentReset = onDocumentReset,
                             onLoadFailed = onLoadFailed,
                             onLoadFinished = { PaywallWebViewPrewarmer.shared.markWarmed(resolvedUrl) },
+                            contextSnapshotProvider = contextSnapshotProvider,
                         )
                     } catch (error: Throwable) {
                         // A missing or mid-update WebView package throws Error, not Exception.
@@ -227,6 +249,16 @@ internal fun resolveAxis(
         is Fixed -> constraint
     }
 
+/**
+ * The state instance is part of the key because the view model replaces it for some changes
+ * (custom variables, offering, storefront country) and mutates it in place for others.
+ */
+@JvmSynthetic
+internal fun webViewContextPushKey(
+    state: PaywallState.Loaded.Components,
+    darkMode: Boolean,
+): List<Any?> = listOf(state, state.selectedPackageInfo?.uniqueId, state.locale, darkMode)
+
 /** Holds the per-WebView bridge so factory and onRelease share one instance. */
 internal class WebViewBridgeHolder {
     var bridge: WebViewJavaScriptBridge? = null
@@ -262,6 +294,7 @@ internal fun createPaywallWebView(
     onDocumentReset: () -> Unit = {},
     onLoadFailed: () -> Unit,
     onLoadFinished: () -> Unit = {},
+    contextSnapshotProvider: () -> JsonObject,
 ): ConfiguredPaywallWebView? {
     var terminalFailure = false
     val expectedOrigin = identity.resolvedUrl.toOriginOrNull()
@@ -279,6 +312,7 @@ internal fun createPaywallWebView(
                 terminalFailure = true
                 onLoadFailed()
             },
+            contextSnapshotProvider = contextSnapshotProvider,
         )
         bridge.attach()
         if (terminalFailure) {

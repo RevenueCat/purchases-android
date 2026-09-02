@@ -34,6 +34,7 @@ public class Badge(
 
 @OptIn(InternalRevenueCatAPI::class)
 internal object BadgeStyleSerializer : EnumDeserializerWithDefault<Badge.Style>(
+    serialName = "com.revenuecat.purchases.paywalls.components.properties.Badge.Style",
     defaultValue = Badge.Style.Overlay,
     typeForValue = { style ->
         when (style) {

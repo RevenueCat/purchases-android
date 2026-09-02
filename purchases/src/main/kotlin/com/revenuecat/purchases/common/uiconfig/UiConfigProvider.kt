@@ -7,6 +7,7 @@ import com.revenuecat.purchases.common.remoteconfig.GenerationGuardedCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
+import com.revenuecat.purchases.common.remoteconfig.readConsistent
 import com.revenuecat.purchases.common.verboseLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,7 +34,9 @@ import kotlinx.coroutines.launch
  * synchronously (the suspend fn never suspends, so it resumes on the caller's thread with no dispatch) and only
  * a miss touches the config layer. The in-memory copy is re-warmed on every config commit and dropped on
  * identity change / disable (via [RemoteConfigCommitListener]); a [RemoteConfigManager.configGeneration] guard
- * makes sure a slower disk warm never clobbers a fresher network commit (store-if-newer).
+ * makes sure a slower disk warm never clobbers a fresher network commit (store-if-newer). Cold reads are
+ * guarded by [readConsistent], so a read superseded mid-resolve re-resolves against the new state instead of
+ * serving it.
  */
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions")
@@ -61,21 +64,21 @@ internal class UiConfigProvider(
      */
     suspend fun resolveUiConfig(): UiConfigResolution {
         cache.cached?.let { return UiConfigResolution.Found(it) }
-
-        val generation = manager.configGeneration
-        val resolved = resolve()
-        if (resolved != null) cache.store(generation, resolved)
-
-        // What the cache accepted is what can be served, never `resolved` itself: store-if-newer drops a value
-        // whose generation was overtaken mid-resolve, and that value may belong to the previous user.
-        val served = cache.cached
-        return when {
-            served != null -> UiConfigResolution.Found(served)
-            // Resolved fine, but the generation guard dropped it — not a failure, and it must not be classified
-            // from the committed state (an identity change has already wiped it). The next read re-resolves.
-            resolved != null -> UiConfigResolution.Superseded
-            else -> classifyUnresolved()
+        val resolution = manager.readConsistent(what = { "ui_config" }) { generation ->
+            when (val resolved = resolve()) {
+                null -> classifyUnresolved()
+                else -> {
+                    // Publish only while the read still looks consistent: a superseded value may belong to the
+                    // previous user and must not land in the memory-first cache (the retry re-resolves, and the
+                    // commit that superseded it re-warms the cache on its own).
+                    if (manager.configGeneration == generation) cache.store(generation, resolved)
+                    UiConfigResolution.Found(resolved)
+                }
+            }
         }
+        // Superseded on both attempts: nothing trustworthy to serve or classify (an identity change has
+        // already wiped the committed state the read saw). The next read re-resolves.
+        return resolution ?: UiConfigResolution.Superseded
     }
 
     /**
