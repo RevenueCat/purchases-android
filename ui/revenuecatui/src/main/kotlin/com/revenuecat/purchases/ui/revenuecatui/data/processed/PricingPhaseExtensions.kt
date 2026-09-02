@@ -138,3 +138,22 @@ internal fun PricingPhase.productOfferEndDate(locale: Locale, date: Date): Strin
 
 internal fun PricingPhase.canDisplay(unit: Period.Unit): Boolean =
     unit.ordinal <= billingPeriod.unit.ordinal
+
+/**
+ * This phase's price, but only when it can be compared like-for-like against the standard renewal
+ * price: same billing period, and not free. Returns null otherwise so the offer discount variables
+ * render empty rather than a misleading number — a 7-day trial on a monthly product would otherwise
+ * read as a full month's saving.
+ */
+internal fun PricingPhase.comparableOfferPriceMicros(rcPackage: Package?): Long? {
+    val basePeriod = rcPackage?.product?.period ?: return null
+
+    // Compare unit and value rather than the whole Period: its generated equals() also covers
+    // `iso8601`, so semantically identical periods built from different strings ("P3M" vs
+    // "P0Y3M0D") would compare unequal and silently blank a legitimate same-period offer.
+    if (billingPeriod.unit != basePeriod.unit || billingPeriod.value != basePeriod.value) {
+        return null
+    }
+
+    return price.amountMicros.takeIf { it > 0L }
+}
