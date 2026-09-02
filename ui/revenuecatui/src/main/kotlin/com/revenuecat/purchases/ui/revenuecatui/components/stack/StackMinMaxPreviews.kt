@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredWidth
@@ -23,19 +24,18 @@ import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Padding
+import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
-import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
-import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
@@ -71,6 +71,24 @@ private fun FitConstraintsPreview() {
             "Fit(max = 120)" to Fit(max = 120u),
             "Fit(min = 100, max = 180)" to Fit(min = 100u, max = 180u),
         ),
+    )
+}
+
+@Preview(name = "Margin · Fill maximum", widthDp = 320, heightDp = 140, showBackground = true)
+@Composable
+private fun FillMaximumWithMarginPreview() {
+    MarginConstraintPreview(
+        title = "Fill(max=32) + 16dp margins",
+        constraint = Fill(max = 32u),
+    )
+}
+
+@Preview(name = "Margin · Fit maximum", widthDp = 320, heightDp = 140, showBackground = true)
+@Composable
+private fun FitMaximumWithMarginPreview() {
+    MarginConstraintPreview(
+        title = "Fit(max=32) + 16dp margins",
+        constraint = Fit(max = 32u),
     )
 }
 
@@ -179,6 +197,53 @@ private fun ConstraintGallery(cases: List<Pair<String, SizeConstraint>>) {
 }
 
 @Composable
+private fun MarginConstraintPreview(
+    title: String,
+    constraint: SizeConstraint,
+) {
+    Column(
+        modifier = Modifier
+            .background(previewBackground)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(text = title)
+        Row(
+            modifier = Modifier.background(Color(0xFFCBD5E1)),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            StackComponentView(
+                style = previewStackComponentStyle(
+                    children = listOf(
+                        previewTextComponentStyle(
+                            text = "32",
+                            color = ColorStyles(ColorStyle.Solid(Color.White)),
+                            size = Size(width = Fixed(100u), height = Fixed(32u)),
+                        ),
+                    ),
+                    size = Size(width = constraint, height = Fixed(32u)),
+                    spacing = 0.dp,
+                    background = BackgroundStyles.Color(childColors[1]),
+                    padding = PaddingValues(0.dp),
+                    margin = PaddingValues(horizontal = 16.dp),
+                    shape = Shape.Rectangle(),
+                    border = null,
+                ),
+                state = previewEmptyState(),
+                clickHandler = {},
+            )
+            Box(
+                modifier = Modifier
+                    .requiredWidth(4.dp)
+                    .requiredHeight(32.dp)
+                    .background(Color.Magenta),
+            )
+        }
+        Text(text = "32dp content + 32dp margin; marker starts at 64dp")
+    }
+}
+
+@Composable
 private fun StackPreview(
     title: String,
     horizontal: Boolean,
@@ -217,7 +282,10 @@ private fun StackPreview(
         Box(
             modifier = Modifier
                 .size(size)
-                .border(1.dp, Color.Magenta)
+                .border(
+                    width = 1.dp,
+                    color = Color.Magenta,
+                ),
         ) {
             StackComponentView(
                 style = previewStackComponentStyle(
