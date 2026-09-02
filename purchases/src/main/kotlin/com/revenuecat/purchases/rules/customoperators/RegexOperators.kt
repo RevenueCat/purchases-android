@@ -20,6 +20,7 @@ import java.util.regex.PatternSyntaxException
 internal object RegexOperators {
 
     private const val BINARY = 2
+    private const val TERNARY = 3
 
     /**
      * `{"rc.regexMatch": [input, pattern]}` — whether the pattern occurs
@@ -35,6 +36,52 @@ internal object RegexOperators {
 
         val operands = operands(evaluated, operatorName)
         return Value.BoolValue(operands.regex.containsMatchIn(operands.input))
+    }
+
+    /**
+     * `{"rc.regexExtract": [input, pattern]}` or
+     * `{"rc.regexExtract": [input, pattern, group]}` — the text of the first
+     * match, or of one of its capture groups. Group `0`, the default, is the
+     * whole match.
+     *
+     * Returns `null` when the pattern does not match, and when the group
+     * exists but took no part in the match, as group 1 of `(a)|(b)` does
+     * against `"b"`.
+     *
+     * A group number the pattern does not have is a lowering bug and throws
+     * [EvaluationException.TypeMismatch], as do non-string operands, a pattern
+     * that does not compile, and a fractional group.
+     */
+    fun opRegexExtract(args: Value, vars: Scope): Value {
+        val operatorName = "rc.regexExtract"
+        val evaluated = Operators.evalArgs(args, vars)
+        checkArity(evaluated.size, listOf(BINARY, TERNARY), operatorName)
+
+        val operands = operands(evaluated, operatorName)
+        val group = group(evaluated.getOrNull(TERNARY - 1), operatorName)
+        val captureCount = operands.regex.toPattern().matcher("").groupCount()
+
+        if (group > captureCount) {
+            throw EvaluationException.TypeMismatch(
+                "operator '$operatorName' asked for group $group of a pattern with " +
+                    "$captureCount capture group(s)",
+            )
+        }
+
+        val matched = operands.regex.find(operands.input)?.groups?.get(group)
+        return matched?.let { Value.StringValue(it.value) } ?: Value.Null
+    }
+
+    /** Reads the optional group argument, defaulting to the whole match. */
+    private fun group(value: Value?, operatorName: String): Int = when {
+        value == null -> 0
+        value is Value.IntValue && value.value >= 0 ->
+            value.value.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        value is Value.FloatValue && value.value >= 0 && value.value % 1.0 == 0.0 ->
+            Operators.clampedInt(value.value)
+        else -> throw EvaluationException.TypeMismatch(
+            "operator '$operatorName' expected a whole, non-negative group number, got $value",
+        )
     }
 
     /** Rejects an argument count no overload accepts. */
