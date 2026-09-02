@@ -37,7 +37,7 @@ public class GoogleOneTimePurchaseOfferDetails @JvmOverloads constructor(
     /**
      * Discount display info for this offer, or null if base plan/no discount.
      */
-    override val discountDisplayInfo: ProductDetails.OneTimePurchaseOfferDetails.DiscountDisplayInfo? = null,
+    override val discountDisplayInfo: DiscountDisplayInfo? = null,
 
     /**
      * The `ProductDetails` object from BillingClient this offer was created from.

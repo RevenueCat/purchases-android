@@ -1,12 +1,11 @@
 package com.revenuecat.purchases.google
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.android.billingclient.api.ProductDetails
+import com.revenuecat.purchases.models.GoogleDiscountDisplayInfo
 import com.revenuecat.purchases.models.GoogleOneTimePurchaseOfferDetails
 import com.revenuecat.purchases.models.OneTimePurchaseOfferDetailsList
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.utils.mockProductDetails
-import io.mockk.mockk
 import org.assertj.core.api.AssertionsForInterfaceTypes.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -93,7 +92,7 @@ class OneTimePurchaseOfferDetailsListTest {
 
     @Test
     fun `basePlan returns offer detail with null discountDisplayInfo`() {
-        val discountInfo = mockk<ProductDetails.OneTimePurchaseOfferDetails.DiscountDisplayInfo>()
+        val discountInfo = GoogleDiscountDisplayInfo(percentageDiscount = 20)
         val discountedOffer = GoogleOneTimePurchaseOfferDetails(
             productId = productId,
             price = Price(formatted = "$2.99", amountMicros = 2990000, currencyCode = "USD"),

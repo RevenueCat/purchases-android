@@ -5,6 +5,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.models.GoogleDiscountDisplayInfo
 import com.revenuecat.purchases.models.GoogleOneTimePurchaseOfferDetails
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.OneTimePurchaseOfferDetailsList
@@ -90,13 +91,28 @@ internal fun ProductDetails.OneTimePurchaseOfferDetails.toGoogleOneTimePurchaseO
         amountMicros = this.priceAmountMicros,
         currencyCode = this.priceCurrencyCode,
     )
+    val discountDisplayInfo = this.discountDisplayInfo?.let { googleDiscount ->
+        val percentage = googleDiscount.percentageDiscount
+        val discountAmountPrice = googleDiscount.discountAmount?.let { amount ->
+            Price(
+                formatted = amount.formattedDiscountAmount,
+                amountMicros = amount.discountAmountMicros,
+                currencyCode = amount.discountAmountCurrencyCode,
+            )
+        }
+        GoogleDiscountDisplayInfo(
+            percentageDiscount = percentage,
+            discountAmount = discountAmountPrice,
+        )
+    }
+
     return GoogleOneTimePurchaseOfferDetails(
         productId = productId,
         price = price,
         offerId = this.offerId,
         offerToken = this.offerToken,
         offerTags = this.offerTags,
-        discountDisplayInfo = this.discountDisplayInfo,
+        discountDisplayInfo = discountDisplayInfo,
         productDetails = productDetails,
         presentedOfferingContext = null,
     )

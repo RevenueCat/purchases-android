@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.models
 
-import com.android.billingclient.api.ProductDetails
 import com.revenuecat.purchases.PresentedOfferingContext
 
 /**
@@ -35,7 +34,7 @@ public interface OneTimePurchaseOfferDetails {
     /**
      * Discount display info for the one-time purchase offer, null if base plan / no discount.
      */
-    public val discountDisplayInfo: ProductDetails.OneTimePurchaseOfferDetails.DiscountDisplayInfo?
+    public val discountDisplayInfo: DiscountDisplayInfo?
 
     /**
      * Contains only data that is required to make the purchase.
