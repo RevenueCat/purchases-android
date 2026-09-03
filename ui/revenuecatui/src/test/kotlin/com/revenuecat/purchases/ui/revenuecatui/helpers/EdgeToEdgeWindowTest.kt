@@ -69,7 +69,8 @@ class EdgeToEdgeWindowTest {
         assertThat(edgeToEdgeWindow().navigationBarColor).isEqualTo(DefaultDarkScrim)
     }
 
-    // Light navigation bar icons don't exist before api 26, so the scrim is the dark one even in light mode.
+    // Navigation bar icons are always light before api 26 (dark icons arrived with the light-navigation-bar
+    // appearance in 26), so the scrim is the dark one even in light mode.
     @Test
     @Config(sdk = [24])
     @Suppress("DEPRECATION")
