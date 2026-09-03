@@ -3031,10 +3031,10 @@ class CustomerCenterViewModelTests {
         assertThat(fetchCurrentCalls).isEqualTo(callsAfterInitialLoad + 1)
     }
 
-    // region allPurchases loading
+    // region purchaseHistory loading
 
     @Test
-    fun `allPurchases is populated when displayPurchaseHistoryLink is true`(): Unit = runBlocking {
+    fun `purchaseHistory is populated when displayPurchaseHistoryLink is true`(): Unit = runBlocking {
         setupPurchasesMock()
         every { configData.support } returns CustomerCenterConfigData.Support(
             displayPurchaseHistoryLink = true,
@@ -3067,12 +3067,12 @@ class CustomerCenterViewModelTests {
         val model = setupViewModel()
         val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
 
-        assertThat(state.allPurchases).isNotEmpty
-        assertThat(state.allPurchases.map { it.productIdentifier }).contains("inactive_product")
+        assertThat(state.purchaseHistory).isNotEmpty
+        assertThat(state.purchaseHistory.map { it.productIdentifier }).contains("inactive_product")
     }
 
     @Test
-    fun `allPurchases is empty when displayPurchaseHistoryLink is false`(): Unit = runBlocking {
+    fun `purchaseHistory is empty when displayPurchaseHistoryLink is false`(): Unit = runBlocking {
         setupPurchasesMock()
         every { configData.support } returns CustomerCenterConfigData.Support(
             displayPurchaseHistoryLink = false,
@@ -3105,22 +3105,22 @@ class CustomerCenterViewModelTests {
         val model = setupViewModel()
         val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
 
-        assertThat(state.allPurchases).isEmpty()
+        assertThat(state.purchaseHistory).isEmpty()
     }
 
     @Test
-    fun `allPurchases is empty when displayPurchaseHistoryLink is null`(): Unit = runBlocking {
+    fun `purchaseHistory is empty when displayPurchaseHistoryLink is null`(): Unit = runBlocking {
         setupPurchasesMock()
         // default support mock has no displayPurchaseHistoryLink set (null)
 
         val model = setupViewModel()
         val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
 
-        assertThat(state.allPurchases).isEmpty()
+        assertThat(state.purchaseHistory).isEmpty()
     }
 
     @Test
-    fun `allPurchases maps non-subscription purchaseDate, originalPurchaseDate, and storeTransactionId`(): Unit = runBlocking {
+    fun `purchaseHistory maps non-subscription purchaseDate, originalPurchaseDate, and storeTransactionId`(): Unit = runBlocking {
         setupPurchasesMock()
         every { configData.support } returns CustomerCenterConfigData.Support(
             displayPurchaseHistoryLink = true,
@@ -3148,7 +3148,7 @@ class CustomerCenterViewModelTests {
         val model = setupViewModel()
         val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
 
-        val nonSub = state.allPurchases.firstOrNull { it.productIdentifier == "lifetime_product" }
+        val nonSub = state.purchaseHistory.firstOrNull { it.productIdentifier == "lifetime_product" }
         assertThat(nonSub).isNotNull
         assertThat(nonSub!!.purchaseDate).isEqualTo(purchaseDate)
         assertThat(nonSub.originalPurchaseDate).isEqualTo(originalPurchaseDate)
@@ -3156,7 +3156,7 @@ class CustomerCenterViewModelTests {
     }
 
     @Test
-    fun `allPurchases emits unique purchase history entry ids`(): Unit = runBlocking {
+    fun `purchaseHistory emits unique purchase history entry ids`(): Unit = runBlocking {
         setupPurchasesMock()
         every { configData.support } returns CustomerCenterConfigData.Support(
             displayPurchaseHistoryLink = true,
@@ -3217,7 +3217,7 @@ class CustomerCenterViewModelTests {
         val model = setupViewModel()
         val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
 
-        val entryIds = state.allPurchases.map { it.purchaseHistoryEntryId }
+        val entryIds = state.purchaseHistory.map { it.purchaseHistoryEntryId }
         assertThat(entryIds).doesNotHaveDuplicates()
         assertThat(entryIds).containsExactlyInAnyOrder(
             "subscription:subscription_product",

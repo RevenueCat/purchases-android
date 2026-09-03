@@ -770,7 +770,7 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
-    private suspend fun loadAllPurchases(
+    private suspend fun loadPurchaseHistory(
         customerInfo: CustomerInfo,
         dateFormatter: DateFormatter,
         locale: Locale,
@@ -1114,8 +1114,8 @@ internal class CustomerCenterViewModelImpl(
                 locale = locale,
                 localization = customerCenterConfigData.localization,
             )
-            val allPurchaseInformationList = if (customerCenterConfigData.support.displayPurchaseHistoryLink == true) {
-                loadAllPurchases(
+            val purchaseHistoryList = if (customerCenterConfigData.support.displayPurchaseHistoryLink == true) {
+                loadPurchaseHistory(
                     customerInfo = customerInfo,
                     dateFormatter = dateFormatter,
                     locale = locale,
@@ -1143,7 +1143,7 @@ internal class CustomerCenterViewModelImpl(
             val successState = CustomerCenterState.Success(
                 customerCenterConfigData,
                 purchaseInformationList,
-                allPurchases = allPurchaseInformationList,
+                purchaseHistory = purchaseHistoryList,
                 mainScreenPaths = emptyList(), // Will be computed below
                 detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
                 noActiveScreenOffering = noActiveScreenOffering,
