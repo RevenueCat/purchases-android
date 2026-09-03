@@ -1,6 +1,7 @@
 package com.revenuecat.sample.admob.nextgen.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -63,12 +64,8 @@ internal class PreloaderUiState(
         }
     }
 
-    fun decreaseBufferSize() {
-        if (!started && bufferSize > MIN_BUFFER_SIZE) bufferSize--
-    }
-
-    fun increaseBufferSize() {
-        if (!started && bufferSize < MAX_SAMPLE_BUFFER_SIZE) bufferSize++
+    fun updateBufferSize(newBufferSize: Int) {
+        if (!started) bufferSize = newBufferSize.coerceIn(MIN_BUFFER_SIZE, MAX_SAMPLE_BUFFER_SIZE)
     }
 
     fun preloadCallback(scope: CoroutineScope): PreloadCallback = preloadStatusCallback(
@@ -82,6 +79,14 @@ internal class PreloaderUiState(
             refresh()
         },
     )
+
+    fun toggle(start: () -> Boolean, stop: () -> Boolean) {
+        if (started) {
+            updateAfterStop(stop())
+        } else {
+            updateAfterStart(start())
+        }
+    }
 
     fun updateAfterStart(startResult: Boolean) {
         refresh()
@@ -200,29 +205,47 @@ private fun PreloaderHeader(state: PreloaderUiState, onToggle: () -> Unit) {
 @Composable
 private fun BufferSizeSetting(state: PreloaderUiState) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        NumericCountSetting(
+            label = {
+                Text(
+                    text = "Buffer capacity",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            value = state.bufferSize,
+            valueRange = MIN_BUFFER_SIZE..MAX_SAMPLE_BUFFER_SIZE,
+            enabled = !state.started,
+            onValueChange = state::updateBufferSize,
+        )
+    }
+}
+
+@Composable
+internal fun NumericCountSetting(
+    label: @Composable () -> Unit,
+    value: Int,
+    valueRange: IntRange,
+    enabled: Boolean = true,
+    onValueChange: (Int) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(modifier = Modifier.weight(1f)) { label() }
+        OutlinedButton(
+            onClick = { onValueChange(value - 1) },
+            enabled = enabled && value > valueRange.first,
         ) {
-            Text(
-                text = "Buffer capacity",
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            OutlinedButton(
-                onClick = state::decreaseBufferSize,
-                enabled = !state.started && state.bufferSize > MIN_BUFFER_SIZE,
-            ) {
-                Text("−")
-            }
-            Text(state.bufferSize.toString())
-            OutlinedButton(
-                onClick = state::increaseBufferSize,
-                enabled = !state.started && state.bufferSize < MAX_SAMPLE_BUFFER_SIZE,
-            ) {
-                Text("+")
-            }
+            Text("−")
+        }
+        Text(value.toString())
+        OutlinedButton(
+            onClick = { onValueChange(value + 1) },
+            enabled = enabled && value < valueRange.last,
+        ) {
+            Text("+")
         }
     }
 }
