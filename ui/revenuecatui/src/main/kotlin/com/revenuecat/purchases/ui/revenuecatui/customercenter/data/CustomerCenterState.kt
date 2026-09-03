@@ -28,7 +28,7 @@ internal sealed class CustomerCenterState(
     data class Success(
         @get:JvmSynthetic val customerCenterConfigData: CustomerCenterConfigData,
         @get:JvmSynthetic val purchases: List<PurchaseInformation> = emptyList(),
-        @get:JvmSynthetic val purchaseHistory: List<PurchaseInformation> = emptyList(),
+        @get:JvmSynthetic val purchaseHistory: PurchaseHistory = PurchaseHistory(),
         @get:JvmSynthetic val mainScreenPaths: List<CustomerCenterConfigData.HelpPath> = emptyList(),
         @get:JvmSynthetic val detailScreenPaths: List<CustomerCenterConfigData.HelpPath> = emptyList(),
         @get:JvmSynthetic val restorePurchasesState: RestorePurchasesState? = null,

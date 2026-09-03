@@ -55,6 +55,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PathUtils
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseHistory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.shouldShowSeeAllPurchases
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
@@ -775,7 +776,7 @@ internal class CustomerCenterViewModelImpl(
         dateFormatter: DateFormatter,
         locale: Locale,
         localization: CustomerCenterConfigData.Localization,
-    ): List<PurchaseInformation> {
+    ): PurchaseHistory {
         val activeSubscriptions = customerInfo.subscriptionsByProductIdentifier.values
             .filter { it.isActive }
             .sortedBy { it.purchaseDate }
@@ -801,41 +802,54 @@ internal class CustomerCenterViewModelImpl(
                 )
             }
 
-        val transactions = activeSubscriptions +
-            inactiveSubscriptions +
-            nonSubscriptions
-
         return coroutineScope {
-            transactions.map { transaction ->
-                async {
-                    val entitlement = customerInfo.entitlements.active.values
-                        .firstOrNull { it.productIdentifier == transaction.productIdentifier }
-                        ?: customerInfo.entitlements.all.values
-                            .firstOrNull { it.productIdentifier == transaction.productIdentifier }
+            // Start every product lookup before awaiting, so they still resolve concurrently.
+            val toInfo: suspend (TransactionDetails) -> PurchaseInformation = {
+                it.toPurchaseInformation(customerInfo, dateFormatter, locale, localization)
+            }
+            val active = activeSubscriptions.map { async { toInfo(it) } }
+            val inactive = inactiveSubscriptions.map { async { toInfo(it) } }
+            val nonSubs = nonSubscriptions.map { async { toInfo(it) } }
 
-                    val isActivePlayStoreSubscription = transaction.store == Store.PLAY_STORE &&
-                        transaction is TransactionDetails.Subscription &&
-                        transaction.isActive
-                    val product = if (isActivePlayStoreSubscription) {
-                        purchases.awaitGetProduct(
-                            transaction.productIdentifier,
-                            (transaction as TransactionDetails.Subscription).productPlanIdentifier,
-                        )
-                    } else {
-                        null
-                    }
-
-                    PurchaseInformation(
-                        entitlementInfo = entitlement,
-                        subscribedProduct = product,
-                        transaction = transaction,
-                        dateFormatter = dateFormatter,
-                        locale = locale,
-                        localization = localization,
-                    )
-                }
-            }.awaitAll()
+            PurchaseHistory(
+                activeSubscriptions = active.awaitAll(),
+                inactiveSubscriptions = inactive.awaitAll(),
+                nonSubscriptions = nonSubs.awaitAll(),
+            )
         }
+    }
+
+    private suspend fun TransactionDetails.toPurchaseInformation(
+        customerInfo: CustomerInfo,
+        dateFormatter: DateFormatter,
+        locale: Locale,
+        localization: CustomerCenterConfigData.Localization,
+    ): PurchaseInformation {
+        val entitlement = customerInfo.entitlements.active.values
+            .firstOrNull { it.productIdentifier == productIdentifier }
+            ?: customerInfo.entitlements.all.values
+                .firstOrNull { it.productIdentifier == productIdentifier }
+
+        val isActivePlayStoreSubscription = store == Store.PLAY_STORE &&
+            this is TransactionDetails.Subscription &&
+            isActive
+        val product = if (isActivePlayStoreSubscription) {
+            purchases.awaitGetProduct(
+                productIdentifier,
+                (this as TransactionDetails.Subscription).productPlanIdentifier,
+            )
+        } else {
+            null
+        }
+
+        return PurchaseInformation(
+            entitlementInfo = entitlement,
+            subscribedProduct = product,
+            transaction = this,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization,
+        )
     }
 
     private fun findActiveTransactions(customerInfo: CustomerInfo): List<TransactionDetails> {
@@ -1114,7 +1128,7 @@ internal class CustomerCenterViewModelImpl(
                 locale = locale,
                 localization = customerCenterConfigData.localization,
             )
-            val purchaseHistoryList = if (customerCenterConfigData.support.displayPurchaseHistoryLink == true) {
+            val purchaseHistory = if (customerCenterConfigData.support.displayPurchaseHistoryLink == true) {
                 loadPurchaseHistory(
                     customerInfo = customerInfo,
                     dateFormatter = dateFormatter,
@@ -1122,7 +1136,7 @@ internal class CustomerCenterViewModelImpl(
                     localization = customerCenterConfigData.localization,
                 )
             } else {
-                emptyList()
+                PurchaseHistory()
             }
             val virtualCurrencies = if (customerCenterConfigData.support.displayVirtualCurrencies == true) {
                 purchases.invalidateVirtualCurrenciesCache()
@@ -1143,7 +1157,7 @@ internal class CustomerCenterViewModelImpl(
             val successState = CustomerCenterState.Success(
                 customerCenterConfigData,
                 purchaseInformationList,
-                purchaseHistory = purchaseHistoryList,
+                purchaseHistory = purchaseHistory,
                 mainScreenPaths = emptyList(), // Will be computed below
                 detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
                 noActiveScreenOffering = noActiveScreenOffering,

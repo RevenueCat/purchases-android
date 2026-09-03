@@ -3067,8 +3067,8 @@ class CustomerCenterViewModelTests {
         val model = setupViewModel()
         val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
 
-        assertThat(state.purchaseHistory).isNotEmpty
-        assertThat(state.purchaseHistory.map { it.productIdentifier }).contains("inactive_product")
+        assertThat(state.purchaseHistory.all).isNotEmpty
+        assertThat(state.purchaseHistory.all.map { it.productIdentifier }).contains("inactive_product")
     }
 
     @Test
@@ -3105,7 +3105,7 @@ class CustomerCenterViewModelTests {
         val model = setupViewModel()
         val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
 
-        assertThat(state.purchaseHistory).isEmpty()
+        assertThat(state.purchaseHistory.all).isEmpty()
     }
 
     @Test
@@ -3116,7 +3116,7 @@ class CustomerCenterViewModelTests {
         val model = setupViewModel()
         val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
 
-        assertThat(state.purchaseHistory).isEmpty()
+        assertThat(state.purchaseHistory.all).isEmpty()
     }
 
     @Test
@@ -3148,7 +3148,7 @@ class CustomerCenterViewModelTests {
         val model = setupViewModel()
         val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
 
-        val nonSub = state.purchaseHistory.firstOrNull { it.productIdentifier == "lifetime_product" }
+        val nonSub = state.purchaseHistory.all.firstOrNull { it.productIdentifier == "lifetime_product" }
         assertThat(nonSub).isNotNull
         assertThat(nonSub!!.purchaseDate).isEqualTo(purchaseDate)
         assertThat(nonSub.originalPurchaseDate).isEqualTo(originalPurchaseDate)
@@ -3217,7 +3217,7 @@ class CustomerCenterViewModelTests {
         val model = setupViewModel()
         val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
 
-        val entryIds = state.purchaseHistory.map { it.purchaseHistoryEntryId }
+        val entryIds = state.purchaseHistory.all.map { it.purchaseHistoryEntryId }
         assertThat(entryIds).doesNotHaveDuplicates()
         assertThat(entryIds).containsExactlyInAnyOrder(
             "subscription:subscription_product",
@@ -3289,6 +3289,51 @@ class CustomerCenterViewModelTests {
             val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
 
             assertThat(state.shouldShowPurchaseHistory).isFalse()
+        }
+
+    @Test
+    fun `purchase history groups a promotional subscription under subscriptions`(): Unit = runBlocking {
+        setupPurchasesMock()
+        every { configData.support } returns CustomerCenterConfigData.Support(
+            displayPurchaseHistoryLink = true,
+            supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+        )
+        every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+            "promo_product" to subscriptionInfo("promo_product", Store.PROMOTIONAL, isActive = true),
+        )
+        every { customerInfo.activeSubscriptions } returns setOf("promo_product")
+
+        val model = setupViewModel()
+        val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        assertThat(state.purchaseHistory.activeSubscriptions.map { it.productIdentifier })
+            .containsExactly("promo_product")
+        assertThat(state.purchaseHistory.nonSubscriptions).isEmpty()
+    }
+
+    @Test
+    fun `purchase history keeps an expired subscription inactive when an entitlement is active`(): Unit =
+        runBlocking {
+            setupPurchasesMock()
+            every { configData.support } returns CustomerCenterConfigData.Support(
+                displayPurchaseHistoryLink = true,
+                supportTickets = CustomerCenterConfigData.Support.SupportTickets(),
+            )
+            every { customerInfo.subscriptionsByProductIdentifier } returns mapOf(
+                "expired_a" to subscriptionInfo("expired_a", Store.PLAY_STORE, isActive = false),
+            )
+            every { customerInfo.activeSubscriptions } returns setOf()
+            every { customerInfo.entitlements } returns EntitlementInfos(
+                mapOf("ent_a" to entitlementInfoFor("expired_a")),
+                VerificationResult.VERIFIED,
+            )
+
+            val model = setupViewModel()
+            val state = model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+            assertThat(state.purchaseHistory.inactiveSubscriptions.map { it.productIdentifier })
+                .containsExactly("expired_a")
+            assertThat(state.purchaseHistory.activeSubscriptions).isEmpty()
         }
 
     private fun subscriptionInfo(
