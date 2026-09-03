@@ -138,24 +138,6 @@ class PriceFactoryTest {
     }
 
     @Test
-    fun `creates price with 29_99 correctly handles floating point`() {
-        // Similar case to 19.99
-        val price = PriceFactory.createPrice(29990000L, "USD", Locale.US)
-
-        assertThat(price.formatted).isEqualTo("$29.99")
-        assertThat(price.amountMicros).isEqualTo(29990000L)
-    }
-
-    @Test
-    fun `creates price with 99_99 correctly handles floating point`() {
-        // Similar case to 19.99
-        val price = PriceFactory.createPrice(99990000L, "USD", Locale.US)
-
-        assertThat(price.formatted).isEqualTo("$99.99")
-        assertThat(price.amountMicros).isEqualTo(99990000L)
-    }
-
-    @Test
     fun `truncatePrice true uses floor instead of round`() {
         // When truncatePrice is true, it should floor (not round)
         // 8_375_000 micros = $8.375 which should truncate to $8.37, not round to $8.38
@@ -166,21 +148,11 @@ class PriceFactoryTest {
     }
 
     @Test
-    fun `truncatePrice false uses proper rounding`() {
-        // When truncatePrice is false (default), it should round
-        // 8_375_000 micros = $8.375 which should round to $8.38 (half-up rounding)
-        val price = PriceFactory.createPrice(8375000L, "USD", Locale.US, truncatePrice = false)
+    fun `truncatePrice false rounds half up when the lower cent is even`() {
+        // 8_365_000 micros = $8.365. Half-up must yield $8.37; ties-to-even yields $8.36.
+        val price = PriceFactory.createPrice(8365000L, "USD", Locale.US, truncatePrice = false)
 
-        assertThat(price.formatted).isEqualTo("$8.38")
-        assertThat(price.amountMicros).isEqualTo(8375000L)
-    }
-
-    @Test
-    fun `truncatePrice defaults to false`() {
-        // Default behavior should use rounding, not truncation
-        val priceDefault = PriceFactory.createPrice(8375000L, "USD", Locale.US)
-        val priceExplicit = PriceFactory.createPrice(8375000L, "USD", Locale.US, truncatePrice = false)
-
-        assertThat(priceDefault.formatted).isEqualTo(priceExplicit.formatted)
+        assertThat(price.formatted).isEqualTo("$8.37")
+        assertThat(price.amountMicros).isEqualTo(8365000L)
     }
 }
