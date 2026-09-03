@@ -8,7 +8,6 @@ import android.widget.TextView
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -125,8 +124,9 @@ internal fun NativeScreen(onBack: () -> Unit) {
                 NativeAdCountSetting(
                     batchSize = batchSize,
                     maximum = MAX_NATIVE_BATCH_SIZE,
-                    onDecrease = { batchSize = (batchSize - 1).coerceAtLeast(MIN_NATIVE_BATCH_SIZE) },
-                    onIncrease = { batchSize = (batchSize + 1).coerceAtMost(MAX_NATIVE_BATCH_SIZE) },
+                    onValueChange = {
+                        batchSize = it.coerceAtLeast(MIN_NATIVE_BATCH_SIZE).coerceAtMost(MAX_NATIVE_BATCH_SIZE)
+                    },
                 )
             }
         }
@@ -164,13 +164,10 @@ internal fun NativeScreen(onBack: () -> Unit) {
                     NativeAdCountSetting(
                         batchSize = preloadedAdCount,
                         maximum = preloadState.adsAvailable,
-                        onDecrease = {
-                            preferredPreloadedAdCount =
-                                (preloadedAdCount - 1).coerceAtLeast(MIN_NATIVE_BATCH_SIZE)
-                        },
-                        onIncrease = {
-                            preferredPreloadedAdCount =
-                                (preloadedAdCount + 1).coerceAtMost(preloadState.adsAvailable)
+                        onValueChange = {
+                            preferredPreloadedAdCount = it
+                                .coerceAtLeast(MIN_NATIVE_BATCH_SIZE)
+                                .coerceAtMost(preloadState.adsAvailable)
                         },
                     )
                 },
@@ -192,18 +189,17 @@ internal fun NativeScreen(onBack: () -> Unit) {
                     ),
                 ),
                 onToggle = {
-                    if (preloadState.started) {
-                        preloadState.updateAfterStop(NativeAdPreloader.destroy(NATIVE_PRELOAD_ID))
-                    } else {
-                        preloadState.updateAfterStart(
+                    preloadState.toggle(
+                        start = {
                             NativeAdPreloader.startAndTrack(
                                 NATIVE_PRELOAD_ID,
                                 PreloadConfiguration(nativeRequest(adVariant), preloadState.bufferSize),
                                 placement = adVariant.placement("preload"),
                                 preloadCallback = preloadState.preloadCallback(scope),
-                            ),
-                        )
-                    }
+                            )
+                        },
+                        stop = { NativeAdPreloader.destroy(NATIVE_PRELOAD_ID) },
+                    )
                 },
             )
         }
@@ -219,29 +215,14 @@ internal fun NativeScreen(onBack: () -> Unit) {
 private fun NativeAdCountSetting(
     batchSize: Int,
     maximum: Int,
-    onDecrease: () -> Unit,
-    onIncrease: () -> Unit,
+    onValueChange: (Int) -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text("Number of ads", modifier = Modifier.weight(1f))
-        OutlinedButton(
-            onClick = onDecrease,
-            enabled = batchSize > MIN_NATIVE_BATCH_SIZE,
-        ) {
-            Text("−")
-        }
-        Text(batchSize.toString())
-        OutlinedButton(
-            onClick = onIncrease,
-            enabled = batchSize < maximum,
-        ) {
-            Text("+")
-        }
-    }
+    NumericCountSetting(
+        label = { Text("Number of ads") },
+        value = batchSize,
+        valueRange = MIN_NATIVE_BATCH_SIZE..maximum,
+        onValueChange = onValueChange,
+    )
 }
 
 private data class HandledNativeResult(val ads: List<NativeAd>, val status: String)

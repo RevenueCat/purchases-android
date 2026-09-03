@@ -221,13 +221,12 @@ private fun <AdT : Ad, EventCallbackT> FullScreenAdScreen(
                     ),
                 ),
                 onToggle = {
-                    if (preloadState.started) {
-                        preloadState.updateAfterStop(stopPreloader())
-                    } else {
-                        preloadState.updateAfterStart(
-                            startPreloader(preloadState.bufferSize, preloadState.preloadCallback(scope)),
-                        )
-                    }
+                    preloadState.toggle(
+                        start = {
+                            startPreloader(preloadState.bufferSize, preloadState.preloadCallback(scope))
+                        },
+                        stop = stopPreloader,
+                    )
                 },
             )
         }
