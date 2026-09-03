@@ -1,9 +1,6 @@
 package com.revenuecat.purchases.simulatedstore
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.PackageType
-import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.networking.WebBillingPhase
