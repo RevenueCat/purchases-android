@@ -48,7 +48,8 @@ class EdgeToEdgeWindowTest {
     }
 
     // layoutInDisplayCutoutMode does not exist in the api 26 framework jar, so this only smoke-tests the
-    // properties that do.
+    // properties that do. Contrast enforcement doesn't exist before api 29, so the navigation bar gets
+    // enableEdgeToEdge's default scrim instead of being transparent.
     @Test
     @Config(sdk = [26])
     @Suppress("DEPRECATION")
@@ -58,7 +59,22 @@ class EdgeToEdgeWindowTest {
         assertThat(window.attributes.flags and WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
             .isNotEqualTo(0)
         assertThat(window.statusBarColor).isEqualTo(Color.TRANSPARENT)
-        assertThat(window.navigationBarColor).isEqualTo(Color.TRANSPARENT)
+        assertThat(window.navigationBarColor).isEqualTo(NAVIGATION_BAR_LIGHT_SCRIM)
+    }
+
+    @Test
+    @Config(sdk = [28], qualifiers = "night")
+    @Suppress("DEPRECATION")
+    fun `the navigation bar gets the dark scrim in dark mode between api 26 and 28`() {
+        assertThat(edgeToEdgeWindow().navigationBarColor).isEqualTo(NAVIGATION_BAR_DARK_SCRIM)
+    }
+
+    // Light navigation bar icons don't exist before api 26, so the scrim is the dark one even in light mode.
+    @Test
+    @Config(sdk = [24])
+    @Suppress("DEPRECATION")
+    fun `the navigation bar always gets the dark scrim before api 26`() {
+        assertThat(edgeToEdgeWindow().navigationBarColor).isEqualTo(NAVIGATION_BAR_DARK_SCRIM)
     }
 
     @Test
@@ -92,7 +108,7 @@ class EdgeToEdgeWindowTest {
 
     @Test
     @Suppress("DEPRECATION")
-    fun `the system bars are transparent before api 35`() {
+    fun `the system bars are transparent between api 29 and 34`() {
         val window = edgeToEdgeWindow()
 
         assertThat(window.statusBarColor).isEqualTo(Color.TRANSPARENT)
