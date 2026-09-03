@@ -30,6 +30,17 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import java.util.Date
 import java.util.Locale
 
+internal fun periodTypeLabel(
+    periodType: PeriodType,
+    localization: CustomerCenterConfigData.Localization,
+): String? = when (periodType) {
+    PeriodType.TRIAL -> localization.commonLocalizedString(CommonLocalizedString.TRIAL_PERIOD)
+    PeriodType.INTRO -> localization.commonLocalizedString(CommonLocalizedString.INTRODUCTORY_PRICE)
+    // There is no localized string for a prepaid period, so the row is omitted instead of
+    // labeling it as introductory.
+    PeriodType.NORMAL, PeriodType.PREPAID -> null
+}
+
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 @Composable
 internal fun PurchaseHistoryDetailView(
@@ -99,12 +110,7 @@ internal fun PurchaseHistoryDetailView(
                 )
             }
 
-            if (purchase.periodType != PeriodType.NORMAL) {
-                val periodValue = if (purchase.periodType == PeriodType.TRIAL) {
-                    localization.commonLocalizedString(CommonLocalizedString.TRIAL_PERIOD)
-                } else {
-                    localization.commonLocalizedString(CommonLocalizedString.INTRODUCTORY_PRICE)
-                }
+            periodTypeLabel(purchase.periodType, localization)?.let { periodValue ->
                 DetailRow(
                     label = localization.commonLocalizedString(CommonLocalizedString.PERIOD_TYPE),
                     value = periodValue,
