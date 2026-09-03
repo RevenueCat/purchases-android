@@ -610,15 +610,13 @@ internal class PurchasesFactory(
             require(apiKey.isNotBlank()) { "API key must be set. Get this from the RevenueCat web app" }
 
             val apiKeyValidationResult = apiKeyValidator.validateAndLog(apiKey, store)
-
-            // Test Store keys are only meant for development. uiPreviewMode and
-            // allowTestStoreInReleaseBuild are internal opt-ins that intentionally bypass this guard.
-            val isTestStoreKeyInReleaseBuild = !isDebugBuild() &&
-                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE
             val testStoreReleaseBuildAllowed = dangerousSettings.uiPreviewMode ||
                 dangerousSettings.allowTestStoreInReleaseBuild
 
-            if (isTestStoreKeyInReleaseBuild && !testStoreReleaseBuildAllowed) {
+            if (!testStoreReleaseBuildAllowed &&
+                apiKeyValidationResult == APIKeyValidator.ValidationResult.SIMULATED_STORE &&
+                !isDebugBuild()
+            ) {
                 val redactedApiKey = apiKeyValidator.redactApiKey(apiKey)
                 errorLog(
                     error = PurchasesError(
