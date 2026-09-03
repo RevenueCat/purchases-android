@@ -4,7 +4,6 @@ package com.revenuecat.purchases.checkpoints
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
@@ -13,7 +12,6 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.audiences.Audience
 import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
-import com.revenuecat.purchases.common.audiences.AudiencesSnapshot
 import com.revenuecat.purchases.common.checkpoints.CheckpointResponse
 import com.revenuecat.purchases.common.checkpoints.CheckpointRule
 import com.revenuecat.purchases.common.checkpoints.CheckpointRulesResolution
@@ -21,10 +19,8 @@ import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesDimensionProvider
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
-import com.revenuecat.purchases.common.remoteconfig.ConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
-import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
@@ -44,7 +40,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.jsonObject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -58,10 +53,6 @@ import java.util.concurrent.atomic.AtomicInteger
 class CheckpointWorkflowResolverImplTest {
 
     private val checkpointId = "test_checkpoint"
-
-    private companion object {
-        const val BACKEND_PREDICATE_HASH = "349OzehoTyCAdiZblj9w0J0yD-Uow8X3"
-    }
 
     private lateinit var mockWorkflowManager: WorkflowManager
     private lateinit var mockUiConfigProvider: UiConfigProvider
@@ -142,7 +133,7 @@ class CheckpointWorkflowResolverImplTest {
 
         assertThat(noActionReason(resolve()))
             .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
-        coVerify(exactly = 0) { mockAudiencesConfigProvider.getSnapshot() }
+        coVerify(exactly = 0) { mockAudiencesConfigProvider.getAudiences() }
     }
 
     @Test
@@ -152,7 +143,7 @@ class CheckpointWorkflowResolverImplTest {
         assertThat(noActionReason(resolve())).isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
         assertThat(offeringsFetched).isZero()
         // With no rules to match, there is nothing to read the audiences for.
-        coVerify(exactly = 0) { mockAudiencesConfigProvider.getSnapshot() }
+        coVerify(exactly = 0) { mockAudiencesConfigProvider.getAudiences() }
     }
 
     @Test
@@ -241,15 +232,12 @@ class CheckpointWorkflowResolverImplTest {
         var generation = 0
         var snapshotReads = 0
         configureRulesReadAt { generation }
-        coEvery { mockAudiencesConfigProvider.getSnapshot() } answers {
+        coEvery { mockAudiencesConfigProvider.getAudiences() } answers {
             if (snapshotReads++ == 0) {
                 generation++
                 null
             } else {
-                AudiencesSnapshot(
-                    audiences = mapOf("aud_wf1234" to alwaysMatching("aud_wf1234")),
-                    backendPredicateResults = emptyMap(),
-                )
+                mapOf("aud_wf1234" to alwaysMatching("aud_wf1234"))
             }
         }
 
@@ -262,7 +250,7 @@ class CheckpointWorkflowResolverImplTest {
             var generation = 0
             var snapshotReads = 0
             configureRulesReadAt { generation }
-            coEvery { mockAudiencesConfigProvider.getSnapshot() } answers {
+            coEvery { mockAudiencesConfigProvider.getAudiences() } answers {
                 snapshotReads++
                 generation++
                 null
@@ -305,18 +293,18 @@ class CheckpointWorkflowResolverImplTest {
     @Test
     fun `rules after the first match do not need their audience`() = runTest {
         configureRules(rule("wf1234"), rule("wf5678"))
-        // aud_wf5678 is absent from the snapshot, so consulting it would fail the resolution.
+        // aud_wf5678 is absent from the audiences, so consulting it would fail the resolution.
         configureAudiences(alwaysMatching("aud_wf1234"))
 
         val resolution = resolve() as CheckpointResolution.MatchedWorkflow
 
         assertThat(resolution.workflow).isEqualTo(mockWorkflow)
-        coVerify(exactly = 1) { mockAudiencesConfigProvider.getSnapshot() }
+        coVerify(exactly = 1) { mockAudiencesConfigProvider.getAudiences() }
     }
 
     @Test
-    fun `an unavailable audiences snapshot is configuration unavailable`() = runTest {
-        coEvery { mockAudiencesConfigProvider.getSnapshot() } returns null
+    fun `unavailable audiences are configuration unavailable`() = runTest {
+        coEvery { mockAudiencesConfigProvider.getAudiences() } returns null
 
         assertThat(noActionReason(resolve()))
             .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
@@ -461,59 +449,6 @@ class CheckpointWorkflowResolverImplTest {
 
         assertThat(resolution).isNotInstanceOf(CheckpointResolution.MatchedWorkflow::class.java)
         assertThat(noActionReason(resolution))
-            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
-    }
-
-    @Test
-    fun `a backend predicate result the audience reads resolves the workflow`() = runTest {
-        configureAudiences(
-            Audience(
-                "aud_wf1234",
-                """{"or": [
-                    {"var": ["backend.$BACKEND_PREDICATE_HASH", false]},
-                    {"==": [{"var": "custom.country"}, "PL"]}
-                ]}""",
-            ),
-            backendPredicateResults = mapOf(BACKEND_PREDICATE_HASH to RulesDimensionValue.BoolValue(true)),
-        )
-
-        assertThat(resolve()).isInstanceOf(CheckpointResolution.MatchedWorkflow::class.java)
-    }
-
-    @Test
-    fun `a false backend predicate result resolves NoAction with NO_MATCH`() = runTest {
-        configureAudiences(
-            Audience("aud_wf1234", """{"var": ["backend.$BACKEND_PREDICATE_HASH", false]}"""),
-            backendPredicateResults = mapOf(BACKEND_PREDICATE_HASH to RulesDimensionValue.BoolValue(false)),
-        )
-
-        assertThat(noActionReason(resolve())).isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
-    }
-
-    @Test
-    fun `a non-boolean backend predicate result is compared like any other dimension`() = runTest {
-        configureAudiences(
-            Audience("aud_wf1234", """{"==": [{"var": ["backend.$BACKEND_PREDICATE_HASH", ""]}, "variant_b"]}"""),
-            backendPredicateResults = mapOf(BACKEND_PREDICATE_HASH to RulesDimensionValue.StringValue("variant_b")),
-        )
-
-        assertThat(resolve()).isInstanceOf(CheckpointResolution.MatchedWorkflow::class.java)
-    }
-
-    @Test
-    fun `a backend predicate result absent from the snapshot falls back to the rule's default`() = runTest {
-        // A hash this SDK never received (a newer backend, a value shape it skipped) reads as the default the
-        // rule was authored with, the same forward-compatibility path as any other unknown dimension.
-        configureAudiences(Audience("aud_wf1234", """{"var": ["backend.$BACKEND_PREDICATE_HASH", false]}"""))
-
-        assertThat(noActionReason(resolve())).isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
-    }
-
-    @Test
-    fun `a backend predicate read without a default is not a NO_MATCH when the hash is absent`() = runTest {
-        configureAudiences(Audience("aud_wf1234", """{"var": "backend.$BACKEND_PREDICATE_HASH"}"""))
-
-        assertThat(noActionReason(resolve()))
             .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
     }
 
@@ -684,14 +619,8 @@ class CheckpointWorkflowResolverImplTest {
 
     private fun alwaysMatching(audienceId: String) = Audience(id = audienceId, rules = "true")
 
-    private fun configureAudiences(
-        vararg audiences: Audience,
-        backendPredicateResults: Map<String, RulesDimensionValue> = emptyMap(),
-    ) {
-        coEvery { mockAudiencesConfigProvider.getSnapshot() } returns AudiencesSnapshot(
-            audiences = audiences.associateBy { it.id },
-            backendPredicateResults = backendPredicateResults,
-        )
+    private fun configureAudiences(vararg audiences: Audience) {
+        coEvery { mockAudiencesConfigProvider.getAudiences() } returns audiences.associateBy { it.id }
     }
 
     private fun configureRules(vararg rules: CheckpointRule) {
@@ -744,13 +673,6 @@ class CheckpointWorkflowResolverImplTest {
                 onSnapshotRead()
                 mapOf("aud_wf1234" to Audience(id = "aud_wf1234", rules = """{"==":[1,1]}"""))
             }
-            coEvery { manager.topic(RemoteConfigTopic.Audiences) } returns ConfigTopic(
-                mapOf(
-                    "backend_predicate_results" to RemoteConfiguration.ConfigItem(
-                        metadata = JsonTools.json.parseToJsonElement("""{"hash": true}""").jsonObject,
-                    ),
-                ),
-            )
         }
 
     private fun resolverBackedBy(manager: RemoteConfigManager) = CheckpointWorkflowResolverImpl(

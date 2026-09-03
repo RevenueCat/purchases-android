@@ -341,47 +341,6 @@ class RulesDimensionResolverTest {
     }
 
     @Test
-    fun `backend values are nested under the backend root`() = runTest {
-        val resolver = resolver(provider("platform" to string("android")))
-
-        val values = resolver
-            .snapshot(backendValues = mapOf("349OzehoTyCAdiZblj9w0J0yD-Uow8X3" to RulesDimensionValue.BoolValue(true)))
-            .getOrThrow()
-            .values
-
-        val matches = RulesEngine.evaluate(
-            """{"var": ["backend.349OzehoTyCAdiZblj9w0J0yD-Uow8X3", false]}""",
-            values,
-        )
-        assertThat(matches.getOrThrow()).isTrue()
-    }
-
-    @Test
-    fun `no backend values leaves the root absent rather than empty`() = runTest {
-        val resolver = resolver(provider("platform" to string("android")))
-
-        val values = resolver.snapshot().getOrThrow().values
-
-        assertThat(values).containsOnlyKeys("evaluated_at", "platform")
-        // An absent hash reads as the rule's default, which is what keeps unknown hashes forward-compatible.
-        assertThat(
-            RulesEngine.evaluate("""{"var": ["backend.unknown_hash", false]}""", values).getOrThrow(),
-        ).isFalse()
-    }
-
-    @Test
-    fun `a provider claiming the backend root fails the snapshot`() = runTest {
-        val resolver = resolver(
-            provider("backend" to RulesDimensionValue.ObjectValue(mapOf("source" to string("x")))),
-        )
-
-        // Reserved whether or not this evaluation supplies backend values, so the collision is deterministic.
-        val error = resolver.snapshot().exceptionOrNull()
-
-        assertThat(error).isEqualTo(RulesDimensionResolutionException.ConflictingDimension("backend"))
-    }
-
-    @Test
     fun `a provider claiming the custom root fails the snapshot`() = runTest {
         val resolver = resolver(
             provider("custom" to RulesDimensionValue.ObjectValue(mapOf("source" to string("x")))),
@@ -424,10 +383,10 @@ class RulesDimensionResolverTest {
 
     @Test
     fun `a nested name no predicate could read is dropped rather than exposed`() = runTest {
-        // Object values carry names too — one `var` path segment each — and the backend's pre-evaluated results
-        // are the source that can nest arbitrarily, so the same reachability rule applies at every depth.
-        val values = resolver().snapshot(
-            backendValues = mapOf(
+        // Object values carry names too — one `var` path segment each — and a provider can nest them
+        // arbitrarily, so the same reachability rule applies at every depth.
+        val resolver = resolver(
+            provider(
                 "profile" to RulesDimensionValue.ObjectValue(
                     mapOf(
                         "user.tier" to string("gold"),
@@ -440,29 +399,27 @@ class RulesDimensionResolverTest {
                     ),
                 ),
             ),
-        ).getOrThrow().values
+        )
 
-        assertThat(values["backend"]).isEqualTo(
+        val values = resolver.snapshot().getOrThrow().values
+
+        assertThat(values["profile"]).isEqualTo(
             Value.ObjectValue(
                 mapOf(
-                    "profile" to Value.ObjectValue(
-                        mapOf(
-                            "tier" to Value.StringValue("gold"),
-                            "nested" to Value.ObjectValue(mapOf("kept" to Value.StringValue("yes"))),
-                        ),
-                    ),
+                    "tier" to Value.StringValue("gold"),
+                    "nested" to Value.ObjectValue(mapOf("kept" to Value.StringValue("yes"))),
                 ),
             ),
         )
         assertThat(
-            RulesEngine.evaluate("""{"==": [{"var": "backend.profile.tier"}, "gold"]}""", values).getOrThrow(),
+            RulesEngine.evaluate("""{"==": [{"var": "profile.tier"}, "gold"]}""", values).getOrThrow(),
         ).isTrue()
     }
 
     @Test
     fun `a name inside an object list record no predicate could read is dropped rather than exposed`() = runTest {
-        val values = resolver().snapshot(
-            backendValues = mapOf(
+        val resolver = resolver(
+            provider(
                 "results" to RulesDimensionValue.ObjectListValue(
                     listOf(
                         mapOf("user.tier" to string("gold"), "id" to string("a")),
@@ -470,17 +427,15 @@ class RulesDimensionResolverTest {
                     ),
                 ),
             ),
-        ).getOrThrow().values
+        )
 
-        assertThat(values["backend"]).isEqualTo(
-            Value.ObjectValue(
-                mapOf(
-                    "results" to Value.ArrayValue(
-                        listOf(
-                            Value.ObjectValue(mapOf("id" to Value.StringValue("a"))),
-                            Value.ObjectValue(mapOf("id" to Value.StringValue("b"))),
-                        ),
-                    ),
+        val values = resolver.snapshot().getOrThrow().values
+
+        assertThat(values["results"]).isEqualTo(
+            Value.ArrayValue(
+                listOf(
+                    Value.ObjectValue(mapOf("id" to Value.StringValue("a"))),
+                    Value.ObjectValue(mapOf("id" to Value.StringValue("b"))),
                 ),
             ),
         )

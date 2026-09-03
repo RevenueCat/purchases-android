@@ -22,7 +22,7 @@ internal interface RulesDimensionProvider {
      *
      * The root names are part of the contract predicates are authored against, so a provider must not claim one
      * that is not its own: the resolver fails the whole snapshot when two sources supply the same name, or when a
-     * provider supplies one of the roots the resolver itself owns (`evaluated_at`, `custom`, `backend`).
+     * provider supplies one of the roots the resolver itself owns (`evaluated_at`, `custom`).
      *
      * A value that is unavailable is omitted rather than guessed: a predicate that reads an absent key fails as
      * an unresolved variable, rather than being answered from a value we invented. Only a source whose values are

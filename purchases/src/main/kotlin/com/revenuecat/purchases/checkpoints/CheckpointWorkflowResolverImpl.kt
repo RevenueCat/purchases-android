@@ -114,8 +114,8 @@ internal class CheckpointWorkflowResolverImpl(
     }
 
     /**
-     * The whole audiences topic is read once as a snapshot, so every rule is matched against audiences and
-     * backend predicate results from the same committed config, and matching itself never re-reads config.
+     * The whole audience dictionary is read once, so every rule is matched against audiences from the same
+     * committed config, and matching itself never re-reads config.
      */
     @Suppress("ReturnCount")
     private suspend fun matchRule(
@@ -124,14 +124,13 @@ internal class CheckpointWorkflowResolverImpl(
         customVariables: Map<String, RulesDimensionValue>,
     ): Result<CheckpointRule?> {
         if (rules.isEmpty()) return Result.success(null)
-        val snapshot = audiencesConfigProvider.getSnapshot()
+        val audiences = audiencesConfigProvider.getAudiences()
             ?: return Result.failure(AudiencesUnavailableException())
         return localRulesEvaluator.match(
             rules = rules,
             customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables),
-            backendValues = snapshot.backendPredicateResults,
         ) { rule ->
-            snapshot.audiences[rule.audienceId]
+            audiences[rule.audienceId]
                 ?.let { audience -> Result.success(audience.rules) }
                 ?: Result.failure(AudienceUnavailableException(rule.audienceId))
         }

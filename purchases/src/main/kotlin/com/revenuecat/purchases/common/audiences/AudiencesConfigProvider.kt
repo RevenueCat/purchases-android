@@ -5,43 +5,24 @@ package com.revenuecat.purchases.common.audiences
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.common.errorLog
-import com.revenuecat.purchases.common.localrules.RulesDimensionValue
-import com.revenuecat.purchases.common.localrules.asRulesDimensionValue
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.readConsistent
-import com.revenuecat.purchases.common.warnLog
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
-
-/**
- * The audiences topic as of one read: the audience dictionary from the static `default` blob together with the
- * `backend_predicate_results` the backend committed alongside it. Rules in [audiences] read
- * [backendPredicateResults] under `backend.*`, so consumers must evaluate the two together rather than
- * re-reading either on its own.
- */
-internal data class AudiencesSnapshot(
-    val audiences: Map<String, Audience>,
-    val backendPredicateResults: Map<String, RulesDimensionValue>,
-)
 
 internal class AudiencesConfigProvider(
     private val manager: RemoteConfigManager,
 ) {
     /**
-     * The current audiences topic, or `null` when the topic, its `default` item, or that item's blob is
-     * unavailable. Both parts are read under one config generation: [readConsistent] re-reads them once if a
-     * commit races the read, and gives up with `null` if that read is superseded too.
+     * The audience dictionary from the topic's static `default` blob, or `null` when the topic, that item, or its
+     * blob is unavailable. Read under one config generation: [readConsistent] re-reads once if a commit races the
+     * read, and gives up with `null` if that read is superseded too.
      */
-    suspend fun getSnapshot(): AudiencesSnapshot? =
+    suspend fun getAudiences(): Map<String, Audience>? =
         manager.readConsistent(what = { "the audiences topic" }) { _ ->
-            val audiences = manager.blobData(RemoteConfigTopic.Audiences, ITEM_DEFAULT, ::parseAudiences)
-                ?: return@readConsistent null
-            AudiencesSnapshot(
-                audiences = audiences,
-                backendPredicateResults = backendPredicateResults(),
-            )
+            manager.blobData(RemoteConfigTopic.Audiences, ITEM_DEFAULT, ::parseAudiences)
         }
 
     /**
@@ -70,27 +51,7 @@ internal class AudiencesConfigProvider(
         }.toMap()
     }
 
-    private suspend fun backendPredicateResults(): Map<String, RulesDimensionValue> {
-        val metadata = manager.topic(RemoteConfigTopic.Audiences)
-            ?.get(ITEM_BACKEND_PREDICATE_RESULTS)
-            ?.metadata
-            ?: return emptyMap()
-        return metadata.mapNotNull { (hash, element) ->
-            val result = element.asRulesDimensionValue()
-            if (result == null) {
-                // Rules read these with a default (`{"var": ["backend.<hash>", false]}`), so a value shape this
-                // SDK version cannot represent degrades to the rule's default instead of failing the item. An
-                // explicit null is not such a shape: it reaches the rule as null, which is falsy.
-                warnLog { "Ignoring backend predicate result '$hash': its value can't be read by a rule." }
-                null
-            } else {
-                hash to result
-            }
-        }.toMap()
-    }
-
     private companion object {
         const val ITEM_DEFAULT = "default"
-        const val ITEM_BACKEND_PREDICATE_RESULTS = "backend_predicate_results"
     }
 }

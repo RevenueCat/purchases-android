@@ -11,8 +11,7 @@ import java.util.Date
 
 /**
  * The dimensions the backend last delivered alongside the subscriber, cached because not every response carries
- * them, exposed as root-level names. Distinct from the reserved nested `backend` root, which holds the backend's
- * pre-evaluated predicate results for one evaluation.
+ * them, exposed as root-level names.
  *
  * The names are the backend's to choose, and the root-name contract applies to it like any other source: one
  * that collides with an SDK-provided dimension fails the snapshot. An explicit null is kept as null, since the
