@@ -227,7 +227,7 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         // definite solution for positioning the root component.
         val rootComponent = (backendRootComponent as? StackComponentStyle)
             ?.takeIf { it.size.height is SizeConstraint.Fit }
-            ?.copy(size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill))
+            ?.copy(size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fill()))
             ?: backendRootComponent
 
         PaywallValidationResult.Components(

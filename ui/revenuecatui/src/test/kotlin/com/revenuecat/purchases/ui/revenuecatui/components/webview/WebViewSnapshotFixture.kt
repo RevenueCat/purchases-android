@@ -84,7 +84,7 @@ internal fun prepaidPackage(): Package {
 internal fun testWebViewStyle(rcPackage: Package? = null) = WebViewComponentStyle(
     url = "https://assets.example.com/promo/index.html",
     visible = true,
-    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+    size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
     componentId = "promo_web_view",
     overrides = emptyList(),
     rcPackage = rcPackage,

@@ -68,12 +68,12 @@ class CarouselFillMatchesFixedSiblingTest {
                 alignment = HorizontalAlignment.CENTER,
                 distribution = FlexDistribution.CENTER,
             ),
-            size = Size(width = Fill, height = Fill),
+            size = Size(width = Fill(), height = Fill()),
             backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
         )
         val fixedSiblingPage = StackComponent(
             components = emptyList(),
-            size = Size(width = Fill, height = Fixed(300u)),
+            size = Size(width = Fill(), height = Fixed(300u)),
         )
         // No explicit carousel `size` -- matches the schema default (Fit/Fit).
         val carousel = CarouselComponent(
@@ -93,11 +93,11 @@ class CarouselFillMatchesFixedSiblingTest {
             components = listOf(
                 StackComponent(
                     components = emptyList(),
-                    size = Size(width = Fill, height = Fill),
+                    size = Size(width = Fill(), height = Fill()),
                     backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
                 ),
             ),
-            size = Size(width = Fill, height = Fill),
+            size = Size(width = Fill(), height = Fill()),
         )
         val nestedFixedSiblingPage = StackComponent(
             components = listOf(
