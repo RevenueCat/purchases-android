@@ -69,6 +69,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCen
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.FeedbackSurveyView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.NoActiveUserManagementView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PromotionalOfferScreen
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.PurchaseHistoryView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.RelevantPurchasesListView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.SelectedPurchaseDetailView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.VirtualCurrencyBalancesScreen
@@ -198,6 +199,7 @@ internal fun InternalCustomerCenter(
                 is CustomerCenterAction.DismissSupportTicketSuccessSnackbar -> {
                     viewModel.dismissSupportTicketSuccessSnackbar()
                 }
+                is CustomerCenterAction.ShowPurchaseHistory -> viewModel.showPurchaseHistory()
             }
         },
     )
@@ -513,6 +515,7 @@ private fun CustomerCenterNavHost(
                     localization = customerCenterState.customerCenterConfigData.localization,
                     purchaseInformation = destination.purchaseInformation,
                     supportedPaths = customerCenterState.detailScreenPaths,
+                    shouldShowPurchaseHistory = customerCenterState.shouldShowPurchaseHistory,
                     onAction = onAction,
                 )
             }
@@ -527,6 +530,16 @@ private fun CustomerCenterNavHost(
             is CustomerCenterDestination.CreateSupportTicket -> {
                 CreateSupportTicketView(
                     data = destination.data,
+                    localization = customerCenterState.customerCenterConfigData.localization,
+                )
+            }
+
+            is CustomerCenterDestination.PurchaseHistory -> {
+                val purchaseHistory = customerCenterState.purchaseHistory
+                PurchaseHistoryView(
+                    activeSubscriptions = purchaseHistory.activeSubscriptions,
+                    inactiveSubscriptions = purchaseHistory.inactiveSubscriptions,
+                    nonSubscriptions = purchaseHistory.nonSubscriptions,
                     localization = customerCenterState.customerCenterConfigData.localization,
                 )
             }
@@ -572,6 +585,7 @@ private fun MainScreenContent(
                 },
                 onAction = onAction,
                 purchases = state.purchases,
+                shouldShowPurchaseHistory = state.shouldShowPurchaseHistory,
             )
         } ?: run {
             // Handle missing management screen
@@ -587,6 +601,7 @@ private fun MainScreenContent(
                 supportTickets = configuration.support.supportTickets,
                 offering = state.noActiveScreenOffering,
                 virtualCurrencies = state.virtualCurrencies,
+                shouldShowPurchaseHistory = state.shouldShowPurchaseHistory,
                 onAction = onAction,
             )
         } ?: run {

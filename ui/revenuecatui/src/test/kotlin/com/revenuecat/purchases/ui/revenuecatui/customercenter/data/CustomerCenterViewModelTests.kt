@@ -3374,4 +3374,26 @@ class CustomerCenterViewModelTests {
 
     // endregion
 
+
+    // region Purchase History navigation
+
+    @Test
+    fun `showPurchaseHistory navigates to PurchaseHistory destination`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        model.showPurchaseHistory()
+
+        val updatedState = model.state.value as CustomerCenterState.Success
+        assertThat(updatedState.currentDestination)
+            .isInstanceOf(CustomerCenterDestination.PurchaseHistory::class.java)
+        assertThat(updatedState.navigationButtonType)
+            .isEqualTo(CustomerCenterState.NavigationButtonType.BACK)
+        val destination = updatedState.currentDestination as CustomerCenterDestination.PurchaseHistory
+        assertThat(destination.title).isEqualTo("Purchase History")
+    }
+
+    // endregion
+
 }
