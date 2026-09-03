@@ -127,9 +127,7 @@ class PriceFactoryTest {
 
     @Test
     fun `creates price with 19_99 correctly handles floating point`() {
-        // This is the bug case: 19_990_000 micros should produce "$19.99", not "$19.98"
-        // The bug occurred because 19_990_000 / 1_000_000.0 = 19.989999... in floating point
-        // and floor would truncate to 19.98
+        // 19_990_000 micros should produce "$19.99", not "$19.98"
         val price = PriceFactory.createPrice(19990000L, "USD", Locale.US)
 
         assertThat(price.formatted).isEqualTo("$19.99")

@@ -1,6 +1,9 @@
 package com.revenuecat.purchases.simulatedstore
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.common.networking.WebBillingPhase
@@ -51,6 +54,29 @@ class SimulatedStoreProductConverterTest {
         assertThat(result.price.formatted).isEqualTo("$9.99")
         assertThat(result.price.amountMicros).isEqualTo(9990000L)
         assertThat(result.price.currencyCode).isEqualTo("USD")
+    }
+
+    @Test
+    fun `converts a 19_99 test store price without a one cent underflow`() {
+        val productResponse = WebBillingProductResponse(
+            identifier = "test_product",
+            productType = "subscription",
+            title = "Test Product",
+            defaultPurchaseOptionId = "option1",
+            purchaseOptions = mapOf(
+                "option1" to WebBillingPurchaseOption(
+                    basePrice = WebBillingPrice(
+                        amountMicros = 19_990_000L,
+                        currency = "USD",
+                    ),
+                ),
+            ),
+        )
+
+        val result = convertToStoreProduct(productResponse)
+
+        assertThat(result.price.amountMicros).isEqualTo(19_990_000L)
+        assertThat(result.price.formatted).isEqualTo("$19.99")
     }
 
     @Test
