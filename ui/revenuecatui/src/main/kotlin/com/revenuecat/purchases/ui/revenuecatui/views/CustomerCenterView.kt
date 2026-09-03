@@ -106,7 +106,7 @@ public class CustomerCenterView : CompatComposeView {
     private var lastNavigationUpdate: Pair<Boolean, String?>? = null
     private val internalNavigationListener = CustomerCenterNavigationListener { canNavigateBack, title ->
         lastNavigationUpdate = canNavigateBack to title
-        navigationListener?.onNavigationChanged(canNavigateBack, title)
+        navigationListener?.onScreenChange(canNavigateBack, title)
     }
     private val customerCenterOptionsState = mutableStateOf(
         CustomerCenterOptions.Builder()
@@ -156,7 +156,7 @@ public class CustomerCenterView : CompatComposeView {
             ),
         )
         lastNavigationUpdate?.let { (canNavigateBack, title) ->
-            navigationOptions.listener?.onNavigationChanged(canNavigateBack, title)
+            navigationOptions.listener?.onScreenChange(canNavigateBack, title)
         }
     }
 

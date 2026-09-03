@@ -287,7 +287,7 @@ private fun NotifyNavigationListener(
     val title = successState?.currentDestination?.title
 
     LaunchedEffect(canNavigateBack, title) {
-        currentListener.onNavigationChanged(canNavigateBack = canNavigateBack, title = title)
+        currentListener.onScreenChange(canNavigateBack = canNavigateBack, title = title)
     }
 }
 
