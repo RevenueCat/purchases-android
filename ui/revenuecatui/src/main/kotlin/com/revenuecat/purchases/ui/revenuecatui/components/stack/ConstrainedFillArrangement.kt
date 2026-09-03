@@ -64,7 +64,15 @@ private fun flexibleSpacePositions(
     }
 
     val indices = if (reverseInput) sizes.indices.reversed() else sizes.indices
-    var currentPosition = edgeSpace
+    var currentPosition = if (
+        reverseInput &&
+        sizes.size == 1 &&
+        distribution == FlexDistribution.SPACE_BETWEEN
+    ) {
+        remainingSpace.toFloat()
+    } else {
+        edgeSpace
+    }
     indices.forEachIndexed { position, index ->
         positions[index] = currentPosition.roundToInt()
         currentPosition += sizes[index]
