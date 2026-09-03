@@ -172,7 +172,7 @@ internal fun StackComponentView(
                 when (badge.alignment) {
                     TwoDimensionalAlignment.TOP,
                     TwoDimensionalAlignment.BOTTOM,
-                    -> StackWithLongEdgeToEdgeBadge(
+                        -> StackWithLongEdgeToEdgeBadge(
                         stackState,
                         state,
                         badge.stackStyle,
@@ -187,7 +187,7 @@ internal fun StackComponentView(
                     )
 
                     else
-                    -> StackWithShortEdgeToEdgeBadge(
+                        -> StackWithShortEdgeToEdgeBadge(
                         stackState,
                         state,
                         badge.stackStyle,
@@ -906,7 +906,7 @@ private val TwoDimensionalAlignment.isTop: Boolean
         TwoDimensionalAlignment.TOP_LEADING,
         TwoDimensionalAlignment.TOP,
         TwoDimensionalAlignment.TOP_TRAILING,
-        -> true
+            -> true
 
         TwoDimensionalAlignment.CENTER,
         TwoDimensionalAlignment.LEADING,
@@ -914,7 +914,7 @@ private val TwoDimensionalAlignment.isTop: Boolean
         TwoDimensionalAlignment.BOTTOM,
         TwoDimensionalAlignment.BOTTOM_LEADING,
         TwoDimensionalAlignment.BOTTOM_TRAILING,
-        -> false
+            -> false
     }
 
 private fun getOverlaidBadgeOffsetY(
@@ -925,17 +925,17 @@ private fun getOverlaidBadgeOffsetY(
     TwoDimensionalAlignment.CENTER,
     TwoDimensionalAlignment.LEADING,
     TwoDimensionalAlignment.TRAILING,
-    -> 0
+        -> 0
 
     TwoDimensionalAlignment.TOP,
     TwoDimensionalAlignment.TOP_LEADING,
     TwoDimensionalAlignment.TOP_TRAILING,
-    -> (-((height.toFloat() - mainStackBorderWidthPx) / 2)).roundToInt()
+        -> (-((height.toFloat() - mainStackBorderWidthPx) / 2)).roundToInt()
 
     TwoDimensionalAlignment.BOTTOM,
     TwoDimensionalAlignment.BOTTOM_LEADING,
     TwoDimensionalAlignment.BOTTOM_TRAILING,
-    -> ((height.toFloat() - mainStackBorderWidthPx) / 2).roundToInt()
+        -> ((height.toFloat() - mainStackBorderWidthPx) / 2).roundToInt()
 }
 
 /**
@@ -963,12 +963,12 @@ internal val FlexDistribution.usesAllAvailableSpace: Boolean
         FlexDistribution.SPACE_AROUND,
         FlexDistribution.SPACE_BETWEEN,
         FlexDistribution.SPACE_EVENLY,
-        -> true
+            -> true
 
         FlexDistribution.START,
         FlexDistribution.END,
         FlexDistribution.CENTER,
-        -> false
+            -> false
     }
 
 private val ComponentStyle.shouldIgnoreTopWindowInsets: Boolean
