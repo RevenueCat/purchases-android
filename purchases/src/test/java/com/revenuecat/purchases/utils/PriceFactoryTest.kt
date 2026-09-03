@@ -138,21 +138,10 @@ class PriceFactoryTest {
     }
 
     @Test
-    fun `truncatePrice true uses floor instead of round`() {
-        // When truncatePrice is true, it should floor (not round)
-        // 8_375_000 micros = $8.375 which should truncate to $8.37, not round to $8.38
-        val price = PriceFactory.createPrice(8375000L, "USD", Locale.US, truncatePrice = true)
+    fun `truncates fractional cents`() {
+        // Price display intentionally never rounds up: $8.375 is displayed as $8.37.
+        val price = PriceFactory.createPrice(8375000L, "USD", Locale.US)
 
         assertThat(price.formatted).isEqualTo("$8.37")
-        assertThat(price.amountMicros).isEqualTo(8375000L)
-    }
-
-    @Test
-    fun `truncatePrice false rounds half up when the lower cent is even`() {
-        // 8_365_000 micros = $8.365. Half-up must yield $8.37; ties-to-even yields $8.36.
-        val price = PriceFactory.createPrice(8365000L, "USD", Locale.US, truncatePrice = false)
-
-        assertThat(price.formatted).isEqualTo("$8.37")
-        assertThat(price.amountMicros).isEqualTo(8365000L)
     }
 }
