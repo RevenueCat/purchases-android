@@ -21,35 +21,43 @@ internal fun allocateConstrainedFillSpace(
 ): IntArray {
     val result = IntArray(constraints.size)
     val remainingIndices = constraints.indices.filterTo(mutableListOf()) { constraints[it] != null }
-    var remainingSpace = availableSpace.coerceAtLeast(0)
+    var remainingSpace = availableSpace.coerceAtLeast(0).toLong()
 
     while (remainingIndices.isNotEmpty()) {
         val equalShare = remainingSpace.toDouble() / remainingIndices.size
-        val constrainedIndices = remainingIndices.filter { index ->
+        val minimumConstrainedIndices = remainingIndices.filter { index ->
             val fill = requireNotNull(constraints[index])
-            equalShare < fill.minimumPx(density) || equalShare > fill.maximumPx(density)
+            equalShare < fill.minimumPx(density)
+        }
+        val constrainedIndices = if (minimumConstrainedIndices.isNotEmpty()) {
+            minimumConstrainedIndices
+        } else {
+            remainingIndices.filter { index ->
+                equalShare > requireNotNull(constraints[index]).maximumPx(density)
+            }
         }
 
         if (constrainedIndices.isEmpty()) {
             val baseShare = remainingSpace / remainingIndices.size
+            val remainder = remainingSpace % remainingIndices.size
             remainingIndices.forEachIndexed { remainderIndex, index ->
-                result[index] = baseShare + if (remainderIndex < remainingSpace % remainingIndices.size) 1 else 0
+                result[index] = baseShare.toInt() + if (remainderIndex < remainder) 1 else 0
             }
             break
         }
 
         constrainedIndices.forEach { index ->
             val fill = requireNotNull(constraints[index])
-            val allocation = if (equalShare < fill.minimumPx(density)) {
+            val allocation = if (minimumConstrainedIndices.isNotEmpty()) {
                 fill.minimumPx(density)
             } else {
                 fill.maximumPx(density)
             }
             result[index] = allocation
-            remainingSpace -= allocation
+            remainingSpace -= allocation.toLong()
             remainingIndices.remove(index)
         }
-        remainingSpace = remainingSpace.coerceAtLeast(0)
+        remainingSpace = remainingSpace.coerceAtLeast(0L)
     }
 
     return result

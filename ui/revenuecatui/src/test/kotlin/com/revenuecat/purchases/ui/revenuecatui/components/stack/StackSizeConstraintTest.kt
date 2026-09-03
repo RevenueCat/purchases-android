@@ -61,6 +61,28 @@ class StackSizeConstraintTest {
     }
 
     @Test
+    fun `fill minimum is applied before sibling maximum`() {
+        val allocations = allocateConstrainedFillSpace(
+            availableSpace = 100,
+            constraints = listOf(Fill(min = 100u), Fill(max = 40u)),
+            density = Density(1f),
+        )
+
+        assertThat(allocations).containsExactly(100, 0)
+    }
+
+    @Test
+    fun `space remaining after minimum is balanced between maximum constrained siblings`() {
+        val allocations = allocateConstrainedFillSpace(
+            availableSpace = 100,
+            constraints = listOf(Fill(min = 80u), Fill(max = 20u), Fill(max = 20u)),
+            density = Density(1f),
+        )
+
+        assertThat(allocations).containsExactly(80, 10, 10)
+    }
+
+    @Test
     fun `fill minimums are preserved when they exceed available space`() {
         val allocations = allocateConstrainedFillSpace(
             availableSpace = 100,
