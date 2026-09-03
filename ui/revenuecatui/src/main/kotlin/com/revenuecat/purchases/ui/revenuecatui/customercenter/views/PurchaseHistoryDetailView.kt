@@ -131,35 +131,8 @@ internal fun PurchaseHistoryDetailView(
                 )
             }
 
-            purchase.originalPurchaseDate?.let { date ->
-                DetailRow(
-                    label = localization.commonLocalizedString(CommonLocalizedString.ORIGINAL_DOWNLOAD_DATE),
-                    value = date.fmt(),
-                )
-            }
-
-            if (purchase.productIdentifier.isNotEmpty()) {
-                DetailRow(
-                    label = localization.commonLocalizedString(CommonLocalizedString.PRODUCT_ID),
-                    value = purchase.productIdentifier,
-                )
-            }
-
-            purchase.storeTransactionId?.let { id ->
-                DetailRow(
-                    label = localization.commonLocalizedString(CommonLocalizedString.TRANSACTION_ID),
-                    value = id,
-                )
-            }
-
-            DetailRow(
-                label = localization.commonLocalizedString(CommonLocalizedString.SANDBOX),
-                value = if (purchase.isSandbox) {
-                    localization.commonLocalizedString(CommonLocalizedString.YES)
-                } else {
-                    localization.commonLocalizedString(CommonLocalizedString.NO)
-                },
-            )
+            // store, productID, sandbox, transactionID and originalPurchaseDate are debug only on
+            // iOS (PurchaseDetailItem.isDebugOnly), so they are not rendered here either.
         }
 
         if (purchase.ownershipType == OwnershipType.FAMILY_SHARED) {
