@@ -27,5 +27,5 @@ internal fun Price.pricePerYear(billingPeriod: Period, locale: Locale): Price {
 
 private fun Price.pricePerPeriod(units: Double, locale: Locale): Price {
     val value = amountMicros / units
-    return PriceFactory.createPrice(value.toLong(), currencyCode, locale)
+    return PriceFactory.createPrice(value.toLong(), currencyCode, locale, truncatePrice = true)
 }
