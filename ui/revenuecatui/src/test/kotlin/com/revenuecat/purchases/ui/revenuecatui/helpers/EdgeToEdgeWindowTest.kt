@@ -59,14 +59,14 @@ class EdgeToEdgeWindowTest {
         assertThat(window.attributes.flags and WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
             .isNotEqualTo(0)
         assertThat(window.statusBarColor).isEqualTo(Color.TRANSPARENT)
-        assertThat(window.navigationBarColor).isEqualTo(NAVIGATION_BAR_LIGHT_SCRIM)
+        assertThat(window.navigationBarColor).isEqualTo(DefaultLightScrim)
     }
 
     @Test
     @Config(sdk = [28], qualifiers = "night")
     @Suppress("DEPRECATION")
     fun `the navigation bar gets the dark scrim in dark mode between api 26 and 28`() {
-        assertThat(edgeToEdgeWindow().navigationBarColor).isEqualTo(NAVIGATION_BAR_DARK_SCRIM)
+        assertThat(edgeToEdgeWindow().navigationBarColor).isEqualTo(DefaultDarkScrim)
     }
 
     // Light navigation bar icons don't exist before api 26, so the scrim is the dark one even in light mode.
@@ -74,7 +74,10 @@ class EdgeToEdgeWindowTest {
     @Config(sdk = [24])
     @Suppress("DEPRECATION")
     fun `the navigation bar always gets the dark scrim before api 26`() {
-        assertThat(edgeToEdgeWindow().navigationBarColor).isEqualTo(NAVIGATION_BAR_DARK_SCRIM)
+        val window = edgeToEdgeWindow()
+
+        assertThat(window.statusBarColor).isEqualTo(Color.TRANSPARENT)
+        assertThat(window.navigationBarColor).isEqualTo(DefaultDarkScrim)
     }
 
     @Test
@@ -115,12 +118,16 @@ class EdgeToEdgeWindowTest {
         assertThat(window.navigationBarColor).isEqualTo(Color.TRANSPARENT)
     }
 
-    // Deliberately left at the platform default (true), matching enableEdgeToEdge()'s auto style: the
-    // system scrims 3-button navigation so the buttons stay readable over arbitrary paywall content.
+    // The auto style keeps navigation bar contrast enforcement on (the system scrims 3-button navigation so
+    // the buttons stay readable over arbitrary paywall content) and turns the status bar counterpart off.
     @Test
     @Config(sdk = [29])
-    fun `the navigation bar contrast enforcement is left at the platform default`() {
-        assertThat(edgeToEdgeWindow().isNavigationBarContrastEnforced).isTrue
+    @Suppress("DEPRECATION")
+    fun `contrast enforcement follows the enableEdgeToEdge auto style`() {
+        val window = edgeToEdgeWindow()
+
+        assertThat(window.isNavigationBarContrastEnforced).isTrue
+        assertThat(window.isStatusBarContrastEnforced).isFalse
     }
 
     @Test
