@@ -114,7 +114,7 @@ class CheckpointWorkflowActivityTest {
         }
         every { mockPurchases.currentActivity } returns launchingActivity
         coEvery { mockPurchases.resolveCheckpoint(any(), any()) } returns
-            CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk())
+            CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null)
 
         CoroutineScope(dispatcher).launch {
             mockPurchases.checkpointsManager.checkpoint(mockPurchases, "test_checkpoint", null)
