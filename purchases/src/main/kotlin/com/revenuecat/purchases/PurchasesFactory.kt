@@ -36,6 +36,7 @@ import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesEngineLoggerBridge
 import com.revenuecat.purchases.common.localrules.StoreDimensionProvider
 import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider
+import com.revenuecat.purchases.common.localrules.SubscriberDimensionsProvider
 import com.revenuecat.purchases.common.log
 import com.revenuecat.purchases.common.networking.APISourceFailover
 import com.revenuecat.purchases.common.networking.DeviceConnectivityChecker
@@ -404,6 +405,9 @@ internal class PurchasesFactory(
                             Purchases.sharedInstance.purchasesOrchestrator.awaitCustomerInfo(appUserID)
                         },
                     ),
+                    SubscriberDimensionsProvider {
+                        cache.getCachedSubscriberDimensionsJson(identityManager.currentAppUserID)
+                    },
                 ),
             )
 

@@ -6,21 +6,14 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
+import com.revenuecat.purchases.common.localrules.asRulesDimensionValue
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.readConsistent
 import com.revenuecat.purchases.common.warnLog
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.decodeFromJsonElement
-import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.longOrNull
 
 /**
  * The audiences topic as of one read: the audience dictionary from the static `default` blob together with the
@@ -86,7 +79,8 @@ internal class AudiencesConfigProvider(
             val result = element.asRulesDimensionValue()
             if (result == null) {
                 // Rules read these with a default (`{"var": ["backend.<hash>", false]}`), so a value shape this
-                // SDK version cannot represent degrades to the rule's default instead of failing the item.
+                // SDK version cannot represent degrades to the rule's default instead of failing the item. An
+                // explicit null is not such a shape: it reaches the rule as null, which is falsy.
                 warnLog { "Ignoring backend predicate result '$hash': its value can't be read by a rule." }
                 null
             } else {
@@ -99,27 +93,4 @@ internal class AudiencesConfigProvider(
         const val ITEM_DEFAULT = "default"
         const val ITEM_BACKEND_PREDICATE_RESULTS = "backend_predicate_results"
     }
-}
-
-/**
- * `null` for a value no rule could read: an explicit JSON `null` (no value to compare) or an array of anything
- * but objects ([RulesDimensionValue.ObjectListValue] is the only collection a dimension can be). An entry an
- * object holds that can't be read is dropped from it, mirroring how absent record values behave.
- */
-private fun JsonElement.asRulesDimensionValue(): RulesDimensionValue? = when (this) {
-    is JsonNull -> null
-    is JsonPrimitive -> when {
-        isString -> RulesDimensionValue.StringValue(content)
-        else -> booleanOrNull?.let { RulesDimensionValue.BoolValue(it) }
-            ?: longOrNull?.let { RulesDimensionValue.IntValue(it) }
-            ?: doubleOrNull?.let { RulesDimensionValue.DoubleValue(it) }
-    }
-    is JsonObject -> RulesDimensionValue.ObjectValue(
-        mapNotNull { (name, element) -> element.asRulesDimensionValue()?.let { name to it } }.toMap(),
-    )
-    is JsonArray -> map { element -> (element as? JsonObject)?.asRulesDimensionValue() }
-        .takeIf { records -> records.all { it is RulesDimensionValue.ObjectValue } }
-        ?.let { records ->
-            RulesDimensionValue.ObjectListValue(records.map { (it as RulesDimensionValue.ObjectValue).value })
-        }
 }

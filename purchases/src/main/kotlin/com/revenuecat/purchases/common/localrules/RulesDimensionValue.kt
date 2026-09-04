@@ -31,6 +31,15 @@ public sealed class RulesDimensionValue {
     public data class DateValue(val value: Date) : RulesDimensionValue()
 
     /**
+     * An explicit null a source states for a name it does have, as opposed to leaving the name out.
+     *
+     * Reaches the engine as JSON `null`: `var` resolves it instead of failing as an unresolved variable, `missing`
+     * still reports it, and it is falsy. For a source whose values are its own to state — the backend's — rather
+     * than one the SDK observes, where an unavailable value is omitted.
+     */
+    public object NullValue : RulesDimensionValue()
+
+    /**
      * A collection of records, for a dimension the customer has any number of rather than one of — their
      * purchases, their entitlements.
      *

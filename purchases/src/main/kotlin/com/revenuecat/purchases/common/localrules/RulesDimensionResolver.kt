@@ -186,6 +186,7 @@ private val RulesDimensionValue.asRulesEngineValue: Value
         is RulesDimensionValue.IntValue -> Value.IntValue(value)
         is RulesDimensionValue.DoubleValue -> Value.FloatValue(value)
         is RulesDimensionValue.DateValue -> Value.IntValue(value.time)
+        is RulesDimensionValue.NullValue -> Value.Null
         is RulesDimensionValue.ObjectListValue -> Value.ArrayValue(
             value.map { record -> Value.ObjectValue(record.mapValues { (_, item) -> item.asRulesEngineValue }) },
         )

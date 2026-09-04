@@ -173,11 +173,20 @@ class RulesDimensionResolverTest {
                 "count" to RulesDimensionValue.IntValue(3),
                 "ratio" to RulesDimensionValue.DoubleValue(1.5),
                 "date" to RulesDimensionValue.DateValue(evaluationDate),
+                "nothing" to RulesDimensionValue.NullValue,
                 "records" to RulesDimensionValue.ObjectListValue(
-                    listOf(mapOf("id" to RulesDimensionValue.StringValue("one"))),
+                    listOf(
+                        mapOf(
+                            "id" to RulesDimensionValue.StringValue("one"),
+                            "nothing" to RulesDimensionValue.NullValue,
+                        ),
+                    ),
                 ),
                 "record" to RulesDimensionValue.ObjectValue(
-                    mapOf("id" to RulesDimensionValue.StringValue("one")),
+                    mapOf(
+                        "id" to RulesDimensionValue.StringValue("one"),
+                        "nothing" to RulesDimensionValue.NullValue,
+                    ),
                 ),
             ),
         )
@@ -192,10 +201,13 @@ class RulesDimensionResolverTest {
                 "count" to Value.IntValue(3),
                 "ratio" to Value.FloatValue(1.5),
                 "date" to Value.IntValue(1_700_000_000_000),
+                "nothing" to Value.Null,
                 "records" to Value.ArrayValue(
-                    listOf(Value.ObjectValue(mapOf("id" to Value.StringValue("one")))),
+                    listOf(
+                        Value.ObjectValue(mapOf("id" to Value.StringValue("one"), "nothing" to Value.Null)),
+                    ),
                 ),
-                "record" to Value.ObjectValue(mapOf("id" to Value.StringValue("one"))),
+                "record" to Value.ObjectValue(mapOf("id" to Value.StringValue("one"), "nothing" to Value.Null)),
             ),
         )
     }

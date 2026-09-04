@@ -185,8 +185,12 @@ internal class AudiencesConfigProviderTest {
 
         assertThat(provider.getSnapshot()?.backendPredicateResults).isEqualTo(
             mapOf(
+                "null-result" to RulesDimensionValue.NullValue,
                 "null-in-object" to RulesDimensionValue.ObjectValue(
-                    mapOf("kept" to RulesDimensionValue.BoolValue(true)),
+                    mapOf(
+                        "value" to RulesDimensionValue.NullValue,
+                        "kept" to RulesDimensionValue.BoolValue(true),
+                    ),
                 ),
                 "kept" to RulesDimensionValue.BoolValue(true),
             ),
