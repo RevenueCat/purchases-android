@@ -29,7 +29,7 @@ Checkpoints are `@InternalRevenueCatAPI`, so every call site here needs `@OptIn(
 
 The identifier selects the experience. `CheckpointWorkflowResolverImpl` reads the checkpoint's rules from the
 `checkpoint_rules` remote-config topic and serves the workflow of the first rule that resolves, presented as a
-real workflow paywall by `CheckpointWorkflowActivity`. So `hard_paywall`, `soft_paywall`, `onboarding_complete`
+real workflow paywall by `CheckpointWorkflowPresenter`. So `hard_paywall`, `soft_paywall`, `onboarding_complete`
 and `entitlement_gate` each need a checkpoint of that name configured in the dashboard; the names are still the
 app's labels for its own gating behavior, but they now also pick what gets shown.
 

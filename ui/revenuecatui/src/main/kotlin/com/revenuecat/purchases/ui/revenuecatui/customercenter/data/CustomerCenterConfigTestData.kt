@@ -169,6 +169,8 @@ internal object CustomerCenterConfigTestData {
         isTrial = false,
         isCancelled = false,
         isLifetime = false,
+        productIdentifier = "monthly_product_id",
+        purchaseHistoryEntryId = "subscription:monthly_product_id",
     )
 
     val purchaseInformationYearlyExpiring = PurchaseInformation(
@@ -190,6 +192,8 @@ internal object CustomerCenterConfigTestData {
         isTrial = false,
         isCancelled = true,
         isLifetime = false,
+        productIdentifier = "yearly_product_id",
+        purchaseHistoryEntryId = "subscription:yearly_product_id",
     )
 
     val purchaseInformationYearlyExpired = PurchaseInformation(
@@ -211,6 +215,8 @@ internal object CustomerCenterConfigTestData {
         isTrial = false,
         isCancelled = true,
         isLifetime = false,
+        productIdentifier = "yearly_product_id",
+        purchaseHistoryEntryId = "subscription:yearly_product_id",
     )
 
     val purchaseInformationLifetime = PurchaseInformation(
@@ -225,6 +231,8 @@ internal object CustomerCenterConfigTestData {
         isTrial = false,
         isCancelled = false,
         isLifetime = true,
+        productIdentifier = "lifetime_product_id",
+        purchaseHistoryEntryId = "non_subscription:lifetime_transaction_id",
     )
 
     val purchaseInformationFreeTrial = PurchaseInformation(
@@ -246,6 +254,8 @@ internal object CustomerCenterConfigTestData {
         isTrial = true,
         isCancelled = false,
         isLifetime = false,
+        productIdentifier = "premium_yearly_product_id",
+        purchaseHistoryEntryId = "subscription:premium_yearly_product_id",
     )
 
     val purchaseInformationPromotional = PurchaseInformation(
@@ -260,6 +270,8 @@ internal object CustomerCenterConfigTestData {
         isTrial = false,
         isCancelled = true,
         isLifetime = false,
+        productIdentifier = "rc_promo_Test1_lifetime",
+        purchaseHistoryEntryId = "non_subscription:rc_promo_Test1_lifetime",
     )
 
     val fourVirtualCurrencies = VirtualCurrencies(

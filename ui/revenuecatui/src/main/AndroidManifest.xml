@@ -9,9 +9,6 @@
                 android:name=".customercenter.CustomerCenterActivity"
                 android:theme="@android:style/Theme.NoTitleBar"
                 android:exported="false" />
-        <activity
-                android:name=".checkpoints.CheckpointWorkflowActivity"
-                android:exported="false" />
     </application>
 
 </manifest>
