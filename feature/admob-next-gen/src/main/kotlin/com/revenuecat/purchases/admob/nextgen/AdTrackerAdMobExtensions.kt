@@ -23,10 +23,9 @@ import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAd
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAdEventCallback
+import com.revenuecat.purchases.admob.nextgen.tracking.NativeAdLoadResultHandler
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingAdLoadCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingNativeAdLoaderCallback
-import com.revenuecat.purchases.admob.nextgen.tracking.trackAdFailedToLoad
-import com.revenuecat.purchases.admob.nextgen.tracking.trackAdLoaded
 import com.revenuecat.purchases.admob.nextgen.tracking.trackAndConfigureAdLoadResult
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFormat
@@ -614,13 +613,12 @@ public suspend fun AdTracker.loadAndTrackNativeAd(
     bannerAdEventCallback: BannerAdEventCallback? = null,
 ): NativeAdLoadResult {
     val result = NativeAdLoader.load(adRequest)
-    trackAndConfigureNativeAdLoadResult(
-        result = result,
+    nativeAdLoadResultHandler(
         placement = placement,
         adUnitId = adRequest.adUnitId,
         nativeAdEventCallback = nativeAdEventCallback,
         bannerAdEventCallback = bannerAdEventCallback,
-    )
+    ).handle(result)
     return result
 }
 
@@ -705,15 +703,14 @@ public suspend fun AdTracker.loadAndTrackNativeAds(
     nativeAdEventCallback: NativeAdEventCallback? = null,
     bannerAdEventCallback: BannerAdEventCallback? = null,
 ): Flow<NativeAdLoadResult> {
-    val adUnitId = adRequest.adUnitId
+    val resultHandler = nativeAdLoadResultHandler(
+        placement = placement,
+        adUnitId = adRequest.adUnitId,
+        nativeAdEventCallback = nativeAdEventCallback,
+        bannerAdEventCallback = bannerAdEventCallback,
+    )
     return NativeAdLoader.load(adRequest, maxNumberOfAds).onEach { result ->
-        trackAndConfigureNativeAdLoadResult(
-            result = result,
-            placement = placement,
-            adUnitId = adUnitId,
-            nativeAdEventCallback = nativeAdEventCallback,
-            bannerAdEventCallback = bannerAdEventCallback,
-        )
+        resultHandler.handle(result)
     }
 }
 
@@ -725,6 +722,20 @@ private fun trackingNativeAdLoaderCallback(
     bannerAdEventCallback: BannerAdEventCallback?,
 ): TrackingNativeAdLoaderCallback = TrackingNativeAdLoaderCallback(
     delegate = delegate,
+    resultHandler = nativeAdLoadResultHandler(
+        placement = placement,
+        adUnitId = adUnitId,
+        nativeAdEventCallback = nativeAdEventCallback,
+        bannerAdEventCallback = bannerAdEventCallback,
+    ),
+)
+
+private fun nativeAdLoadResultHandler(
+    placement: String?,
+    adUnitId: String,
+    nativeAdEventCallback: NativeAdEventCallback?,
+    bannerAdEventCallback: BannerAdEventCallback?,
+): NativeAdLoadResultHandler = NativeAdLoadResultHandler(
     placement = placement,
     adUnitId = adUnitId,
     configureAd = { ad -> ad.installTrackingEventCallback(nativeAdEventCallback, placement, adUnitId) },
@@ -733,29 +744,3 @@ private fun trackingNativeAdLoaderCallback(
     },
     configureBannerAd = { ad -> ad.installTrackingCallbacks(bannerAdEventCallback, null, placement, adUnitId) },
 )
-
-private fun trackAndConfigureNativeAdLoadResult(
-    result: NativeAdLoadResult,
-    placement: String?,
-    adUnitId: String,
-    nativeAdEventCallback: NativeAdEventCallback?,
-    bannerAdEventCallback: BannerAdEventCallback?,
-) {
-    when (result) {
-        is NativeAdLoadResult.NativeAdSuccess -> {
-            trackAdLoaded({ result.ad.getResponseInfo() }, AdFormat.NATIVE, placement, adUnitId)
-            result.ad.installTrackingEventCallback(nativeAdEventCallback, placement, adUnitId)
-        }
-        is NativeAdLoadResult.CustomNativeAdSuccess -> {
-            trackAdLoaded({ result.ad.getResponseInfo() }, AdFormat.NATIVE, placement, adUnitId)
-            result.ad.installTrackingEventCallback(nativeAdEventCallback, placement, adUnitId)
-        }
-        is NativeAdLoadResult.BannerAdSuccess -> {
-            trackAdLoaded({ result.ad.getResponseInfo() }, AdFormat.BANNER, placement, adUnitId)
-            result.ad.installTrackingCallbacks(bannerAdEventCallback, null, placement, adUnitId)
-        }
-        is NativeAdLoadResult.Failure -> {
-            trackAdFailedToLoad(result.error, AdFormat.NATIVE, placement, adUnitId)
-        }
-    }
-}
