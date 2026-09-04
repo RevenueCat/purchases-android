@@ -3394,6 +3394,40 @@ class CustomerCenterViewModelTests {
         assertThat(destination.title).isEqualTo("Purchase History")
     }
 
+
+    @Test
+    fun `showPurchaseHistoryDetail navigates to PurchaseHistoryDetail with correct purchase id and title`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        val purchase = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing
+        model.showPurchaseHistoryDetail(purchase)
+
+        val updatedState = model.state.value as CustomerCenterState.Success
+        assertThat(updatedState.currentDestination)
+            .isInstanceOf(CustomerCenterDestination.PurchaseHistoryDetail::class.java)
+        assertThat(updatedState.navigationButtonType)
+            .isEqualTo(CustomerCenterState.NavigationButtonType.BACK)
+        val destination = updatedState.currentDestination as CustomerCenterDestination.PurchaseHistoryDetail
+        assertThat(destination.purchaseHistoryEntryId).isEqualTo(purchase.purchaseHistoryEntryId)
+        assertThat(destination.title).isEqualTo(purchase.title)
+    }
+
+    @Test
+    fun `showPurchaseHistoryDetail falls back to Purchase History title when purchase title is null`(): Unit = runBlocking {
+        setupPurchasesMock()
+        val model = setupViewModel()
+        model.state.filterIsInstance<CustomerCenterState.Success>().first()
+
+        val purchase = CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing.copy(title = null)
+        model.showPurchaseHistoryDetail(purchase)
+
+        val destination = (model.state.value as CustomerCenterState.Success)
+            .currentDestination as CustomerCenterDestination.PurchaseHistoryDetail
+        assertThat(destination.title).isEqualTo("Purchase History")
+    }
+
     // endregion
 
 }

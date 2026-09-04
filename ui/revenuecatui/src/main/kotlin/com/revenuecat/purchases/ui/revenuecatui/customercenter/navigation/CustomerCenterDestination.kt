@@ -49,4 +49,9 @@ internal sealed class CustomerCenterDestination {
     data class PurchaseHistory(
         override val title: String,
     ) : CustomerCenterDestination()
+
+    data class PurchaseHistoryDetail(
+        val purchaseHistoryEntryId: String,
+        override val title: String,
+    ) : CustomerCenterDestination()
 }

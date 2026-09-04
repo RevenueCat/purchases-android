@@ -148,6 +148,8 @@ internal interface CustomerCenterViewModel {
 
     fun showPurchaseHistory()
 
+    fun showPurchaseHistoryDetail(purchase: PurchaseInformation)
+
     fun dismissSupportTicketSuccessSnackbar()
 
     /**
@@ -376,6 +378,31 @@ internal class CustomerCenterViewModelImpl(
                 currentState.copy(
                     navigationState = currentState.navigationState.push(
                         CustomerCenterDestination.PurchaseHistory(title = title),
+                    ),
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
+                )
+            } else {
+                currentState
+            }
+        }
+    }
+
+    override fun showPurchaseHistoryDetail(purchase: PurchaseInformation) {
+        val state = _state.value
+        if (state !is CustomerCenterState.Success) return
+
+        val title = purchase.title ?: state.customerCenterConfigData.localization.commonLocalizedString(
+            CustomerCenterConfigData.Localization.CommonLocalizedString.SCREEN_PURCHASE_HISTORY_TITLE,
+        )
+
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(
+                    navigationState = currentState.navigationState.push(
+                        CustomerCenterDestination.PurchaseHistoryDetail(
+                            purchaseHistoryEntryId = purchase.purchaseHistoryEntryId,
+                            title = title,
+                        ),
                     ),
                     navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
                 )
