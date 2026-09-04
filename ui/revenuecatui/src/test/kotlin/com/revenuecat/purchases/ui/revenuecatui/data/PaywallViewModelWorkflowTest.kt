@@ -144,6 +144,7 @@ class PaywallViewModelWorkflowTest {
             ),
         ),
         triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
+        paramValues = offeringParams(offeringId),
     )
     private val step2 = WorkflowStep(
         id = "step-2",
@@ -151,6 +152,7 @@ class PaywallViewModelWorkflowTest {
         screenId = screenId2,
         triggers = emptyList(),
         triggerActions = emptyMap(),
+        paramValues = offeringParams(offeringId),
     )
 
     // Two-package fixture: monthly (default) + annual, for propagation tests.
@@ -202,6 +204,9 @@ class PaywallViewModelWorkflowTest {
         return wfl to offerings
     }
 
+    private fun offeringParams(offeringId: String): Map<String, JsonObject> =
+        mapOf("offering" to JsonObject(mapOf("identifier" to JsonPrimitive(offeringId))))
+
     private fun screenTypeMetadata(vararg types: String): JsonObject =
         JsonObject(mapOf(WorkflowScreenType.METADATA_KEY to JsonArray(types.map { JsonPrimitive(it) })))
 
@@ -222,6 +227,7 @@ class PaywallViewModelWorkflowTest {
                 ),
             ),
             triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
+            // Like the backend, only the paywall step carries the offering; this one falls back to its screen's.
             paramValues = emptyMap(),
             // Context (non-paywall) step: tagged with an empty screen_type so it suppresses paywall events.
             metadata = screenTypeMetadata(),
@@ -232,7 +238,7 @@ class PaywallViewModelWorkflowTest {
             screenId = screenId2,
             triggers = emptyList(),
             triggerActions = emptyMap(),
-            paramValues = emptyMap(),
+            paramValues = offeringParams(offeringId),
             // Paywall step: tagged so it reports paywall events.
             metadata = screenTypeMetadata(WorkflowScreenType.PAYWALL),
         )
@@ -326,6 +332,7 @@ class PaywallViewModelWorkflowTest {
         screenId = screenId1,
         triggers = emptyList(),
         triggerActions = emptyMap(),
+        paramValues = offeringParams(offeringId),
     )
 
     private val singleStepWorkflowWithExitOffer = PublishedWorkflow(
@@ -379,7 +386,6 @@ class PaywallViewModelWorkflowTest {
         componentsConfig = componentsConfig,
         componentsLocalizations = localizations,
         defaultLocaleIdentifier = defaultLocaleId,
-        offeringIdentifier = emptyOfferingId,
     )
 
     private val step3EmptyOffering = WorkflowStep(
@@ -388,6 +394,7 @@ class PaywallViewModelWorkflowTest {
         screenId = screenEmptyId,
         triggers = emptyList(),
         triggerActions = emptyMap(),
+        paramValues = offeringParams(emptyOfferingId),
     )
 
     private val step1ToStep3 = WorkflowStep(
@@ -403,6 +410,7 @@ class PaywallViewModelWorkflowTest {
             ),
         ),
         triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-3")),
+        paramValues = offeringParams(offeringId),
     )
 
     private val screenWithEmptyOffering2 = WorkflowScreen(
@@ -413,7 +421,6 @@ class PaywallViewModelWorkflowTest {
         componentsConfig = componentsConfig,
         componentsLocalizations = localizations,
         defaultLocaleIdentifier = defaultLocaleId,
-        offeringIdentifier = emptyOfferingId,
     )
 
     private val step1WithEmptyOffering = WorkflowStep(
@@ -422,6 +429,7 @@ class PaywallViewModelWorkflowTest {
         screenId = "screen-empty-initial",
         triggers = emptyList(),
         triggerActions = emptyMap(),
+        paramValues = offeringParams(emptyOfferingId),
     )
 
     private val workflowFailingInitial = PublishedWorkflow(
@@ -856,7 +864,7 @@ class PaywallViewModelWorkflowTest {
             screenId = screenCId,
             triggers = emptyList(),
             triggerActions = emptyMap(),
-            paramValues = emptyMap(),
+            paramValues = offeringParams(threeStepOfferingId),
         )
         val threeStepWorkflow = PublishedWorkflow(
             id = "wfl-three-step",
@@ -1786,6 +1794,71 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `initial step without an offering identifier falls back to its screen's offering`() {
+        val stepWithoutOffering = step1.copy(paramValues = emptyMap())
+        val workflowWithoutOffering = workflow.copy(steps = mapOf("step-1" to stepWithoutOffering, "step-2" to step2))
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(workflowWithoutOffering, testOfferings, null, uiConfig)
+
+        val loaded = vm.workflowState.value?.stepStates?.get("step-1")
+        assertThat(loaded).isNotNull
+        assertThat(loaded!!.offering.identifier).isEqualTo(offeringId)
+    }
+
+    @Test
+    fun `initial step with no offering on the step or its screen errors instead of rendering`() {
+        val stepWithoutOffering = step1.copy(paramValues = emptyMap())
+        val workflowWithoutOffering = workflow.copy(
+            steps = mapOf("step-1" to stepWithoutOffering, "step-2" to step2),
+            screens = mapOf(
+                screenId1 to makeScreen(screenId1).copy(offeringIdentifier = null),
+                screenId2 to makeScreen(screenId2),
+            ),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(workflowWithoutOffering, testOfferings, null, uiConfig)
+
+        assertThat(vm.workflowState.value).isNull()
+        val error = vm.state.value as PaywallState.Error
+        assertThat(error.errorMessage).contains("Step 'step-1' has no offering identifier")
+    }
+
+    @Test
+    fun `initial step whose offering is not in offerings errors instead of rendering`() {
+        val stepWithUnknownOffering = step1.copy(paramValues = offeringParams("unknown_offering"))
+        val workflowWithUnknownOffering =
+            workflow.copy(steps = mapOf("step-1" to stepWithUnknownOffering, "step-2" to step2))
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(workflowWithUnknownOffering, testOfferings, null, uiConfig)
+
+        assertThat(vm.workflowState.value).isNull()
+        val error = vm.state.value as PaywallState.Error
+        assertThat(error.errorMessage).contains("Offering 'unknown_offering' not found for step 'step-1'")
+    }
+
+    @Test
+    fun `navigation to a step without an offering identifier is refused and keeps the current step`() {
+        val stepWithoutOffering = step2.copy(paramValues = emptyMap())
+        val workflowToStepWithoutOffering = workflow.copy(
+            steps = mapOf("step-1" to step1, "step-2" to stepWithoutOffering),
+            screens = mapOf(
+                screenId1 to makeScreen(screenId1),
+                screenId2 to makeScreen(screenId2).copy(offeringIdentifier = null),
+            ),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(workflowToStepWithoutOffering, testOfferings, null, uiConfig)
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        assertThat(vm.workflowState.value?.pendingTransition).isNull()
+    }
+
+    @Test
     fun `all events within one impression share the same traceId, new impression gets a new one`() {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
@@ -2328,6 +2401,7 @@ class PaywallViewModelWorkflowTest {
             screenId = screenId1,
             triggers = emptyList(),
             triggerActions = emptyMap(),
+            paramValues = offeringParams(offeringId),
             metadata = metadata,
         )
         return workflow.copy(

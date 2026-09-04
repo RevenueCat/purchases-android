@@ -94,6 +94,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -110,6 +111,8 @@ private const val TEST_WAIT_MS = 5_000L
 @RunWith(AndroidJUnit4::class)
 class PaywallViewModelTest {
     private val defaultOffering = TestData.template2Offering
+    private val defaultOfferingParams =
+        mapOf("offering" to JsonObject(mapOf("identifier" to JsonPrimitive(defaultOffering.identifier))))
     private val defaultLocaleIdentifier = LocaleId("en_US")
     private val localizations = nonEmptyMapOf(
         defaultLocaleIdentifier to nonEmptyMapOf(
@@ -1429,8 +1432,10 @@ class PaywallViewModelTest {
                 ),
             ),
             triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
+            paramValues = defaultOfferingParams,
         )
-        val stepTwo = WorkflowStep(id = "step-2", type = "screen", screenId = "screen-1")
+        val stepTwo =
+            WorkflowStep(id = "step-2", type = "screen", screenId = "screen-1", paramValues = defaultOfferingParams)
         val workflow = PublishedWorkflow(
             id = "wfl-test",
             displayName = "Test Workflow",
@@ -1487,7 +1492,8 @@ class PaywallViewModelTest {
             defaultLocaleIdentifier = defaultLocaleIdentifier,
             offeringIdentifier = defaultOffering.identifier,
         )
-        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
+        val stepOne =
+            WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1", paramValues = defaultOfferingParams)
         val workflow = PublishedWorkflow(
             id = "wfl-test",
             displayName = "Test Workflow",
@@ -3240,7 +3246,8 @@ class PaywallViewModelTest {
             defaultLocaleIdentifier = defaultLocaleIdentifier,
             offeringIdentifier = defaultOffering.identifier,
         )
-        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
+        val stepOne =
+            WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1", paramValues = defaultOfferingParams)
         val workflow = PublishedWorkflow(
             id = "wfl-test",
             displayName = "Test Workflow",
@@ -3323,7 +3330,8 @@ class PaywallViewModelTest {
             defaultLocaleIdentifier = defaultLocaleIdentifier,
             offeringIdentifier = defaultOffering.identifier,
         )
-        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
+        val stepOne =
+            WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1", paramValues = defaultOfferingParams)
         val workflow = PublishedWorkflow(
             id = workflowId,
             displayName = "Real Workflow",
@@ -3453,7 +3461,14 @@ class PaywallViewModelTest {
             id = "wfl-test",
             displayName = "Test Workflow",
             initialStepId = "step-1",
-            steps = mapOf("step-1" to WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")),
+            steps = mapOf(
+                "step-1" to WorkflowStep(
+                    id = "step-1",
+                    type = "screen",
+                    screenId = "screen-1",
+                    paramValues = defaultOfferingParams,
+                ),
+            ),
             screens = mapOf("screen-1" to workflowScreen),
         )
         coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Found("wfl-test")

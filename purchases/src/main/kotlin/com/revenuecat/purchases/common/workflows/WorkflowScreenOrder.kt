@@ -7,8 +7,8 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 /**
  * Screens in the order a user reaches them.
  * Unreachable screens come last, not dropped: [WorkflowTriggerAction] has an `Unknown` variant and
- * [WorkflowStep.type] is an open string, so a navigation this version cannot read must not stop a real page
- * from warming.
+ * [WorkflowStep.type] is an open, optional string, so a navigation this version cannot read must not stop a real
+ * page from warming.
  */
 internal fun PublishedWorkflow.screensInVisitOrder(): List<WorkflowScreen> {
     val roots = setOfNotNull(initialStepId, singleStepFallbackId)

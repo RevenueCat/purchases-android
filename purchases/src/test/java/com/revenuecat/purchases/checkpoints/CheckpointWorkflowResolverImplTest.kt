@@ -24,10 +24,18 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
+import com.revenuecat.purchases.common.workflows.WorkflowScreen
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTrigger
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
+import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
+import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
+import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -38,13 +46,16 @@ import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.net.URL
 import java.util.Date
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -80,7 +91,6 @@ class CheckpointWorkflowResolverImplTest {
             every { identifier } returns "default"
         }
         mockOfferings = mockk()
-        coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns mapOf("wf1234" to "default")
         coEvery { mockWorkflowManager.getWorkflowBody(any()) } answers { uiWorkflow(firstArg()) }
         every { mockWorkflowManager.prewarmWorkflowAssets(any(), any()) } just Runs
         coEvery { mockUiConfigProvider.getUiConfig() } returns mockUiConfig
@@ -148,12 +158,108 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `checkpoint resolves NoAction with CONFIGURATION_UNAVAILABLE when no workflows exist`() = runTest {
-        coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns emptyMap()
+    fun `a UI workflow whose initial step has no offering identifier is configuration unavailable`() = runTest {
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns
+            uiWorkflow("wf1234", offeringIdentifier = null)
 
         assertThat(noActionReason(resolve()))
             .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
         assertThat(offeringsFetched).isZero()
+        verify(exactly = 0) { mockWorkflowManager.prewarmWorkflowAssets(any(), any()) }
+    }
+
+    @Test
+    fun `a UI workflow whose initial step has no offering identifier falls back to its screen's`() = runTest {
+        val workflow = uiWorkflow("wf1234", offeringIdentifier = null)
+            .copy(screens = mapOf("screen-id" to screen(offeringIdentifier = "default")))
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow
+
+        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
+
+        assertThat(resolution.offering).isEqualTo(mockOffering)
+        verify(exactly = 1) { mockWorkflowManager.prewarmWorkflowAssets(workflow, mockUiConfig) }
+    }
+
+    @Test
+    fun `a UI workflow's initial step offering identifier wins over its screen's`() = runTest {
+        val workflow = uiWorkflow("wf1234", offeringIdentifier = "default")
+            .copy(screens = mapOf("screen-id" to screen(offeringIdentifier = "missing")))
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow
+
+        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
+
+        assertThat(resolution.offering).isEqualTo(mockOffering)
+    }
+
+    @Test
+    fun `an untyped initial step resolves as a UI workflow`() = runTest {
+        val workflow = workflow("wf1234", screenStep("screen-step", "default").copy(type = null))
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow
+
+        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
+
+        assertThat(resolution.workflow).isEqualTo(workflow)
+        assertThat(resolution.offering).isEqualTo(mockOffering)
+        verify(exactly = 1) { mockWorkflowManager.prewarmWorkflowAssets(workflow, mockUiConfig) }
+    }
+
+    @Test
+    fun `the offering comes from the initial step and not from later steps`() = runTest {
+        val workflow = workflow(
+            "wf1234",
+            screenStep("first", "default"),
+            screenStep("second", "missing"),
+        )
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow
+
+        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
+
+        assertThat(resolution.offering).isEqualTo(mockOffering)
+    }
+
+    @Test
+    fun `an offering identifier on a later step does not rescue an initial step without one`() = runTest {
+        val workflow = workflow(
+            "wf1234",
+            screenStep("first", offeringIdentifier = null),
+            screenStep("second", "default"),
+        )
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow
+
+        assertThat(noActionReason(resolve()))
+            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        assertThat(offeringsFetched).isZero()
+    }
+
+    @Test
+    fun `a UI workflow with an invalid offering identifier does not fall through to a later rule`() = runTest {
+        val baseStep = screenStep("screen-step", offeringIdentifier = null)
+        val invalidWorkflows = listOf(
+            workflow(
+                "ui-with-non-string-identifier",
+                baseStep.copy(paramValues = offeringParams(JsonPrimitive(42))),
+            ),
+            workflow(
+                "ui-with-null-identifier",
+                baseStep.copy(paramValues = offeringParams(JsonNull)),
+            ),
+            workflow(
+                "ui-with-non-object-offering",
+                baseStep.copy(paramValues = mapOf("offering" to JsonPrimitive("default"))),
+            ),
+            workflow("ui-with-blank-identifier", screenStep("screen-step", "  ")),
+        )
+        configureRules(rule("wf-invalid"), rule("wf1234"))
+
+        invalidWorkflows.forEach { invalidWorkflow ->
+            coEvery { mockWorkflowManager.getWorkflowBody("wf-invalid") } returns invalidWorkflow
+
+            assertThat(noActionReason(resolve()))
+                .describedAs(invalidWorkflow.displayName)
+                .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        }
+        assertThat(offeringsFetched).isZero()
+        coVerify(exactly = 0) { mockWorkflowManager.getWorkflowBody("wf1234") }
     }
 
     @Test
@@ -367,9 +473,10 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `a matched rule whose workflow is not mapped to an offering does not fall through`() = runTest {
+    fun `a matched rule whose initial step has no offering identifier does not fall through`() = runTest {
         configureRules(rule("wf5678"), rule("wf1234"))
-        coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns mapOf("wf1234" to "default")
+        coEvery { mockWorkflowManager.getWorkflowBody("wf5678") } returns
+            uiWorkflow("wf5678", offeringIdentifier = null)
 
         assertThat(noActionReason(resolve()))
             .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
@@ -379,8 +486,7 @@ class CheckpointWorkflowResolverImplTest {
     @Test
     fun `a matched rule whose offering is missing from offerings does not fall through`() = runTest {
         configureRules(rule("wf5678"), rule("wf1234"))
-        coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns
-            mapOf("wf5678" to "missing", "wf1234" to "default")
+        coEvery { mockWorkflowManager.getWorkflowBody("wf5678") } returns uiWorkflow("wf5678", "missing")
 
         assertThat(noActionReason(resolve()))
             .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
@@ -390,8 +496,6 @@ class CheckpointWorkflowResolverImplTest {
     @Test
     fun `a matched rule whose workflow fails to load does not fall through`() = runTest {
         configureRules(rule("wf5678"), rule("wf1234"))
-        coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns
-            mapOf("wf5678" to "default", "wf1234" to "default")
         coEvery { mockWorkflowManager.getWorkflowBody("wf5678") } throws PurchasesException(
             PurchasesError(PurchasesErrorCode.UnknownError, "Workflow unavailable."),
         )
@@ -475,13 +579,10 @@ class CheckpointWorkflowResolverImplTest {
     @Test
     fun `offerings and ui config are resolved once`() = runTest {
         configureRules(rule("wf1234"), rule("wf5678"))
-        coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns
-            mapOf("wf1234" to "default", "wf5678" to "default")
 
         assertThat(resolve()).isInstanceOf(CheckpointResolution.MatchedWorkflow::class.java)
         assertThat(offeringsFetched).isEqualTo(1)
         coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
-        coVerify(exactly = 1) { mockWorkflowManager.offeringIdByWorkflowId() }
     }
 
     @Test
@@ -492,7 +593,6 @@ class CheckpointWorkflowResolverImplTest {
 
         assertThat(resolution.offering).isEqualTo(mockOffering)
         assertThat(offeringsFetched).isEqualTo(1)
-        coVerify(exactly = 0) { mockWorkflowManager.offeringIdByWorkflowId() }
         coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
         verify(exactly = 0) { mockWorkflowManager.prewarmWorkflowAssets(any(), any()) }
     }
@@ -555,11 +655,15 @@ class CheckpointWorkflowResolverImplTest {
             workflow("offering-without-identifier", baseOfferingStep.copy(paramValues = emptyMap())),
             workflow(
                 "offering-with-non-string-identifier",
-                baseOfferingStep.copy(paramValues = mapOf("offering_identifier" to JsonPrimitive(42))),
+                baseOfferingStep.copy(paramValues = offeringParams(JsonPrimitive(42))),
             ),
             workflow(
                 "offering-with-null-identifier",
-                baseOfferingStep.copy(paramValues = mapOf("offering_identifier" to JsonNull)),
+                baseOfferingStep.copy(paramValues = offeringParams(JsonNull)),
+            ),
+            workflow(
+                "offering-with-non-object-offering",
+                baseOfferingStep.copy(paramValues = mapOf("offering" to JsonPrimitive("default"))),
             ),
             workflow("offering-with-blank-identifier", offeringStep("  ")),
         )
@@ -583,13 +687,11 @@ class CheckpointWorkflowResolverImplTest {
         coEvery { mockWorkflowManager.getWorkflowBody("wf-ui") } returns uiWorkflow("wf-ui")
         coEvery { mockWorkflowManager.getWorkflowBody("wf-offering") } returns
             offeringWorkflow("wf-offering", "default")
-        coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns mapOf("wf-ui" to "default")
         coEvery { mockUiConfigProvider.getUiConfig() } returns null
 
         assertThat(noActionReason(resolve()))
             .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
         coVerify(exactly = 1) { mockUiConfigProvider.getUiConfig() }
-        coVerify(exactly = 0) { mockWorkflowManager.offeringIdByWorkflowId() }
         coVerify(exactly = 0) { mockWorkflowManager.getWorkflowBody(any()) }
         assertThat(offeringsFetched).isZero()
     }
@@ -600,7 +702,6 @@ class CheckpointWorkflowResolverImplTest {
         coEvery { mockWorkflowManager.getWorkflowBody("wf-offering") } returns
             offeringWorkflow("wf-offering", "missing")
         coEvery { mockWorkflowManager.getWorkflowBody("wf-ui") } returns uiWorkflow("wf-ui")
-        coEvery { mockWorkflowManager.offeringIdByWorkflowId() } returns mapOf("wf-ui" to "default")
 
         assertThat(noActionReason(resolve()))
             .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
@@ -709,13 +810,14 @@ class CheckpointWorkflowResolverImplTest {
     private fun noActionReason(resolution: CheckpointResolution): CheckpointResolution.NoAction.Reason =
         (resolution as CheckpointResolution.NoAction).reason
 
-    private fun uiWorkflow(id: String): PublishedWorkflow = PublishedWorkflow(
-        id = id,
-        displayName = "UI workflow",
-        initialStepId = "screen-step",
-        steps = mapOf("screen-step" to WorkflowStep("screen-step", "screen", screenId = "screen-id")),
-        screens = emptyMap(),
-    )
+    private fun uiWorkflow(id: String, offeringIdentifier: String? = "default"): PublishedWorkflow =
+        PublishedWorkflow(
+            id = id,
+            displayName = "UI workflow",
+            initialStepId = "screen-step",
+            steps = mapOf("screen-step" to screenStep("screen-step", offeringIdentifier)),
+            screens = emptyMap(),
+        )
 
     private fun offeringWorkflow(id: String, offeringIdentifier: String): PublishedWorkflow = PublishedWorkflow(
         id = id,
@@ -736,6 +838,35 @@ class CheckpointWorkflowResolverImplTest {
     private fun offeringStep(offeringIdentifier: String): WorkflowStep = WorkflowStep(
         id = "offering-step",
         type = "offering",
-        paramValues = mapOf("offering_identifier" to JsonPrimitive(offeringIdentifier)),
+        paramValues = offeringParams(offeringIdentifier),
     )
+
+    private fun screenStep(id: String, offeringIdentifier: String?): WorkflowStep = WorkflowStep(
+        id = id,
+        type = "screen",
+        screenId = "screen-id",
+        paramValues = offeringParams(offeringIdentifier),
+    )
+
+    private fun offeringParams(offeringIdentifier: String?) =
+        offeringIdentifier?.let { offeringParams(JsonPrimitive(it)) }.orEmpty()
+
+    private fun screen(offeringIdentifier: String?) = WorkflowScreen(
+        name = "screen-id",
+        templateName = "template",
+        assetBaseURL = URL("https://assets.revenuecat.com"),
+        componentsConfig = ComponentsConfig(
+            PaywallComponentsConfig(
+                stack = StackComponent(components = emptyList()),
+                background = Background.Color(ColorScheme(light = ColorInfo.Hex(0))),
+                stickyFooter = null,
+            ),
+        ),
+        componentsLocalizations = emptyMap(),
+        defaultLocaleIdentifier = LocaleId("en_US"),
+        offeringIdentifier = offeringIdentifier,
+    )
+
+    private fun offeringParams(identifier: JsonElement) =
+        mapOf("offering" to JsonObject(mapOf("identifier" to identifier)))
 }
