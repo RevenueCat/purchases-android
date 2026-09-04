@@ -18,22 +18,22 @@ class CheckpointGateResultMappingTest {
     @Test
     fun `every no-action reason maps to its gate counterpart`() {
         val reasons = listOf(
-            CheckpointResult.NoAction.Reason.NO_MATCH to CheckpointGateResult.NoWorkflowReason.NO_MATCH,
-            CheckpointResult.NoAction.Reason.HOLDOUT to CheckpointGateResult.NoWorkflowReason.HOLDOUT,
+            CheckpointResult.NoAction.Reason.NO_MATCH to CheckpointGateResult.NoActionReason.NO_MATCH,
+            CheckpointResult.NoAction.Reason.HOLDOUT to CheckpointGateResult.NoActionReason.HOLDOUT,
             CheckpointResult.NoAction.Reason.FREQUENCY_CAPPED to
-                CheckpointGateResult.NoWorkflowReason.FREQUENCY_CAPPED,
+                CheckpointGateResult.NoActionReason.FREQUENCY_CAPPED,
             CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE to
-                CheckpointGateResult.NoWorkflowReason.CONFIGURATION_UNAVAILABLE,
+                CheckpointGateResult.NoActionReason.CONFIGURATION_UNAVAILABLE,
             CheckpointResult.NoAction.Reason.UNKNOWN_CHECKPOINT to
-                CheckpointGateResult.NoWorkflowReason.UNKNOWN_CHECKPOINT,
+                CheckpointGateResult.NoActionReason.UNKNOWN_CHECKPOINT,
             CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER to
-                CheckpointGateResult.NoWorkflowReason.INVALID_CHECKPOINT_IDENTIFIER,
+                CheckpointGateResult.NoActionReason.INVALID_CHECKPOINT_IDENTIFIER,
         )
 
         reasons.forEach { (reason, expected) ->
             val gateResult = CheckpointResult.NoAction(reason).toGateResult(activeEntitlementsBefore = null)
 
-            assertThat(gateResult.noWorkflowReason).isEqualTo(expected)
+            assertThat(gateResult.noActionReason).isEqualTo(expected)
             assertThat(gateResult.entitlements).isEmpty()
             assertThat(gateResult.error).isNull()
         }
@@ -42,19 +42,19 @@ class CheckpointGateResultMappingTest {
     /**
      * The reason mapping cannot be compiler-exhaustive over a value-based constant class, so this guards the
      * seam instead: a [CheckpointResult.NoAction.Reason] constant added without a declared
-     * [CheckpointGateResult.NoWorkflowReason] counterpart falls into the mapping's pass-through branch and
+     * [CheckpointGateResult.NoActionReason] counterpart falls into the mapping's pass-through branch and
      * produces a value that is not among the declared constants, failing here.
      */
     @Test
-    fun `every declared no-action reason maps to a declared no-workflow reason`() {
+    fun `every declared no-action reason maps to a declared no-action gate reason`() {
         val declaredReasons = declaredConstants<CheckpointResult.NoAction.Reason>()
-        val declaredNoWorkflowReasons = declaredConstants<CheckpointGateResult.NoWorkflowReason>()
+        val declaredNoActionReasons = declaredConstants<CheckpointGateResult.NoActionReason>()
         assertThat(declaredReasons).isNotEmpty
 
         declaredReasons.forEach { reason ->
             val gateResult = CheckpointResult.NoAction(reason).toGateResult(activeEntitlementsBefore = null)
 
-            assertThat(declaredNoWorkflowReasons).contains(gateResult.noWorkflowReason)
+            assertThat(declaredNoActionReasons).contains(gateResult.noActionReason)
         }
     }
 
@@ -65,7 +65,7 @@ class CheckpointGateResultMappingTest {
         val gateResult = CheckpointResult.PaywallPresented(outcome).toGateResult(setOf("plus"))
 
         assertThat(gateResult.entitlements).containsExactly(EntitlementGrant("pro"))
-        assertThat(gateResult.noWorkflowReason).isNull()
+        assertThat(gateResult.noActionReason).isNull()
         assertThat(gateResult.error).isNull()
     }
 
@@ -96,7 +96,7 @@ class CheckpointGateResultMappingTest {
             val gateResult = CheckpointResult.PaywallPresented(outcome).toGateResult(emptySet())
 
             assertThat(gateResult.entitlements).isEmpty()
-            assertThat(gateResult.noWorkflowReason).isNull()
+            assertThat(gateResult.noActionReason).isNull()
             assertThat(gateResult.error).isNull()
         }
     }
@@ -108,7 +108,7 @@ class CheckpointGateResultMappingTest {
         val gateResult = CheckpointResult.PaywallPresented(CheckpointPaywallOutcome.Error(error))
             .toGateResult(emptySet())
 
-        assertThat(gateResult.noWorkflowReason).isNull()
+        assertThat(gateResult.noActionReason).isNull()
         assertThat(gateResult.error).isEqualTo(error)
         assertThat(gateResult.entitlements).isEmpty()
     }
@@ -119,7 +119,7 @@ class CheckpointGateResultMappingTest {
 
         val gateResult = unknownResult.toGateResult(activeEntitlementsBefore = null)
 
-        assertThat(gateResult.noWorkflowReason).isEqualTo(CheckpointGateResult.NoWorkflowReason.ERROR)
+        assertThat(gateResult.noActionReason).isEqualTo(CheckpointGateResult.NoActionReason.ERROR)
         assertThat(gateResult.error?.code).isEqualTo(PurchasesErrorCode.UnknownError)
     }
 
@@ -130,7 +130,7 @@ class CheckpointGateResultMappingTest {
         val gateResult = CheckpointResult.PaywallPresented(unknownOutcome).toGateResult(emptySet())
 
         assertThat(gateResult.entitlements).isEmpty()
-        assertThat(gateResult.noWorkflowReason).isNull()
+        assertThat(gateResult.noActionReason).isNull()
         assertThat(gateResult.error).isNull()
     }
 

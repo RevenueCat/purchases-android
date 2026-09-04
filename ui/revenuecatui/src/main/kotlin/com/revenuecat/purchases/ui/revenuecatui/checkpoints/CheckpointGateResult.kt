@@ -9,9 +9,9 @@ import dev.drewhamilton.poko.Poko
  * [com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint]'s callback once the checkpoint finishes.
  *
  * Invariants:
- * - [noWorkflowReason] is null exactly when a workflow was presented.
- * - [entitlements] can only be non-empty when a workflow was presented.
- * - [error] can accompany a null [noWorkflowReason]: the workflow was presented but something failed inside it,
+ * - [noActionReason] is null exactly when a flow was presented.
+ * - [entitlements] can only be non-empty when a flow was presented.
+ * - [error] can accompany a null [noActionReason]: the flow was presented but something failed inside it,
  *   like a purchase.
  */
 @InternalRevenueCatAPI
@@ -19,50 +19,50 @@ import dev.drewhamilton.poko.Poko
 public class CheckpointGateResult internal constructor(
     /** The entitlements the user obtained during this checkpoint. Empty when they obtained none. */
     public val entitlements: List<EntitlementGrant>,
-    /** Why no workflow was presented for this checkpoint, or null when one was. */
-    public val noWorkflowReason: NoWorkflowReason?,
+    /** Why nothing was presented for this checkpoint, or null when something was. */
+    public val noActionReason: NoActionReason?,
     /**
-     * The failure that prevented a workflow from being presented (with [noWorkflowReason] equal to
-     * [NoWorkflowReason.ERROR]), or that happened inside the presented workflow (with a null [noWorkflowReason]).
+     * The failure that prevented a flow from being presented (with [noActionReason] equal to
+     * [NoActionReason.ERROR]), or that happened inside the presented flow (with a null [noActionReason]).
      */
     public val error: PurchasesError?,
 ) {
 
-    /** The reason no workflow was presented for the checkpoint. */
+    /** The reason nothing was presented for the checkpoint. */
     @Poko
-    public class NoWorkflowReason internal constructor(internal val value: String) {
+    public class NoActionReason internal constructor(internal val value: String) {
 
         override fun toString(): String = value
 
         public companion object {
             /** The checkpoint is configured, but no targeting rule matched. */
             @JvmField
-            public val NO_MATCH: NoWorkflowReason = NoWorkflowReason("NO_MATCH")
+            public val NO_MATCH: NoActionReason = NoActionReason("NO_MATCH")
 
             /** The customer was assigned to a holdout. */
             @JvmField
-            public val HOLDOUT: NoWorkflowReason = NoWorkflowReason("HOLDOUT")
+            public val HOLDOUT: NoActionReason = NoActionReason("HOLDOUT")
 
             /** The customer reached the configured frequency cap. */
             @JvmField
-            public val FREQUENCY_CAPPED: NoWorkflowReason = NoWorkflowReason("FREQUENCY_CAPPED")
+            public val FREQUENCY_CAPPED: NoActionReason = NoActionReason("FREQUENCY_CAPPED")
 
             /** The configuration needed to serve the checkpoint could not be read. */
             @JvmField
-            public val CONFIGURATION_UNAVAILABLE: NoWorkflowReason = NoWorkflowReason("CONFIGURATION_UNAVAILABLE")
+            public val CONFIGURATION_UNAVAILABLE: NoActionReason = NoActionReason("CONFIGURATION_UNAVAILABLE")
 
             /** The checkpoint identifier is not configured in the RevenueCat dashboard. */
             @JvmField
-            public val UNKNOWN_CHECKPOINT: NoWorkflowReason = NoWorkflowReason("UNKNOWN_CHECKPOINT")
+            public val UNKNOWN_CHECKPOINT: NoActionReason = NoActionReason("UNKNOWN_CHECKPOINT")
 
             /** The checkpoint identifier is invalid. */
             @JvmField
-            public val INVALID_CHECKPOINT_IDENTIFIER: NoWorkflowReason =
-                NoWorkflowReason("INVALID_CHECKPOINT_IDENTIFIER")
+            public val INVALID_CHECKPOINT_IDENTIFIER: NoActionReason =
+                NoActionReason("INVALID_CHECKPOINT_IDENTIFIER")
 
-            /** A workflow should have been presented but failed to; [CheckpointGateResult.error] has the detail. */
+            /** Something should have been presented but failed to; [CheckpointGateResult.error] has the detail. */
             @JvmField
-            public val ERROR: NoWorkflowReason = NoWorkflowReason("ERROR")
+            public val ERROR: NoActionReason = NoActionReason("ERROR")
         }
     }
 }

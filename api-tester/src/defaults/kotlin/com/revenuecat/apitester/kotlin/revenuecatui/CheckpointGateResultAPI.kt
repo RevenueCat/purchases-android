@@ -12,7 +12,7 @@ private class CheckpointGateResultAPI {
 
     fun checkGateResult(gateResult: CheckpointGateResult) {
         val entitlements: List<EntitlementGrant> = gateResult.entitlements
-        val noWorkflowReason: CheckpointGateResult.NoWorkflowReason? = gateResult.noWorkflowReason
+        val noActionReason: CheckpointGateResult.NoActionReason? = gateResult.noActionReason
         val error: PurchasesError? = gateResult.error
     }
 
@@ -20,17 +20,17 @@ private class CheckpointGateResultAPI {
         val identifier: String = grant.identifier
     }
 
-    fun checkNoWorkflowReason() {
-        val noMatch: CheckpointGateResult.NoWorkflowReason = CheckpointGateResult.NoWorkflowReason.NO_MATCH
-        val holdout: CheckpointGateResult.NoWorkflowReason = CheckpointGateResult.NoWorkflowReason.HOLDOUT
-        val frequencyCapped: CheckpointGateResult.NoWorkflowReason =
-            CheckpointGateResult.NoWorkflowReason.FREQUENCY_CAPPED
-        val configurationUnavailable: CheckpointGateResult.NoWorkflowReason =
-            CheckpointGateResult.NoWorkflowReason.CONFIGURATION_UNAVAILABLE
-        val unknownCheckpoint: CheckpointGateResult.NoWorkflowReason =
-            CheckpointGateResult.NoWorkflowReason.UNKNOWN_CHECKPOINT
-        val invalidCheckpointIdentifier: CheckpointGateResult.NoWorkflowReason =
-            CheckpointGateResult.NoWorkflowReason.INVALID_CHECKPOINT_IDENTIFIER
-        val error: CheckpointGateResult.NoWorkflowReason = CheckpointGateResult.NoWorkflowReason.ERROR
+    fun checkNoActionReason() {
+        val noMatch: CheckpointGateResult.NoActionReason = CheckpointGateResult.NoActionReason.NO_MATCH
+        val holdout: CheckpointGateResult.NoActionReason = CheckpointGateResult.NoActionReason.HOLDOUT
+        val frequencyCapped: CheckpointGateResult.NoActionReason =
+            CheckpointGateResult.NoActionReason.FREQUENCY_CAPPED
+        val configurationUnavailable: CheckpointGateResult.NoActionReason =
+            CheckpointGateResult.NoActionReason.CONFIGURATION_UNAVAILABLE
+        val unknownCheckpoint: CheckpointGateResult.NoActionReason =
+            CheckpointGateResult.NoActionReason.UNKNOWN_CHECKPOINT
+        val invalidCheckpointIdentifier: CheckpointGateResult.NoActionReason =
+            CheckpointGateResult.NoActionReason.INVALID_CHECKPOINT_IDENTIFIER
+        val error: CheckpointGateResult.NoActionReason = CheckpointGateResult.NoActionReason.ERROR
     }
 }

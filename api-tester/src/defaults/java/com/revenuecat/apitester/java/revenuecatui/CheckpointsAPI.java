@@ -20,7 +20,7 @@ final class CheckpointsAPI {
     static void check(Purchases purchases, CheckpointParams params) {
         CheckpointGateCallback callback = (CheckpointGateResult gateResult) -> {
             List<EntitlementGrant> entitlements = gateResult.getEntitlements();
-            CheckpointGateResult.NoWorkflowReason noWorkflowReason = gateResult.getNoWorkflowReason();
+            CheckpointGateResult.NoActionReason noActionReason = gateResult.getNoActionReason();
             PurchasesError error = gateResult.getError();
         };
         CheckpointsExtensionsKt.checkpoint(purchases, "checkpoint_identifier", callback);
@@ -33,17 +33,17 @@ final class CheckpointsAPI {
     }
 
     @OptIn(markerClass = InternalRevenueCatAPI.class)
-    static void checkNoWorkflowReason() {
-        CheckpointGateResult.NoWorkflowReason noMatch = CheckpointGateResult.NoWorkflowReason.NO_MATCH;
-        CheckpointGateResult.NoWorkflowReason holdout = CheckpointGateResult.NoWorkflowReason.HOLDOUT;
-        CheckpointGateResult.NoWorkflowReason frequencyCapped =
-                CheckpointGateResult.NoWorkflowReason.FREQUENCY_CAPPED;
-        CheckpointGateResult.NoWorkflowReason configurationUnavailable =
-                CheckpointGateResult.NoWorkflowReason.CONFIGURATION_UNAVAILABLE;
-        CheckpointGateResult.NoWorkflowReason unknownCheckpoint =
-                CheckpointGateResult.NoWorkflowReason.UNKNOWN_CHECKPOINT;
-        CheckpointGateResult.NoWorkflowReason invalidCheckpointIdentifier =
-                CheckpointGateResult.NoWorkflowReason.INVALID_CHECKPOINT_IDENTIFIER;
-        CheckpointGateResult.NoWorkflowReason error = CheckpointGateResult.NoWorkflowReason.ERROR;
+    static void checkNoActionReason() {
+        CheckpointGateResult.NoActionReason noMatch = CheckpointGateResult.NoActionReason.NO_MATCH;
+        CheckpointGateResult.NoActionReason holdout = CheckpointGateResult.NoActionReason.HOLDOUT;
+        CheckpointGateResult.NoActionReason frequencyCapped =
+                CheckpointGateResult.NoActionReason.FREQUENCY_CAPPED;
+        CheckpointGateResult.NoActionReason configurationUnavailable =
+                CheckpointGateResult.NoActionReason.CONFIGURATION_UNAVAILABLE;
+        CheckpointGateResult.NoActionReason unknownCheckpoint =
+                CheckpointGateResult.NoActionReason.UNKNOWN_CHECKPOINT;
+        CheckpointGateResult.NoActionReason invalidCheckpointIdentifier =
+                CheckpointGateResult.NoActionReason.INVALID_CHECKPOINT_IDENTIFIER;
+        CheckpointGateResult.NoActionReason error = CheckpointGateResult.NoActionReason.ERROR;
     }
 }

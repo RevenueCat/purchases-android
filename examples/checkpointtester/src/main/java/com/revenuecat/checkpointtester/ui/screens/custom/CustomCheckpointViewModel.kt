@@ -42,17 +42,17 @@ class CustomCheckpointViewModel : ViewModel() {
     @OptIn(InternalRevenueCatAPI::class)
     private fun CheckpointGateResult.toUiState(): UiState {
         val error = error
-        val noWorkflowReason = noWorkflowReason
+        val noActionReason = noActionReason
         return when {
-            error != null && noWorkflowReason != null -> UiState(
+            error != null && noActionReason != null -> UiState(
                 title = "Failed",
                 detail = "${error.code}: ${error.message}",
                 raw = toString(),
                 isError = true,
             )
-            noWorkflowReason != null -> UiState(
-                title = "No workflow served",
-                detail = "Reason: $noWorkflowReason",
+            noActionReason != null -> UiState(
+                title = "Nothing served",
+                detail = "Reason: $noActionReason",
                 raw = toString(),
             )
             else -> UiState(

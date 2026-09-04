@@ -34,7 +34,7 @@ internal fun CheckpointResult.toGateResult(activeEntitlementsBefore: Set<String>
     when (this) {
         is CheckpointResult.NoAction -> CheckpointGateResult(
             entitlements = emptyList(),
-            noWorkflowReason = reason.toNoWorkflowReason(),
+            noActionReason = reason.toNoActionReason(),
             error = null,
         )
         is CheckpointResult.PaywallPresented -> paywallOutcome.toGateResult(activeEntitlementsBefore)
@@ -50,19 +50,19 @@ internal fun CheckpointResult.toGateResult(activeEntitlementsBefore: Set<String>
  * fails when one of them falls into the pass-through branch, which only exists for reason values a newer
  * producer sends at runtime.
  */
-private fun CheckpointResult.NoAction.Reason.toNoWorkflowReason(): CheckpointGateResult.NoWorkflowReason =
+private fun CheckpointResult.NoAction.Reason.toNoActionReason(): CheckpointGateResult.NoActionReason =
     when (this) {
-        CheckpointResult.NoAction.Reason.NO_MATCH -> CheckpointGateResult.NoWorkflowReason.NO_MATCH
-        CheckpointResult.NoAction.Reason.HOLDOUT -> CheckpointGateResult.NoWorkflowReason.HOLDOUT
+        CheckpointResult.NoAction.Reason.NO_MATCH -> CheckpointGateResult.NoActionReason.NO_MATCH
+        CheckpointResult.NoAction.Reason.HOLDOUT -> CheckpointGateResult.NoActionReason.HOLDOUT
         CheckpointResult.NoAction.Reason.FREQUENCY_CAPPED ->
-            CheckpointGateResult.NoWorkflowReason.FREQUENCY_CAPPED
+            CheckpointGateResult.NoActionReason.FREQUENCY_CAPPED
         CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE ->
-            CheckpointGateResult.NoWorkflowReason.CONFIGURATION_UNAVAILABLE
+            CheckpointGateResult.NoActionReason.CONFIGURATION_UNAVAILABLE
         CheckpointResult.NoAction.Reason.UNKNOWN_CHECKPOINT ->
-            CheckpointGateResult.NoWorkflowReason.UNKNOWN_CHECKPOINT
+            CheckpointGateResult.NoActionReason.UNKNOWN_CHECKPOINT
         CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER ->
-            CheckpointGateResult.NoWorkflowReason.INVALID_CHECKPOINT_IDENTIFIER
-        else -> CheckpointGateResult.NoWorkflowReason(value)
+            CheckpointGateResult.NoActionReason.INVALID_CHECKPOINT_IDENTIFIER
+        else -> CheckpointGateResult.NoActionReason(value)
     }
 
 private fun CheckpointPaywallOutcome.toGateResult(activeEntitlementsBefore: Set<String>?): CheckpointGateResult =
@@ -89,12 +89,12 @@ private fun workflowGateResult(
     error: PurchasesError? = null,
 ): CheckpointGateResult = CheckpointGateResult(
     entitlements = entitlements,
-    noWorkflowReason = null,
+    noActionReason = null,
     error = error,
 )
 
 internal fun errorGateResult(error: PurchasesError): CheckpointGateResult = CheckpointGateResult(
     entitlements = emptyList(),
-    noWorkflowReason = CheckpointGateResult.NoWorkflowReason.ERROR,
+    noActionReason = CheckpointGateResult.NoActionReason.ERROR,
     error = error,
 )

@@ -9,13 +9,13 @@ import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointGateResult
 @OptIn(InternalRevenueCatAPI::class)
 fun CheckpointGateResult.summary(): String {
     val error = error
-    val noWorkflowReason = noWorkflowReason
+    val noActionReason = noActionReason
     return when {
         entitlements.isNotEmpty() ->
             "Obtained ${entitlements.joinToString { it.identifier }}."
-        error != null && noWorkflowReason != null -> "Checkpoint failed: ${error.message}"
+        error != null && noActionReason != null -> "Checkpoint failed: ${error.message}"
         error != null -> "Workflow finished with an error: ${error.message}"
-        noWorkflowReason != null -> "No workflow served ($noWorkflowReason)."
+        noActionReason != null -> "Nothing served ($noActionReason)."
         else -> "Workflow finished without the user obtaining anything."
     }
 }

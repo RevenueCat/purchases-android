@@ -78,8 +78,8 @@ class CheckpointGateTest {
         val gateResults = checkpointGate()
 
         assertThat(gateResults).hasSize(1)
-        assertThat(gateResults.single().noWorkflowReason)
-            .isEqualTo(CheckpointGateResult.NoWorkflowReason.UNKNOWN_CHECKPOINT)
+        assertThat(gateResults.single().noActionReason)
+            .isEqualTo(CheckpointGateResult.NoActionReason.UNKNOWN_CHECKPOINT)
     }
 
     @Test
@@ -88,8 +88,8 @@ class CheckpointGateTest {
 
         manager.checkpointGate(mockPurchases, " bad😀", null) { gateResults += it }
 
-        assertThat(gateResults.single().noWorkflowReason)
-            .isEqualTo(CheckpointGateResult.NoWorkflowReason.INVALID_CHECKPOINT_IDENTIFIER)
+        assertThat(gateResults.single().noActionReason)
+            .isEqualTo(CheckpointGateResult.NoActionReason.INVALID_CHECKPOINT_IDENTIFIER)
     }
 
     @Test
@@ -105,7 +105,7 @@ class CheckpointGateTest {
 
         assertThat(gateResults.single().entitlements)
             .containsExactly(EntitlementGrant("pro"))
-        assertThat(gateResults.single().noWorkflowReason).isNull()
+        assertThat(gateResults.single().noActionReason).isNull()
     }
 
     @Test
@@ -121,7 +121,7 @@ class CheckpointGateTest {
 
             assertThat(gateResults.single().entitlements)
                 .containsExactly(EntitlementGrant("pro"))
-            assertThat(gateResults.single().noWorkflowReason).isNull()
+            assertThat(gateResults.single().noActionReason).isNull()
             assertThat(gateResults.single().error).isNull()
         }
 
@@ -147,7 +147,7 @@ class CheckpointGateTest {
 
         val gateResults = checkpointGate()
 
-        assertThat(gateResults.single().noWorkflowReason).isEqualTo(CheckpointGateResult.NoWorkflowReason.ERROR)
+        assertThat(gateResults.single().noActionReason).isEqualTo(CheckpointGateResult.NoActionReason.ERROR)
         assertThat(gateResults.single().error?.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
     }
 
