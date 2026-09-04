@@ -16,6 +16,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
@@ -110,6 +111,7 @@ public class PaywallView : CompatComposeView {
         override fun onRestoreError(error: PurchasesError) { listener?.onRestoreError(error) }
         override fun onWebCheckoutOpened() { listener?.onWebCheckoutOpened() }
         override fun onUrlOpened(url: String) { listener?.onUrlOpened(url) }
+        override fun onInteraction(event: PaywallInteractionEvent) { listener?.onInteraction(event) }
     }
 
     private var paywallOptions: PaywallOptions
