@@ -7,15 +7,17 @@ import com.revenuecat.purchases.PurchasesException
 
 /**
  * Registers that [checkpointIdentifier] was hit. Depending on the configured targeting rules, this may
- * auto-present an experience or do nothing. [callback] is invoked exactly once, on the main thread, when the
- * checkpoint finishes: immediately when nothing is presented, or once the presented experience reaches a
- * terminal state. It reports what the user obtained while going through the checkpoint, if anything.
+ * auto-present an experience or do nothing. [callback] may be invoked at most once, on the main thread, when the
+ * checkpoint finishes:
+ * - If the checkpoint is configured as a hard gate in the dashboard, only if the customer has any entitlement before or
+ * while going through the checkpoint.
+ * - If the checkpoint is configured as a soft gate in the dashboard (default), if the user has any entitlement before
+ * going through the checkpoint, or if the user finishes the entire flow experience.
+ *
+ * It reports what the user obtained while going through the checkpoint, if anything.
  *
  * This call never throws; failures are reported through the result's
  * [error][CheckpointGateResult.error].
- *
- * Note: the callback firing unconditionally is temporary. Future versions will support gate conditions,
- * invoking the callback only when the configured conditions pass.
  *
  * @param checkpointIdentifier The checkpoint identifier, as configured in the RevenueCat dashboard. It must start
  * with an ASCII letter, contain only ASCII letters, numbers, underscores, and hyphens, and be no more than 255
