@@ -320,7 +320,7 @@ private fun StackWithLongEdgeToEdgeBadge(
                 // We make the badge use all the available width without increasing the size of the main content.
                 badgeStack.copy(
                     background = null,
-                    size = Size(width = Fill, height = badgeStack.size.height),
+                    size = Size(width = Fill(), height = badgeStack.size.height),
                     border = null,
                     margin = PaddingValues(0.dp),
                 ),
@@ -621,7 +621,7 @@ private fun MainStackComponent(
                     // Skip weight() for a Fill child when this Row's width axis is unbounded (else it
                     // collapses to zero). See Modifier.trackMainAxisUnbounded; only tracked when a Fill
                     // child could be affected.
-                    val hasFillWidthChild = stackState.children.any { it.size.width == Fill }
+                    val hasFillWidthChild = stackState.children.any { it.size.width is Fill }
                     val mainAxisUnbounded = remember { mutableStateOf(false) }
                     HorizontalStack(
                         size = stackState.size,
@@ -644,7 +644,7 @@ private fun MainStackComponent(
                                 onClick = clickHandler,
                                 componentInteractionTracker = componentInteractionTracker,
                                 modifier = Modifier
-                                    .conditional(child.size.width == Fill && !mainAxisUnbounded.value) {
+                                    .conditional(child.size.width is Fill && !mainAxisUnbounded.value) {
                                         Modifier.weight(1f)
                                     }
                                     .conditional(
@@ -660,7 +660,7 @@ private fun MainStackComponent(
 
                 is Dimension.Vertical -> {
                     // See the Horizontal branch above for why this exists.
-                    val hasFillHeightChild = stackState.children.any { it.size.height == Fill }
+                    val hasFillHeightChild = stackState.children.any { it.size.height is Fill }
                     val mainAxisUnbounded = remember { mutableStateOf(false) }
                     VerticalStack(
                         size = stackState.size,
@@ -683,7 +683,7 @@ private fun MainStackComponent(
                                 onClick = clickHandler,
                                 componentInteractionTracker = componentInteractionTracker,
                                 modifier = Modifier
-                                    .conditional(child.size.height == Fill && !mainAxisUnbounded.value) {
+                                    .conditional(child.size.height is Fill && !mainAxisUnbounded.value) {
                                         Modifier.weight(1f)
                                     }
                                     .conditional(
@@ -1577,12 +1577,12 @@ private fun StackComponentView_Preview_HorizontalChildrenFillWidth() {
                 previewTextComponentStyle(
                     text = "Hello",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Yellow)),
-                    size = Size(width = Fill, height = Fit()),
+                    size = Size(width = Fill(), height = Fit()),
                 ),
                 previewTextComponentStyle(
                     text = "World",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Blue)),
-                    size = Size(width = Fill, height = Fit()),
+                    size = Size(width = Fill(), height = Fit()),
                 ),
             ),
             dimension = Dimension.Horizontal(
@@ -1620,12 +1620,12 @@ private fun StackComponentView_Preview_VerticalChildrenFillHeight() {
                 previewTextComponentStyle(
                     text = "Hello",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Yellow)),
-                    size = Size(width = Fit(), height = Fill),
+                    size = Size(width = Fit(), height = Fill()),
                 ),
                 previewTextComponentStyle(
                     text = "World",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Blue)),
-                    size = Size(width = Fit(), height = Fill),
+                    size = Size(width = Fit(), height = Fill()),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1781,7 +1781,7 @@ private fun StackComponentView_Preview_Distribution_SpaceAround_With_Fill_Childr
                 previewTextComponentStyle(
                     text = "Hello",
                     backgroundColor = ColorStyles(ColorStyle.Solid(Color.Yellow)),
-                    size = Size(width = Fill, height = Fit()),
+                    size = Size(width = Fill(), height = Fit()),
                 ),
                 previewTextComponentStyle(
                     text = "SPACE_AROUND",
@@ -1885,7 +1885,7 @@ private fun StackComponentView_Preview_HorizontalDivider() {
             style = previewStackComponentStyle(
                 children = emptyList(),
                 visible = true,
-                size = Size(width = Fill, height = Fixed(1u)),
+                size = Size(width = Fill(), height = Fixed(1u)),
                 dimension = Dimension.Vertical(
                     alignment = HorizontalAlignment.LEADING,
                     FlexDistribution.SPACE_BETWEEN,
@@ -1920,7 +1920,7 @@ private fun StackComponentView_Preview_VerticalDivider() {
             style = previewStackComponentStyle(
                 children = emptyList(),
                 visible = true,
-                size = Size(width = Fixed(1u), height = Fill),
+                size = Size(width = Fixed(1u), height = Fill()),
                 dimension = Dimension.Horizontal(alignment = VerticalAlignment.TOP, FlexDistribution.SPACE_BETWEEN),
                 spacing = 0.dp,
                 // Explicitly applying horizontal margin to make sure it doesn't "eat up" the divider.

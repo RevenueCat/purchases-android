@@ -119,11 +119,7 @@ internal object AccessorOperators {
      */
     fun opMissingSome(args: Value, vars: Scope): Value {
         val evaluated = Operators.evalArgs(args, vars)
-        if (evaluated.size != 2) {
-            throw EvaluationException.TypeMismatch(
-                "operator 'missing_some' expects 2 arguments, got ${evaluated.size}",
-            )
-        }
+        Operators.checkArity(evaluated.size, listOf(2), "missing_some")
         val needCountValue = evaluated[0]
 
         // json-logic-js computes `missing.apply(this, [options])` for the

@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.remoteconfig.GenerationGuardedCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
+import com.revenuecat.purchases.common.remoteconfig.readConsistent
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
 import kotlinx.coroutines.CoroutineScope
@@ -93,38 +94,37 @@ internal class WorkflowsConfigProvider(
             return cached.offeringToWorkflowId[offeringId]?.let { WorkflowResolution.Found(it) }
                 ?: WorkflowResolution.NoWorkflow
         }
-        val generation = manager.configGeneration
-        val topic = manager.topic(RemoteConfigTopic.Workflows)
-        verboseLog { "workflows topic ${if (topic == null) "is absent" else "has ${topic.size} item(s)"}" }
-        // A null topic means it could not be read (a failed or not-yet-run sync). The caller should fall back to
-        // the offering's default paywall; this is not the same as a genuinely workflowless offering.
-        return if (topic == null) {
-            verboseLog { "Workflows topic unavailable resolving offering '$offeringId'" }
-            WorkflowResolution.Unavailable
-        } else {
-            val matches = topic.entries
-                .filter { (_, item) -> item.metadata.stringOrNull(KEY_OFFERING_IDENTIFIER) == offeringId }
-            if (matches.size > 1) {
-                warnLog { "Duplicate offering_identifier '$offeringId' in workflows topic: ${matches.map { it.key }}" }
-            }
-            // Last entry wins on duplicates.
-            val workflowId = matches.lastOrNull()?.key
-            verboseLog {
-                if (workflowId != null) {
-                    "Resolved offering '$offeringId' to workflow '$workflowId'"
-                } else {
-                    "No workflow found for offering '$offeringId'"
-                }
-            }
-            // If an identity-change invalidation advanced the generation while the topic was read, the resolved
-            // id may belong to the previous user; prefer whatever the (now newer) cache holds instead.
-            val resolvedId = if (cache.isCurrent(generation)) {
-                workflowId
+        // Superseded on both attempts: an id resolved against a generation that moved may belong to the previous
+        // user, and there is nothing trustworthy to serve. Callers treat Unavailable as "fall back to the
+        // offering's default paywall".
+        return manager.readConsistent(what = { "the workflow for offering '$offeringId'" }) { _ ->
+            val topic = manager.topic(RemoteConfigTopic.Workflows)
+            verboseLog { "workflows topic ${if (topic == null) "is absent" else "has ${topic.size} item(s)"}" }
+            // A null topic means it could not be read (a failed or not-yet-run sync). The caller should fall
+            // back to the offering's default paywall; this is not the same as a genuinely workflowless offering.
+            if (topic == null) {
+                verboseLog { "Workflows topic unavailable resolving offering '$offeringId'" }
+                WorkflowResolution.Unavailable
             } else {
-                cache.cached?.offeringToWorkflowId?.get(offeringId)
+                val matches = topic.entries
+                    .filter { (_, item) -> item.metadata.stringOrNull(KEY_OFFERING_IDENTIFIER) == offeringId }
+                if (matches.size > 1) {
+                    warnLog {
+                        "Duplicate offering_identifier '$offeringId' in workflows topic: ${matches.map { it.key }}"
+                    }
+                }
+                // Last entry wins on duplicates.
+                val workflowId = matches.lastOrNull()?.key
+                verboseLog {
+                    if (workflowId != null) {
+                        "Resolved offering '$offeringId' to workflow '$workflowId'"
+                    } else {
+                        "No workflow found for offering '$offeringId'"
+                    }
+                }
+                workflowId?.let { WorkflowResolution.Found(it) } ?: WorkflowResolution.NoWorkflow
             }
-            resolvedId?.let { WorkflowResolution.Found(it) } ?: WorkflowResolution.NoWorkflow
-        }
+        } ?: WorkflowResolution.Unavailable
     }
 
     /** The resolved workflow id for [offeringId], or `null` when none is mapped or the topic is unavailable. */
@@ -152,14 +152,10 @@ internal class WorkflowsConfigProvider(
      */
     suspend fun getWorkflow(workflowId: String): PublishedWorkflow? {
         cache.cached?.workflows?.get(workflowId)?.let { return it.value }
-        val generation = manager.configGeneration
-        val workflow = resolveWorkflowBody(workflowId)
-        // If an identity-change invalidation advanced the generation while the body was resolved, it may belong
-        // to the previous user; prefer whatever the (now newer) cache holds instead of serving it.
-        return when {
-            workflow == null -> null
-            cache.isCurrent(generation) -> workflow
-            else -> cache.cached?.workflows?.get(workflowId)?.value
+        // A body resolved against a generation that moved may belong to the previous user; readConsistent
+        // re-resolves it once against the new state instead of serving it.
+        return manager.readConsistent(what = { "workflow '$workflowId'" }) { _ ->
+            resolveWorkflowBody(workflowId)
         }
     }
 

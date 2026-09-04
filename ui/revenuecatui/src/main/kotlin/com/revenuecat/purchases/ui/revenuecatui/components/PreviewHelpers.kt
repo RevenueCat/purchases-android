@@ -206,7 +206,7 @@ internal fun previewTextComponentStyle(
     horizontalAlignment: HorizontalAlignment = HorizontalAlignment.CENTER,
     backgroundColor: ColorStyles? = null,
     visible: Boolean = true,
-    size: Size = Size(width = Fill, height = Fit()),
+    size: Size = Size(width = Fill(), height = Fit()),
     padding: Padding = zero,
     margin: Padding = zero,
     tabIndex: Int? = null,

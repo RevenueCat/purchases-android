@@ -8,6 +8,8 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.jsonObject
@@ -31,6 +33,7 @@ internal class AudiencesConfigProviderTest {
             override fun w(tag: String, msg: String) {}
             override fun e(tag: String, msg: String, throwable: Throwable?) {}
         }
+        every { manager.configGeneration } returns 0
     }
 
     @After
@@ -86,6 +89,26 @@ internal class AudiencesConfigProviderTest {
         assertThat(provider.getAudience("valid")).isEqualTo(
             Audience(id = "valid", rules = """{"==":[1,1]}"""),
         )
+    }
+
+    @Test
+    fun `getAudience reads again when the config generation changes during the read`() = runTest {
+        every { manager.configGeneration } returnsMany listOf(0, 1)
+        returnMetadata("aud_123" to """{"id":"aud_123","rules":{"==":[1,1]}}""")
+
+        assertThat(provider.getAudience("aud_123")).isEqualTo(
+            Audience(id = "aud_123", rules = """{"==":[1,1]}"""),
+        )
+        coVerify(exactly = 2) { manager.topic(RemoteConfigTopic.Audiences) }
+    }
+
+    @Test
+    fun `getAudience returns null when the config changes during both reads`() = runTest {
+        every { manager.configGeneration } returnsMany listOf(0, 1, 1, 2)
+        returnMetadata("aud_123" to """{"id":"aud_123","rules":{"==":[1,1]}}""")
+
+        assertThat(provider.getAudience("aud_123")).isNull()
+        coVerify(exactly = 2) { manager.topic(RemoteConfigTopic.Audiences) }
     }
 
     private fun returnMetadata(vararg audiences: Pair<String, String>) {

@@ -54,6 +54,29 @@ class SimulatedStoreProductConverterTest {
     }
 
     @Test
+    fun `converts a 19_99 test store price without a one cent underflow`() {
+        val productResponse = WebBillingProductResponse(
+            identifier = "test_product",
+            productType = "subscription",
+            title = "Test Product",
+            defaultPurchaseOptionId = "option1",
+            purchaseOptions = mapOf(
+                "option1" to WebBillingPurchaseOption(
+                    basePrice = WebBillingPrice(
+                        amountMicros = 19_990_000L,
+                        currency = "USD",
+                    ),
+                ),
+            ),
+        )
+
+        val result = convertToStoreProduct(productResponse)
+
+        assertThat(result.price.amountMicros).isEqualTo(19_990_000L)
+        assertThat(result.price.formatted).isEqualTo("$19.99")
+    }
+
+    @Test
     fun `converts subscription product correctly`() {
         val productResponse = WebBillingProductResponse(
             identifier = "sub_product",

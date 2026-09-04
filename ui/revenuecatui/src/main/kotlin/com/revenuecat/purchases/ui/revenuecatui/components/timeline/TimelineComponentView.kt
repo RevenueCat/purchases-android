@@ -254,7 +254,7 @@ private fun TimelineComponentView_Connector_Margin_Preview() {
 private class SizeParameterProvider : PreviewParameterProvider<Size> {
     private val allSizeConstraints = listOf(
         SizeConstraint.Fit(),
-        SizeConstraint.Fill,
+        SizeConstraint.Fill(),
         SizeConstraint.Fixed(200u),
     )
     override val values: Sequence<Size> = allSizeConstraints
@@ -293,7 +293,7 @@ private fun TimelineComponentView_Size_Preview(
 private class SizeConstraintParameterProvider : PreviewParameterProvider<SizeConstraint> {
     override val values: Sequence<SizeConstraint> = sequenceOf(
         SizeConstraint.Fit(),
-        SizeConstraint.Fill,
+        SizeConstraint.Fill(),
         SizeConstraint.Fixed(100u),
     )
 }
@@ -394,7 +394,7 @@ private fun previewStyle(
     columnGutter: Int = 8,
     iconAlignment: TimelineComponent.IconAlignment = TimelineComponent.IconAlignment.TitleAndDescription,
     visible: Boolean = true,
-    size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+    size: Size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
     padding: PaddingValues = PaddingValues(all = 5.dp),
     margin: PaddingValues = PaddingValues(all = 5.dp),
     items: List<TimelineComponentStyle.ItemStyle> = previewItems(),
