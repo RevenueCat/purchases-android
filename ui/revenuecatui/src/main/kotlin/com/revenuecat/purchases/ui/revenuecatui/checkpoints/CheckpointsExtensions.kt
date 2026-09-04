@@ -9,10 +9,10 @@ import com.revenuecat.purchases.PurchasesException
  * Registers that [checkpointIdentifier] was hit. Depending on the configured targeting rules, this may
  * auto-present an experience or do nothing. [callback] may be invoked at most once, on the main thread, when the
  * checkpoint finishes:
- * - If the checkpoint is configured as a hard gate in the dashboard, only if the customer has any entitlement before or
- * while going through the checkpoint.
- * - If the checkpoint is configured as a soft gate in the dashboard (default), if the user has any entitlement before
- * going through the checkpoint, or if the user finishes the entire flow experience.
+ * - If the checkpoint is configured as a hard gate in the dashboard, only if the customer
+ * does not match any rule when entering the checkpoint or if getting an entitlement while going through the checkpoint.
+ * - If the checkpoint is configured as a soft gate in the dashboard (default), only if the customer
+ * does not match any rule when entering the checkpoint, or if the user finishes the entire flow experience.
  *
  * It reports what the user obtained while going through the checkpoint, if anything.
  *
