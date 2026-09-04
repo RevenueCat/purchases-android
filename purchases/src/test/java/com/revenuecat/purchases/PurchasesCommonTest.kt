@@ -2207,6 +2207,51 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
     }
 
     @Test
+    fun `getCustomerInfo for a given app user ID asks about exactly that user`() {
+        val callback = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
+
+        purchases.purchasesOrchestrator.getCustomerInfo(
+            appUserID = "other_user",
+            fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
+            trackDiagnostics = true,
+            callback = callback,
+        )
+
+        verify(exactly = 1) {
+            mockCustomerInfoHelper.retrieveCustomerInfo(
+                "other_user",
+                CacheFetchPolicy.FETCH_CURRENT,
+                appInBackground = false,
+                allowSharingPlayStoreAccount = false,
+                trackDiagnostics = true,
+                callback = callback,
+            )
+        }
+    }
+
+    @Test
+    fun `getCustomerInfo without an explicit app user ID asks about the current user`() {
+        val callback = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
+
+        purchases.purchasesOrchestrator.getCustomerInfo(
+            fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
+            trackDiagnostics = false,
+            callback = callback,
+        )
+
+        verify(exactly = 1) {
+            mockCustomerInfoHelper.retrieveCustomerInfo(
+                appUserId,
+                CacheFetchPolicy.FETCH_CURRENT,
+                appInBackground = false,
+                allowSharingPlayStoreAccount = false,
+                trackDiagnostics = false,
+                callback = callback,
+            )
+        }
+    }
+
+    @Test
     fun `fetch customer info on foregrounded if it's stale`() {
         mockCacheStale(customerInfoStale = true)
         mockSynchronizeSubscriberAttributesForAllUsers()

@@ -9,7 +9,6 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
-import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider.Companion.KEY_EVALUATED_AT
 import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider.Companion.KEY_UPDATED_AT
 import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider.Companion.KEY_VALUE
 import com.revenuecat.purchases.rules.RulesEngine
@@ -73,6 +72,7 @@ class SubscriberAttributesDimensionIntegrationTest {
                     attributesCache.getAllStoredSubscriberAttributes(cache.getCachedAppUserID() ?: "")
                 },
             ),
+            currentAppUserId = { cache.getCachedAppUserID() ?: "" },
             dateProvider = object : DateProvider {
                 override val now: Date get() = evaluationDate
             },
@@ -89,14 +89,13 @@ class SubscriberAttributesDimensionIntegrationTest {
 
         val goal = values.recordFor("goal")
         assertThat(goal[KEY_VALUE]).isEqualTo(Value.StringValue("lose_weight"))
-        assertThat(goal[KEY_EVALUATED_AT]).isEqualTo(Value.IntValue(evaluationDate.time))
         // Set by this device just now, so it survived the round-trip through JSON with the value.
         assertThat((goal[KEY_UPDATED_AT] as Value.IntValue).value).isBetween(before.time, Date().time)
 
         assertThat(
             RulesEngine.evaluate(
-                """{"and": [{"==": [{"var": "subscriberAttributes.goal.value"}, "lose_weight"]},
-                    {"==": [{"var": "subscriberAttributes.seats.value"}, 3]}]}""",
+                """{"and": [{"==": [{"var": "subscriber_attributes.goal.value"}, "lose_weight"]},
+                    {"==": [{"var": "subscriber_attributes.seats.value"}, 3]}]}""",
                 values,
             ).getOrThrow(),
         ).isTrue()
@@ -111,7 +110,7 @@ class SubscriberAttributesDimensionIntegrationTest {
 
         assertThat(
             RulesEngine.evaluate(
-                """{"==": [{"var": "subscriberAttributes.${'$'}email.value"}, "jane@example.com"]}""",
+                """{"==": [{"var": "subscriber_attributes.${'$'}email.value"}, "jane@example.com"]}""",
                 values,
             ).getOrThrow(),
         ).isTrue()
@@ -132,13 +131,13 @@ class SubscriberAttributesDimensionIntegrationTest {
     }
 
     @Test
-    fun `a customer the app has said nothing about contributes no namespace`() = runTest {
+    fun `a customer the app has said nothing about contributes no root`() = runTest {
         attributes.setAttributes(mapOf("goal" to "lose_weight"), "user_a")
         cache.cacheAppUserID("user_b")
 
         val values = resolver.snapshot().getOrThrow().values
 
-        assertThat(values).doesNotContainKey("subscriberAttributes")
+        assertThat(values).doesNotContainKey("subscriber_attributes")
     }
 
     @Test
@@ -149,7 +148,7 @@ class SubscriberAttributesDimensionIntegrationTest {
         attributes.setAttributes(mapOf("goal" to null), "user_a")
 
         val values = resolver.snapshot().getOrThrow().values
-        assertThat((values["subscriberAttributes"] as Value.ObjectValue).entries).containsOnlyKeys("tier")
+        assertThat((values["subscriber_attributes"] as Value.ObjectValue).entries).containsOnlyKeys("tier")
         // The deletion is still on disk waiting to be posted; it is the scope that leaves it out, not the cache.
         assertThat(attributesCache.getAllStoredSubscriberAttributes("user_a")).containsKey("goal")
     }
@@ -161,9 +160,9 @@ class SubscriberAttributesDimensionIntegrationTest {
 
         val values = resolver.snapshot().getOrThrow().values
 
-        assertThat((values["subscriberAttributes"] as Value.ObjectValue).entries).containsOnlyKeys("tier")
+        assertThat((values["subscriber_attributes"] as Value.ObjectValue).entries).containsOnlyKeys("tier")
     }
 
     private fun Map<String, Value>.recordFor(name: String): Map<String, Value> =
-        ((this["subscriberAttributes"] as Value.ObjectValue).entries[name] as Value.ObjectValue).entries
+        ((this["subscriber_attributes"] as Value.ObjectValue).entries[name] as Value.ObjectValue).entries
 }

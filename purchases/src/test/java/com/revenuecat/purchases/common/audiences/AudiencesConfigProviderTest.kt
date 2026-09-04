@@ -1,18 +1,14 @@
 package com.revenuecat.purchases.common.audiences
 
-import com.revenuecat.purchases.JsonTools
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.common.currentLogHandler
-import com.revenuecat.purchases.common.remoteconfig.ConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
-import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.jsonObject
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -47,76 +43,104 @@ internal class AudiencesConfigProviderTest {
     }
 
     @Test
-    fun `getAudience decodes a typed audience and ignores unknown fields`() = runTest {
-        returnMetadata(
-            "aud_123" to """
+    fun `the default blob decodes typed audiences and ignores unknown fields`() = runTest {
+        returnDefaultBlob(
+            """
             {
-              "id": "aud_123",
-              "created_via": "dashboard",
-              "rules": { "and": [{ "var": "country" }, true] }
+              "aud_123": {
+                "id": "aud_123",
+                "created_via": "dashboard",
+                "rules": { "and": [{ "var": "country" }, true] }
+              },
+              "aud_456": {
+                "id": "aud_456",
+                "rules": { "==": [1, 1] }
+              }
             }
             """.trimIndent(),
         )
 
-        assertThat(provider.getAudience("aud_123")).isEqualTo(
-            Audience(
-                id = "aud_123",
-                rules = """{"and":[{"var":"country"},true]}""",
+        assertThat(provider.getAudiences()).isEqualTo(
+            mapOf(
+                "aud_123" to Audience(id = "aud_123", rules = """{"and":[{"var":"country"},true]}"""),
+                "aud_456" to Audience(id = "aud_456", rules = """{"==":[1,1]}"""),
             ),
         )
     }
 
     @Test
-    fun `getAudience returns null for missing or invalid metadata`() = runTest {
-        returnMetadata(
-            "missing-id" to """{"rules":{"==":[1,1]}}""",
-            "array-rules" to """{"id":"array-rules","rules":[1,2,3]}""",
-        )
+    fun `a missing default blob makes the audiences unavailable`() = runTest {
+        returnNoDefaultBlob()
 
-        assertThat(provider.getAudience("missing-id")).isNull()
-        assertThat(provider.getAudience("array-rules")).isNull()
-        assertThat(provider.getAudience("unknown")).isNull()
+        assertThat(provider.getAudiences()).isNull()
     }
 
     @Test
-    fun `a malformed audience does not prevent reading another audience`() = runTest {
-        returnMetadata(
-            "invalid" to """{"id":"invalid","rules":[]}""",
-            "valid" to """{"id":"valid","rules":{"==":[1,1]}}""",
+    fun `a blob that is not a JSON object makes the audiences unavailable`() = runTest {
+        returnDefaultBlob("""[{"id":"aud_123"}]""")
+
+        assertThat(provider.getAudiences()).isNull()
+    }
+
+    @Test
+    fun `a malformed blob makes the audiences unavailable`() = runTest {
+        returnDefaultBlob("{not json")
+
+        assertThat(provider.getAudiences()).isNull()
+    }
+
+    @Test
+    fun `a malformed audience is dropped without dropping the others`() = runTest {
+        returnDefaultBlob(
+            """
+            {
+              "missing-id": { "rules": { "==": [1, 1] } },
+              "array-rules": { "id": "array-rules", "rules": [1, 2, 3] },
+              "valid": { "id": "valid", "rules": { "==": [1, 1] } }
+            }
+            """.trimIndent(),
         )
 
-        assertThat(provider.getAudience("invalid")).isNull()
-        assertThat(provider.getAudience("valid")).isEqualTo(
-            Audience(id = "valid", rules = """{"==":[1,1]}"""),
+        assertThat(provider.getAudiences()).isEqualTo(
+            mapOf("valid" to Audience(id = "valid", rules = """{"==":[1,1]}""")),
         )
     }
 
     @Test
-    fun `getAudience reads again when the config generation changes during the read`() = runTest {
+    fun `getAudiences reads again when the config generation changes during the read`() = runTest {
         every { manager.configGeneration } returnsMany listOf(0, 1)
-        returnMetadata("aud_123" to """{"id":"aud_123","rules":{"==":[1,1]}}""")
+        returnDefaultBlob("""{"aud_123":{"id":"aud_123","rules":{"==":[1,1]}}}""")
 
-        assertThat(provider.getAudience("aud_123")).isEqualTo(
-            Audience(id = "aud_123", rules = """{"==":[1,1]}"""),
+        assertThat(provider.getAudiences()).isEqualTo(
+            mapOf("aud_123" to Audience(id = "aud_123", rules = """{"==":[1,1]}""")),
         )
-        coVerify(exactly = 2) { manager.topic(RemoteConfigTopic.Audiences) }
+        coVerify(exactly = 2) {
+            manager.blobData(RemoteConfigTopic.Audiences, "default", any<(ByteArray) -> Map<String, Audience>?>())
+        }
     }
 
     @Test
-    fun `getAudience returns null when the config changes during both reads`() = runTest {
+    fun `getAudiences returns null when the config changes during both reads`() = runTest {
         every { manager.configGeneration } returnsMany listOf(0, 1, 1, 2)
-        returnMetadata("aud_123" to """{"id":"aud_123","rules":{"==":[1,1]}}""")
+        returnDefaultBlob("""{"aud_123":{"id":"aud_123","rules":{"==":[1,1]}}}""")
 
-        assertThat(provider.getAudience("aud_123")).isNull()
-        coVerify(exactly = 2) { manager.topic(RemoteConfigTopic.Audiences) }
+        assertThat(provider.getAudiences()).isNull()
+        coVerify(exactly = 2) {
+            manager.blobData(RemoteConfigTopic.Audiences, "default", any<(ByteArray) -> Map<String, Audience>?>())
+        }
     }
 
-    private fun returnMetadata(vararg audiences: Pair<String, String>) {
-        val items = audiences.associate { (identifier, json) ->
-            identifier to RemoteConfiguration.ConfigItem(
-                metadata = JsonTools.json.parseToJsonElement(json).jsonObject,
-            )
+    private fun returnDefaultBlob(json: String) {
+        coEvery {
+            manager.blobData(RemoteConfigTopic.Audiences, "default", any<(ByteArray) -> Map<String, Audience>?>())
+        } answers {
+            thirdArg<(ByteArray) -> Map<String, Audience>?>()(json.toByteArray())
         }
-        coEvery { manager.topic(RemoteConfigTopic.Audiences) } returns ConfigTopic(items)
+    }
+
+    private fun returnNoDefaultBlob() {
+        coEvery {
+            manager.blobData(RemoteConfigTopic.Audiences, "default", any<(ByteArray) -> Map<String, Audience>?>())
+        } returns null
     }
 }

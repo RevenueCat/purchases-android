@@ -31,6 +31,15 @@ public sealed class RulesDimensionValue {
     public data class DateValue(val value: Date) : RulesDimensionValue()
 
     /**
+     * An explicit null a source states for a name it does have, as opposed to leaving the name out.
+     *
+     * Reaches the engine as JSON `null`: `var` resolves it instead of failing as an unresolved variable, `missing`
+     * still reports it, and it is falsy. For a source whose values are its own to state — the backend's — rather
+     * than one the SDK observes, where an unavailable value is omitted.
+     */
+    public object NullValue : RulesDimensionValue()
+
+    /**
      * A collection of records, for a dimension the customer has any number of rather than one of — their
      * purchases, their entitlements.
      *
@@ -48,7 +57,7 @@ public sealed class RulesDimensionValue {
      * A named group of values, for a dimension that is one thing described several ways — a subscriber attribute
      * and when it was set.
      *
-     * Reaches the engine as a nested object, which `var` walks by dot-path: `subscriberAttributes.goal.value`
+     * Reaches the engine as a nested object, which `var` walks by dot-path: `subscriber_attributes.goal.value`
      * resolves *through* `goal`. Unlike a record inside [ObjectListValue], a predicate reading one of these still
      * sees the whole scope around it, because no iteration operator is involved.
      *
