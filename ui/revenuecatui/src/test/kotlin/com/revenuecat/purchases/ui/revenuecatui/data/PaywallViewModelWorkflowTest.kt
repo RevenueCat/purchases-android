@@ -227,7 +227,8 @@ class PaywallViewModelWorkflowTest {
                 ),
             ),
             triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
-            paramValues = offeringParams(offeringId),
+            // Like the backend, only the paywall step carries the offering; this one falls back to its screen's.
+            paramValues = emptyMap(),
             // Context (non-paywall) step: tagged with an empty screen_type so it suppresses paywall events.
             metadata = screenTypeMetadata(),
         )
@@ -840,7 +841,7 @@ class PaywallViewModelWorkflowTest {
                 ),
             ),
             triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-B")),
-            paramValues = offeringParams(threeStepOfferingId),
+            paramValues = emptyMap(),
         )
         val stepB = WorkflowStep(
             id = "step-B",
@@ -855,7 +856,7 @@ class PaywallViewModelWorkflowTest {
                 ),
             ),
             triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-C")),
-            paramValues = offeringParams(threeStepOfferingId),
+            paramValues = emptyMap(),
         )
         val stepC = WorkflowStep(
             id = "step-C",
@@ -1793,9 +1794,28 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `initial step without an offering identifier errors instead of rendering`() {
+    fun `initial step without an offering identifier falls back to its screen's offering`() {
         val stepWithoutOffering = step1.copy(paramValues = emptyMap())
         val workflowWithoutOffering = workflow.copy(steps = mapOf("step-1" to stepWithoutOffering, "step-2" to step2))
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(workflowWithoutOffering, testOfferings, null, uiConfig)
+
+        val loaded = vm.workflowState.value?.stepStates?.get("step-1")
+        assertThat(loaded).isNotNull
+        assertThat(loaded!!.offering.identifier).isEqualTo(offeringId)
+    }
+
+    @Test
+    fun `initial step with no offering on the step or its screen errors instead of rendering`() {
+        val stepWithoutOffering = step1.copy(paramValues = emptyMap())
+        val workflowWithoutOffering = workflow.copy(
+            steps = mapOf("step-1" to stepWithoutOffering, "step-2" to step2),
+            screens = mapOf(
+                screenId1 to makeScreen(screenId1).copy(offeringIdentifier = null),
+                screenId2 to makeScreen(screenId2),
+            ),
+        )
 
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(workflowWithoutOffering, testOfferings, null, uiConfig)
@@ -1822,8 +1842,13 @@ class PaywallViewModelWorkflowTest {
     @Test
     fun `navigation to a step without an offering identifier is refused and keeps the current step`() {
         val stepWithoutOffering = step2.copy(paramValues = emptyMap())
-        val workflowToStepWithoutOffering =
-            workflow.copy(steps = mapOf("step-1" to step1, "step-2" to stepWithoutOffering))
+        val workflowToStepWithoutOffering = workflow.copy(
+            steps = mapOf("step-1" to step1, "step-2" to stepWithoutOffering),
+            screens = mapOf(
+                screenId1 to makeScreen(screenId1),
+                screenId2 to makeScreen(screenId2).copy(offeringIdentifier = null),
+            ),
+        )
 
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(workflowToStepWithoutOffering, testOfferings, null, uiConfig)

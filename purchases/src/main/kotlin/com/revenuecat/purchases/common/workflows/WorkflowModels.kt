@@ -175,6 +175,14 @@ public data class PublishedWorkflow(
     val hash: String? = null,
     @SerialName("single_step_fallback_id") val singleStepFallbackId: String? = null,
 ) {
+    /**
+     * The offering [step] presents: its own `param_values.offering.identifier`, or the `offering_identifier` of
+     * the screen it renders when the step carries none (the backend only sets it on the paywall step).
+     */
+    @InternalRevenueCatAPI
+    public fun offeringIdentifierFor(step: WorkflowStep): String? =
+        step.offeringIdentifier ?: step.screenId?.let { screens[it]?.offeringIdentifier }
+
     @InternalRevenueCatAPI
     public val dismissExitOffer: WorkflowExitOffer?
         get() {
