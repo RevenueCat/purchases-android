@@ -144,6 +144,22 @@ private fun HorizontalMixedBoundsPreview() {
     }
 }
 
+@Preview(
+    name = "Stack · Horizontal fixed children overflow maximum",
+    widthDp = 380,
+    heightDp = 150,
+    showBackground = true,
+)
+@Composable
+private fun HorizontalFixedChildrenOverflowMaximumPreview() {
+    StackPreview(
+        title = "Fit(max=240): Fixed(160) + Fixed(160)",
+        horizontal = true,
+        constraints = listOf(Fixed(160u), Fixed(160u)),
+        mainAxisSize = Fit(max = 240u),
+    )
+}
+
 @Preview(name = "Stack · Vertical minimum", widthDp = 320, heightDp = 330, showBackground = true)
 @Composable
 private fun VerticalMinimumPreview() {
@@ -161,6 +177,22 @@ private fun VerticalMaximumPreview() {
         title = "240dp: Fill(max=60) + Fill()",
         horizontal = false,
         constraints = listOf(Fill(max = 60u), Fill()),
+    )
+}
+
+@Preview(
+    name = "Stack · Vertical fixed children overflow maximum",
+    widthDp = 320,
+    heightDp = 430,
+    showBackground = true,
+)
+@Composable
+private fun VerticalFixedChildrenOverflowMaximumPreview() {
+    StackPreview(
+        title = "Fit(max=240): Fixed(160) + Fixed(160)",
+        horizontal = false,
+        constraints = listOf(Fixed(160u), Fixed(160u)),
+        mainAxisSize = Fit(max = 240u),
     )
 }
 
@@ -332,16 +364,13 @@ private fun MarginConstraintPreview(
 private fun StackPreview(
     title: String,
     horizontal: Boolean,
-    constraints: List<Fill>,
+    constraints: List<SizeConstraint>,
     distribution: FlexDistribution = FlexDistribution.START,
+    mainAxisSize: SizeConstraint = Fixed(240u),
 ) {
     val children = constraints.mapIndexed { index, constraint ->
         previewChild(
-            label = when {
-                constraint.min != null -> "min ${constraint.min}"
-                constraint.max != null -> "max ${constraint.max}"
-                else -> "Fill"
-            },
+            label = constraint.previewLabel(),
             color = childColors[index % childColors.size],
             constraint = constraint,
             horizontal = horizontal,
@@ -353,9 +382,9 @@ private fun StackPreview(
         Dimension.Vertical(HorizontalAlignment.CENTER, distribution)
     }
     val size = if (horizontal) {
-        Size(width = Fixed(240u), height = Fixed(72u))
+        Size(width = mainAxisSize, height = Fixed(72u))
     } else {
-        Size(width = Fixed(240u), height = Fixed(240u))
+        Size(width = Fixed(240u), height = mainAxisSize)
     }
 
     Column(
@@ -390,10 +419,21 @@ private fun StackPreview(
     }
 }
 
+private fun SizeConstraint.previewLabel(): String = when {
+    this is Fill && min != null -> "min $min"
+    this is Fill && max != null -> "max $max"
+    this is Fill -> "Fill"
+    this is Fit && min != null -> "Fit min $min"
+    this is Fit && max != null -> "Fit max $max"
+    this is Fit -> "Fit"
+    this is Fixed -> "Fixed $value"
+    else -> "Unknown"
+}
+
 private fun previewChild(
     label: String,
     color: ColorStyles,
-    constraint: Fill,
+    constraint: SizeConstraint,
     horizontal: Boolean,
 ): ComponentStyle = previewTextComponentStyle(
     text = label,
