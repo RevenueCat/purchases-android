@@ -24,11 +24,11 @@ class StoreDimensionProviderTest {
     private val date = Date(1_700_000_000_000)
 
     @Test
-    fun `the store country is exposed as a three-letter code`() = runTest {
+    fun `the storefront is exposed as a three-letter code`() = runTest {
         assertThat(provider("US").dimensions(date))
-            .isEqualTo(mapOf("country" to RulesDimensionValue.StringValue("USA")))
+            .isEqualTo(mapOf("storefront" to RulesDimensionValue.StringValue("USA")))
         assertThat(provider("ES").dimensions(date))
-            .isEqualTo(mapOf("country" to RulesDimensionValue.StringValue("ESP")))
+            .isEqualTo(mapOf("storefront" to RulesDimensionValue.StringValue("ESP")))
     }
 
     @Test
@@ -55,7 +55,7 @@ class StoreDimensionProviderTest {
         for (failure in failures) {
             val snapshot = RulesDimensionResolver(
                 providers = listOf(
-                    provider(RulesDimensionNamespace.Device, "platform" to "android"),
+                    deviceProvider("platform" to "android"),
                     StoreDimensionProvider { throw failure },
                 ),
             ).snapshot()
@@ -63,7 +63,7 @@ class StoreDimensionProviderTest {
             assertThat(snapshot.isSuccess).describedAs("%s", failure).isTrue()
             assertThat(snapshot.getOrThrow().values)
                 .describedAs("%s", failure)
-                .containsOnlyKeys("device")
+                .containsOnlyKeys("evaluated_at", "platform")
         }
     }
 
@@ -82,33 +82,32 @@ class StoreDimensionProviderTest {
     }
 
     @Test
-    fun `the store country is fetched on every evaluation`() = runTest {
+    fun `the storefront is fetched on every evaluation`() = runTest {
         var countryCode: String? = "US"
         val provider = StoreDimensionProvider { countryCode }
 
-        assertThat(provider.dimensions(date)["country"]).isEqualTo(RulesDimensionValue.StringValue("USA"))
+        assertThat(provider.dimensions(date)["storefront"]).isEqualTo(RulesDimensionValue.StringValue("USA"))
 
         countryCode = "ES"
 
-        assertThat(provider.dimensions(date)["country"]).isEqualTo(RulesDimensionValue.StringValue("ESP"))
+        assertThat(provider.dimensions(date)["storefront"]).isEqualTo(RulesDimensionValue.StringValue("ESP"))
     }
 
     @Test
-    fun `the store country is reachable by dot-path from a predicate`() = runTest {
+    fun `the storefront is reachable by name from a predicate`() = runTest {
         val values = RulesDimensionResolver(providers = listOf(provider("US"))).snapshot().getOrThrow().values
 
-        val matches = RulesEngine.evaluate("""{"==": [{"var": "store.country"}, "USA"]}""", values)
+        val matches = RulesEngine.evaluate("""{"==": [{"var": "storefront"}, "USA"]}""", values)
 
         assertThat(matches.getOrThrow()).isTrue()
     }
 
     private fun provider(countryCode: String?) = StoreDimensionProvider { countryCode }
 
-    private fun provider(
-        dimensionNamespace: RulesDimensionNamespace,
+    private fun deviceProvider(
         vararg values: Pair<String, String>,
     ) = object : RulesDimensionProvider {
-        override val namespace = dimensionNamespace
+        override val name = "device"
         override suspend fun dimensions(date: Date) =
             values.associate { (key, value) -> key to RulesDimensionValue.StringValue(value) }
     }

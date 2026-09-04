@@ -5,7 +5,7 @@ package com.revenuecat.purchases.common.localrules
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.DateProvider
-import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider.Companion.KEY_EVALUATED_AT
+import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider.Companion.KEY_SUBSCRIBER_ATTRIBUTES
 import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider.Companion.KEY_UPDATED_AT
 import com.revenuecat.purchases.common.localrules.SubscriberAttributesDimensionProvider.Companion.KEY_VALUE
 import com.revenuecat.purchases.rules.RulesEngine
@@ -30,27 +30,30 @@ class SubscriberAttributesDimensionProviderTest {
 
     @Test
     fun `every stored attribute is exposed under the name the app set it with`() = runTest {
-        val dimensions = provider(
+        val records = provider(
             attribute("\$email", "jane@example.com"),
             attribute("goal", "lose_weight"),
-        ).dimensions(evaluationDate)
+        ).records(evaluationDate)
 
         // Reserved names keep their '$': it is what the app set, what the dashboard shows, and what keeps a custom
         // "email" from colliding with the reserved one. Only '.' means anything to the engine.
-        assertThat(dimensions).containsOnlyKeys("\$email", "goal")
+        assertThat(records).containsOnlyKeys("\$email", "goal")
     }
 
     @Test
-    fun `an attribute is a record of its value, when it was set, and when it was read`() = runTest {
+    fun `the attributes are one root dimension wrapping a record per attribute`() = runTest {
         val dimensions = provider(attribute("goal", "lose_weight")).dimensions(evaluationDate)
 
         assertThat(dimensions).isEqualTo(
             mapOf(
-                "goal" to RulesDimensionValue.ObjectValue(
+                KEY_SUBSCRIBER_ATTRIBUTES to RulesDimensionValue.ObjectValue(
                     mapOf(
-                        KEY_VALUE to RulesDimensionValue.StringValue("lose_weight"),
-                        KEY_UPDATED_AT to RulesDimensionValue.DateValue(setDate),
-                        KEY_EVALUATED_AT to RulesDimensionValue.DateValue(evaluationDate),
+                        "goal" to RulesDimensionValue.ObjectValue(
+                            mapOf(
+                                KEY_VALUE to RulesDimensionValue.StringValue("lose_weight"),
+                                KEY_UPDATED_AT to RulesDimensionValue.DateValue(setDate),
+                            ),
+                        ),
                     ),
                 ),
             ),
@@ -59,47 +62,64 @@ class SubscriberAttributesDimensionProviderTest {
 
     @Test
     fun `a value stays the string the app set, whatever it looks like`() = runTest {
-        val dimensions = provider(
+        val records = provider(
             attribute("seats", "3"),
             attribute("betaOptIn", "true"),
             attribute("sku", "0123"),
-        ).dimensions(evaluationDate)
+        ).records(evaluationDate)
 
-        assertThat(dimensions.valueOf("seats")).isEqualTo(RulesDimensionValue.StringValue("3"))
-        assertThat(dimensions.valueOf("betaOptIn")).isEqualTo(RulesDimensionValue.StringValue("true"))
+        assertThat(records.valueOf("seats")).isEqualTo(RulesDimensionValue.StringValue("3"))
+        assertThat(records.valueOf("betaOptIn")).isEqualTo(RulesDimensionValue.StringValue("true"))
         // A product code the SDK guessed at would silently stop being the string it was set as.
-        assertThat(dimensions.valueOf("sku")).isEqualTo(RulesDimensionValue.StringValue("0123"))
+        assertThat(records.valueOf("sku")).isEqualTo(RulesDimensionValue.StringValue("0123"))
     }
 
     @Test
     fun `a deleted attribute is left out whether or not it has been posted yet`() = runTest {
         // A deletion is stored as a tombstone with no value, and stays in the cache for the current customer even
         // after the backend has been told about it.
-        val dimensions = provider(
+        val records = provider(
             attribute("pending", null, isSynced = false),
             attribute("posted", null, isSynced = true),
             attribute("goal", "lose_weight"),
-        ).dimensions(evaluationDate)
+        ).records(evaluationDate)
 
-        assertThat(dimensions).containsOnlyKeys("goal")
+        assertThat(records).containsOnlyKeys("goal")
     }
 
     @Test
     fun `an attribute set to an empty value is left out`() = runTest {
         // The SDK's other spelling of a deletion, and an empty string would compare equal to an absent value
         // anyway.
-        val dimensions = provider(attribute("goal", ""), attribute("tier", "gold")).dimensions(evaluationDate)
+        val records = provider(attribute("goal", ""), attribute("tier", "gold")).records(evaluationDate)
 
-        assertThat(dimensions).containsOnlyKeys("tier")
+        assertThat(records).containsOnlyKeys("tier")
     }
 
     @Test
-    fun `a customer with no attributes contributes no namespace at all`() = runTest {
-        val values = resolver(provider()).snapshot().getOrThrow().values
+    fun `an attribute named so no predicate could read it is left out`() = runTest {
+        // A '.' would be walked as a path through a "user" object that does not exist, and a blank name is not one
+        // a predicate can be written against. Attribute names sit inside this provider's root dimension, where the
+        // resolver's own filtering cannot see them.
+        val records = provider(
+            attribute("user.tier", "gold"),
+            attribute("", "anything"),
+            attribute(" ", "anything"),
+            attribute("tier", "gold"),
+        ).records(evaluationDate)
 
-        // An empty object is truthy in JSON Logic, so `{"var": "subscriberAttributes"}` would read as present for a
-        // customer the app has never said anything about.
-        assertThat(values).doesNotContainKey("subscriberAttributes")
+        assertThat(records).containsOnlyKeys("tier")
+    }
+
+    @Test
+    fun `a customer with no readable attributes contributes no root at all`() = runTest {
+        // An empty object is truthy in JSON Logic, so `{"var": "subscriber_attributes"}` would read as present for
+        // a customer the app has never said anything about.
+        assertThat(provider().dimensions(evaluationDate)).isEmpty()
+        assertThat(provider(attribute("user.tier", "gold")).dimensions(evaluationDate)).isEmpty()
+
+        val values = resolver(provider()).snapshot().getOrThrow().values
+        assertThat(values).doesNotContainKey(KEY_SUBSCRIBER_ATTRIBUTES)
     }
 
     @Test
@@ -117,7 +137,9 @@ class SubscriberAttributesDimensionProviderTest {
             ).snapshot()
 
             assertThat(snapshot.isSuccess).describedAs("%s", failure).isTrue()
-            assertThat(snapshot.getOrThrow().values).describedAs("%s", failure).containsOnlyKeys("device")
+            assertThat(snapshot.getOrThrow().values)
+                .describedAs("%s", failure)
+                .containsOnlyKeys("evaluated_at", "platform")
         }
     }
 
@@ -126,12 +148,12 @@ class SubscriberAttributesDimensionProviderTest {
         var attributes = mapOf("goal" to attribute("goal", "lose_weight"))
         val provider = SubscriberAttributesDimensionProvider { attributes }
 
-        assertThat(provider.dimensions(evaluationDate).valueOf("goal"))
+        assertThat(provider.records(evaluationDate).valueOf("goal"))
             .isEqualTo(RulesDimensionValue.StringValue("lose_weight"))
 
         attributes = mapOf("goal" to attribute("goal", "gain_muscle"))
 
-        assertThat(provider.dimensions(evaluationDate).valueOf("goal"))
+        assertThat(provider.records(evaluationDate).valueOf("goal"))
             .isEqualTo(RulesDimensionValue.StringValue("gain_muscle"))
     }
 
@@ -147,23 +169,23 @@ class SubscriberAttributesDimensionProviderTest {
         ).snapshot().getOrThrow().values
 
         val matching = listOf(
-            """{"==": [{"var": "subscriberAttributes.${'$'}email.value"}, "jane@example.com"]}""",
+            """{"==": [{"var": "subscriber_attributes.${'$'}email.value"}, "jane@example.com"]}""",
             // The loose operators coerce, so a value the app set as a string is still comparable to a number.
-            """{"==": [{"var": "subscriberAttributes.seats.value"}, 3]}""",
-            """{">": [{"var": "subscriberAttributes.seats.value"}, 2]}""",
-            // Each record carries the evaluation instant, so "set in the last 7 days" needs nothing else in scope.
-            """{"<": [{"-": [{"var": "subscriberAttributes.tier.evaluatedAt"},
-                {"var": "subscriberAttributes.tier.updatedAt"}]}, 604800000]}""",
+            """{"==": [{"var": "subscriber_attributes.seats.value"}, 3]}""",
+            """{">": [{"var": "subscriber_attributes.seats.value"}, 2]}""",
+            // The scope carries the evaluation instant at its root, so "set in the last 7 days" needs nothing else.
+            """{"<": [{"-": [{"var": "evaluated_at"},
+                {"var": "subscriber_attributes.tier.updated_at"}]}, 604800000]}""",
         )
         val notMatching = listOf(
-            """{"==": [{"var": "subscriberAttributes.goal.value"}, "gain_muscle"]}""",
+            """{"==": [{"var": "subscriber_attributes.goal.value"}, "gain_muscle"]}""",
             // An attribute the app never set on this device, and one the SDK does not expose. Both
             // need a default, since reading a name that resolves to nothing is an error.
-            """{"!!": {"var": ["subscriberAttributes.favoriteColor.value", false]}}""",
-            """{"!!": {"var": ["subscriberAttributes.goal.isSynced", false]}}""",
+            """{"!!": {"var": ["subscriber_attributes.favoriteColor.value", false]}}""",
+            """{"!!": {"var": ["subscriber_attributes.goal.isSynced", false]}}""",
             // The same window, for an attribute set six weeks ago.
-            """{"<": [{"-": [{"var": "subscriberAttributes.goal.evaluatedAt"},
-                {"var": "subscriberAttributes.goal.updatedAt"}]}, 604800000]}""",
+            """{"<": [{"-": [{"var": "evaluated_at"},
+                {"var": "subscriber_attributes.goal.updated_at"}]}, 604800000]}""",
         )
 
         for (predicate in matching) {
@@ -193,10 +215,13 @@ class SubscriberAttributesDimensionProviderTest {
     )
 
     private fun deviceProvider(vararg values: Pair<String, String>) = object : RulesDimensionProvider {
-        override val namespace = RulesDimensionNamespace.Device
+        override val name = "device"
         override suspend fun dimensions(date: Date) =
             values.associate { (key, value) -> key to RulesDimensionValue.StringValue(value) }
     }
+
+    private suspend fun SubscriberAttributesDimensionProvider.records(date: Date): Map<String, RulesDimensionValue> =
+        (dimensions(date)[KEY_SUBSCRIBER_ATTRIBUTES] as? RulesDimensionValue.ObjectValue)?.value.orEmpty()
 
     private fun Map<String, RulesDimensionValue>.valueOf(name: String): RulesDimensionValue? =
         (this[name] as? RulesDimensionValue.ObjectValue)?.value?.get(KEY_VALUE)

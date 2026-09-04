@@ -21,23 +21,23 @@ internal data class RulesDimensionSnapshot(
 internal sealed class RulesDimensionResolutionException(message: String) : Exception(message) {
 
     internal data class ProviderFailed(
-        val namespace: RulesDimensionNamespace,
+        val providerName: String,
         val reason: String,
-    ) : RulesDimensionResolutionException("dimension provider '${namespace.key}' failed: $reason")
+    ) : RulesDimensionResolutionException("dimension provider '$providerName' failed: $reason")
 
     internal data class ConflictingDimension(
         val path: String,
-    ) : RulesDimensionResolutionException("two dimension providers supplied '$path'")
+    ) : RulesDimensionResolutionException("two dimension sources supplied '$path'")
 }
 
 /**
- * Builds the scope local rule evaluation runs against by collecting every provider once and nesting its values
- * under the provider's namespace.
+ * Builds the scope local rule evaluation runs against by collecting every provider once and merging its values
+ * into a single root scope. Every snapshot also carries the evaluation instant as `evaluated_at`.
  *
  * All providers see the same reference instant, so every dimension in one snapshot is consistent with the others.
  *
  * Both failure modes are configuration bugs rather than runtime conditions — a provider that cannot produce its
- * values, and two providers claiming the same path — so they fail the whole snapshot instead of silently
+ * values, and two sources claiming the same root name — so they fail the whole snapshot instead of silently
  * degrading a rule to a non-match, which would be indistinguishable from a customer who genuinely does not match.
  * Cancellation is neither, and propagates.
  */
@@ -47,9 +47,10 @@ internal class RulesDimensionResolver(
 ) {
 
     /**
-     * [customVariables] are the caller's own values for this one evaluation, exposed under
-     * [RulesDimensionNamespace.Custom]. [backendValues] are the backend's pre-evaluated values for this one
-     * evaluation, exposed under [RulesDimensionNamespace.Backend].
+     * [customVariables] are the caller's own values for this one evaluation, exposed under `custom`.
+     * [backendValues] are the backend's pre-evaluated values for this one evaluation, exposed under `backend`.
+     * Both roots are reserved whether or not this evaluation supplies values for them, so a provider colliding
+     * with one is deterministic rather than dependent on call arguments.
      */
     @Suppress("ReturnCount")
     suspend fun snapshot(
@@ -57,7 +58,8 @@ internal class RulesDimensionResolver(
         backendValues: Map<String, RulesDimensionValue> = emptyMap(),
     ): Result<RulesDimensionSnapshot> {
         val date = dateProvider.now
-        val values = mutableMapOf<String, MutableMap<String, Value>>()
+        // Seeded before any provider runs, so a provider claiming this root is an ordinary collision.
+        val values = mutableMapOf<String, Value>(KEY_EVALUATED_AT to Value.IntValue(date.time))
 
         for (provider in providers) {
             val dimensions = try {
@@ -67,93 +69,115 @@ internal class RulesDimensionResolver(
             } catch (@Suppress("TooGenericExceptionCaught") error: Exception) {
                 return Result.failure(
                     RulesDimensionResolutionException.ProviderFailed(
-                        namespace = provider.namespace,
+                        providerName = provider.name,
                         reason = error.message ?: error.toString(),
                     ),
                 )
             }
-            values.addDimensions(provider.namespace, dimensions)?.let { conflict ->
+            values.addRootDimensions(dimensions)?.let { conflict ->
                 return Result.failure(conflict)
             }
         }
 
-        values.addDimensions(RulesDimensionNamespace.Custom, customVariables)?.let { conflict ->
+        values.addNestedDimensions(KEY_CUSTOM, customVariables)?.let { conflict ->
             return Result.failure(conflict)
         }
 
-        values.addDimensions(RulesDimensionNamespace.Backend, backendValues)?.let { conflict ->
+        values.addNestedDimensions(KEY_BACKEND, backendValues)?.let { conflict ->
             return Result.failure(conflict)
         }
 
         return Result.success(
             RulesDimensionSnapshot(
-                values = values.mapValues { (_, dimensions) -> Value.ObjectValue(dimensions) },
+                values = values,
                 evaluationDate = date,
             ),
         )
     }
 }
 
-/** Nests [dimensions] under [namespace], or returns the conflict that stops the whole snapshot. */
-@Suppress("ReturnCount")
-private fun MutableMap<String, MutableMap<String, Value>>.addDimensions(
-    namespace: RulesDimensionNamespace,
+/** Merges [dimensions] into the root scope, or returns the conflict that stops the whole snapshot. */
+private fun MutableMap<String, Value>.addRootDimensions(
     dimensions: Map<String, RulesDimensionValue>,
 ): RulesDimensionResolutionException.ConflictingDimension? {
-    // Filtered before the check below, so a source whose every name was unreachable still contributes no namespace.
-    val reachable = dimensions.filterReachable(namespace)
-    // A source with nothing to say contributes no namespace at all: an empty object is truthy in JSON Logic, so
-    // `{"var": "store"}` would read as present for a customer whose store never answered.
-    if (reachable.isEmpty()) return null
-    val target = getOrPut(namespace.key) { mutableMapOf() }
-    for ((name, value) in reachable) {
-        if (target.containsKey(name)) {
-            return RulesDimensionResolutionException.ConflictingDimension("${namespace.key}.$name")
+    for ((name, value) in dimensions.filterReachable(root = null)) {
+        if (containsKey(name) || name == KEY_CUSTOM || name == KEY_BACKEND) {
+            return RulesDimensionResolutionException.ConflictingDimension(name)
         }
-        target[name] = value.asRulesEngineValue
+        this[name] = value.asRulesEngineValue
     }
     return null
 }
 
+/** Nests [dimensions] under [root], or returns the conflict that stops the whole snapshot. */
+@Suppress("ReturnCount")
+private fun MutableMap<String, Value>.addNestedDimensions(
+    root: String,
+    dimensions: Map<String, RulesDimensionValue>,
+): RulesDimensionResolutionException.ConflictingDimension? {
+    // Filtered before the check below, so a source whose every name was unreachable still contributes no root.
+    val reachable = dimensions.filterReachable(root)
+    // A source with nothing to say contributes no root at all: an empty object is truthy in JSON Logic, so
+    // `{"var": "custom"}` would read as present for an evaluation that supplied no custom values.
+    if (reachable.isEmpty()) return null
+    if (containsKey(root)) {
+        return RulesDimensionResolutionException.ConflictingDimension(root)
+    }
+    this[root] = Value.ObjectValue(reachable.mapValues { (_, value) -> value.asRulesEngineValue })
+    return null
+}
+
 /**
- * Drops the names no predicate could ever read, at any depth. The engine's `var` walks a strict dot-path, so a
- * name containing a `.` would be read as a path through a nested object that does not exist, and an empty one is
- * not a name a predicate can be written against. Names inside [RulesDimensionValue.ObjectValue] and
- * [RulesDimensionValue.ObjectListValue] records are one `var` path segment each, so the same rule applies to
- * them, one entry at a time.
+ * Drops the names no predicate could ever read, at any depth; see [String.isReachableDimensionName]. Names inside
+ * [RulesDimensionValue.ObjectValue] and [RulesDimensionValue.ObjectListValue] records are one `var` path segment
+ * each, so the same rule applies to them, one entry at a time. An object left with nothing readable is dropped
+ * along with its names, for the same reason [addNestedDimensions] contributes no root for an empty source: an
+ * empty object is truthy in JSON Logic, so keeping it would make `{"var": "profile"}` read as present.
  *
- * Dropped rather than failing the snapshot, unlike this resolver's other two rejections: a namespace like
- * [RulesDimensionNamespace.SubscriberAttributes] is named by the app, so a single attribute the SDK cannot expose
- * must not stop every checkpoint from resolving. Same treatment `CustomVariableKeyValidator` gives the other
- * developer-named namespace.
+ * Dropped rather than failing the snapshot, unlike this resolver's other two rejections: custom variables are
+ * named by the app, so a single value the SDK cannot expose must not stop every checkpoint from resolving. Same
+ * treatment `CustomVariableKeyValidator` gives them at registration time, and
+ * [SubscriberAttributesDimensionProvider] gives the other developer-named source.
  */
 private fun Map<String, RulesDimensionValue>.filterReachable(
-    namespace: RulesDimensionNamespace,
-): Map<String, RulesDimensionValue> = filterReachable(parentPath = namespace.key)
-
-private fun Map<String, RulesDimensionValue>.filterReachable(
-    parentPath: String,
+    root: String?,
 ): Map<String, RulesDimensionValue> = mapNotNull { (name, value) ->
-    val path = "$parentPath$DIMENSION_PATH_SEPARATOR$name"
-    if (name.isEmpty() || name.contains(DIMENSION_PATH_SEPARATOR)) {
+    val path = root?.let { "$it$DIMENSION_PATH_SEPARATOR$name" } ?: name
+    if (!name.isReachableDimensionName) {
         warnLog {
-            "Ignoring dimension '$path': a dimension name can't be empty or contain '$DIMENSION_PATH_SEPARATOR'."
+            "Ignoring dimension '$path': a dimension name can't be blank or contain '$DIMENSION_PATH_SEPARATOR'."
         }
         null
     } else {
-        name to value.filterReachable(path)
+        value.filterReachable(path)?.let { reachable -> name to reachable }
     }
 }.toMap()
 
-private fun RulesDimensionValue.filterReachable(path: String): RulesDimensionValue = when (this) {
-    is RulesDimensionValue.ObjectValue -> RulesDimensionValue.ObjectValue(value.filterReachable(path))
+private fun RulesDimensionValue.filterReachable(path: String): RulesDimensionValue? = when (this) {
+    is RulesDimensionValue.ObjectValue -> value.filterReachable(root = path)
+        .takeIf { it.isNotEmpty() }
+        ?.let { RulesDimensionValue.ObjectValue(it) }
     is RulesDimensionValue.ObjectListValue -> RulesDimensionValue.ObjectListValue(
-        value.mapIndexed { index, record -> record.filterReachable("$path$DIMENSION_PATH_SEPARATOR$index") },
+        value.mapIndexedNotNull { index, record ->
+            record.filterReachable(root = "$path$DIMENSION_PATH_SEPARATOR$index").takeIf { it.isNotEmpty() }
+        },
     )
     else -> this
 }
 
-private const val DIMENSION_PATH_SEPARATOR = '.'
+/**
+ * Whether a predicate could read this name. The engine's `var` walks a strict dot-path, so a name containing a
+ * `.` would be read as a path through a nested object that does not exist, and a blank one is not a name a
+ * predicate can be written against.
+ */
+internal val String.isReachableDimensionName: Boolean
+    get() = isNotBlank() && !contains(DIMENSION_PATH_SEPARATOR)
+
+internal const val DIMENSION_PATH_SEPARATOR = '.'
+
+private const val KEY_EVALUATED_AT = "evaluated_at"
+private const val KEY_CUSTOM = "custom"
+private const val KEY_BACKEND = "backend"
 
 private val RulesDimensionValue.asRulesEngineValue: Value
     get() = when (this) {
