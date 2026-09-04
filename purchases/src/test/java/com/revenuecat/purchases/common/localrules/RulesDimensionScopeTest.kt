@@ -227,6 +227,7 @@ class RulesDimensionScopeTest {
                 SubscriberAttributesDimensionProvider { SUBSCRIBER_ATTRIBUTES },
                 SubscriberDimensionsProvider { SUBSCRIBER_DIMENSIONS },
             ),
+            currentAppUserId = { APP_USER_ID },
             dateProvider = object : DateProvider {
                 override val now: Date get() = evaluationDate
             },

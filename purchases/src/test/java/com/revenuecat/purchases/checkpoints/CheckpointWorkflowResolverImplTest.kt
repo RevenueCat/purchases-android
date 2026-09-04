@@ -98,7 +98,7 @@ class CheckpointWorkflowResolverImplTest {
             uiConfigProvider = mockUiConfigProvider,
             checkpointsConfigProvider = mockCheckpointsConfigProvider,
             audiencesConfigProvider = mockAudiencesConfigProvider,
-            localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
+            localRulesEvaluator = LocalRulesEvaluator(providers = emptyList(), currentAppUserId = { "user" }),
             getOfferings = {
                 offeringsFetched++
                 offeringsFetchError?.let { throw PurchasesException(it) }
@@ -386,7 +386,7 @@ class CheckpointWorkflowResolverImplTest {
                 uiConfigProvider = mockUiConfigProvider,
                 checkpointsConfigProvider = mockCheckpointsConfigProvider,
                 audiencesConfigProvider = mockAudiencesConfigProvider,
-                localRulesEvaluator = LocalRulesEvaluator(providers = listOf(FailingDimensionProvider)),
+                localRulesEvaluator = LocalRulesEvaluator(providers = listOf(FailingDimensionProvider), currentAppUserId = { "user" }),
                 getOfferings = { mockOfferings },
             )
 
@@ -596,7 +596,7 @@ class CheckpointWorkflowResolverImplTest {
             uiConfigProvider = mockUiConfigProvider,
             checkpointsConfigProvider = mockCheckpointsConfigProvider,
             audiencesConfigProvider = mockAudiencesConfigProvider,
-            localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
+            localRulesEvaluator = LocalRulesEvaluator(providers = emptyList(), currentAppUserId = { "user" }),
             getOfferings = { throw CancellationException("cancelled") },
         )
 
@@ -680,7 +680,7 @@ class CheckpointWorkflowResolverImplTest {
         uiConfigProvider = mockUiConfigProvider,
         checkpointsConfigProvider = CheckpointsConfigProvider(manager),
         audiencesConfigProvider = AudiencesConfigProvider(manager),
-        localRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
+        localRulesEvaluator = LocalRulesEvaluator(providers = emptyList(), currentAppUserId = { "user" }),
         getOfferings = { mockOfferings },
     )
 

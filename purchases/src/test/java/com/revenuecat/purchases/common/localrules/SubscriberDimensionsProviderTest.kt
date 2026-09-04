@@ -169,6 +169,7 @@ class SubscriberDimensionsProviderTest {
 
     private fun resolver(vararg providers: RulesDimensionProvider) = RulesDimensionResolver(
         providers = providers.toList(),
+        currentAppUserId = { "user" },
         dateProvider = object : DateProvider {
             override val now: Date = evaluationDate
         },

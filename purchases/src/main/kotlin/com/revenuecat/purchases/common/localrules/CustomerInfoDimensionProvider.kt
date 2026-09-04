@@ -26,8 +26,10 @@ internal class CustomerInfoDimensionProvider(
      * The app user ID is reported without waiting for the customer info, so a rule targeting only the ID does not
      * depend on the network: it is known as soon as the SDK is configured.
      *
-     * Read once per evaluation, so the ID reported and the customer info fetched cannot describe two different
-     * customers within this provider's values.
+     * Read once per evaluation. Reading it here does not by itself guarantee the fetched customer info describes
+     * the same customer: an identity change can land while the fetch is in flight, and on a cold cache the
+     * pending-purchase sync reads the current user for itself. [RulesDimensionResolver] closes that gap by
+     * re-reading the current ID after every provider has run and failing the snapshot on a change.
      */
     override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
         // Nobody to ask about: the SDK has no cached user, so there is no request to make on their behalf.

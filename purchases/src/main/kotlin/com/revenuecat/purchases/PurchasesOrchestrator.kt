@@ -187,7 +187,10 @@ internal class PurchasesOrchestrator(
     internal val audiencesConfigProvider: AudiencesConfigProvider,
     val adTracker: AdTracker = AdTracker(adEventsManager),
     private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
-    private val localRulesEvaluator: LocalRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
+    private val localRulesEvaluator: LocalRulesEvaluator = LocalRulesEvaluator(
+        providers = emptyList(),
+        currentAppUserId = { identityManager.currentAppUserID },
+    ),
     @OptIn(InternalRevenueCatAPI::class)
     private val checkpointWorkflowResolver: CheckpointWorkflowResolver = CheckpointWorkflowResolverImpl(
         workflowManager = workflowManager,
