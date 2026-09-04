@@ -5,9 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -41,12 +39,8 @@ fun OnboardingScreen(
         )
         Text(state.step.title, style = MaterialTheme.typography.headlineSmall)
         Text(state.step.body, style = MaterialTheme.typography.bodyMedium)
-        if (state.finishing) {
-            CircularProgressIndicator(modifier = Modifier.size(32.dp))
-        } else {
-            Button(onClick = { viewModel.advance(onFinish) }) {
-                Text(state.step.buttonLabel)
-            }
+        Button(onClick = { viewModel.advance(onFinish) }) {
+            Text(state.step.buttonLabel)
         }
     }
 }
