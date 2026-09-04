@@ -91,6 +91,17 @@ class CheckpointGateResultMappingTest {
     }
 
     @Test
+    fun `a finished app-owned presentation grants the entitlements that were not active before`() {
+        val outcome = CheckpointPaywallOutcome.Finished(customerInfoWithActive("pro", "plus"))
+
+        val gateResult = CheckpointResult.PaywallPresented(outcome).toGateResult(setOf("plus"))
+
+        assertThat(gateResult.entitlements).containsExactly(EntitlementGrant("pro"))
+        assertThat(gateResult.noActionReason).isNull()
+        assertThat(gateResult.error).isNull()
+    }
+
+    @Test
     fun `a dismissed or web checkout outcome grants nothing but reports the workflow as presented`() {
         listOf(CheckpointPaywallOutcome.Dismissed, CheckpointPaywallOutcome.WebCheckoutOpened).forEach { outcome ->
             val gateResult = CheckpointResult.PaywallPresented(outcome).toGateResult(emptySet())

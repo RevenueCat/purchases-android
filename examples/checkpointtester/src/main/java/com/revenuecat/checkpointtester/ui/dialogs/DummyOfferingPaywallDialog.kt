@@ -26,13 +26,13 @@ import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitPurchase
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointOfferingCompletion
 import kotlinx.coroutines.launch
 
 /**
  * The dummy custom paywall behind [DummyOfferingPaywallPresenter]: the offering's packages as plain buy
  * buttons plus a dismiss button. A cancelled purchase keeps the dialog open; any other purchase error is
- * shown inline so the user can retry or dismiss.
+ * shown inline so the user can retry or dismiss. Whether it closes after a purchase or a dismissal, it only
+ * reports that it finished: the SDK works out what the user obtained.
  */
 @OptIn(InternalRevenueCatAPI::class)
 @Composable
@@ -45,8 +45,8 @@ fun DummyOfferingPaywallDialog(
     var purchasing by remember(request) { mutableStateOf(false) }
     var errorMessage by remember(request) { mutableStateOf<String?>(null) }
 
-    fun finish(report: (CheckpointOfferingCompletion) -> Unit) {
-        report(request.completion)
+    fun finish() {
+        request.completion.finished()
         DummyOfferingPaywallPresenter.clear()
     }
 
@@ -56,10 +56,10 @@ fun DummyOfferingPaywallDialog(
         errorMessage = null
         scope.launch {
             try {
-                val result = Purchases.sharedInstance.awaitPurchase(
+                Purchases.sharedInstance.awaitPurchase(
                     PurchaseParams.Builder(purchasingActivity, packageToPurchase).build(),
                 )
-                finish { it.purchased(result.customerInfo, result.storeTransaction) }
+                finish()
             } catch (e: PurchasesException) {
                 purchasing = false
                 if (e.code != PurchasesErrorCode.PurchaseCancelledError) {
@@ -70,7 +70,7 @@ fun DummyOfferingPaywallDialog(
     }
 
     AlertDialog(
-        onDismissRequest = { if (!purchasing) finish { it.dismissed() } },
+        onDismissRequest = { if (!purchasing) finish() },
         modifier = modifier,
         title = { Text(text = "Dummy custom paywall") },
         text = {
@@ -83,7 +83,7 @@ fun DummyOfferingPaywallDialog(
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = { finish { it.dismissed() } }, enabled = !purchasing) {
+            TextButton(onClick = { finish() }, enabled = !purchasing) {
                 Text(text = "Dismiss")
             }
         },

@@ -1,10 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.models.StoreTransaction
 
 /**
  * Presents the offering a checkpoint resolves to with app-owned UI, set through
@@ -16,27 +13,30 @@ public fun interface CheckpointOfferingPresenter {
 
     /**
      * Called on the main thread when a checkpoint resolves to [offering]. Present it however the app wants and
-     * report the terminal outcome through [completion]; the checkpoint stays unresolved until then.
+     * report through [completion] once the presentation is over; the checkpoint stays unresolved until then.
+     * The SDK works out what the user obtained by itself, so the app doesn't report purchases or restores.
      */
     public fun present(offering: Offering, completion: CheckpointOfferingCompletion)
 }
 
 /**
- * How a [CheckpointOfferingPresenter] reports its presentation's terminal outcome. Only the first report
- * counts; later reports, including reports for a checkpoint call that no longer exists, are ignored.
+ * How a [CheckpointOfferingPresenter] reports that its presentation is over. Only the first report counts;
+ * later reports, including reports for a checkpoint call that no longer exists, are ignored.
  */
 @InternalRevenueCatAPI
 public interface CheckpointOfferingCompletion {
 
-    /** The presentation ended without a purchase, restore, or error. */
-    public fun dismissed()
+    /**
+     * The presentation is over, however it ended. The SDK syncs any store purchase made during it, refreshes the
+     * customer's information, and resolves the checkpoint with what the user obtained. Purchases made through
+     * the SDK or through the app's own billing client are both picked up; an app that disabled automatic
+     * purchase syncing must call [com.revenuecat.purchases.Purchases.syncPurchases] before reporting.
+     */
+    public fun finished()
 
-    /** A purchase completed during the presentation. */
-    public fun purchased(customerInfo: CustomerInfo, storeTransaction: StoreTransaction)
-
-    /** Purchases were restored during the presentation. */
-    public fun restored(customerInfo: CustomerInfo)
-
-    /** The presentation failed, or a purchase or restore inside it failed. */
-    public fun failed(error: PurchasesError)
+    /**
+     * The offering could not be presented, or the presentation failed. The checkpoint resolves with an error
+     * and nothing obtained.
+     */
+    public fun failed()
 }

@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
@@ -7,7 +8,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
-import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.coroutines.CancellationException
@@ -172,7 +173,7 @@ internal class CheckpointsManager(
      * Presents a matched offering through the registered [checkpointOfferingPresenter] when there is one; the
      * offering's own (or the default fallback) paywall otherwise. The app-owned presentation claims the same
      * one-presentation-at-a-time slot as SDK-presented workflows and resolves through its completion's first
-     * report.
+     * report, after the SDK has synced the store purchases made during it.
      */
     private suspend fun presentOffering(
         purchases: Purchases,
@@ -189,7 +190,7 @@ internal class CheckpointsManager(
         )
         claim(call)
         try {
-            presenter.present(offering, PresenterCompletion(call.callId))
+            presenter.present(offering, PresenterCompletion(call.callId, purchases))
             return call.paywallFinished.await()
         } catch (e: CancellationException) {
             abandon(call.callId)
@@ -204,20 +205,37 @@ internal class CheckpointsManager(
     }
 
     // Routes an app-owned presentation's report back to its pending call. take() removes the call, so only the
-    // first report wins and the one-presentation slot is released with it.
-    private inner class PresenterCompletion(private val callId: String) : CheckpointOfferingCompletion {
-        override fun dismissed(): Unit = finish(CheckpointPaywallOutcome.Dismissed)
+    // first report wins and the one-presentation slot is released with it, before the sync that follows a
+    // finished report: the app's UI is already gone, so a new checkpoint may present meanwhile.
+    private inner class PresenterCompletion(
+        private val callId: String,
+        private val purchases: Purchases,
+    ) : CheckpointOfferingCompletion {
 
-        override fun purchased(customerInfo: CustomerInfo, storeTransaction: StoreTransaction): Unit =
-            finish(CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+        // FETCH_CURRENT posts the store purchases the SDK hasn't seen yet (e.g. made through the app's own
+        // billing client) before fetching, so the outcome reflects whatever the app's paywall sold.
+        override fun finished() {
+            val call = take(callId) ?: return
+            purchases.getCustomerInfo(
+                CacheFetchPolicy.FETCH_CURRENT,
+                object : ReceiveCustomerInfoCallback {
+                    override fun onReceived(customerInfo: CustomerInfo) {
+                        call.paywallFinished.complete(CheckpointPaywallOutcome.Finished(customerInfo))
+                    }
 
-        override fun restored(customerInfo: CustomerInfo): Unit =
-            finish(CheckpointPaywallOutcome.Restored(customerInfo))
+                    override fun onError(error: PurchasesError) {
+                        call.paywallFinished.complete(CheckpointPaywallOutcome.Error(error))
+                    }
+                },
+            )
+        }
 
-        override fun failed(error: PurchasesError): Unit = finish(CheckpointPaywallOutcome.Error(error))
-
-        private fun finish(outcome: CheckpointPaywallOutcome) {
-            take(callId)?.paywallFinished?.complete(outcome)
+        override fun failed() {
+            val error = PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                "The checkpoint offering presenter reported a failure.",
+            )
+            take(callId)?.paywallFinished?.complete(CheckpointPaywallOutcome.Error(error))
         }
     }
 

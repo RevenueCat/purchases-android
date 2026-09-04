@@ -126,6 +126,29 @@ class CheckpointGateTest {
         }
 
     @Test
+    fun `an app-owned presentation delivers the grants the SDK finds after syncing`() = runTest(dispatcher) {
+        cachedCustomerInfoHasActive("plus")
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfoWithActive("plus", "pro"))
+        }
+        var completion: CheckpointOfferingCompletion? = null
+        manager.checkpointOfferingPresenter = CheckpointOfferingPresenter { _, presentation ->
+            completion = presentation
+        }
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk()))
+
+        val gateResults = mutableListOf<CheckpointGateResult>()
+        checkpointGate(gateResults)
+        assertThat(gateResults).isEmpty()
+
+        completion!!.finished()
+
+        assertThat(gateResults.single().entitlements).containsExactly(EntitlementGrant("pro"))
+        assertThat(gateResults.single().noActionReason).isNull()
+        assertThat(gateResults.single().error).isNull()
+    }
+
+    @Test
     fun `a missing cached customer info counts every entitlement active afterwards as granted`() =
         runTest(dispatcher) {
             noCachedCustomerInfo()

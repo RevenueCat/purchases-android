@@ -4,6 +4,7 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
@@ -12,6 +13,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -159,7 +161,7 @@ class CheckpointsManagerTest {
         runTest(dispatcher) {
             val offering = mockk<Offering>()
             val customerInfo = mockk<CustomerInfo>()
-            val storeTransaction = mockk<StoreTransaction>()
+            syncedCustomerInfoIs(customerInfo)
             var presented: Offering? = null
             var completion: CheckpointOfferingCompletion? = null
             manager.checkpointOfferingPresenter = CheckpointOfferingPresenter { presentedOffering, presentation ->
@@ -174,30 +176,60 @@ class CheckpointsManagerTest {
             assertThat(presented).isEqualTo(offering)
             assertThat(result).isNull()
             verify(exactly = 0) { mockActivity.startActivity(any()) }
+            verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
 
-            completion!!.purchased(customerInfo, storeTransaction)
+            completion!!.finished()
             call.join()
 
             assertThat((result as CheckpointResult.PaywallPresented).paywallOutcome)
-                .isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+                .isEqualTo(CheckpointPaywallOutcome.Finished(customerInfo))
         }
 
     @Test
-    fun `only the presenter's first report counts`() = runTest(dispatcher) {
-        var completion: CheckpointOfferingCompletion? = null
-        manager.checkpointOfferingPresenter = CheckpointOfferingPresenter { _, presentation ->
-            completion = presentation
-        }
-        resolvesTo(CheckpointResolution.MatchedOffering(mockk()))
+    fun `a failed report resolves with an error without syncing`() = runTest(dispatcher) {
+        val completion = presentThroughRegisteredPresenter()
         var result: CheckpointResult? = null
         val call = launch { result = checkpoint() }
 
-        completion!!.dismissed()
-        completion!!.purchased(mockk(), mockk())
+        completion()!!.failed()
+        call.join()
+
+        val outcome = (result as CheckpointResult.PaywallPresented).paywallOutcome
+        assertThat((outcome as CheckpointPaywallOutcome.Error).error.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+    }
+
+    @Test
+    fun `a sync failure after a finished report resolves with that error`() = runTest(dispatcher) {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "Simulated.")
+        syncFailsWith(error)
+        val completion = presentThroughRegisteredPresenter()
+        var result: CheckpointResult? = null
+        val call = launch { result = checkpoint() }
+
+        completion()!!.finished()
         call.join()
 
         assertThat((result as CheckpointResult.PaywallPresented).paywallOutcome)
-            .isEqualTo(CheckpointPaywallOutcome.Dismissed)
+            .isEqualTo(CheckpointPaywallOutcome.Error(error))
+    }
+
+    @Test
+    fun `only the presenter's first report counts`() = runTest(dispatcher) {
+        val customerInfo = mockk<CustomerInfo>()
+        syncedCustomerInfoIs(customerInfo)
+        val completion = presentThroughRegisteredPresenter()
+        var result: CheckpointResult? = null
+        val call = launch { result = checkpoint() }
+
+        completion()!!.finished()
+        completion()!!.failed()
+        completion()!!.finished()
+        call.join()
+
+        assertThat((result as CheckpointResult.PaywallPresented).paywallOutcome)
+            .isEqualTo(CheckpointPaywallOutcome.Finished(customerInfo))
+        verify(exactly = 1) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
     }
 
     @Test
@@ -231,17 +263,14 @@ class CheckpointsManagerTest {
 
     @Test
     fun `cancelling an app-owned presentation releases the slot and ignores a late report`() = runTest(dispatcher) {
-        var completion: CheckpointOfferingCompletion? = null
-        manager.checkpointOfferingPresenter = CheckpointOfferingPresenter { _, presentation ->
-            completion = presentation
-        }
-        resolvesTo(CheckpointResolution.MatchedOffering(mockk()))
+        val completion = presentThroughRegisteredPresenter()
         val presenterCall = launch { checkpoint() }
 
         presenterCall.cancel()
         presenterCall.join()
-        // The pending call died with the caller, so this report must be a no-op.
-        completion!!.dismissed()
+        // The pending call died with the caller, so this report must be a no-op, sync included.
+        completion()!!.finished()
+        verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
 
         manager.checkpointOfferingPresenter = null
         var result: CheckpointResult? = null
@@ -531,6 +560,28 @@ class CheckpointsManagerTest {
 
     private fun resolvesToWorkflow() {
         resolvesTo(CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk()))
+    }
+
+    // Registers a presenter for a matched offering and returns an accessor for the completion it was handed.
+    private fun presentThroughRegisteredPresenter(): () -> CheckpointOfferingCompletion? {
+        var completion: CheckpointOfferingCompletion? = null
+        manager.checkpointOfferingPresenter = CheckpointOfferingPresenter { _, presentation ->
+            completion = presentation
+        }
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk()))
+        return { completion }
+    }
+
+    private fun syncedCustomerInfoIs(customerInfo: CustomerInfo) {
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfo)
+        }
+    }
+
+    private fun syncFailsWith(error: PurchasesError) {
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>().onError(error)
+        }
     }
 
     private fun currentCallId(): String = presentedCallIds.last()

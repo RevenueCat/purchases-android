@@ -27,6 +27,9 @@ private class CheckpointPaywallOutcomeAPI {
             is CheckpointPaywallOutcome.Restored -> {
                 val restoredCustomerInfo: CustomerInfo = outcome.customerInfo
             }
+            is CheckpointPaywallOutcome.Finished -> {
+                val finishedCustomerInfo: CustomerInfo = outcome.customerInfo
+            }
             is CheckpointPaywallOutcome.Error -> {
                 val outcomeError: PurchasesError = outcome.error
             }
@@ -38,6 +41,7 @@ private class CheckpointPaywallOutcomeAPI {
         val dismissed: CheckpointPaywallOutcome = CheckpointPaywallOutcome.Dismissed
         val purchased: CheckpointPaywallOutcome = CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction)
         val restored: CheckpointPaywallOutcome = CheckpointPaywallOutcome.Restored(customerInfo)
+        val finished: CheckpointPaywallOutcome = CheckpointPaywallOutcome.Finished(customerInfo)
         val errored: CheckpointPaywallOutcome = CheckpointPaywallOutcome.Error(error)
         val webCheckoutOpened: CheckpointPaywallOutcome = CheckpointPaywallOutcome.WebCheckoutOpened
     }

@@ -2,12 +2,9 @@
 
 package com.revenuecat.apitester.kotlin.revenuecatui
 
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointGateCallback
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointGateResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointListener
@@ -39,22 +36,14 @@ private class CheckpointsAPI {
         val currentListener: CheckpointListener? = purchases.checkpointListener
     }
 
-    fun checkOfferingPresenter(
-        purchases: Purchases,
-        presenter: CheckpointOfferingPresenter,
-        customerInfo: CustomerInfo,
-        storeTransaction: StoreTransaction,
-        error: PurchasesError,
-    ) {
+    fun checkOfferingPresenter(purchases: Purchases, presenter: CheckpointOfferingPresenter) {
         purchases.checkpointOfferingPresenter = presenter
         purchases.checkpointOfferingPresenter = null
         val currentPresenter: CheckpointOfferingPresenter? = purchases.checkpointOfferingPresenter
         val lambdaPresenter = CheckpointOfferingPresenter {
                 offering: Offering, completion: CheckpointOfferingCompletion ->
-            completion.dismissed()
-            completion.purchased(customerInfo, storeTransaction)
-            completion.restored(customerInfo)
-            completion.failed(error)
+            completion.finished()
+            completion.failed()
         }
     }
 }
