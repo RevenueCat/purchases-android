@@ -87,7 +87,7 @@ public object WorkflowScreenType {
 @Serializable
 public data class WorkflowStep(
     val id: String,
-    val type: String,
+    val type: String? = null,
     @SerialName("screen_id") val screenId: String? = null,
     @SerialName("param_values") val paramValues: Map<String, JsonElement> = emptyMap(),
     val triggers: List<WorkflowTrigger> = emptyList(),
@@ -129,6 +129,14 @@ public data class WorkflowStep(
     public val isOfferingStep: Boolean
         get() = type == OFFERING_STEP_TYPE
 
+    internal val offeringIdentifier: String?
+        get() {
+            return (paramValues[OFFERING_IDENTIFIER_PARAM] as? JsonPrimitive)
+                ?.takeIf { it.isString }
+                ?.content
+                ?.takeIf { it.isNotBlank() }
+        }
+
     private fun stringParam(key: String): String? =
         (paramValues[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
 }
@@ -136,6 +144,7 @@ public data class WorkflowStep(
 private const val EXPERIMENT_ID_PARAM = "experiment_id"
 private const val EXPERIMENT_VARIANT_PARAM = "experiment_variant"
 private const val OFFERING_STEP_TYPE = "offering"
+private const val OFFERING_IDENTIFIER_PARAM = "offering_identifier"
 
 @InternalRevenueCatAPI
 @Serializable

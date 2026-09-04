@@ -4,7 +4,7 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 internal data class WorkflowScreenContext(
     val workflowId: String,
     val stepId: String,
-    val stepType: String,
+    val stepType: String?,
     /** `null` when the backend did not tag the step; see `WorkflowStep.stepScreenType`. */
     val screenType: List<String>?,
 )
