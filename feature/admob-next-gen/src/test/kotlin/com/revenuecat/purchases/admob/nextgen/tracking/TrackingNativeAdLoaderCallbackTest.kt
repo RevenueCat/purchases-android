@@ -59,9 +59,7 @@ class TrackingNativeAdLoaderCallbackTest {
                     order += "delegate"
                 }
             },
-            placement = "home",
-            adUnitId = "ad-unit",
-            configureAd = { order += "configure" },
+            resultHandler = resultHandler(configureAd = { order += "configure" }),
         )
 
         callback.onNativeAdLoaded(nativeAd)
@@ -96,9 +94,7 @@ class TrackingNativeAdLoaderCallbackTest {
                     delegatedError = adError
                 }
             },
-            placement = null,
-            adUnitId = "ad-unit",
-            configureAd = { configured = true },
+            resultHandler = resultHandler(placement = null, configureAd = { configured = true }),
         )
 
         callback.onAdFailedToLoad(error)
@@ -133,9 +129,7 @@ class TrackingNativeAdLoaderCallbackTest {
                     delegatedCustomNativeAd = customNativeAd
                 }
             },
-            placement = "home",
-            adUnitId = "ad-unit",
-            configureAd = { configured = true },
+            resultHandler = resultHandler(configureAd = { configured = true }),
         )
 
         callback.onCustomNativeAdLoaded(customNativeAd)
@@ -171,9 +165,7 @@ class TrackingNativeAdLoaderCallbackTest {
                     delegatedBannerAd = bannerAd
                 }
             },
-            placement = "home",
-            adUnitId = "ad-unit",
-            configureAd = { configured = true },
+            resultHandler = resultHandler(configureAd = { configured = true }),
         )
 
         callback.onBannerAdLoaded(bannerAd)
@@ -207,9 +199,7 @@ class TrackingNativeAdLoaderCallbackTest {
                     loadingCompleted = true
                 }
             },
-            placement = "home",
-            adUnitId = "ad-unit",
-            configureAd = { configured = true },
+            resultHandler = resultHandler(configureAd = { configured = true }),
         )
 
         callback.onAdLoadingCompleted()
@@ -218,6 +208,15 @@ class TrackingNativeAdLoaderCallbackTest {
         assertTrue(loadingCompleted)
         assertFalse(configured)
     }
+
+    private fun resultHandler(
+        placement: String? = "home",
+        configureAd: (NativeAd) -> Unit,
+    ): NativeAdLoadResultHandler = NativeAdLoadResultHandler(
+        placement = placement,
+        adUnitId = "ad-unit",
+        configureAd = configureAd,
+    )
 
     private fun responseInfo(adapterClassName: String, responseId: String): ResponseInfo =
         mockk<ResponseInfo>().also {
