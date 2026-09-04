@@ -78,11 +78,22 @@ internal class CheckpointWorkflowPresenter(
             application = activity.application.also { it.registerActivityLifecycleCallbacks(lifecycleCallbacks) }
         }
         host = activity
-        val resolution = presentation.resolution
         val options = PaywallOptions.Builder(dismissRequest = ::requestDismiss)
-            .injectedWorkflow(resolution.workflow, resolution.offering, resolution.uiConfig)
             .setCustomVariables(presentation.customVariables)
             .setListener(outcomeListener)
+            .apply {
+                when (val content = presentation.content) {
+                    is CheckpointPaywallContent.Workflow -> injectedWorkflow(
+                        content.resolution.workflow,
+                        content.resolution.offering,
+                        content.resolution.uiConfig,
+                    )
+                    // Offering paywalls, unlike workflows, don't necessarily carry their own close action, so
+                    // the dismiss button keeps the fallback paywall dismissable.
+                    is CheckpointPaywallContent.OfferingPaywall ->
+                        setOffering(content.offering).setShouldDisplayDismissButton(true)
+                }
+            }
             .build()
         val dialog = ComponentDialog(activity, EDGE_TO_EDGE_WINDOW_THEME)
         dialog.window?.applyEdgeToEdge()

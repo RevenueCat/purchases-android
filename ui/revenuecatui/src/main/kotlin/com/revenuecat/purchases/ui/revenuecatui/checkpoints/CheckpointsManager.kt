@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -9,7 +10,10 @@ import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
@@ -18,9 +22,21 @@ import java.util.UUID
  * observe a call that was taken between two accessors.
  */
 internal class CheckpointPresentation(
-    val resolution: CheckpointResolution.MatchedWorkflow,
+    val content: CheckpointPaywallContent,
     val customVariables: Map<String, CustomVariableValue>,
 )
+
+/** What [CheckpointWorkflowPresenter] renders for a presented checkpoint. */
+internal sealed class CheckpointPaywallContent {
+
+    class Workflow(val resolution: CheckpointResolution.MatchedWorkflow) : CheckpointPaywallContent()
+
+    /**
+     * A matched offering. Until offering presenters exist, the offering's configured paywall is presented,
+     * falling back to the default paywall when it has none.
+     */
+    class OfferingPaywall(val offering: Offering) : CheckpointPaywallContent()
+}
 
 /**
  * Runs a checkpoint hit end to end: fires listener events, asks the core module what the checkpoint resolves
@@ -34,14 +50,18 @@ internal class CheckpointPresentation(
  * with a free presentation slot. A workflow that is already on screen keeps reporting to the manager that
  * presented it, exactly once, even if the SDK is reconfigured underneath it.
  */
+@Suppress("TooManyFunctions")
 internal class CheckpointsManager(
+    // Owns the coroutines behind the callback-based gate API, so an un-awaited checkpoint lives and dies with
+    // the Purchases instance holding this manager rather than with any caller scope.
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
     private val presenterFactory: (callId: String, manager: CheckpointsManager) -> CheckpointWorkflowPresenter =
         { callId, manager -> CheckpointWorkflowPresenter(callId, manager) },
 ) {
 
     private class PendingCall(
         val callId: String,
-        val resolution: CheckpointResolution.MatchedWorkflow,
+        val content: CheckpointPaywallContent,
         val customVariables: Map<String, CustomVariableValue>,
         val paywallFinished: CompletableDeferred<CheckpointPaywallOutcome>,
     ) {
@@ -86,9 +106,14 @@ internal class CheckpointsManager(
             customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
         )
         val result = when (resolution) {
-            is CheckpointResolution.MatchedOffering -> CheckpointResult.ReceivedOffering(resolution.offering)
-            is CheckpointResolution.MatchedWorkflow ->
-                CheckpointResult.PaywallPresented(present(purchases, resolution, customVariables))
+            // No offering presenter exists yet, so the offering's (or the default fallback) paywall is
+            // presented instead of returning the offering for app-owned presentation.
+            is CheckpointResolution.MatchedOffering -> CheckpointResult.PaywallPresented(
+                present(purchases, CheckpointPaywallContent.OfferingPaywall(resolution.offering), customVariables),
+            )
+            is CheckpointResolution.MatchedWorkflow -> CheckpointResult.PaywallPresented(
+                present(purchases, CheckpointPaywallContent.Workflow(resolution), customVariables),
+            )
             is CheckpointResolution.NoAction ->
                 CheckpointResult.NoAction(resolution.reason.toResultReason())
         }
@@ -96,8 +121,30 @@ internal class CheckpointsManager(
         result
     }
 
+    /**
+     * Callback flavor of [checkpoint] behind the gate API: runs the checkpoint and reports what the user
+     * obtained while going through it. Never throws; failures fold into the result. [callback] is invoked
+     * exactly once, on the main thread, when the checkpoint finishes.
+     */
+    fun checkpointGate(
+        purchases: Purchases,
+        identifier: String,
+        params: CheckpointParams?,
+        callback: CheckpointGateCallback,
+    ) {
+        scope.launch {
+            val activeEntitlementsBefore = cachedActiveEntitlementIds(purchases)
+            val gateResult = try {
+                checkpoint(purchases, identifier, params).toGateResult(activeEntitlementsBefore)
+            } catch (e: PurchasesException) {
+                errorGateResult(e.error)
+            }
+            callback.onCheckpointFinished(gateResult)
+        }
+    }
+
     fun presentation(callId: String): CheckpointPresentation? =
-        withPendingCall(callId) { CheckpointPresentation(it.resolution, it.customVariables) }
+        withPendingCall(callId) { CheckpointPresentation(it.content, it.customVariables) }
 
     fun recordOutcome(callId: String, outcome: CheckpointPaywallOutcome) {
         withPendingCall(callId) { it.outcome = outcome }
@@ -119,14 +166,14 @@ internal class CheckpointsManager(
 
     private suspend fun present(
         purchases: Purchases,
-        resolution: CheckpointResolution.MatchedWorkflow,
+        content: CheckpointPaywallContent,
         customVariables: Map<String, CustomVariableValue>,
     ): CheckpointPaywallOutcome {
         val activity = purchases.currentActivity ?: presentationError(
             PurchasesErrorCode.ConfigurationError,
             "Cannot present checkpoint workflow: no started Activity found.",
         )
-        val call = PendingCall(UUID.randomUUID().toString(), resolution, customVariables, CompletableDeferred())
+        val call = PendingCall(UUID.randomUUID().toString(), content, customVariables, CompletableDeferred())
         val claimed = synchronized(this) { (pendingCall == null).also { if (it) pendingCall = call } }
         if (!claimed) {
             presentationError(

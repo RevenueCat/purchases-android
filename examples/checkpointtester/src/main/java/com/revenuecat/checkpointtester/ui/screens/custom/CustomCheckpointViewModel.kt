@@ -1,18 +1,15 @@
 package com.revenuecat.checkpointtester.ui.screens.custom
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import com.revenuecat.checkpointtester.checkpoints.summary
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.awaitCheckpoint
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointGateResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 /**
  * Runs whatever identifier is typed in, so a checkpoint configured in the dashboard can be tried without
@@ -37,37 +34,32 @@ class CustomCheckpointViewModel : ViewModel() {
         val checkpointIdentifier = identifier.trim()
         if (checkpointIdentifier.isEmpty() || _state.value.runningFor != null) return
         _state.update { UiState(runningFor = checkpointIdentifier) }
-        viewModelScope.launch {
-            val result = try {
-                when (val result = Purchases.sharedInstance.awaitCheckpoint(checkpointIdentifier)) {
-                    is CheckpointResult.ReceivedOffering -> UiState(
-                        title = "Offering returned",
-                        detail = "Identifier: ${result.offering.identifier}. The app now owns presentation.",
-                        raw = result.toString(),
-                    )
-                    is CheckpointResult.PaywallPresented -> UiState(
-                        title = "Paywall presented",
-                        detail = when (val outcome = result.paywallOutcome) {
-                            is CheckpointPaywallOutcome.Purchased -> "Purchased."
-                            is CheckpointPaywallOutcome.Restored -> "Restored."
-                            CheckpointPaywallOutcome.Dismissed -> "Dismissed."
-                            CheckpointPaywallOutcome.WebCheckoutOpened -> "Left to pay via web checkout."
-                            is CheckpointPaywallOutcome.Error -> "Paywall error: ${outcome.error.message}"
-                            else -> "Unknown paywall outcome."
-                        },
-                        raw = result.toString(),
-                    )
-                    is CheckpointResult.NoAction -> UiState(
-                        title = "No action",
-                        detail = "Reason: ${result.reason}",
-                        raw = result.toString(),
-                    )
-                    else -> UiState(title = "Unknown checkpoint result.", raw = result.toString())
-                }
-            } catch (e: PurchasesException) {
-                UiState(title = "Failed", detail = "${e.code}: ${e.message}", raw = e.error.toString(), isError = true)
-            }
-            _state.value = result
+        Purchases.sharedInstance.checkpoint(checkpointIdentifier) { gateResult ->
+            _state.value = gateResult.toUiState()
+        }
+    }
+
+    @OptIn(InternalRevenueCatAPI::class)
+    private fun CheckpointGateResult.toUiState(): UiState {
+        val error = error
+        val noActionReason = noActionReason
+        return when {
+            error != null && noActionReason != null -> UiState(
+                title = "Failed",
+                detail = "${error.code}: ${error.message}",
+                raw = toString(),
+                isError = true,
+            )
+            noActionReason != null -> UiState(
+                title = "Nothing served",
+                detail = "Reason: $noActionReason",
+                raw = toString(),
+            )
+            else -> UiState(
+                title = "Workflow presented",
+                detail = summary(),
+                raw = toString(),
+            )
         }
     }
 }

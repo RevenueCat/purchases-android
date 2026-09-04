@@ -7,6 +7,46 @@ import com.revenuecat.purchases.PurchasesException
 
 /**
  * Registers that [checkpointIdentifier] was hit. Depending on the configured targeting rules, this may
+ * auto-present an experience or do nothing. [callback] may be invoked at most once, on the main thread, when the
+ * checkpoint finishes:
+ * - If the checkpoint is configured as a hard gate in the dashboard, only if the customer
+ * does not match any rule when entering the checkpoint or if getting an entitlement while going through the checkpoint.
+ * - If the checkpoint is configured as a soft gate in the dashboard (default), only if the customer
+ * does not match any rule when entering the checkpoint, or if the user finishes the entire flow experience.
+ *
+ * It reports what the user obtained while going through the checkpoint, if anything.
+ *
+ * This call never throws; failures are reported through the result's
+ * [error][CheckpointGateResult.error].
+ *
+ * @param checkpointIdentifier The checkpoint identifier, as configured in the RevenueCat dashboard. It must start
+ * with an ASCII letter, contain only ASCII letters, numbers, underscores, and hyphens, and be no more than 255
+ * characters.
+ * @param params Optional per-call parameters, like custom properties usable in targeting rules.
+ * @param callback Receives the [CheckpointGateResult] once the checkpoint finishes.
+ */
+@InternalRevenueCatAPI
+public fun Purchases.checkpoint(
+    checkpointIdentifier: String,
+    params: CheckpointParams?,
+    callback: CheckpointGateCallback,
+) {
+    checkpointsManager.checkpointGate(this, checkpointIdentifier, params, callback)
+}
+
+/**
+ * [checkpoint] without per-call parameters.
+ */
+@InternalRevenueCatAPI
+public fun Purchases.checkpoint(
+    checkpointIdentifier: String,
+    callback: CheckpointGateCallback,
+) {
+    checkpoint(checkpointIdentifier, params = null, callback = callback)
+}
+
+/**
+ * Registers that [checkpointIdentifier] was hit. Depending on the configured targeting rules, this may
  * auto-present an experience (the call resolves when it finishes) or do nothing.
  *
  * @param checkpointIdentifier The checkpoint identifier, as configured in the RevenueCat dashboard. It must start
@@ -16,10 +56,8 @@ import com.revenuecat.purchases.PurchasesException
  * @throws [PurchasesException] with a [PurchasesError] if the checkpoint could not be handled.
  * @return The [CheckpointResult] for this checkpoint.
  */
-@JvmSynthetic
 @Throws(PurchasesException::class)
-@InternalRevenueCatAPI
-public suspend fun Purchases.awaitCheckpoint(
+internal suspend fun Purchases.awaitCheckpoint(
     checkpointIdentifier: String,
     params: CheckpointParams? = null,
 ): CheckpointResult = checkpointsManager.checkpoint(this, checkpointIdentifier, params)
