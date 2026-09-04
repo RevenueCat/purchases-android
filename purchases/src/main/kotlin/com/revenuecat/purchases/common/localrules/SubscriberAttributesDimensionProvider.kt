@@ -47,7 +47,7 @@ internal class SubscriberAttributesDimensionProvider(
         if (!key.backendKey.isReachableDimensionName) {
             warnLog {
                 "Ignoring dimension '$KEY_SUBSCRIBER_ATTRIBUTES$DIMENSION_PATH_SEPARATOR${key.backendKey}': " +
-                    "a dimension name can't be empty or contain '$DIMENSION_PATH_SEPARATOR'."
+                    "a dimension name can't be blank or contain '$DIMENSION_PATH_SEPARATOR'."
             }
             return null
         }

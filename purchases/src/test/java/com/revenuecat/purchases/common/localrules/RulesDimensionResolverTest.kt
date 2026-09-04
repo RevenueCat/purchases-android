@@ -360,7 +360,7 @@ class RulesDimensionResolverTest {
     @Test
     fun `a provider claiming the backend root fails the snapshot`() = runTest {
         val resolver = resolver(
-            provider("backend" to RulesDimensionValue.ObjectValue(emptyMap())),
+            provider("backend" to RulesDimensionValue.ObjectValue(mapOf("source" to string("x")))),
         )
 
         // Reserved whether or not this evaluation supplies backend values, so the collision is deterministic.
@@ -372,7 +372,7 @@ class RulesDimensionResolverTest {
     @Test
     fun `a provider claiming the custom root fails the snapshot`() = runTest {
         val resolver = resolver(
-            provider("custom" to RulesDimensionValue.ObjectValue(emptyMap())),
+            provider("custom" to RulesDimensionValue.ObjectValue(mapOf("source" to string("x")))),
         )
 
         val error = resolver.snapshot().exceptionOrNull()
@@ -396,10 +396,11 @@ class RulesDimensionResolverTest {
     fun `a name no predicate could read is dropped rather than exposed`() = runTest {
         val resolver = resolver(
             provider(
-                // A '.' would be walked as a path through a "user" object that does not exist, and "" is not a
-                // name a predicate can be written against.
+                // A '.' would be walked as a path through a "user" object that does not exist, and a blank name is
+                // not one a predicate can be written against.
                 "user.tier" to string("gold"),
                 "" to string("anything"),
+                " " to string("anything"),
                 "tier" to string("gold"),
             ),
         )
@@ -419,6 +420,7 @@ class RulesDimensionResolverTest {
                     mapOf(
                         "user.tier" to string("gold"),
                         "" to string("anything"),
+                        " " to string("anything"),
                         "tier" to string("gold"),
                         "nested" to RulesDimensionValue.ObjectValue(
                             mapOf("also.bad" to string("dropped"), "kept" to string("yes")),
@@ -469,6 +471,55 @@ class RulesDimensionResolverTest {
                     ),
                 ),
             ),
+        )
+    }
+
+    @Test
+    fun `an object dimension with nothing readable is absent rather than empty`() = runTest {
+        // An empty object is truthy in JSON Logic, so keeping one would make `{"var": "profile"}` read as present.
+        // Same whether the object was supplied empty or every name inside it was unreachable, at any depth.
+        val resolver = resolver(
+            provider(
+                "empty" to RulesDimensionValue.ObjectValue(emptyMap()),
+                "profile" to RulesDimensionValue.ObjectValue(mapOf("user.tier" to string("gold"))),
+                "goal" to RulesDimensionValue.ObjectValue(
+                    mapOf(
+                        "value" to string("lose_weight"),
+                        "emptied" to RulesDimensionValue.ObjectValue(mapOf("also.bad" to string("dropped"))),
+                    ),
+                ),
+            ),
+        )
+
+        val values = resolver
+            .snapshot(mapOf("settings" to RulesDimensionValue.ObjectValue(emptyMap())))
+            .getOrThrow()
+            .values
+
+        assertThat(values).containsOnlyKeys("evaluated_at", "goal")
+        assertThat(values["goal"]).isEqualTo(Value.ObjectValue(mapOf("value" to Value.StringValue("lose_weight"))))
+        assertThat(
+            RulesEngine.evaluate("""{"!!": [{"var": ["profile", false]}]}""", values).getOrThrow(),
+        ).isFalse()
+    }
+
+    @Test
+    fun `an object list record with nothing readable is dropped from the array`() = runTest {
+        val resolver = resolver(
+            provider(
+                "results" to RulesDimensionValue.ObjectListValue(
+                    listOf(
+                        mapOf("user.tier" to string("gold")),
+                        mapOf("id" to string("b")),
+                    ),
+                ),
+            ),
+        )
+
+        val values = resolver.snapshot().getOrThrow().values
+
+        assertThat(values["results"]).isEqualTo(
+            Value.ArrayValue(listOf(Value.ObjectValue(mapOf("id" to Value.StringValue("b"))))),
         )
     }
 

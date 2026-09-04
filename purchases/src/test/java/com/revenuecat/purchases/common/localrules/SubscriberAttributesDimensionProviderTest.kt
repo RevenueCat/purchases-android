@@ -98,12 +98,13 @@ class SubscriberAttributesDimensionProviderTest {
 
     @Test
     fun `an attribute named so no predicate could read it is left out`() = runTest {
-        // A '.' would be walked as a path through a "user" object that does not exist, and "" is not a name a
-        // predicate can be written against. Attribute names sit inside this provider's root dimension, where the
+        // A '.' would be walked as a path through a "user" object that does not exist, and a blank name is not one
+        // a predicate can be written against. Attribute names sit inside this provider's root dimension, where the
         // resolver's own filtering cannot see them.
         val records = provider(
             attribute("user.tier", "gold"),
             attribute("", "anything"),
+            attribute(" ", "anything"),
             attribute("tier", "gold"),
         ).records(evaluationDate)
 

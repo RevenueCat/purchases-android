@@ -130,7 +130,9 @@ private fun MutableMap<String, Value>.addNestedDimensions(
 /**
  * Drops the names no predicate could ever read, at any depth; see [String.isReachableDimensionName]. Names inside
  * [RulesDimensionValue.ObjectValue] and [RulesDimensionValue.ObjectListValue] records are one `var` path segment
- * each, so the same rule applies to them, one entry at a time.
+ * each, so the same rule applies to them, one entry at a time. An object left with nothing readable is dropped
+ * along with its names, for the same reason [addNestedDimensions] contributes no root for an empty source: an
+ * empty object is truthy in JSON Logic, so keeping it would make `{"var": "profile"}` read as present.
  *
  * Dropped rather than failing the snapshot, unlike this resolver's other two rejections: custom variables are
  * named by the app, so a single value the SDK cannot expose must not stop every checkpoint from resolving. Same
@@ -143,29 +145,33 @@ private fun Map<String, RulesDimensionValue>.filterReachable(
     val path = root?.let { "$it$DIMENSION_PATH_SEPARATOR$name" } ?: name
     if (!name.isReachableDimensionName) {
         warnLog {
-            "Ignoring dimension '$path': a dimension name can't be empty or contain '$DIMENSION_PATH_SEPARATOR'."
+            "Ignoring dimension '$path': a dimension name can't be blank or contain '$DIMENSION_PATH_SEPARATOR'."
         }
         null
     } else {
-        name to value.filterReachable(path)
+        value.filterReachable(path)?.let { reachable -> name to reachable }
     }
 }.toMap()
 
-private fun RulesDimensionValue.filterReachable(path: String): RulesDimensionValue = when (this) {
-    is RulesDimensionValue.ObjectValue -> RulesDimensionValue.ObjectValue(value.filterReachable(root = path))
+private fun RulesDimensionValue.filterReachable(path: String): RulesDimensionValue? = when (this) {
+    is RulesDimensionValue.ObjectValue -> value.filterReachable(root = path)
+        .takeIf { it.isNotEmpty() }
+        ?.let { RulesDimensionValue.ObjectValue(it) }
     is RulesDimensionValue.ObjectListValue -> RulesDimensionValue.ObjectListValue(
-        value.mapIndexed { index, record -> record.filterReachable(root = "$path$DIMENSION_PATH_SEPARATOR$index") },
+        value.mapIndexedNotNull { index, record ->
+            record.filterReachable(root = "$path$DIMENSION_PATH_SEPARATOR$index").takeIf { it.isNotEmpty() }
+        },
     )
     else -> this
 }
 
 /**
  * Whether a predicate could read this name. The engine's `var` walks a strict dot-path, so a name containing a
- * `.` would be read as a path through a nested object that does not exist, and an empty one is not a name a
+ * `.` would be read as a path through a nested object that does not exist, and a blank one is not a name a
  * predicate can be written against.
  */
 internal val String.isReachableDimensionName: Boolean
-    get() = isNotEmpty() && !contains(DIMENSION_PATH_SEPARATOR)
+    get() = isNotBlank() && !contains(DIMENSION_PATH_SEPARATOR)
 
 internal const val DIMENSION_PATH_SEPARATOR = '.'
 
