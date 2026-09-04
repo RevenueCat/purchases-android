@@ -47,15 +47,13 @@ internal class RulesDimensionResolver(
 ) {
 
     /**
-     * [customVariables] are the caller's own values for this one evaluation, exposed under `custom`.
-     * [backendValues] are the backend's pre-evaluated values for this one evaluation, exposed under `backend`.
-     * Both roots are reserved whether or not this evaluation supplies values for them, so a provider colliding
-     * with one is deterministic rather than dependent on call arguments.
+     * [customVariables] are the caller's own values for this one evaluation, exposed under `custom`. That root
+     * is reserved whether or not this evaluation supplies values for it, so a provider colliding with it is
+     * deterministic rather than dependent on call arguments.
      */
     @Suppress("ReturnCount")
     suspend fun snapshot(
         customVariables: Map<String, RulesDimensionValue> = emptyMap(),
-        backendValues: Map<String, RulesDimensionValue> = emptyMap(),
     ): Result<RulesDimensionSnapshot> {
         val date = dateProvider.now
         // Seeded before any provider runs, so a provider claiming this root is an ordinary collision.
@@ -83,10 +81,6 @@ internal class RulesDimensionResolver(
             return Result.failure(conflict)
         }
 
-        values.addNestedDimensions(KEY_BACKEND, backendValues)?.let { conflict ->
-            return Result.failure(conflict)
-        }
-
         return Result.success(
             RulesDimensionSnapshot(
                 values = values,
@@ -101,7 +95,7 @@ private fun MutableMap<String, Value>.addRootDimensions(
     dimensions: Map<String, RulesDimensionValue>,
 ): RulesDimensionResolutionException.ConflictingDimension? {
     for ((name, value) in dimensions.filterReachable(root = null)) {
-        if (containsKey(name) || name == KEY_CUSTOM || name == KEY_BACKEND) {
+        if (containsKey(name) || name == KEY_CUSTOM) {
             return RulesDimensionResolutionException.ConflictingDimension(name)
         }
         this[name] = value.asRulesEngineValue
@@ -177,7 +171,6 @@ internal const val DIMENSION_PATH_SEPARATOR = '.'
 
 private const val KEY_EVALUATED_AT = "evaluated_at"
 private const val KEY_CUSTOM = "custom"
-private const val KEY_BACKEND = "backend"
 
 private val RulesDimensionValue.asRulesEngineValue: Value
     get() = when (this) {

@@ -53,7 +53,7 @@ class RulesDimensionScopeTest {
 
     @Test
     fun `the whole evaluation scope`() = runTest {
-        val scope = resolver().snapshot(CUSTOM_VARIABLES, BACKEND_VALUES).getOrThrow().values
+        val scope = resolver().snapshot(CUSTOM_VARIABLES).getOrThrow().values
 
         assertThat(scope.render()).isEqualTo(
             """
@@ -61,9 +61,6 @@ class RulesDimensionScopeTest {
               "acquisition_channel": "paid_search",
               "app_user_id": "current_user",
               "app_version": "1.2.3",
-              "backend": {
-                "349OzehoTyCAdiZblj9w0J0yD-Uow8X3": true
-              },
               "custom": {
                 "plan": "gold",
                 "seats": 3,
@@ -180,13 +177,12 @@ class RulesDimensionScopeTest {
 
     @Test
     fun `every root of the scope is readable by a predicate`() = runTest {
-        val scope = resolver().snapshot(CUSTOM_VARIABLES, BACKEND_VALUES).getOrThrow().values
+        val scope = resolver().snapshot(CUSTOM_VARIABLES).getOrThrow().values
 
         val predicates = listOf(
             """{"==": [{"var": "platform"}, "android"]}""",
             """{"==": [{"var": "storefront"}, "USA"]}""",
             """{"==": [{"var": "custom.plan"}, "gold"]}""",
-            """{"var": ["backend.349OzehoTyCAdiZblj9w0J0yD-Uow8X3", false]}""",
             """{"==": [{"var": "app_user_id"}, "current_user"]}""",
             """{"==": [{"var": "acquisition_channel"}, "paid_search"]}""",
             """{"some": [{"var": "purchases"}, {"==": [{"var": "period_type"}, "trial"]}]}""",
@@ -290,10 +286,6 @@ class RulesDimensionScopeTest {
             "plan" to RulesDimensionValue.StringValue("gold"),
             "seats" to RulesDimensionValue.IntValue(3),
             "trialEligible" to RulesDimensionValue.BoolValue(true),
-        )
-
-        val BACKEND_VALUES = mapOf(
-            "349OzehoTyCAdiZblj9w0J0yD-Uow8X3" to RulesDimensionValue.BoolValue(true),
         )
 
         /** The dimensions the backend last sent alongside the subscriber, root-level under their own names. */
