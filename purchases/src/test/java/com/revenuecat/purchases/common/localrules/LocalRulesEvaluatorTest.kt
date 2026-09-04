@@ -15,6 +15,7 @@ class LocalRulesEvaluatorTest {
     private val matchingPredicate = """{"==": [{"var": "platform"}, "android"]}"""
     private val nonMatchingPredicate = """{"==": [{"var": "platform"}, "amazon"]}"""
     private val malformedPredicate = "{not json"
+    private val unsuppliedDimensionPredicate = """{"==": [{"var": "unknown_dimension"}, true]}"""
 
     private var snapshotsTaken = 0
     private val deviceProvider = object : RulesDimensionProvider {
@@ -54,18 +55,45 @@ class LocalRulesEvaluatorTest {
     }
 
     @Test
-    fun `a predicate reading an unsupplied dimension surfaces as an error`() = runTest {
-        // A dimension this SDK version cannot resolve makes the rule
-        // unanswerable. Reporting that is what lets the caller tell it apart
-        // from a rule that was evaluated and did not match.
+    fun `a predicate reading an unsupplied dimension is a non-match`() = runTest {
+        val result = evaluator().match(listOf(TestRule("only", unsuppliedDimensionPredicate)))
+
+        assertThat(result.getOrThrow()).isNull()
+    }
+
+    @Test
+    fun `a negated predicate reading an unsupplied dimension is a non-match`() = runTest {
         val result = evaluator().match(
-            listOf(TestRule("only", """{"==": [{"var": "unknown_dimension"}, true]}""")),
+            listOf(TestRule("only", """{"!": [{"==": [{"var": "unknown_dimension"}, "NL"]}]}""")),
+        )
+
+        assertThat(result.getOrThrow()).isNull()
+    }
+
+    @Test
+    fun `an unsupplied dimension does not block a later match`() = runTest {
+        val result = evaluator().match(
+            listOf(
+                TestRule("unsupplied", unsuppliedDimensionPredicate),
+                TestRule("match", matchingPredicate),
+            ),
+        )
+
+        assertThat(result.getOrThrow()?.name).isEqualTo("match")
+    }
+
+    @Test
+    fun `an unsupplied dimension is not remembered as the first failure`() = runTest {
+        val result = evaluator().match(
+            listOf(
+                TestRule("unsupplied", unsuppliedDimensionPredicate),
+                TestRule("broken", malformedPredicate),
+            ),
         )
 
         val error = result.exceptionOrNull() as LocalRulesEvaluationException.PredicateEvaluation
-        assertThat(error.ruleIndex).isZero()
-        assertThat(error.error)
-            .isEqualTo(RulesEngine.EvaluationException.UnresolvedVariable("unknown_dimension"))
+        assertThat(error.ruleIndex).isEqualTo(1)
+        assertThat(error.error).isInstanceOf(RulesEngine.EvaluationException.Parse::class.java)
     }
 
     @Test
@@ -169,10 +197,8 @@ class LocalRulesEvaluatorTest {
             evaluator().match(rules, mapOf("source" to RulesDimensionValue.StringValue("other")))
                 .getOrThrow(),
         ).isNull()
-        // Supplying no custom variables at all leaves `custom.source` unresolved,
-        // which is unanswerable rather than a non-match.
-        assertThat(evaluator().match(rules).exceptionOrNull())
-            .isInstanceOf(LocalRulesEvaluationException.PredicateEvaluation::class.java)
+        // Supplying no custom variables at all leaves `custom.source` unresolved, which is a non-match.
+        assertThat(evaluator().match(rules).getOrThrow()).isNull()
     }
 
     @Test

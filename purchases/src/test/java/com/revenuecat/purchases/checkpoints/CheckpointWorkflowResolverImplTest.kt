@@ -53,6 +53,7 @@ import java.util.concurrent.atomic.AtomicInteger
 class CheckpointWorkflowResolverImplTest {
 
     private val checkpointId = "test_checkpoint"
+    private val unsuppliedDimensionPredicate = """{"in": [{"var": "last_seen.country"}, ["ES"]]}"""
 
     private lateinit var mockWorkflowManager: WorkflowManager
     private lateinit var mockUiConfigProvider: UiConfigProvider
@@ -330,6 +331,28 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
+    fun `an audience on an unsupplied dimension resolves to no match`() = runTest {
+        configureAudiences(Audience("aud_wf1234", unsuppliedDimensionPredicate))
+
+        assertThat(noActionReason(resolve())).isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
+        coVerify(exactly = 0) { mockWorkflowManager.getWorkflowBody(any()) }
+    }
+
+    @Test
+    fun `an audience on an unsupplied dimension does not block a later matching workflow`() = runTest {
+        configureRules(rule("wf5678"), rule("wf1234"))
+        configureAudiences(
+            Audience("aud_wf5678", unsuppliedDimensionPredicate),
+            Audience("aud_wf1234", "true"),
+        )
+
+        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
+
+        assertThat(resolution.workflow).isEqualTo(mockWorkflow)
+        coVerify(exactly = 0) { mockWorkflowManager.getWorkflowBody("wf5678") }
+    }
+
+    @Test
     fun `a malformed audience before a match does not prevent a later matching workflow`() = runTest {
         configureRules(rule("wf5678"), rule("wf1234"))
         configureAudiences(
@@ -430,13 +453,11 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `a custom variable the audience requires but the app omitted is not a NO_MATCH`() = runTest {
-        // The audience asks about a variable the call never supplied, so the SDK cannot place this
-        // customer inside or outside it. Saying NO_MATCH would claim an answer it does not have.
+    fun `a custom variable the audience requires but the app omitted resolves NoAction with NO_MATCH`() = runTest {
         configureAudiences(Audience("aud_wf1234", """{"==": [{"var": "custom.source"}, "settings"]}"""))
 
         assertThat(noActionReason(resolver.resolve(checkpointId, emptyMap())))
-            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+            .isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
     }
 
     @Test
@@ -448,8 +469,7 @@ class CheckpointWorkflowResolverImplTest {
         val resolution = resolver.resolve(checkpointId, emptyMap())
 
         assertThat(resolution).isNotInstanceOf(CheckpointResolution.MatchedWorkflow::class.java)
-        assertThat(noActionReason(resolution))
-            .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+        assertThat(noActionReason(resolution)).isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
     }
 
     @Test
