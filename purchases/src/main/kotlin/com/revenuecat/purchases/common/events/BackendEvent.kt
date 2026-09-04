@@ -279,7 +279,7 @@ internal sealed class BackendEvent : Event {
             val locale: String? = null,
         ) {
             private companion object {
-                const val WORKFLOW_CONTEXT_PLATFORM = "android"
+                const val WORKFLOW_CONTEXT_PLATFORM = "Android"
             }
         }
 
