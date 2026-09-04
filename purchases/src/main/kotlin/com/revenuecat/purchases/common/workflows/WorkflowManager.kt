@@ -121,10 +121,6 @@ internal class WorkflowManager(
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         workflowsConfigProvider.resolveWorkflow(offeringId)
 
-    /** See [WorkflowsConfigProvider.offeringIdByWorkflowId]. */
-    suspend fun offeringIdByWorkflowId(): Map<String, String> =
-        workflowsConfigProvider.offeringIdByWorkflowId()
-
     /**
      * Invokes [onComplete] once the config-endpoint paywall data `getOfferings` depends on is ready — the
      * config-topic replacement for the old `getWorkflowsList(onComplete=)` gate `OfferingsManager` used to

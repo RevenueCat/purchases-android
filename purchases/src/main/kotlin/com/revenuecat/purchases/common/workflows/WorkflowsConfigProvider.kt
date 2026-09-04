@@ -132,19 +132,6 @@ internal class WorkflowsConfigProvider(
         (resolveWorkflow(offeringId) as? WorkflowResolution.Found)?.workflowId
 
     /**
-     * Every workflow id in the `workflows` topic that maps to an `offering_identifier`, mapped to that offering.
-     * Workflows without one are omitted: they can't be presented, so no caller has a use for them. Empty when the
-     * topic is unavailable. May trigger a `/v1/config` sync on a cold cache.
-     */
-    suspend fun offeringIdByWorkflowId(): Map<String, String> =
-        manager.topic(RemoteConfigTopic.Workflows)
-            ?.mapNotNull { (workflowId, item) ->
-                item.metadata.stringOrNull(KEY_OFFERING_IDENTIFIER)?.let { workflowId to it }
-            }
-            ?.toMap()
-            .orEmpty()
-
-    /**
      * Resolves [workflowId] into a [PublishedWorkflow], or `null` when the item is unknown, its body can be
      * neither read nor downloaded, or the body fails to parse. Memory-first: a cached workflow returns
      * synchronously — the body bytes are already in memory, so the [Lazy] decode runs on this (caller) thread

@@ -92,6 +92,61 @@ internal class WorkflowModelsDeserializationTest {
     }
 
     @Test
+    fun `WorkflowStep type is null when absent`() {
+        // Untyped workflows ship steps without a type; the whole workflow must still parse.
+        val json = """
+            {"id": "step_1"}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.type).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier reads param_values`() {
+        val json = """
+            {"id": "step_1", "param_values": {"offering_identifier": "default"}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isEqualTo("default")
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier is null when param_values lacks it`() {
+        val json = """
+            {"id": "step_1", "param_values": {"other": "value"}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier is null for a null value`() {
+        val json = """
+            {"id": "step_1", "param_values": {"offering_identifier": null}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier is null for a non-string value`() {
+        val json = """
+            {"id": "step_1", "param_values": {"offering_identifier": 42}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier is null for a blank value`() {
+        val json = """
+            {"id": "step_1", "param_values": {"offering_identifier": "  "}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isNull()
+    }
+
+    @Test
     fun `WorkflowScreen reads state_declarations`() {
         val json = """
             {

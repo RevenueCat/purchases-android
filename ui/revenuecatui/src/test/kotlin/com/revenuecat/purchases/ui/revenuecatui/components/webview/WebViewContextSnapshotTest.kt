@@ -327,6 +327,20 @@ internal class WebViewContextSnapshotTest {
     }
 
     @Test
+    fun `step_type is null for an untyped step`() {
+        val workflow = testContextSnapshot(
+            workflowScreen = WorkflowScreenContext(
+                workflowId = "wf_123",
+                stepId = "step_paywall",
+                stepType = null,
+                screenType = listOf("paywall"),
+            ),
+        ).getValue("workflow").jsonObject
+
+        assertThat(workflow.getValue("step_type")).isEqualTo(JsonNull)
+    }
+
+    @Test
     fun `screen_type is an empty array for an untagged step`() {
         // The wire type has no null; the untagged-vs-tagged-empty distinction is native-only.
         val workflow = testContextSnapshot(
