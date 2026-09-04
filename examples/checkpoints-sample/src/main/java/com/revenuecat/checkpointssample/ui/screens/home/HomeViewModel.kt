@@ -22,7 +22,6 @@ class HomeViewModel : ViewModel() {
     data class UiState(
         val loading: Boolean = true,
         val activeEntitlements: List<String> = emptyList(),
-        val checkingAccess: Boolean = false,
         val message: String? = null,
         val gamesPlayed: Int = 0,
     ) {
@@ -38,7 +37,6 @@ class HomeViewModel : ViewModel() {
     }
 
     fun refresh() {
-        if (_state.value.checkingAccess) return
         _state.update { it.copy(loading = true, message = null) }
         viewModelScope.launch {
             val customerInfo = try {
@@ -56,12 +54,11 @@ class HomeViewModel : ViewModel() {
     @OptIn(InternalRevenueCatAPI::class)
     fun play(onAccessGranted: () -> Unit) {
         val current = _state.value
-        if (current.loading || current.checkingAccess) return
+        if (current.loading) return
         if (current.gameUnlocked) {
             startGame(onAccessGranted)
             return
         }
-        _state.update { it.copy(checkingAccess = true, message = null) }
         Purchases.sharedInstance.checkpoint(
             Constants.PLAY_GAME_CHECKPOINT_ID,
             CheckpointParams { customVariables { "games_played" to current.gamesPlayed } },
@@ -69,7 +66,6 @@ class HomeViewModel : ViewModel() {
             val granted = gateResult.entitlements.map { it.identifier }
             _state.update {
                 it.copy(
-                    checkingAccess = false,
                     activeEntitlements = (it.activeEntitlements + granted).distinct().sorted(),
                     message = if (granted.isEmpty()) gateResult.lockedMessage() else null,
                 )

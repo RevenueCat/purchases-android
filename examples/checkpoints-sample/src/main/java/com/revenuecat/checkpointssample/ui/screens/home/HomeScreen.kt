@@ -37,7 +37,7 @@ fun HomeScreen(
     ) {
         Text("Checkpoints Arcade", style = MaterialTheme.typography.headlineSmall)
         GameStatusCard(state)
-        if (state.loading || state.checkingAccess) {
+        if (state.loading) {
             CircularProgressIndicator(modifier = Modifier.size(32.dp))
         } else {
             Button(onClick = { viewModel.play(onPlay) }) {

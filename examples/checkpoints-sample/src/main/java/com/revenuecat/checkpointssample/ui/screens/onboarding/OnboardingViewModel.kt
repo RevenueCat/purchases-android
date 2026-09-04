@@ -28,14 +28,12 @@ class OnboardingViewModel : ViewModel() {
 
     data class UiState(
         val step: Step = Step.Welcome,
-        val finishing: Boolean = false,
     )
 
     private val _state = MutableStateFlow(UiState())
     val state: StateFlow<UiState> = _state.asStateFlow()
 
     fun advance(onFinished: () -> Unit) {
-        if (_state.value.finishing) return
         when (_state.value.step) {
             Step.Welcome -> _state.update { it.copy(step = Step.Personalize) }
             Step.Personalize -> finish(onFinished)
@@ -44,10 +42,8 @@ class OnboardingViewModel : ViewModel() {
 
     @OptIn(InternalRevenueCatAPI::class)
     private fun finish(onFinished: () -> Unit) {
-        _state.update { it.copy(finishing = true) }
         Purchases.sharedInstance.checkpoint(Constants.ONBOARDING_CHECKPOINT_ID) {
-            // Whatever the checkpoint served (or didn't), onboarding is over: continue to home.
-            _state.update { state -> state.copy(finishing = false) }
+            // Only called once the gate lets the user through, so this is where onboarding ends.
             onFinished()
         }
     }
