@@ -41,6 +41,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -60,6 +61,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.getColorForT
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesDialog
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterAnimations
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterNavigator
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
@@ -85,10 +87,10 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun InternalCustomerCenter(
     modifier: Modifier = Modifier,
-    listener: CustomerCenterListener? = null,
+    options: CustomerCenterOptions = CustomerCenterOptions.Builder().build(),
     viewModel: CustomerCenterViewModel = getCustomerCenterViewModel(
         isDarkMode = isSystemInDarkTheme(),
-        listener = listener,
+        listener = options.listener,
     ),
     onDismiss: () -> Unit,
 ) {
@@ -146,6 +148,12 @@ internal fun InternalCustomerCenter(
         viewModel.onNavigationButtonPressed(context, onDismiss)
     }
 
+    BindNavigator(navigator = options.navigationOptions.navigator) {
+        viewModel.onNavigationButtonPressed(context, onDismiss)
+    }
+
+    NotifyNavigationListener(state = state, listener = options.navigationOptions.listener)
+
     viewModel.actionError.value?.let {
         ErrorDialog(
             dismissRequest = viewModel::clearActionError,
@@ -156,6 +164,7 @@ internal fun InternalCustomerCenter(
     InternalCustomerCenter(
         state,
         modifier,
+        shouldShowTopBar = options.navigationOptions.shouldShowTopBar,
         onAction = { action ->
             when (action) {
                 is CustomerCenterAction.PathButtonPressed -> {
@@ -207,6 +216,7 @@ internal fun InternalCustomerCenter(
 private fun InternalCustomerCenter(
     state: CustomerCenterState,
     modifier: Modifier = Modifier,
+    shouldShowTopBar: Boolean = true,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     val colorScheme = createColorScheme(state)
@@ -222,6 +232,7 @@ private fun InternalCustomerCenter(
                 title = title,
                 shouldUseLargeTopBar = shouldUseLargeTopBar,
                 navigationButtonType = navigationButtonType,
+                shouldShowTopBar = shouldShowTopBar,
             ),
             onAction = onAction,
         ) {
@@ -245,6 +256,38 @@ private fun InternalCustomerCenter(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun BindNavigator(
+    navigator: CustomerCenterNavigator?,
+    onNavigateBack: () -> Unit,
+) {
+    if (navigator == null) return
+
+    val currentOnNavigateBack by rememberUpdatedState(onNavigateBack)
+
+    DisposableEffect(navigator) {
+        navigator.onNavigateBack = { currentOnNavigateBack() }
+        onDispose { navigator.onNavigateBack = null }
+    }
+}
+
+@Composable
+private fun NotifyNavigationListener(
+    state: CustomerCenterState,
+    listener: CustomerCenterNavigationListener?,
+) {
+    if (listener == null) return
+
+    val currentListener by rememberUpdatedState(listener)
+    val successState = state as? CustomerCenterState.Success
+    val canNavigateBack = successState?.navigationState?.canNavigateBack == true
+    val title = successState?.currentDestination?.title
+
+    LaunchedEffect(canNavigateBack, title) {
+        currentListener.onScreenChange(canNavigateBack = canNavigateBack, title = title)
     }
 }
 
@@ -305,6 +348,7 @@ private data class CustomerCenterScaffoldConfig(
     val title: String?,
     val shouldUseLargeTopBar: Boolean,
     val navigationButtonType: CustomerCenterState.NavigationButtonType,
+    val shouldShowTopBar: Boolean = true,
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -324,11 +368,13 @@ private fun CustomerCenterScaffold(
     Scaffold(
         modifier = modifier.applyIfNotNull(scrollBehavior) { nestedScroll(it.nestedScrollConnection) },
         topBar = {
-            CustomerCenterTopBar(
-                scaffoldConfig = scaffoldConfig,
-                scrollBehavior = scrollBehavior,
-                onAction = onAction,
-            )
+            if (scaffoldConfig.shouldShowTopBar) {
+                CustomerCenterTopBar(
+                    scaffoldConfig = scaffoldConfig,
+                    scrollBehavior = scrollBehavior,
+                    onAction = onAction,
+                )
+            }
         },
     ) { paddingValues ->
         Column(
@@ -358,8 +404,11 @@ private fun CustomerCenterTopBar(
     )
     if (scaffoldConfig.shouldUseLargeTopBar) {
         LargeTopAppBar(
+            modifier = Modifier.testTag("customer_center_top_bar"),
             title = {
-                scaffoldConfig.title?.let { Text(text = it) }
+                scaffoldConfig.title?.let {
+                    Text(text = it, modifier = Modifier.testTag("customer_center_top_bar_title"))
+                }
             },
             navigationIcon = {
                 CustomerCenterNavigationIcon(
@@ -372,8 +421,11 @@ private fun CustomerCenterTopBar(
         )
     } else {
         TopAppBar(
+            modifier = Modifier.testTag("customer_center_top_bar"),
             title = {
-                scaffoldConfig.title?.let { Text(text = it) }
+                scaffoldConfig.title?.let {
+                    Text(text = it, modifier = Modifier.testTag("customer_center_top_bar_title"))
+                }
             },
             navigationIcon = {
                 CustomerCenterNavigationIcon(
@@ -391,9 +443,12 @@ private fun CustomerCenterNavigationIcon(
     navigationButtonType: CustomerCenterState.NavigationButtonType,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
-    IconButton(onClick = {
-        onAction(CustomerCenterAction.NavigationButtonPressed)
-    }) {
+    IconButton(
+        modifier = Modifier.testTag("customer_center_navigation_button"),
+        onClick = {
+            onAction(CustomerCenterAction.NavigationButtonPressed)
+        },
+    ) {
         Icon(
             imageVector = when (navigationButtonType) {
                 CustomerCenterState.NavigationButtonType.BACK -> ArrowBack
@@ -738,6 +793,26 @@ internal fun CustomerCenterMultiplePurchasesPreview() {
         modifier = Modifier
             .fillMaxSize()
             .padding(10.dp),
+        onAction = {},
+    )
+}
+
+@Preview
+@Composable
+internal fun CustomerCenterLoadedNoTopBarPreview() {
+    InternalCustomerCenter(
+        state = CustomerCenterState.Success(
+            customerCenterConfigData = previewConfigData,
+            purchases = listOf(CustomerCenterConfigTestData.purchaseInformationMonthlyRenewing),
+            mainScreenPaths = previewConfigData.getManagementScreen()?.paths ?: emptyList(),
+            detailScreenPaths = previewConfigData.getManagementScreen()?.paths?.filter {
+                it.type == CustomerCenterConfigData.HelpPath.PathType.CANCEL
+            } ?: emptyList(),
+        ),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(10.dp),
+        shouldShowTopBar = false,
         onAction = {},
     )
 }
