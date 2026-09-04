@@ -6,7 +6,7 @@ import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdValue
 import com.google.android.libraries.ads.mobile.sdk.common.PrecisionType
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.admob.nextgen.ConfiguredPurchasesRule
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
@@ -14,33 +14,20 @@ import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkClass
-import io.mockk.mockkObject
 import io.mockk.slot
-import io.mockk.unmockkObject
 import io.mockk.verify
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import java.lang.reflect.Proxy
 
 class TrackingEventCallbackContractTest {
-    private val purchases = mockk<Purchases>(relaxed = true)
+    @get:Rule
+    val configuredPurchases = ConfiguredPurchasesRule()
 
-    @Before
-    fun setUp() {
-        every { purchases.adTracker } returns mockk<AdTracker>(relaxed = true)
-        mockkObject(Purchases)
-        every { Purchases.isConfigured } returns true
-        every { Purchases.sharedInstance } returns purchases
-    }
-
-    @After
-    fun tearDown() {
-        unmockkObject(Purchases)
-    }
+    private val purchases get() = configuredPurchases.purchases
 
     @Test
     fun `format callbacks override every SDK callback`() {

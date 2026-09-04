@@ -6,6 +6,7 @@ import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.common.PreloadCallback
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.admob.nextgen.PreloaderTest
+import com.revenuecat.purchases.admob.nextgen.responseInfo
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import io.mockk.confirmVerified
 import io.mockk.every

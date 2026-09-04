@@ -8,42 +8,26 @@ import com.google.android.libraries.ads.mobile.sdk.common.PreloadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.PreloadConfiguration
 import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
-import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import io.mockk.CapturingSlot
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.slot
-import io.mockk.unmockkObject
 import io.mockk.verify
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Before
+import org.junit.Rule
 
 internal abstract class PreloaderTest {
 
-    protected val adTracker = mockk<AdTracker>(relaxed = true)
-    private val purchases = mockk<Purchases>(relaxed = true)
+    @get:Rule
+    val configuredPurchases = ConfiguredPurchasesRule()
 
-    @Before
-    fun setUpPurchases() {
-        every { purchases.adTracker } returns adTracker
-        mockkObject(Purchases)
-        every { Purchases.isConfigured } returns true
-        every { Purchases.sharedInstance } returns purchases
-    }
-
-    @After
-    fun tearDownPurchases() {
-        unmockkObject(Purchases)
-    }
+    protected val adTracker get() = configuredPurchases.adTracker
 
     protected fun assertStartInstallsPreloadTracking(
         expectedAdFormat: AdFormat,
@@ -76,11 +60,6 @@ internal abstract class PreloaderTest {
 
         assertNull(pollAndTrackAd(PRELOAD_ID))
         verify(exactly = 0) { adTracker.trackAdLoaded(any(), any()) }
-    }
-
-    protected fun responseInfo(networkName: String, responseId: String): ResponseInfo = mockk(relaxed = true) {
-        every { adapterClassName } returns networkName
-        every { this@mockk.responseId } returns responseId
     }
 
     protected fun loadError(errorCode: LoadAdError.ErrorCode): LoadAdError = mockk {
