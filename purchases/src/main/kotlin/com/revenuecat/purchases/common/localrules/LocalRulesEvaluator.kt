@@ -43,21 +43,26 @@ internal class LocalRulesEvaluator(
      *
      * When a predicate must be resolved before it can be evaluated, a resolution failure fails the call immediately.
      * [customVariables] are the caller's own values for this evaluation, readable under `custom.*`.
+     * [backendValues] are the backend's pre-evaluated predicate results for this evaluation, readable under
+     * `backend.*`; the caller supplies them alongside the rules they were committed with, so both reflect the
+     * same remote config state.
      */
     suspend fun <Rule : LocalRule> match(
         rules: List<Rule>,
         customVariables: Map<String, RulesDimensionValue> = emptyMap(),
-    ): Result<Rule?> = match(rules, customVariables) { rule -> Result.success(rule.predicate) }
+        backendValues: Map<String, RulesDimensionValue> = emptyMap(),
+    ): Result<Rule?> = match(rules, customVariables, backendValues) { rule -> Result.success(rule.predicate) }
 
     @Suppress("ReturnCount")
     suspend fun <Rule> match(
         rules: List<Rule>,
         customVariables: Map<String, RulesDimensionValue> = emptyMap(),
+        backendValues: Map<String, RulesDimensionValue> = emptyMap(),
         predicateFor: suspend (Rule) -> Result<String>,
     ): Result<Rule?> {
         if (rules.isEmpty()) return Result.success(null)
 
-        val snapshot = dimensionResolver.snapshot(customVariables).fold(
+        val snapshot = dimensionResolver.snapshot(customVariables, backendValues).fold(
             onSuccess = { snapshot -> snapshot },
             onFailure = { error ->
                 return Result.failure(LocalRulesEvaluationException.DimensionResolution(error))

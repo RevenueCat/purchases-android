@@ -297,6 +297,46 @@ class RulesDimensionResolverTest {
     }
 
     @Test
+    fun `backend values are nested under the backend namespace`() = runTest {
+        val resolver = resolver(provider(RulesDimensionNamespace.Device, "platform" to string("android")))
+
+        val values = resolver
+            .snapshot(backendValues = mapOf("349OzehoTyCAdiZblj9w0J0yD-Uow8X3" to RulesDimensionValue.BoolValue(true)))
+            .getOrThrow()
+            .values
+
+        val matches = RulesEngine.evaluate(
+            """{"var": ["backend.349OzehoTyCAdiZblj9w0J0yD-Uow8X3", false]}""",
+            values,
+        )
+        assertThat(matches.getOrThrow()).isTrue()
+    }
+
+    @Test
+    fun `no backend values leaves the namespace absent rather than empty`() = runTest {
+        val resolver = resolver(provider(RulesDimensionNamespace.Device, "platform" to string("android")))
+
+        val values = resolver.snapshot().getOrThrow().values
+
+        assertThat(values).containsOnlyKeys("device")
+        // An absent hash reads as the rule's default, which is what keeps unknown hashes forward-compatible.
+        assertThat(
+            RulesEngine.evaluate("""{"var": ["backend.unknown_hash", false]}""", values).getOrThrow(),
+        ).isFalse()
+    }
+
+    @Test
+    fun `a backend value colliding with a provider fails the snapshot`() = runTest {
+        val resolver = resolver(provider(RulesDimensionNamespace.Backend, "hash" to RulesDimensionValue.BoolValue(false)))
+
+        val error = resolver
+            .snapshot(backendValues = mapOf("hash" to RulesDimensionValue.BoolValue(true)))
+            .exceptionOrNull()
+
+        assertThat(error).isEqualTo(RulesDimensionResolutionException.ConflictingDimension("backend.hash"))
+    }
+
+    @Test
     fun `a custom variable colliding with a provider fails the snapshot`() = runTest {
         val resolver = resolver(provider(RulesDimensionNamespace.Custom, "source" to string("provided")))
 
@@ -338,6 +378,69 @@ class RulesDimensionResolverTest {
 
         assertThat(values["subscriberAttributes"])
             .isEqualTo(Value.ObjectValue(mapOf("tier" to Value.StringValue("gold"))))
+    }
+
+    @Test
+    fun `a nested name no predicate could read is dropped rather than exposed`() = runTest {
+        // Object values carry names too — one `var` path segment each — and the backend's pre-evaluated results
+        // are the source that can nest arbitrarily, so the same reachability rule applies at every depth.
+        val values = resolver().snapshot(
+            backendValues = mapOf(
+                "profile" to RulesDimensionValue.ObjectValue(
+                    mapOf(
+                        "user.tier" to string("gold"),
+                        "" to string("anything"),
+                        "tier" to string("gold"),
+                        "nested" to RulesDimensionValue.ObjectValue(
+                            mapOf("also.bad" to string("dropped"), "kept" to string("yes")),
+                        ),
+                    ),
+                ),
+            ),
+        ).getOrThrow().values
+
+        assertThat(values["backend"]).isEqualTo(
+            Value.ObjectValue(
+                mapOf(
+                    "profile" to Value.ObjectValue(
+                        mapOf(
+                            "tier" to Value.StringValue("gold"),
+                            "nested" to Value.ObjectValue(mapOf("kept" to Value.StringValue("yes"))),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        assertThat(
+            RulesEngine.evaluate("""{"==": [{"var": "backend.profile.tier"}, "gold"]}""", values).getOrThrow(),
+        ).isTrue()
+    }
+
+    @Test
+    fun `a name inside an object list record no predicate could read is dropped rather than exposed`() = runTest {
+        val values = resolver().snapshot(
+            backendValues = mapOf(
+                "results" to RulesDimensionValue.ObjectListValue(
+                    listOf(
+                        mapOf("user.tier" to string("gold"), "id" to string("a")),
+                        mapOf("id" to string("b")),
+                    ),
+                ),
+            ),
+        ).getOrThrow().values
+
+        assertThat(values["backend"]).isEqualTo(
+            Value.ObjectValue(
+                mapOf(
+                    "results" to Value.ArrayValue(
+                        listOf(
+                            Value.ObjectValue(mapOf("id" to Value.StringValue("a"))),
+                            Value.ObjectValue(mapOf("id" to Value.StringValue("b"))),
+                        ),
+                    ),
+                ),
+            ),
+        )
     }
 
     @Test

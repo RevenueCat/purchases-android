@@ -44,6 +44,7 @@ import kotlinx.serialization.json.JsonPrimitive
  * [SIMULATED_ERROR_CHECKPOINT_ID] is the one piece of PoC scaffolding left: it is the only way for the tester
  * apps to exercise the throw path, since nothing in the config-driven path throws.
  */
+@Suppress("TooManyFunctions")
 internal class CheckpointWorkflowResolverImpl(
     private val workflowManager: WorkflowManager,
     private val uiConfigProvider: UiConfigProvider,
@@ -87,14 +88,11 @@ internal class CheckpointWorkflowResolverImpl(
             CheckpointRulesResolution.Unavailable ->
                 return configurationUnavailable("The rules for checkpoint '$identifier' could not be read.")
         }
-        val matchResult = localRulesEvaluator.match(
-            rules = rulesResolution.checkpoint.rules,
-            customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables),
-        ) { rule ->
-            audiencesConfigProvider.getAudience(rule.audienceId)
-                ?.let { audience -> Result.success(audience.rules) }
-                ?: Result.failure(AudienceUnavailableException(rule.audienceId))
-        }
+        val matchResult = matchRule(audiencesConfigProvider, rulesResolution.checkpoint.rules, customVariables)
+        // Checked before the result is unwrapped: a match that failed against a generation that moved mid-read
+        // (audiences read from a later commit than the rules) is stale rather than authoritative, and deserves
+        // the retry as much as a stale success does.
+        if (!checkpointsConfigProvider.isCurrent(rulesResolution)) return null
         // An audience the SDK failed to evaluate is not the same answer as an audience the customer is outside of,
         // so it can't report NO_MATCH.
         val rule = matchResult.getOrElse { error ->
@@ -102,7 +100,6 @@ internal class CheckpointWorkflowResolverImpl(
                 "The audiences for checkpoint '$identifier' could not be evaluated: ${error.message}",
             )
         }
-        if (!checkpointsConfigProvider.isCurrent(rulesResolution)) return null
         if (rule == null) return noMatch(identifier)
         val uiConfig = try {
             uiConfigProvider.getUiConfig()
@@ -114,6 +111,30 @@ internal class CheckpointWorkflowResolverImpl(
         } ?: return configurationUnavailable("UI config is unavailable for checkpoint '$identifier'.")
         val result = resolveRule(identifier, workflowManager, rule, uiConfig)
         return result.takeIf { checkpointsConfigProvider.isCurrent(rulesResolution) }
+    }
+
+    /**
+     * The whole audiences topic is read once as a snapshot, so every rule is matched against audiences and
+     * backend predicate results from the same committed config, and matching itself never re-reads config.
+     */
+    @Suppress("ReturnCount")
+    private suspend fun matchRule(
+        audiencesConfigProvider: AudiencesConfigProvider,
+        rules: List<CheckpointRule>,
+        customVariables: Map<String, RulesDimensionValue>,
+    ): Result<CheckpointRule?> {
+        if (rules.isEmpty()) return Result.success(null)
+        val snapshot = audiencesConfigProvider.getSnapshot()
+            ?: return Result.failure(AudiencesUnavailableException())
+        return localRulesEvaluator.match(
+            rules = rules,
+            customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables),
+            backendValues = snapshot.backendPredicateResults,
+        ) { rule ->
+            snapshot.audiences[rule.audienceId]
+                ?.let { audience -> Result.success(audience.rules) }
+                ?: Result.failure(AudienceUnavailableException(rule.audienceId))
+        }
     }
 
     @Suppress("ReturnCount")
@@ -225,6 +246,9 @@ internal class CheckpointWorkflowResolverImpl(
 
     private class AudienceUnavailableException(identifier: String) :
         Exception("audience '$identifier' could not be read")
+
+    private class AudiencesUnavailableException :
+        Exception("the audiences configuration could not be read")
 
     private companion object {
         const val SIMULATED_ERROR_CHECKPOINT_ID = "error_checkpoint"
