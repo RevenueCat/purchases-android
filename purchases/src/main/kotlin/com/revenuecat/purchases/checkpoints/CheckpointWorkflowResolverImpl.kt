@@ -9,6 +9,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolverImpl.Companion.SIMULATED_ERROR_CHECKPOINT_ID
 import com.revenuecat.purchases.common.CustomVariableKeyValidator
 import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.checkpoints.CheckpointRule
@@ -25,14 +26,13 @@ import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import kotlinx.coroutines.CancellationException
-import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Resolves a checkpoint through the `checkpoint_rules` topic: the checkpoint's rules are read from remote config
  * and evaluated in order against locally collected dimensions, and the first rule whose audience matches wins.
  *
- * The winner is final. If its workflow turns out to be unservable — no offering configured for it, that offering
- * absent from the fetched offerings, or its body unavailable — the checkpoint resolves to
+ * The winner is final. If its workflow turns out to be unservable — no offering identifier on its initial step,
+ * that offering absent from the fetched offerings, or its body unavailable — the checkpoint resolves to
  * [CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE] rather than falling through to a rule the
  * customer was not the first choice for.
  *
@@ -160,7 +160,7 @@ internal class CheckpointWorkflowResolverImpl(
         } else if (workflow.steps.values.any { it.type == OFFERING_STEP_TYPE }) {
             unservableRule(rule, "a UI workflow cannot contain offering steps")
         } else {
-            resolveUiRule(checkpointIdentifier, workflowManager, rule, workflow, uiConfig)
+            resolveUiRule(checkpointIdentifier, rule, workflow, uiConfig, initialStep)
         }
     }
 
@@ -170,16 +170,11 @@ internal class CheckpointWorkflowResolverImpl(
         rule: CheckpointRule,
         step: WorkflowStep,
     ): CheckpointResolution {
-        val offeringIdentifier = (step.paramValues[OFFERING_IDENTIFIER_PARAM] as? JsonPrimitive)
-            ?.takeIf { it.isString }
-            ?.content
-            ?.takeIf { it.isNotBlank() }
+        val offeringIdentifier = step.offeringIdentifier
             ?: return unservableRule(rule, "the offering step has no valid offering identifier")
 
         val offering = loadOffering(checkpointIdentifier, offeringIdentifier)
-        if (offering == null) {
-            return unservableRule(rule, "offering '$offeringIdentifier' was not found in offerings")
-        }
+            ?: return unservableRule(rule, "offering '$offeringIdentifier' was not found in offerings")
         debugLog {
             "Checkpoint resolved to offering '${offering.identifier}' from workflow '${rule.workflowId}'"
         }
@@ -189,26 +184,15 @@ internal class CheckpointWorkflowResolverImpl(
     @Suppress("ReturnCount")
     private suspend fun resolveUiRule(
         checkpointIdentifier: String,
-        workflowManager: WorkflowManager,
         rule: CheckpointRule,
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
+        initialStep: WorkflowStep,
     ): CheckpointResolution {
-        val offeringId = try {
-            workflowManager.offeringIdByWorkflowId()[rule.workflowId]
-        } catch (e: CancellationException) {
-            throw e
-        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
-            errorLog(e) { "Workflow offering metadata could not be fetched for checkpoint '$checkpointIdentifier'." }
-            null
-        }
-        if (offeringId == null) {
-            return unservableRule(rule, "no offering is mapped to it in the workflows topic")
-        }
+        val offeringId = initialStep.offeringIdentifier
+            ?: return unservableRule(rule, "its initial step has no valid offering identifier")
         val offering = loadOffering(checkpointIdentifier, offeringId)
-        if (offering == null) {
-            return unservableRule(rule, "offering '$offeringId' was not found in offerings")
-        }
+            ?: return unservableRule(rule, "offering '$offeringId' was not found in offerings")
         debugLog {
             "Checkpoint resolved to workflow '${rule.workflowId}' (offering: ${offering.identifier})"
         }
@@ -253,6 +237,5 @@ internal class CheckpointWorkflowResolverImpl(
     private companion object {
         const val SIMULATED_ERROR_CHECKPOINT_ID = "error_checkpoint"
         const val OFFERING_STEP_TYPE = "offering"
-        const val OFFERING_IDENTIFIER_PARAM = "offering_identifier"
     }
 }
