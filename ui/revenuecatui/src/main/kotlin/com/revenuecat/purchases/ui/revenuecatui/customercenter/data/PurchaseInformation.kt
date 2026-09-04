@@ -176,6 +176,7 @@ private fun determineTitle(
     }
 
     return subscribedProduct?.title
+        ?: transaction.displayName?.takeIf { it.isNotBlank() }
         ?: when (transaction) {
             is TransactionDetails.Subscription ->
                 localization.commonLocalizedString(

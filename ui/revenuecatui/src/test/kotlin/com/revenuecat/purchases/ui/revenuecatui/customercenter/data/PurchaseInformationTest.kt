@@ -1409,4 +1409,76 @@ class PurchaseInformationTest {
         }
         every { dateFormatter.format(twoDaysAgo, any()) } returns "1 Oct 2063"
     }
+
+    @Test
+    fun `subscription title falls back to the transaction display name`() {
+        setupDateFormatter(oneDayAgo, "1 Oct 2063")
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = null,
+            subscribedProduct = null,
+            transaction = TransactionDetails.Subscription(
+                productIdentifier = "expired_product",
+                productPlanIdentifier = "monthly",
+                store = Store.PLAY_STORE,
+                isActive = false,
+                willRenew = false,
+                expiresDate = oneDayAgo,
+                isTrial = false,
+                managementURL = null,
+                price = null,
+                isSandbox = false,
+                purchaseHistoryEntryId = "subscription:expired_product",
+                displayName = "Pro Monthly",
+            ),
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization,
+        )
+
+        assertThat(purchaseInformation.title).isEqualTo("Pro Monthly")
+    }
+
+    @Test
+    fun `non-subscription title falls back to the transaction display name`() {
+        setupDateFormatter(null, "")
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = null,
+            transaction = TransactionDetails.NonSubscription(
+                productIdentifier = "lifetime",
+                store = Store.PLAY_STORE,
+                price = null,
+                isSandbox = false,
+                purchaseHistoryEntryId = "non_subscription:txn-9",
+                displayName = "Lifetime Unlock",
+            ),
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization,
+        )
+
+        assertThat(purchaseInformation.title).isEqualTo("Lifetime Unlock")
+    }
+
+    @Test
+    fun `title stays generic when there is no display name`() {
+        setupDateFormatter(null, "")
+
+        val purchaseInformation = PurchaseInformation(
+            entitlementInfo = null,
+            transaction = TransactionDetails.NonSubscription(
+                productIdentifier = "lifetime",
+                store = Store.PLAY_STORE,
+                price = null,
+                isSandbox = false,
+                purchaseHistoryEntryId = "non_subscription:txn-10",
+            ),
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization,
+        )
+
+        assertThat(purchaseInformation.title).isEqualTo("One time purchase")
+    }
 }

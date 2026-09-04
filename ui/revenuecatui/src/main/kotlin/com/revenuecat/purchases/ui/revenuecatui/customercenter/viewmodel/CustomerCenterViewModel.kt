@@ -176,6 +176,7 @@ internal sealed class TransactionDetails(
     open val price: Price?,
     open val isSandbox: Boolean,
     open val purchaseHistoryEntryId: String,
+    open val displayName: String?,
 ) {
 
     @Immutable
@@ -191,6 +192,7 @@ internal sealed class TransactionDetails(
         override val price: Price?,
         override val isSandbox: Boolean,
         override val purchaseHistoryEntryId: String,
+        override val displayName: String? = null,
         val purchaseDate: Date? = null,
         val originalPurchaseDate: Date? = null,
         val unsubscribeDetectedAt: Date? = null,
@@ -200,7 +202,7 @@ internal sealed class TransactionDetails(
         val refundedAt: Date? = null,
         val ownershipType: OwnershipType = OwnershipType.UNKNOWN,
         val storeTransactionId: String? = null,
-    ) : TransactionDetails(productIdentifier, store, price, isSandbox, purchaseHistoryEntryId)
+    ) : TransactionDetails(productIdentifier, store, price, isSandbox, purchaseHistoryEntryId, displayName)
 
     @Immutable
     data class NonSubscription(
@@ -209,10 +211,11 @@ internal sealed class TransactionDetails(
         override val price: Price?,
         override val isSandbox: Boolean,
         override val purchaseHistoryEntryId: String,
+        override val displayName: String? = null,
         val purchaseDate: Date? = null,
         val originalPurchaseDate: Date? = null,
         val storeTransactionId: String? = null,
-    ) : TransactionDetails(productIdentifier, store, price, isSandbox, purchaseHistoryEntryId)
+    ) : TransactionDetails(productIdentifier, store, price, isSandbox, purchaseHistoryEntryId, displayName)
 }
 
 @Suppress("TooManyFunctions", "LargeClass")
@@ -843,6 +846,7 @@ internal class CustomerCenterViewModelImpl(
                     price = transaction.price,
                     isSandbox = transaction.isSandbox,
                     purchaseHistoryEntryId = nonSubscriptionHistoryEntryId(transaction.transactionIdentifier),
+                    displayName = transaction.displayName,
                     purchaseDate = transaction.purchaseDate,
                     originalPurchaseDate = transaction.originalPurchaseDate,
                     storeTransactionId = transaction.storeTransactionId,
@@ -922,6 +926,7 @@ internal class CustomerCenterViewModelImpl(
                     price = it.price,
                     isSandbox = it.isSandbox,
                     purchaseHistoryEntryId = nonSubscriptionHistoryEntryId(it.transactionIdentifier),
+                    displayName = it.displayName,
                     purchaseDate = it.purchaseDate,
                     originalPurchaseDate = it.originalPurchaseDate,
                     storeTransactionId = it.storeTransactionId,
@@ -1635,6 +1640,7 @@ internal class CustomerCenterViewModelImpl(
         price = price,
         isSandbox = isSandbox,
         purchaseHistoryEntryId = subscriptionHistoryEntryId(productIdentifier),
+        displayName = displayName,
         purchaseDate = purchaseDate,
         originalPurchaseDate = originalPurchaseDate,
         unsubscribeDetectedAt = unsubscribeDetectedAt,
