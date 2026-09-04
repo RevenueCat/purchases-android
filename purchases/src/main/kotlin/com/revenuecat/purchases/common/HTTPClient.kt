@@ -700,7 +700,11 @@ internal class HTTPClient(
     private fun getConnection(request: HTTPRequest, timeoutMs: Long): HttpURLConnection {
         return (request.fullURL.openConnection() as HttpURLConnection).apply {
             connectTimeout = timeoutMs.toInt()
-            // We leave the read timeout to the default (readTimeout = 0), which means infinite.
+            // Bound reads with the same budget: with the default (readTimeout = 0, infinite), an
+            // established connection that goes silent hangs the request forever, so the request
+            // never errors, coalesced callers waiting on it never release, and the retry/fallback
+            // machinery never runs.
+            readTimeout = timeoutMs.toInt()
             request.headers.forEach { (key, value) ->
                 addRequestProperty(key, value)
             }
