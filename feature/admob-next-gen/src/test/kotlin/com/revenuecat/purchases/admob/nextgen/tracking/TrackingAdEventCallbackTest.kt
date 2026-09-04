@@ -5,10 +5,10 @@ package com.revenuecat.purchases.admob.nextgen.tracking
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.common.AdValue
 import com.google.android.libraries.ads.mobile.sdk.common.PrecisionType
-import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.admob.nextgen.responseInfo
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
@@ -31,13 +31,11 @@ import org.junit.Test
 class TrackingAdEventCallbackTest {
     private val adTracker = mockk<AdTracker>(relaxed = true)
     private val purchases = mockk<Purchases>(relaxed = true)
-    private val responseInfo = mockk<ResponseInfo>()
+    private val responseInfo = responseInfo("test-network", "response-id")
 
     @Before
     fun setUp() {
         every { purchases.adTracker } returns adTracker
-        every { responseInfo.adapterClassName } returns "test-network"
-        every { responseInfo.responseId } returns "response-id"
         mockkObject(Purchases)
         every { Purchases.isConfigured } returns true
         every { Purchases.sharedInstance } returns purchases
@@ -190,9 +188,7 @@ class TrackingAdEventCallbackTest {
 
     @Test
     fun `refreshed banner reads current response info at event time`() {
-        val refreshedResponseInfo = mockk<ResponseInfo>()
-        every { refreshedResponseInfo.adapterClassName } returns "refreshed-network"
-        every { refreshedResponseInfo.responseId } returns "refreshed-response"
+        val refreshedResponseInfo = responseInfo("refreshed-network", "refreshed-response")
         var currentResponseInfo = responseInfo
         val callback = TrackingBannerAdEventCallback(null, "home", "ad-unit") { currentResponseInfo }
         currentResponseInfo = refreshedResponseInfo

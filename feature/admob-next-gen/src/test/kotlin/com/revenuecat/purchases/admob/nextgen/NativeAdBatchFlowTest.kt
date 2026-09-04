@@ -2,23 +2,14 @@
 
 package com.revenuecat.purchases.admob.nextgen
 
-import com.google.android.libraries.ads.mobile.sdk.banner.BannerAd
-import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
-import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
-import com.google.android.libraries.ads.mobile.sdk.nativead.CustomNativeAd
-import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
-import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoadResult
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoader
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoaderCallback
-import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdRequest
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdEventCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingNativeAdEventCallback
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
-import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
@@ -39,33 +30,31 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
 class NativeAdBatchFlowTest {
-    private val adTracker = mockk<AdTracker>(relaxed = true)
-    private val purchases = mockk<Purchases>(relaxed = true)
+    @get:Rule
+    val configuredPurchases = ConfiguredPurchasesRule()
+
+    private val adTracker get() = configuredPurchases.adTracker
 
     @Before
     fun setUp() {
-        every { purchases.adTracker } returns adTracker
         mockkObject(NativeAdLoader.Companion)
-        mockkObject(Purchases)
-        every { Purchases.isConfigured } returns true
-        every { Purchases.sharedInstance } returns purchases
     }
 
     @After
     fun tearDown() {
-        unmockkObject(Purchases)
         unmockkObject(NativeAdLoader.Companion)
     }
 
     @Test
     fun `callback batch tracks configures and forwards every result and completion`() {
-        val adRequest = adRequest("native-unit")
+        val adRequest = nativeAdRequest("native-unit")
         val nativeAd = nativeAd("native-network", "native-response")
         val customNativeAd = customNativeAd("custom-network", "custom-response")
-        val bannerAd = bannerAd("banner-network", "banner-response")
+        val bannerAd = nativeBannerAd("banner-network", "banner-response")
         val error = mockk<LoadAdError> {
             every { code } returns LoadAdError.ErrorCode.NO_FILL
         }
@@ -84,7 +73,7 @@ class NativeAdBatchFlowTest {
         assertEquals(listOf(nativeAd), delegate.nativeAds)
         assertEquals(listOf(customNativeAd), delegate.customNativeAds)
         assertEquals(listOf(bannerAd), delegate.bannerAds)
-        assertEquals(listOf(error), delegate.errors)
+        assertEquals(listOf(error), delegate.loadErrors)
         assertEquals(1, delegate.completionCount)
         assertTrue(nativeAd.adEventCallback is TrackingNativeAdEventCallback)
         assertTrue(customNativeAd.adEventCallback is TrackingNativeAdEventCallback)
@@ -95,10 +84,10 @@ class NativeAdBatchFlowTest {
 
     @Test
     fun `flow batch tracks and configures each result when collected`() = runBlocking {
-        val adRequest = adRequest("native-unit")
+        val adRequest = nativeAdRequest("native-unit")
         val nativeAd = nativeAd("native-network", "native-response")
         val customNativeAd = customNativeAd("custom-network", "custom-response")
-        val bannerAd = bannerAd("banner-network", "banner-response")
+        val bannerAd = nativeBannerAd("banner-network", "banner-response")
         val error = mockk<LoadAdError> {
             every { code } returns LoadAdError.ErrorCode.NO_FILL
         }
@@ -130,67 +119,4 @@ class NativeAdBatchFlowTest {
         assertEquals("native-unit", failedData.captured.adUnitId)
     }
 
-    private fun adRequest(adUnitId: String): NativeAdRequest = mockk {
-        every { this@mockk.adUnitId } returns adUnitId
-    }
-
-    private fun nativeAd(network: String, responseId: String): NativeAd {
-        var callback: NativeAdEventCallback? = null
-        return mockk(relaxed = true) {
-            every { getResponseInfo() } returns responseInfo(network, responseId)
-            every { adEventCallback } answers { callback }
-            every { adEventCallback = any() } answers { callback = firstArg() }
-        }
-    }
-
-    private fun customNativeAd(network: String, responseId: String): CustomNativeAd {
-        var callback: NativeAdEventCallback? = null
-        return mockk(relaxed = true) {
-            every { getResponseInfo() } returns responseInfo(network, responseId)
-            every { adEventCallback } answers { callback }
-            every { adEventCallback = any() } answers { callback = firstArg() }
-        }
-    }
-
-    private fun bannerAd(network: String, responseId: String): BannerAd {
-        var callback: BannerAdEventCallback? = null
-        return mockk(relaxed = true) {
-            every { getResponseInfo() } returns responseInfo(network, responseId)
-            every { adEventCallback } answers { callback }
-            every { adEventCallback = any() } answers { callback = firstArg() }
-        }
-    }
-
-    private fun responseInfo(network: String, responseId: String): ResponseInfo = mockk {
-        every { adapterClassName } returns network
-        every { this@mockk.responseId } returns responseId
-    }
-
-    private class RecordingNativeAdLoaderCallback : NativeAdLoaderCallback {
-        val nativeAds = mutableListOf<NativeAd>()
-        val customNativeAds = mutableListOf<CustomNativeAd>()
-        val bannerAds = mutableListOf<BannerAd>()
-        val errors = mutableListOf<LoadAdError>()
-        var completionCount = 0
-
-        override fun onNativeAdLoaded(nativeAd: NativeAd) {
-            nativeAds += nativeAd
-        }
-
-        override fun onCustomNativeAdLoaded(customNativeAd: CustomNativeAd) {
-            customNativeAds += customNativeAd
-        }
-
-        override fun onBannerAdLoaded(bannerAd: BannerAd) {
-            bannerAds += bannerAd
-        }
-
-        override fun onAdFailedToLoad(adError: LoadAdError) {
-            errors += adError
-        }
-
-        override fun onAdLoadingCompleted() {
-            completionCount++
-        }
-    }
 }

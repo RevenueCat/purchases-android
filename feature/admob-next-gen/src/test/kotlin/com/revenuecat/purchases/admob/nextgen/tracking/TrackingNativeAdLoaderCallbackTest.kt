@@ -4,48 +4,33 @@ package com.revenuecat.purchases.admob.nextgen.tracking
 
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAd
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
-import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
 import com.google.android.libraries.ads.mobile.sdk.nativead.CustomNativeAd
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoaderCallback
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.admob.nextgen.ConfiguredPurchasesRule
+import com.revenuecat.purchases.admob.nextgen.responseInfo
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
-import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.slot
-import io.mockk.unmockkObject
 import io.mockk.verify
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
 class TrackingNativeAdLoaderCallbackTest {
-    private val adTracker = mockk<AdTracker>(relaxed = true)
-    private val purchases = mockk<Purchases>(relaxed = true)
+    @get:Rule
+    val configuredPurchases = ConfiguredPurchasesRule()
 
-    @Before
-    fun setUp() {
-        every { purchases.adTracker } returns adTracker
-        mockkObject(Purchases)
-        every { Purchases.isConfigured } returns true
-        every { Purchases.sharedInstance } returns purchases
-    }
-
-    @After
-    fun tearDown() {
-        unmockkObject(Purchases)
-    }
+    private val adTracker get() = configuredPurchases.adTracker
 
     @Test
     fun `tracks native load then configures it before delegating`() {
@@ -218,10 +203,4 @@ class TrackingNativeAdLoaderCallbackTest {
         assertTrue(loadingCompleted)
         assertFalse(configured)
     }
-
-    private fun responseInfo(adapterClassName: String, responseId: String): ResponseInfo =
-        mockk<ResponseInfo>().also {
-            every { it.adapterClassName } returns adapterClassName
-            every { it.responseId } returns responseId
-        }
 }

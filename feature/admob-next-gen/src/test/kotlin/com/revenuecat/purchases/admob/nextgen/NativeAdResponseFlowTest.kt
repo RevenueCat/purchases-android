@@ -12,12 +12,10 @@ import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallbac
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoader
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoaderCallback
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdEventCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdRefreshCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingNativeAdEventCallback
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
-import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
@@ -35,23 +33,21 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 class NativeAdResponseFlowTest {
-    private val adTracker = mockk<AdTracker>(relaxed = true)
-    private val purchases = mockk<Purchases>(relaxed = true)
+    @get:Rule
+    val configuredPurchases = ConfiguredPurchasesRule()
+
+    private val adTracker get() = configuredPurchases.adTracker
 
     @Before
     fun setUp() {
-        every { purchases.adTracker } returns adTracker
         mockkObject(NativeAdLoader.Companion)
-        mockkObject(Purchases)
-        every { Purchases.isConfigured } returns true
-        every { Purchases.sharedInstance } returns purchases
     }
 
     @After
     fun tearDown() {
-        unmockkObject(Purchases)
         unmockkObject(NativeAdLoader.Companion)
     }
 
@@ -60,10 +56,7 @@ class NativeAdResponseFlowTest {
         val order = mutableListOf<String>()
         var installedCallback: NativeAdEventCallback? = null
         val loadedAd = mockk<NativeAd>(relaxed = true) {
-            every { getResponseInfo() } returns mockk<ResponseInfo> {
-                every { adapterClassName } returns "native-network"
-                every { responseId } returns "native-response"
-            }
+            every { getResponseInfo() } returns responseInfo("native-network", "native-response")
             every { adEventCallback } answers { installedCallback }
         }
         val trackingLoadCallback = slot<NativeAdLoaderCallback>()
