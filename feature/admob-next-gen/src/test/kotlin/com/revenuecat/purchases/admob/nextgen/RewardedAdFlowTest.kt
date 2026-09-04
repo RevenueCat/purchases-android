@@ -3,6 +3,11 @@
 package com.revenuecat.purchases.admob.nextgen
 
 import android.app.Activity
+import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
+import com.google.android.libraries.ads.mobile.sdk.common.AdLoadResult
+import com.google.android.libraries.ads.mobile.sdk.common.AdRequest
+import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
+import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
 import com.google.android.libraries.ads.mobile.sdk.rewarded.OnUserEarnedRewardListener
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAd
 import com.google.android.libraries.ads.mobile.sdk.rewarded.RewardedAdEventCallback
@@ -10,15 +15,23 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingRewardedAdEventCallback
 import com.revenuecat.purchases.ads.events.AdTracker
+import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdFormat
+import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import io.mockk.coEvery
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.runs
+import io.mockk.slot
 import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -27,14 +40,11 @@ class RewardedAdFlowTest {
 
     private val adTracker = mockk<AdTracker>(relaxed = true)
     private val purchases = mockk<Purchases>(relaxed = true)
-    private val contract = FullScreenAdFlowContract<RewardedAd, RewardedAdEventCallback>(
-        adTracker = adTracker,
-        values = FullScreenAdTestValues(AdFormat.REWARDED, "rewarded-unit", "load-placement"),
-        suspendingValues = FullScreenAdTestValues(
-            AdFormat.REWARDED,
-            "suspend-rewarded-unit",
-            "suspend-load-placement",
-        ),
+    private val values = FullScreenAdTestValues(AdFormat.REWARDED, "rewarded-unit", "load-placement")
+    private val suspendingValues = FullScreenAdTestValues(
+        AdFormat.REWARDED,
+        "suspend-rewarded-unit",
+        "suspend-load-placement",
     )
 
     @Before
@@ -54,41 +64,47 @@ class RewardedAdFlowTest {
 
     @Test
     fun `rewarded success installs tracking and supports placement and delegate updates`() {
+        val adRequest = mockk<AdRequest> { every { adUnitId } returns values.adUnitId }
+        val responseInfo = mockk<ResponseInfo>(relaxed = true) {
+            every { adapterClassName } returns "test-network"
+            every { responseId } returns "response-id"
+        }
+        var installedCallback: RewardedAdEventCallback? = null
+        val rewardedAd = mockk<RewardedAd>(relaxed = true) {
+            every { getResponseInfo() } returns responseInfo
+            every { adEventCallback } answers { installedCallback }
+            every { adEventCallback = any() } answers { installedCallback = firstArg() }
+        }
+        val activity = mockk<Activity>()
         val rewardListener = mockk<OnUserEarnedRewardListener>()
+        val loadCallback = FullScreenRecordingAdLoadCallback<RewardedAd>()
         val initialEventCallback = RecordingRewardedAdEventCallback()
         val replacementEventCallback = RecordingRewardedAdEventCallback()
+        val trackingLoadCallback = slot<AdLoadCallback<RewardedAd>>()
 
-        contract.callbackSuccess(
-            createAd = { responseInfo, installedCallback ->
-                mockk(relaxed = true) {
-                    every { getResponseInfo() } returns responseInfo
-                    every { adEventCallback } answers { installedCallback.callback }
-                    every { adEventCallback = any() } answers { installedCallback.callback = firstArg() }
-                }
-            },
-            initialEventCallback = initialEventCallback,
-            replacementEventCallback = replacementEventCallback,
-            stubLoad = { adRequest, trackingLoadCallback ->
-                every { RewardedAd.load(adRequest, any()) } answers {
-                    trackingLoadCallback.callback = secondArg()
-                }
-            },
-            loadAndTrack = { adRequest, loadCallback, eventCallback ->
-                adTracker.loadAndTrackRewardedAd(
-                    adRequest = adRequest,
-                    placement = "load-placement",
-                    loadCallback = loadCallback,
-                    adEventCallback = eventCallback,
-                )
-            },
-            asTrackingCallback = { it as? TrackingRewardedAdEventCallback },
-            invokeDelegateCallback = { it.onAdMetadataChanged() },
-            assertInitialDelegateInvoked = { assertTrue(initialEventCallback.metadataChangedCalled) },
-            setTrackingEventCallback = { ad, eventCallback -> ad.setTrackingAdEventCallback(eventCallback) },
-            assertReplacementDelegateInvoked = { assertTrue(replacementEventCallback.metadataChangedCalled) },
-            show = { ad, activity, placement -> ad.show(activity, placement, rewardListener) },
-            verifyShow = { ad, activity -> verify(exactly = 1) { ad.show(activity, rewardListener) } },
+        every { RewardedAd.load(adRequest, capture(trackingLoadCallback)) } just runs
+        adTracker.loadAndTrackRewardedAd(
+            adRequest = adRequest,
+            placement = values.placement,
+            loadCallback = loadCallback,
+            adEventCallback = initialEventCallback,
         )
+        trackingLoadCallback.captured.onAdLoaded(rewardedAd)
+
+        assertSame(rewardedAd, loadCallback.loadedAd)
+        adTracker.assertLoadedData(slot(), values, "test-network", "response-id")
+
+        val trackingCallback = requireNotNull(installedCallback as? TrackingRewardedAdEventCallback)
+        trackingCallback.onAdMetadataChanged()
+        assertTrue(initialEventCallback.metadataChangedCalled)
+
+        rewardedAd.setTrackingAdEventCallback(replacementEventCallback)
+        trackingCallback.onAdMetadataChanged()
+        assertTrue(replacementEventCallback.metadataChangedCalled)
+
+        rewardedAd.show(activity, "show-placement", rewardListener)
+        assertEquals("show-placement", trackingCallback.placement)
+        verify(exactly = 1) { rewardedAd.show(activity, rewardListener) }
     }
 
     @Test
@@ -105,93 +121,92 @@ class RewardedAdFlowTest {
         val activity = mockk<Activity>()
         val rewardListener = mockk<OnUserEarnedRewardListener>()
 
-        assertShowClearsPlacement(
-            trackingCallback = trackingCallback,
-            show = {
-                rewardedAd.show(
-                    activity = activity,
-                    placement = null,
-                    onUserEarnedRewardListener = rewardListener,
-                )
-            },
-            verifyShow = { verify(exactly = 1) { rewardedAd.show(activity, rewardListener) } },
-        )
+        rewardedAd.show(activity, placement = null, onUserEarnedRewardListener = rewardListener)
+
+        assertNull(trackingCallback.placement)
+        verify(exactly = 1) { rewardedAd.show(activity, rewardListener) }
     }
 
     @Test
     fun `rewarded failure is forwarded to load callback`() {
-        contract.callbackFailure(
-            stubLoad = { adRequest, trackingLoadCallback ->
-                every { RewardedAd.load(adRequest, any()) } answers {
-                    trackingLoadCallback.callback = secondArg()
-                }
-            },
-            loadAndTrack = { adRequest, loadCallback ->
-                adTracker.loadAndTrackRewardedAd(
-                    adRequest = adRequest,
-                    placement = "load-placement",
-                    loadCallback = loadCallback,
-                )
-            },
+        val adRequest = mockk<AdRequest> { every { adUnitId } returns values.adUnitId }
+        val error = mockk<LoadAdError>(relaxed = true)
+        val loadCallback = FullScreenRecordingAdLoadCallback<RewardedAd>()
+        val trackingLoadCallback = slot<AdLoadCallback<RewardedAd>>()
+
+        every { RewardedAd.load(adRequest, capture(trackingLoadCallback)) } just runs
+        adTracker.loadAndTrackRewardedAd(
+            adRequest = adRequest,
+            placement = values.placement,
+            loadCallback = loadCallback,
         )
+        trackingLoadCallback.captured.onAdFailedToLoad(error)
+
+        assertSame(error, loadCallback.loadError)
+        adTracker.assertFailedData(slot(), values)
     }
 
     @Test
     fun `suspending rewarded success tracks and installs callback before returning original result`() = runBlocking {
+        val adRequest = mockk<AdRequest> { every { adUnitId } returns suspendingValues.adUnitId }
+        val responseInfo = mockk<ResponseInfo>(relaxed = true) {
+            every { adapterClassName } returns "suspend-test-network"
+            every { responseId } returns "suspend-response-id"
+        }
+        var installedCallback: RewardedAdEventCallback? = null
+        val rewardedAd = mockk<RewardedAd>(relaxed = true) {
+            every { getResponseInfo() } returns responseInfo
+            every { adEventCallback } answers { installedCallback }
+            every { adEventCallback = any() } answers { installedCallback = firstArg() }
+        }
         val eventCallback = RecordingRewardedAdEventCallback()
+        val sdkResult = AdLoadResult.Success(rewardedAd)
 
-        contract.suspendingSuccess(
-            createAd = { responseInfo, installedCallback ->
-                mockk(relaxed = true) {
-                    every { getResponseInfo() } returns responseInfo
-                    every { adEventCallback } answers { installedCallback.callback }
-                    every { adEventCallback = any() } answers { installedCallback.callback = firstArg() }
-                }
-            },
-            eventCallback = eventCallback,
-            stubLoad = { adRequest, sdkResult -> coEvery { RewardedAd.load(adRequest) } returns sdkResult },
-            loadAndTrack = { adRequest, delegate ->
-                adTracker.loadAndTrackRewardedAd(
-                    adRequest = adRequest,
-                    placement = "suspend-load-placement",
-                    adEventCallback = delegate,
-                )
-            },
-            asTrackingCallback = { it as? TrackingRewardedAdEventCallback },
-            invokeDelegateCallback = { it.onAdMetadataChanged() },
-            assertDelegateInvoked = { assertTrue(eventCallback.metadataChangedCalled) },
+        coEvery { RewardedAd.load(adRequest) } returns sdkResult
+        val result = adTracker.loadAndTrackRewardedAd(
+            adRequest = adRequest,
+            placement = suspendingValues.placement,
+            adEventCallback = eventCallback,
+        )
+
+        assertSame(sdkResult, result)
+        val trackingCallback = requireNotNull(installedCallback as? TrackingRewardedAdEventCallback)
+        trackingCallback.onAdMetadataChanged()
+        assertTrue(eventCallback.metadataChangedCalled)
+        adTracker.assertLoadedData(
+            slot<AdLoadedData>(),
+            suspendingValues,
+            "suspend-test-network",
+            "suspend-response-id",
         )
     }
 
     @Test
     fun `suspending rewarded failure tracks error and returns original result`() = runBlocking {
-        contract.suspendingFailure(
-            stubLoad = { adRequest, sdkResult -> coEvery { RewardedAd.load(adRequest) } returns sdkResult },
-            loadAndTrack = { adRequest ->
-                adTracker.loadAndTrackRewardedAd(
-                    adRequest = adRequest,
-                    placement = "suspend-load-placement",
-                )
-            },
+        val adRequest = mockk<AdRequest> { every { adUnitId } returns suspendingValues.adUnitId }
+        val error = mockk<LoadAdError> { every { code } returns LoadAdError.ErrorCode.NETWORK_ERROR }
+        val sdkResult = AdLoadResult.Failure<RewardedAd>(error)
+
+        coEvery { RewardedAd.load(adRequest) } returns sdkResult
+        val result = adTracker.loadAndTrackRewardedAd(
+            adRequest = adRequest,
+            placement = suspendingValues.placement,
         )
+
+        assertSame(sdkResult, result)
+        adTracker.assertSuspendingFailedData(slot<AdFailedToLoadData>(), suspendingValues)
     }
 
     @Test
     fun `setting event callback directly falls back when tracking is not installed`() {
+        val rewardedAd = mockk<RewardedAd>(relaxed = true) {
+            every { adEventCallback } returns null
+        }
         val eventCallback = RecordingRewardedAdEventCallback()
 
-        contract.eventCallbackFallback(
-            createAd = {
-                mockk(relaxed = true) {
-                    every { adEventCallback } returns null
-                }
-            },
-            eventCallback = eventCallback,
-            setTrackingEventCallback = { ad, callback -> ad.setTrackingAdEventCallback(callback) },
-            verifyEventCallbackInstalled = { ad, callback ->
-                verify(exactly = 1) { ad.adEventCallback = callback }
-            },
-        )
+        rewardedAd.setTrackingAdEventCallback(eventCallback)
+
+        verify(exactly = 1) { rewardedAd.adEventCallback = eventCallback }
     }
 
     private class RecordingRewardedAdEventCallback : RewardedAdEventCallback {

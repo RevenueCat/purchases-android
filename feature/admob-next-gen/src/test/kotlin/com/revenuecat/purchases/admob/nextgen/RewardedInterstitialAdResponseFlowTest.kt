@@ -2,6 +2,8 @@
 
 package com.revenuecat.purchases.admob.nextgen
 
+import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
+import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAd
 import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.RewardedInterstitialAdEventCallback
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -22,15 +24,10 @@ class RewardedInterstitialAdResponseFlowTest {
 
     private val adTracker = mockk<AdTracker>(relaxed = true)
     private val purchases = mockk<Purchases>(relaxed = true)
-    private val contract =
-        FullScreenAdResponseFlowContract<RewardedInterstitialAd, RewardedInterstitialAdEventCallback>(
-            adTracker = adTracker,
-            values = FullScreenAdTestValues(
-                adFormat = AdFormat.REWARDED_INTERSTITIAL,
-                adUnitId = "supplied-rewarded-interstitial-unit",
-                placement = "response-rewarded-interstitial",
-            ),
-        )
+    private val contract = FullScreenAdResponseFlowContract(
+        adTracker = adTracker,
+        adapter = RewardedInterstitialAdAdapter(),
+    )
 
     @Before
     fun setUp() {
@@ -52,53 +49,65 @@ class RewardedInterstitialAdResponseFlowTest {
         val eventCallback = RecordingRewardedInterstitialEventCallback()
 
         contract.responseSuccess(
-            createAd = { responseInfo, installedCallback, onCallbackInstalled ->
-                mockk(relaxed = true) {
-                    every { getResponseInfo() } returns responseInfo
-                    every { adEventCallback = any() } answers {
-                        installedCallback.callback = firstArg()
-                        onCallbackInstalled()
-                    }
-                }
-            },
             eventCallback = eventCallback,
-            stubLoadFromResponse = { trackingLoadCallback ->
-                every { RewardedInterstitialAd.loadFromAdResponse("opaque-response", any()) } answers {
-                    trackingLoadCallback.callback = secondArg()
-                }
-            },
-            loadAndTrackFromResponse = { loadCallback, delegate ->
-                adTracker.loadAndTrackRewardedInterstitialAdFromResponse(
-                    adResponse = "opaque-response",
-                    adUnitId = "supplied-rewarded-interstitial-unit",
-                    placement = "response-rewarded-interstitial",
-                    loadCallback = loadCallback,
-                    adEventCallback = delegate,
-                )
-            },
-            asTrackingCallback = { it as? TrackingRewardedInterstitialAdEventCallback },
-            invokeDelegateCallback = { it.onAdMetadataChanged() },
             assertDelegateInvoked = { assertTrue(eventCallback.metadataChangedCalled) },
         )
     }
 
     @Test
     fun `response failure uses supplied ad unit and placement before forwarding`() {
-        contract.responseFailure(
-            stubLoadFromResponse = { trackingLoadCallback ->
+        contract.responseFailure()
+    }
+
+    private inner class RewardedInterstitialAdAdapter :
+        FullScreenAdResponseFlowAdapter<RewardedInterstitialAd, RewardedInterstitialAdEventCallback> {
+            override val values = FullScreenAdTestValues(
+                adFormat = AdFormat.REWARDED_INTERSTITIAL,
+                adUnitId = "supplied-rewarded-interstitial-unit",
+                placement = "response-rewarded-interstitial",
+            )
+
+            override fun createAd(
+                responseInfo: ResponseInfo,
+                installedCallback: CallbackHolder<RewardedInterstitialAdEventCallback>,
+                onCallbackInstalled: () -> Unit,
+            ): RewardedInterstitialAd = mockk(relaxed = true) {
+                every { getResponseInfo() } returns responseInfo
+                every { adEventCallback = any() } answers {
+                    installedCallback.callback = firstArg()
+                    onCallbackInstalled()
+                }
+            }
+
+            override fun stubLoadFromResponse(
+                trackingLoadCallback: CallbackHolder<AdLoadCallback<RewardedInterstitialAd>>,
+            ) {
                 every { RewardedInterstitialAd.loadFromAdResponse("opaque-response", any()) } answers {
                     trackingLoadCallback.callback = secondArg()
                 }
-            },
-            loadAndTrackFromResponse = { loadCallback ->
+            }
+
+            override fun loadAndTrackFromResponse(
+                loadCallback: AdLoadCallback<RewardedInterstitialAd>,
+                eventCallback: RewardedInterstitialAdEventCallback?,
+            ) {
                 adTracker.loadAndTrackRewardedInterstitialAdFromResponse(
                     adResponse = "opaque-response",
-                    adUnitId = "supplied-rewarded-interstitial-unit",
-                    placement = "response-rewarded-interstitial",
+                    adUnitId = values.adUnitId,
+                    placement = values.placement,
                     loadCallback = loadCallback,
+                    adEventCallback = eventCallback,
                 )
-            },
-        )
+            }
+
+            override fun asTrackingCallback(
+                callback: RewardedInterstitialAdEventCallback,
+            ): TrackingRewardedInterstitialAdEventCallback? =
+                callback as? TrackingRewardedInterstitialAdEventCallback
+
+            override fun invokeDelegateCallback(callback: RewardedInterstitialAdEventCallback) {
+                callback.onAdMetadataChanged()
+            }
     }
 
     private class RecordingRewardedInterstitialEventCallback : RewardedInterstitialAdEventCallback {

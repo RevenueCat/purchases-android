@@ -3,21 +3,34 @@
 package com.revenuecat.purchases.admob.nextgen
 
 import android.app.Activity
+import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
+import com.google.android.libraries.ads.mobile.sdk.common.AdLoadResult
+import com.google.android.libraries.ads.mobile.sdk.common.AdRequest
+import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
+import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAd
 import com.google.android.libraries.ads.mobile.sdk.interstitial.InterstitialAdEventCallback
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingInterstitialAdEventCallback
 import com.revenuecat.purchases.ads.events.AdTracker
+import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdFormat
+import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import io.mockk.coEvery
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
+import io.mockk.runs
+import io.mockk.slot
 import io.mockk.unmockkObject
 import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -26,14 +39,11 @@ class InterstitialAdFlowTest {
 
     private val adTracker = mockk<AdTracker>(relaxed = true)
     private val purchases = mockk<Purchases>(relaxed = true)
-    private val contract = FullScreenAdFlowContract<InterstitialAd, InterstitialAdEventCallback>(
-        adTracker = adTracker,
-        values = FullScreenAdTestValues(AdFormat.INTERSTITIAL, "interstitial-unit", "load-placement"),
-        suspendingValues = FullScreenAdTestValues(
-            AdFormat.INTERSTITIAL,
-            "suspend-interstitial-unit",
-            "suspend-load-placement",
-        ),
+    private val values = FullScreenAdTestValues(AdFormat.INTERSTITIAL, "interstitial-unit", "load-placement")
+    private val suspendingValues = FullScreenAdTestValues(
+        AdFormat.INTERSTITIAL,
+        "suspend-interstitial-unit",
+        "suspend-load-placement",
     )
 
     @Before
@@ -53,40 +63,47 @@ class InterstitialAdFlowTest {
 
     @Test
     fun `interstitial success installs tracking and supports placement and delegate updates`() {
+        val adRequest = mockk<AdRequest> { every { adUnitId } returns values.adUnitId }
+        val responseInfo = mockk<ResponseInfo>(relaxed = true) {
+            every { adapterClassName } returns "test-network"
+            every { responseId } returns "response-id"
+        }
+        var installedCallback: InterstitialAdEventCallback? = null
+        val interstitialAd = mockk<InterstitialAd>(relaxed = true) {
+            every { getResponseInfo() } returns responseInfo
+            every { adEventCallback } answers { installedCallback }
+            every { adEventCallback = any() } answers { installedCallback = firstArg() }
+        }
+        val activity = mockk<Activity>()
+        val loadCallback = FullScreenRecordingAdLoadCallback<InterstitialAd>()
         val initialEventCallback = RecordingInterstitialAdEventCallback()
         val replacementEventCallback = RecordingInterstitialAdEventCallback()
+        val trackingLoadCallback = slot<AdLoadCallback<InterstitialAd>>()
 
-        contract.callbackSuccess(
-            createAd = { responseInfo, installedCallback ->
-                mockk(relaxed = true) {
-                    every { getResponseInfo() } returns responseInfo
-                    every { adEventCallback } answers { installedCallback.callback }
-                    every { adEventCallback = any() } answers { installedCallback.callback = firstArg() }
-                }
-            },
-            initialEventCallback = initialEventCallback,
-            replacementEventCallback = replacementEventCallback,
-            stubLoad = { adRequest, trackingLoadCallback ->
-                every { InterstitialAd.load(adRequest, any()) } answers {
-                    trackingLoadCallback.callback = secondArg()
-                }
-            },
-            loadAndTrack = { adRequest, loadCallback, eventCallback ->
-                adTracker.loadAndTrackInterstitialAd(
-                    adRequest = adRequest,
-                    placement = "load-placement",
-                    loadCallback = loadCallback,
-                    adEventCallback = eventCallback,
-                )
-            },
-            asTrackingCallback = { it as? TrackingInterstitialAdEventCallback },
-            invokeDelegateCallback = { it.onAppEvent("name", "data") },
-            assertInitialDelegateInvoked = { assertTrue(initialEventCallback.appEventCalled) },
-            setTrackingEventCallback = { ad, eventCallback -> ad.setTrackingAdEventCallback(eventCallback) },
-            assertReplacementDelegateInvoked = { assertTrue(replacementEventCallback.appEventCalled) },
-            show = { ad, activity, placement -> ad.show(activity, placement) },
-            verifyShow = { ad, activity -> verify(exactly = 1) { ad.show(activity) } },
+        every { InterstitialAd.load(adRequest, capture(trackingLoadCallback)) } just runs
+
+        adTracker.loadAndTrackInterstitialAd(
+            adRequest = adRequest,
+            placement = values.placement,
+            loadCallback = loadCallback,
+            adEventCallback = initialEventCallback,
         )
+        trackingLoadCallback.captured.onAdLoaded(interstitialAd)
+
+        assertSame(interstitialAd, loadCallback.loadedAd)
+        adTracker.assertLoadedData(slot(), values, "test-network", "response-id")
+
+        val trackingCallback = requireNotNull(installedCallback as? TrackingInterstitialAdEventCallback)
+        trackingCallback.onAppEvent("name", "data")
+        assertTrue(initialEventCallback.appEventCalled)
+
+        interstitialAd.setTrackingAdEventCallback(replacementEventCallback)
+        trackingCallback.onAppEvent("name", "data")
+        assertTrue(replacementEventCallback.appEventCalled)
+
+        interstitialAd.show(activity, "show-placement")
+        assertEquals("show-placement", trackingCallback.placement)
+        verify(exactly = 1) { interstitialAd.show(activity) }
     }
 
     @Test
@@ -102,87 +119,93 @@ class InterstitialAdFlowTest {
             every { adEventCallback } returns trackingCallback
         }
 
-        assertShowClearsPlacement(
-            trackingCallback = trackingCallback,
-            show = { interstitialAd.show(activity, placement = null) },
-            verifyShow = { verify(exactly = 1) { interstitialAd.show(activity) } },
-        )
+        interstitialAd.show(activity, placement = null)
+
+        assertNull(trackingCallback.placement)
+        verify(exactly = 1) { interstitialAd.show(activity) }
     }
 
     @Test
     fun `interstitial failure is forwarded to load callback`() {
-        contract.callbackFailure(
-            stubLoad = { adRequest, trackingLoadCallback ->
-                every { InterstitialAd.load(adRequest, any()) } answers {
-                    trackingLoadCallback.callback = secondArg()
-                }
-            },
-            loadAndTrack = { adRequest, loadCallback ->
-                adTracker.loadAndTrackInterstitialAd(
-                    adRequest = adRequest,
-                    placement = "load-placement",
-                    loadCallback = loadCallback,
-                )
-            },
+        val adRequest = mockk<AdRequest> { every { adUnitId } returns values.adUnitId }
+        val error = mockk<LoadAdError>(relaxed = true)
+        val loadCallback = FullScreenRecordingAdLoadCallback<InterstitialAd>()
+        val trackingLoadCallback = slot<AdLoadCallback<InterstitialAd>>()
+
+        every { InterstitialAd.load(adRequest, capture(trackingLoadCallback)) } just runs
+        adTracker.loadAndTrackInterstitialAd(
+            adRequest = adRequest,
+            placement = values.placement,
+            loadCallback = loadCallback,
         )
+        trackingLoadCallback.captured.onAdFailedToLoad(error)
+
+        assertSame(error, loadCallback.loadError)
+        adTracker.assertFailedData(slot(), values)
     }
 
     @Test
     fun `suspending interstitial success tracks and installs callback before returning original result`() = runBlocking {
+        val adRequest = mockk<AdRequest> { every { adUnitId } returns suspendingValues.adUnitId }
+        val responseInfo = mockk<ResponseInfo>(relaxed = true) {
+            every { adapterClassName } returns "suspend-test-network"
+            every { responseId } returns "suspend-response-id"
+        }
+        var installedCallback: InterstitialAdEventCallback? = null
+        val interstitialAd = mockk<InterstitialAd>(relaxed = true) {
+            every { getResponseInfo() } returns responseInfo
+            every { adEventCallback } answers { installedCallback }
+            every { adEventCallback = any() } answers { installedCallback = firstArg() }
+        }
         val eventCallback = RecordingInterstitialAdEventCallback()
+        val sdkResult = AdLoadResult.Success(interstitialAd)
 
-        contract.suspendingSuccess(
-            createAd = { responseInfo, installedCallback ->
-                mockk(relaxed = true) {
-                    every { getResponseInfo() } returns responseInfo
-                    every { adEventCallback } answers { installedCallback.callback }
-                    every { adEventCallback = any() } answers { installedCallback.callback = firstArg() }
-                }
-            },
-            eventCallback = eventCallback,
-            stubLoad = { adRequest, sdkResult -> coEvery { InterstitialAd.load(adRequest) } returns sdkResult },
-            loadAndTrack = { adRequest, delegate ->
-                adTracker.loadAndTrackInterstitialAd(
-                    adRequest = adRequest,
-                    placement = "suspend-load-placement",
-                    adEventCallback = delegate,
-                )
-            },
-            asTrackingCallback = { it as? TrackingInterstitialAdEventCallback },
-            invokeDelegateCallback = { it.onAppEvent("name", "data") },
-            assertDelegateInvoked = { assertTrue(eventCallback.appEventCalled) },
+        coEvery { InterstitialAd.load(adRequest) } returns sdkResult
+
+        val result = adTracker.loadAndTrackInterstitialAd(
+            adRequest = adRequest,
+            placement = suspendingValues.placement,
+            adEventCallback = eventCallback,
+        )
+
+        assertSame(sdkResult, result)
+        val trackingCallback = requireNotNull(installedCallback as? TrackingInterstitialAdEventCallback)
+        trackingCallback.onAppEvent("name", "data")
+        assertTrue(eventCallback.appEventCalled)
+        adTracker.assertLoadedData(
+            slot<AdLoadedData>(),
+            suspendingValues,
+            "suspend-test-network",
+            "suspend-response-id",
         )
     }
 
     @Test
     fun `suspending interstitial failure tracks error and returns original result`() = runBlocking {
-        contract.suspendingFailure(
-            stubLoad = { adRequest, sdkResult -> coEvery { InterstitialAd.load(adRequest) } returns sdkResult },
-            loadAndTrack = { adRequest ->
-                adTracker.loadAndTrackInterstitialAd(
-                    adRequest = adRequest,
-                    placement = "suspend-load-placement",
-                )
-            },
+        val adRequest = mockk<AdRequest> { every { adUnitId } returns suspendingValues.adUnitId }
+        val error = mockk<LoadAdError> { every { code } returns LoadAdError.ErrorCode.NETWORK_ERROR }
+        val sdkResult = AdLoadResult.Failure<InterstitialAd>(error)
+
+        coEvery { InterstitialAd.load(adRequest) } returns sdkResult
+        val result = adTracker.loadAndTrackInterstitialAd(
+            adRequest = adRequest,
+            placement = suspendingValues.placement,
         )
+
+        assertSame(sdkResult, result)
+        adTracker.assertSuspendingFailedData(slot<AdFailedToLoadData>(), suspendingValues)
     }
 
     @Test
     fun `setting event callback directly falls back when tracking is not installed`() {
+        val interstitialAd = mockk<InterstitialAd>(relaxed = true) {
+            every { adEventCallback } returns null
+        }
         val eventCallback = RecordingInterstitialAdEventCallback()
 
-        contract.eventCallbackFallback(
-            createAd = {
-                mockk(relaxed = true) {
-                    every { adEventCallback } returns null
-                }
-            },
-            eventCallback = eventCallback,
-            setTrackingEventCallback = { ad, callback -> ad.setTrackingAdEventCallback(callback) },
-            verifyEventCallbackInstalled = { ad, callback ->
-                verify(exactly = 1) { ad.adEventCallback = callback }
-            },
-        )
+        interstitialAd.setTrackingAdEventCallback(eventCallback)
+
+        verify(exactly = 1) { interstitialAd.adEventCallback = eventCallback }
     }
 
     private class RecordingInterstitialAdEventCallback : InterstitialAdEventCallback {

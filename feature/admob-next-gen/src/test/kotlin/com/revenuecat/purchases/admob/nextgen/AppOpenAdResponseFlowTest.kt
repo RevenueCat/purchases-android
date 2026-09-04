@@ -4,6 +4,8 @@ package com.revenuecat.purchases.admob.nextgen
 
 import com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAd
 import com.google.android.libraries.ads.mobile.sdk.appopen.AppOpenAdEventCallback
+import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
+import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingAppOpenAdEventCallback
@@ -22,13 +24,9 @@ class AppOpenAdResponseFlowTest {
 
     private val adTracker = mockk<AdTracker>(relaxed = true)
     private val purchases = mockk<Purchases>(relaxed = true)
-    private val contract = FullScreenAdResponseFlowContract<AppOpenAd, AppOpenAdEventCallback>(
+    private val contract = FullScreenAdResponseFlowContract(
         adTracker = adTracker,
-        values = FullScreenAdTestValues(
-            adFormat = AdFormat.APP_OPEN,
-            adUnitId = "supplied-app-open-unit",
-            placement = "response-app-open",
-        ),
+        adapter = AppOpenAdAdapter(),
     )
 
     @Before
@@ -51,53 +49,63 @@ class AppOpenAdResponseFlowTest {
         val eventCallback = RecordingAppOpenEventCallback()
 
         contract.responseSuccess(
-            createAd = { responseInfo, installedCallback, onCallbackInstalled ->
-                mockk(relaxed = true) {
-                    every { getResponseInfo() } returns responseInfo
-                    every { adEventCallback = any() } answers {
-                        installedCallback.callback = firstArg()
-                        onCallbackInstalled()
-                    }
-                }
-            },
             eventCallback = eventCallback,
-            stubLoadFromResponse = { trackingLoadCallback ->
-                every { AppOpenAd.loadFromAdResponse("opaque-response", any()) } answers {
-                    trackingLoadCallback.callback = secondArg()
-                }
-            },
-            loadAndTrackFromResponse = { loadCallback, delegate ->
-                adTracker.loadAndTrackAppOpenAdFromResponse(
-                    adResponse = "opaque-response",
-                    adUnitId = "supplied-app-open-unit",
-                    placement = "response-app-open",
-                    loadCallback = loadCallback,
-                    adEventCallback = delegate,
-                )
-            },
-            asTrackingCallback = { it as? TrackingAppOpenAdEventCallback },
-            invokeDelegateCallback = { it.onAdDismissedFullScreenContent() },
             assertDelegateInvoked = { assertTrue(eventCallback.dismissed) },
         )
     }
 
     @Test
     fun `response failure uses supplied ad unit and placement before forwarding`() {
-        contract.responseFailure(
-            stubLoadFromResponse = { trackingLoadCallback ->
-                every { AppOpenAd.loadFromAdResponse("opaque-response", any()) } answers {
-                    trackingLoadCallback.callback = secondArg()
-                }
-            },
-            loadAndTrackFromResponse = { loadCallback ->
-                adTracker.loadAndTrackAppOpenAdFromResponse(
-                    adResponse = "opaque-response",
-                    adUnitId = "supplied-app-open-unit",
-                    placement = "response-app-open",
-                    loadCallback = loadCallback,
-                )
-            },
+        contract.responseFailure()
+    }
+
+    private inner class AppOpenAdAdapter : FullScreenAdResponseFlowAdapter<AppOpenAd, AppOpenAdEventCallback> {
+        override val values = FullScreenAdTestValues(
+            adFormat = AdFormat.APP_OPEN,
+            adUnitId = "supplied-app-open-unit",
+            placement = "response-app-open",
         )
+
+        override fun createAd(
+            responseInfo: ResponseInfo,
+            installedCallback: CallbackHolder<AppOpenAdEventCallback>,
+            onCallbackInstalled: () -> Unit,
+        ): AppOpenAd = mockk(relaxed = true) {
+            every { getResponseInfo() } returns responseInfo
+            every { adEventCallback = any() } answers {
+                installedCallback.callback = firstArg()
+                onCallbackInstalled()
+            }
+        }
+
+        override fun stubLoadFromResponse(
+            trackingLoadCallback: CallbackHolder<AdLoadCallback<AppOpenAd>>,
+        ) {
+            every { AppOpenAd.loadFromAdResponse("opaque-response", any()) } answers {
+                trackingLoadCallback.callback = secondArg()
+            }
+        }
+
+        override fun loadAndTrackFromResponse(
+            loadCallback: AdLoadCallback<AppOpenAd>,
+            eventCallback: AppOpenAdEventCallback?,
+        ) {
+            adTracker.loadAndTrackAppOpenAdFromResponse(
+                adResponse = "opaque-response",
+                adUnitId = values.adUnitId,
+                placement = values.placement,
+                loadCallback = loadCallback,
+                adEventCallback = eventCallback,
+            )
+        }
+
+        override fun asTrackingCallback(
+            callback: AppOpenAdEventCallback,
+        ): TrackingAppOpenAdEventCallback? = callback as? TrackingAppOpenAdEventCallback
+
+        override fun invokeDelegateCallback(callback: AppOpenAdEventCallback) {
+            callback.onAdDismissedFullScreenContent()
+        }
     }
 
     private class RecordingAppOpenEventCallback : AppOpenAdEventCallback {
