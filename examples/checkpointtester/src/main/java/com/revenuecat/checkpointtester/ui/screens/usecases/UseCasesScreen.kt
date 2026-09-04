@@ -56,9 +56,10 @@ private val NAVIGATED_USE_CASES = listOf(
 private val INLINE_USE_CASES = listOf(
     InlineUseCase(
         identifier = "offering_checkpoint",
-        title = "Offering fallback paywall",
-        description = "A terminal offering workflow presents the offering's paywall, falling back to the " +
-            "default paywall until custom presenters exist.",
+        title = "App-presented offering",
+        description = "A terminal offering workflow is handed to the app's registered " +
+            "CheckpointOfferingPresenter, which shows a dummy custom paywall. Without a presenter, the " +
+            "offering's own (or the default fallback) paywall would be presented instead.",
     ),
     InlineUseCase(
         identifier = "unknown_checkpoint",

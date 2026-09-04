@@ -1,11 +1,14 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
+import com.revenuecat.purchases.CacheFetchPolicy
+import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.coroutines.CancellationException
@@ -32,8 +35,8 @@ internal sealed class CheckpointPaywallContent {
     class Workflow(val resolution: CheckpointResolution.MatchedWorkflow) : CheckpointPaywallContent()
 
     /**
-     * A matched offering. Until offering presenters exist, the offering's configured paywall is presented,
-     * falling back to the default paywall when it has none.
+     * A matched offering with no registered [CheckpointOfferingPresenter]: the offering's configured paywall
+     * is presented, falling back to the default paywall when it has none.
      */
     class OfferingPaywall(val offering: Offering) : CheckpointPaywallContent()
 }
@@ -77,6 +80,10 @@ internal class CheckpointsManager(
     @set:Synchronized
     var checkpointListener: CheckpointListener? = null
 
+    @get:Synchronized
+    @set:Synchronized
+    var checkpointOfferingPresenter: CheckpointOfferingPresenter? = null
+
     // At most one workflow may be presented at a time, so this single field is both the pending call and
     // the gate that enforces that rule: there is no second piece of state to fall out of sync with.
     private var pendingCall: PendingCall? = null
@@ -106,10 +113,8 @@ internal class CheckpointsManager(
             customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
         )
         val result = when (resolution) {
-            // No offering presenter exists yet, so the offering's (or the default fallback) paywall is
-            // presented instead of returning the offering for app-owned presentation.
             is CheckpointResolution.MatchedOffering -> CheckpointResult.PaywallPresented(
-                present(purchases, CheckpointPaywallContent.OfferingPaywall(resolution.offering), customVariables),
+                presentOffering(purchases, resolution.offering, customVariables),
             )
             is CheckpointResolution.MatchedWorkflow -> CheckpointResult.PaywallPresented(
                 present(purchases, CheckpointPaywallContent.Workflow(resolution), customVariables),
@@ -164,6 +169,76 @@ internal class CheckpointsManager(
         failed.paywallFinished.complete(failed.outcome ?: CheckpointPaywallOutcome.Error(error))
     }
 
+    /**
+     * Presents a matched offering through the registered [checkpointOfferingPresenter] when there is one; the
+     * offering's own (or the default fallback) paywall otherwise. The app-owned presentation claims the same
+     * one-presentation-at-a-time slot as SDK-presented workflows and resolves through its completion's first
+     * report, after the SDK has synced the store purchases made during it.
+     */
+    private suspend fun presentOffering(
+        purchases: Purchases,
+        offering: Offering,
+        customVariables: Map<String, CustomVariableValue>,
+    ): CheckpointPaywallOutcome {
+        val presenter = checkpointOfferingPresenter
+            ?: return present(purchases, CheckpointPaywallContent.OfferingPaywall(offering), customVariables)
+        val call = PendingCall(
+            UUID.randomUUID().toString(),
+            CheckpointPaywallContent.OfferingPaywall(offering),
+            customVariables,
+            CompletableDeferred(),
+        )
+        claim(call)
+        try {
+            presenter.present(offering, PresenterCompletion(call.callId, purchases))
+            return call.paywallFinished.await()
+        } catch (e: CancellationException) {
+            abandon(call.callId)
+            throw e
+        } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
+            abandon(call.callId)
+            presentationError(
+                PurchasesErrorCode.ConfigurationError,
+                "Checkpoint offering presenter failed: $e",
+            )
+        }
+    }
+
+    // Routes an app-owned presentation's report back to its pending call. take() removes the call, so only the
+    // first report wins and the one-presentation slot is released with it, before the sync that follows a
+    // finished report: the app's UI is already gone, so a new checkpoint may present meanwhile.
+    private inner class PresenterCompletion(
+        private val callId: String,
+        private val purchases: Purchases,
+    ) : CheckpointOfferingCompletion {
+
+        // FETCH_CURRENT posts the store purchases the SDK hasn't seen yet (e.g. made through the app's own
+        // billing client) before fetching, so the outcome reflects whatever the app's paywall sold.
+        override fun finished() {
+            val call = take(callId) ?: return
+            purchases.getCustomerInfo(
+                CacheFetchPolicy.FETCH_CURRENT,
+                object : ReceiveCustomerInfoCallback {
+                    override fun onReceived(customerInfo: CustomerInfo) {
+                        call.paywallFinished.complete(CheckpointPaywallOutcome.Finished(customerInfo))
+                    }
+
+                    override fun onError(error: PurchasesError) {
+                        call.paywallFinished.complete(CheckpointPaywallOutcome.Error(error))
+                    }
+                },
+            )
+        }
+
+        override fun failed() {
+            val error = PurchasesError(
+                PurchasesErrorCode.UnknownError,
+                "The checkpoint offering presenter reported a failure.",
+            )
+            take(callId)?.paywallFinished?.complete(CheckpointPaywallOutcome.Error(error))
+        }
+    }
+
     private suspend fun present(
         purchases: Purchases,
         content: CheckpointPaywallContent,
@@ -174,13 +249,7 @@ internal class CheckpointsManager(
             "Cannot present checkpoint workflow: no started Activity found.",
         )
         val call = PendingCall(UUID.randomUUID().toString(), content, customVariables, CompletableDeferred())
-        val claimed = synchronized(this) { (pendingCall == null).also { if (it) pendingCall = call } }
-        if (!claimed) {
-            presentationError(
-                PurchasesErrorCode.OperationAlreadyInProgressError,
-                "Another checkpoint workflow is already being presented.",
-            )
-        }
+        claim(call)
         try {
             val presenter = presenterFactory(call.callId, this)
             withPendingCall(call.callId) { it.presenter = presenter }
@@ -194,6 +263,18 @@ internal class CheckpointsManager(
             presentationError(
                 PurchasesErrorCode.ConfigurationError,
                 "Failed to present checkpoint workflow: $e",
+            )
+        }
+    }
+
+    // The single pendingCall field is the one-presentation-at-a-time gate; claiming fails while any
+    // presentation, SDK- or app-owned, is live.
+    private fun claim(call: PendingCall) {
+        val claimed = synchronized(this) { (pendingCall == null).also { if (it) pendingCall = call } }
+        if (!claimed) {
+            presentationError(
+                PurchasesErrorCode.OperationAlreadyInProgressError,
+                "Another checkpoint workflow is already being presented.",
             )
         }
     }

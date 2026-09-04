@@ -63,6 +63,18 @@ internal suspend fun Purchases.awaitCheckpoint(
 ): CheckpointResult = checkpointsManager.checkpoint(this, checkpointIdentifier, params)
 
 /**
+ * Presents the offerings checkpoints resolve to with app-owned UI. When null, an offering's configured paywall
+ * is presented instead, falling back to the default paywall. Held by this [Purchases] instance, so it is
+ * cleared when the SDK is reconfigured.
+ */
+@InternalRevenueCatAPI
+public var Purchases.checkpointOfferingPresenter: CheckpointOfferingPresenter?
+    get() = checkpointsManager.checkpointOfferingPresenter
+    set(value) {
+        checkpointsManager.checkpointOfferingPresenter = value
+    }
+
+/**
  * Global listener for checkpoint activity, including the disposition of checkpoint-presented experiences.
  * Held by this [Purchases] instance, so it is cleared when the SDK is reconfigured.
  */

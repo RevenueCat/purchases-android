@@ -34,6 +34,16 @@ public abstract class CheckpointPaywallOutcome internal constructor() {
     ) : CheckpointPaywallOutcome()
 
     /**
+     * An app-owned presentation through [CheckpointOfferingPresenter] finished. Which store action, if any,
+     * happened during it is not reported; [customerInfo] is the customer's information after syncing the store
+     * purchases made during it.
+     */
+    @Poko
+    public class Finished(
+        public val customerInfo: CustomerInfo,
+    ) : CheckpointPaywallOutcome()
+
+    /**
      * A purchase or restore failed with [error], or the workflow could not be kept on screen (e.g. a failed
      * re-present after a configuration change). Cancellations are reported as [Dismissed] instead.
      */

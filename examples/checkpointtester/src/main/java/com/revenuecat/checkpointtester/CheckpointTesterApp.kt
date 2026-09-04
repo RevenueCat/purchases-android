@@ -15,6 +15,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,7 +28,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.revenuecat.checkpointtester.checkpoints.DummyOfferingPaywallPresenter
 import com.revenuecat.checkpointtester.ui.Screen
+import com.revenuecat.checkpointtester.ui.dialogs.DummyOfferingPaywallDialog
 import com.revenuecat.checkpointtester.ui.dialogs.SetAttributeDialog
 import com.revenuecat.checkpointtester.ui.screens.custom.CustomCheckpointScreen
 import com.revenuecat.checkpointtester.ui.screens.gate.EntitlementGateScreen
@@ -112,9 +115,17 @@ fun CheckpointTesterApp(
                 CustomCheckpointScreen(modifier = contentModifier)
             }
         }
-        if (showAttributeDialog) {
-            SetAttributeDialog(onDismiss = { showAttributeDialog = false })
-        }
+        if (showAttributeDialog) SetAttributeDialog(onDismiss = { showAttributeDialog = false })
+        DummyOfferingPaywallHost()
+    }
+}
+
+// Renders the dummy custom paywall whenever the app's CheckpointOfferingPresenter has an offering to present.
+@Composable
+private fun DummyOfferingPaywallHost() {
+    val paywallRequest by DummyOfferingPaywallPresenter.request.collectAsState()
+    paywallRequest?.let { request ->
+        DummyOfferingPaywallDialog(request = request)
     }
 }
 

@@ -71,6 +71,8 @@ private fun CheckpointPaywallOutcome.toGateResult(activeEntitlementsBefore: Set<
             workflowGateResult(entitlementGrants(customerInfo, activeEntitlementsBefore))
         is CheckpointPaywallOutcome.Restored ->
             workflowGateResult(entitlementGrants(customerInfo, activeEntitlementsBefore))
+        is CheckpointPaywallOutcome.Finished ->
+            workflowGateResult(entitlementGrants(customerInfo, activeEntitlementsBefore))
         is CheckpointPaywallOutcome.Error -> workflowGateResult(error = error)
         // Dismissed, WebCheckoutOpened, and any future outcome without an in-app grant signal.
         else -> workflowGateResult()

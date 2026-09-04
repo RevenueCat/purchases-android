@@ -3,10 +3,13 @@ package com.revenuecat.apitester.java.revenuecatui;
 import androidx.annotation.OptIn;
 
 import com.revenuecat.purchases.InternalRevenueCatAPI;
+import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Purchases;
 import com.revenuecat.purchases.PurchasesError;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointGateCallback;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointGateResult;
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointOfferingCompletion;
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointOfferingPresenter;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointsExtensionsKt;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.EntitlementGrant;
@@ -30,6 +33,17 @@ final class CheckpointsAPI {
     @OptIn(markerClass = InternalRevenueCatAPI.class)
     static void checkGrants(EntitlementGrant entitlementGrant) {
         String identifier = entitlementGrant.getIdentifier();
+    }
+
+    @OptIn(markerClass = InternalRevenueCatAPI.class)
+    static void checkOfferingPresenter(Purchases purchases) {
+        CheckpointOfferingPresenter presenter = (Offering offering, CheckpointOfferingCompletion completion) -> {
+            completion.finished();
+            completion.failed();
+        };
+        CheckpointsExtensionsKt.setCheckpointOfferingPresenter(purchases, presenter);
+        CheckpointsExtensionsKt.setCheckpointOfferingPresenter(purchases, null);
+        CheckpointOfferingPresenter current = CheckpointsExtensionsKt.getCheckpointOfferingPresenter(purchases);
     }
 
     @OptIn(markerClass = InternalRevenueCatAPI.class)
