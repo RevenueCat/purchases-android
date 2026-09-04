@@ -8,6 +8,7 @@ package com.revenuecat.purchases.common
 import android.os.Build
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.ForceServerErrorStrategy
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
@@ -959,6 +960,7 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         assertThat(request.getHeader("X-Kotlin-Version")).isEqualTo(KotlinVersion.CURRENT.toString())
         assertThat(request.getHeader("X-Is-Backgrounded")).isEqualTo("true")
         assertThat(request.getHeader("X-Billing-Client-Sdk-Version")).isEqualTo(BuildConfig.BILLING_CLIENT_VERSION)
+        assertThat(request.headers.names()).doesNotContain("X-Is-Sandbox")
     }
 
     @Test
@@ -992,6 +994,23 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val request = server.takeRequest()
 
         assertThat(request.headers.names()).doesNotContain("X-Storefront")
+    }
+
+    @Test
+    fun `adds sandbox header if store is test store`() {
+        client = createClient(appConfig = createAppConfig(store = Store.TEST_STORE))
+        val expectedResult = HTTPResult.createResult()
+        val endpoint = Endpoint.LogIn
+        enqueue(
+            endpoint.getPath(),
+            expectedResult
+        )
+
+        client.performRequest(baseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+        val request = server.takeRequest()
+
+        assertThat(request.getHeader("X-Is-Sandbox")).isEqualTo("true")
     }
 
     @Test
