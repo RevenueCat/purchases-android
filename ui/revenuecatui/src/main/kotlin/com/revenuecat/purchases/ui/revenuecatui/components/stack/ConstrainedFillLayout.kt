@@ -21,7 +21,7 @@ internal object ConstrainedFillLayout {
         val orientation: Orientation
         val distribution: FlexDistribution
 
-        class Horizontal(
+        data class Horizontal(
             override val distribution: FlexDistribution,
             val arrangement: Arrangement.Horizontal,
             val alignment: Alignment.Vertical,
@@ -29,7 +29,7 @@ internal object ConstrainedFillLayout {
             override val orientation: Orientation = Orientation.Horizontal
         }
 
-        class Vertical(
+        data class Vertical(
             override val distribution: FlexDistribution,
             val arrangement: Arrangement.Vertical,
             val alignment: Alignment.Horizontal,
