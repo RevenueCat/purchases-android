@@ -13,12 +13,10 @@ import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingAppOpenAdEventCallback
-import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
-import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
@@ -36,10 +34,17 @@ import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+
 class AppOpenAdFlowTest {
 
     private val adTracker = mockk<AdTracker>(relaxed = true)
     private val purchases = mockk<Purchases>(relaxed = true)
+    private val values = FullScreenAdTestValues(AdFormat.APP_OPEN, "app-open-unit", "load-placement")
+    private val suspendingValues = FullScreenAdTestValues(
+        AdFormat.APP_OPEN,
+        "suspend-app-open-unit",
+        "suspend-load-placement",
+    )
 
     @Before
     fun setUp() {
@@ -59,7 +64,7 @@ class AppOpenAdFlowTest {
     @Test
     fun `app open success installs tracking and supports placement and delegate updates`() {
         val adRequest = mockk<AdRequest> {
-            every { adUnitId } returns "app-open-unit"
+            every { adUnitId } returns values.adUnitId
         }
         val responseInfo = mockk<ResponseInfo>(relaxed = true) {
             every { adapterClassName } returns "test-network"
@@ -72,7 +77,7 @@ class AppOpenAdFlowTest {
             every { adEventCallback = any() } answers { installedCallback = firstArg() }
         }
         val activity = mockk<Activity>()
-        val loadCallback = RecordingAppOpenLoadCallback()
+        val loadCallback = FullScreenRecordingAdLoadCallback<AppOpenAd>()
         val initialEventCallback = RecordingAppOpenAdEventCallback()
         val replacementEventCallback = RecordingAppOpenAdEventCallback()
         val trackingLoadCallback = slot<AdLoadCallback<AppOpenAd>>()
@@ -81,32 +86,16 @@ class AppOpenAdFlowTest {
 
         adTracker.loadAndTrackAppOpenAd(
             adRequest = adRequest,
-            placement = "load-placement",
+            placement = values.placement,
             loadCallback = loadCallback,
             adEventCallback = initialEventCallback,
         )
         trackingLoadCallback.captured.onAdLoaded(appOpenAd)
 
         assertSame(appOpenAd, loadCallback.loadedAd)
+        adTracker.assertLoadedData(slot(), values, "test-network", "response-id")
 
-        // Pins the format, ad unit and placement this entry point hands to the load tracker;
-        // the wrapper classes are covered separately, so only the wiring is asserted here.
-        val loadedData = slot<AdLoadedData>()
-        verify(exactly = 1) {
-            adTracker.trackAdLoaded(capture(loadedData), AdCaptureMethod.ADAPTER)
-        }
-        assertEquals(
-            AdLoadedData(
-                networkName = "test-network",
-                mediatorName = AdMediatorName.AD_MOB,
-                adFormat = AdFormat.APP_OPEN,
-                placement = "load-placement",
-                adUnitId = "app-open-unit",
-                impressionId = "response-id",
-            ),
-            loadedData.captured,
-        )
-        val trackingCallback = installedCallback as TrackingAppOpenAdEventCallback
+        val trackingCallback = requireNotNull(installedCallback as? TrackingAppOpenAdEventCallback)
         trackingCallback.onAdDismissedFullScreenContent()
         assertTrue(initialEventCallback.dismissed)
 
@@ -141,85 +130,67 @@ class AppOpenAdFlowTest {
     @Test
     fun `app open failure is forwarded to load callback`() {
         val adRequest = mockk<AdRequest> {
-            every { adUnitId } returns "app-open-unit"
+            every { adUnitId } returns values.adUnitId
         }
         val error = mockk<LoadAdError>(relaxed = true)
-        val loadCallback = RecordingAppOpenLoadCallback()
+        val loadCallback = FullScreenRecordingAdLoadCallback<AppOpenAd>()
         val trackingLoadCallback = slot<AdLoadCallback<AppOpenAd>>()
 
         every { AppOpenAd.load(adRequest, capture(trackingLoadCallback)) } just runs
 
         adTracker.loadAndTrackAppOpenAd(
             adRequest = adRequest,
-            placement = "load-placement",
+            placement = values.placement,
             loadCallback = loadCallback,
         )
         trackingLoadCallback.captured.onAdFailedToLoad(error)
 
         assertSame(error, loadCallback.loadError)
-
-        val failedData = slot<AdFailedToLoadData>()
-        verify(exactly = 1) {
-            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
-        }
-        assertEquals(AdFormat.APP_OPEN, failedData.captured.adFormat)
-        assertEquals("app-open-unit", failedData.captured.adUnitId)
-        assertEquals("load-placement", failedData.captured.placement)
+        adTracker.assertFailedData(slot(), values)
     }
 
     @Test
-    fun `suspending app open success tracks and installs callback before returning original result`() =
-        runBlocking {
-            val adRequest = mockk<AdRequest> {
-                every { adUnitId } returns "suspend-app-open-unit"
-            }
-            val responseInfo = mockk<ResponseInfo>(relaxed = true) {
-                every { adapterClassName } returns "suspend-test-network"
-                every { responseId } returns "suspend-response-id"
-            }
-            var installedCallback: AppOpenAdEventCallback? = null
-            val appOpenAd = mockk<AppOpenAd>(relaxed = true) {
-                every { getResponseInfo() } returns responseInfo
-                every { adEventCallback } answers { installedCallback }
-                every { adEventCallback = any() } answers { installedCallback = firstArg() }
-            }
-            val eventCallback = RecordingAppOpenAdEventCallback()
-            val sdkResult = AdLoadResult.Success(appOpenAd)
-
-            coEvery { AppOpenAd.load(adRequest) } returns sdkResult
-
-            val result = adTracker.loadAndTrackAppOpenAd(
-                adRequest = adRequest,
-                placement = "suspend-load-placement",
-                adEventCallback = eventCallback,
-            )
-
-            assertSame(sdkResult, result)
-            val trackingCallback = installedCallback as TrackingAppOpenAdEventCallback
-            trackingCallback.onAdDismissedFullScreenContent()
-            assertTrue(eventCallback.dismissed)
-
-            val loadedData = slot<AdLoadedData>()
-            verify(exactly = 1) {
-                adTracker.trackAdLoaded(capture(loadedData), AdCaptureMethod.ADAPTER)
-            }
-            assertEquals(
-                AdLoadedData(
-                    networkName = "suspend-test-network",
-                    mediatorName = AdMediatorName.AD_MOB,
-                    adFormat = AdFormat.APP_OPEN,
-                    placement = "suspend-load-placement",
-                    adUnitId = "suspend-app-open-unit",
-                    impressionId = "suspend-response-id",
-                ),
-                loadedData.captured,
-            )
+    fun `suspending app open success tracks and installs callback before returning original result`() = runBlocking {
+        val adRequest = mockk<AdRequest> {
+            every { adUnitId } returns suspendingValues.adUnitId
         }
+        val responseInfo = mockk<ResponseInfo>(relaxed = true) {
+            every { adapterClassName } returns "suspend-test-network"
+            every { responseId } returns "suspend-response-id"
+        }
+        var installedCallback: AppOpenAdEventCallback? = null
+        val appOpenAd = mockk<AppOpenAd>(relaxed = true) {
+            every { getResponseInfo() } returns responseInfo
+            every { adEventCallback } answers { installedCallback }
+            every { adEventCallback = any() } answers { installedCallback = firstArg() }
+        }
+        val eventCallback = RecordingAppOpenAdEventCallback()
+        val sdkResult = AdLoadResult.Success(appOpenAd)
+
+        coEvery { AppOpenAd.load(adRequest) } returns sdkResult
+
+        val result = adTracker.loadAndTrackAppOpenAd(
+            adRequest = adRequest,
+            placement = suspendingValues.placement,
+            adEventCallback = eventCallback,
+        )
+
+        assertSame(sdkResult, result)
+        val trackingCallback = requireNotNull(installedCallback as? TrackingAppOpenAdEventCallback)
+        trackingCallback.onAdDismissedFullScreenContent()
+        assertTrue(eventCallback.dismissed)
+        adTracker.assertLoadedData(
+            slot<AdLoadedData>(),
+            suspendingValues,
+            "suspend-test-network",
+            "suspend-response-id",
+        )
+    }
 
     @Test
     fun `suspending app open failure tracks error and returns original result`() = runBlocking {
         val adRequest = mockk<AdRequest> {
-            every { adUnitId } returns "suspend-app-open-unit"
+            every { adUnitId } returns suspendingValues.adUnitId
         }
         val error = mockk<LoadAdError> {
             every { code } returns LoadAdError.ErrorCode.NETWORK_ERROR
@@ -230,24 +201,11 @@ class AppOpenAdFlowTest {
 
         val result = adTracker.loadAndTrackAppOpenAd(
             adRequest = adRequest,
-            placement = "suspend-load-placement",
+            placement = suspendingValues.placement,
         )
 
         assertSame(sdkResult, result)
-        val failedData = slot<AdFailedToLoadData>()
-        verify(exactly = 1) {
-            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
-        }
-        assertEquals(
-            AdFailedToLoadData(
-                mediatorName = AdMediatorName.AD_MOB,
-                adFormat = AdFormat.APP_OPEN,
-                placement = "suspend-load-placement",
-                adUnitId = "suspend-app-open-unit",
-                mediatorErrorCode = LoadAdError.ErrorCode.NETWORK_ERROR.value,
-            ),
-            failedData.captured,
-        )
+        adTracker.assertSuspendingFailedData(slot<AdFailedToLoadData>(), suspendingValues)
     }
 
     @Test
@@ -267,19 +225,6 @@ class AppOpenAdFlowTest {
 
         override fun onAdDismissedFullScreenContent() {
             dismissed = true
-        }
-    }
-
-    private class RecordingAppOpenLoadCallback : AdLoadCallback<AppOpenAd> {
-        var loadedAd: AppOpenAd? = null
-        var loadError: LoadAdError? = null
-
-        override fun onAdLoaded(ad: AppOpenAd) {
-            loadedAd = ad
-        }
-
-        override fun onAdFailedToLoad(adError: LoadAdError) {
-            loadError = adError
         }
     }
 }
