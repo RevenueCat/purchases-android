@@ -118,16 +118,21 @@ public data class WorkflowStep(
             }
         }
 
-    internal val offeringIdentifier: String?
+    /** The offering this step presents, read from `param_values.offering.identifier`. */
+    @InternalRevenueCatAPI
+    public val offeringIdentifier: String?
         get() {
-            return (paramValues[OFFERING_IDENTIFIER_PARAM] as? JsonPrimitive)
+            return (paramValues[OFFERING_PARAM] as? JsonObject)
+                ?.get(OFFERING_IDENTIFIER_PARAM)
+                ?.let { it as? JsonPrimitive }
                 ?.takeIf { it.isString }
                 ?.content
                 ?.takeIf { it.isNotBlank() }
         }
 }
 
-private const val OFFERING_IDENTIFIER_PARAM = "offering_identifier"
+private const val OFFERING_PARAM = "offering"
+private const val OFFERING_IDENTIFIER_PARAM = "identifier"
 
 @InternalRevenueCatAPI
 @Serializable

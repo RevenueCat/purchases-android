@@ -38,7 +38,9 @@ import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
@@ -203,11 +205,15 @@ class CheckpointWorkflowResolverImplTest {
         val invalidWorkflows = listOf(
             workflow(
                 "ui-with-non-string-identifier",
-                baseStep.copy(paramValues = mapOf("offering_identifier" to JsonPrimitive(42))),
+                baseStep.copy(paramValues = offeringParams(JsonPrimitive(42))),
             ),
             workflow(
                 "ui-with-null-identifier",
-                baseStep.copy(paramValues = mapOf("offering_identifier" to JsonNull)),
+                baseStep.copy(paramValues = offeringParams(JsonNull)),
+            ),
+            workflow(
+                "ui-with-non-object-offering",
+                baseStep.copy(paramValues = mapOf("offering" to JsonPrimitive("default"))),
             ),
             workflow("ui-with-blank-identifier", screenStep("screen-step", "  ")),
         )
@@ -617,11 +623,15 @@ class CheckpointWorkflowResolverImplTest {
             workflow("offering-without-identifier", baseOfferingStep.copy(paramValues = emptyMap())),
             workflow(
                 "offering-with-non-string-identifier",
-                baseOfferingStep.copy(paramValues = mapOf("offering_identifier" to JsonPrimitive(42))),
+                baseOfferingStep.copy(paramValues = offeringParams(JsonPrimitive(42))),
             ),
             workflow(
                 "offering-with-null-identifier",
-                baseOfferingStep.copy(paramValues = mapOf("offering_identifier" to JsonNull)),
+                baseOfferingStep.copy(paramValues = offeringParams(JsonNull)),
+            ),
+            workflow(
+                "offering-with-non-object-offering",
+                baseOfferingStep.copy(paramValues = mapOf("offering" to JsonPrimitive("default"))),
             ),
             workflow("offering-with-blank-identifier", offeringStep("  ")),
         )
@@ -807,5 +817,8 @@ class CheckpointWorkflowResolverImplTest {
     )
 
     private fun offeringParams(offeringIdentifier: String?) =
-        offeringIdentifier?.let { mapOf("offering_identifier" to JsonPrimitive(it)) }.orEmpty()
+        offeringIdentifier?.let { offeringParams(JsonPrimitive(it)) }.orEmpty()
+
+    private fun offeringParams(identifier: JsonElement) =
+        mapOf("offering" to JsonObject(mapOf("identifier" to identifier)))
 }

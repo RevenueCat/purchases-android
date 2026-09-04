@@ -1245,10 +1245,10 @@ internal class PaywallViewModelImpl(
             ?: return PaywallState.Error("Step '${step.id}' has no screen_id in workflow '${workflow.id}'")
         val screen = workflow.screens[screenId]
             ?: return PaywallState.Error("Screen '$screenId' not found in workflow '${workflow.id}'")
-        val offeringId = screen.offeringIdentifier
-            ?: return PaywallState.Error("Screen '$screenId' has no offering_id in workflow '${workflow.id}'")
+        val offeringId = step.offeringIdentifier
+            ?: return PaywallState.Error("Step '${step.id}' has no offering identifier in workflow '${workflow.id}'")
         val baseOffering = offerings[offeringId]
-            ?: return PaywallState.Error("Offering '$offeringId' not found for screen '$screenId'")
+            ?: return PaywallState.Error("Offering '$offeringId' not found for step '${step.id}'")
 
         val paywallComponents = WorkflowScreenMapper.toPaywallComponents(screen, screenId, uiConfig)
         val offering = Offering(
@@ -1481,14 +1481,10 @@ internal class PaywallViewModelImpl(
 
     @Suppress("ReturnCount")
     private fun validateStep(step: WorkflowStep, workflow: PublishedWorkflow, offerings: Offerings): String? {
-        val screenId = step.screenId
-            ?: return "Step '${step.id}' has no screen_id in workflow '${workflow.id}'"
-        val screen = workflow.screens[screenId]
-            ?: return "Screen '$screenId' not found in workflow '${workflow.id}'"
-        val offeringId = screen.offeringIdentifier
-            ?: return "Screen '$screenId' has no offering_id in workflow '${workflow.id}'"
+        val offeringId = step.offeringIdentifier
+            ?: return "Step '${step.id}' has no offering identifier in workflow '${workflow.id}'"
         offerings[offeringId]
-            ?: return "Offering '$offeringId' not found for screen '$screenId'"
+            ?: return "Offering '$offeringId' not found for step '${step.id}'"
         return null
     }
 
