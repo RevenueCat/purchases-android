@@ -46,6 +46,21 @@ internal class WebViewEffectiveSizeTest {
     }
 
     @Test
+    fun `fit axes clamp the resolved content default and placeholder sizes`() {
+        val size = webViewEffectiveSize(
+            declaredSize = Size(
+                width = Fit(default = 240u, min = 300u),
+                height = Fit(max = 80u),
+            ),
+            contentWidthCssPx = 0,
+            contentHeightCssPx = 200,
+        )
+
+        assertThat(size.width).isEqualTo(Fixed(300u))
+        assertThat(size.height).isEqualTo(Fixed(80u))
+    }
+
+    @Test
     fun `non-fit axes ignore reported content sizes`() {
         val size = webViewEffectiveSize(
             declaredSize = Size(width = Fill(), height = Fixed(200u)),
@@ -102,6 +117,39 @@ internal class WebViewEffectiveSizeTest {
 
         assertThat(size.width).isEqualTo(Fixed(320u))
         assertThat(size.height).isEqualTo(Fixed(480u))
+    }
+
+    @Test
+    fun `unbounded fill axes clamp after resolving their base size`() {
+        val size = webViewEffectiveSize(
+            declaredSize = Size(
+                width = Fill(max = 200u),
+                height = Fill(min = 500u),
+            ),
+            contentWidthCssPx = 320,
+            contentHeightCssPx = 480,
+            widthAxisUnbounded = true,
+            heightAxisUnbounded = true,
+        )
+
+        assertThat(size.width).isEqualTo(Fixed(200u))
+        assertThat(size.height).isEqualTo(Fixed(500u))
+    }
+
+    @Test
+    fun `minimum takes precedence over maximum for web view sizing`() {
+        val size = webViewEffectiveSize(
+            declaredSize = Size(
+                width = Fit(min = 400u, max = 200u),
+                height = Fill(min = 400u, max = 200u),
+            ),
+            contentWidthCssPx = 320,
+            contentHeightCssPx = 320,
+            heightAxisUnbounded = true,
+        )
+
+        assertThat(size.width).isEqualTo(Fixed(400u))
+        assertThat(size.height).isEqualTo(Fixed(400u))
     }
 
     @Test

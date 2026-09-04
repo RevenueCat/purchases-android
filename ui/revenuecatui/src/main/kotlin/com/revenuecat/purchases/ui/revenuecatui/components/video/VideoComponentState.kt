@@ -37,6 +37,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.AspectRatio
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.clamp
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDelegate
 import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentStyle
@@ -278,14 +279,20 @@ internal class VideoComponentState(
     ): SizeConstraint = when (this) {
         is Fit -> {
             when (other) {
-                is Fit -> Fixed(with(density) { thisDimensionPx.toInt().toDp().value.toUInt() })
+                is Fit -> {
+                    val intrinsicSize = with(density) { thisDimensionPx.toInt().toDp().value.toUInt() }
+                    Fixed(clamp(intrinsicSize))
+                }
                 is Fill -> this
 
                 is Fixed -> {
                     // If the other dimension is Fixed, we'll have to scale this one by the same factor.
                     val otherDimensionDp = with(density) { otherDimensionPx.toInt().toDp() }
                     val scaleFactor = other.value.toFloat() / otherDimensionDp.value
-                    Fixed(with(density) { (scaleFactor * thisDimensionPx.toInt()).toDp().value.toUInt() })
+                    val scaledSize = with(density) {
+                        (scaleFactor * thisDimensionPx.toInt()).toDp().value.toUInt()
+                    }
+                    Fixed(clamp(scaledSize))
                 }
             }
         }

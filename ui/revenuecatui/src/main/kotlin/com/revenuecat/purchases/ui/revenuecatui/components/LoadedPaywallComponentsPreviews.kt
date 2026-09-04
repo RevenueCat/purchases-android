@@ -46,6 +46,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Shadow
 import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
@@ -936,10 +937,21 @@ private fun LoadedPaywallComponents_Preview_DirectImageAsBackground() {
     }
 }
 
-@Suppress("LongMethod", "MagicNumber")
-@Preview(showSystemUi = true)
+@Preview(name = "Header nested media - Fill", showSystemUi = true)
 @Composable
-private fun LoadedPaywallComponents_Preview_HeaderNestedStackWithImage() {
+private fun LoadedPaywallComponents_Preview_HeaderNestedStackWithImage_Fill() {
+    LoadedPaywallComponents_Preview_HeaderNestedStackWithImage(mediaWidth = Fill())
+}
+
+@Preview(name = "Header nested media - Fill(max = 200)", showSystemUi = true)
+@Composable
+private fun LoadedPaywallComponents_Preview_HeaderNestedStackWithImage_CappedFill() {
+    LoadedPaywallComponents_Preview_HeaderNestedStackWithImage(mediaWidth = Fill(max = 200u))
+}
+
+@Suppress("LongMethod", "MagicNumber")
+@Composable
+private fun LoadedPaywallComponents_Preview_HeaderNestedStackWithImage(mediaWidth: SizeConstraint) {
     val textColor = ColorScheme(light = ColorInfo.Hex(Color(0xFF272727).toArgb()))
     val whiteColor = ColorScheme(light = ColorInfo.Hex(Color(0xFFFDFDFD).toArgb()))
 
@@ -984,7 +996,7 @@ private fun LoadedPaywallComponents_Preview_HeaderNestedStackWithImage() {
                             ),
                         ),
                         fitMode = FitMode.FIT,
-                        size = Size(width = Fill(), height = Fit()),
+                        size = Size(width = mediaWidth, height = Fit()),
                     ),
                     TextComponent(
                         text = LocalizationKey("overlay-text"),

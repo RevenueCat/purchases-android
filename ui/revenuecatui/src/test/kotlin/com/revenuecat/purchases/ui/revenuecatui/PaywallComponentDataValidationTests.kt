@@ -89,7 +89,10 @@ class PaywallComponentDataValidationTests {
                             ),
                             TestData.Components.monthlyPackageComponent,
                         ),
-                        size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
+                        size = Size(
+                            width = SizeConstraint.Fill(min = 10u, max = 1000u),
+                            height = SizeConstraint.Fit(min = 20u, max = 40u),
+                        ),
                     ),
                     background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
                 ),
@@ -791,7 +794,9 @@ class PaywallComponentDataValidationTests {
     @Test
     fun `Should use Fill size in root component even if given Fit`() {
         val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-        assert((validated.stack as StackComponentStyle).size.height == SizeConstraint.Fill())
+        val size = (validated.stack as StackComponentStyle).size
+        assertEquals(SizeConstraint.Fill(min = 10u, max = 1000u), size.width)
+        assertEquals(SizeConstraint.Fill(min = 20u, max = 40u), size.height)
     }
 
     @Test

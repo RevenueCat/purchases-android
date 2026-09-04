@@ -141,6 +141,59 @@ class StackFillUnboundedCollapseTest {
         }
     }
 
+    @Test
+    fun `Fill child with maximum does not occupy its entire weighted slot`() {
+        val constrainedChild = StackComponent(
+            components = emptyList(),
+            size = Size(width = Fill(max = 20u), height = Fill()),
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+        )
+        val root = StackComponent(
+            components = listOf(constrainedChild),
+            dimension = Dimension.Horizontal(VerticalAlignment.TOP, FlexDistribution.START),
+            size = Size(width = Fixed(100u), height = Fixed(20u)),
+        )
+        val style = styleFactory.create(root).getOrThrow().componentStyle as StackComponentStyle
+
+        composeTestRule.setContent {
+            StackComponentView(
+                style = style,
+                state = FakePaywallState(components = emptyList()),
+                clickHandler = {},
+                modifier = Modifier.testTag("stack"),
+            )
+        }
+
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("stack").assertPixelColorEquals(
+            Color.Red,
+            startX = 5,
+            startY = 5,
+            width = 1,
+            height = 1,
+        )
+    }
+
+    @Test
+    fun `horizontal Fill minimum is allocated before its sibling`() {
+        assertConstrainedFillSiblings(
+            horizontal = true,
+            firstConstraint = Fill(min = 80u),
+            firstColorPosition = 75,
+            secondColorPosition = 85,
+        )
+    }
+
+    @Test
+    fun `vertical Fill maximum releases space to its sibling`() {
+        assertConstrainedFillSiblings(
+            horizontal = false,
+            firstConstraint = Fill(max = 20u),
+            firstColorPosition = 15,
+            secondColorPosition = 85,
+        )
+    }
+
     private fun assertScrollingFitStackKeepsFillChild(vertical: Boolean) {
         // A real leaf with actual content: an empty decorative box has zero intrinsic size and
         // would correctly measure to 0 under any unbounded constraint regardless of this fix
@@ -246,5 +299,68 @@ class StackFillUnboundedCollapseTest {
         composeTestRule.onNodeWithTag("stack")
             .assertPixelColorEquals(color = Color.Red, startX = redX, startY = redY, width = 1, height = 1)
             .assertPixelColorEquals(color = Color.Blue, startX = blueX, startY = blueY, width = 1, height = 1)
+    }
+
+    private fun assertConstrainedFillSiblings(
+        horizontal: Boolean,
+        firstConstraint: Fill,
+        firstColorPosition: Int,
+        secondColorPosition: Int,
+    ) {
+        val firstChild = StackComponent(
+            components = emptyList(),
+            size = if (horizontal) {
+                Size(width = firstConstraint, height = Fill())
+            } else {
+                Size(width = Fill(), height = firstConstraint)
+            },
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+        )
+        val secondChild = StackComponent(
+            components = emptyList(),
+            size = Size(width = Fill(), height = Fill()),
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
+        )
+        val stack = StackComponent(
+            components = listOf(firstChild, secondChild),
+            dimension = if (horizontal) {
+                Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START)
+            } else {
+                Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START)
+            },
+            size = if (horizontal) {
+                Size(width = Fixed(100u), height = Fixed(20u))
+            } else {
+                Size(width = Fixed(20u), height = Fixed(100u))
+            },
+        )
+        val style = styleFactory.create(stack).getOrThrow().componentStyle as StackComponentStyle
+
+        composeTestRule.setContent {
+            StackComponentView(
+                style = style,
+                state = FakePaywallState(components = emptyList()),
+                clickHandler = {},
+                modifier = Modifier.testTag("stack"),
+            )
+        }
+
+        composeTestRule.waitForIdle()
+        val firstPositionPx = with(composeTestRule.density) { firstColorPosition.dp.roundToPx() }
+        val secondPositionPx = with(composeTestRule.density) { secondColorPosition.dp.roundToPx() }
+        val crossPositionPx = with(composeTestRule.density) { 10.dp.roundToPx() }
+        val (firstX, firstY) = if (horizontal) {
+            firstPositionPx to crossPositionPx
+        } else {
+            crossPositionPx to firstPositionPx
+        }
+        val (secondX, secondY) = if (horizontal) {
+            secondPositionPx to crossPositionPx
+        } else {
+            crossPositionPx to secondPositionPx
+        }
+        composeTestRule.onNodeWithTag("stack")
+            .assertPixelColorEquals(Color.Red, firstX, firstY, width = 1, height = 1)
+            .assertPixelColorEquals(Color.Blue, secondX, secondY, width = 1, height = 1)
     }
 }
