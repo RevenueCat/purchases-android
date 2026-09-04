@@ -17,7 +17,7 @@ import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 
 internal object ConstrainedFillLayout {
-    sealed interface Config {
+    internal sealed interface Config {
         val orientation: Orientation
         val distribution: FlexDistribution
 
