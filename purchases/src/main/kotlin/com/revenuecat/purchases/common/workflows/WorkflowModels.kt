@@ -124,9 +124,13 @@ public data class WorkflowStep(
     public val experimentVariant: String?
         get() = stringParam(EXPERIMENT_VARIANT_PARAM)
 
-    internal val offeringIdentifier: String?
+    /** The offering this step presents, read from `param_values.offering.identifier`. */
+    @InternalRevenueCatAPI
+    public val offeringIdentifier: String?
         get() {
-            return (paramValues[OFFERING_IDENTIFIER_PARAM] as? JsonPrimitive)
+            return (paramValues[OFFERING_PARAM] as? JsonObject)
+                ?.get(OFFERING_IDENTIFIER_PARAM)
+                ?.let { it as? JsonPrimitive }
                 ?.takeIf { it.isString }
                 ?.content
                 ?.takeIf { it.isNotBlank() }
@@ -138,7 +142,8 @@ public data class WorkflowStep(
 
 private const val EXPERIMENT_ID_PARAM = "experiment_id"
 private const val EXPERIMENT_VARIANT_PARAM = "experiment_variant"
-private const val OFFERING_IDENTIFIER_PARAM = "offering_identifier"
+private const val OFFERING_PARAM = "offering"
+private const val OFFERING_IDENTIFIER_PARAM = "identifier"
 
 @InternalRevenueCatAPI
 @Serializable
