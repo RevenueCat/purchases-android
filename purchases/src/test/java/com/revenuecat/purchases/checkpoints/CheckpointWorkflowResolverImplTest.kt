@@ -24,10 +24,18 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowManager
+import com.revenuecat.purchases.common.workflows.WorkflowScreen
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTrigger
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
+import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
+import com.revenuecat.purchases.paywalls.components.common.LocaleId
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
+import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
+import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -47,6 +55,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
+import java.net.URL
 import java.util.Date
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -157,6 +166,29 @@ class CheckpointWorkflowResolverImplTest {
             .isEqualTo(CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
         assertThat(offeringsFetched).isZero()
         verify(exactly = 0) { mockWorkflowManager.prewarmWorkflowAssets(any(), any()) }
+    }
+
+    @Test
+    fun `a UI workflow whose initial step has no offering identifier falls back to its screen's`() = runTest {
+        val workflow = uiWorkflow("wf1234", offeringIdentifier = null)
+            .copy(screens = mapOf("screen-id" to screen(offeringIdentifier = "default")))
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow
+
+        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
+
+        assertThat(resolution.offering).isEqualTo(mockOffering)
+        verify(exactly = 1) { mockWorkflowManager.prewarmWorkflowAssets(workflow, mockUiConfig) }
+    }
+
+    @Test
+    fun `a UI workflow's initial step offering identifier wins over its screen's`() = runTest {
+        val workflow = uiWorkflow("wf1234", offeringIdentifier = "default")
+            .copy(screens = mapOf("screen-id" to screen(offeringIdentifier = "missing")))
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow
+
+        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
+
+        assertThat(resolution.offering).isEqualTo(mockOffering)
     }
 
     @Test
@@ -818,6 +850,22 @@ class CheckpointWorkflowResolverImplTest {
 
     private fun offeringParams(offeringIdentifier: String?) =
         offeringIdentifier?.let { offeringParams(JsonPrimitive(it)) }.orEmpty()
+
+    private fun screen(offeringIdentifier: String?) = WorkflowScreen(
+        name = "screen-id",
+        templateName = "template",
+        assetBaseURL = URL("https://assets.revenuecat.com"),
+        componentsConfig = ComponentsConfig(
+            PaywallComponentsConfig(
+                stack = StackComponent(components = emptyList()),
+                background = Background.Color(ColorScheme(light = ColorInfo.Hex(0))),
+                stickyFooter = null,
+            ),
+        ),
+        componentsLocalizations = emptyMap(),
+        defaultLocaleIdentifier = LocaleId("en_US"),
+        offeringIdentifier = offeringIdentifier,
+    )
 
     private fun offeringParams(identifier: JsonElement) =
         mapOf("offering" to JsonObject(mapOf("identifier" to identifier)))

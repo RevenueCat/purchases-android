@@ -31,8 +31,9 @@ import kotlinx.coroutines.CancellationException
  * Resolves a checkpoint through the `checkpoint_rules` topic: the checkpoint's rules are read from remote config
  * and evaluated in order against locally collected dimensions, and the first rule whose audience matches wins.
  *
- * The winner is final. If its workflow turns out to be unservable — no offering identifier on its initial step,
- * that offering absent from the fetched offerings, or its body unavailable — the checkpoint resolves to
+ * The winner is final. If its workflow turns out to be unservable — no offering identifier on its initial step or
+ * that step's screen, that offering absent from the fetched offerings, or its body unavailable — the checkpoint
+ * resolves to
  * [CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE] rather than falling through to a rule the
  * customer was not the first choice for.
  *
@@ -189,7 +190,7 @@ internal class CheckpointWorkflowResolverImpl(
         uiConfig: UiConfig,
         initialStep: WorkflowStep,
     ): CheckpointResolution {
-        val offeringId = initialStep.offeringIdentifier
+        val offeringId = workflow.offeringIdentifierFor(initialStep)
             ?: return unservableRule(rule, "its initial step has no valid offering identifier")
         val offering = loadOffering(checkpointIdentifier, offeringId)
             ?: return unservableRule(rule, "offering '$offeringId' was not found in offerings")
