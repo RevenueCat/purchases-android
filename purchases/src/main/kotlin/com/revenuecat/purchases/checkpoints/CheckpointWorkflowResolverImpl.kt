@@ -93,8 +93,9 @@ internal class CheckpointWorkflowResolverImpl(
         // (audiences read from a later commit than the rules) is stale rather than authoritative, and deserves
         // the retry as much as a stale success does.
         if (!checkpointsConfigProvider.isCurrent(rulesResolution)) return null
-        // An audience the SDK failed to evaluate is not the same answer as an audience the customer is outside of,
-        // so it can't report NO_MATCH.
+        // An audience the SDK failed to evaluate (unreadable audiences, a predicate the engine cannot run) is not
+        // the same answer as an audience the customer is outside of, so it can't report NO_MATCH. A predicate on a
+        // dimension this SDK does not supply is the latter: the evaluator already counts it as a non-match.
         val rule = matchResult.getOrElse { error ->
             return configurationUnavailable(
                 "The audiences for checkpoint '$identifier' could not be evaluated: ${error.message}",
