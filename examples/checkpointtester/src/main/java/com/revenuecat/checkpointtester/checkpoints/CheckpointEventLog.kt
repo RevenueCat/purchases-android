@@ -3,6 +3,8 @@ package com.revenuecat.checkpointtester.checkpoints
 import android.util.Log
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointCompletedContext
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointEvaluatedContext
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointEvaluation
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointHitContext
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointListener
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
@@ -34,12 +36,23 @@ object CheckpointEventLog : CheckpointListener {
         track("Hit · ${context.identifier} · customVariables=${context.customVariables}")
     }
 
+    override fun onCheckpointEvaluated(context: CheckpointEvaluatedContext) {
+        track("Evaluated · ${context.identifier} · ${describe(context.evaluation)}")
+    }
+
     override fun onCheckpointCompleted(context: CheckpointCompletedContext) {
         track("Completed · ${context.identifier} · ${describe(context.result)}")
     }
 
     fun clear() {
         _events.update { emptyList() }
+    }
+
+    private fun describe(evaluation: CheckpointEvaluation): String = when (evaluation) {
+        is CheckpointEvaluation.OfferingReturned -> "Offering returned (${evaluation.offering.identifier})"
+        CheckpointEvaluation.FlowPresented -> "Flow presented"
+        is CheckpointEvaluation.NoAction -> "No action (${evaluation.reason})"
+        else -> "Unknown evaluation"
     }
 
     private fun describe(result: CheckpointResult): String = when (result) {

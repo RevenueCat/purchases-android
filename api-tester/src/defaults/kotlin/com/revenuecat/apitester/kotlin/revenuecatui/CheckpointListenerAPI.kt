@@ -6,6 +6,8 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointCompletedContext
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointContext
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointEvaluatedContext
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointEvaluation
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointHitContext
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointListener
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
@@ -16,6 +18,8 @@ private class CheckpointListenerAPI {
     fun check() {
         val listener = object : CheckpointListener {
             override fun onCheckpointHit(context: CheckpointHitContext) {}
+
+            override fun onCheckpointEvaluated(context: CheckpointEvaluatedContext) {}
 
             override fun onCheckpointCompleted(context: CheckpointCompletedContext) {}
         }
@@ -31,6 +35,11 @@ private class CheckpointListenerAPI {
 
     fun checkCheckpointHitContext(context: CheckpointHitContext) {
         val supertype: CheckpointContext = context
+    }
+
+    fun checkCheckpointEvaluatedContext(context: CheckpointEvaluatedContext) {
+        val supertype: CheckpointContext = context
+        val evaluation: CheckpointEvaluation = context.evaluation
     }
 
     fun checkCheckpointCompletedContext(context: CheckpointCompletedContext) {

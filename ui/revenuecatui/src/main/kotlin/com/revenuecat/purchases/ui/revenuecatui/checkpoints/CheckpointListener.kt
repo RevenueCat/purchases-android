@@ -28,6 +28,18 @@ public class CheckpointHitContext internal constructor(
 ) : CheckpointContext()
 
 /**
+ * Context delivered to [CheckpointListener.onCheckpointEvaluated].
+ */
+@InternalRevenueCatAPI
+@Poko
+public class CheckpointEvaluatedContext internal constructor(
+    override val identifier: String,
+    override val customVariables: Map<String, CustomVariableValue>,
+    /** What the checkpoint evaluated to. */
+    public val evaluation: CheckpointEvaluation,
+) : CheckpointContext()
+
+/**
  * Context delivered to [CheckpointListener.onCheckpointCompleted].
  */
 @InternalRevenueCatAPI
@@ -49,6 +61,11 @@ public interface CheckpointListener {
 
     /** A checkpoint was hit, before evaluation. */
     public fun onCheckpointHit(context: CheckpointHitContext) {
+        // Default empty implementation
+    }
+
+    /** The checkpoint's rules were evaluated; fired before anything is presented. */
+    public fun onCheckpointEvaluated(context: CheckpointEvaluatedContext) {
         // Default empty implementation
     }
 

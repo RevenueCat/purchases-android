@@ -122,6 +122,65 @@ class CheckpointsManagerTest {
     }
 
     @Test
+    fun `a matched workflow is reported as evaluated before its paywall finishes`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val call = launch { checkpoint() }
+
+        verify(exactly = 1) {
+            mockListener.onCheckpointEvaluated(
+                CheckpointEvaluatedContext(checkpointId, emptyMap(), CheckpointEvaluation.FlowPresented),
+            )
+        }
+        verify(exactly = 0) { mockListener.onCheckpointCompleted(any()) }
+
+        finishPaywall(CheckpointPaywallOutcome.Dismissed)
+        call.join()
+        verify(exactly = 1) { mockListener.onCheckpointCompleted(any()) }
+    }
+
+    @Test
+    fun `a matched offering is reported as evaluated with the offering`() = runTest(dispatcher) {
+        val offering = mockk<Offering>()
+        resolvesTo(CheckpointResolution.MatchedOffering(offering))
+
+        checkpoint()
+
+        verifyOrder {
+            mockListener.onCheckpointHit(CheckpointHitContext(checkpointId, emptyMap()))
+            mockListener.onCheckpointEvaluated(
+                CheckpointEvaluatedContext(checkpointId, emptyMap(), CheckpointEvaluation.OfferingReturned(offering)),
+            )
+            mockListener.onCheckpointCompleted(any())
+        }
+    }
+
+    @Test
+    fun `no action and an invalid identifier are reported as evaluated with their reason`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.UNKNOWN_CHECKPOINT))
+        checkpoint()
+        manager.checkpoint(mockPurchases, " bad", null)
+
+        verify(exactly = 1) {
+            mockListener.onCheckpointEvaluated(
+                CheckpointEvaluatedContext(
+                    checkpointId,
+                    emptyMap(),
+                    CheckpointEvaluation.NoAction(CheckpointResult.NoAction.Reason.UNKNOWN_CHECKPOINT),
+                ),
+            )
+        }
+        verify(exactly = 1) {
+            mockListener.onCheckpointEvaluated(
+                CheckpointEvaluatedContext(
+                    " bad",
+                    emptyMap(),
+                    CheckpointEvaluation.NoAction(CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER),
+                ),
+            )
+        }
+    }
+
+    @Test
     fun `offering checkpoint returns without an activity or presentation`() = runTest(dispatcher) {
         val offering = mockk<Offering>()
         every { mockPurchases.currentActivity } returns null

@@ -13,6 +13,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointCompletedContext
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointEvaluatedContext
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointHitContext
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointListener
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpointListener
@@ -41,6 +42,10 @@ class MainApplication : Application() {
                     "Checkpoint hit: ${context.identifier}",
                     Toast.LENGTH_SHORT,
                 ).show()
+            }
+
+            override fun onCheckpointEvaluated(context: CheckpointEvaluatedContext) {
+                Log.d(TAG, "CheckpointListener: onCheckpointEvaluated: ${context.evaluation}")
             }
 
             override fun onCheckpointCompleted(context: CheckpointCompletedContext) {
