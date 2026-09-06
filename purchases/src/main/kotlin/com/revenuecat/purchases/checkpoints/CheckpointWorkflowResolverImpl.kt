@@ -88,7 +88,12 @@ internal class CheckpointWorkflowResolverImpl(
             CheckpointRulesResolution.Unavailable ->
                 return configurationUnavailable("The rules for checkpoint '$identifier' could not be read.")
         }
-        val matchResult = matchRule(audiencesConfigProvider, rulesResolution.checkpoint.rules, customVariables)
+        val matchResult = matchRule(
+            audiencesConfigProvider,
+            identifier,
+            rulesResolution.checkpoint.rules,
+            customVariables,
+        )
         // Checked before the result is unwrapped: a match that failed against a generation that moved mid-read
         // (audiences read from a later commit than the rules) is stale rather than authoritative, and deserves
         // the retry as much as a stale success does.
@@ -121,15 +126,20 @@ internal class CheckpointWorkflowResolverImpl(
     @Suppress("ReturnCount")
     private suspend fun matchRule(
         audiencesConfigProvider: AudiencesConfigProvider,
+        identifier: String,
         rules: List<CheckpointRule>,
         customVariables: Map<String, RulesDimensionValue>,
     ): Result<CheckpointRule?> {
         if (rules.isEmpty()) return Result.success(null)
         val audiences = audiencesConfigProvider.getAudiences()
             ?: return Result.failure(AudiencesUnavailableException())
+        debugLog { "Evaluating ${rules.size} rules for checkpoint '$identifier'." }
         return localRulesEvaluator.match(
             rules = rules,
             customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables),
+            label = { index, rule ->
+                "Rule ${index + 1} (id ${rule.id}, audience ${rule.audienceId}, workflow ${rule.workflowId})"
+            },
         ) { rule ->
             audiences[rule.audienceId]
                 ?.let { audience -> Result.success(audience.rules) }

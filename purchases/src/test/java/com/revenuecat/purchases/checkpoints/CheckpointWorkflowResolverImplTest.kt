@@ -4,6 +4,9 @@ package com.revenuecat.purchases.checkpoints
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.LogLevel
+import com.revenuecat.purchases.LogMessage
+import com.revenuecat.purchases.assertLogs
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
@@ -182,6 +185,28 @@ class CheckpointWorkflowResolverImplTest {
         assertThat(resolution.uiConfig).isEqualTo(mockUiConfig)
         assertThat(resolution.offering).isEqualTo(mockOffering)
         verify(exactly = 1) { mockWorkflowManager.prewarmWorkflowAssets(mockWorkflow, mockUiConfig) }
+    }
+
+    @Test
+    fun `each rule evaluation is logged with its ids only`() {
+        configureRules(rule("wf5678"), rule("wf1234"))
+        configureAudiences(
+            Audience("aud_wf5678", "false"),
+            Audience("aud_wf1234", "true"),
+        )
+
+        assertLogs(
+            listOf(
+                LogMessage(LogLevel.DEBUG, "Evaluating 2 rules for checkpoint '$checkpointId'."),
+                LogMessage(
+                    LogLevel.VERBOSE,
+                    "Rule 1 (id rule_wf5678, audience aud_wf5678, workflow wf5678) did not match.",
+                ),
+                LogMessage(LogLevel.DEBUG, "Rule 2 (id rule_wf1234, audience aud_wf1234, workflow wf1234) matched."),
+            ),
+        ) {
+            runTest { resolve() }
+        }
     }
 
     @Test

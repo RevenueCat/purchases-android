@@ -5,6 +5,8 @@ package com.revenuecat.purchases.common.localrules
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.rules.RulesEngine
 
 internal sealed class LocalRulesEvaluationException(message: String) : Exception(message) {
@@ -47,6 +49,9 @@ internal class LocalRulesEvaluator(
      *
      * When a predicate must be resolved before it can be evaluated, a resolution failure fails the call immediately.
      * [customVariables] are the caller's own values for this evaluation, readable under `custom.*`.
+     *
+     * Every rule's outcome is logged under the name [label] gives it. Logs never include dimension values or
+     * predicates, only dimension names and how each rule fared.
      */
     suspend fun <Rule : LocalRule> match(
         rules: List<Rule>,
@@ -57,6 +62,7 @@ internal class LocalRulesEvaluator(
     suspend fun <Rule> match(
         rules: List<Rule>,
         customVariables: Map<String, RulesDimensionValue> = emptyMap(),
+        label: (index: Int, rule: Rule) -> String = { index, _ -> "Rule ${index + 1}" },
         predicateFor: suspend (Rule) -> Result<String>,
     ): Result<Rule?> {
         if (rules.isEmpty()) return Result.success(null)
@@ -67,18 +73,30 @@ internal class LocalRulesEvaluator(
                 return Result.failure(LocalRulesEvaluationException.DimensionResolution(error))
             },
         )
+        verboseLog { "Evaluating ${rules.size} rules against dimensions ${snapshot.values.keys.sorted()}." }
 
         var firstFailure: LocalRulesEvaluationException.PredicateEvaluation? = null
         for ((index, rule) in rules.withIndex()) {
             val predicate = predicateFor(rule).getOrElse { error -> return Result.failure(error) }
             val result = RulesEngine.evaluate(predicate, snapshot.values)
             val matches = result.getOrElse { error ->
-                if (error !is RulesEngine.EvaluationException.UnresolvedVariable && firstFailure == null) {
-                    firstFailure = LocalRulesEvaluationException.PredicateEvaluation(index, error)
+                if (error is RulesEngine.EvaluationException.UnresolvedVariable) {
+                    verboseLog {
+                        "${label(index, rule)} did not match: it reads '${error.path}', which this SDK does not supply."
+                    }
+                } else {
+                    debugLog { "${label(index, rule)} could not be evaluated (${error.javaClass.simpleName})." }
+                    if (firstFailure == null) {
+                        firstFailure = LocalRulesEvaluationException.PredicateEvaluation(index, error)
+                    }
                 }
                 false
             }
-            if (matches) return Result.success(rule)
+            if (matches) {
+                debugLog { "${label(index, rule)} matched." }
+                return Result.success(rule)
+            }
+            if (result.isSuccess) verboseLog { "${label(index, rule)} did not match." }
         }
 
         return firstFailure?.let { failure -> Result.failure(failure) } ?: Result.success(null)

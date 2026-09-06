@@ -3,10 +3,18 @@
 package com.revenuecat.purchases.common.localrules
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.LogLevel
+import com.revenuecat.purchases.LogMessage
+import com.revenuecat.purchases.NoOpLogHandler
+import com.revenuecat.purchases.assertDebugLog
+import com.revenuecat.purchases.assertLogs
+import com.revenuecat.purchases.assertVerboseLog
+import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.rules.RulesEngine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.Before
 import org.junit.Test
 import java.util.Date
 
@@ -24,6 +32,11 @@ class LocalRulesEvaluatorTest {
             snapshotsTaken++
             return mapOf("platform" to RulesDimensionValue.StringValue("android"))
         }
+    }
+
+    @Before
+    fun setup() {
+        currentLogHandler = NoOpLogHandler
     }
 
     @Test
@@ -226,6 +239,49 @@ class LocalRulesEvaluatorTest {
         }
 
         assertThat(snapshotsTaken).isEqualTo(1)
+    }
+
+    @Test
+    fun `every rule's outcome is logged without predicates or values`() {
+        assertLogs(
+            listOf(
+                LogMessage(LogLevel.VERBOSE, "Evaluating 2 rules against dimensions [evaluated_at, platform]."),
+                LogMessage(LogLevel.VERBOSE, "Rule 1 did not match."),
+                LogMessage(LogLevel.DEBUG, "Rule 2 matched."),
+            ),
+        ) {
+            runTest {
+                evaluator().match(
+                    listOf(TestRule("first", nonMatchingPredicate), TestRule("second", matchingPredicate)),
+                )
+            }
+        }
+    }
+
+    @Test
+    fun `an unsupplied dimension is logged by name`() {
+        assertVerboseLog("Rule 1 did not match: it reads 'unknown_dimension', which this SDK does not supply.") {
+            runTest { evaluator().match(listOf(TestRule("only", unsuppliedDimensionPredicate))) }
+        }
+    }
+
+    @Test
+    fun `an unevaluable predicate is logged by failure kind`() {
+        assertDebugLog("Rule 1 could not be evaluated (Parse).") {
+            runTest { evaluator().match(listOf(TestRule("only", malformedPredicate))) }
+        }
+    }
+
+    @Test
+    fun `a caller-supplied label names the rules in the logs`() {
+        assertDebugLog("rule named second matched.") {
+            runTest {
+                evaluator().match(
+                    rules = listOf(TestRule("first", nonMatchingPredicate), TestRule("second", matchingPredicate)),
+                    label = { _, rule -> "rule named ${rule.name}" },
+                ) { rule -> Result.success(rule.predicate) }
+            }
+        }
     }
 
     private fun evaluator() = LocalRulesEvaluator(providers = listOf(deviceProvider), currentAppUserId = { "user" })
