@@ -5,6 +5,7 @@ package com.revenuecat.purchases.ui.revenuecatui.data.testdata
 import android.app.Activity
 import android.content.res.AssetManager
 import androidx.compose.material3.ColorScheme
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
@@ -28,6 +29,7 @@ import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
 import com.revenuecat.purchases.paywalls.events.ExitOfferType
 import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
@@ -545,7 +547,7 @@ internal class MockViewModel(
     override val actionError: State<PurchasesError?>
         get() = _actionError
     override val purchaseCompleted: State<Boolean> = mutableStateOf(false)
-    override val workflowState: State<WorkflowPaywallUiState?> = mutableStateOf(null)
+    override val workflowState: MutableState<WorkflowPaywallUiState?> = mutableStateOf(null)
 
     fun loadedLegacyState(): PaywallState.Loaded.Legacy? {
         return state.value.loadedLegacy()
@@ -625,8 +627,10 @@ internal class MockViewModel(
 
     var closePaywallCallCount = 0
         private set
-    override fun closePaywall(result: PaywallResult?) {
+    val closePaywallReasons = mutableListOf<PaywallDismissReason>()
+    override fun closePaywall(result: PaywallResult?, reason: PaywallDismissReason) {
         closePaywallCallCount++
+        closePaywallReasons.add(reason)
     }
 
     var getWebCheckoutUrlCallCount = 0
