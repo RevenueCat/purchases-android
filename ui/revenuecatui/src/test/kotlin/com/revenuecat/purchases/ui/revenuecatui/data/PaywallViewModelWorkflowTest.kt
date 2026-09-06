@@ -46,6 +46,7 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConf
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
@@ -477,7 +478,7 @@ class PaywallViewModelWorkflowTest {
 
     private fun createVm(
         dismissRequest: () -> Unit = {},
-        dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
+        dismissRequestWithExitOffering: ((Offering?, PaywallResult?, PaywallDismissReason) -> Unit)? = null,
         listener: PaywallListener? = null,
     ): PaywallViewModelImpl {
         val builder = PaywallOptions.Builder(dismissRequest = dismissRequest)
@@ -1105,7 +1106,7 @@ class PaywallViewModelWorkflowTest {
 
         var receivedExitOffering: Offering? = null
         val vm = createVm(
-            dismissRequestWithExitOffering = { offering, _ ->
+            dismissRequestWithExitOffering = { offering, _, _ ->
                 receivedExitOffering = offering
             },
         )
@@ -1128,7 +1129,7 @@ class PaywallViewModelWorkflowTest {
 
         var receivedExitOffering: Offering? = exitOffering
         val vm = createVm(
-            dismissRequestWithExitOffering = { offering, _ ->
+            dismissRequestWithExitOffering = { offering, _, _ ->
                 receivedExitOffering = offering
             },
         )

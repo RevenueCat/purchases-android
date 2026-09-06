@@ -40,6 +40,7 @@ import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -120,7 +121,7 @@ internal interface PaywallViewModel {
     }
     fun onPaywallPresented()
     fun onPaywallDismissed()
-    fun closePaywall(result: PaywallResult? = null)
+    fun closePaywall(result: PaywallResult? = null, reason: PaywallDismissReason = PaywallDismissReason.CLOSE)
 
     /**
      * Workflow-related UI state. Non-null when the loaded paywall is a multi-step workflow.
@@ -346,7 +347,7 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    override fun closePaywall(result: PaywallResult?) {
+    override fun closePaywall(result: PaywallResult?, reason: PaywallDismissReason) {
         Logger.d("Paywalls: Close paywall initiated")
         trackCurrentWorkflowLeft()
         trackPaywallClose()
@@ -361,7 +362,7 @@ internal class PaywallViewModelImpl(
         endPresentationSession()
         val dismissWithExitOffering = options.dismissRequestWithExitOffering
         if (dismissWithExitOffering != null) {
-            dismissWithExitOffering(exitOffering, result)
+            dismissWithExitOffering(exitOffering, result, reason)
         } else {
             options.dismissRequest()
         }

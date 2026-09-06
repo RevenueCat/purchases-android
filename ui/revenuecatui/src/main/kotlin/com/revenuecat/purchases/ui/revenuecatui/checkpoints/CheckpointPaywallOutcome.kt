@@ -12,7 +12,10 @@ import dev.drewhamilton.poko.Poko
 @InternalRevenueCatAPI
 public abstract class CheckpointPaywallOutcome internal constructor() {
 
-    /** The paywall was dismissed without a purchase, restore, or error. */
+    /**
+     * The paywall was dismissed without a purchase, restore, or error, whether through a close action, by backing
+     * out, or by the system taking the window down.
+     */
     public object Dismissed : CheckpointPaywallOutcome() {
         override fun toString(): String = "Dismissed"
     }

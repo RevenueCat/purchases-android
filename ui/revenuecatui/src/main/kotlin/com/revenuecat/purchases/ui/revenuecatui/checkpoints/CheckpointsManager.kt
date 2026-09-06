@@ -23,6 +23,14 @@ internal class CheckpointPresentation(
 )
 
 /**
+ * A [CheckpointResult] plus what only the SDK needs to know about how the checkpoint ended. [backedOut] is true
+ * when a presented paywall went away because the user navigated back (system back, or a navigate-back action on
+ * a workflow's first step) without purchasing or restoring. The public outcome reports that as a plain
+ * [CheckpointPaywallOutcome.Dismissed]; whether the user went through the checkpoint is not part of it.
+ */
+internal class CheckpointRun(val result: CheckpointResult, val backedOut: Boolean)
+
+/**
  * Runs a checkpoint hit end to end: fires listener events, asks the core module what the checkpoint resolves
  * to, and either returns its data or presents the resolved workflow through [CheckpointWorkflowPresenter].
  * Owns the one-presentation-at-a-time constraint and the pending call that routes a presented paywall's
@@ -34,6 +42,7 @@ internal class CheckpointPresentation(
  * with a free presentation slot. A workflow that is already on screen keeps reporting to the manager that
  * presented it, exactly once, even if the SDK is reconfigured underneath it.
  */
+@Suppress("TooManyFunctions")
 internal class CheckpointsManager(
     private val presenterFactory: (callId: String, manager: CheckpointsManager) -> CheckpointWorkflowPresenter =
         { callId, manager -> CheckpointWorkflowPresenter(callId, manager) },
@@ -43,7 +52,7 @@ internal class CheckpointsManager(
         val callId: String,
         val resolution: CheckpointResolution.MatchedWorkflow,
         val customVariables: Map<String, CustomVariableValue>,
-        val paywallFinished: CompletableDeferred<CheckpointPaywallOutcome>,
+        val paywallFinished: CompletableDeferred<PresentationEnd>,
     ) {
         // Null until the paywall reports something; kept on the call rather than the presented window so
         // losing the window (configuration change) doesn't reset it.
@@ -52,6 +61,8 @@ internal class CheckpointsManager(
         // Only used to take an orphaned workflow window down when its call is abandoned.
         var presenter: CheckpointWorkflowPresenter? = null
     }
+
+    private class PresentationEnd(val outcome: CheckpointPaywallOutcome, val backedOut: Boolean)
 
     @get:Synchronized
     @set:Synchronized
@@ -71,29 +82,39 @@ internal class CheckpointsManager(
         purchases: Purchases,
         identifier: String,
         params: CheckpointParams?,
-    ): CheckpointResult = withContext(Dispatchers.Main) {
+    ): CheckpointResult = runCheckpoint(purchases, identifier, params).result
+
+    /** [checkpoint], keeping what only the SDK needs to know about how the checkpoint ended. */
+    suspend fun runCheckpoint(
+        purchases: Purchases,
+        identifier: String,
+        params: CheckpointParams?,
+    ): CheckpointRun = withContext(Dispatchers.Main) {
         val customVariables = (params ?: CheckpointParams {}).customVariables
         checkpointListener?.onCheckpointHit(CheckpointHitContext(identifier, customVariables))
         if (!CheckpointIdentifierValidator.isValid(identifier)) {
             Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(identifier))
             val result = CheckpointResult.NoAction(CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER)
             checkpointListener?.onCheckpointCompleted(CheckpointCompletedContext(identifier, customVariables, result))
-            return@withContext result
+            return@withContext CheckpointRun(result, backedOut = false)
         }
 
         val resolution = purchases.resolveCheckpoint(
             identifier,
             customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
         )
-        val result = when (resolution) {
-            is CheckpointResolution.MatchedOffering -> CheckpointResult.ReceivedOffering(resolution.offering)
-            is CheckpointResolution.MatchedWorkflow ->
-                CheckpointResult.PaywallPresented(present(purchases, resolution, customVariables))
+        val run = when (resolution) {
+            is CheckpointResolution.MatchedOffering ->
+                CheckpointRun(CheckpointResult.ReceivedOffering(resolution.offering), backedOut = false)
+            is CheckpointResolution.MatchedWorkflow -> {
+                val end = present(purchases, resolution, customVariables)
+                CheckpointRun(CheckpointResult.PaywallPresented(end.outcome), end.backedOut)
+            }
             is CheckpointResolution.NoAction ->
-                CheckpointResult.NoAction(resolution.reason.toResultReason())
+                CheckpointRun(CheckpointResult.NoAction(resolution.reason.toResultReason()), backedOut = false)
         }
-        checkpointListener?.onCheckpointCompleted(CheckpointCompletedContext(identifier, customVariables, result))
-        result
+        checkpointListener?.onCheckpointCompleted(CheckpointCompletedContext(identifier, customVariables, run.result))
+        run
     }
 
     fun presentation(callId: String): CheckpointPresentation? =
@@ -103,10 +124,16 @@ internal class CheckpointsManager(
         withPendingCall(callId) { it.outcome = outcome }
     }
 
-    fun onPresentationFinished(callId: String) {
+    // A recorded purchase or restore means the user went through, however the window went away: checkpoint
+    // paywalls don't auto-dismiss on restore, so a user who restored and then backed out still went through. A
+    // paywall that went away without reporting anything was dismissed.
+    fun onPresentationFinished(callId: String, navigatedBack: Boolean = false) {
         val finished = take(callId) ?: return
-        // A paywall that went away without reporting anything was dismissed.
-        finished.paywallFinished.complete(finished.outcome ?: CheckpointPaywallOutcome.Dismissed)
+        val recorded = finished.outcome
+        val obtained = recorded is CheckpointPaywallOutcome.Purchased || recorded is CheckpointPaywallOutcome.Restored
+        finished.paywallFinished.complete(
+            PresentationEnd(recorded ?: CheckpointPaywallOutcome.Dismissed, backedOut = navigatedBack && !obtained),
+        )
     }
 
     // Like onPresentationFinished, for a presentation that failed: an outcome the paywall already reported
@@ -114,14 +141,16 @@ internal class CheckpointsManager(
     // reporting anything surfaces as an error rather than a phantom dismissal.
     fun onPresentationFailed(callId: String, error: PurchasesError) {
         val failed = take(callId) ?: return
-        failed.paywallFinished.complete(failed.outcome ?: CheckpointPaywallOutcome.Error(error))
+        failed.paywallFinished.complete(
+            PresentationEnd(failed.outcome ?: CheckpointPaywallOutcome.Error(error), backedOut = false),
+        )
     }
 
     private suspend fun present(
         purchases: Purchases,
         resolution: CheckpointResolution.MatchedWorkflow,
         customVariables: Map<String, CustomVariableValue>,
-    ): CheckpointPaywallOutcome {
+    ): PresentationEnd {
         val activity = purchases.currentActivity ?: presentationError(
             PurchasesErrorCode.ConfigurationError,
             "Cannot present checkpoint workflow: no started Activity found.",
