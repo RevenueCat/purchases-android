@@ -61,15 +61,12 @@ class HomeViewModel : ViewModel() {
         Purchases.sharedInstance.checkpoint(
             Constants.PLAY_GAME_CHECKPOINT_ID,
             CheckpointParams { customVariables { "games_played" to current.gamesPlayed } },
-        ) { gateResult ->
-            // Only called once the gate lets the user through, so the game starts whatever was served. The
-            // grants are merged in so the card reflects what the user obtained on the way.
-            val granted = gateResult.entitlements.map { it.identifier }
+        ) { result ->
+            // Only called once the gate lets the user through, so the game starts whatever was served (a null
+            // result means nothing was). The grants are merged in so the card reflects what the user obtained.
+            val granted = result?.entitlements.orEmpty().map { it.identifier }
             _state.update {
-                it.copy(
-                    activeEntitlements = (it.activeEntitlements + granted).distinct().sorted(),
-                    message = gateResult.error?.let { error -> "Something went wrong: ${error.message}" },
-                )
+                it.copy(activeEntitlements = (it.activeEntitlements + granted).distinct().sorted(), message = null)
             }
             startGame(onAccessGranted)
         }
