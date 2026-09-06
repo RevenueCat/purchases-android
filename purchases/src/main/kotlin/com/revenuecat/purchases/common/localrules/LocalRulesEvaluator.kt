@@ -50,8 +50,9 @@ internal class LocalRulesEvaluator(
      * When a predicate must be resolved before it can be evaluated, a resolution failure fails the call immediately.
      * [customVariables] are the caller's own values for this evaluation, readable under `custom.*`.
      *
-     * Every rule's outcome is logged by its position in [rules]. Logs never include dimension values or
-     * predicates, only dimension names and how each rule fared.
+     * Every rule's outcome is logged by its position in [rules], for the [context] the rules belong to (e.g.
+     * `checkpoint 'onboarding'`). Logs never include dimension values or predicates, only dimension names and how
+     * each rule fared.
      */
     suspend fun <Rule : LocalRule> match(
         rules: List<Rule>,
@@ -62,8 +63,10 @@ internal class LocalRulesEvaluator(
     suspend fun <Rule> match(
         rules: List<Rule>,
         customVariables: Map<String, RulesDimensionValue> = emptyMap(),
+        context: String? = null,
         predicateFor: suspend (Rule) -> Result<String>,
     ): Result<Rule?> {
+        val forContext = context?.let { " for $it" } ?: ""
         if (rules.isEmpty()) return Result.success(null)
 
         val snapshot = dimensionResolver.snapshot(customVariables).fold(
@@ -72,7 +75,7 @@ internal class LocalRulesEvaluator(
                 return Result.failure(LocalRulesEvaluationException.DimensionResolution(error))
             },
         )
-        verboseLog { "Evaluating ${rules.size} rules against dimensions ${snapshot.values.keys.sorted()}." }
+        verboseLog { "Evaluating ${rules.size} rules$forContext against dimensions ${snapshot.values.keys.sorted()}." }
 
         var firstFailure: LocalRulesEvaluationException.PredicateEvaluation? = null
         for ((index, rule) in rules.withIndex()) {
@@ -81,10 +84,11 @@ internal class LocalRulesEvaluator(
             val matches = result.getOrElse { error ->
                 if (error is RulesEngine.EvaluationException.UnresolvedVariable) {
                     verboseLog {
-                        "${label(index)} did not match: it reads '${error.path}', which this SDK does not supply."
+                        "Rule ${index + 1}$forContext did not match: it reads '${error.path}', which this SDK " +
+                            "does not supply."
                     }
                 } else {
-                    debugLog { "${label(index)} could not be evaluated (${error.javaClass.simpleName})." }
+                    debugLog { "Rule ${index + 1}$forContext could not be evaluated (${error.javaClass.simpleName})." }
                     if (firstFailure == null) {
                         firstFailure = LocalRulesEvaluationException.PredicateEvaluation(index, error)
                     }
@@ -92,14 +96,12 @@ internal class LocalRulesEvaluator(
                 false
             }
             if (matches) {
-                verboseLog { "${label(index)} matched." }
+                verboseLog { "Rule ${index + 1}$forContext matched." }
                 return Result.success(rule)
             }
-            if (result.isSuccess) verboseLog { "${label(index)} did not match." }
+            if (result.isSuccess) verboseLog { "Rule ${index + 1}$forContext did not match." }
         }
 
         return firstFailure?.let { failure -> Result.failure(failure) } ?: Result.success(null)
     }
-
-    private fun label(index: Int): String = "Rule ${index + 1}"
 }
