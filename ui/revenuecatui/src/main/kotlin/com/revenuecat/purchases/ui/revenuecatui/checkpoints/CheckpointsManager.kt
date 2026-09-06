@@ -23,10 +23,8 @@ internal class CheckpointPresentation(
 )
 
 /**
- * A [CheckpointResult] plus what only the SDK needs to know about how the checkpoint ended. [backedOut] is true
- * when a presented paywall went away because the user navigated back (system back, or a navigate-back action on
- * a workflow's first step) without purchasing or restoring. The public outcome reports that as a plain
- * [CheckpointPaywallOutcome.Dismissed]; whether the user went through the checkpoint is not part of it.
+ * [backedOut] is true when a presented paywall went away because the user navigated back (system back,
+ * or a navigate-back action on a workflow's first step) without purchasing or restoring.
  */
 internal class CheckpointRun(val result: CheckpointResult, val backedOut: Boolean)
 
@@ -84,7 +82,6 @@ internal class CheckpointsManager(
         params: CheckpointParams?,
     ): CheckpointResult = runCheckpoint(purchases, identifier, params).result
 
-    /** [checkpoint], keeping what only the SDK needs to know about how the checkpoint ended. */
     suspend fun runCheckpoint(
         purchases: Purchases,
         identifier: String,
