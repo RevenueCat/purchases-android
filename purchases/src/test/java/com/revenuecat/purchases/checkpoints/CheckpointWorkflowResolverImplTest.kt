@@ -188,7 +188,7 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `each rule evaluation is logged with the checkpoint identifier and its position`() {
+    fun `each rule evaluation is logged under the checkpoint's prefix with its position`() {
         configureRules(rule("wf5678"), rule("wf1234"))
         configureAudiences(
             Audience("aud_wf5678", "false"),
@@ -197,8 +197,8 @@ class CheckpointWorkflowResolverImplTest {
 
         assertLogs(
             listOf(
-                LogMessage(LogLevel.VERBOSE, "Rule 1 for checkpoint '$checkpointId' did not match."),
-                LogMessage(LogLevel.VERBOSE, "Rule 2 for checkpoint '$checkpointId' matched."),
+                LogMessage(LogLevel.VERBOSE, "[Checkpoint '$checkpointId'] Rule 1 did not match."),
+                LogMessage(LogLevel.VERBOSE, "[Checkpoint '$checkpointId'] Rule 2 matched."),
             ),
         ) {
             runTest { resolve() }

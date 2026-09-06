@@ -136,7 +136,7 @@ internal class CheckpointWorkflowResolverImpl(
         return localRulesEvaluator.match(
             rules = rules,
             customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables),
-            context = "checkpoint '$identifier'",
+            logPrefix = "[Checkpoint '$identifier'] ",
         ) { rule ->
             audiences[rule.audienceId]
                 ?.let { audience -> Result.success(audience.rules) }
