@@ -8,7 +8,6 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitCustomerInfo
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointGateResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -63,29 +62,21 @@ class HomeViewModel : ViewModel() {
             Constants.PLAY_GAME_CHECKPOINT_ID,
             CheckpointParams { customVariables { "games_played" to current.gamesPlayed } },
         ) { gateResult ->
+            // Only called once the gate lets the user through, so the game starts whatever was served. The
+            // grants are merged in so the card reflects what the user obtained on the way.
             val granted = gateResult.entitlements.map { it.identifier }
             _state.update {
                 it.copy(
                     activeEntitlements = (it.activeEntitlements + granted).distinct().sorted(),
-                    message = if (granted.isEmpty()) gateResult.lockedMessage() else null,
+                    message = gateResult.error?.let { error -> "Something went wrong: ${error.message}" },
                 )
             }
-            if (granted.isNotEmpty()) startGame(onAccessGranted)
+            startGame(onAccessGranted)
         }
     }
 
     private fun startGame(onAccessGranted: () -> Unit) {
         _state.update { it.copy(gamesPlayed = it.gamesPlayed + 1) }
         onAccessGranted()
-    }
-
-    @OptIn(InternalRevenueCatAPI::class)
-    private fun CheckpointGateResult.lockedMessage(): String {
-        val error = error
-        return if (error != null) {
-            "Something went wrong: ${error.message}"
-        } else {
-            "The game is still locked. Unlock it to play."
-        }
     }
 }
