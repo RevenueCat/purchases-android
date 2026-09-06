@@ -17,6 +17,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
@@ -80,7 +81,10 @@ internal class CheckpointWorkflowPresenter(
         }
         host = activity
         val resolution = presentation.resolution
-        val options = PaywallOptions.Builder(dismissRequest = ::requestDismiss)
+        // Direct dismissals (a completed purchase or restore, the load-error dialog) carry no reason and count as
+        // a close; everything else reports one. The exit offering, if any, is not presented for checkpoints.
+        val options = PaywallOptions.Builder(dismissRequest = { requestDismiss(PaywallDismissReason.CLOSE) })
+            .setDismissRequestWithExitOffering { _, _, reason -> requestDismiss(reason) }
             .injectedWorkflow(resolution.workflow, resolution.offerings, resolution.uiConfig)
             .setCustomVariables(presentation.customVariables)
             .setListener(outcomeListener)
@@ -160,9 +164,10 @@ internal class CheckpointWorkflowPresenter(
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
     }
 
-    private fun requestDismiss() {
+    private fun requestDismiss(reason: PaywallDismissReason) {
         dismissWindowOnly()
-        finish()
+        teardown()
+        manager.onPresentationFinished(callId, navigatedBack = reason == PaywallDismissReason.NAVIGATED_BACK)
     }
 
     // Safety net for dismissals this presenter didn't initiate (e.g. the system tearing the window down):

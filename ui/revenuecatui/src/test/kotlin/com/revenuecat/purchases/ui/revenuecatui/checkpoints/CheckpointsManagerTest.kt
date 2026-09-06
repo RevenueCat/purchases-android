@@ -396,6 +396,65 @@ class CheckpointsManagerTest {
         assertThat(manager.presentation(callId)).isNull()
     }
 
+    @Test
+    fun `backing out without a recorded outcome resolves Dismissed and backed out`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        finishPaywall(outcome = null, navigatedBack = true)
+        call.join()
+
+        assertThat((run!!.result as CheckpointResult.PaywallPresented).paywallOutcome)
+            .isEqualTo(CheckpointPaywallOutcome.Dismissed)
+        assertThat(run!!.backedOut).isTrue
+        assertThat(manager.presentation(currentCallId())).isNull()
+    }
+
+    @Test
+    fun `backing out after a recorded error keeps the error and is backed out`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        finishPaywall(CheckpointPaywallOutcome.Error(error), navigatedBack = true)
+        call.join()
+
+        assertThat((run!!.result as CheckpointResult.PaywallPresented).paywallOutcome)
+            .isEqualTo(CheckpointPaywallOutcome.Error(error))
+        assertThat(run!!.backedOut).isTrue
+    }
+
+    @Test
+    fun `backing out after a recorded restore is not backed out`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val customerInfo = mockk<CustomerInfo>()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        finishPaywall(CheckpointPaywallOutcome.Restored(customerInfo), navigatedBack = true)
+        call.join()
+
+        assertThat((run!!.result as CheckpointResult.PaywallPresented).paywallOutcome)
+            .isEqualTo(CheckpointPaywallOutcome.Restored(customerInfo))
+        assertThat(run!!.backedOut).isFalse
+    }
+
+    @Test
+    fun `closing without backing out is not backed out`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        finishPaywall(CheckpointPaywallOutcome.Dismissed)
+        call.join()
+
+        assertThat((run!!.result as CheckpointResult.PaywallPresented).paywallOutcome)
+            .isEqualTo(CheckpointPaywallOutcome.Dismissed)
+        assertThat(run!!.backedOut).isFalse
+    }
+
     private fun resolvesTo(resolution: CheckpointResolution) {
         coEvery { mockPurchases.resolveCheckpoint(any(), any()) } returns resolution
     }
@@ -408,15 +467,17 @@ class CheckpointsManagerTest {
 
     // Mirrors what CheckpointWorkflowPresenter does: read the pending call for the presented callId, record
     // the outcome, then report the paywall as finished.
-    private fun finishPaywall(outcome: CheckpointPaywallOutcome) {
+    private fun finishPaywall(outcome: CheckpointPaywallOutcome?, navigatedBack: Boolean = false) {
         val callId = currentCallId()
         assertThat(manager.presentation(callId)).isNotNull
-        manager.recordOutcome(callId, outcome)
-        manager.onPresentationFinished(callId)
+        outcome?.let { manager.recordOutcome(callId, it) }
+        manager.onPresentationFinished(callId, navigatedBack)
     }
 
     private suspend fun checkpoint(params: CheckpointParams? = null): CheckpointResult =
         manager.checkpoint(mockPurchases, checkpointId, params)
+
+    private suspend fun runCheckpoint(): CheckpointRun = manager.runCheckpoint(mockPurchases, checkpointId, null)
 
     private suspend fun checkpointErrorCode(): PurchasesErrorCode? = try {
         checkpoint()

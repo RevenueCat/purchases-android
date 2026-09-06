@@ -130,7 +130,7 @@ internal fun InternalPaywall(
 
     BackHandler {
         if (!viewModel.handleBackNavigation()) {
-            viewModel.closePaywall()
+            viewModel.closePaywall(reason = PaywallDismissReason.NAVIGATED_BACK)
         }
     }
 
@@ -428,7 +428,14 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
 
                 is PaywallAction.External.NavigateBack -> {
                     if (!viewModel.handleBackNavigation()) {
-                        viewModel.closePaywall()
+                        // On a workflow's first step this backs out like system back. A standalone paywall has
+                        // nowhere to go back to, so there navigate-back is its close action.
+                        val reason = if (viewModel.workflowState.value != null) {
+                            PaywallDismissReason.NAVIGATED_BACK
+                        } else {
+                            PaywallDismissReason.CLOSE
+                        }
+                        viewModel.closePaywall(reason = reason)
                     }
                 }
 
