@@ -197,12 +197,13 @@ class CheckpointWorkflowResolverImplTest {
 
         assertLogs(
             listOf(
-                LogMessage(LogLevel.DEBUG, "Evaluating 2 rules for checkpoint '$checkpointId'."),
                 LogMessage(
                     LogLevel.VERBOSE,
-                    "Rule 1 (id rule_wf5678, audience aud_wf5678, workflow wf5678) did not match.",
+                    "Evaluating 2 rules for checkpoint '$checkpointId': id rule_wf5678, audience aud_wf5678, " +
+                        "workflow wf5678, id rule_wf1234, audience aud_wf1234, workflow wf1234.",
                 ),
-                LogMessage(LogLevel.DEBUG, "Rule 2 (id rule_wf1234, audience aud_wf1234, workflow wf1234) matched."),
+                LogMessage(LogLevel.VERBOSE, "Rule 1 did not match."),
+                LogMessage(LogLevel.VERBOSE, "Rule 2 matched."),
             ),
         ) {
             runTest { resolve() }

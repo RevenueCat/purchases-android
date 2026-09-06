@@ -50,7 +50,7 @@ internal class LocalRulesEvaluator(
      * When a predicate must be resolved before it can be evaluated, a resolution failure fails the call immediately.
      * [customVariables] are the caller's own values for this evaluation, readable under `custom.*`.
      *
-     * Every rule's outcome is logged under the name [label] gives it. Logs never include dimension values or
+     * Every rule's outcome is logged by its position in [rules]. Logs never include dimension values or
      * predicates, only dimension names and how each rule fared.
      */
     suspend fun <Rule : LocalRule> match(
@@ -62,7 +62,6 @@ internal class LocalRulesEvaluator(
     suspend fun <Rule> match(
         rules: List<Rule>,
         customVariables: Map<String, RulesDimensionValue> = emptyMap(),
-        label: (index: Int, rule: Rule) -> String = { index, _ -> "Rule ${index + 1}" },
         predicateFor: suspend (Rule) -> Result<String>,
     ): Result<Rule?> {
         if (rules.isEmpty()) return Result.success(null)
@@ -82,10 +81,10 @@ internal class LocalRulesEvaluator(
             val matches = result.getOrElse { error ->
                 if (error is RulesEngine.EvaluationException.UnresolvedVariable) {
                     verboseLog {
-                        "${label(index, rule)} did not match: it reads '${error.path}', which this SDK does not supply."
+                        "${label(index)} did not match: it reads '${error.path}', which this SDK does not supply."
                     }
                 } else {
-                    debugLog { "${label(index, rule)} could not be evaluated (${error.javaClass.simpleName})." }
+                    debugLog { "${label(index)} could not be evaluated (${error.javaClass.simpleName})." }
                     if (firstFailure == null) {
                         firstFailure = LocalRulesEvaluationException.PredicateEvaluation(index, error)
                     }
@@ -93,12 +92,14 @@ internal class LocalRulesEvaluator(
                 false
             }
             if (matches) {
-                debugLog { "${label(index, rule)} matched." }
+                verboseLog { "${label(index)} matched." }
                 return Result.success(rule)
             }
-            if (result.isSuccess) verboseLog { "${label(index, rule)} did not match." }
+            if (result.isSuccess) verboseLog { "${label(index)} did not match." }
         }
 
         return firstFailure?.let { failure -> Result.failure(failure) } ?: Result.success(null)
     }
+
+    private fun label(index: Int): String = "Rule ${index + 1}"
 }

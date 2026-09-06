@@ -133,13 +133,13 @@ internal class CheckpointWorkflowResolverImpl(
         if (rules.isEmpty()) return Result.success(null)
         val audiences = audiencesConfigProvider.getAudiences()
             ?: return Result.failure(AudiencesUnavailableException())
-        debugLog { "Evaluating ${rules.size} rules for checkpoint '$identifier'." }
+        verboseLog {
+            val described = rules.joinToString { "id ${it.id}, audience ${it.audienceId}, workflow ${it.workflowId}" }
+            "Evaluating ${rules.size} rules for checkpoint '$identifier': $described."
+        }
         return localRulesEvaluator.match(
             rules = rules,
             customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables),
-            label = { index, rule ->
-                "Rule ${index + 1} (id ${rule.id}, audience ${rule.audienceId}, workflow ${rule.workflowId})"
-            },
         ) { rule ->
             audiences[rule.audienceId]
                 ?.let { audience -> Result.success(audience.rules) }

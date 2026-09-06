@@ -247,7 +247,7 @@ class LocalRulesEvaluatorTest {
             listOf(
                 LogMessage(LogLevel.VERBOSE, "Evaluating 2 rules against dimensions [evaluated_at, platform]."),
                 LogMessage(LogLevel.VERBOSE, "Rule 1 did not match."),
-                LogMessage(LogLevel.DEBUG, "Rule 2 matched."),
+                LogMessage(LogLevel.VERBOSE, "Rule 2 matched."),
             ),
         ) {
             runTest {
@@ -269,18 +269,6 @@ class LocalRulesEvaluatorTest {
     fun `an unevaluable predicate is logged by failure kind`() {
         assertDebugLog("Rule 1 could not be evaluated (Parse).") {
             runTest { evaluator().match(listOf(TestRule("only", malformedPredicate))) }
-        }
-    }
-
-    @Test
-    fun `a caller-supplied label names the rules in the logs`() {
-        assertDebugLog("rule named second matched.") {
-            runTest {
-                evaluator().match(
-                    rules = listOf(TestRule("first", nonMatchingPredicate), TestRule("second", matchingPredicate)),
-                    label = { _, rule -> "rule named ${rule.name}" },
-                ) { rule -> Result.success(rule.predicate) }
-            }
         }
     }
 
