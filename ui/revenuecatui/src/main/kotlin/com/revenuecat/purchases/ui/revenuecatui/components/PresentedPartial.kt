@@ -158,12 +158,25 @@ private fun ComponentOverride.Condition.evaluate(
     is ComponentOverride.Condition.SelectedPackage -> evaluate(conditionContext.selectedPackageId)
     is ComponentOverride.Condition.Variable -> evaluate(conditionContext.customVariables)
     is ComponentOverride.Condition.State -> evaluate(conditionContext.stateReader)
-    is ComponentOverride.Condition.WindowWidthRule ->
-        evaluateComparison(operator, conditionContext.windowDpSize?.width?.value?.toDouble(), value)
-    is ComponentOverride.Condition.WindowHeightRule ->
-        evaluateComparison(operator, conditionContext.windowDpSize?.height?.value?.toDouble(), value)
+    is ComponentOverride.Condition.WindowWidthRule,
+    is ComponentOverride.Condition.WindowHeightRule,
+    is ComponentOverride.Condition.WindowAspectRatioRule,
+    -> evaluateWindowCondition(conditionContext.windowDpSize)
     ComponentOverride.Condition.Unsupported -> false
 }
+
+private fun ComponentOverride.Condition.evaluateWindowCondition(windowDpSize: DpSize?): Boolean = when (this) {
+    is ComponentOverride.Condition.WindowWidthRule ->
+        evaluateComparison(operator, windowDpSize?.width?.value?.toDouble(), value)
+    is ComponentOverride.Condition.WindowHeightRule ->
+        evaluateComparison(operator, windowDpSize?.height?.value?.toDouble(), value)
+    is ComponentOverride.Condition.WindowAspectRatioRule ->
+        evaluateComparison(operator, windowDpSize?.aspectRatioOrNull(), value)
+    else -> false
+}
+
+private fun DpSize.aspectRatioOrNull(): Double? =
+    if (height.value > 0f) width.value.toDouble() / height.value.toDouble() else null
 
 private fun evaluateComparison(
     operator: ComponentOverride.ComparisonOperator,

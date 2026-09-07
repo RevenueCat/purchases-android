@@ -2201,6 +2201,69 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
+                "window_aspect_ratio_condition '>= 1.2' matches a landscape window and not portrait",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowAspectRatioRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = 1.2,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(1024.dp, 768.dp),
+                    expected = expandedPartial,
+                ),
+            ),
+            arrayOf(
+                "window_aspect_ratio_condition '>= 1.2' does not match the same window rotated to portrait",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowAspectRatioRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = 1.2,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(768.dp, 1024.dp),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "window_aspect_ratio_condition never matches a zero-height window",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowAspectRatioRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = 1.2,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(1024.dp, 0.dp),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
                 "window_width_condition '>= 700' does not match a phone-sized window",
                 Args(
                     availableOverrides = listOf(

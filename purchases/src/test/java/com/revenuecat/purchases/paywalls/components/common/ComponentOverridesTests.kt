@@ -584,6 +584,14 @@ internal class ComponentOverridesTests {
                         value = 480.0,
                     ),
                 ),
+                // Window aspect ratio condition
+                arrayOf(
+                    """{ "type": "window_aspect_ratio_condition", "operator": ">=", "value": 1.2 }""",
+                    ComponentOverride.Condition.WindowAspectRatioRule(
+                        operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                        value = 1.2,
+                    ),
+                ),
                 // Window condition with fractional value
                 arrayOf(
                     """{ "type": "window_width_condition", "operator": ">=", "value": 700.5 }""",
@@ -722,9 +730,14 @@ internal class ComponentOverridesTests {
                 operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
                 value = 480.0,
             )
+            val aspectRatio = ComponentOverride.Condition.WindowAspectRatioRule(
+                operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                value = 1.2,
+            )
 
             assert(width.isRule)
             assert(height.isRule)
+            assert(aspectRatio.isRule)
         }
     }
 }
