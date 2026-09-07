@@ -36,7 +36,7 @@ public class StackComponent(
     @get:JvmSynthetic
     public val dimension: Dimension = Vertical(CENTER, START),
     @get:JvmSynthetic
-    public val size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+    public val size: Size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
     @get:JvmSynthetic
     public val spacing: Float? = null,
     @get:JvmSynthetic
@@ -112,5 +112,6 @@ public class PartialStackComponent(
 
 @OptIn(InternalRevenueCatAPI::class)
 internal object StackOverflowDeserializer : EnumDeserializerWithDefault<StackComponent.Overflow>(
+    serialName = "com.revenuecat.purchases.paywalls.components.StackComponent.Overflow",
     defaultValue = StackComponent.Overflow.NONE,
 )

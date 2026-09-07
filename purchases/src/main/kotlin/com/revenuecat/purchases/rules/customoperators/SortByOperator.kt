@@ -28,11 +28,7 @@ internal object SortByOperator {
     fun opSortBy(args: Value, vars: Scope): Value {
         val raw = Operators.argsAsList(args)
 
-        if (raw.size != ARGUMENT_COUNT) {
-            throw EvaluationException.TypeMismatch(
-                "operator '$OPERATOR_NAME' expects $ARGUMENT_COUNT arguments, got ${raw.size}",
-            )
-        }
+        Operators.checkArity(raw.size, listOf(ARGUMENT_COUNT), OPERATOR_NAME)
 
         val source = Evaluator.evaluateValue(raw[0], vars)
         if (source !is Value.ArrayValue) {

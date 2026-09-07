@@ -171,6 +171,43 @@ class PurchasesFactoryTest {
     }
 
     @Test
+    fun `forcing Test Store in release builds skips the check`() {
+        // Arrange
+        var isDebugBuildCalled = false
+        purchasesFactory = PurchasesFactory(
+            isDebugBuild = {
+                isDebugBuildCalled = true
+                false
+            },
+            apiKeyValidator = apiKeyValidatorMock,
+        )
+        val applicationContextMock = mockk<Application>()
+        every {
+            applicationMock.checkCallingOrSelfPermission(Manifest.permission.INTERNET)
+        } returns PackageManager.PERMISSION_GRANTED
+        every {
+            applicationMock.applicationContext
+        } returns applicationContextMock
+        every {
+            apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE)
+        } returns APIKeyValidator.ValidationResult.SIMULATED_STORE
+
+        // Act
+        val dangerousSettings = DangerousSettings().apply {
+            forceAllowTestStoreInReleaseBuilds()
+        }
+        purchasesFactory.validateConfiguration(
+            createConfiguration(
+                dangerousSettings = dangerousSettings,
+            ),
+        )
+
+        // Assert
+        verify(exactly = 0) { applicationMock.startActivity(any()) }
+        assertThat(isDebugBuildCalled).isFalse
+    }
+
+    @Test
     fun `creating purchases with remote config enabled provides audiences config to the orchestrator`() {
         val application = spyk(ApplicationProvider.getApplicationContext<Application>())
         every { application.applicationContext } returns application

@@ -182,13 +182,13 @@ private class PreviewParametersProvider : PreviewParameterProvider<PreviewParame
         PreviewParameters(
             imageWidth = 1909u,
             imageHeight = 1306u,
-            viewSize = Size(width = Fill, height = Fit()),
+            viewSize = Size(width = Fill(), height = Fit()),
             fitMode = FitMode.FIT,
         ),
         PreviewParameters(
             imageWidth = 1306u,
             imageHeight = 1909u,
-            viewSize = Size(width = Fit(), height = Fill),
+            viewSize = Size(width = Fit(), height = Fill()),
             fitMode = FitMode.FIT,
         ),
     )
@@ -239,7 +239,7 @@ private fun ImageComponentView_Bigger_Container_Fill_Fit_FitModeFill_Preview() {
             ImageComponentView(
                 style = previewImageComponentStyle(
                     themeImageUrls = themeImageUrls,
-                    size = Size(width = Fill, height = Fit()),
+                    size = Size(width = Fill(), height = Fit()),
                     fitMode = FitMode.FILL,
                     shape = MaskShape.Rectangle(),
                 ),
@@ -265,7 +265,7 @@ private fun ImageComponentView_Bigger_Container_Fit_Fill_FitModeFill_Preview() {
             ImageComponentView(
                 style = previewImageComponentStyle(
                     themeImageUrls = themeImageUrls,
-                    size = Size(width = Fit(), height = Fill),
+                    size = Size(width = Fit(), height = Fill()),
                     fitMode = FitMode.FILL,
                     shape = MaskShape.Rectangle(),
                 ),

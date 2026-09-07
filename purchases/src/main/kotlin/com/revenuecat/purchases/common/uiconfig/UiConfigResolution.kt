@@ -12,9 +12,9 @@ import com.revenuecat.purchases.UiConfig
  * - [Found]: the [UiConfig] is resolved and in memory.
  * - [NotConfigured]: the topic is absent, or carries none of the ui_config parts. A project with no paywalls
  *   configured legitimately has no `ui_config` at all, so there is nothing to resolve — not a failure.
- * - [Superseded]: a [UiConfig] **was** resolved, but a newer config commit or an identity change advanced the
- *   config generation while it was in flight, so it was dropped instead of served (store-if-newer). The next
- *   read re-resolves against the fresher config.
+ * - [Superseded]: the read was superseded twice in a row — a config commit or an identity change advanced the
+ *   config generation while each attempt was in flight — so nothing trustworthy could be served. The next read
+ *   re-resolves against the fresher config.
  * - [Unavailable]: the topic carries ui_config parts but they could not be resolved into one [UiConfig] (an
  *   unresolvable blob, or a merged object that doesn't decode). The only outcome worth reporting as an error.
  */

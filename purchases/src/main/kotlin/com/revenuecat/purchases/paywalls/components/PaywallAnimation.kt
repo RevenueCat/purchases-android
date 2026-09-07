@@ -35,6 +35,7 @@ public class PaywallAnimation(
 
 @OptIn(InternalRevenueCatAPI::class)
 internal object AnimationTypeSerializer : EnumDeserializerWithDefault<PaywallAnimation.AnimationType>(
+    serialName = "com.revenuecat.purchases.paywalls.components.PaywallAnimation.AnimationType",
     defaultValue = PaywallAnimation.AnimationType.EASE_IN_OUT,
     typeForValue = { value ->
         when (value) {

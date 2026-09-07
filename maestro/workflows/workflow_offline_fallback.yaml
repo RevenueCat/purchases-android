@@ -6,6 +6,9 @@
 
 appId: com.revenuecat.e2etests
 name: Workflow offering renders the default paywall when config is offline with nothing cached
+# Forces server errors through configureForE2ETests, which only exists in debug builds.
+tags:
+  - debug-only
 env:
   MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
 

@@ -107,7 +107,7 @@ class PaywallComponentAssetsTest {
         url = url,
         id = id,
         protocolVersion = WebViewComponent.SUPPORTED_PROTOCOL_VERSION,
-        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill),
+        size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fill()),
     )
 
     private fun imageUrls(webpLowRes: String) = ImageUrls(

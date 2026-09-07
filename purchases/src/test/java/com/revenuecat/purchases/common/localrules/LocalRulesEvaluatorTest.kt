@@ -12,13 +12,14 @@ import java.util.Date
 
 class LocalRulesEvaluatorTest {
 
-    private val matchingPredicate = """{"==": [{"var": "device.platform"}, "android"]}"""
-    private val nonMatchingPredicate = """{"==": [{"var": "device.platform"}, "amazon"]}"""
+    private val matchingPredicate = """{"==": [{"var": "platform"}, "android"]}"""
+    private val nonMatchingPredicate = """{"==": [{"var": "platform"}, "amazon"]}"""
     private val malformedPredicate = "{not json"
+    private val unsuppliedDimensionPredicate = """{"==": [{"var": "unknown_dimension"}, true]}"""
 
     private var snapshotsTaken = 0
     private val deviceProvider = object : RulesDimensionProvider {
-        override val namespace = RulesDimensionNamespace.Device
+        override val name = "device"
         override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
             snapshotsTaken++
             return mapOf("platform" to RulesDimensionValue.StringValue("android"))
@@ -54,18 +55,45 @@ class LocalRulesEvaluatorTest {
     }
 
     @Test
-    fun `a predicate reading an unsupplied dimension surfaces as an error`() = runTest {
-        // A dimension this SDK version cannot resolve makes the rule
-        // unanswerable. Reporting that is what lets the caller tell it apart
-        // from a rule that was evaluated and did not match.
+    fun `a predicate reading an unsupplied dimension is a non-match`() = runTest {
+        val result = evaluator().match(listOf(TestRule("only", unsuppliedDimensionPredicate)))
+
+        assertThat(result.getOrThrow()).isNull()
+    }
+
+    @Test
+    fun `a negated predicate reading an unsupplied dimension is a non-match`() = runTest {
         val result = evaluator().match(
-            listOf(TestRule("only", """{"==": [{"var": "device.unknown_dimension"}, true]}""")),
+            listOf(TestRule("only", """{"!": [{"==": [{"var": "unknown_dimension"}, "NL"]}]}""")),
+        )
+
+        assertThat(result.getOrThrow()).isNull()
+    }
+
+    @Test
+    fun `an unsupplied dimension does not block a later match`() = runTest {
+        val result = evaluator().match(
+            listOf(
+                TestRule("unsupplied", unsuppliedDimensionPredicate),
+                TestRule("match", matchingPredicate),
+            ),
+        )
+
+        assertThat(result.getOrThrow()?.name).isEqualTo("match")
+    }
+
+    @Test
+    fun `an unsupplied dimension is not remembered as the first failure`() = runTest {
+        val result = evaluator().match(
+            listOf(
+                TestRule("unsupplied", unsuppliedDimensionPredicate),
+                TestRule("broken", malformedPredicate),
+            ),
         )
 
         val error = result.exceptionOrNull() as LocalRulesEvaluationException.PredicateEvaluation
-        assertThat(error.ruleIndex).isZero()
-        assertThat(error.error)
-            .isEqualTo(RulesEngine.EvaluationException.UnresolvedVariable("device.unknown_dimension"))
+        assertThat(error.ruleIndex).isEqualTo(1)
+        assertThat(error.error).isInstanceOf(RulesEngine.EvaluationException.Parse::class.java)
     }
 
     @Test
@@ -98,17 +126,35 @@ class LocalRulesEvaluatorTest {
     @Test
     fun `a failed dimension snapshot fails the evaluation`() = runTest {
         val failing = object : RulesDimensionProvider {
-            override val namespace = RulesDimensionNamespace.Device
+            override val name = "device"
             override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> =
                 throw IllegalStateException("nope")
         }
 
-        val result = LocalRulesEvaluator(providers = listOf(failing))
+        val result = LocalRulesEvaluator(providers = listOf(failing), currentAppUserId = { "user" })
             .match(listOf(TestRule("only", matchingPredicate)))
 
         val error = result.exceptionOrNull() as LocalRulesEvaluationException.DimensionResolution
         assertThat(error.reason)
-            .isEqualTo(RulesDimensionResolutionException.ProviderFailed(RulesDimensionNamespace.Device, "nope"))
+            .isEqualTo(RulesDimensionResolutionException.ProviderFailed("device", "nope"))
+    }
+
+    @Test
+    fun `an app user change during the snapshot fails the evaluation`() = runTest {
+        var currentUser = "userA"
+        val flipping = object : RulesDimensionProvider {
+            override val name = "identity_flipper"
+            override suspend fun dimensions(date: Date): Map<String, RulesDimensionValue> {
+                currentUser = "userB"
+                return emptyMap()
+            }
+        }
+
+        val result = LocalRulesEvaluator(providers = listOf(flipping), currentAppUserId = { currentUser })
+            .match(listOf(TestRule("only", matchingPredicate)))
+
+        val error = result.exceptionOrNull() as LocalRulesEvaluationException.DimensionResolution
+        assertThat(error.reason).isInstanceOf(RulesDimensionResolutionException.AppUserChanged::class.java)
     }
 
     @Test
@@ -151,10 +197,8 @@ class LocalRulesEvaluatorTest {
             evaluator().match(rules, mapOf("source" to RulesDimensionValue.StringValue("other")))
                 .getOrThrow(),
         ).isNull()
-        // Supplying no custom variables at all leaves `custom.source` unresolved,
-        // which is unanswerable rather than a non-match.
-        assertThat(evaluator().match(rules).exceptionOrNull())
-            .isInstanceOf(LocalRulesEvaluationException.PredicateEvaluation::class.java)
+        // Supplying no custom variables at all leaves `custom.source` unresolved, which is a non-match.
+        assertThat(evaluator().match(rules).getOrThrow()).isNull()
     }
 
     @Test
@@ -163,7 +207,7 @@ class LocalRulesEvaluatorTest {
             TestRule(
                 "only",
                 """{"and": [
-                    {"==": [{"var": "device.platform"}, "android"]},
+                    {"==": [{"var": "platform"}, "android"]},
                     {"==": [{"var": "custom.source"}, "settings"]}
                 ]}""",
             ),
@@ -184,7 +228,7 @@ class LocalRulesEvaluatorTest {
         assertThat(snapshotsTaken).isEqualTo(1)
     }
 
-    private fun evaluator() = LocalRulesEvaluator(providers = listOf(deviceProvider))
+    private fun evaluator() = LocalRulesEvaluator(providers = listOf(deviceProvider), currentAppUserId = { "user" })
 
     private data class TestRule(
         val name: String,

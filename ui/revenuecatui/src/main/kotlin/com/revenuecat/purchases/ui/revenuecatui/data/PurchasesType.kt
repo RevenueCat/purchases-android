@@ -10,6 +10,7 @@ import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.awaitCreateSupportTicket
 import com.revenuecat.purchases.awaitCustomerCenterConfigData
@@ -62,6 +63,8 @@ internal interface PurchasesType {
     suspend fun awaitSyncPurchases(): CustomerInfo
 
     val storefrontCountryCode: String?
+
+    val store: Store
 
     val customerCenterListener: CustomerCenterListener?
 
@@ -137,6 +140,9 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
 
     override val storefrontCountryCode: String?
         get() = purchases.storefrontCountryCode
+
+    override val store: Store
+        get() = purchases.store
 
     override val customerCenterListener: CustomerCenterListener?
         get() = purchases.customerCenterListener

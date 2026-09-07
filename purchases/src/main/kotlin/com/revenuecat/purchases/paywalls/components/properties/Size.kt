@@ -27,16 +27,25 @@ public sealed interface SizeConstraint {
      * Fits the content size.
      *
      * @param default Optional default size (in dp) to show during loading and initial content size calculations.
+     * @param min Optional minimum size in dp.
+     * @param max Optional maximum size in dp.
      */
     @Poko
     @Immutable
     @Serializable
     public class Fit(
         @get:JvmSynthetic @SerialName("default") public val default: UInt? = null,
+        @get:JvmSynthetic public val min: UInt? = null,
+        @get:JvmSynthetic public val max: UInt? = null,
     ) : SizeConstraint
 
+    @Poko
+    @Immutable
     @Serializable
-    public object Fill : SizeConstraint
+    public class Fill(
+        @get:JvmSynthetic public val min: UInt? = null,
+        @get:JvmSynthetic public val max: UInt? = null,
+    ) : SizeConstraint
 
     @Poko
     @Immutable

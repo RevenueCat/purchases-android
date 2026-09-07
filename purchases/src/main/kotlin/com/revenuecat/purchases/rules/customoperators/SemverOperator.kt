@@ -33,12 +33,7 @@ internal object SemverOperator {
     fun opSemverCompare(args: Value, vars: Scope): Value {
         val evaluated = Operators.evalArgs(args, vars)
 
-        if (evaluated.size != ARGUMENT_COUNT) {
-            throw EvaluationException.TypeMismatch(
-                "operator '$OPERATOR_NAME' expects $ARGUMENT_COUNT arguments, " +
-                    "got ${evaluated.size}",
-            )
-        }
+        Operators.checkArity(evaluated.size, listOf(ARGUMENT_COUNT), OPERATOR_NAME)
 
         val left = SemanticVersion.parse(evaluated[0])
         val right = SemanticVersion.parse(evaluated[1])

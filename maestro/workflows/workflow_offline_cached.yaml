@@ -8,6 +8,9 @@
 
 appId: com.revenuecat.e2etests
 name: Workflow offering renders from cache when reopened offline after a prior load
+# Forces server errors through configureForE2ETests, which only exists in debug builds.
+tags:
+  - debug-only
 env:
   MAESTRO_STORE: ${MAESTRO_STORE || 'test_store'}
 

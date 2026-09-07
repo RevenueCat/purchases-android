@@ -39,6 +39,7 @@ public class StateDeclaration(
 
 @OptIn(InternalRevenueCatAPI::class)
 internal object ValueTypeSerializer : EnumDeserializerWithDefault<StateDeclaration.ValueType>(
+    serialName = "com.revenuecat.purchases.paywalls.components.common.StateDeclaration.ValueType",
     defaultValue = StateDeclaration.ValueType.UNKNOWN,
 )
 

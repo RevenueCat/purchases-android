@@ -1267,6 +1267,12 @@ internal class PaywallViewModelImpl(
             storefrontCountryCode = purchases.storefrontCountryCode,
             mode = options.mode,
             stateStore = stateStore,
+            workflowScreen = WorkflowScreenContext(
+                workflowId = workflow.id,
+                stepId = step.id,
+                stepType = step.type,
+                screenType = step.stepScreenType,
+            ),
         )
     }
 
@@ -1530,6 +1536,7 @@ internal class PaywallViewModelImpl(
         storefrontCountryCode: String?,
         mode: PaywallMode,
         stateStore: PaywallStateStore? = null,
+        workflowScreen: WorkflowScreenContext? = null,
     ): PaywallState {
         if (offering.availablePackages.isEmpty()) {
             return PaywallState.Error("No packages available")
@@ -1570,6 +1577,7 @@ internal class PaywallViewModelImpl(
                 defaultCustomVariables = extractDefaultCustomVariables(offering),
                 stateStore = stateStore,
                 viewModelActionInProgress = _actionInProgress,
+                workflowScreen = workflowScreen,
             )
         }
     }

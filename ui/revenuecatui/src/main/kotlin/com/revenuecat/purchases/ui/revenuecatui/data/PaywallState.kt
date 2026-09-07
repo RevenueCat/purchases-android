@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.LocaleList
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
@@ -112,7 +113,7 @@ internal sealed interface PaywallState {
              * All locales that this paywall supports, with `locales.head` being the default one.
              */
             private val locales: NonEmptySet<LocaleId>,
-            private val storefrontCountryCode: String?,
+            val storefrontCountryCode: String?,
             private val dateProvider: () -> Date,
             private val packages: AvailablePackages,
             /**
@@ -127,6 +128,7 @@ internal sealed interface PaywallState {
             initialSelectedTabIndex: Int? = null,
             initialSheetState: SimpleSheetState = SimpleSheetState(),
             private val purchases: PurchasesType,
+            val workflowScreen: WorkflowScreenContext? = null,
             /**
              * Presentation-session store for state-driven paywalls, seeded from the paywall's declared state defaults.
              */
@@ -141,6 +143,8 @@ internal sealed interface PaywallState {
              */
             val mergedCustomVariables: Map<String, CustomVariableValue> =
                 defaultCustomVariables + customVariables
+
+            val store: Store get() = purchases.store
 
             data class AvailablePackages(
                 val packagesOutsideTabs: List<Info>,

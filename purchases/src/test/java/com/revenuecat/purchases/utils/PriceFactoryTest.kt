@@ -124,4 +124,22 @@ class PriceFactoryTest {
         // JPY has 0 fraction digits
         assertThat(jpyPrice.formatted).isEqualTo("￥999")
     }
+
+    @Test
+    fun `creates price with 19_99 correctly handles floating point`() {
+        // 19_990_000 micros should produce "$19.99", not "$19.98"
+        val price = PriceFactory.createPrice(19990000L, "USD", Locale.US)
+
+        assertThat(price.formatted).isEqualTo("$19.99")
+        assertThat(price.amountMicros).isEqualTo(19990000L)
+        assertThat(price.currencyCode).isEqualTo("USD")
+    }
+
+    @Test
+    fun `truncates fractional cents`() {
+        // Price display intentionally never rounds up: $8.375 is displayed as $8.37.
+        val price = PriceFactory.createPrice(8375000L, "USD", Locale.US)
+
+        assertThat(price.formatted).isEqualTo("$8.37")
+    }
 }

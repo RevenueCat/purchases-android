@@ -29,6 +29,8 @@ public class DangerousSettings internal constructor(
      * remote-config-driven host resolution is being validated.
      */
     internal val usesRemoteConfigAPISources: Boolean = false,
+
+    internal var allowTestStoreInReleaseBuild: Boolean = false,
 ) : Parcelable {
     public constructor(autoSyncPurchases: Boolean = true) : this(
         autoSyncPurchases = autoSyncPurchases,
@@ -36,7 +38,16 @@ public class DangerousSettings internal constructor(
         uiPreviewMode = false,
         applyObfuscatedAccountIdToSubscriptionChanges = false,
         usesRemoteConfigAPISources = false,
+        allowTestStoreInReleaseBuild = false,
     )
+
+    /**
+     * Forces the SDK to allow using a Test Store API key in release builds.
+     * Avoid calling this except when necessary, to make sure no builds with Test Store are uploaded to the stores.
+     */
+    public fun forceAllowTestStoreInReleaseBuilds() {
+        allowTestStoreInReleaseBuild = true
+    }
 
     public companion object {
         /**
