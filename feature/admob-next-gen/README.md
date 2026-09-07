@@ -20,9 +20,9 @@ direct loading, preloading, placement overrides, native batch loading, and rewar
 - [Installation](#installation)
 - [Initialize Google Mobile Ads Next-Gen](#initialize-google-mobile-ads-next-gen)
 - [Events tracked](#events-tracked)
+- [Usage](#usage)
 - [Placement](#placement)
 - [Callback handling](#callback-handling)
-- [Usage](#usage)
 - [Further guides](#further-guides)
 
 ## Requirements
@@ -133,49 +133,6 @@ no creative was served.
 
 Network and impression ID are read when each callback fires. This ensures that an auto-refreshing banner attributes
 events to the creative currently on screen rather than the first one loaded.
-
-## Placement
-
-Every tracking helper accepts an optional `placement` that identifies the logical location of an ad in your app, such
-as `"home_banner"`, `"app_start"`, or `"level_complete_reward"`. Use stable names so events from the same slot can
-be grouped together in RevenueCat.
-
-Placement ownership depends on the loading stage:
-
-| Stage | Placement applies to |
-| --- | --- |
-| Direct load | Load success or failure and, by default, the ad's later lifecycle events |
-| `startAndTrack` | Preload success or failure only |
-| `pollAndTrackAd` | The polled ad's display, click, revenue, and banner-refresh events |
-| Tracked `show(activity, placement, ...)` | Overrides the polled or load-time placement for full-screen lifecycle events |
-
-The placements passed to `startAndTrack` and `pollAndTrackAd` are independent. Polling does not emit another loaded
-event. Calling Google's regular `show` retains the load-time or poll-time placement; passing a placement to the
-adapter's tracked `show` overload replaces it. Passing `null` explicitly clears it.
-
-Banner and native ads do not have a placement-aware `show` call. They keep the placement supplied when loaded or
-polled for their complete lifecycle, including banner refreshes.
-
-## Callback handling
-
-The adapter installs tracking wrappers before returning a loaded or polled ad. Pass your event callbacks to the
-RevenueCat load or poll helper instead of assigning the ad's callback property afterward. Direct assignment replaces
-the tracking wrapper.
-
-Every supported ad type exposes the same tracking-safe event callback setter:
-
-```kotlin
-ad.setTrackingAdEventCallback(adEventCallback)
-```
-
-Banners also expose `setTrackingBannerAdRefreshCallback` for their refresh callback.
-
-All Google callbacks are forwarded after RevenueCat performs its own tracking. Forwarding still occurs if RevenueCat
-is not configured or tracking fails.
-
-Google Mobile Ads Next-Gen can invoke load and event callbacks on a background thread. Dispatch to the main thread
-before updating views or other UI-confined state. RevenueCat's `rewardVerificationStarted` and
-`rewardVerificationCompleted` callbacks are delivered on the main thread.
 
 ## Usage
 
@@ -558,6 +515,49 @@ Purchases.sharedInstance.adTracker.loadAndTrackNativeAd(
 A `NativeAdRequest` can combine standard native, custom-native, and banner inventory. RevenueCat tracks each result
 using its actual format and installs the corresponding event wrapper before forwarding it. Use
 `nativeAdEventCallback` for native and custom-native results and `bannerAdEventCallback` for banner results.
+
+## Placement
+
+Every tracking helper accepts an optional `placement` that identifies the logical location of an ad in your app, such
+as `"home_banner"`, `"app_start"`, or `"level_complete_reward"`. Use stable names so events from the same slot can
+be grouped together in RevenueCat.
+
+Placement ownership depends on the loading stage:
+
+| Stage | Placement applies to |
+| --- | --- |
+| Direct load | Load success or failure and, by default, the ad's later lifecycle events |
+| `startAndTrack` | Preload success or failure only |
+| `pollAndTrackAd` | The polled ad's display, click, revenue, and banner-refresh events |
+| Tracked `show(activity, placement, ...)` | Overrides the polled or load-time placement for full-screen lifecycle events |
+
+The placements passed to `startAndTrack` and `pollAndTrackAd` are independent. Polling does not emit another loaded
+event. Calling Google's regular `show` retains the load-time or poll-time placement; passing a placement to the
+adapter's tracked `show` overload replaces it. Passing `null` explicitly clears it.
+
+Banner and native ads do not have a placement-aware `show` call. They keep the placement supplied when loaded or
+polled for their complete lifecycle, including banner refreshes.
+
+## Callback handling
+
+The adapter installs tracking wrappers before returning a loaded or polled ad. Pass your event callbacks to the
+RevenueCat load or poll helper instead of assigning the ad's callback property afterward. Direct assignment replaces
+the tracking wrapper.
+
+Every supported ad type exposes the same tracking-safe event callback setter:
+
+```kotlin
+ad.setTrackingAdEventCallback(adEventCallback)
+```
+
+Banners also expose `setTrackingBannerAdRefreshCallback` for their refresh callback.
+
+All Google callbacks are forwarded after RevenueCat performs its own tracking. Forwarding still occurs if RevenueCat
+is not configured or tracking fails.
+
+Google Mobile Ads Next-Gen can invoke load and event callbacks on a background thread. Dispatch to the main thread
+before updating views or other UI-confined state. RevenueCat's `rewardVerificationStarted` and
+`rewardVerificationCompleted` callbacks are delivered on the main thread.
 
 ## Further guides
 
