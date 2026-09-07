@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.paywalls.components.IconComponent
@@ -19,6 +20,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.currentWindowDpSize
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMargin
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
@@ -56,11 +58,13 @@ private fun rememberUpdatedIconComponentState(
     stateStoreProvider: () -> PaywallStateStore,
 ): IconComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val windowDpSize = currentWindowDpSize()
     val layoutDirection = LocalLayoutDirection.current
 
     return remember(style) {
         IconComponentState(
             initialWindowSize = windowSize,
+            initialWindowDpSize = windowDpSize,
             initialLayoutDirection = layoutDirection,
             style = style,
             selectedPackageInfoProvider = selectedPackageInfoProvider,
@@ -70,7 +74,10 @@ private fun rememberUpdatedIconComponentState(
             stateStoreProvider = stateStoreProvider,
         )
     }.apply {
-        update(windowSize = windowSize)
+        update(
+            windowSize = windowSize,
+            windowDpSize = windowDpSize,
+        )
     }
 }
 
@@ -78,6 +85,7 @@ private fun rememberUpdatedIconComponentState(
 @Stable
 internal class IconComponentState(
     initialWindowSize: WindowWidthSizeClass,
+    initialWindowDpSize: DpSize,
     initialLayoutDirection: LayoutDirection,
     private val style: IconComponentStyle,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
@@ -87,6 +95,7 @@ internal class IconComponentState(
     private val stateStoreProvider: () -> PaywallStateStore = { PaywallStateStore(emptyMap()) },
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
+    private var windowDpSize by mutableStateOf(initialWindowDpSize)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
 
     private val packageAwareDelegate = PackageAwareDelegate(
@@ -109,6 +118,7 @@ internal class IconComponentState(
                 selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
                 customVariables = customVariablesProvider(),
                 stateReader = stateStoreProvider()::currentValueOrDefault,
+                windowDpSize = windowDpSize,
             ),
         )
     }
@@ -166,7 +176,9 @@ internal class IconComponentState(
     @JvmSynthetic
     fun update(
         windowSize: WindowWidthSizeClass? = null,
+        windowDpSize: DpSize? = null,
     ) {
         if (windowSize != null) this.windowSize = windowSize
+        if (windowDpSize != null) this.windowDpSize = windowDpSize
     }
 }

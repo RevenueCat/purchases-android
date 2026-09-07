@@ -2,6 +2,7 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components
 
+import androidx.compose.ui.unit.DpSize
 import com.revenuecat.purchases.paywalls.components.PartialComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
@@ -95,6 +96,11 @@ internal class ConditionContext(
     val customVariables: Map<String, CustomVariableValue>,
     // Calls inside derivedStateOf subscribe only to the keys condition evaluation actually reads.
     val stateReader: (String) -> JsonPrimitive? = { null },
+    /**
+     * The paywall's rendered bounds in dp, for window size condition evaluation.
+     * `null` when unknown, in which case window size conditions never match.
+     */
+    val windowDpSize: DpSize? = null,
 )
 
 /**
@@ -152,7 +158,26 @@ private fun ComponentOverride.Condition.evaluate(
     is ComponentOverride.Condition.SelectedPackage -> evaluate(conditionContext.selectedPackageId)
     is ComponentOverride.Condition.Variable -> evaluate(conditionContext.customVariables)
     is ComponentOverride.Condition.State -> evaluate(conditionContext.stateReader)
+    is ComponentOverride.Condition.WindowWidthRule ->
+        evaluateComparison(operator, conditionContext.windowDpSize?.width?.value?.toDouble(), value)
+    is ComponentOverride.Condition.WindowHeightRule ->
+        evaluateComparison(operator, conditionContext.windowDpSize?.height?.value?.toDouble(), value)
     ComponentOverride.Condition.Unsupported -> false
+}
+
+private fun evaluateComparison(
+    operator: ComponentOverride.ComparisonOperator,
+    actual: Double?,
+    expected: Double,
+): Boolean {
+    if (actual == null) return false
+    return when (operator) {
+        ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL -> actual >= expected
+        ComponentOverride.ComparisonOperator.GREATER_THAN -> actual > expected
+        ComponentOverride.ComparisonOperator.LESS_THAN_OR_EQUAL -> actual <= expected
+        ComponentOverride.ComparisonOperator.LESS_THAN -> actual < expected
+        ComponentOverride.ComparisonOperator.EQUALS -> abs(actual - expected) < STATE_NUMBER_COMPARISON_EPSILON
+    }
 }
 
 private fun ComponentOverride.Condition.IntroOfferRule.evaluate(offerEligibility: OfferEligibility): Boolean {

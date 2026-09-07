@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
@@ -24,6 +25,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.currentWindowDpSize
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDelegate
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
@@ -60,11 +62,13 @@ private fun rememberUpdatedStackComponentState(
     stateStoreProvider: () -> PaywallStateStore,
 ): StackComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val windowDpSize = currentWindowDpSize()
     val layoutDirection = LocalLayoutDirection.current
 
     return remember(style) {
         StackComponentState(
             initialWindowSize = windowSize,
+            initialWindowDpSize = windowDpSize,
             initialLayoutDirection = layoutDirection,
             style = style,
             selectedPackageInfoProvider = selectedPackageInfoProvider,
@@ -76,6 +80,7 @@ private fun rememberUpdatedStackComponentState(
     }.apply {
         update(
             windowSize = windowSize,
+            windowDpSize = windowDpSize,
             layoutDirection = layoutDirection,
         )
     }
@@ -85,6 +90,7 @@ private fun rememberUpdatedStackComponentState(
 @Stable
 internal class StackComponentState(
     initialWindowSize: WindowWidthSizeClass,
+    initialWindowDpSize: DpSize,
     initialLayoutDirection: LayoutDirection,
     private val style: StackComponentStyle,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
@@ -94,6 +100,7 @@ internal class StackComponentState(
     private val stateStoreProvider: () -> PaywallStateStore = { PaywallStateStore(emptyMap()) },
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
+    private var windowDpSize by mutableStateOf(initialWindowDpSize)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
 
     private val packageAwareDelegate = PackageAwareDelegate(
@@ -116,6 +123,7 @@ internal class StackComponentState(
                 selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
                 customVariables = customVariablesProvider(),
                 stateReader = stateStoreProvider()::currentValueOrDefault,
+                windowDpSize = windowDpSize,
             ),
         )
     }
@@ -180,9 +188,11 @@ internal class StackComponentState(
     @JvmSynthetic
     fun update(
         windowSize: WindowWidthSizeClass? = null,
+        windowDpSize: DpSize? = null,
         layoutDirection: LayoutDirection? = null,
     ) {
         if (windowSize != null) this.windowSize = windowSize
+        if (windowDpSize != null) this.windowDpSize = windowDpSize
         if (layoutDirection != null) this.layoutDirection = layoutDirection
     }
 

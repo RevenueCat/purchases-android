@@ -10,12 +10,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.DpSize
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.currentWindowDpSize
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
@@ -44,27 +46,34 @@ private fun rememberUpdatedTabsComponentState(
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
 ): TabsComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val windowDpSize = currentWindowDpSize()
 
     return remember(style) {
         TabsComponentState(
             initialWindowSize = windowSize,
+            initialWindowDpSize = windowDpSize,
             style = style,
             selectedPackageInfoProvider = selectedPackageInfoProvider,
             customVariablesProvider = customVariablesProvider,
         )
     }.apply {
-        update(windowSize = windowSize)
+        update(
+            windowSize = windowSize,
+            windowDpSize = windowDpSize,
+        )
     }
 }
 
 @Stable
 internal class TabsComponentState(
     initialWindowSize: WindowWidthSizeClass,
+    initialWindowDpSize: DpSize,
     private val style: TabsComponentStyle,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val customVariablesProvider: () -> Map<String, CustomVariableValue> = { emptyMap() },
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
+    private var windowDpSize by mutableStateOf(initialWindowDpSize)
 
     private val offerEligibility by derivedStateOf {
         selectedPackageInfoProvider()?.let {
@@ -83,6 +92,7 @@ internal class TabsComponentState(
             conditionContext = ConditionContext(
                 selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
                 customVariables = customVariablesProvider(),
+                windowDpSize = windowDpSize,
             ),
         )
     }
@@ -117,7 +127,9 @@ internal class TabsComponentState(
     @JvmSynthetic
     fun update(
         windowSize: WindowWidthSizeClass? = null,
+        windowDpSize: DpSize? = null,
     ) {
         if (windowSize != null) this.windowSize = windowSize
+        if (windowDpSize != null) this.windowDpSize = windowDpSize
     }
 }

@@ -8,12 +8,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.DpSize
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.currentWindowDpSize
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDelegate
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
@@ -45,10 +47,12 @@ private fun rememberUpdatedTimelineComponentState(
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
 ): TimelineComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val windowDpSize = currentWindowDpSize()
 
     return remember(style) {
         TimelineComponentState(
             initialWindowSize = windowSize,
+            initialWindowDpSize = windowDpSize,
             style = style,
             selectedPackageInfoProvider = selectedPackageInfoProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
@@ -56,13 +60,18 @@ private fun rememberUpdatedTimelineComponentState(
             customVariablesProvider = customVariablesProvider,
         )
     }.apply {
-        update(windowSize = windowSize)
+        update(
+            windowSize = windowSize,
+            windowDpSize = windowDpSize,
+        )
     }
 }
 
+@Suppress("LongParameterList")
 @Stable
 internal class TimelineComponentState(
     initialWindowSize: WindowWidthSizeClass,
+    initialWindowDpSize: DpSize,
     private val style: TimelineComponentStyle,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
@@ -71,6 +80,7 @@ internal class TimelineComponentState(
 ) {
 
     private var windowSize by mutableStateOf(initialWindowSize)
+    private var windowDpSize by mutableStateOf(initialWindowDpSize)
 
     private val packageAwareDelegate = PackageAwareDelegate(
         style = style,
@@ -91,6 +101,7 @@ internal class TimelineComponentState(
             conditionContext = ConditionContext(
                 selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
                 customVariables = customVariablesProvider(),
+                windowDpSize = windowDpSize,
             ),
         )
     }
@@ -124,6 +135,7 @@ internal class TimelineComponentState(
         style.items.map { itemStyle ->
             ItemState(
                 initialWindowSize = windowSize,
+                initialWindowDpSize = windowDpSize,
                 style = itemStyle,
                 selectedPackageInfoProvider = selectedPackageInfoProvider,
                 selectedTabIndexProvider = selectedTabIndexProvider,
@@ -134,13 +146,19 @@ internal class TimelineComponentState(
     }
 
     @JvmSynthetic
-    fun update(windowSize: WindowWidthSizeClass? = null) {
+    fun update(
+        windowSize: WindowWidthSizeClass? = null,
+        windowDpSize: DpSize? = null,
+    ) {
         if (windowSize != null) this.windowSize = windowSize
+        if (windowDpSize != null) this.windowDpSize = windowDpSize
     }
 
+    @Suppress("LongParameterList")
     @Stable
     class ItemState(
         initialWindowSize: WindowWidthSizeClass,
+        initialWindowDpSize: DpSize,
         private val style: TimelineComponentStyle.ItemStyle,
         private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
         private val selectedTabIndexProvider: () -> Int,
@@ -149,6 +167,7 @@ internal class TimelineComponentState(
     ) {
 
         private var windowSize by mutableStateOf(initialWindowSize)
+        private var windowDpSize by mutableStateOf(initialWindowDpSize)
 
         private val packageAwareDelegate = PackageAwareDelegate(
             style = style,
@@ -169,6 +188,7 @@ internal class TimelineComponentState(
                 conditionContext = ConditionContext(
                     selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
                     customVariables = customVariablesProvider(),
+                    windowDpSize = windowDpSize,
                 ),
             )
         }
@@ -191,8 +211,10 @@ internal class TimelineComponentState(
         @JvmSynthetic
         fun update(
             windowSize: WindowWidthSizeClass? = null,
+            windowDpSize: DpSize? = null,
         ) {
             if (windowSize != null) this.windowSize = windowSize
+            if (windowDpSize != null) this.windowDpSize = windowDpSize
         }
     }
 }

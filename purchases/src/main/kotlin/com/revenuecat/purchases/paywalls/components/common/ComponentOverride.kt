@@ -36,6 +36,30 @@ public class ComponentOverride<T : PartialComponent>(
         NOT_IN,
     }
 
+    /**
+     * Numeric comparison operators for layout condition evaluation (window size).
+     * [EQUALS] compares with an epsilon tolerance (1e-10) to absorb JSON round-trip
+     * noise; it is still fragile against measured fractional sizes and is intended
+     * for authored integer breakpoints.
+     */
+    @Serializable
+    public enum class ComparisonOperator {
+        @SerialName(">=")
+        GREATER_THAN_OR_EQUAL,
+
+        @SerialName(">")
+        GREATER_THAN,
+
+        @SerialName("<=")
+        LESS_THAN_OR_EQUAL,
+
+        @SerialName("<")
+        LESS_THAN,
+
+        @SerialName("=")
+        EQUALS,
+    }
+
     @Serializable(with = ConditionSerializer::class)
     public sealed interface Condition {
 
@@ -108,6 +132,26 @@ public class ComponentOverride<T : PartialComponent>(
             }
         }
 
+        /**
+         * Matches against the paywall's rendered bounds — not the device screen, so a
+         * multi-window pane or sheet reports its own size. [value] is density-independent
+         * (Android dp / iOS points). Evaluates to false while the size is unknown and
+         * re-evaluates live as the window resizes. Conditions within one override AND
+         * together, so `WindowWidthRule >= 700` plus `WindowHeightRule >= 480` targets
+         * large windows while excluding landscape phones.
+         */
+        @Serializable
+        public data class WindowWidthRule(
+            public val operator: ComparisonOperator,
+            public val value: Double,
+        ) : Condition { override val isRule: Boolean get() = true }
+
+        @Serializable
+        public data class WindowHeightRule(
+            public val operator: ComparisonOperator,
+            public val value: Double,
+        ) : Condition { override val isRule: Boolean get() = true }
+
         @Serializable
         public object Unsupported : Condition
     }
@@ -129,6 +173,8 @@ internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
         "selected_package_condition" to { Condition.SelectedPackage.serializer() },
         "variable_condition" to { Condition.Variable.serializer() },
         "state_condition" to { Condition.State.serializer() },
+        "window_width_condition" to { Condition.WindowWidthRule.serializer() },
+        "window_height_condition" to { Condition.WindowHeightRule.serializer() },
     ),
     defaultValue = { Condition.Unsupported },
 )

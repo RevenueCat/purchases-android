@@ -17,6 +17,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
@@ -31,6 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.currentWindowDpSize
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMargin
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
@@ -74,6 +76,7 @@ private fun rememberUpdatedImageComponentState(
     stateStoreProvider: () -> PaywallStateStore,
 ): ImageComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val windowDpSize = currentWindowDpSize()
     val density = LocalDensity.current
     val darkMode = isSystemInDarkTheme()
     val layoutDirection = LocalLayoutDirection.current
@@ -81,6 +84,7 @@ private fun rememberUpdatedImageComponentState(
     return remember(style) {
         ImageComponentState(
             initialWindowSize = windowSize,
+            initialWindowDpSize = windowDpSize,
             initialDensity = density,
             initialDarkMode = darkMode,
             initialLayoutDirection = layoutDirection,
@@ -95,6 +99,7 @@ private fun rememberUpdatedImageComponentState(
     }.apply {
         update(
             windowSize = windowSize,
+            windowDpSize = windowDpSize,
             density = density,
             darkMode = darkMode,
             layoutDirection = layoutDirection,
@@ -106,6 +111,7 @@ private fun rememberUpdatedImageComponentState(
 @Stable
 internal class ImageComponentState(
     initialWindowSize: WindowWidthSizeClass,
+    initialWindowDpSize: DpSize,
     initialDensity: Density,
     initialDarkMode: Boolean,
     initialLayoutDirection: LayoutDirection,
@@ -118,6 +124,7 @@ internal class ImageComponentState(
     private val stateStoreProvider: () -> PaywallStateStore = { PaywallStateStore(emptyMap()) },
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
+    private var windowDpSize by mutableStateOf(initialWindowDpSize)
     private var density by mutableStateOf(initialDensity)
     private var darkMode by mutableStateOf(initialDarkMode)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
@@ -142,6 +149,7 @@ internal class ImageComponentState(
                 selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
                 customVariables = customVariablesProvider(),
                 stateReader = stateStoreProvider()::currentValueOrDefault,
+                windowDpSize = windowDpSize,
             ),
         )
     }
@@ -255,11 +263,13 @@ internal class ImageComponentState(
     @JvmSynthetic
     fun update(
         windowSize: WindowWidthSizeClass? = null,
+        windowDpSize: DpSize? = null,
         density: Density? = null,
         darkMode: Boolean? = null,
         layoutDirection: LayoutDirection? = null,
     ) {
         if (windowSize != null) this.windowSize = windowSize
+        if (windowDpSize != null) this.windowDpSize = windowDpSize
         if (density != null) this.density = density
         if (darkMode != null) this.darkMode = darkMode
         if (layoutDirection != null) this.layoutDirection = layoutDirection
