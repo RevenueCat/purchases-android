@@ -13,13 +13,13 @@ public abstract class CheckpointEvaluation internal constructor() {
 
     /** A rule matched and the checkpoint resolved to [offering], which is handed to the app to present. */
     @Poko
-    public class OfferingReturned internal constructor(
+    public class MatchedOffering internal constructor(
         public val offering: Offering,
     ) : CheckpointEvaluation()
 
-    /** A rule matched and a RevenueCat flow is being presented. */
-    public object FlowPresented : CheckpointEvaluation() {
-        override fun toString(): String = "FlowPresented"
+    /** A rule matched and a RevenueCat flow is about to be presented. */
+    public object MatchedUIFlow : CheckpointEvaluation() {
+        override fun toString(): String = "MatchedUIFlow"
     }
 
     /** Nothing is served for this checkpoint; [reason] says why. */

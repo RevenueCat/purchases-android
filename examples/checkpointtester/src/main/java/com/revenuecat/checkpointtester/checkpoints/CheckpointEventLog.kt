@@ -49,8 +49,8 @@ object CheckpointEventLog : CheckpointListener {
     }
 
     private fun describe(evaluation: CheckpointEvaluation): String = when (evaluation) {
-        is CheckpointEvaluation.OfferingReturned -> "Offering returned (${evaluation.offering.identifier})"
-        CheckpointEvaluation.FlowPresented -> "Flow presented"
+        is CheckpointEvaluation.MatchedOffering -> "Matched offering (${evaluation.offering.identifier})"
+        CheckpointEvaluation.MatchedUIFlow -> "Matched UI flow"
         is CheckpointEvaluation.NoAction -> "No action (${evaluation.reason})"
         else -> "Unknown evaluation"
     }

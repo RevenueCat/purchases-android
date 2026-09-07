@@ -128,7 +128,7 @@ class CheckpointsManagerTest {
 
         verify(exactly = 1) {
             mockListener.onCheckpointEvaluated(
-                CheckpointEvaluatedContext(checkpointId, emptyMap(), CheckpointEvaluation.FlowPresented),
+                CheckpointEvaluatedContext(checkpointId, emptyMap(), CheckpointEvaluation.MatchedUIFlow),
             )
         }
         verify(exactly = 0) { mockListener.onCheckpointCompleted(any()) }
@@ -148,7 +148,7 @@ class CheckpointsManagerTest {
         verifyOrder {
             mockListener.onCheckpointHit(CheckpointHitContext(checkpointId, emptyMap()))
             mockListener.onCheckpointEvaluated(
-                CheckpointEvaluatedContext(checkpointId, emptyMap(), CheckpointEvaluation.OfferingReturned(offering)),
+                CheckpointEvaluatedContext(checkpointId, emptyMap(), CheckpointEvaluation.MatchedOffering(offering)),
             )
             mockListener.onCheckpointCompleted(any())
         }

@@ -13,10 +13,10 @@ private class CheckpointEvaluationAPI {
 
     fun checkEvaluation(evaluation: CheckpointEvaluation) {
         when (evaluation) {
-            is CheckpointEvaluation.OfferingReturned -> {
+            is CheckpointEvaluation.MatchedOffering -> {
                 val offering: Offering = evaluation.offering
             }
-            is CheckpointEvaluation.FlowPresented -> {}
+            is CheckpointEvaluation.MatchedUIFlow -> {}
             is CheckpointEvaluation.NoAction -> {
                 val reason: CheckpointResult.NoAction.Reason = evaluation.reason
             }

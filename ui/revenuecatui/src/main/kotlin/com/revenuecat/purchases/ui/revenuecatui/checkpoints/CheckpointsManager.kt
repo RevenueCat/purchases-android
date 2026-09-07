@@ -34,7 +34,7 @@ internal class CheckpointRun(
 ) {
     val result: CheckpointResult
         get() = when (evaluation) {
-            is CheckpointEvaluation.OfferingReturned -> CheckpointResult.ReceivedOffering(evaluation.offering)
+            is CheckpointEvaluation.MatchedOffering -> CheckpointResult.ReceivedOffering(evaluation.offering)
             is CheckpointEvaluation.NoAction -> CheckpointResult.NoAction(evaluation.reason)
             else -> CheckpointResult.PaywallPresented(
                 requireNotNull(flowOutcome) { "A presented flow always ends with an outcome." },
@@ -114,8 +114,8 @@ internal class CheckpointsManager(
                 customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
             )
             val evaluation = when (resolution) {
-                is CheckpointResolution.MatchedOffering -> CheckpointEvaluation.OfferingReturned(resolution.offering)
-                is CheckpointResolution.MatchedWorkflow -> CheckpointEvaluation.FlowPresented
+                is CheckpointResolution.MatchedOffering -> CheckpointEvaluation.MatchedOffering(resolution.offering)
+                is CheckpointResolution.MatchedWorkflow -> CheckpointEvaluation.MatchedUIFlow
                 is CheckpointResolution.NoAction -> CheckpointEvaluation.NoAction(resolution.reason.toResultReason())
             }
             notifyEvaluated(identifier, customVariables, evaluation)
