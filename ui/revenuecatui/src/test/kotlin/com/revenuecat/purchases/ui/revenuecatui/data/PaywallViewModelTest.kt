@@ -39,6 +39,7 @@ import com.revenuecat.purchases.paywalls.components.common.StateUpdate
 import com.revenuecat.purchases.paywalls.components.common.StateUpdateValue
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.common.workflows.WorkflowScreen
@@ -50,6 +51,7 @@ import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
+import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -67,6 +69,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData.copy
 import com.revenuecat.purchases.ui.revenuecatui.extensions.copy
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.helpers.resolvedWebCheckoutInteractionUrl
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
@@ -255,6 +258,7 @@ class PaywallViewModelTest {
         every { listener.onRestoreCompleted(any()) } just runs
         every { listener.onRestoreError(any()) } just runs
         every { listener.onPurchaseCancelled() } just runs
+        every { listener.onInteraction(any()) } just runs
     }
 
     @After
@@ -1573,6 +1577,56 @@ class PaywallViewModelTest {
                 },
             )
         }
+    }
+
+    @Test
+    fun `trackComponentInteraction notifies listener with snake case map`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        val events = mutableListOf<PaywallInteractionEvent>()
+        every { listener.onInteraction(capture(events)) } just runs
+
+        model.trackComponentInteraction(
+            componentType = PaywallComponentType.BUTTON,
+            componentName = PaywallLegacyComponentInteraction.RESTORE_BUTTON_NAME,
+            componentValue = PaywallLegacyComponentInteraction.Value.RESTORE_PURCHASES,
+        )
+
+        val trackedEvents = mutableListOf<FeatureEvent>()
+        verify { purchases.track(capture(trackedEvents)) }
+        val trackedInteraction = trackedEvents.filterIsInstance<PaywallEvent>()
+            .single { it.type == PaywallEventType.COMPONENT_INTERACTION }
+        assertThat(events).containsExactly(trackedInteraction.toInteractionEvent())
+    }
+
+    @Test
+    fun `trackComponentInteraction still tracks when listener throws`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        every { listener.onInteraction(any()) } throws IllegalStateException("developer bug")
+
+        model.trackComponentInteraction(
+            componentType = PaywallComponentType.BUTTON,
+            componentName = PaywallLegacyComponentInteraction.RESTORE_BUTTON_NAME,
+            componentValue = PaywallLegacyComponentInteraction.Value.RESTORE_PURCHASES,
+        )
+
+        verify(exactly = 1) { listener.onInteraction(any()) }
+        verifyEventTracked(PaywallEventType.COMPONENT_INTERACTION, 1)
+    }
+
+    @Test
+    fun `trackComponentInteraction does not notify listener before impression`() {
+        val model = create()
+
+        model.trackComponentInteraction(
+            componentType = PaywallComponentType.BUTTON,
+            componentName = PaywallLegacyComponentInteraction.RESTORE_BUTTON_NAME,
+            componentValue = PaywallLegacyComponentInteraction.Value.RESTORE_PURCHASES,
+        )
+
+        verify(exactly = 0) { listener.onInteraction(any()) }
+        verify(exactly = 0) { purchases.track(any()) }
     }
 
     @Test

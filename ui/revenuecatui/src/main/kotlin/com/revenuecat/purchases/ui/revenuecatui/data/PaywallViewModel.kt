@@ -63,6 +63,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
 import com.revenuecat.purchases.ui.revenuecatui.helpers.resolveWebCheckoutUrlForInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.safeResume
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
@@ -552,6 +553,11 @@ internal class PaywallViewModelImpl(
             componentInteraction = data,
         )
         purchases.track(event)
+        listener?.let { listener ->
+            val interactionEvent = event.toInteractionEvent()
+            runCatching { listener.onInteraction(interactionEvent) }
+                .onFailure { Logger.e("PaywallListener.onInteraction threw", it) }
+        }
     }
 
     override suspend fun handleRestorePurchases() = runExclusiveAction { performRestore() }
