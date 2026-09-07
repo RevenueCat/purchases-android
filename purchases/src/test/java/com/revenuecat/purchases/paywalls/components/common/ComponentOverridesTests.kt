@@ -6,6 +6,7 @@ import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
+import org.assertj.core.api.Assertions.assertThat
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -735,9 +736,9 @@ internal class ComponentOverridesTests {
                 value = 1.2,
             )
 
-            assert(width.isRule)
-            assert(height.isRule)
-            assert(aspectRatio.isRule)
+            assertThat(width.isRule).isTrue
+            assertThat(height.isRule).isTrue
+            assertThat(aspectRatio.isRule).isTrue
         }
     }
 }
