@@ -538,11 +538,12 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `an unknown evaluation resolves to a configuration-unavailable no action`() {
+    fun `an unknown evaluation resolves to a configuration-unavailable no action and logs an error`() {
         val run = CheckpointRun(object : CheckpointEvaluation() {}, flowOutcome = null, backedOut = false)
 
         assertThat(run.result)
             .isEqualTo(CheckpointResult.NoAction(CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE))
+        verify(exactly = 1) { Logger.e(match { it.startsWith("Unknown checkpoint evaluation") }) }
     }
 
     @Test

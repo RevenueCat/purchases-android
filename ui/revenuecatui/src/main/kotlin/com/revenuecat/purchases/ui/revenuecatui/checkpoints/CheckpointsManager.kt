@@ -41,7 +41,10 @@ internal class CheckpointRun(
             )
             // The hierarchy is closed but not sealed; an evaluation this code doesn't know is treated as nothing
             // served rather than as a presented flow.
-            else -> CheckpointResult.NoAction(CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+            else -> {
+                Logger.e("Unknown checkpoint evaluation '$evaluation'; treating it as nothing served.")
+                CheckpointResult.NoAction(CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
+            }
         }
 }
 
