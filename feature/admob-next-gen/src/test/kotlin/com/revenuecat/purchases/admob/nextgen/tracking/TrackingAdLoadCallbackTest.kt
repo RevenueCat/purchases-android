@@ -5,9 +5,9 @@ package com.revenuecat.purchases.admob.nextgen.tracking
 import com.google.android.libraries.ads.mobile.sdk.common.Ad
 import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
-import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.admob.nextgen.responseInfo
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
@@ -189,10 +189,4 @@ class TrackingAdLoadCallbackTest {
 
         assertEquals(listOf("configure", "delegate"), order)
     }
-
-    private fun responseInfo(adapterClassName: String, responseId: String): ResponseInfo =
-        mockk<ResponseInfo>().also {
-            every { it.adapterClassName } returns adapterClassName
-            every { it.responseId } returns responseId
-        }
 }

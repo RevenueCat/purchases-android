@@ -11,11 +11,9 @@ import com.google.android.libraries.ads.mobile.sdk.common.AdLoadCallback
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
 import com.google.android.libraries.ads.mobile.sdk.common.ResponseInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdEventCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdRefreshCallback
 import com.revenuecat.purchases.ads.events.AdCaptureMethod
-import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
@@ -23,34 +21,20 @@ import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.runs
 import io.mockk.slot
-import io.mockk.unmockkObject
 import io.mockk.verify
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 class BannerAdFlowTest {
 
-    private val adTracker = mockk<AdTracker>(relaxed = true)
-    private val purchases = mockk<Purchases>(relaxed = true)
+    @get:Rule
+    val configuredPurchases = ConfiguredPurchasesRule()
 
-    @Before
-    fun setUp() {
-        every { purchases.adTracker } returns adTracker
-        mockkObject(Purchases)
-        every { Purchases.isConfigured } returns true
-        every { Purchases.sharedInstance } returns purchases
-    }
-
-    @After
-    fun tearDown() {
-        unmockkObject(Purchases)
-    }
+    private val adTracker get() = configuredPurchases.adTracker
 
     @Test
     fun `success installs tracking callbacks before forwarding loaded banner`() {
@@ -58,10 +42,7 @@ class BannerAdFlowTest {
         val adRequest = mockk<BannerAdRequest> {
             every { adUnitId } returns "banner-unit"
         }
-        val responseInfo = mockk<ResponseInfo>(relaxed = true) {
-            every { adapterClassName } returns "test-network"
-            every { responseId } returns "response-id"
-        }
+        val responseInfo = responseInfo("test-network", "response-id")
         val bannerAd = mockk<BannerAd>(relaxed = true) {
             every { getResponseInfo() } returns responseInfo
         }
