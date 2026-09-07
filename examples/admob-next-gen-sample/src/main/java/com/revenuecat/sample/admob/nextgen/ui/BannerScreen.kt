@@ -137,18 +137,17 @@ internal fun BannerScreen(activity: Activity, onBack: () -> Unit) {
                         ),
                     ),
                     onToggle = {
-                        if (preloadState.started) {
-                            preloadState.updateAfterStop(BannerAdPreloader.destroy(BANNER_PRELOAD_ID))
-                        } else {
-                            preloadState.updateAfterStart(
+                        preloadState.toggle(
+                            start = {
                                 BannerAdPreloader.startAndTrack(
                                     BANNER_PRELOAD_ID,
                                     PreloadConfiguration(bannerRequest(), preloadState.bufferSize),
                                     placement = "banner_preload",
                                     preloadCallback = preloadState.preloadCallback(scope),
-                                ),
-                            )
-                        }
+                                )
+                            },
+                            stop = { BannerAdPreloader.destroy(BANNER_PRELOAD_ID) },
+                        )
                     },
                 )
             }
