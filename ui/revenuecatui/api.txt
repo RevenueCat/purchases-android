@@ -73,11 +73,101 @@ package com.revenuecat.purchases.ui.revenuecatui {
     method @KotlinOnly @Deprecated @androidx.compose.runtime.Composable public static void PaywallFooter(com.revenuecat.purchases.ui.revenuecatui.PaywallOptions options, optional boolean condensed, optional kotlin.jvm.functions.Function1<androidx.compose.foundation.layout.PaddingValues,kotlin.Unit>? mainContent);
   }
 
+  public final class PaywallInteractionEvent {
+    method public <T> T? getProperty(com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<T> key);
+    method @InaccessibleFromKotlin public java.util.Map<java.lang.String,java.lang.Object> getRawProperties();
+    property public java.util.Map<java.lang.String,java.lang.Object> rawProperties;
+  }
+
+  public static final class PaywallInteractionEvent.ComponentTypes {
+    property public static String BUTTON;
+    property public static String CAROUSEL;
+    property public static String PACKAGE;
+    property public static String PACKAGE_SELECTION_SHEET;
+    property public static String PURCHASE_BUTTON;
+    property public static String SWITCH;
+    property public static String TAB;
+    property public static String TEXT;
+    field public static final String BUTTON = "button";
+    field public static final String CAROUSEL = "carousel";
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.ComponentTypes INSTANCE;
+    field public static final String PACKAGE = "package";
+    field public static final String PACKAGE_SELECTION_SHEET = "package_selection_sheet";
+    field public static final String PURCHASE_BUTTON = "purchase_button";
+    field public static final String SWITCH = "switch";
+    field public static final String TAB = "tab";
+    field public static final String TEXT = "text";
+  }
+
+  public static final class PaywallInteractionEvent.Key<T> {
+    method @InaccessibleFromKotlin public String getName();
+    property public String name;
+  }
+
+  public static final class PaywallInteractionEvent.Keys {
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> COMPONENT_NAME;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> COMPONENT_TYPE;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> COMPONENT_URL;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> COMPONENT_VALUE;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> CURRENT_PACKAGE_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> CURRENT_PRODUCT_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.Boolean> DARK_MODE;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.Integer> DEFAULT_INDEX;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> DEFAULT_PACKAGE_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> DEFAULT_PRODUCT_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> DESTINATION_CONTEXT_NAME;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.Integer> DESTINATION_INDEX;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> DESTINATION_PACKAGE_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> DESTINATION_PRODUCT_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> DISPLAY_MODE;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> LOCALE;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> OFFERING_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> ORIGIN_CONTEXT_NAME;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.Integer> ORIGIN_INDEX;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> ORIGIN_PACKAGE_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> ORIGIN_PRODUCT_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> PAYWALL_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.Integer> PAYWALL_REVISION;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> RESULTING_PACKAGE_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> RESULTING_PRODUCT_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> SESSION_ID;
+    property public com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.Long> TIMESTAMP;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> COMPONENT_NAME;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> COMPONENT_TYPE;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> COMPONENT_URL;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> COMPONENT_VALUE;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> CURRENT_PACKAGE_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> CURRENT_PRODUCT_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.Boolean> DARK_MODE;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.Integer> DEFAULT_INDEX;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> DEFAULT_PACKAGE_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> DEFAULT_PRODUCT_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> DESTINATION_CONTEXT_NAME;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.Integer> DESTINATION_INDEX;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> DESTINATION_PACKAGE_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> DESTINATION_PRODUCT_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> DISPLAY_MODE;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Keys INSTANCE;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> LOCALE;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> OFFERING_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> ORIGIN_CONTEXT_NAME;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.Integer> ORIGIN_INDEX;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> ORIGIN_PACKAGE_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> ORIGIN_PRODUCT_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> PAYWALL_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.Integer> PAYWALL_REVISION;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> RESULTING_PACKAGE_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> RESULTING_PRODUCT_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.String> SESSION_ID;
+    field public static final com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent.Key<java.lang.Long> TIMESTAMP;
+  }
+
   public final class PaywallKt {
     method @KotlinOnly @androidx.compose.runtime.Composable public static void Paywall(com.revenuecat.purchases.ui.revenuecatui.PaywallOptions options);
   }
 
   public interface PaywallListener {
+    method public default void onInteraction(com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent event);
     method public default void onPurchaseCancelled();
     method public default void onPurchaseCompleted(com.revenuecat.purchases.CustomerInfo customerInfo, com.revenuecat.purchases.models.StoreTransaction storeTransaction);
     method public default void onPurchaseError(com.revenuecat.purchases.PurchasesError error);
