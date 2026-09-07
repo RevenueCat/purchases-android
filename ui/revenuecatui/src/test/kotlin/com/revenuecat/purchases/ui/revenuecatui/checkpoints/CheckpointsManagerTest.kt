@@ -538,6 +538,14 @@ class CheckpointsManagerTest {
     }
 
     @Test
+    fun `an unknown evaluation resolves to a configuration-unavailable no action`() {
+        val run = CheckpointRun(object : CheckpointEvaluation() {}, flowOutcome = null, backedOut = false)
+
+        assertThat(run.result)
+            .isEqualTo(CheckpointResult.NoAction(CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE))
+    }
+
+    @Test
     fun `checkpoint works without a listener`() = runTest(dispatcher) {
         manager.checkpointListener = null
         resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))

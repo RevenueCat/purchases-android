@@ -36,9 +36,12 @@ internal class CheckpointRun(
         get() = when (evaluation) {
             is CheckpointEvaluation.MatchedOffering -> CheckpointResult.ReceivedOffering(evaluation.offering)
             is CheckpointEvaluation.NoAction -> CheckpointResult.NoAction(evaluation.reason)
-            else -> CheckpointResult.PaywallPresented(
+            is CheckpointEvaluation.MatchedUIFlow -> CheckpointResult.PaywallPresented(
                 requireNotNull(flowOutcome) { "A presented flow always ends with an outcome." },
             )
+            // The hierarchy is closed but not sealed; an evaluation this code doesn't know is treated as nothing
+            // served rather than as a presented flow.
+            else -> CheckpointResult.NoAction(CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE)
         }
 }
 
