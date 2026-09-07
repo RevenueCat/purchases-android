@@ -97,7 +97,7 @@ internal class ConditionContext(
     // Calls inside derivedStateOf subscribe only to the keys condition evaluation actually reads.
     val stateReader: (String) -> JsonPrimitive? = { null },
     /**
-     * The paywall's rendered bounds in dp, for window size condition evaluation.
+     * The current window size in dp, for window size condition evaluation.
      * `null` when unknown, in which case window size conditions never match.
      */
     val windowDpSize: DpSize? = null,
@@ -172,7 +172,7 @@ private fun ComponentOverride.Condition.evaluateWindowCondition(windowDpSize: Dp
         evaluateComparison(operator, windowDpSize?.height?.value?.toDouble(), value)
     is ComponentOverride.Condition.WindowAspectRatioRule ->
         evaluateComparison(operator, windowDpSize?.aspectRatioOrNull(), value)
-    else -> false
+    else -> error("Non-window condition routed to window evaluation: $this")
 }
 
 private fun DpSize.aspectRatioOrNull(): Double? =
@@ -189,7 +189,7 @@ private fun evaluateComparison(
         ComponentOverride.ComparisonOperator.GREATER_THAN -> actual > expected
         ComponentOverride.ComparisonOperator.LESS_THAN_OR_EQUAL -> actual <= expected
         ComponentOverride.ComparisonOperator.LESS_THAN -> actual < expected
-        ComponentOverride.ComparisonOperator.EQUALS -> abs(actual - expected) < STATE_NUMBER_COMPARISON_EPSILON
+        ComponentOverride.ComparisonOperator.EQUALS -> abs(actual - expected) < NUMBER_COMPARISON_EPSILON
     }
 }
 
@@ -240,7 +240,7 @@ private fun ComponentOverride.Condition.Variable.matchesValue(
     else -> false
 }
 
-private const val STATE_NUMBER_COMPARISON_EPSILON = 1e-10
+private const val NUMBER_COMPARISON_EPSILON = 1e-10
 
 private fun ComponentOverride.Condition.State.evaluate(
     stateReader: (String) -> JsonPrimitive?,
@@ -264,7 +264,7 @@ private fun ComponentOverride.Condition.State.matchesValue(current: JsonPrimitiv
         val expectedNumber = value.doubleOrNull
         val currentNumber = current.doubleOrNull
         expectedNumber != null && currentNumber != null &&
-            abs(expectedNumber - currentNumber) < STATE_NUMBER_COMPARISON_EPSILON
+            abs(expectedNumber - currentNumber) < NUMBER_COMPARISON_EPSILON
     }
 }
 

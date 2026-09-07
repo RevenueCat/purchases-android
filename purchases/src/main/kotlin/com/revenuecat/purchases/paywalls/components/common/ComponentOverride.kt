@@ -38,9 +38,8 @@ public class ComponentOverride<T : PartialComponent>(
 
     /**
      * Numeric comparison operators for layout condition evaluation (window size).
-     * [EQUALS] compares with an epsilon tolerance (1e-10) to absorb JSON round-trip
-     * noise; it is still fragile against measured fractional sizes and is intended
-     * for authored integer breakpoints.
+     * [EQUALS] compares with a small epsilon tolerance but remains fragile against
+     * measured fractional sizes; it is intended for authored integer breakpoints.
      */
     @Serializable
     public enum class ComparisonOperator {
@@ -146,6 +145,7 @@ public class ComponentOverride<T : PartialComponent>(
             public val value: Double,
         ) : Condition { override val isRule: Boolean get() = true }
 
+        /** See [WindowWidthRule]; same semantics for the window's height. */
         @Serializable
         public data class WindowHeightRule(
             public val operator: ComparisonOperator,
@@ -154,10 +154,9 @@ public class ComponentOverride<T : PartialComponent>(
 
         /**
          * Matches when the window's aspect ratio (width / height: above 1 is landscape,
-         * below 1 is portrait) satisfies the comparison. Computed from the live oriented
-         * window size, so rotation re-evaluates it. Pair with a width floor (e.g.
-         * [WindowWidthRule] >= 600) so small multi-window sizes don't match; never
-         * matches while the window size is unknown.
+         * below 1 is portrait) satisfies the comparison; rotation re-evaluates it. Pair
+         * with a width floor (e.g. [WindowWidthRule] >= 600) so small multi-window sizes
+         * don't match; never matches while the size is unknown or its height is zero.
          */
         @Serializable
         public data class WindowAspectRatioRule(

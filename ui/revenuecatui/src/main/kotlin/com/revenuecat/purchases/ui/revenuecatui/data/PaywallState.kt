@@ -521,7 +521,8 @@ internal val PaywallState.Loaded.Legacy.isInFullScreenMode: Boolean
  * `selected_package` visibility rules can't oscillate.
  *
  * Note this only covers the package component's own rules. A package hidden solely by an enclosing
- * stack's rule still resolves visible here.
+ * stack's rule still resolves visible here. The screen condition is pinned to COMPACT and the window
+ * size to unknown, so size-class and window-size visibility rules do not influence selection either.
  */
 private fun PaywallState.Loaded.Components.AvailablePackages.Info.resolvesVisible(
     customVariables: Map<String, CustomVariableValue>,
