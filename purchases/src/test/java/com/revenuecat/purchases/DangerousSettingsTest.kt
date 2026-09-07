@@ -26,6 +26,19 @@ class DangerousSettingsTest {
     }
 
     @Test
+    fun `allowTestStoreInReleaseBuild is false by default`() {
+        val dangerousSettings = DangerousSettings()
+        assertThat(dangerousSettings.allowTestStoreInReleaseBuild).isFalse
+    }
+
+    @Test
+    fun `forceAllowTestStoreInReleaseBuilds allows Test Store in release builds`() {
+        val dangerousSettings = DangerousSettings()
+        dangerousSettings.forceAllowTestStoreInReleaseBuilds()
+        assertThat(dangerousSettings.allowTestStoreInReleaseBuild).isTrue
+    }
+
+    @Test
     fun `default uiPreviewMode is false`() {
         val dangerousSettings = DangerousSettings()
         assertThat(dangerousSettings.uiPreviewMode).isFalse
@@ -49,6 +62,7 @@ class DangerousSettingsTest {
         val dangerousSettings = DangerousSettings.forPreviewMode()
         assertThat(dangerousSettings.uiPreviewMode).isTrue
         assertThat(dangerousSettings.autoSyncPurchases).isFalse
+        assertThat(dangerousSettings.allowTestStoreInReleaseBuild).isFalse
         assertThat(dangerousSettings.customEntitlementComputation).isFalse
         assertThat(dangerousSettings.applyObfuscatedAccountIdToSubscriptionChanges).isFalse
     }

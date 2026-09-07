@@ -5,6 +5,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import android.content.res.Configuration
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
@@ -19,6 +20,9 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.isTraversalGroup
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.offset
 import com.revenuecat.purchases.InternalRevenueCatAPI
@@ -168,35 +172,34 @@ internal fun PaywallComponentsScaffold(
         modifier = background?.let { modifier.background(it) } ?: modifier,
     ) {
         WithOptionalBackgroundOverlay(state, background = background) {
-            if (footerContent != null) {
-                // Overlapping footer: main content fills the whole area and the footer is pinned to the
-                // bottom, drawn on top. Main content reserves bottom clearance equal to the footer height
-                // (see footerBottomPadding), so an opaque footer looks identical to the old stacked layout
-                // while a transparent footer lets content draw behind it.
-                OverlayLayout(
-                    state = state,
-                    modifier = Modifier.fillMaxSize(),
-                    hasHeader = headerContent != null,
-                    hasFooter = true,
-                ) {
-                    // Child 0: caller-supplied main content.
-                    mainContent()
-                    // Child 1 (optional): fixed header overlay.
-                    headerContent?.invoke()
-                    // Child 2: sticky footer overlay, pinned to the bottom.
-                    footerContent.invoke()
+            // Overlapping footer: main content fills the whole area and the footer is pinned to the
+            // bottom, drawn on top. Main content reserves bottom clearance equal to the footer height
+            // (see footerBottomPadding), so an opaque footer looks identical to the old stacked layout
+            // while a transparent footer lets content draw behind it.
+            OverlayLayout(
+                state = state,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .semantics { isTraversalGroup = true },
+                hasHeader = headerContent != null,
+                hasFooter = footerContent != null,
+            ) {
+                // Child 0: caller-supplied main content.
+                mainContent()
+                // Child 1 (optional): fixed header overlay.
+                headerContent?.let { header ->
+                    Box(
+                        modifier = Modifier.semantics {
+                            isTraversalGroup = true
+                            traversalIndex = -1f
+                        },
+                        propagateMinConstraints = true,
+                    ) {
+                        header()
+                    }
                 }
-            } else {
-                OverlayLayout(
-                    state = state,
-                    modifier = Modifier.fillMaxSize(),
-                    hasHeader = headerContent != null,
-                ) {
-                    // Child 0: caller-supplied main content.
-                    mainContent()
-                    // Child 1 (optional): fixed header overlay.
-                    headerContent?.invoke()
-                }
+                // Child 2 (optional): sticky footer overlay, pinned to the bottom.
+                footerContent?.invoke()
             }
         }
     }
@@ -448,7 +451,7 @@ private fun LoadedPaywallComponents_Preview_Bless() {
                         StackComponent(
                             components = listOf(TestData.Components.monthlyPackageComponent),
                             dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
-                            size = Size(width = Fill, height = Fill),
+                            size = Size(width = Fill(), height = Fill()),
                             backgroundColor = ColorScheme(
                                 light = ColorInfo.Gradient.Linear(
                                     degrees = 60f,
@@ -474,56 +477,56 @@ private fun LoadedPaywallComponents_Preview_Bless() {
                                     fontWeight = FontWeight.SEMI_BOLD,
                                     fontSize = 28,
                                     horizontalAlignment = LEADING,
-                                    size = Size(width = Fill, height = Fit()),
+                                    size = Size(width = Fill(), height = Fit()),
                                     margin = Padding(top = 0.0, bottom = 40.0, leading = 0.0, trailing = 0.0),
                                 ),
                                 TextComponent(
                                     text = LocalizationKey("feature-1"),
                                     color = textColor,
                                     horizontalAlignment = LEADING,
-                                    size = Size(width = Fill, height = Fit()),
+                                    size = Size(width = Fill(), height = Fit()),
                                     margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
                                 ),
                                 TextComponent(
                                     text = LocalizationKey("feature-2"),
                                     color = textColor,
                                     horizontalAlignment = LEADING,
-                                    size = Size(width = Fill, height = Fit()),
+                                    size = Size(width = Fill(), height = Fit()),
                                     margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
                                 ),
                                 TextComponent(
                                     text = LocalizationKey("feature-3"),
                                     color = textColor,
                                     horizontalAlignment = LEADING,
-                                    size = Size(width = Fill, height = Fit()),
+                                    size = Size(width = Fill(), height = Fit()),
                                     margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
                                 ),
                                 TextComponent(
                                     text = LocalizationKey("feature-4"),
                                     color = textColor,
                                     horizontalAlignment = LEADING,
-                                    size = Size(width = Fill, height = Fit()),
+                                    size = Size(width = Fill(), height = Fit()),
                                     margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
                                 ),
                                 TextComponent(
                                     text = LocalizationKey("feature-5"),
                                     color = textColor,
                                     horizontalAlignment = LEADING,
-                                    size = Size(width = Fill, height = Fit()),
+                                    size = Size(width = Fill(), height = Fit()),
                                     margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
                                 ),
                                 TextComponent(
                                     text = LocalizationKey("feature-6"),
                                     color = textColor,
                                     horizontalAlignment = LEADING,
-                                    size = Size(width = Fill, height = Fit()),
+                                    size = Size(width = Fill(), height = Fit()),
                                     margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
                                 ),
                                 TextComponent(
                                     text = LocalizationKey("offer"),
                                     color = textColor,
                                     horizontalAlignment = LEADING,
-                                    size = Size(width = Fill, height = Fit()),
+                                    size = Size(width = Fill(), height = Fit()),
                                     margin = Padding(top = 48.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
                                 ),
                                 StackComponent(
@@ -551,12 +554,12 @@ private fun LoadedPaywallComponents_Preview_Bless() {
                                 ),
                             ),
                             dimension = Vertical(alignment = LEADING, distribution = END),
-                            size = Size(width = Fill, height = Fill),
+                            size = Size(width = Fill(), height = Fill()),
                             padding = Padding(top = 16.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
                         ),
                     ),
                     dimension = ZLayer(alignment = BOTTOM),
-                    size = Size(width = Fill, height = Fill),
+                    size = Size(width = Fill(), height = Fill()),
                     backgroundColor = backgroundColor,
                 ),
                 background = Background.Color(backgroundColor),

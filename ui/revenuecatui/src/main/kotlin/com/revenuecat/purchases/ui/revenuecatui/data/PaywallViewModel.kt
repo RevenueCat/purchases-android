@@ -63,6 +63,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallProductIdentifier
 import com.revenuecat.purchases.ui.revenuecatui.helpers.resolveWebCheckoutUrlForInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.safeResume
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toComponentsPaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.helpers.toLegacyPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.helpers.validatedPaywall
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
@@ -552,6 +553,11 @@ internal class PaywallViewModelImpl(
             componentInteraction = data,
         )
         purchases.track(event)
+        listener?.let { listener ->
+            val interactionEvent = event.toInteractionEvent()
+            runCatching { listener.onInteraction(interactionEvent) }
+                .onFailure { Logger.e("PaywallListener.onInteraction threw", it) }
+        }
     }
 
     override suspend fun handleRestorePurchases() = runExclusiveAction { performRestore() }
@@ -1267,6 +1273,12 @@ internal class PaywallViewModelImpl(
             storefrontCountryCode = purchases.storefrontCountryCode,
             mode = options.mode,
             stateStore = stateStore,
+            workflowScreen = WorkflowScreenContext(
+                workflowId = workflow.id,
+                stepId = step.id,
+                stepType = step.type,
+                screenType = step.stepScreenType,
+            ),
         )
     }
 
@@ -1530,6 +1542,7 @@ internal class PaywallViewModelImpl(
         storefrontCountryCode: String?,
         mode: PaywallMode,
         stateStore: PaywallStateStore? = null,
+        workflowScreen: WorkflowScreenContext? = null,
     ): PaywallState {
         if (offering.availablePackages.isEmpty()) {
             return PaywallState.Error("No packages available")
@@ -1570,6 +1583,7 @@ internal class PaywallViewModelImpl(
                 defaultCustomVariables = extractDefaultCustomVariables(offering),
                 stateStore = stateStore,
                 viewModelActionInProgress = _actionInProgress,
+                workflowScreen = workflowScreen,
             )
         }
     }

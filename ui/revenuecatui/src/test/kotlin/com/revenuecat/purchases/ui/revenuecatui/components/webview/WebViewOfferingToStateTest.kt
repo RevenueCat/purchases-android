@@ -23,7 +23,7 @@ class WebViewOfferingToStateTest {
     fun `components config with web_view produces WebViewComponentStyle in paywall state`() {
         val webViewUrl = "https://paywalls.revenuecat.com/index.html"
         val webViewId = "promo_web_view"
-        val size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit())
+        val size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit())
 
         val state = FakePaywallState(
             components = listOf(

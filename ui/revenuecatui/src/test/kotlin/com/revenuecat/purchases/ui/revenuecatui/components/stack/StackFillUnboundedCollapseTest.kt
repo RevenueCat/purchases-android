@@ -97,16 +97,16 @@ class StackFillUnboundedCollapseTest {
         // reproduce this: Box relaxes its child's min to 0.)
         val fillChild = StackComponent(
             components = emptyList(),
-            size = Size(width = Fill, height = Fill),
+            size = Size(width = Fill(), height = Fill()),
             backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
         )
         val root = StackComponent(
             components = listOf(
-                StackComponent(components = emptyList(), size = Size(width = Fill, height = Fixed(100u))),
+                StackComponent(components = emptyList(), size = Size(width = Fill(), height = Fixed(100u))),
                 fillChild,
             ),
             dimension = Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START),
-            size = Size(width = Fill, height = Fill),
+            size = Size(width = Fill(), height = Fill()),
         )
         val style = styleFactory.create(root).getOrThrow().componentStyle as StackComponentStyle
 
@@ -149,7 +149,7 @@ class StackFillUnboundedCollapseTest {
         val child = TextComponent(
             text = LocalizationKey("dummy"),
             color = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb())),
-            size = Size(width = Fill, height = Fill),
+            size = Size(width = Fill(), height = Fill()),
         )
         val dimension = if (vertical) {
             Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START)
@@ -199,12 +199,12 @@ class StackFillUnboundedCollapseTest {
         val crossAxis = 100.dp
         val redChild = StackComponent(
             components = emptyList(),
-            size = Size(width = Fill, height = Fill),
+            size = Size(width = Fill(), height = Fill()),
             backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
         )
         val blueChild = StackComponent(
             components = emptyList(),
-            size = Size(width = Fill, height = Fill),
+            size = Size(width = Fill(), height = Fill()),
             backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
         )
         val stack = StackComponent(

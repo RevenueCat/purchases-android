@@ -122,7 +122,7 @@ class StyleFactoryTests {
 
     @Test
     fun `Should create a WebViewComponentStyle for a WebViewComponent`() {
-        val size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit())
+        val size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit())
         val component = WebViewComponent(
             url = "https://paywalls.revenuecat.com/{{ custom.animal }}.html",
             id = "promo_web_view",
@@ -149,7 +149,7 @@ class StyleFactoryTests {
             url = "https://paywalls.revenuecat.com/index.html",
             id = "promo_web_view",
             protocolVersion = 1,
-            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+            size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
             overrides = listOf(
                 ComponentOverride(
                     conditions = listOf(ComponentOverride.Condition.Selected),
@@ -1229,7 +1229,7 @@ class StyleFactoryTests {
                     components = listOf(
                         ImageComponent(
                             source = imageUrls,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+                            size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
                         ),
                     ),
                     dimension = Dimension.ZLayer(
@@ -1239,7 +1239,7 @@ class StyleFactoryTests {
 
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+                    size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1294,7 +1294,7 @@ class StyleFactoryTests {
 
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+                    size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1336,11 +1336,11 @@ class StyleFactoryTests {
             components = listOf(
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+                    size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
                 ),
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+                    size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1384,7 +1384,7 @@ class StyleFactoryTests {
                 ),
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+                    size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1407,7 +1407,7 @@ class StyleFactoryTests {
         assertThat(secondImage.ignoreTopWindowInsets).isFalse()
     }
 
-    private fun heroWebViewComponent(width: SizeConstraint = SizeConstraint.Fill) = WebViewComponent(
+    private fun heroWebViewComponent(width: SizeConstraint = SizeConstraint.Fill()) = WebViewComponent(
         url = "https://bundle-hash.components.revenuecat-static.com/index.html",
         id = "hero_web_view",
         protocolVersion = 1,
@@ -1722,7 +1722,7 @@ class StyleFactoryTests {
                     components = listOf(
                         ImageComponent(
                             source = imageUrls,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+                            size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
                         ),
                     ),
                     dimension = Dimension.ZLayer(

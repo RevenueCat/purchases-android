@@ -244,6 +244,7 @@ private fun TestWebViewSlot(
                         expectedUrl = identity.resolvedUrl,
                         sizeToContentWidth = identity.sizeToContentWidth,
                         sizeToContentHeight = identity.sizeToContentHeight,
+                        contextSnapshotProvider = ::testContextSnapshot,
                     ).also { created ->
                         created.attach()
                         onBridgeCreated(created)

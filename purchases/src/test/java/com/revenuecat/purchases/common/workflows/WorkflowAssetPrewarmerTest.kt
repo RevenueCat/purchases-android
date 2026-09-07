@@ -284,7 +284,7 @@ class WorkflowAssetPrewarmerTest {
                         url = url,
                         id = "component-1",
                         protocolVersion = WebViewComponent.SUPPORTED_PROTOCOL_VERSION,
-                        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill),
+                        size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fill()),
                     ),
                 ),
             ),
