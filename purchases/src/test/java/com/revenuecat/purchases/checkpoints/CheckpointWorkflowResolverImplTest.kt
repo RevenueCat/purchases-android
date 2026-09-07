@@ -4,6 +4,9 @@ package com.revenuecat.purchases.checkpoints
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.LogLevel
+import com.revenuecat.purchases.LogMessage
+import com.revenuecat.purchases.assertLogs
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
@@ -214,6 +217,24 @@ class CheckpointWorkflowResolverImplTest {
         configureRules(CheckpointRule(id = null, audienceId = "aud_wf1234", workflowId = "wf1234"))
 
         assertThat(matchedWorkflow(resolve()).checkpointRuleId).isNull()
+    }
+
+    @Test
+    fun `each rule evaluation is logged under the checkpoint's prefix with its position`() {
+        configureRules(rule("wf5678"), rule("wf1234"))
+        configureAudiences(
+            Audience("aud_wf5678", "false"),
+            Audience("aud_wf1234", "true"),
+        )
+
+        assertLogs(
+            listOf(
+                LogMessage(LogLevel.VERBOSE, "[Checkpoint '$checkpointId'] Rule 1 did not match."),
+                LogMessage(LogLevel.VERBOSE, "[Checkpoint '$checkpointId'] Rule 2 matched."),
+            ),
+        ) {
+            runTest { resolve() }
+        }
     }
 
     @Test
