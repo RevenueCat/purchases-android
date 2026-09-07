@@ -195,10 +195,10 @@ class CheckpointWorkflowResolverImplTest {
     @Test
     fun `the served rule id is the one whose audience matched`() = runTest {
         configureRules(rule("wf5678"), rule("wf1234"))
-        coEvery { mockAudiencesConfigProvider.getAudience("aud_wf5678") } returns
-            Audience("aud_wf5678", "false")
-        coEvery { mockAudiencesConfigProvider.getAudience("aud_wf1234") } returns
-            Audience("aud_wf1234", "true")
+        configureAudiences(
+            Audience("aud_wf5678", "false"),
+            Audience("aud_wf1234", "true"),
+        )
 
         assertThat(matchedWorkflow(resolve()).checkpointRuleId).isEqualTo("rule_wf1234")
     }
