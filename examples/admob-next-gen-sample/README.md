@@ -1,7 +1,7 @@
 # AdMob Next-Gen sample
 
 This app demonstrates RevenueCat ad-event tracking with the Google Mobile Ads Next-Gen SDK. See the
-[adapter README](../../feature/admob-next-gen/README.md) for installation instructions and complete API examples.
+[adapter README](../../feature/admob-next-gen/README.md) for installation instructions and the complete API guide.
 
 ## Run locally
 
