@@ -9,7 +9,6 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.UiConfig
-import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolverImpl.Companion.SIMULATED_ERROR_CHECKPOINT_ID
 import com.revenuecat.purchases.common.CustomVariableKeyValidator
 import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.checkpoints.CheckpointRule
