@@ -141,7 +141,7 @@ class CheckpointsManagerTest {
     @Test
     fun `a matched offering is reported as evaluated as a matched flow`() = runTest(dispatcher) {
         val offering = mockk<Offering>()
-        resolvesTo(CheckpointResolution.MatchedOffering(offering))
+        resolvesTo(CheckpointResolution.MatchedOffering(offering, checkpointRuleId = null))
 
         checkpoint()
 
