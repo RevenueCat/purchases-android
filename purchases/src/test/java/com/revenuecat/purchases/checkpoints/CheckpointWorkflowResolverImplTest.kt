@@ -188,6 +188,38 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
+    fun `a matched workflow reports the rule that was served`() = runTest {
+        assertThat(matchedWorkflow(resolve()).checkpointRuleId).isEqualTo("rule_wf1234")
+    }
+
+    @Test
+    fun `the served rule id is the one whose audience matched`() = runTest {
+        configureRules(rule("wf5678"), rule("wf1234"))
+        configureAudiences(
+            Audience("aud_wf5678", "false"),
+            Audience("aud_wf1234", "true"),
+        )
+
+        assertThat(matchedWorkflow(resolve()).checkpointRuleId).isEqualTo("rule_wf1234")
+    }
+
+    @Test
+    fun `a matched offering reports the rule that was served`() = runTest {
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns offeringWorkflow("wf1234", "default")
+
+        val resolution = resolve() as CheckpointResolution.MatchedOffering
+
+        assertThat(resolution.checkpointRuleId).isEqualTo("rule_wf1234")
+    }
+
+    @Test
+    fun `a matched workflow reports no rule id when the rules topic omits it`() = runTest {
+        configureRules(CheckpointRule(id = null, audienceId = "aud_wf1234", workflowId = "wf1234"))
+
+        assertThat(matchedWorkflow(resolve()).checkpointRuleId).isNull()
+    }
+
+    @Test
     fun `each rule evaluation is logged under the checkpoint's prefix with its position`() {
         configureRules(rule("wf5678"), rule("wf1234"))
         configureAudiences(
@@ -460,7 +492,8 @@ class CheckpointWorkflowResolverImplTest {
     fun `a custom variable the audience requires resolves the workflow`() = runTest {
         configureAudiences(Audience("aud_wf1234", """{"==": [{"var": "custom.source"}, "settings"]}"""))
 
-        val resolution = resolver.resolve(checkpointId, mapOf("source" to RulesDimensionValue.StringValue("settings")))
+        val resolution =
+            resolver.resolve(checkpointId, mapOf("source" to RulesDimensionValue.StringValue("settings")))
 
         assertThat(resolution).isInstanceOf(CheckpointResolution.MatchedWorkflow::class.java)
     }
@@ -469,7 +502,11 @@ class CheckpointWorkflowResolverImplTest {
     fun `a custom variable the audience does not accept resolves NoAction with NO_MATCH`() = runTest {
         configureAudiences(Audience("aud_wf1234", """{"==": [{"var": "custom.source"}, "settings"]}"""))
 
-        assertThat(noActionReason(resolver.resolve(checkpointId, mapOf("source" to RulesDimensionValue.StringValue("onboarding")))))
+        assertThat(
+            noActionReason(
+                resolver.resolve(checkpointId, mapOf("source" to RulesDimensionValue.StringValue("onboarding"))),
+            ),
+        )
             .isEqualTo(CheckpointResolution.NoAction.Reason.NO_MATCH)
     }
 
@@ -729,6 +766,9 @@ class CheckpointWorkflowResolverImplTest {
 
     private fun noActionReason(resolution: CheckpointResolution): CheckpointResolution.NoAction.Reason =
         (resolution as CheckpointResolution.NoAction).reason
+
+    private fun matchedWorkflow(resolution: CheckpointResolution): CheckpointResolution.MatchedWorkflow =
+        resolution as CheckpointResolution.MatchedWorkflow
 
     private fun uiWorkflow(id: String): PublishedWorkflow = PublishedWorkflow(
         id = id,
