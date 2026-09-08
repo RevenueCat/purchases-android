@@ -1932,9 +1932,36 @@ class PaywallViewModelWorkflowTest {
         val error = vm.state.value as PaywallState.Error
         assertThat(error.errorMessage).contains("Step 'step-2' has no offering identifier")
         assertThat(error.toPaywallResult().error.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
-        val completed = captured.filterIsInstance<WorkflowEvent>().single() as WorkflowEvent.StepCompleted
+        val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
+        assertThat(workflowEvents).hasSize(2)
+        val completed = workflowEvents[0] as WorkflowEvent.StepCompleted
         assertThat(completed.stepId).isEqualTo("step-1")
         assertThat(completed.toStepId).isNull()
+        val close = workflowEvents[1] as WorkflowEvent.Close
+        assertThat(close.stepId).isEqualTo("step-1")
+        assertThat(close.traceId).isEqualTo(completed.traceId)
+    }
+
+    @Test
+    fun `dismissing the error after a failed navigation does not repeat the workflow events`() {
+        val stepWithoutOffering = step2.copy(paramValues = emptyMap())
+        val workflowToStepWithoutOffering = workflow.copy(
+            steps = mapOf("step-1" to step1, "step-2" to stepWithoutOffering),
+            screens = mapOf(
+                screenId1 to makeScreen(screenId1),
+                screenId2 to makeScreen(screenId2).copy(offeringIdentifier = null),
+            ),
+        )
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(workflowToStepWithoutOffering, testOfferings, null, uiConfig)
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        captured.clear()
+
+        vm.closePaywall(result = (vm.state.value as PaywallState.Error).toPaywallResult())
+
+        assertThat(captured.filterIsInstance<WorkflowEvent>()).isEmpty()
     }
 
     @Test
