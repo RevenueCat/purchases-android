@@ -1337,6 +1337,48 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `step events echo the experiment params baked into the step`() {
+        // The backend bakes experiment_id / experiment_variant into the steps of the enrolled variant.
+        // Every step event echoes them verbatim so khepri can enroll on exposure. step-2 has none.
+        val experimentStep1 = step1.copy(
+            paramValues = mapOf(
+                "experiment_id" to JsonPrimitive("exp_abc"),
+                "experiment_variant" to JsonPrimitive("b"),
+            ),
+        )
+        val experimentWorkflow = workflow.copy(steps = mapOf("step-1" to experimentStep1, "step-2" to step2))
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(experimentWorkflow, testOfferings, null, uiConfig)
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
+        vm.handleBackNavigation()
+        vm.closePaywall(result = null)
+
+        val started = captured.filterIsInstance<WorkflowEvent.StepStarted>()
+        val completed = captured.filterIsInstance<WorkflowEvent.StepCompleted>()
+        val close = captured.filterIsInstance<WorkflowEvent.Close>().single()
+
+        val step1Started = started.filter { it.stepId == "step-1" }
+        assertThat(step1Started).hasSize(2)
+        assertThat(step1Started.map { it.experimentId }).containsOnly("exp_abc")
+        assertThat(step1Started.map { it.experimentVariant }).containsOnly("b")
+        val step1Completed = completed.filter { it.stepId == "step-1" }
+        assertThat(step1Completed).isNotEmpty
+        assertThat(step1Completed.map { it.experimentId }).containsOnly("exp_abc")
+        assertThat(step1Completed.map { it.experimentVariant }).containsOnly("b")
+        assertThat(close.stepId).isEqualTo("step-1")
+        assertThat(close.experimentId).isEqualTo("exp_abc")
+        assertThat(close.experimentVariant).isEqualTo("b")
+
+        val step2Started = started.single { it.stepId == "step-2" }
+        assertThat(step2Started.experimentId).isNull()
+        assertThat(step2Started.experimentVariant).isNull()
+    }
+
+    @Test
     fun `closePaywall without a purchase fires workflows Close for the current step`() {
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }

@@ -117,7 +117,26 @@ public data class WorkflowStep(
                 (element as? JsonPrimitive)?.takeIf { it.isString }?.content
             }
         }
+
+    /**
+     * The experiment this step belongs to, baked into `param_values` by the backend for the steps of the
+     * enrolled variant only. Echoed verbatim on step events; null for steps outside an experiment.
+     */
+    @InternalRevenueCatAPI
+    public val experimentId: String?
+        get() = stringParam(EXPERIMENT_ID_PARAM)
+
+    /** The enrolled variant key, alongside [experimentId]. */
+    @InternalRevenueCatAPI
+    public val experimentVariant: String?
+        get() = stringParam(EXPERIMENT_VARIANT_PARAM)
+
+    private fun stringParam(key: String): String? =
+        (paramValues[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
 }
+
+private const val EXPERIMENT_ID_PARAM = "experiment_id"
+private const val EXPERIMENT_VARIANT_PARAM = "experiment_variant"
 
 @InternalRevenueCatAPI
 @Serializable

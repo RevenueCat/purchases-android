@@ -109,6 +109,58 @@ class WorkflowEventTest {
     }
 
     @Test
+    fun `experiment params are echoed into backend properties for every workflow event`() {
+        val creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date())
+        val events = listOf(
+            WorkflowEvent.StepStarted(
+                creationData = creationData,
+                workflowId = "wfl_abc",
+                stepId = "step-1",
+                traceId = "trace",
+                experimentId = "exp_abc",
+                experimentVariant = "b",
+            ),
+            WorkflowEvent.StepCompleted(
+                creationData = creationData,
+                workflowId = "wfl_abc",
+                stepId = "step-1",
+                traceId = "trace",
+                experimentId = "exp_abc",
+                experimentVariant = "b",
+            ),
+            WorkflowEvent.Close(
+                creationData = creationData,
+                workflowId = "wfl_abc",
+                stepId = "step-1",
+                traceId = "trace",
+                experimentId = "exp_abc",
+                experimentVariant = "b",
+            ),
+        )
+
+        for (event in events) {
+            val properties = (event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows).event.properties
+            assertThat(properties.experimentId).`as`(event::class.simpleName).isEqualTo("exp_abc")
+            assertThat(properties.experimentVariant).`as`(event::class.simpleName).isEqualTo("b")
+            assertThat(properties.isLastVariantStep).isNull()
+        }
+    }
+
+    @Test
+    fun `experiment params default to null so steps outside an experiment send nothing`() {
+        val event = WorkflowEvent.StepStarted(
+            creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
+            workflowId = "wfl_abc",
+            stepId = "step-1",
+            traceId = "trace",
+        )
+
+        val properties = (event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows).event.properties
+        assertThat(properties.experimentId).isNull()
+        assertThat(properties.experimentVariant).isNull()
+    }
+
+    @Test
     fun `Close carries workflow, step, and step-position metadata`() {
         val event = WorkflowEvent.Close(
             creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),

@@ -53,6 +53,38 @@ internal class WorkflowModelsDeserializationTest {
     }
 
     @Test
+    fun `WorkflowStep experiment params read experiment_id and experiment_variant from param_values`() {
+        val json = """
+            {"id": "step_1", "type": "screen",
+             "param_values": {"experiment_id": "exp_abc", "experiment_variant": "b", "other": 1}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.experimentId).isEqualTo("exp_abc")
+        assertThat(step.experimentVariant).isEqualTo("b")
+    }
+
+    @Test
+    fun `WorkflowStep experiment params are null when absent`() {
+        // Steps outside an enrolled variant (default combo, shared steps) carry no experiment params.
+        val json = """
+            {"id": "step_1", "type": "screen", "param_values": {"offering_identifier": "premium"}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.experimentId).isNull()
+        assertThat(step.experimentVariant).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep experiment params are null when not strings`() {
+        val json = """
+            {"id": "step_1", "type": "screen", "param_values": {"experiment_id": 12, "experiment_variant": null}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.experimentId).isNull()
+        assertThat(step.experimentVariant).isNull()
+    }
+
+    @Test
     fun `WorkflowStep stepScreenType is null when metadata is absent`() {
         val json = """
             {"id": "step_1", "type": "screen"}
