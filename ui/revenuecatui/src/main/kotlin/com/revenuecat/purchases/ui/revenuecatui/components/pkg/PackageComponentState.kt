@@ -113,6 +113,6 @@ internal class PackageComponentState(
     @JvmSynthetic
     fun update(windowSize: WindowWidthSizeClass, windowDpSize: DpSize?) {
         this.windowSize = windowSize
-        this.windowDpSize = windowDpSize
+        if (windowDpSize != null) this.windowDpSize = windowDpSize
     }
 }

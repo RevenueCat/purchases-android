@@ -121,16 +121,28 @@ internal fun LoadedWorkflowPaywall(
         }
     }
 
-    PaywallComponentsScaffold(
-        state = currentState,
-        modifier = modifier,
-        background = null,
-        headerContent = if (!isLeavingHeader) headerComposable else null,
-    ) {
-        if (isLeavingHeader && headerComposable != null) {
-            // Box required to overlay the LEAVING header above WorkflowStepsContent.
-            // Only present during a header→no-header transition; not added in the common case.
-            Box(Modifier.fillMaxSize()) {
+    // Measured once at the root so the header — composed by the scaffold, outside any step's
+    // subtree — sees the bounds on its first frame; every step fills the same scaffold.
+    MeasurePaywallBounds(states = stepStates.values.toList(), modifier = modifier) {
+        PaywallComponentsScaffold(
+            state = currentState,
+            background = null,
+            headerContent = if (!isLeavingHeader) headerComposable else null,
+        ) {
+            if (isLeavingHeader && headerComposable != null) {
+                // Box required to overlay the LEAVING header above WorkflowStepsContent.
+                // Only present during a header→no-header transition; not added in the common case.
+                Box(Modifier.fillMaxSize()) {
+                    WorkflowStepsContent(
+                        currentStepId = currentStepId,
+                        stepStates = stepStates,
+                        transitionState = transitionState,
+                        clickHandler = clickHandler,
+                        componentInteractionTracker = componentInteractionTracker,
+                    )
+                    headerComposable()
+                }
+            } else {
                 WorkflowStepsContent(
                     currentStepId = currentStepId,
                     stepStates = stepStates,
@@ -138,16 +150,7 @@ internal fun LoadedWorkflowPaywall(
                     clickHandler = clickHandler,
                     componentInteractionTracker = componentInteractionTracker,
                 )
-                headerComposable()
             }
-        } else {
-            WorkflowStepsContent(
-                currentStepId = currentStepId,
-                stepStates = stepStates,
-                transitionState = transitionState,
-                clickHandler = clickHandler,
-                componentInteractionTracker = componentInteractionTracker,
-            )
         }
     }
 }
@@ -247,46 +250,44 @@ private fun WorkflowStepContent(
             .workflowTransition(transitionState, stepId, layoutDirection)
             .background(background),
     ) {
-        MeasurePaywallBounds(stepState) {
-            WithOptionalBackgroundOverlay(
+        WithOptionalBackgroundOverlay(
+            state = stepState,
+            background = background,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            // The header for a workflow step is rendered by the scaffold, so hasHeader is false here.
+            // A sticky footer, when present, overlays the bottom on top of the full-height content and
+            // reserves clearance via footerBottomPadding (see PaywallComponentsScaffold).
+            OverlayLayout(
                 state = stepState,
-                background = background,
                 modifier = Modifier.fillMaxSize(),
+                hasFooter = stepState.stickyFooter != null,
             ) {
-                // The header for a workflow step is rendered by the scaffold, so hasHeader is false here.
-                // A sticky footer, when present, overlays the bottom on top of the full-height content and
-                // reserves clearance via footerBottomPadding (see PaywallComponentsScaffold).
-                OverlayLayout(
+                ComponentView(
+                    style = stepState.stack,
                     state = stepState,
-                    modifier = Modifier.fillMaxSize(),
-                    hasFooter = stepState.stickyFooter != null,
-                ) {
+                    onClick = onClick,
+                    componentInteractionTracker = tracker,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .conditional(shouldWrapMainContentInVerticalScroll) {
+                            verticalScroll(mainScrollState)
+                        }
+                        .conditional(stepState.header != null && !stepState.mainStackHasHeroImage) {
+                            headerTopPadding(stepState)
+                        }
+                        .conditional(stepState.stickyFooter != null) {
+                            footerBottomPadding(stepState)
+                        },
+                )
+                stepState.stickyFooter?.let { footerStyle ->
                     ComponentView(
-                        style = stepState.stack,
+                        style = footerStyle,
                         state = stepState,
                         onClick = onClick,
                         componentInteractionTracker = tracker,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .conditional(shouldWrapMainContentInVerticalScroll) {
-                                verticalScroll(mainScrollState)
-                            }
-                            .conditional(stepState.header != null && !stepState.mainStackHasHeroImage) {
-                                headerTopPadding(stepState)
-                            }
-                            .conditional(stepState.stickyFooter != null) {
-                                footerBottomPadding(stepState)
-                            },
+                        modifier = Modifier.fillMaxWidth(),
                     )
-                    stepState.stickyFooter?.let { footerStyle ->
-                        ComponentView(
-                            style = footerStyle,
-                            state = stepState,
-                            onClick = onClick,
-                            componentInteractionTracker = tracker,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
                 }
             }
         }

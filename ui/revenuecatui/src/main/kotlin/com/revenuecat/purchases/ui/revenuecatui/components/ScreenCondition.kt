@@ -22,28 +22,43 @@ internal fun currentWindowDpSize(): DpSize = with(LocalDensity.current) {
 }
 
 /**
- * Measures the paywall's own bounds into [PaywallState.Loaded.Components.paywallBoundsDp], which
- * window size rules evaluate against — a paywall in a sheet or pane matches its own size, not the
- * app window's, same as iOS. An unbounded axis (e.g. the height of a fit-content sheet) falls back
- * to the app window's dimension. Available synchronously to [content], so rules resolve correctly
- * on the first frame.
+ * Measures the size proposed to the paywall into [PaywallState.Loaded.Components.paywallBoundsDp]
+ * for every state in [states], which window size rules evaluate against — a paywall in a sheet or
+ * pane matches its own bounds, not the app window's, same as iOS. An unbounded axis (e.g. the
+ * height of a fit-content sheet) falls back to the app window's dimension. Available synchronously
+ * to [content], so rules resolve correctly on the first frame.
  */
+@JvmSynthetic
+@Composable
+internal fun MeasurePaywallBounds(
+    states: List<PaywallState.Loaded.Components>,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    BoxWithConstraints(modifier) {
+        val bounds = if (constraints.hasBoundedWidth && constraints.hasBoundedHeight) {
+            DpSize(maxWidth, maxHeight)
+        } else {
+            val windowDpSize = currentWindowDpSize()
+            DpSize(
+                width = if (constraints.hasBoundedWidth) maxWidth else windowDpSize.width,
+                height = if (constraints.hasBoundedHeight) maxHeight else windowDpSize.height,
+            )
+        }
+        for (state in states) {
+            state.paywallBoundsDp = bounds
+        }
+        content()
+    }
+}
+
 @JvmSynthetic
 @Composable
 internal fun MeasurePaywallBounds(
     state: PaywallState.Loaded.Components,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
-) {
-    val windowDpSize = currentWindowDpSize()
-    BoxWithConstraints(modifier) {
-        state.paywallBoundsDp = DpSize(
-            width = if (constraints.hasBoundedWidth) maxWidth else windowDpSize.width,
-            height = if (constraints.hasBoundedHeight) maxHeight else windowDpSize.height,
-        )
-        content()
-    }
-}
+) = MeasurePaywallBounds(listOf(state), modifier, content)
 
 internal enum class ScreenCondition {
     COMPACT,

@@ -103,10 +103,9 @@ internal fun LoadedPaywallComponents(
     }
 
     CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
-        MeasurePaywallBounds(state) {
+        MeasurePaywallBounds(state, modifier) {
             PaywallComponentsScaffold(
                 state = state,
-                modifier = modifier,
                 headerContent = state.header?.let { headerStyle ->
                     {
                         ComponentView(

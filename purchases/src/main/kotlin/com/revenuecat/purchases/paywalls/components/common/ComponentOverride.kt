@@ -132,12 +132,14 @@ public class ComponentOverride<T : PartialComponent>(
         }
 
         /**
-         * Matches against the paywall's own rendered bounds, same as iOS: a paywall in a
-         * sheet, dialog, or multi-window pane sees its own size, not the app window's.
-         * [value] is density-independent (Android dp / iOS points). Evaluates to false
-         * while the size is unknown and re-evaluates live as the paywall resizes.
-         * Conditions within one override AND together, so `WindowWidthRule >= 700` plus
-         * `WindowHeightRule >= 480` targets large windows while excluding landscape phones.
+         * Matches against the size proposed to the paywall (its bounds), same as iOS: a
+         * paywall in a sheet, dialog, or multi-window pane sees its own size, not the app
+         * window's. A fit-content axis matches the space available to it, not the final
+         * laid-out size. [value] is density-independent (Android dp / iOS points).
+         * Evaluates to false while the size is unknown and re-evaluates live as the
+         * paywall resizes. Conditions within one override AND together, so
+         * `WindowWidthRule >= 700` plus `WindowHeightRule >= 480` targets large windows
+         * while excluding landscape phones.
          */
         @Serializable
         public data class WindowWidthRule(
