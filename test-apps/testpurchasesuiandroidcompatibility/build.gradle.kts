@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.revenuecat.testpurchasesuiandroidcompatibility"
-    compileSdk = 34 // Keeping at this level to test revenuecatui compatibility
+    compileSdk = 35 // Keeping at this level to test revenuecatui compatibility
 
     defaultConfig {
         applicationId = "com.revenuecat.testpurchasesuiandroidcompatibility"
