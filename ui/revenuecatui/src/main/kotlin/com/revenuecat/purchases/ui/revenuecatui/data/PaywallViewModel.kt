@@ -1233,25 +1233,29 @@ internal class PaywallViewModelImpl(
         } else {
             null
         }
+        if (newState !is PaywallState.Loaded.Components) {
+            failWorkflowPresentation(newState)
+            return
+        }
         // Set workflowState before _state so a recomposition that lands between the two writes
         // sees the workflow branch and the correct step, not the single-page branch.
-        // On error, clear workflowState so the UI falls through to the normal error path rather
-        // than entering workflow mode with a currentStepId absent from stepStates.
-        if (newState !is PaywallState.Loaded.Components) {
-            currentWorkflowStep?.let { currentStep ->
-                trackWorkflowStepCompleted(step = currentStep, toStepId = null)
-            }
-        }
-        _workflowState.value = if (newState is PaywallState.Loaded.Components) {
-            WorkflowPaywallUiState(
-                currentStepId = step.id,
-                stepStates = workflowStepStateCache.toMap(),
-                pendingTransition = pendingTransition,
-            )
-        } else {
-            null
-        }
+        _workflowState.value = WorkflowPaywallUiState(
+            currentStepId = step.id,
+            stepStates = workflowStepStateCache.toMap(),
+            pendingTransition = pendingTransition,
+        )
         _state.value = newState
+    }
+
+    // Clearing workflowState makes the UI fall through to the normal error path instead of entering workflow
+    // mode with a currentStepId absent from stepStates; dismissing that error closes the paywall.
+    private fun failWorkflowPresentation(errorState: PaywallState) {
+        currentWorkflowStep?.let { currentStep ->
+            trackWorkflowStepCompleted(step = currentStep, toStepId = null)
+        }
+        updateExitOfferData(ExitOfferData.Unavailable())
+        _workflowState.value = null
+        _state.value = errorState
     }
 
     override fun onTransitionComplete(transitionId: Int) {
@@ -1270,7 +1274,7 @@ internal class PaywallViewModelImpl(
         stateStore: PaywallStateStore?,
     ): PaywallState {
         val resolved = when (val resolution = resolveStep(step, workflow, offerings)) {
-            is StepResolution.Invalid -> return PaywallState.Error(resolution.reason)
+            is StepResolution.Invalid -> return resolution.toErrorState()
             is StepResolution.Ready -> resolution
         }
         val baseOffering = resolved.offering
@@ -1342,8 +1346,8 @@ internal class PaywallViewModelImpl(
         val workflow = currentWorkflow ?: return
         val offerings = currentWorkflowOfferings ?: return
         val candidate = navigator.peekTriggerStep(componentId, triggerType) ?: return
-        validateStep(candidate, workflow, offerings)?.let { error ->
-            Logger.e("Cannot navigate to step '${candidate.id}': $error")
+        (resolveStep(candidate, workflow, offerings) as? StepResolution.Invalid)?.let { invalid ->
+            failWorkflowPresentation(invalid.toErrorState())
             return
         }
         val fromStep = navigator.currentStep
@@ -1377,9 +1381,9 @@ internal class PaywallViewModelImpl(
         val workflow = currentWorkflow ?: return false
         val offerings = currentWorkflowOfferings ?: return false
         val candidate = navigator.peekBackStep ?: return false
-        validateStep(candidate, workflow, offerings)?.let { error ->
-            Logger.e("Cannot navigate back to step '${candidate.id}': $error")
-            return false
+        (resolveStep(candidate, workflow, offerings) as? StepResolution.Invalid)?.let { invalid ->
+            failWorkflowPresentation(invalid.toErrorState())
+            return true
         }
         val fromStep = navigator.currentStep
         val fromStepId = fromStep?.id
@@ -1523,9 +1527,6 @@ internal class PaywallViewModelImpl(
         )
     }
 
-    private fun validateStep(step: WorkflowStep, workflow: PublishedWorkflow, offerings: Offerings): String? =
-        (resolveStep(step, workflow, offerings) as? StepResolution.Invalid)?.reason
-
     @Suppress("ReturnCount")
     private fun resolveStep(step: WorkflowStep, workflow: PublishedWorkflow, offerings: Offerings): StepResolution {
         val screenId = step.screenId
@@ -1545,6 +1546,9 @@ internal class PaywallViewModelImpl(
         class Ready(val screenId: String, val screen: WorkflowScreen, val offering: Offering) : StepResolution
         class Invalid(val reason: String) : StepResolution
     }
+
+    private fun StepResolution.Invalid.toErrorState(): PaywallState.Error =
+        PaywallState.Error(reason, PurchasesError(PurchasesErrorCode.ConfigurationError, reason))
 
     /**
      * Whether this workflow step reports paywall events (`paywall_impression` / `paywall_close`),
