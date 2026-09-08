@@ -1431,8 +1431,16 @@ private fun LoadedPaywallComponents_Preview_LargeFooter() {
 }
 
 @Preview(name = "WindowSize - phone stacked", device = "spec:width=411dp,height=891dp", showSystemUi = true)
-@Preview(name = "WindowSize - landscape stacked (height floor)", device = "spec:width=891dp,height=411dp", showSystemUi = true)
-@Preview(name = "WindowSize - tablet side by side", device = "spec:width=1280dp,height=800dp,dpi=240", showSystemUi = true)
+@Preview(
+    name = "WindowSize - landscape stacked (height floor)",
+    device = "spec:width=891dp,height=411dp",
+    showSystemUi = true,
+)
+@Preview(
+    name = "WindowSize - tablet side by side",
+    device = "spec:width=1280dp,height=800dp,dpi=240",
+    showSystemUi = true,
+)
 @Composable
 private fun LoadedPaywallComponents_Preview_WindowSizeConditions() {
     LoadedPaywallComponents(
