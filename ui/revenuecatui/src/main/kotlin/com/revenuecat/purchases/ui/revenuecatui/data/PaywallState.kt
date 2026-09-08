@@ -16,10 +16,13 @@ import androidx.compose.ui.text.intl.LocaleList
 import androidx.compose.ui.unit.DpSize
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
@@ -55,10 +58,13 @@ internal sealed interface PaywallState {
     object Loading : PaywallState
 
     @Immutable
-    data class Error(val errorMessage: String) : PaywallState {
+    data class Error(val errorMessage: String, val error: PurchasesError? = null) : PaywallState {
         init {
             Logger.e("Paywall transitioned to error state: $errorMessage")
         }
+
+        fun toPaywallResult(): PaywallResult.Error =
+            PaywallResult.Error(error ?: PurchasesError(PurchasesErrorCode.UnknownError, errorMessage))
     }
 
     @Stable
