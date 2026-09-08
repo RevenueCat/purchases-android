@@ -10,11 +10,13 @@ import android.widget.EditText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -117,6 +119,18 @@ class CheckpointWorkflowPresenterTest {
 
         assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
         assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Dismissed)
+        assertThat(backedOut()).isFalse
+    }
+
+    @Test
+    fun `a dismissal carrying an error result completes the call with that error`() {
+        launchCheckpoint()
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Step misconfigured")
+
+        lastOptions!!.dismissRequestWithExitOffering!!(null, PaywallResult.Error(error), PaywallDismissReason.CLOSE)
+
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
+        assertThat((paywallOutcome() as CheckpointPaywallOutcome.Error).error).isEqualTo(error)
         assertThat(backedOut()).isFalse
     }
 

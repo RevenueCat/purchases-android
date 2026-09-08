@@ -20,6 +20,7 @@ import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.EDGE_TO_EDGE_WINDOW_THEME
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.applyEdgeToEdge
@@ -80,10 +81,14 @@ internal class CheckpointWorkflowPresenter(
         }
         host = activity
         val resolution = presentation.resolution
-        // Direct dismissals (a completed purchase or restore, the load-error dialog) carry no reason and count as
-        // a close; everything else reports one. The exit offering, if any, is not presented for checkpoints.
+        // Direct dismissals (a completed purchase or restore) carry no reason and count as a close; everything else
+        // reports one, and an error dialog being dismissed also carries the error as its result. The exit offering,
+        // if any, is not presented for checkpoints.
         val options = PaywallOptions.Builder(dismissRequest = { requestDismiss(PaywallDismissReason.CLOSE) })
-            .setDismissRequestWithExitOffering { _, _, reason -> requestDismiss(reason) }
+            .setDismissRequestWithExitOffering { _, result, reason ->
+                (result as? PaywallResult.Error)?.let { recordOutcome(CheckpointPaywallOutcome.Error(it.error)) }
+                requestDismiss(reason)
+            }
             .injectedWorkflow(resolution.workflow, resolution.offering, resolution.uiConfig)
             .setCustomVariables(presentation.customVariables)
             .setListener(outcomeListener)
