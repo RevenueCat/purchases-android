@@ -25,6 +25,7 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
+import com.revenuecat.purchases.common.workflows.WorkflowScreen
 import com.revenuecat.purchases.common.workflows.WorkflowScreenType
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
@@ -1260,7 +1261,6 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    @Suppress("ReturnCount")
     private fun computeStateForStep(
         step: WorkflowStep,
         workflow: PublishedWorkflow,
@@ -1269,16 +1269,14 @@ internal class PaywallViewModelImpl(
         presentedOfferingContext: PresentedOfferingContext?,
         stateStore: PaywallStateStore?,
     ): PaywallState {
-        val screenId = step.screenId
-            ?: return PaywallState.Error("Step '${step.id}' has no screen_id in workflow '${workflow.id}'")
-        val screen = workflow.screens[screenId]
-            ?: return PaywallState.Error("Screen '$screenId' not found in workflow '${workflow.id}'")
-        val offeringId = workflow.offeringIdentifierFor(step)
-            ?: return PaywallState.Error("Step '${step.id}' has no offering identifier in workflow '${workflow.id}'")
-        val baseOffering = offerings[offeringId]
-            ?: return PaywallState.Error("Offering '$offeringId' not found for step '${step.id}'")
+        val resolved = when (val resolution = resolveStep(step, workflow, offerings)) {
+            is StepResolution.Invalid -> return PaywallState.Error(resolution.reason)
+            is StepResolution.Ready -> resolution
+        }
+        val baseOffering = resolved.offering
 
-        val paywallComponents = WorkflowScreenMapper.toPaywallComponents(screen, screenId, uiConfig)
+        val paywallComponents =
+            WorkflowScreenMapper.toPaywallComponents(resolved.screen, resolved.screenId, uiConfig)
         val offering = Offering(
             identifier = baseOffering.identifier,
             serverDescription = baseOffering.serverDescription,
@@ -1525,13 +1523,27 @@ internal class PaywallViewModelImpl(
         )
     }
 
+    private fun validateStep(step: WorkflowStep, workflow: PublishedWorkflow, offerings: Offerings): String? =
+        (resolveStep(step, workflow, offerings) as? StepResolution.Invalid)?.reason
+
     @Suppress("ReturnCount")
-    private fun validateStep(step: WorkflowStep, workflow: PublishedWorkflow, offerings: Offerings): String? {
+    private fun resolveStep(step: WorkflowStep, workflow: PublishedWorkflow, offerings: Offerings): StepResolution {
+        val screenId = step.screenId
+            ?: return StepResolution.Invalid("Step '${step.id}' has no screen_id in workflow '${workflow.id}'")
+        val screen = workflow.screens[screenId]
+            ?: return StepResolution.Invalid("Screen '$screenId' not found in workflow '${workflow.id}'")
         val offeringId = workflow.offeringIdentifierFor(step)
-            ?: return "Step '${step.id}' has no offering identifier in workflow '${workflow.id}'"
-        offerings[offeringId]
-            ?: return "Offering '$offeringId' not found for step '${step.id}'"
-        return null
+            ?: return StepResolution.Invalid(
+                "Step '${step.id}' has no offering identifier in workflow '${workflow.id}'",
+            )
+        val offering = offerings[offeringId]
+            ?: return StepResolution.Invalid("Offering '$offeringId' not found for step '${step.id}'")
+        return StepResolution.Ready(screenId, screen, offering)
+    }
+
+    private sealed interface StepResolution {
+        class Ready(val screenId: String, val screen: WorkflowScreen, val offering: Offering) : StepResolution
+        class Invalid(val reason: String) : StepResolution
     }
 
     /**
