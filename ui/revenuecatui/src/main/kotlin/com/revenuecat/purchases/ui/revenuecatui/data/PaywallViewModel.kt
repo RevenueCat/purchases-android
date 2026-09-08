@@ -349,10 +349,7 @@ internal class PaywallViewModelImpl(
 
     override fun closePaywall(result: PaywallResult?) {
         Logger.d("Paywalls: Close paywall initiated")
-        trackCurrentWorkflowStepCompleted()
-        if (!workflowCompletedInSession) {
-            trackCurrentWorkflowAbandoned()
-        }
+        trackCurrentWorkflowLeft()
         trackPaywallClose()
         val exitOffering = if (!_purchaseCompleted.value && shouldTriggerExitOfferForCurrentStep) {
             preloadedExitOffering
@@ -1250,9 +1247,7 @@ internal class PaywallViewModelImpl(
     // Clearing workflowState makes the UI fall through to the normal error path instead of entering workflow
     // mode with a currentStepId absent from stepStates; dismissing that error closes the paywall.
     private fun failWorkflowPresentation(errorState: PaywallState) {
-        currentWorkflowStep?.let { currentStep ->
-            trackWorkflowStepCompleted(step = currentStep, toStepId = null)
-        }
+        trackCurrentWorkflowLeft()
         updateExitOfferData(ExitOfferData.Unavailable())
         _workflowState.value = null
         _state.value = errorState
@@ -1501,6 +1496,13 @@ internal class PaywallViewModelImpl(
     private fun trackCurrentWorkflowStepCompleted() {
         currentWorkflowStep?.let { step ->
             trackWorkflowStepCompleted(step = step, toStepId = null)
+        }
+    }
+
+    private fun trackCurrentWorkflowLeft() {
+        trackCurrentWorkflowStepCompleted()
+        if (!workflowCompletedInSession) {
+            trackCurrentWorkflowAbandoned()
         }
     }
 
