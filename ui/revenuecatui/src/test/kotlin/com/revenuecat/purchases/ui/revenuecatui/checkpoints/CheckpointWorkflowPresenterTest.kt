@@ -57,7 +57,7 @@ class CheckpointWorkflowPresenterTest {
         mockPurchases = mockk {
             every { currentActivity } answers { controller.get() }
             coEvery { resolveCheckpoint(any(), any()) } returns
-                CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk())
+                CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null)
         }
         manager = CheckpointsManager { callId, manager ->
             presentedCallIds += callId
