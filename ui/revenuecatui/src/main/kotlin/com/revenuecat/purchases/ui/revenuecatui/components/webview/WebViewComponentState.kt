@@ -17,7 +17,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.currentWindowDpSize
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDelegate
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
@@ -32,6 +31,7 @@ internal fun rememberUpdatedWebViewComponentState(
     paywallState: PaywallState.Loaded.Components,
 ): WebViewComponentState = rememberUpdatedWebViewComponentState(
     style = style,
+    windowDpSize = paywallState.paywallBoundsDp,
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
@@ -45,6 +45,7 @@ internal fun rememberUpdatedWebViewComponentState(
 @Composable
 private fun rememberUpdatedWebViewComponentState(
     style: WebViewComponentStyle,
+    windowDpSize: DpSize?,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
     selectedOfferEligibilityProvider: () -> OfferEligibility,
@@ -52,7 +53,6 @@ private fun rememberUpdatedWebViewComponentState(
     stateStoreProvider: () -> PaywallStateStore,
 ): WebViewComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
-    val windowDpSize = currentWindowDpSize()
 
     return remember(style) {
         WebViewComponentState(
@@ -77,7 +77,7 @@ private fun rememberUpdatedWebViewComponentState(
 @Stable
 internal class WebViewComponentState(
     initialWindowSize: WindowWidthSizeClass,
-    initialWindowDpSize: DpSize,
+    initialWindowDpSize: DpSize?,
     private val style: WebViewComponentStyle,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,

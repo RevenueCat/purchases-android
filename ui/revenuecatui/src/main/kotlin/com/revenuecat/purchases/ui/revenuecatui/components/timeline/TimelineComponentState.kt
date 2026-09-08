@@ -15,7 +15,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.currentWindowDpSize
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDelegate
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
@@ -30,24 +29,26 @@ internal fun rememberUpdatedTimelineComponentState(
     paywallState: PaywallState.Loaded.Components,
 ): TimelineComponentState = rememberUpdatedTimelineComponentState(
     style = style,
+    windowDpSize = paywallState.paywallBoundsDp,
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
     customVariablesProvider = { paywallState.mergedCustomVariables },
 )
 
+@Suppress("LongParameterList")
 @Stable
 @JvmSynthetic
 @Composable
 private fun rememberUpdatedTimelineComponentState(
     style: TimelineComponentStyle,
+    windowDpSize: DpSize?,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
     selectedOfferEligibilityProvider: () -> OfferEligibility,
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
 ): TimelineComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
-    val windowDpSize = currentWindowDpSize()
 
     return remember(style) {
         TimelineComponentState(
@@ -71,7 +72,7 @@ private fun rememberUpdatedTimelineComponentState(
 @Stable
 internal class TimelineComponentState(
     initialWindowSize: WindowWidthSizeClass,
-    initialWindowDpSize: DpSize,
+    initialWindowDpSize: DpSize?,
     private val style: TimelineComponentStyle,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
@@ -158,7 +159,7 @@ internal class TimelineComponentState(
     @Stable
     class ItemState(
         initialWindowSize: WindowWidthSizeClass,
-        initialWindowDpSize: DpSize,
+        initialWindowDpSize: DpSize?,
         private val style: TimelineComponentStyle.ItemStyle,
         private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
         private val selectedTabIndexProvider: () -> Int,

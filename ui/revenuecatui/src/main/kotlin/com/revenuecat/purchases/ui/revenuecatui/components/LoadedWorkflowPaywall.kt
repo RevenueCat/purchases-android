@@ -219,7 +219,7 @@ private fun WorkflowStepsContent(
  * Off-screen (parked) steps still receive a click handler, but it short-circuits because they are
  * translated off-screen and can't receive touches.
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 private fun WorkflowStepContent(
     stepId: String,
@@ -247,44 +247,46 @@ private fun WorkflowStepContent(
             .workflowTransition(transitionState, stepId, layoutDirection)
             .background(background),
     ) {
-        WithOptionalBackgroundOverlay(
-            state = stepState,
-            background = background,
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            // The header for a workflow step is rendered by the scaffold, so hasHeader is false here.
-            // A sticky footer, when present, overlays the bottom on top of the full-height content and
-            // reserves clearance via footerBottomPadding (see PaywallComponentsScaffold).
-            OverlayLayout(
+        MeasurePaywallBounds(stepState) {
+            WithOptionalBackgroundOverlay(
                 state = stepState,
+                background = background,
                 modifier = Modifier.fillMaxSize(),
-                hasFooter = stepState.stickyFooter != null,
             ) {
-                ComponentView(
-                    style = stepState.stack,
+                // The header for a workflow step is rendered by the scaffold, so hasHeader is false here.
+                // A sticky footer, when present, overlays the bottom on top of the full-height content and
+                // reserves clearance via footerBottomPadding (see PaywallComponentsScaffold).
+                OverlayLayout(
                     state = stepState,
-                    onClick = onClick,
-                    componentInteractionTracker = tracker,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .conditional(shouldWrapMainContentInVerticalScroll) {
-                            verticalScroll(mainScrollState)
-                        }
-                        .conditional(stepState.header != null && !stepState.mainStackHasHeroImage) {
-                            headerTopPadding(stepState)
-                        }
-                        .conditional(stepState.stickyFooter != null) {
-                            footerBottomPadding(stepState)
-                        },
-                )
-                stepState.stickyFooter?.let { footerStyle ->
+                    modifier = Modifier.fillMaxSize(),
+                    hasFooter = stepState.stickyFooter != null,
+                ) {
                     ComponentView(
-                        style = footerStyle,
+                        style = stepState.stack,
                         state = stepState,
                         onClick = onClick,
                         componentInteractionTracker = tracker,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .conditional(shouldWrapMainContentInVerticalScroll) {
+                                verticalScroll(mainScrollState)
+                            }
+                            .conditional(stepState.header != null && !stepState.mainStackHasHeroImage) {
+                                headerTopPadding(stepState)
+                            }
+                            .conditional(stepState.stickyFooter != null) {
+                                footerBottomPadding(stepState)
+                            },
                     )
+                    stepState.stickyFooter?.let { footerStyle ->
+                        ComponentView(
+                            style = footerStyle,
+                            state = stepState,
+                            onClick = onClick,
+                            componentInteractionTracker = tracker,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
             }
         }

@@ -17,7 +17,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.currentWindowDpSize
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TabsComponentStyle
@@ -33,6 +32,7 @@ internal fun rememberUpdatedTabsComponentState(
     paywallState: PaywallState.Loaded.Components,
 ): TabsComponentState = rememberUpdatedTabsComponentState(
     style = style,
+    windowDpSize = paywallState.paywallBoundsDp,
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     customVariablesProvider = { paywallState.mergedCustomVariables },
 )
@@ -42,11 +42,11 @@ internal fun rememberUpdatedTabsComponentState(
 @Composable
 private fun rememberUpdatedTabsComponentState(
     style: TabsComponentStyle,
+    windowDpSize: DpSize?,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
 ): TabsComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
-    val windowDpSize = currentWindowDpSize()
 
     return remember(style) {
         TabsComponentState(
@@ -67,7 +67,7 @@ private fun rememberUpdatedTabsComponentState(
 @Stable
 internal class TabsComponentState(
     initialWindowSize: WindowWidthSizeClass,
-    initialWindowDpSize: DpSize,
+    initialWindowDpSize: DpSize?,
     private val style: TabsComponentStyle,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val customVariablesProvider: () -> Map<String, CustomVariableValue> = { emptyMap() },

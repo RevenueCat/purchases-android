@@ -16,7 +16,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.currentWindowDpSize
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
@@ -33,24 +32,26 @@ internal fun rememberUpdatedCarouselComponentState(
     paywallState: PaywallState.Loaded.Components,
 ): CarouselComponentState = rememberUpdatedCarouselComponentState(
     style = style,
+    windowDpSize = paywallState.paywallBoundsDp,
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
     customVariablesProvider = { paywallState.mergedCustomVariables },
 )
 
+@Suppress("LongParameterList")
 @Stable
 @JvmSynthetic
 @Composable
 private fun rememberUpdatedCarouselComponentState(
     style: CarouselComponentStyle,
+    windowDpSize: DpSize?,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
     selectedOfferEligibilityProvider: () -> OfferEligibility,
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
 ): CarouselComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
-    val windowDpSize = currentWindowDpSize()
 
     return remember(style) {
         CarouselComponentState(
@@ -74,7 +75,7 @@ private fun rememberUpdatedCarouselComponentState(
 @Stable
 internal class CarouselComponentState(
     initialWindowSize: WindowWidthSizeClass,
-    initialWindowDpSize: DpSize,
+    initialWindowDpSize: DpSize?,
     private val style: CarouselComponentStyle,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,

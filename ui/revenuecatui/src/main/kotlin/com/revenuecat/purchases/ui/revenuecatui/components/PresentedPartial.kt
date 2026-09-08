@@ -97,7 +97,7 @@ internal class ConditionContext(
     // Calls inside derivedStateOf subscribe only to the keys condition evaluation actually reads.
     val stateReader: (String) -> JsonPrimitive? = { null },
     /**
-     * The current window size in dp, for window size condition evaluation.
+     * The paywall's measured bounds in dp, for window size condition evaluation.
      * `null` when unknown, in which case window size conditions never match.
      */
     val windowDpSize: DpSize? = null,

@@ -32,7 +32,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.currentWindowDpSize
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMargin
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
@@ -54,6 +53,7 @@ internal fun rememberUpdatedImageComponentState(
     paywallState: PaywallState.Loaded.Components,
 ): ImageComponentState = rememberUpdatedImageComponentState(
     style = style,
+    windowDpSize = paywallState.paywallBoundsDp,
     localeProvider = { paywallState.locale },
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
@@ -68,6 +68,7 @@ internal fun rememberUpdatedImageComponentState(
 @Composable
 private fun rememberUpdatedImageComponentState(
     style: ImageComponentStyle,
+    windowDpSize: DpSize?,
     localeProvider: () -> Locale,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
@@ -76,7 +77,6 @@ private fun rememberUpdatedImageComponentState(
     stateStoreProvider: () -> PaywallStateStore,
 ): ImageComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
-    val windowDpSize = currentWindowDpSize()
     val density = LocalDensity.current
     val darkMode = isSystemInDarkTheme()
     val layoutDirection = LocalLayoutDirection.current
@@ -111,7 +111,7 @@ private fun rememberUpdatedImageComponentState(
 @Stable
 internal class ImageComponentState(
     initialWindowSize: WindowWidthSizeClass,
-    initialWindowDpSize: DpSize,
+    initialWindowDpSize: DpSize?,
     initialDensity: Density,
     initialDarkMode: Boolean,
     initialLayoutDirection: LayoutDirection,

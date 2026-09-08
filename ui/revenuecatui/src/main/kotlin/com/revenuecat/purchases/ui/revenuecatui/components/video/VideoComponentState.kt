@@ -32,7 +32,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.currentWindowDpSize
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMargin
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
@@ -49,7 +48,7 @@ import dev.drewhamilton.poko.Poko
 @Poko
 internal class VideoComponentState(
     initialWindowSize: WindowWidthSizeClass,
-    initialWindowDpSize: DpSize,
+    initialWindowDpSize: DpSize?,
     initialDensity: Density,
     initialDarkMode: Boolean,
     initialLayoutDirection: LayoutDirection,
@@ -311,6 +310,7 @@ internal fun rememberUpdatedVideoComponentState(
     paywallState: PaywallState.Loaded.Components,
 ): VideoComponentState = rememberUpdatedVideoComponentState(
     style = style,
+    windowDpSize = paywallState.paywallBoundsDp,
     localeProvider = { paywallState.locale },
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
@@ -324,6 +324,7 @@ internal fun rememberUpdatedVideoComponentState(
 @Composable
 private fun rememberUpdatedVideoComponentState(
     style: VideoComponentStyle,
+    windowDpSize: DpSize?,
     localeProvider: () -> Locale,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
@@ -331,7 +332,6 @@ private fun rememberUpdatedVideoComponentState(
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
 ): VideoComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
-    val windowDpSize = currentWindowDpSize()
     val density = LocalDensity.current
     val darkMode = isSystemInDarkTheme()
     val layoutDirection = LocalLayoutDirection.current

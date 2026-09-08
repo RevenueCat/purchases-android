@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.LocaleList
+import androidx.compose.ui.unit.DpSize
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Store
@@ -143,6 +144,14 @@ internal sealed interface PaywallState {
              */
             val mergedCustomVariables: Map<String, CustomVariableValue> =
                 defaultCustomVariables + customVariables
+
+            /**
+             * The paywall's measured bounds in dp, which window size rules evaluate against —
+             * a paywall in a sheet or pane sees its own size, not the app window's. Set by the
+             * paywall root's measurement; null until first measure, matching iOS.
+             */
+            var paywallBoundsDp: DpSize? by mutableStateOf(null)
+                @JvmSynthetic internal set
 
             val store: Store get() = purchases.store
 

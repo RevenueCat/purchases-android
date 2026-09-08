@@ -20,7 +20,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.currentWindowDpSize
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.addMargin
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
@@ -38,6 +37,7 @@ internal fun rememberUpdatedIconComponentState(
     paywallState: PaywallState.Loaded.Components,
 ): IconComponentState = rememberUpdatedIconComponentState(
     style = style,
+    windowDpSize = paywallState.paywallBoundsDp,
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
@@ -51,6 +51,7 @@ internal fun rememberUpdatedIconComponentState(
 @Suppress("LongParameterList")
 private fun rememberUpdatedIconComponentState(
     style: IconComponentStyle,
+    windowDpSize: DpSize?,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
     selectedOfferEligibilityProvider: () -> OfferEligibility,
@@ -58,7 +59,6 @@ private fun rememberUpdatedIconComponentState(
     stateStoreProvider: () -> PaywallStateStore,
 ): IconComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
-    val windowDpSize = currentWindowDpSize()
     val layoutDirection = LocalLayoutDirection.current
 
     return remember(style) {
@@ -85,7 +85,7 @@ private fun rememberUpdatedIconComponentState(
 @Stable
 internal class IconComponentState(
     initialWindowSize: WindowWidthSizeClass,
-    initialWindowDpSize: DpSize,
+    initialWindowDpSize: DpSize?,
     initialLayoutDirection: LayoutDirection,
     private val style: IconComponentStyle,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,

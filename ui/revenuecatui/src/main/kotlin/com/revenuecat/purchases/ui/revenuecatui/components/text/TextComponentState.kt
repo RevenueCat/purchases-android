@@ -24,7 +24,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.countdown.CountdownTime
 import com.revenuecat.purchases.ui.revenuecatui.components.countdown.rememberCountdownState
-import com.revenuecat.purchases.ui.revenuecatui.components.currentWindowDpSize
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
@@ -46,6 +45,7 @@ internal fun rememberUpdatedTextComponentState(
     paywallState: PaywallState.Loaded.Components,
 ): TextComponentState = rememberUpdatedTextComponentState(
     style = style,
+    windowDpSize = paywallState.paywallBoundsDp,
     localeProvider = { paywallState.locale },
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
@@ -60,6 +60,7 @@ internal fun rememberUpdatedTextComponentState(
 @Composable
 private fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
+    windowDpSize: DpSize?,
     localeProvider: () -> Locale,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
@@ -68,7 +69,6 @@ private fun rememberUpdatedTextComponentState(
     stateStoreProvider: () -> PaywallStateStore,
 ): TextComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
-    val windowDpSize = currentWindowDpSize()
 
     val countdownState = style.countdownDate?.let { date ->
         rememberCountdownState(date)
@@ -99,7 +99,7 @@ private fun rememberUpdatedTextComponentState(
 @Stable
 internal class TextComponentState(
     initialWindowSize: WindowWidthSizeClass,
-    initialWindowDpSize: DpSize,
+    initialWindowDpSize: DpSize?,
     private val style: TextComponentStyle,
     private val localeProvider: () -> Locale,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,

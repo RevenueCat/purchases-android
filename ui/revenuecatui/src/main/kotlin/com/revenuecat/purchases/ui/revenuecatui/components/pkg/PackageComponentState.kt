@@ -17,7 +17,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.buildPresentedPartial
-import com.revenuecat.purchases.ui.revenuecatui.components.currentWindowDpSize
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDelegate
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
@@ -31,6 +30,7 @@ internal fun rememberUpdatedPackageComponentState(
     paywallState: PaywallState.Loaded.Components,
 ): PackageComponentState = rememberUpdatedPackageComponentState(
     style = style,
+    windowDpSize = paywallState.paywallBoundsDp,
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
@@ -43,13 +43,13 @@ internal fun rememberUpdatedPackageComponentState(
 @Composable
 private fun rememberUpdatedPackageComponentState(
     style: PackageComponentStyle,
+    windowDpSize: DpSize?,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
     selectedOfferEligibilityProvider: () -> OfferEligibility,
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
 ): PackageComponentState {
     val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
-    val windowDpSize = currentWindowDpSize()
 
     return remember(style) {
         PackageComponentState(
@@ -73,7 +73,7 @@ private fun rememberUpdatedPackageComponentState(
 @Stable
 internal class PackageComponentState(
     initialWindowSize: WindowWidthSizeClass,
-    initialWindowDpSize: DpSize,
+    initialWindowDpSize: DpSize?,
     private val style: PackageComponentStyle,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
@@ -111,7 +111,7 @@ internal class PackageComponentState(
     val visible by derivedStateOf { presentedPartial?.partial?.visible ?: style.visible }
 
     @JvmSynthetic
-    fun update(windowSize: WindowWidthSizeClass, windowDpSize: DpSize) {
+    fun update(windowSize: WindowWidthSizeClass, windowDpSize: DpSize?) {
         this.windowSize = windowSize
         this.windowDpSize = windowDpSize
     }
