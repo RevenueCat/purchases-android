@@ -88,7 +88,12 @@ internal class CheckpointWorkflowResolverImpl(
             CheckpointRulesResolution.Unavailable ->
                 return configurationUnavailable("The rules for checkpoint '$identifier' could not be read.")
         }
-        val matchResult = matchRule(audiencesConfigProvider, rulesResolution.checkpoint.rules, customVariables)
+        val matchResult = matchRule(
+            audiencesConfigProvider,
+            identifier,
+            rulesResolution.checkpoint.rules,
+            customVariables,
+        )
         // Checked before the result is unwrapped: a match that failed against a generation that moved mid-read
         // (audiences read from a later commit than the rules) is stale rather than authoritative, and deserves
         // the retry as much as a stale success does.
@@ -110,8 +115,8 @@ internal class CheckpointWorkflowResolverImpl(
             errorLog(e) { "UI config could not be fetched for checkpoint '$identifier'." }
             null
         } ?: return configurationUnavailable("UI config is unavailable for checkpoint '$identifier'.")
-        val result = resolveRule(identifier, workflowManager, rule, uiConfig)
-        return result.takeIf { checkpointsConfigProvider.isCurrent(rulesResolution) }
+        return resolveRule(identifier, workflowManager, rule, uiConfig)
+            .takeIf { checkpointsConfigProvider.isCurrent(rulesResolution) }
     }
 
     /**
@@ -121,6 +126,7 @@ internal class CheckpointWorkflowResolverImpl(
     @Suppress("ReturnCount")
     private suspend fun matchRule(
         audiencesConfigProvider: AudiencesConfigProvider,
+        identifier: String,
         rules: List<CheckpointRule>,
         customVariables: Map<String, RulesDimensionValue>,
     ): Result<CheckpointRule?> {
@@ -130,6 +136,7 @@ internal class CheckpointWorkflowResolverImpl(
         return localRulesEvaluator.match(
             rules = rules,
             customVariables = CustomVariableKeyValidator.validateAndFilter(customVariables),
+            logPrefix = "[Checkpoint '$identifier'] ",
         ) { rule ->
             audiences[rule.audienceId]
                 ?.let { audience -> Result.success(audience.rules) }
@@ -183,7 +190,7 @@ internal class CheckpointWorkflowResolverImpl(
         debugLog {
             "Checkpoint resolved to offering '${offering.identifier}' from workflow '${rule.workflowId}'"
         }
-        return CheckpointResolution.MatchedOffering(offering)
+        return CheckpointResolution.MatchedOffering(offering, checkpointRuleId = rule.id)
     }
 
     @Suppress("ReturnCount")
@@ -213,7 +220,7 @@ internal class CheckpointWorkflowResolverImpl(
             "Checkpoint resolved to workflow '${rule.workflowId}' (offering: ${offering.identifier})"
         }
         workflowManager.prewarmWorkflowAssets(workflow, uiConfig)
-        return CheckpointResolution.MatchedWorkflow(workflow, uiConfig, offering)
+        return CheckpointResolution.MatchedWorkflow(workflow, uiConfig, offering, checkpointRuleId = rule.id)
     }
 
     private suspend fun loadOffering(checkpointIdentifier: String, offeringIdentifier: String): Offering? =
