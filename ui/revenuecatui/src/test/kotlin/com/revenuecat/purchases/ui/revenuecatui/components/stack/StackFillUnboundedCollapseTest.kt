@@ -185,6 +185,17 @@ class StackFillUnboundedCollapseTest {
     }
 
     @Test
+    fun `horizontal Fill minimums overflow sequentially when they exceed the stack`() {
+        assertConstrainedFillSiblings(
+            horizontal = true,
+            firstConstraint = Fill(min = 80u),
+            firstColorPosition = 75,
+            secondColorPosition = 85,
+            secondConstraint = Fill(min = 80u),
+        )
+    }
+
+    @Test
     fun `vertical Fill maximum releases space to its sibling`() {
         assertConstrainedFillSiblings(
             horizontal = false,
@@ -306,6 +317,7 @@ class StackFillUnboundedCollapseTest {
         firstConstraint: Fill,
         firstColorPosition: Int,
         secondColorPosition: Int,
+        secondConstraint: Fill = Fill(),
     ) {
         val firstChild = StackComponent(
             components = emptyList(),
@@ -318,7 +330,11 @@ class StackFillUnboundedCollapseTest {
         )
         val secondChild = StackComponent(
             components = emptyList(),
-            size = Size(width = Fill(), height = Fill()),
+            size = if (horizontal) {
+                Size(width = secondConstraint, height = Fill())
+            } else {
+                Size(width = Fill(), height = secondConstraint)
+            },
             backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Blue.toArgb())),
         )
         val stack = StackComponent(
