@@ -396,6 +396,10 @@ internal sealed interface PaywallState {
                             ?.uniqueId
                         // Nothing in the tab renders, so fall back outside it rather than clearing.
                         ?: visibleFallbackForHiddenDefaultOutsideTabs
+
+                    // The remembered or default selection for this tab was resolved without the
+                    // measured bounds, so it can be hidden here by a window size rule.
+                    reconcileSelectionForWindowSize(paywallBoundsDp)
                 }
 
                 if (clickScopedActionInProgress != null) {
@@ -418,7 +422,9 @@ internal sealed interface PaywallState {
              * Moves the selection off a package that a window size rule hides at the measured
              * window size, so a hidden package can't stay selected and purchasable. Initial
              * selection is resolved before the window size is known, and the window can change
-             * later. If nothing resolves visible the selection stays put.
+             * later. If nothing resolves visible the selection stays put (iOS parity). Acts only
+             * on this state's own selection; the workflow-level [defaultPackageInfo] fallback is
+             * not owned by this state and is left as-is.
              */
             fun reconcileSelectionForWindowSize(windowDpSize: DpSize?) {
                 if (windowDpSize == null) return
@@ -435,6 +441,8 @@ internal sealed interface PaywallState {
 
             fun resetToDefaultPackage() {
                 selectedPackageUniqueId = peekDefaultPackageUniqueIdAfterSheetDismiss()
+                // The restored default was resolved without the measured bounds.
+                reconcileSelectionForWindowSize(paywallBoundsDp)
             }
 
             /** The package the current tab should fall back to, which is also what a reset restores. */
