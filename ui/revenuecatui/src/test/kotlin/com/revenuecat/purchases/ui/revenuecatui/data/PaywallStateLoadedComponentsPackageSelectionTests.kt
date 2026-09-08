@@ -2,6 +2,8 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.intl.LocaleList
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -415,6 +417,85 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
 
         assertThat(state.selectedPackageInfo).isNull()
     }
+
+    // endregion
+
+    // region window size rules
+
+    @Test
+    fun `Switching tabs reconciles a remembered selection hidden by a window size rule`() {
+        val state = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = mapOf(
+                0 to listOf(packageInfo(TestData.Packages.weekly, isSelectedByDefault = true)),
+                1 to listOf(
+                    packageInfo(
+                        TestData.Packages.monthly,
+                        isSelectedByDefault = true,
+                        visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+                    ),
+                    packageInfo(TestData.Packages.annual, isSelectedByDefault = false),
+                ),
+            ),
+            initialSelectedTabIndex = 0,
+        )
+        state.paywallBoundsDp = DpSize(800.dp, 600.dp)
+
+        state.update(selectedTabIndex = 1)
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Resetting to the default package reconciles a default hidden by a window size rule`() {
+        val hiddenDefault = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = true,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+        )
+        val visiblePackage = packageInfo(TestData.Packages.annual, isSelectedByDefault = false)
+        val state = paywallState(
+            packagesOutsideTabs = listOf(hiddenDefault, visiblePackage),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        state.paywallBoundsDp = DpSize(800.dp, 600.dp)
+        state.update(selectedPackageUniqueId = visiblePackage.uniqueId)
+
+        state.resetToDefaultPackage()
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Reconciles a user-selected package hidden by a window size rule`() {
+        val hideable = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = false,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+        )
+        val visibleDefault = packageInfo(TestData.Packages.annual, isSelectedByDefault = true)
+        val state = paywallState(
+            packagesOutsideTabs = listOf(hideable, visibleDefault),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        state.update(selectedPackageUniqueId = hideable.uniqueId)
+
+        state.reconcileSelectionForWindowSize(DpSize(800.dp, 600.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    private fun hiddenWhenWiderThanOverride(width: Double) = PresentedOverride(
+        conditions = listOf(
+            ComponentOverride.Condition.WindowWidthRule(
+                operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                value = width,
+            ),
+        ),
+        properties = PresentedPackagePartial(partial = PartialPackageComponent(visible = false)),
+    )
 
     // endregion
 
