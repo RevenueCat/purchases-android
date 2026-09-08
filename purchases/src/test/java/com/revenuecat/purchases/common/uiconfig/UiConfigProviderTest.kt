@@ -296,20 +296,32 @@ internal class UiConfigProviderTest {
     }
 
     @Test
-    fun `resolveUiConfig returns Superseded when a newer invalidation lands mid-resolve`() = runTest {
-        // The value resolved fine but belongs to a superseded generation, so it is dropped rather than served.
-        // That is not a resolution failure, and must not be classified from the (already wiped) committed state.
-        every { manager.configGeneration } returns 0
-        val merged = minimalUiConfigJson()
-        coEvery {
+    fun `resolveUiConfig re-resolves once and serves the fresh value when the config changes mid-read`() = runTest {
+        // A commit advanced the generation while the first resolve was in flight; its value can't be trusted, so
+        // the read re-resolves once against the new state and serves (and caches) that result.
+        every { manager.configGeneration } returnsMany listOf(0, 1)
+        stubMergedRead(minimalUiConfigJson())
+
+        assertThat(provider.resolveUiConfig()).isInstanceOf(UiConfigResolution.Found::class.java)
+        assertThat(provider.isWarm()).isTrue
+        coVerify(exactly = 2) {
             manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())
-        } answers {
-            provider.onConfigInvalidated(generation = 5)
-            thirdArg<(JsonObject) -> UiConfig?>().invoke(merged)
         }
+    }
+
+    @Test
+    fun `resolveUiConfig returns Superseded when the config changes during both reads`() = runTest {
+        // Values resolved fine but each belongs to a superseded generation, so they are dropped rather than
+        // served. That is not a resolution failure, and must not be classified from the committed state (an
+        // identity change may have already wiped it).
+        every { manager.configGeneration } returnsMany listOf(0, 1, 1, 1, 2, 2)
+        stubMergedRead(minimalUiConfigJson())
 
         assertThat(provider.resolveUiConfig()).isEqualTo(UiConfigResolution.Superseded)
         assertThat(provider.isWarm()).isFalse
+        coVerify(exactly = 2) {
+            manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())
+        }
         coVerify(exactly = 0) { manager.committedTopicOrNull(any()) }
     }
 
@@ -434,9 +446,10 @@ internal class UiConfigProviderTest {
     @Test
     fun `getUiConfig does not serve a value resolved before a concurrent newer invalidation`() = runTest {
         // Cold read snapshots generation 0, then an identity-change invalidation at a newer generation lands
-        // while the merge is in flight. The just-resolved value belongs to the previous user, so it must not be
-        // returned to the in-flight caller, nor repopulate the cache.
-        every { manager.configGeneration } returns 0
+        // while the merge is in flight (and the config keeps moving during the retry). The values resolved
+        // mid-change may belong to the previous user, so they must not be returned to the in-flight caller,
+        // nor repopulate the cache.
+        every { manager.configGeneration } returnsMany listOf(0, 5, 5, 5, 6, 6)
         val merged = minimalUiConfigJson()
         coEvery {
             manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())

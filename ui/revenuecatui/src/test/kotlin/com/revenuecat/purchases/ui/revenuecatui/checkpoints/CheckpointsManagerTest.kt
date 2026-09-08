@@ -3,7 +3,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import android.app.Activity
-import android.content.Intent
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
@@ -51,7 +50,8 @@ class CheckpointsManagerTest {
     private lateinit var mockPurchases: Purchases
     private lateinit var mockActivity: Activity
     private lateinit var mockListener: CheckpointListener
-    private val startedIntents = mutableListOf<Intent>()
+    private lateinit var mockPresenter: CheckpointWorkflowPresenter
+    private val presentedCallIds = mutableListOf<String>()
 
     private lateinit var manager: CheckpointsManager
 
@@ -60,14 +60,17 @@ class CheckpointsManagerTest {
         Dispatchers.setMain(dispatcher)
         mockkObject(Logger)
         every { Logger.e(any()) } just runs
-        startedIntents.clear()
+        presentedCallIds.clear()
         mockActivity = mockk(relaxed = true)
-        capturesStartedIntents()
+        mockPresenter = mockk(relaxed = true)
         mockListener = mockk(relaxed = true)
         mockPurchases = mockk {
             every { currentActivity } returns mockActivity
         }
-        manager = CheckpointsManager()
+        manager = CheckpointsManager { callId, _ ->
+            presentedCallIds += callId
+            mockPresenter
+        }
         manager.checkpointListener = mockListener
     }
 
@@ -122,12 +125,12 @@ class CheckpointsManagerTest {
     fun `offering checkpoint returns without an activity or presentation`() = runTest(dispatcher) {
         val offering = mockk<Offering>()
         every { mockPurchases.currentActivity } returns null
-        resolvesTo(CheckpointResolution.MatchedOffering(offering))
+        resolvesTo(CheckpointResolution.MatchedOffering(offering, checkpointRuleId = null))
 
         val result = checkpoint() as CheckpointResult.ReceivedOffering
 
         assertThat(result.offering).isEqualTo(offering)
-        verify(exactly = 0) { mockActivity.startActivity(any()) }
+        assertThat(presentedCallIds).isEmpty()
         verifyOrder {
             mockListener.onCheckpointHit(CheckpointHitContext(checkpointId, emptyMap()))
             mockListener.onCheckpointCompleted(CheckpointCompletedContext(checkpointId, emptyMap(), result))
@@ -138,15 +141,15 @@ class CheckpointsManagerTest {
     fun `offering checkpoint completes while a UI checkpoint is being presented`() = runTest(dispatcher) {
         val offering = mockk<Offering>()
         coEvery { mockPurchases.resolveCheckpoint(any(), any()) } returnsMany listOf(
-            CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk()),
-            CheckpointResolution.MatchedOffering(offering),
+            CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null),
+            CheckpointResolution.MatchedOffering(offering, checkpointRuleId = null),
         )
         val presentedCall = launch { checkpoint() }
 
         val offeringResult = checkpoint() as CheckpointResult.ReceivedOffering
 
         assertThat(offeringResult.offering).isEqualTo(offering)
-        verify(exactly = 1) { mockActivity.startActivity(any()) }
+        assertThat(presentedCallIds).hasSize(1)
         presentedCall.cancel()
     }
 
@@ -322,17 +325,17 @@ class CheckpointsManagerTest {
         finishPaywall(CheckpointPaywallOutcome.Dismissed)
         secondCall.join()
 
-        verify(exactly = 2) { mockActivity.startActivity(any()) }
+        assertThat(presentedCallIds).hasSize(2)
     }
 
     @Test
-    fun `checkpoint can present again after startActivity throws`() = runTest(dispatcher) {
+    fun `checkpoint can present again after the presenter fails to show`() = runTest(dispatcher) {
         resolvesToWorkflow()
-        every { mockActivity.startActivity(any()) } throws RuntimeException("startActivity failed")
+        every { mockPresenter.show(any()) } throws RuntimeException("show failed")
 
         assertThat(checkpointErrorCode()).isEqualTo(PurchasesErrorCode.ConfigurationError)
 
-        capturesStartedIntents()
+        every { mockPresenter.show(any()) } just runs
         var result: CheckpointResult? = null
         val call = launch { result = checkpoint() }
         finishPaywall(CheckpointPaywallOutcome.Dismissed)
@@ -357,16 +360,14 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `cancelling the caller finishes the presented paywall`() = runTest(dispatcher) {
+    fun `cancelling the caller abandons the presented paywall`() = runTest(dispatcher) {
         resolvesToWorkflow()
-        val presentedActivity = mockk<Activity>(relaxed = true)
         val call = launch { checkpoint() }
-        manager.onPresentationStarted(currentCallId(), presentedActivity)
 
         call.cancel()
         call.join()
 
-        verify { presentedActivity.finish() }
+        verify { mockPresenter.abandon() }
     }
 
     @Test
@@ -381,7 +382,7 @@ class CheckpointsManagerTest {
             var result: CheckpointResult? = null
             val secondCall = launch { result = checkpoint() }
             manager.recordOutcome(abandonedCallId, CheckpointPaywallOutcome.Error(mockk()))
-            manager.onActivityDestroyed(abandonedCallId, isChangingConfigurations = false)
+            manager.onPresentationFinished(abandonedCallId)
 
             assertThat(result).isNull()
 
@@ -394,32 +395,14 @@ class CheckpointsManagerTest {
 
     @Test
     fun `finishing an unknown callId is a no-op`() {
-        manager.onActivityDestroyed("unknown-call-id", isChangingConfigurations = false)
+        manager.onPresentationFinished("unknown-call-id")
         manager.recordOutcome("unknown-call-id", CheckpointPaywallOutcome.Dismissed)
 
         assertThat(manager.presentation("unknown-call-id")).isNull()
     }
 
     @Test
-    fun `a destroy for a configuration change keeps the pending call alive`() = runTest(dispatcher) {
-        resolvesToWorkflow()
-        var result: CheckpointResult? = null
-        val call = launch { result = checkpoint() }
-        val callId = currentCallId()
-
-        manager.onActivityDestroyed(callId, isChangingConfigurations = true)
-
-        assertThat(result).isNull()
-        assertThat(manager.presentation(callId)).isNotNull
-
-        finishPaywall(CheckpointPaywallOutcome.Dismissed)
-        call.join()
-
-        assertThat(result).isInstanceOf(CheckpointResult.PaywallPresented::class.java)
-    }
-
-    @Test
-    fun `a destroy that is not a configuration change releases the pending call`() = runTest(dispatcher) {
+    fun `finishing the presentation releases the pending call`() = runTest(dispatcher) {
         resolvesToWorkflow()
         val customerInfo = mockk<CustomerInfo>()
         val storeTransaction = mockk<StoreTransaction>()
@@ -428,7 +411,7 @@ class CheckpointsManagerTest {
         val callId = currentCallId()
         manager.recordOutcome(callId, CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
 
-        manager.onActivityDestroyed(callId, isChangingConfigurations = false)
+        manager.onPresentationFinished(callId)
         call.join()
 
         assertThat((result as CheckpointResult.PaywallPresented).paywallOutcome)
@@ -449,23 +432,18 @@ class CheckpointsManagerTest {
     }
 
     private fun resolvesToWorkflow() {
-        resolvesTo(CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk()))
+        resolvesTo(CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null))
     }
 
-    private fun capturesStartedIntents() {
-        every { mockActivity.startActivity(capture(startedIntents)) } just runs
-    }
+    private fun currentCallId(): String = presentedCallIds.last()
 
-    private fun currentCallId(): String =
-        startedIntents.last().getStringExtra(CheckpointWorkflowActivity.EXTRA_CALL_ID)!!
-
-    // Mirrors what CheckpointWorkflowActivity does: read the pending call from the launched Intent's callId,
-    // record the outcome, then report the paywall as finished.
+    // Mirrors what CheckpointWorkflowPresenter does: read the pending call for the presented callId, record
+    // the outcome, then report the paywall as finished.
     private fun finishPaywall(outcome: CheckpointPaywallOutcome) {
         val callId = currentCallId()
         assertThat(manager.presentation(callId)).isNotNull
         manager.recordOutcome(callId, outcome)
-        manager.onActivityDestroyed(callId, isChangingConfigurations = false)
+        manager.onPresentationFinished(callId)
     }
 
     private suspend fun checkpoint(params: CheckpointParams? = null): CheckpointResult =

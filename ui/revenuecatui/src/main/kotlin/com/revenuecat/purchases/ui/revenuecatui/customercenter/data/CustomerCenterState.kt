@@ -28,6 +28,7 @@ internal sealed class CustomerCenterState(
     data class Success(
         @get:JvmSynthetic val customerCenterConfigData: CustomerCenterConfigData,
         @get:JvmSynthetic val purchases: List<PurchaseInformation> = emptyList(),
+        @get:JvmSynthetic val purchaseHistory: PurchaseHistory = PurchaseHistory(),
         @get:JvmSynthetic val mainScreenPaths: List<CustomerCenterConfigData.HelpPath> = emptyList(),
         @get:JvmSynthetic val detailScreenPaths: List<CustomerCenterConfigData.HelpPath> = emptyList(),
         @get:JvmSynthetic val restorePurchasesState: RestorePurchasesState? = null,
@@ -40,6 +41,7 @@ internal sealed class CustomerCenterState(
         @get:JvmSynthetic val virtualCurrencies: VirtualCurrencies? = null,
         @get:JvmSynthetic val showSupportTicketSuccessSnackbar: Boolean = false,
         @get:JvmSynthetic val isRefreshing: Boolean = false,
+        @get:JvmSynthetic val shouldShowPurchaseHistory: Boolean = false,
     ) : CustomerCenterState(navigationButtonType) {
         val currentDestination: CustomerCenterDestination
             get() = navigationState.currentDestination

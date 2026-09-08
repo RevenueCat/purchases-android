@@ -41,11 +41,7 @@ internal object LetOperator {
     fun opLet(args: Value, vars: Scope): Value {
         val raw = Operators.argsAsList(args)
 
-        if (raw.size != ARGUMENT_COUNT) {
-            throw EvaluationException.TypeMismatch(
-                "operator '$OPERATOR_NAME' expects $ARGUMENT_COUNT arguments, got ${raw.size}",
-            )
-        }
+        Operators.checkArity(raw.size, listOf(ARGUMENT_COUNT), OPERATOR_NAME)
 
         val declarations = raw[0]
         if (declarations !is Value.ObjectValue) {

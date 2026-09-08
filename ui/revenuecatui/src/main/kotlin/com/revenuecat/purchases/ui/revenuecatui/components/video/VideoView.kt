@@ -392,6 +392,11 @@ private fun Video(
         mutableStateOf<TextureVideoView?>(null)
     }
 
+    // The uri the view was last given. The factory only applies it on creation.
+    val appliedUri = remember {
+        mutableStateOf<String?>(null)
+    }
+
     // To guarantee autoplay starts on view creation
     // The code in the factory is not as reliable for view creation but better
     // for rotation
@@ -430,6 +435,8 @@ private fun Video(
                     autoPlay
                 }
 
+                // Set before the shadowing below, so the guard compares the same string.
+                appliedUri.value = videoUri
                 val videoUri = videoUri.toUri()
 
                 TextureVideoView(
@@ -458,6 +465,12 @@ private fun Video(
             update = { view ->
                 videoView.value = view
                 view.setOnReadyCallback(onReady)
+                // update runs on every recomposition and setVideoURI re-prepares the player, so
+                // applying it unconditionally would restart playback constantly.
+                if (appliedUri.value != videoUri) {
+                    appliedUri.value = videoUri
+                    view.setVideoURI(videoUri.toUri())
+                }
             },
             onRelease = { view ->
                 // Capture playback state BEFORE releasing

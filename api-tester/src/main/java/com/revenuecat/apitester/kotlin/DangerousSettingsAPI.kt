@@ -6,5 +6,6 @@ import com.revenuecat.purchases.DangerousSettings
 private class DangerousSettingsAPI {
     fun check(dangerousSettings: DangerousSettings) {
         val autoSync: Boolean = dangerousSettings.autoSyncPurchases
+        dangerousSettings.forceAllowTestStoreInReleaseBuilds()
     }
 }

@@ -21,10 +21,10 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.blockstore.BlockstoreHelper
-import com.revenuecat.purchases.checkpoints.CheckpointEvent
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolver
 import com.revenuecat.purchases.checkpoints.CheckpointWorkflowResolverImpl
+import com.revenuecat.purchases.checkpoints.toCheckpointEvent
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendErrorCode
@@ -187,7 +187,10 @@ internal class PurchasesOrchestrator(
     internal val audiencesConfigProvider: AudiencesConfigProvider,
     val adTracker: AdTracker = AdTracker(adEventsManager),
     private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
-    private val localRulesEvaluator: LocalRulesEvaluator = LocalRulesEvaluator(providers = emptyList()),
+    private val localRulesEvaluator: LocalRulesEvaluator = LocalRulesEvaluator(
+        providers = emptyList(),
+        currentAppUserId = { identityManager.currentAppUserID },
+    ),
     @OptIn(InternalRevenueCatAPI::class)
     private val checkpointWorkflowResolver: CheckpointWorkflowResolver = CheckpointWorkflowResolverImpl(
         workflowManager = workflowManager,
@@ -432,13 +435,9 @@ internal class PurchasesOrchestrator(
         checkpointIdentifier: String,
         customVariables: Map<String, RulesDimensionValue>,
     ): CheckpointResolution {
-        track(
-            CheckpointEvent(
-                identifier = checkpointIdentifier,
-                timestamp = dateProvider.now,
-            ),
-        )
-        return checkpointWorkflowResolver.resolve(checkpointIdentifier, customVariables)
+        val resolution = checkpointWorkflowResolver.resolve(checkpointIdentifier, customVariables)
+        track(resolution.toCheckpointEvent(identifier = checkpointIdentifier, timestamp = dateProvider.now))
+        return resolution
     }
 
     fun getStorefrontCountryCode(callback: GetStorefrontCallback) {
@@ -980,8 +979,25 @@ internal class PurchasesOrchestrator(
         trackDiagnostics: Boolean,
         callback: ReceiveCustomerInfoCallback,
     ) {
+        getCustomerInfo(identityManager.currentAppUserID, fetchPolicy, trackDiagnostics, callback)
+    }
+
+    /**
+     * For a caller that has already read the app user ID: the cache lookup and the backend request both use the
+     * given ID instead of re-reading the current one.
+     *
+     * Not a guarantee that the answer describes that customer. On a cold cache the pending-purchase sync runs
+     * first and reads the current app user for itself, so a caller that needs the guarantee checks the ID again
+     * once the answer is in.
+     */
+    fun getCustomerInfo(
+        appUserID: String,
+        fetchPolicy: CacheFetchPolicy,
+        trackDiagnostics: Boolean,
+        callback: ReceiveCustomerInfoCallback,
+    ) {
         customerInfoHelper.retrieveCustomerInfo(
-            identityManager.currentAppUserID,
+            appUserID,
             fetchPolicy,
             state.appInBackground,
             allowSharingPlayStoreAccount,

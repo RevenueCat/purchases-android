@@ -5,6 +5,8 @@ package com.revenuecat.purchases.common.localrules
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
+import com.revenuecat.purchases.common.debugLog
+import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.rules.RulesEngine
 
 internal sealed class LocalRulesEvaluationException(message: String) : Exception(message) {
@@ -28,21 +30,29 @@ internal sealed class LocalRulesEvaluationException(message: String) : Exception
  */
 internal class LocalRulesEvaluator(
     providers: List<RulesDimensionProvider>,
+    currentAppUserId: () -> String,
     dateProvider: DateProvider = DefaultDateProvider(),
 ) {
 
-    private val dimensionResolver = RulesDimensionResolver(providers, dateProvider)
+    private val dimensionResolver = RulesDimensionResolver(providers, currentAppUserId, dateProvider)
 
     /**
      * The first rule that matches, or `null` when none does.
      *
-     * A predicate the engine cannot evaluate (malformed JSON, an operator this SDK version does not implement, a
-     * dimension this SDK version does not supply) is not enough to fail the call on its own: a later rule may
-     * still match definitively, and it wins. Only when nothing matched does the first such failure surface,
-     * because then "no match" cannot be told apart from "we failed to ask".
+     * A predicate that reads a dimension this SDK version does not supply is a non-match for that rule: the
+     * customer is outside an audience the SDK cannot place them in, and the remaining rules are still walked.
+     *
+     * A predicate the engine cannot evaluate for any other reason (malformed JSON, an operator this SDK version
+     * does not implement) is not enough to fail the call on its own: a later rule may still match definitively,
+     * and it wins. Only when nothing matched does the first such failure surface, because then "no match" cannot
+     * be told apart from "we failed to ask".
      *
      * When a predicate must be resolved before it can be evaluated, a resolution failure fails the call immediately.
      * [customVariables] are the caller's own values for this evaluation, readable under `custom.*`.
+     *
+     * Every rule's outcome is logged by its position in [rules], with [logPrefix] prepended verbatim to each line
+     * (e.g. `[Checkpoint 'onboarding'] `). Logs never include dimension values or predicates, only dimension names
+     * and how each rule fared.
      */
     suspend fun <Rule : LocalRule> match(
         rules: List<Rule>,
@@ -53,6 +63,7 @@ internal class LocalRulesEvaluator(
     suspend fun <Rule> match(
         rules: List<Rule>,
         customVariables: Map<String, RulesDimensionValue> = emptyMap(),
+        logPrefix: String = "",
         predicateFor: suspend (Rule) -> Result<String>,
     ): Result<Rule?> {
         if (rules.isEmpty()) return Result.success(null)
@@ -63,18 +74,31 @@ internal class LocalRulesEvaluator(
                 return Result.failure(LocalRulesEvaluationException.DimensionResolution(error))
             },
         )
+        verboseLog { "${logPrefix}Evaluating ${rules.size} rules against dimensions ${snapshot.values.keys.sorted()}." }
 
         var firstFailure: LocalRulesEvaluationException.PredicateEvaluation? = null
         for ((index, rule) in rules.withIndex()) {
             val predicate = predicateFor(rule).getOrElse { error -> return Result.failure(error) }
             val result = RulesEngine.evaluate(predicate, snapshot.values)
             val matches = result.getOrElse { error ->
-                if (firstFailure == null) {
-                    firstFailure = LocalRulesEvaluationException.PredicateEvaluation(index, error)
+                if (error is RulesEngine.EvaluationException.UnresolvedVariable) {
+                    verboseLog {
+                        "${logPrefix}Rule ${index + 1} did not match: it reads '${error.path}', which this SDK " +
+                            "does not supply."
+                    }
+                } else {
+                    debugLog { "${logPrefix}Rule ${index + 1} could not be evaluated (${error.javaClass.simpleName})." }
+                    if (firstFailure == null) {
+                        firstFailure = LocalRulesEvaluationException.PredicateEvaluation(index, error)
+                    }
                 }
                 false
             }
-            if (matches) return Result.success(rule)
+            if (matches) {
+                verboseLog { "${logPrefix}Rule ${index + 1} matched." }
+                return Result.success(rule)
+            }
+            if (result.isSuccess) verboseLog { "${logPrefix}Rule ${index + 1} did not match." }
         }
 
         return firstFailure?.let { failure -> Result.failure(failure) } ?: Result.success(null)

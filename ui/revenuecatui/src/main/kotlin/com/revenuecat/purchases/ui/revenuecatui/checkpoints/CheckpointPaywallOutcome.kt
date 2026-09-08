@@ -33,7 +33,10 @@ public abstract class CheckpointPaywallOutcome internal constructor() {
         public val customerInfo: CustomerInfo,
     ) : CheckpointPaywallOutcome()
 
-    /** A purchase or restore failed with [error]. Cancellations are reported as [Dismissed] instead. */
+    /**
+     * A purchase or restore failed with [error], or the workflow could not be kept on screen (e.g. a failed
+     * re-present after a configuration change). Cancellations are reported as [Dismissed] instead.
+     */
     @Poko
     public class Error(
         public val error: PurchasesError,

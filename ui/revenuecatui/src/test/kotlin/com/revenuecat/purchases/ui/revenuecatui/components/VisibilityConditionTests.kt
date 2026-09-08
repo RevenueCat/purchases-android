@@ -305,7 +305,7 @@ class VisibilityConditionTests {
             autoplay = true,
             loop = true,
             muteAudio = true,
-            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fixed(200u)),
+            size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fixed(200u)),
             fitMode = FitMode.FILL,
             maskShape = null,
             colorOverlay = null,

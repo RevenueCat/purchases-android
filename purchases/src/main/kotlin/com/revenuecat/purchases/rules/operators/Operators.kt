@@ -98,6 +98,25 @@ internal object Operators {
     ): List<Value> = argsAsList(args).map { Evaluator.evaluateValue(it, vars) }
 
     /**
+     * Rejects an argument count no overload of [operatorName] accepts.
+     *
+     * Only for operators that are strict about arity. Several others take a
+     * fixed number of arguments and silently ignore extras — `substr`, `<`,
+     * `reduce`, and anything reading through [firstArgEvaluated] — matching
+     * `json-logic-js`, where a spread call simply drops what the function
+     * does not declare. Whether an operator is strict is a decision each one
+     * makes; this only spells the refusal the same way every time.
+     */
+    fun checkArity(count: Int, allowed: List<Int>, operatorName: String) {
+        if (count !in allowed) {
+            val expected = allowed.joinToString(" or ")
+            throw EvaluationException.TypeMismatch(
+                "operator '$operatorName' expects $expected arguments, got $count",
+            )
+        }
+    }
+
+    /**
      * Evaluate args and return the first two operands. Missing operands
      * default to [Value.Undefined] (JS omitted-argument semantics:
      * `function(a, b)` sees `undefined` for absent args, so e.g.

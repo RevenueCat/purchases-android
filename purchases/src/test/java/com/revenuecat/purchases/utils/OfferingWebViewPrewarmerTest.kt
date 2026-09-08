@@ -149,7 +149,7 @@ internal class OfferingWebViewPrewarmerTest {
                     url = url,
                     id = "$identifier-component-$index",
                     protocolVersion = WebViewComponent.SUPPORTED_PROTOCOL_VERSION,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill),
+                    size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fill()),
                 )
             },
         )
