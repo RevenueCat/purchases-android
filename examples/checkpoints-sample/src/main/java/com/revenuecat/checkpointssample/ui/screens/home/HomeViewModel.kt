@@ -64,7 +64,7 @@ class HomeViewModel : ViewModel() {
         ) { result ->
             // Only called once the gate lets the user through, so the game starts whatever was served (a null
             // result means nothing was). The grants are merged in so the card reflects what the user obtained.
-            val granted = result?.entitlements.orEmpty().map { it.identifier }
+            val granted = result?.obtainedEntitlements.orEmpty().map { it.entitlementInfo.identifier }
             _state.update {
                 it.copy(activeEntitlements = (it.activeEntitlements + granted).distinct().sorted(), message = null)
             }
