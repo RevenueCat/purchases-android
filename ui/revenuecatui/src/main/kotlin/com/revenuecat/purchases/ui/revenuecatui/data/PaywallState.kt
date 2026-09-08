@@ -94,7 +94,7 @@ internal sealed interface PaywallState {
             }
         }
 
-        @Suppress("LongParameterList")
+        @Suppress("LongParameterList", "TooManyFunctions")
         @Stable
         class Components(
             val stack: ComponentStyle,
@@ -414,6 +414,25 @@ internal sealed interface PaywallState {
                 if (currentTabContainsThisPackage) selectedPackageByTab[currentTabIndex] = selectedPackageUniqueId
             }
 
+            /**
+             * Moves the selection off a package that a window size rule hides at the measured
+             * window size, so a hidden package can't stay selected and purchasable. Initial
+             * selection is resolved before the window size is known, and the window can change
+             * later. If nothing resolves visible the selection stays put.
+             */
+            fun reconcileSelectionForWindowSize(windowDpSize: DpSize?) {
+                if (windowDpSize == null) return
+                val current = selectedPackageUniqueId?.let(::findPackageInfoByUniqueId)
+                if (current != null && !current.resolvesVisible(mergedCustomVariables, windowDpSize)) {
+                    val candidates = packages.packagesOutsideTabs +
+                        packages.packagesByTab[selectedTabIndex].orEmpty()
+                    val replacement = candidates.defaultSelection(mergedCustomVariables, windowDpSize)
+                    if (replacement != null && replacement.uniqueId != current.uniqueId) {
+                        update(selectedPackageUniqueId = replacement.uniqueId)
+                    }
+                }
+            }
+
             fun resetToDefaultPackage() {
                 selectedPackageUniqueId = peekDefaultPackageUniqueIdAfterSheetDismiss()
             }
@@ -537,17 +556,23 @@ internal val PaywallState.Loaded.Legacy.isInFullScreenMode: Boolean
  * `selected_package` visibility rules can't oscillate.
  *
  * Note this only covers the package component's own rules. A package hidden solely by an enclosing
- * stack's rule still resolves visible here. The screen condition is pinned to COMPACT and the window
- * size to unknown, so size-class and window-size visibility rules do not influence selection either.
+ * stack's rule still resolves visible here. The screen condition is pinned to COMPACT, so size-class
+ * rules do not influence selection. The window size defaults to unknown (initial selection happens
+ * before it can be known); the reconcile-on-resize path passes the measured [windowDpSize].
  */
 private fun PaywallState.Loaded.Components.AvailablePackages.Info.resolvesVisible(
     customVariables: Map<String, CustomVariableValue>,
+    windowDpSize: DpSize? = null,
 ): Boolean =
     visibilityOverrides.buildPresentedPartial(
         windowSize = ScreenCondition.COMPACT,
         offerEligibility = offerEligibility ?: OfferEligibility.Ineligible,
         state = ComponentViewState.DEFAULT,
-        conditionContext = ConditionContext(selectedPackageId = null, customVariables = customVariables),
+        conditionContext = ConditionContext(
+            selectedPackageId = null,
+            customVariables = customVariables,
+            windowDpSize = windowDpSize,
+        ),
     )?.partial?.visible ?: visible
 
 /**
@@ -556,16 +581,19 @@ private fun PaywallState.Loaded.Components.AvailablePackages.Info.resolvesVisibl
  */
 private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.defaultSelection(
     customVariables: Map<String, CustomVariableValue>,
+    windowDpSize: DpSize? = null,
 ): PaywallState.Loaded.Components.AvailablePackages.Info? =
-    authoredDefaultIfVisible(customVariables) ?: firstVisible(customVariables)
+    authoredDefaultIfVisible(customVariables, windowDpSize) ?: firstVisible(customVariables, windowDpSize)
 
 /** The package authored as the default, only when it renders. */
 private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.authoredDefaultIfVisible(
     customVariables: Map<String, CustomVariableValue>,
+    windowDpSize: DpSize? = null,
 ): PaywallState.Loaded.Components.AvailablePackages.Info? =
-    firstOrNull { it.isSelectedByDefault && it.resolvesVisible(customVariables) }
+    firstOrNull { it.isSelectedByDefault && it.resolvesVisible(customVariables, windowDpSize) }
 
 private fun List<PaywallState.Loaded.Components.AvailablePackages.Info>.firstVisible(
     customVariables: Map<String, CustomVariableValue>,
+    windowDpSize: DpSize? = null,
 ): PaywallState.Loaded.Components.AvailablePackages.Info? =
-    firstOrNull { it.resolvesVisible(customVariables) }
+    firstOrNull { it.resolvesVisible(customVariables, windowDpSize) }
