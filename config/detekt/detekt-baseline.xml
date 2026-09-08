@@ -179,6 +179,8 @@
     <ID>PreviewPublic:PaywallLoadingView.kt$PaywallLoadingViewPreview</ID>
     <ID>PreviewPublic:PaywallsScreen.kt$PaywallsScreenPreview</ID>
     <ID>PreviewPublic:WeatherApp.kt$WeatherAppPreview</ID>
+    <ID>SuspendFunSwallowsCancellation:RemoteConfigBlobFetcher.kt$RemoteConfigBlobFetcher$catch (@Suppress("TooGenericExceptionCaught") e: Throwable) { errorLog(e) { "Unexpected failure downloading remote config blob '${download.ref}'." } false }</ID>
+    <ID>SuspendFunSwallowsCancellation:VideoComponentView.kt$catch (@Suppress("TooGenericExceptionCaught") e: Exception) { Logger.e("Failed to cache video: $url", e) }</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: JSONException</ID>
     <ID>SwallowedException:DeviceCache.kt$DeviceCache$e: NullPointerException</ID>
     <ID>SwallowedException:utils.kt$e: PackageManager.NameNotFoundException</ID>
