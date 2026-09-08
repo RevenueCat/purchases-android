@@ -103,6 +103,46 @@ class WindowSizeSelectionReconcileTests {
     }
 
     @Test
+    fun `keeps the replacement when resizing back makes the original visible again`() {
+        val state = stateWithDefaultHiddenOnWideWindows()
+        state.reconcileSelectionForWindowSize(wideWindow)
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+
+        state.reconcileSelectionForWindowSize(narrowWindow)
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `evaluates height rules against the frame height`() {
+        val state = FakePaywallState(
+            components = listOf(
+                packageComponent(
+                    packageId = TestData.Packages.monthly.identifier,
+                    isSelectedByDefault = true,
+                    overrides = listOf(
+                        ComponentOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowHeightRule(
+                                    operator = ComponentOverride.ComparisonOperator.LESS_THAN,
+                                    value = 500.0,
+                                ),
+                            ),
+                            properties = PartialPackageComponent(visible = false),
+                        ),
+                    ),
+                ),
+                packageComponent(packageId = TestData.Packages.annual.identifier),
+            ),
+            packages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+        )
+
+        state.reconcileSelectionForWindowSize(DpSize(800.dp, 400.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
     fun `prefers a visible authored default over the first visible package`() {
         val state = FakePaywallState(
             components = listOf(
