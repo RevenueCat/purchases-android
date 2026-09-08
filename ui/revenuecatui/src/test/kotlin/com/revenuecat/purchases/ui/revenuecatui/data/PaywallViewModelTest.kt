@@ -3167,7 +3167,7 @@ class PaywallViewModelTest {
     @Test
     fun `closePaywall forwards an error result through dismissRequestWithExitOffering`() {
         var receivedResult: PaywallResult? = null
-        val model = create(dismissRequestWithExitOffering = { _, result -> receivedResult = result })
+        val model = create(dismissRequestWithExitOffering = { _, result, _ -> receivedResult = result })
         val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Step misconfigured")
 
         model.closePaywall(result = PaywallResult.Error(error))
