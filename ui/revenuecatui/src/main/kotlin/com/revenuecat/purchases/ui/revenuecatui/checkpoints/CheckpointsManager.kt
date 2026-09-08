@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -25,20 +26,22 @@ internal class CheckpointPresentation(
 /**
  * What a checkpoint run produced: its [evaluation], the terminal [flowOutcome] of whatever it presented (null when
  * nothing was), and [backedOut], true when the presented flow went away because the user navigated back (system
- * back, or a navigate-back action on a workflow's first step) without purchasing or restoring.
+ * back, or a navigate-back action on a workflow's first step) without purchasing or restoring. [offering] is the
+ * offering handed to the app when the checkpoint resolved to one instead of presenting a flow.
  */
 internal class CheckpointRun(
     val evaluation: CheckpointEvaluation,
     val flowOutcome: CheckpointPaywallOutcome?,
     val backedOut: Boolean,
+    val offering: Offering? = null,
 ) {
     val result: CheckpointResult
         get() = when (evaluation) {
-            is CheckpointEvaluation.MatchedOffering -> CheckpointResult.ReceivedOffering(evaluation.offering)
             is CheckpointEvaluation.NoAction -> CheckpointResult.NoAction(evaluation.reason)
-            is CheckpointEvaluation.MatchedUIFlow -> CheckpointResult.PaywallPresented(
-                requireNotNull(flowOutcome) { "A presented flow always ends with an outcome." },
-            )
+            is CheckpointEvaluation.MatchedFlow -> offering?.let { CheckpointResult.ReceivedOffering(it) }
+                ?: CheckpointResult.PaywallPresented(
+                    requireNotNull(flowOutcome) { "A presented flow always ends with an outcome." },
+                )
             // The hierarchy is closed but not sealed; an evaluation this code doesn't know is treated as nothing
             // served rather than as a presented flow.
             else -> {
@@ -120,14 +123,16 @@ internal class CheckpointsManager(
                 customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
             )
             val evaluation = when (resolution) {
-                is CheckpointResolution.MatchedOffering -> CheckpointEvaluation.MatchedOffering(resolution.offering)
-                is CheckpointResolution.MatchedWorkflow -> CheckpointEvaluation.MatchedUIFlow
+                is CheckpointResolution.MatchedOffering, is CheckpointResolution.MatchedWorkflow ->
+                    CheckpointEvaluation.MatchedFlow
                 is CheckpointResolution.NoAction -> CheckpointEvaluation.NoAction(resolution.reason.toResultReason())
             }
             notifyEvaluated(identifier, customVariables, evaluation)
             when (resolution) {
                 is CheckpointResolution.MatchedWorkflow -> present(purchases, evaluation, resolution, customVariables)
-                else -> CheckpointRun(evaluation, flowOutcome = null, backedOut = false)
+                is CheckpointResolution.MatchedOffering ->
+                    CheckpointRun(evaluation, flowOutcome = null, backedOut = false, offering = resolution.offering)
+                is CheckpointResolution.NoAction -> CheckpointRun(evaluation, flowOutcome = null, backedOut = false)
             }
         }
         checkpointListener?.onCheckpointCompleted(CheckpointCompletedContext(identifier, customVariables, run.result))

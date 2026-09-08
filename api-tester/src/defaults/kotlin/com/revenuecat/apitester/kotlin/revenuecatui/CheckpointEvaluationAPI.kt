@@ -4,7 +4,6 @@ package com.revenuecat.apitester.kotlin.revenuecatui
 
 import com.revenuecat.apitester.kotlin.exhaustive
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointEvaluation
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
 
@@ -13,10 +12,7 @@ private class CheckpointEvaluationAPI {
 
     fun checkEvaluation(evaluation: CheckpointEvaluation) {
         when (evaluation) {
-            is CheckpointEvaluation.MatchedOffering -> {
-                val offering: Offering = evaluation.offering
-            }
-            is CheckpointEvaluation.MatchedUIFlow -> {}
+            is CheckpointEvaluation.MatchedFlow -> {}
             is CheckpointEvaluation.NoAction -> {
                 val reason: CheckpointResult.NoAction.Reason = evaluation.reason
             }

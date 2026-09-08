@@ -128,7 +128,7 @@ class CheckpointsManagerTest {
 
         verify(exactly = 1) {
             mockListener.onCheckpointEvaluated(
-                CheckpointEvaluatedContext(checkpointId, emptyMap(), CheckpointEvaluation.MatchedUIFlow),
+                CheckpointEvaluatedContext(checkpointId, emptyMap(), CheckpointEvaluation.MatchedFlow),
             )
         }
         verify(exactly = 0) { mockListener.onCheckpointCompleted(any()) }
@@ -139,7 +139,7 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `a matched offering is reported as evaluated with the offering`() = runTest(dispatcher) {
+    fun `a matched offering is reported as evaluated as a matched flow`() = runTest(dispatcher) {
         val offering = mockk<Offering>()
         resolvesTo(CheckpointResolution.MatchedOffering(offering))
 
@@ -148,7 +148,7 @@ class CheckpointsManagerTest {
         verifyOrder {
             mockListener.onCheckpointHit(CheckpointHitContext(checkpointId, emptyMap()))
             mockListener.onCheckpointEvaluated(
-                CheckpointEvaluatedContext(checkpointId, emptyMap(), CheckpointEvaluation.MatchedOffering(offering)),
+                CheckpointEvaluatedContext(checkpointId, emptyMap(), CheckpointEvaluation.MatchedFlow),
             )
             mockListener.onCheckpointCompleted(any())
         }

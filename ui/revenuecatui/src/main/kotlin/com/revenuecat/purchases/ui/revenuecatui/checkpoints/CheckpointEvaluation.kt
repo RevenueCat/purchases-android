@@ -1,7 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.Offering
 import dev.drewhamilton.poko.Poko
 
 /**
@@ -11,15 +10,9 @@ import dev.drewhamilton.poko.Poko
 @InternalRevenueCatAPI
 public abstract class CheckpointEvaluation internal constructor() {
 
-    /** A rule matched and the checkpoint resolved to [offering], which is handed to the app to present. */
-    @Poko
-    public class MatchedOffering internal constructor(
-        public val offering: Offering,
-    ) : CheckpointEvaluation()
-
-    /** A rule matched and a RevenueCat flow is about to be presented. */
-    public object MatchedUIFlow : CheckpointEvaluation() {
-        override fun toString(): String = "MatchedUIFlow"
+    /** A rule matched and a flow is about to be presented. */
+    public object MatchedFlow : CheckpointEvaluation() {
+        override fun toString(): String = "MatchedFlow"
     }
 
     /** Nothing is served for this checkpoint; [reason] says why. */
