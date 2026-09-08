@@ -1910,7 +1910,7 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `navigation to a step without an offering identifier is refused and keeps the current step`() {
+    fun `navigation to a step without an offering identifier fails the workflow with an error`() {
         val stepWithoutOffering = step2.copy(paramValues = emptyMap())
         val workflowToStepWithoutOffering = workflow.copy(
             steps = mapOf("step-1" to step1, "step-2" to stepWithoutOffering),
@@ -1920,12 +1920,38 @@ class PaywallViewModelWorkflowTest {
             ),
         )
 
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(workflowToStepWithoutOffering, testOfferings, null, uiConfig)
+        captured.clear()
+
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
-        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
-        assertThat(vm.workflowState.value?.pendingTransition).isNull()
+        assertThat(vm.workflowState.value).isNull()
+        val error = vm.state.value as PaywallState.Error
+        assertThat(error.errorMessage).contains("Step 'step-2' has no offering identifier")
+        assertThat(error.toPaywallResult().error.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        val completed = captured.filterIsInstance<WorkflowEvent>().single() as WorkflowEvent.StepCompleted
+        assertThat(completed.stepId).isEqualTo("step-1")
+        assertThat(completed.toStepId).isNull()
+    }
+
+    @Test
+    fun `navigation to a step whose screen is missing fails the workflow with an error`() {
+        val stepWithMissingScreen = step2.copy(screenId = "missing-screen")
+        val workflowToMissingScreen =
+            workflow.copy(steps = mapOf("step-1" to step1, "step-2" to stepWithMissingScreen))
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(workflowToMissingScreen, testOfferings, null, uiConfig)
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        assertThat(vm.workflowState.value).isNull()
+        val error = vm.state.value as PaywallState.Error
+        assertThat(error.errorMessage).contains("Screen 'missing-screen' not found")
+        assertThat(error.error?.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
     }
 
     @Test

@@ -235,7 +235,7 @@ internal fun InternalPaywall(
         is PaywallState.Error -> {
             PaywallTheme(fontProvider = options.fontProvider) {
                 ErrorDialog(
-                    dismissRequest = options.dismissRequest,
+                    dismissRequest = { viewModel.closePaywall(result = state.toPaywallResult()) },
                     error = state.errorMessage,
                 )
             }
