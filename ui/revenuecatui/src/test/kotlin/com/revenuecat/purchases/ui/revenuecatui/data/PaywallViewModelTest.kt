@@ -3146,6 +3146,25 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `closePaywall forwards an error result through dismissRequestWithExitOffering`() {
+        var receivedResult: PaywallResult? = null
+        val model = create(dismissRequestWithExitOffering = { _, result -> receivedResult = result })
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Step misconfigured")
+
+        model.closePaywall(result = PaywallResult.Error(error))
+
+        assertThat((receivedResult as PaywallResult.Error).error).isEqualTo(error)
+    }
+
+    @Test
+    fun `an error state without a purchases error dismisses as an unknown error`() {
+        val result = PaywallState.Error("Something broke").toPaywallResult()
+
+        assertThat(result.error.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        assertThat(result.error.underlyingErrorMessage).isEqualTo("Something broke")
+    }
+
+    @Test
     fun `Custom callback purchase logic success calls dismissRequestWithExitOffering when set`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
