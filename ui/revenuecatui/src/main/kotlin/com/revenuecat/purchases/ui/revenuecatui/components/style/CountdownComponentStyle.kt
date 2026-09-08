@@ -26,15 +26,15 @@ internal class CountdownComponentStyle(
     val endStackComponentStyle: StackComponentStyle?,
     @get:JvmSynthetic
     val fallbackStackComponentStyle: StackComponentStyle?,
-    override val visible: Boolean = true,
+    override val visible: Boolean,
     @get:JvmSynthetic
-    val overrides: List<PresentedOverride<PresentedCountdownPartial>> = emptyList(),
+    val overrides: List<PresentedOverride<PresentedCountdownPartial>>,
     /**
      * If this is non-null and equal to the currently selected package, the `selected` [overrides] will be used if
      * available.
      */
     @get:JvmSynthetic
-    override val rcPackage: Package? = null,
+    override val rcPackage: Package?,
     /**
      * The resolved offer for this package, containing the subscription option and promo offer status.
      * Used to determine offer eligibility and pricing phase information.
@@ -47,7 +47,7 @@ internal class CountdownComponentStyle(
      * tab.
      */
     @get:JvmSynthetic
-    override val tabIndex: Int? = null,
+    override val tabIndex: Int?,
     /**
      * The pre-computed offer eligibility for this component's package context.
      * Used for applying conditional overrides based on intro/promo offer status.

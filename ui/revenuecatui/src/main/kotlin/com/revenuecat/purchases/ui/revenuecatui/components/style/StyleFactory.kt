@@ -570,9 +570,7 @@ internal class StyleFactory(
             is VideoComponent -> createVideoComponentStyle(component)
             is FallbackHeaderComponent -> Result.Success(null)
             is WebViewComponent -> createWebViewComponentStyle(component)
-            is CountdownComponent -> createCountdownComponentStyle(
-                component,
-            )
+            is CountdownComponent -> createCountdownComponentStyle(component)
         }
     }
 
