@@ -3,10 +3,17 @@ package com.revenuecat.checkpointssample
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -14,6 +21,7 @@ import androidx.navigation.compose.rememberNavController
 import com.revenuecat.checkpointssample.paywall.SamplePaywall
 import com.revenuecat.checkpointssample.paywall.SamplePaywallPresenter
 import com.revenuecat.checkpointssample.ui.Screen
+import com.revenuecat.checkpointssample.ui.dialogs.SetAttributeDialog
 import com.revenuecat.checkpointssample.ui.screens.game.GameScreen
 import com.revenuecat.checkpointssample.ui.screens.home.HomeScreen
 import com.revenuecat.checkpointssample.ui.screens.onboarding.OnboardingScreen
@@ -21,8 +29,16 @@ import com.revenuecat.checkpointssample.ui.screens.onboarding.OnboardingScreen
 @Composable
 fun CheckpointsSampleApp(modifier: Modifier = Modifier) {
     val navController = rememberNavController()
+    var showAttributeDialog by remember { mutableStateOf(false) }
     Box(modifier = modifier.fillMaxSize()) {
-        Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            floatingActionButton = {
+                SmallFloatingActionButton(onClick = { showAttributeDialog = true }) {
+                    Icon(Icons.Filled.Person, contentDescription = "Set subscriber attribute")
+                }
+            },
+        ) { innerPadding ->
             NavHost(
                 navController = navController,
                 startDestination = Screen.Onboarding.route,
@@ -45,6 +61,7 @@ fun CheckpointsSampleApp(modifier: Modifier = Modifier) {
                 }
             }
         }
+        if (showAttributeDialog) SetAttributeDialog(onDismiss = { showAttributeDialog = false })
         SamplePaywallHost()
     }
 }
