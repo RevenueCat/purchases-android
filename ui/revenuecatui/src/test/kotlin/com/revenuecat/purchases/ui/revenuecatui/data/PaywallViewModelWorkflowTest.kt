@@ -1338,6 +1338,25 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `no experiment is reported without the workflow blob ref`() {
+        val experimentStep1 = step1.copy(
+            paramValues = mapOf(
+                "experiment_id" to JsonPrimitive("exp_abc"),
+                "experiment_variant" to JsonPrimitive("b"),
+            ),
+        )
+        val experimentWorkflow = workflow.copy(steps = mapOf("step-1" to experimentStep1, "step-2" to step2))
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(experimentWorkflow, testOfferings, null, uiConfig)
+
+        val started = captured.filterIsInstance<WorkflowEvent.StepStarted>().single()
+        assertThat(started.experiment).isNull()
+    }
+
+    @Test
     fun `step events carry the step experiment data and the workflow blob ref`() {
         val experimentStep1 = step1.copy(
             paramValues = mapOf(

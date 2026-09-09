@@ -1451,13 +1451,14 @@ internal class PaywallViewModelImpl(
     private fun experimentData(step: WorkflowStep): WorkflowEvent.ExperimentData? {
         val experimentId = step.experimentId
         val experimentVariant = step.experimentVariant
-        return if (experimentId == null || experimentVariant == null) {
+        val blobRef = currentWorkflowBlobRef
+        return if (experimentId == null || experimentVariant == null || blobRef == null) {
             null
         } else {
             WorkflowEvent.ExperimentData(
                 experimentId = experimentId,
                 experimentVariant = experimentVariant,
-                workflowBlobRef = currentWorkflowBlobRef,
+                workflowBlobRef = blobRef,
             )
         }
     }

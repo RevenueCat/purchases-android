@@ -20,7 +20,7 @@ public sealed class WorkflowEvent : FeatureEvent {
     public data class ExperimentData(
         public val experimentId: String,
         public val experimentVariant: String,
-        public val workflowBlobRef: String? = null,
+        public val workflowBlobRef: String,
     )
 
     public abstract val creationData: CreationData
