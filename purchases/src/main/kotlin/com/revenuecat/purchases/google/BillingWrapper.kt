@@ -752,6 +752,15 @@ internal class BillingWrapper(
             BillingStrings.BILLING_SERVICE_DISCONNECTED_INSTANCE.format(billingClient?.toString())
         }
         diagnosticsTrackerIfEnabled?.trackGoogleBillingServiceDisconnected()
+        // If the service died while a connection attempt was in flight (e.g. the Play Store was
+        // updating or was killed mid-connection), that attempt will never deliver
+        // onBillingSetupFinished, and a later startConnection() call while BillingClient is still
+        // CONNECTING only produces a DEVELOPER_ERROR ("client is already in the process of
+        // connecting") which does not retry either. Without re-arming the reconnection ladder
+        // here, queued service requests would wait forever.
+        if (serviceRequests.isNotEmpty()) {
+            retryBillingServiceConnectionWithExponentialBackoff()
+        }
     }
 
     /**
