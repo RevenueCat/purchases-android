@@ -51,9 +51,10 @@ public fun Purchases.checkpoint(
 }
 
 /**
- * Presents the offerings checkpoints resolve to with app-owned UI. When null, an offering's configured paywall
- * is presented instead, falling back to the default paywall. Held by this [Purchases] instance, so it is
- * cleared when the SDK is reconfigured.
+ * Presents the offerings checkpoints resolve to with app-owned UI, unless the call supplies its own through
+ * [CheckpointParams.paywallPresenter]. When neither is set, an offering's configured paywall is presented
+ * instead, falling back to the default paywall. Held by this [Purchases] instance, so it is cleared when the SDK
+ * is reconfigured.
  */
 @InternalRevenueCatAPI
 public var Purchases.paywallPresenter: PaywallPresenter?
