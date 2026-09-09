@@ -19,7 +19,6 @@ class PublicLibraryConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) = with(target) {
         with(pluginManager) {
             apply(libs.plugins.android.library.get().pluginId)
-            apply(libs.plugins.kotlin.android.get().pluginId)
             apply(libs.plugins.kover.get().pluginId)
             apply(libs.plugins.baselineprofile.get().pluginId)
         }

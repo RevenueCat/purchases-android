@@ -1,11 +1,10 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
 }
 
 android {
     namespace = "com.revenuecat.testpurchasesandroidcompatibility"
-    compileSdk = 34 // Keeping it at 34 to test compatibility with purchases-android
+    compileSdk = 35 // Keeping it at 35 to test compatibility with purchases-android
 
     defaultConfig {
         applicationId = "com.revenuecat.testpurchasesandroidcompatibility"

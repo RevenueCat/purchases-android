@@ -251,14 +251,11 @@ fun DokkaSourceSetSpec.configureDocumentedSourceSet() {
 
 dokka {
     dokkaSourceSets {
-        named("customEntitlementComputation") {
+        // AGP registers variant source sets after this block runs, so they can only be reached lazily.
+        matching { it.name.startsWith("customEntitlementComputation") }.configureEach {
             suppress.set(true)
         }
-        named("defaults") {
-            dependentSourceSets.addLater(dokkaSourceSets.named("main").flatMap { it.sourceSetId })
-            configureDocumentedSourceSet()
-        }
-        named("main") {
+        matching { it.name == "defaultsRelease" }.configureEach {
             configureDocumentedSourceSet()
             sourceLink {
                 localDirectory.set(file("src/main/kotlin"))
