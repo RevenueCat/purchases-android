@@ -85,6 +85,18 @@ class CheckpointWorkflowPresenterTest {
     }
 
     @Test
+    fun `the workflow is presented against the offerings the checkpoint resolved to`() {
+        val resolution = CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null)
+        coEvery { mockPurchases.resolveCheckpoint(any(), any()) } returns resolution
+
+        launchCheckpoint()
+
+        assertThat(lastOptions!!.injectedWorkflow).isSameAs(resolution.workflow)
+        assertThat(lastOptions!!.injectedWorkflowOfferings).isSameAs(resolution.offerings)
+        assertThat(lastOptions!!.injectedWorkflowUiConfig).isSameAs(resolution.uiConfig)
+    }
+
+    @Test
     fun `showing a stale callId does not present and does not disturb the live call`() {
         launchCheckpoint()
         val liveDialog = ShadowDialog.getLatestDialog()

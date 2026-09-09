@@ -2,6 +2,7 @@ package com.revenuecat.purchases.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 
@@ -24,7 +25,8 @@ public sealed class CheckpointResolution {
     ) : CheckpointResolution()
 
     /**
-     * The checkpoint matched [workflow], which should be presented against [offering].
+     * The checkpoint matched [workflow]. Each step resolves the offering it presents from [offerings] when it is
+     * reached; a step whose offering is missing fails at presentation time, not here.
      *
      * [checkpointRuleId] identifies the rule that was served, for the hit event to attribute. It is null when
      * the rules topic did not carry an id for that rule.
@@ -32,7 +34,7 @@ public sealed class CheckpointResolution {
     public data class MatchedWorkflow(
         val workflow: PublishedWorkflow,
         val uiConfig: UiConfig,
-        val offering: Offering,
+        val offerings: Offerings,
         val checkpointRuleId: String?,
     ) : CheckpointResolution()
 
