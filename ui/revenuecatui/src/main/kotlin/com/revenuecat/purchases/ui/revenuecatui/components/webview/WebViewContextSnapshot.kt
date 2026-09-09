@@ -33,7 +33,7 @@ internal fun webViewContextSnapshot(
     return webViewContextSnapshot(
         WebViewContextInput(
             customVariables = state.mergedCustomVariables,
-            offering = state.offering,
+            offering = state.offering.takeIf { state.workflowScreen?.hasOffering != false },
             packages = state.paywallPackages,
             // Inside a package component the values describe that package; elsewhere they follow
             // the selection, matching what a text component resolves.
