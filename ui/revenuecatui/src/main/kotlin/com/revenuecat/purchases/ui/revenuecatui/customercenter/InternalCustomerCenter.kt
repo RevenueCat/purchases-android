@@ -63,6 +63,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.Custom
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModel
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelFactory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.viewmodel.CustomerCenterViewModelImpl
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.AppUpdateWarningView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CreateSupportTicketView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCenterErrorView
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.views.CustomerCenterLoadingView
@@ -164,6 +165,14 @@ internal fun InternalCustomerCenter(
                     viewModel.pathButtonPressed(context, action.path, action.purchaseInformation)
                 }
 
+                is CustomerCenterAction.UpdateApp -> {
+                    viewModel.updateApp(context)
+                }
+
+                is CustomerCenterAction.ContinueDespiteAppUpdate -> {
+                    viewModel.continueDespiteAppUpdate()
+                }
+
                 is CustomerCenterAction.PerformRestore -> {
                     coroutineScope.launch {
                         viewModel.restorePurchases()
@@ -244,10 +253,18 @@ private fun InternalCustomerCenter(
                 }
 
                 is CustomerCenterState.Success -> {
-                    CustomerCenterLoaded(
-                        state = state,
-                        onAction = onAction,
-                    )
+                    if (state.showAppUpdateWarning) {
+                        AppUpdateWarningView(
+                            localization = state.customerCenterConfigData.localization,
+                            onUpdateAppClick = { onAction(CustomerCenterAction.UpdateApp) },
+                            onContinueAnywayClick = { onAction(CustomerCenterAction.ContinueDespiteAppUpdate) },
+                        )
+                    } else {
+                        CustomerCenterLoaded(
+                            state = state,
+                            onAction = onAction,
+                        )
+                    }
                 }
             }
         }
@@ -638,6 +655,7 @@ private fun getCustomerCenterViewModel(
             MaterialTheme.colorScheme,
             isDarkMode = isDarkMode,
             listener = listener,
+            appVersion = LocalContext.current.currentAppVersion(),
         ),
     ),
 ): CustomerCenterViewModel {

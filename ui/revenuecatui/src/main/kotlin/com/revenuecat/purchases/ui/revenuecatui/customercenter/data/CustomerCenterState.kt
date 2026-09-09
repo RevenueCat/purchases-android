@@ -42,6 +42,7 @@ internal sealed class CustomerCenterState(
         @get:JvmSynthetic val showSupportTicketSuccessSnackbar: Boolean = false,
         @get:JvmSynthetic val isRefreshing: Boolean = false,
         @get:JvmSynthetic val shouldShowPurchaseHistory: Boolean = false,
+        @get:JvmSynthetic val showAppUpdateWarning: Boolean = false,
     ) : CustomerCenterState(navigationButtonType) {
         val currentDestination: CustomerCenterDestination
             get() = navigationState.currentDestination

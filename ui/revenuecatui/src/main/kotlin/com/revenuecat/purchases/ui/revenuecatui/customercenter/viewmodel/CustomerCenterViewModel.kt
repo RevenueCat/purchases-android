@@ -60,6 +60,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInfo
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.shouldShowSeeAllPurchases
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.extensions.getLocalizedDescription
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.isAppVersionOutdated
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.resolveOfferingSuspend
 import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
@@ -167,6 +168,10 @@ internal interface CustomerCenterViewModel {
      * Called when the activity resumes. Used to refresh after returning from external subscription management.
      */
     fun onActivityResumed()
+
+    fun updateApp(context: Context)
+
+    fun continueDespiteAppUpdate()
 }
 
 @Stable
@@ -218,7 +223,7 @@ internal sealed class TransactionDetails(
     ) : TransactionDetails(productIdentifier, store, price, isSandbox, purchaseHistoryEntryId, displayName)
 }
 
-@Suppress("TooManyFunctions", "LargeClass")
+@Suppress("TooManyFunctions", "LargeClass", "LongParameterList")
 internal class CustomerCenterViewModelImpl(
     private val purchases: PurchasesType,
     private val dateFormatter: DateFormatter = DefaultDateFormatter(),
@@ -226,14 +231,17 @@ internal class CustomerCenterViewModelImpl(
     private val colorScheme: ColorScheme,
     private var isDarkMode: Boolean,
     private val listener: CustomerCenterListener? = null,
+    private val appVersion: String? = null,
 ) : ViewModel(), CustomerCenterViewModel {
     companion object {
         private const val STOP_FLOW_TIMEOUT = 5_000L
+        private const val PLAY_STORE_DETAILS_URL = "https://play.google.com/store/apps/details?id="
     }
 
     private var impressionCreationData: CustomerCenterImpressionEvent.CreationData? = null
     private var wasBackgrounded = false
     private var shouldRefreshOnResume = false
+    private var ignoreAppUpdateWarning = false
     private val _lastLocaleList = MutableStateFlow(getCurrentLocaleList())
     private val _colorScheme = MutableStateFlow(colorScheme)
     private val _state = MutableStateFlow<CustomerCenterState>(CustomerCenterState.NotLoaded)
@@ -1217,6 +1225,7 @@ internal class CustomerCenterViewModelImpl(
                 isRefreshing = false,
                 shouldShowPurchaseHistory = customerCenterConfigData.support.displayPurchaseHistoryLink == true &&
                     customerInfo.shouldShowSeeAllPurchases(),
+                showAppUpdateWarning = shouldShowAppUpdateWarning(customerCenterConfigData),
             )
             val mainScreenPaths = computeMainScreenPaths(successState)
 
@@ -1262,6 +1271,30 @@ internal class CustomerCenterViewModelImpl(
             wasBackgrounded = false
             if (!shouldRefreshOnResume) {
                 launchRefreshIfPossible()
+            }
+        }
+    }
+
+    // Warn unless the dashboard opted out, and only when we can tell the app is behind.
+    private fun shouldShowAppUpdateWarning(configData: CustomerCenterConfigData): Boolean =
+        !ignoreAppUpdateWarning &&
+            configData.support.shouldWarnCustomerToUpdate != false &&
+            isAppVersionOutdated(appVersion, configData.lastPublishedAppVersion)
+
+    override fun updateApp(context: Context) {
+        openURL(
+            context,
+            PLAY_STORE_DETAILS_URL + context.packageName,
+            HelpPath.OpenMethod.EXTERNAL,
+        )
+    }
+
+    override fun continueDespiteAppUpdate() {
+        ignoreAppUpdateWarning = true
+        _state.update { currentState ->
+            when (currentState) {
+                is CustomerCenterState.Success -> currentState.copy(showAppUpdateWarning = false)
+                else -> currentState
             }
         }
     }

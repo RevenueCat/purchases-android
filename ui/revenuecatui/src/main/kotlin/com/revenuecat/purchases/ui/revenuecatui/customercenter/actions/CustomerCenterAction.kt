@@ -24,5 +24,7 @@ internal sealed class CustomerCenterAction {
     object ShowSupportTicketCreation : CustomerCenterAction()
     object DismissSupportTicketSuccessSnackbar : CustomerCenterAction()
     object ShowPurchaseHistory : CustomerCenterAction()
+    object UpdateApp : CustomerCenterAction()
+    object ContinueDespiteAppUpdate : CustomerCenterAction()
     data class ShowPurchaseHistoryDetail(val purchase: PurchaseInformation) : CustomerCenterAction()
 }

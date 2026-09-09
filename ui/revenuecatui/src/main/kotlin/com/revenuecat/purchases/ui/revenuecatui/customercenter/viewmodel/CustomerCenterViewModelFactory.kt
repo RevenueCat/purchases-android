@@ -11,6 +11,7 @@ internal class CustomerCenterViewModelFactory(
     private val colorScheme: ColorScheme,
     private val isDarkMode: Boolean,
     private val listener: CustomerCenterListener? = null,
+    private val appVersion: String? = null,
 ) : ViewModelProvider.NewInstanceFactory() {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -19,6 +20,7 @@ internal class CustomerCenterViewModelFactory(
             colorScheme = colorScheme,
             isDarkMode = isDarkMode,
             listener = listener,
+            appVersion = appVersion,
         ) as T
     }
 }
