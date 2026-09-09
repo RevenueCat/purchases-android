@@ -28,6 +28,23 @@ private class CheckpointsAPI {
         )
     }
 
+    fun checkParams(presenter: PaywallPresenter) {
+        val fromBuilder: CheckpointParams = CheckpointParams.Builder()
+            .setCustomVariables(mapOf("key" to CustomVariableValue.String("value")))
+            .setPaywallPresenter(presenter)
+            .setPaywallPresenter(null)
+            .build()
+        val fromDsl: CheckpointParams = CheckpointParams {
+            customVariables { "key" to "value" }
+            paywallPresenter(presenter)
+            paywallPresenter { params: PaywallPresenter.Params, completion: PaywallPresenter.Completion ->
+                completion.complete(PaywallPresenter.Completion.Result.Closed)
+            }
+        }
+        val customVariables: Map<String, CustomVariableValue> = fromDsl.customVariables
+        val paywallPresenter: PaywallPresenter? = fromDsl.paywallPresenter
+    }
+
     fun checkPaywallPresenter(purchases: Purchases, presenter: PaywallPresenter) {
         purchases.paywallPresenter = presenter
         purchases.paywallPresenter = null
