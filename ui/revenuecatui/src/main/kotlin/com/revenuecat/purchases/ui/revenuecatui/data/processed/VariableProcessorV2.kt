@@ -483,6 +483,7 @@ internal object VariableProcessorV2 {
                 discountPhase = primaryDiscountPhase(subscriptionOption, rcPackage),
                 locale = currencyLocale,
                 localizedVariableKeys = localizedVariableKeys,
+                freeTrialRendering = FreeTrialRendering.WORD,
             ) {
                 rcPackage?.let { pkg ->
                     val showZero = packageContext?.showZeroDecimalPlacePrices ?: false
@@ -492,7 +493,7 @@ internal object VariableProcessorV2 {
 
         Variable.PRODUCT_OFFER_PRICE_PER_DAY ->
             primaryDiscountPhase(subscriptionOption, rcPackage)
-                ?.productOfferPricePerDay(currencyLocale, localizedVariableKeys)
+                ?.productOfferPricePerDay(currencyLocale, localizedVariableKeys, FreeTrialRendering.WORD)
                 ?: rcPackage?.let { pkg ->
                     val showZero = packageContext?.showZeroDecimalPlacePrices ?: false
                     variableDataProvider?.localizedPricePerDay(pkg, currencyLocale, showZero)
@@ -500,7 +501,7 @@ internal object VariableProcessorV2 {
 
         Variable.PRODUCT_OFFER_PRICE_PER_WEEK ->
             primaryDiscountPhase(subscriptionOption, rcPackage)
-                ?.productOfferPricePerWeek(currencyLocale, localizedVariableKeys)
+                ?.productOfferPricePerWeek(currencyLocale, localizedVariableKeys, FreeTrialRendering.WORD)
                 ?: rcPackage?.let { pkg ->
                     val showZero = packageContext?.showZeroDecimalPlacePrices ?: false
                     variableDataProvider?.localizedPricePerWeek(pkg, currencyLocale, showZero)
@@ -508,7 +509,7 @@ internal object VariableProcessorV2 {
 
         Variable.PRODUCT_OFFER_PRICE_PER_MONTH ->
             primaryDiscountPhase(subscriptionOption, rcPackage)
-                ?.productOfferPricePerMonth(currencyLocale, localizedVariableKeys)
+                ?.productOfferPricePerMonth(currencyLocale, localizedVariableKeys, FreeTrialRendering.WORD)
                 ?: rcPackage?.let { pkg ->
                     val showZero = packageContext?.showZeroDecimalPlacePrices ?: false
                     variableDataProvider?.localizedPricePerMonth(pkg, currencyLocale, showZero)
@@ -516,7 +517,7 @@ internal object VariableProcessorV2 {
 
         Variable.PRODUCT_OFFER_PRICE_PER_YEAR ->
             primaryDiscountPhase(subscriptionOption, rcPackage)
-                ?.productOfferPricePerYear(currencyLocale, localizedVariableKeys)
+                ?.productOfferPricePerYear(currencyLocale, localizedVariableKeys, FreeTrialRendering.WORD)
                 ?: rcPackage?.let { pkg ->
                     val showZero = packageContext?.showZeroDecimalPlacePrices ?: false
                     variableDataProvider?.localizedPricePerYear(pkg, currencyLocale, showZero)
@@ -606,6 +607,7 @@ internal object VariableProcessorV2 {
                 discountPhase = secondaryDiscountPhase(subscriptionOption, rcPackage),
                 locale = currencyLocale,
                 localizedVariableKeys = localizedVariableKeys,
+                freeTrialRendering = FreeTrialRendering.WORD,
             ) {
                 rcPackage?.let { pkg ->
                     val showZero = packageContext?.showZeroDecimalPlacePrices ?: false
