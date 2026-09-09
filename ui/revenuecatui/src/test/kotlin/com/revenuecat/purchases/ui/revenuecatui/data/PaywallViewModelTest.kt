@@ -238,6 +238,7 @@ class PaywallViewModelTest {
         dismissInvoked = false
 
         coEvery { purchases.awaitOfferings() } returns offerings
+        coEvery { purchases.awaitWorkflowBlobRef(any()) } returns null
         coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
 
