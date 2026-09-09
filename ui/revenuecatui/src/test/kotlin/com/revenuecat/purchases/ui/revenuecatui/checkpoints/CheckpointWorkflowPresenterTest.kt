@@ -120,7 +120,7 @@ class CheckpointWorkflowPresenterTest {
         lastOptions!!.dismissRequest()
 
         assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
-        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Dismissed)
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Dismissed)
         assertThat(backedOut()).isFalse
     }
 
@@ -131,7 +131,7 @@ class CheckpointWorkflowPresenterTest {
         lastOptions!!.dismissRequestWithExitOffering!!(null, null, PaywallDismissReason.CLOSE)
 
         assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
-        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Dismissed)
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Dismissed)
         assertThat(backedOut()).isFalse
     }
 
@@ -143,7 +143,7 @@ class CheckpointWorkflowPresenterTest {
         lastOptions!!.dismissRequestWithExitOffering!!(null, PaywallResult.Error(error), PaywallDismissReason.CLOSE)
 
         assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
-        assertThat((paywallOutcome() as CheckpointPaywallOutcome.Error).error).isEqualTo(error)
+        assertThat((paywallOutcome() as CheckpointFlowOutcome.Error).error).isEqualTo(error)
         assertThat(backedOut()).isFalse
     }
 
@@ -154,7 +154,7 @@ class CheckpointWorkflowPresenterTest {
         lastOptions!!.dismissRequestWithExitOffering!!(null, null, PaywallDismissReason.NAVIGATED_BACK)
 
         assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
-        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Dismissed)
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Dismissed)
         assertThat(backedOut()).isTrue
     }
 
@@ -163,11 +163,11 @@ class CheckpointWorkflowPresenterTest {
         val customerInfo = mockk<CustomerInfo>()
         val storeTransaction = mockk<StoreTransaction>()
         launchCheckpoint()
-        manager.recordOutcome(currentCallId(), CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+        manager.recordOutcome(currentCallId(), CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
 
         lastOptions!!.dismissRequestWithExitOffering!!(null, null, PaywallDismissReason.NAVIGATED_BACK)
 
-        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
         assertThat(backedOut()).isFalse
     }
 
@@ -190,12 +190,12 @@ class CheckpointWorkflowPresenterTest {
         val customerInfo = mockk<CustomerInfo>()
         val storeTransaction = mockk<StoreTransaction>()
         launchCheckpoint()
-        manager.recordOutcome(currentCallId(), CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+        manager.recordOutcome(currentCallId(), CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
 
         controller.recreate()
         lastOptions!!.dismissRequest()
 
-        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
     }
 
     @Test
@@ -203,14 +203,14 @@ class CheckpointWorkflowPresenterTest {
         val customerInfo = mockk<CustomerInfo>()
         val storeTransaction = mockk<StoreTransaction>()
         launchCheckpoint()
-        manager.recordOutcome(currentCallId(), CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+        manager.recordOutcome(currentCallId(), CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
         val dialog = ShadowDialog.getLatestDialog()
 
         controller.get().finish()
         controller.pause().stop().destroy()
 
         assertThat(dialog.isShowing).isFalse
-        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
     }
 
     @Test
@@ -244,7 +244,7 @@ class CheckpointWorkflowPresenterTest {
         ShadowDialog.getLatestDialog().dismiss()
         shadowOf(Looper.getMainLooper()).idle()
 
-        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Dismissed)
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Dismissed)
     }
 
     @Test
@@ -277,12 +277,12 @@ class CheckpointWorkflowPresenterTest {
         val customerInfo = mockk<CustomerInfo>()
         val storeTransaction = mockk<StoreTransaction>()
         launchCheckpoint()
-        manager.recordOutcome(currentCallId(), CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+        manager.recordOutcome(currentCallId(), CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
         contentFactory = { throw IllegalStateException("content failed") }
 
         controller.recreate()
 
-        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
     }
 
     @Test
@@ -293,8 +293,8 @@ class CheckpointWorkflowPresenterTest {
         controller.recreate()
 
         val outcome = paywallOutcome()
-        assertThat(outcome).isInstanceOf(CheckpointPaywallOutcome.Error::class.java)
-        assertThat((outcome as CheckpointPaywallOutcome.Error).error.code)
+        assertThat(outcome).isInstanceOf(CheckpointFlowOutcome.Error::class.java)
+        assertThat((outcome as CheckpointFlowOutcome.Error).error.code)
             .isEqualTo(PurchasesErrorCode.ConfigurationError)
     }
 
@@ -346,8 +346,8 @@ class CheckpointWorkflowPresenterTest {
 
     private fun currentCallId(): String = presentedCallIds.last()
 
-    private fun paywallOutcome(): CheckpointPaywallOutcome? =
-        (result?.result as? CheckpointResult.PaywallPresented)?.paywallOutcome
+    private fun paywallOutcome(): CheckpointFlowOutcome? =
+        result?.flowOutcome
 
     private fun backedOut(): Boolean? = result?.backedOut
 
