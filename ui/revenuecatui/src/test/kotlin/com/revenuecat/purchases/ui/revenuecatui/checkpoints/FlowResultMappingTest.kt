@@ -55,6 +55,14 @@ class FlowResultMappingTest {
     }
 
     @Test
+    fun `a finished app-owned presentation obtains the entitlements that were not active before`() {
+        val customerInfo = customerInfoWithActive("pro", "plus")
+        val run = presented(CheckpointFlowOutcome.Finished(customerInfo, reportedPurchase = false))
+
+        assertThat(run.toResult(setOf("plus")).obtainedIdentifiers()).containsExactly("pro")
+    }
+
+    @Test
     fun `a dismissed or web checkout outcome yields an empty result`() {
         listOf(CheckpointFlowOutcome.Dismissed, CheckpointFlowOutcome.WebCheckoutOpened).forEach { outcome ->
             assertThat(presented(outcome).toResult(emptySet())).isEqualTo(FlowResult(emptySet()))
