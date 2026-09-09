@@ -14,26 +14,69 @@ internal fun MeasureScope.arrangeConstrainedFillItems(
     sizes: IntArray,
     spacing: Int,
 ): IntArray {
-    if (config.distribution.usesAllAvailableSpace) {
-        return flexibleSpacePositions(
+    return if (config.distribution.usesAllAvailableSpace) {
+        flexibleSpacePositions(
             totalSize = totalSize,
             sizes = sizes,
             spacing = spacing,
             distribution = config.distribution,
             reverseInput = config.orientation == Orientation.Horizontal && layoutDirection == LayoutDirection.Rtl,
         )
-    }
-
-    return IntArray(sizes.size).also { positions ->
-        when (config) {
-            is ConstrainedFillLayout.Config.Horizontal -> with(config.arrangement) {
-                arrange(totalSize, sizes, layoutDirection, positions)
-            }
-            is ConstrainedFillLayout.Config.Vertical -> with(config.arrangement) {
-                arrange(totalSize, sizes, positions)
+    } else {
+        val occupiedSize = sizes.sum() + spacing * (sizes.size - 1).coerceAtLeast(0)
+        if (occupiedSize > totalSize) {
+            overflowingFixedSpacingPositions(
+                config = config,
+                totalSize = totalSize,
+                sizes = sizes,
+                spacing = spacing,
+                occupiedSize = occupiedSize,
+            )
+        } else {
+            IntArray(sizes.size).also { positions ->
+                when (config) {
+                    is ConstrainedFillLayout.Config.Horizontal -> with(config.arrangement) {
+                        arrange(totalSize, sizes, layoutDirection, positions)
+                    }
+                    is ConstrainedFillLayout.Config.Vertical -> with(config.arrangement) {
+                        arrange(totalSize, sizes, positions)
+                    }
+                }
             }
         }
     }
+}
+
+private fun MeasureScope.overflowingFixedSpacingPositions(
+    config: ConstrainedFillLayout.Config,
+    totalSize: Int,
+    sizes: IntArray,
+    spacing: Int,
+    occupiedSize: Int,
+): IntArray {
+    val isRtl = config.orientation == Orientation.Horizontal && layoutDirection == LayoutDirection.Rtl
+    val groupStart = when (config.distribution) {
+        FlexDistribution.START -> if (isRtl) totalSize - occupiedSize else 0
+        FlexDistribution.END -> if (isRtl) 0 else totalSize - occupiedSize
+        FlexDistribution.CENTER -> (totalSize - occupiedSize) / 2
+        else -> error("Expected a fixed-spacing distribution, but was ${config.distribution}.")
+    }
+    val positions = IntArray(sizes.size)
+    if (isRtl) {
+        var currentPosition = groupStart + occupiedSize
+        sizes.forEachIndexed { index, size ->
+            currentPosition -= size
+            positions[index] = currentPosition
+            currentPosition -= spacing
+        }
+    } else {
+        var currentPosition = groupStart
+        sizes.forEachIndexed { index, size ->
+            positions[index] = currentPosition
+            currentPosition += size + spacing
+        }
+    }
+    return positions
 }
 
 private fun flexibleSpacePositions(

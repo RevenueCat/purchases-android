@@ -6,6 +6,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import kotlin.math.roundToInt
+import kotlin.math.sign
 
 /**
  * Divides [availableSpace] equally between Fill children while honoring their minimums and maximums.
@@ -38,10 +39,14 @@ internal fun allocateConstrainedFillSpace(
         }
 
         if (constrainedIndices.isEmpty()) {
-            val baseShare = remainingSpace / remainingIndices.size
-            val remainder = remainingSpace % remainingIndices.size
-            remainingIndices.forEachIndexed { remainderIndex, index ->
-                result[index] = baseShare.toInt() + if (remainderIndex < remainder) 1 else 0
+            // Match Row/Column's weight rounding: round each equal share, then correct the rounding error one
+            // pixel at a time starting from the first child.
+            val roundedShare = equalShare.roundToInt()
+            var remainder = remainingSpace.toInt() - roundedShare * remainingIndices.size
+            remainingIndices.forEach { index ->
+                val correction = remainder.sign
+                result[index] = roundedShare + correction
+                remainder -= correction
             }
             break
         }
