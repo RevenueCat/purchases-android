@@ -4,11 +4,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.paywalls.components.properties.Size
@@ -90,6 +94,49 @@ class SizeModifierTest {
         )
 
         assertThat(measured.width).isEqualTo(40)
+    }
+
+    @Test
+    fun `start alignment places content at the right in RTL`() {
+        assertHorizontalAlignmentInRtl(
+            alignment = Alignment.Start,
+            expectedLeft = 80,
+        )
+    }
+
+    @Test
+    fun `end alignment places content at the left in RTL`() {
+        assertHorizontalAlignmentInRtl(
+            alignment = Alignment.End,
+            expectedLeft = 0,
+        )
+    }
+
+    private fun assertHorizontalAlignmentInRtl(
+        alignment: Alignment.Horizontal,
+        expectedLeft: Int,
+    ) {
+        composeTestRule.setContent {
+            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+                Box(Modifier.requiredSize(100.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .requiredSize(100.dp)
+                            .size(
+                                size = Size(width = Fit(), height = Fit()),
+                                horizontalAlignment = alignment,
+                            )
+                            .testTag(SUBJECT_TAG)
+                            .requiredSize(width = 20.dp, height = 20.dp),
+                    )
+                }
+            }
+        }
+
+        composeTestRule.waitForIdle()
+        val actualLeft = composeTestRule.onNodeWithTag(SUBJECT_TAG).fetchSemanticsNode().boundsInRoot.left
+        val expectedLeftPx = with(composeTestRule.density) { expectedLeft.dp.toPx() }
+        assertThat(actualLeft).isEqualTo(expectedLeftPx)
     }
 
     private fun measure(

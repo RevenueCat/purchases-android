@@ -72,7 +72,7 @@ internal fun Modifier.size(
     )
 
     layout(layoutWidth, layoutHeight) {
-        placeable.placeRelative(x, y)
+        placeable.place(x, y)
     }
 }
 
