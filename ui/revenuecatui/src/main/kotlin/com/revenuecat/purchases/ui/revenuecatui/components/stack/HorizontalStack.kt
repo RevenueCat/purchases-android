@@ -14,6 +14,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalArrangement
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.ComponentSizeParentDataModifier
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
 
 /**
@@ -108,12 +109,16 @@ private fun ConstrainedFillRow(
 ) {
     ConstrainedFillLayout(
         config = config,
-        fillConstraints = items.map { it.size.width as? Fill },
+        fallbackFillConstraints = items.map { it.size.width as? Fill },
         spacing = spacing,
         modifier = modifier,
     ) {
         items.forEachIndexed { index, item ->
-            itemContent(index, item, Modifier)
+            itemContent(
+                index,
+                item,
+                Modifier.then(ComponentSizeParentDataModifier(item.size)),
+            )
         }
     }
 }

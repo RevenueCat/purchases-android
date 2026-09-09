@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.ComponentSizeParentDataModifier
 
 internal object ConstrainedFillLayout {
     internal sealed interface Config {
@@ -44,12 +45,18 @@ internal object ConstrainedFillLayout {
     @Composable
     operator fun invoke(
         config: Config,
-        fillConstraints: List<Fill?>,
+        fallbackFillConstraints: List<Fill?>,
         spacing: Dp,
         modifier: Modifier = Modifier,
         content: @Composable () -> Unit,
     ) {
         Layout(modifier = modifier, content = content) { measurables, constraints ->
+            val fillConstraints = measurables.mapIndexed { index, measurable ->
+                val resolvedMainAxis = (measurable.parentData as? ComponentSizeParentDataModifier)?.size?.let {
+                    if (config.orientation == Orientation.Horizontal) it.width else it.height
+                }
+                resolvedMainAxis as? Fill ?: fallbackFillConstraints.getOrNull(index)
+            }
             val spacingPx = spacing.roundToPx()
             val totalSpacing = spacingPx * (measurables.size - 1).coerceAtLeast(0)
 

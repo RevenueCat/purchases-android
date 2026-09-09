@@ -8,12 +8,15 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
+import com.revenuecat.purchases.paywalls.components.properties.Padding
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
@@ -99,6 +102,82 @@ class StackConstrainedFillDistributionTest {
             firstColorPosition = 30,
             secondColorPosition = 70,
         )
+    }
+
+    @Test
+    fun `horizontal constrained Fill allocation includes resolved margins`() {
+        assertConstrainedFillAllocationIncludesMargins(horizontal = true)
+    }
+
+    @Test
+    fun `vertical constrained Fill allocation includes resolved margins`() {
+        assertConstrainedFillAllocationIncludesMargins(horizontal = false)
+    }
+
+    private fun assertConstrainedFillAllocationIncludesMargins(horizontal: Boolean) {
+        val firstChild = StackComponent(
+            components = emptyList(),
+            size = if (horizontal) {
+                Size(width = Fill(min = 50u), height = Fill())
+            } else {
+                Size(width = Fill(), height = Fill(min = 50u))
+            },
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = emptyList(),
+                    properties = PartialStackComponent(
+                        margin = Padding(top = 10.0, bottom = 10.0, leading = 10.0, trailing = 10.0),
+                    ),
+                ),
+            ),
+        )
+        val secondChild = coloredBlock(
+            size = Size(width = Fill(), height = Fill()),
+            color = Color.Blue,
+        )
+        val stack = StackComponent(
+            components = listOf(firstChild, secondChild),
+            dimension = if (horizontal) {
+                Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START)
+            } else {
+                Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START)
+            },
+            size = if (horizontal) {
+                Size(width = Fixed(100u), height = Fixed(20u))
+            } else {
+                Size(width = Fixed(20u), height = Fixed(100u))
+            },
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Green.toArgb())),
+        )
+        val style = styleFactory.create(stack).getOrThrow().componentStyle as StackComponentStyle
+
+        composeTestRule.setContent {
+            StackComponentView(
+                style = style,
+                state = FakePaywallState(components = emptyList()),
+                clickHandler = {},
+                modifier = Modifier.testTag("stack"),
+            )
+        }
+
+        composeTestRule.waitForIdle()
+        val marginPosition = with(composeTestRule.density) { 65.dp.roundToPx() }
+        val secondChildPosition = with(composeTestRule.density) { 75.dp.roundToPx() }
+        val crossAxisPosition = with(composeTestRule.density) { 10.dp.roundToPx() }
+        val (marginX, marginY) = if (horizontal) {
+            marginPosition to crossAxisPosition
+        } else {
+            crossAxisPosition to marginPosition
+        }
+        val (secondChildX, secondChildY) = if (horizontal) {
+            secondChildPosition to crossAxisPosition
+        } else {
+            crossAxisPosition to secondChildPosition
+        }
+        composeTestRule.onNodeWithTag("stack")
+            .assertPixelColorEquals(Color.Green, marginX, marginY, width = 1, height = 1)
+            .assertPixelColorEquals(Color.Blue, secondChildX, secondChildY, width = 1, height = 1)
     }
 
     @Test
@@ -188,7 +267,10 @@ class StackConstrainedFillDistributionTest {
         )
     }
 
-    private fun coloredBlock(size: Size, color: Color) = StackComponent(
+    private fun coloredBlock(
+        size: Size,
+        color: Color,
+    ) = StackComponent(
         components = emptyList(),
         size = size,
         backgroundColor = ColorScheme(light = ColorInfo.Hex(color.toArgb())),

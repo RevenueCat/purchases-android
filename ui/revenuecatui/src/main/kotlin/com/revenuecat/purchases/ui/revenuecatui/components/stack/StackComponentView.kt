@@ -75,6 +75,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toVerticalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.resolveComponentSizeParentData
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.scrollable
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
@@ -149,6 +150,7 @@ internal fun StackComponentView(
         return
     }
 
+    val resolvedModifier = modifier.resolveComponentSizeParentData(stackState.size)
     val badge = stackState.badge
     if (badge != null) {
         when (badge.style) {
@@ -161,7 +163,7 @@ internal fun StackComponentView(
                     clickHandler,
                     componentInteractionTracker,
                     contentAlpha,
-                    modifier,
+                    resolvedModifier,
                     onStackClick = onStackClick,
                     enabled = enabled,
                     interactionSource = interactionSource,
@@ -180,7 +182,7 @@ internal fun StackComponentView(
                         clickHandler,
                         componentInteractionTracker,
                         contentAlpha,
-                        modifier,
+                        resolvedModifier,
                         onStackClick = onStackClick,
                         enabled = enabled,
                         interactionSource = interactionSource,
@@ -195,7 +197,7 @@ internal fun StackComponentView(
                         clickHandler,
                         componentInteractionTracker,
                         contentAlpha,
-                        modifier,
+                        resolvedModifier,
                         onStackClick = onStackClick,
                         enabled = enabled,
                         interactionSource = interactionSource,
@@ -210,7 +212,7 @@ internal fun StackComponentView(
                     clickHandler = clickHandler,
                     componentInteractionTracker = componentInteractionTracker,
                     contentAlpha = contentAlpha,
-                    modifier = modifier,
+                    modifier = resolvedModifier,
                     onStackClick = onStackClick,
                     enabled = enabled,
                     interactionSource = interactionSource,
@@ -224,7 +226,7 @@ internal fun StackComponentView(
             clickHandler = clickHandler,
             componentInteractionTracker = componentInteractionTracker,
             contentAlpha = contentAlpha,
-            modifier = modifier,
+            modifier = resolvedModifier,
             onStackClick = onStackClick,
             enabled = enabled,
             interactionSource = interactionSource,
