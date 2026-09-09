@@ -90,7 +90,7 @@ class CheckpointWorkflowPresenterTest {
     @Test
     fun `the workflow is presented against the offerings the checkpoint resolved to`() {
         val resolution = CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null)
-        coEvery { mockPurchases.resolveCheckpoint(any(), any()) } returns resolution
+        coEvery { mockPurchases.internalResolveCp(any(), any()) } returns resolution
 
         launchCheckpoint()
 
