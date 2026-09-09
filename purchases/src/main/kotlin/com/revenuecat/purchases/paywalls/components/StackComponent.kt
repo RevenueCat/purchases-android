@@ -113,5 +113,11 @@ public class PartialStackComponent(
 @OptIn(InternalRevenueCatAPI::class)
 internal object StackOverflowDeserializer : EnumDeserializerWithDefault<StackComponent.Overflow>(
     serialName = "com.revenuecat.purchases.paywalls.components.StackComponent.Overflow",
+    valuesByType = mapOf(
+        "none" to StackComponent.Overflow.NONE,
+        // The schema's explicit "not scrollable" value.
+        "default" to StackComponent.Overflow.NONE,
+        "scroll" to StackComponent.Overflow.SCROLL,
+    ),
     defaultValue = StackComponent.Overflow.NONE,
 )

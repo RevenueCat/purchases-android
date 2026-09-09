@@ -37,6 +37,17 @@ internal class ShouldWrapMainContentInVerticalScrollTest {
     }
 
     @Test
+    fun `root stack with scrolling explicitly disabled is not wrapped`() {
+        val stack = previewStackComponentStyle(
+            children = emptyList(),
+            scrollOrientation = null,
+            scrollExplicitlyDisabled = true,
+        )
+
+        assertThat(shouldWrapMainContentInVerticalScroll(stack)).isFalse()
+    }
+
+    @Test
     fun `non-stack root component is wrapped`() {
         val text = previewTextComponentStyle(text = "non-stack root")
 
