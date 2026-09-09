@@ -67,7 +67,6 @@
     <ID>ForbiddenPublicEnum:TypographyType.kt$TypographyType</ID>
     <ID>ForbiddenPublicEnum:VerificationResult.kt$VerificationResult</ID>
     <ID>ForbiddenPublicSealedClass:AmazonPurchasingData.kt$AmazonPurchasingData : PurchasingData</ID>
-    <ID>ForbiddenPublicSealedClass:GalaxyPurchasingData.kt$GalaxyPurchasingData : PurchasingData</ID>
     <ID>ForbiddenPublicSealedClass:GooglePurchasingData.kt$GooglePurchasingData : PurchasingData</ID>
     <ID>ForbiddenPublicSealedClass:PaywallFont.kt$PaywallFont : Parcelable</ID>
     <ID>ForbiddenPublicSealedClass:PaywallResult.kt$PaywallResult : Parcelable</ID>
