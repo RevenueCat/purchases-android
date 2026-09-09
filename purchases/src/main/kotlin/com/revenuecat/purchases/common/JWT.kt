@@ -32,7 +32,9 @@ internal class JWT private constructor(private val payload: JSONObject) {
 
     companion object {
         private const val EXPECTED_SEGMENT_COUNT = 3
+        private const val HEADER_SEGMENT_INDEX = 0
         private const val PAYLOAD_SEGMENT_INDEX = 1
+        private const val SIGNATURE_SEGMENT_INDEX = 2
 
         private const val ISSUER_CLAIM = "iss"
         private const val APP_USER_ID_CLAIM = "rc.app_user_id"
@@ -57,24 +59,30 @@ internal class JWT private constructor(private val payload: JSONObject) {
             val segments = token.split(".")
             if (segments.size != EXPECTED_SEGMENT_COUNT) return null
 
-            val decodedSegments = segments.map { decodeBase64UrlSegment(it) ?: return null }
+            val header = decodeBase64UrlSegment(segments[HEADER_SEGMENT_INDEX])
+            val payloadText = decodeBase64UrlSegment(segments[PAYLOAD_SEGMENT_INDEX])
+            val signature = decodeBase64UrlSegment(segments[SIGNATURE_SEGMENT_INDEX])
 
-            val payload = try {
-                JSONObject(decodedSegments[PAYLOAD_SEGMENT_INDEX])
-            } catch (@Suppress("SwallowedException") e: JSONException) {
-                return null
+            return if (header != null && payloadText != null && signature != null) {
+                parsePayload(payloadText)?.let { JWT(it) }
+            } else {
+                null
             }
-
-            return JWT(payload)
         }
 
-        private fun decodeBase64UrlSegment(segment: String): String? {
-            return try {
+        private fun parsePayload(payloadText: String): JSONObject? =
+            try {
+                JSONObject(payloadText)
+            } catch (@Suppress("SwallowedException") e: JSONException) {
+                null
+            }
+
+        private fun decodeBase64UrlSegment(segment: String): String? =
+            try {
                 val bytes = Base64.decode(segment, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
                 String(bytes, Charsets.UTF_8)
             } catch (@Suppress("SwallowedException") e: IllegalArgumentException) {
                 null
             }
-        }
     }
 }
