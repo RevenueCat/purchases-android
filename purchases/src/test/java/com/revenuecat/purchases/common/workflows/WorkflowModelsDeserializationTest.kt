@@ -229,12 +229,42 @@ internal class WorkflowModelsDeserializationTest {
     }
 
     @Test
-    fun `WorkflowStep offeringIdentifier ignores the legacy flat offering_identifier`() {
+    fun `WorkflowStep offeringIdentifier falls back to the flat offering_identifier`() {
         val json = """
             {"id": "step_1", "param_values": {"offering_identifier": "default"}}
         """.trimIndent()
         val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isEqualTo("default")
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier prefers the nested offering over the flat offering_identifier`() {
+        val json = """
+            {"id": "step_1", "param_values": {"offering": {"identifier": "nested"}, "offering_identifier": "flat"}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isEqualTo("nested")
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier falls back to the flat offering_identifier when the nested one is invalid`() {
+        val json = """
+            {"id": "step_1", "param_values": {"offering": {"identifier": 42}, "offering_identifier": "flat"}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
         assertThat(step.offeringIdentifier).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier is null for a non-string or blank flat offering_identifier`() {
+        listOf(
+            """{"id": "step_1", "param_values": {"offering_identifier": 42}}""",
+            """{"id": "step_1", "param_values": {"offering_identifier": null}}""",
+            """{"id": "step_1", "param_values": {"offering_identifier": "  "}}""",
+        ).forEach { json ->
+            val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+            assertThat(step.offeringIdentifier).describedAs(json).isNull()
+        }
     }
 
     @Test

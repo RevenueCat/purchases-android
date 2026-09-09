@@ -129,12 +129,15 @@ public data class WorkflowStep(
     public val isOfferingStep: Boolean
         get() = type == OFFERING_STEP_TYPE
 
-    /** The offering this step presents, read from `param_values.offering.identifier`. */
+    /**
+     * The offering this step presents, read from `param_values.offering.identifier`, or from
+     * `param_values.offering_identifier` when the step carries the identifier flat.
+     */
     @InternalRevenueCatAPI
     public val offeringIdentifier: String?
         get() {
-            return (paramValues[OFFERING_PARAM] as? JsonObject)
-                ?.get(OFFERING_IDENTIFIER_PARAM)
+            val nested = (paramValues[OFFERING_PARAM] as? JsonObject)?.get(OFFERING_IDENTIFIER_PARAM)
+            return (nested ?: paramValues[FLAT_OFFERING_IDENTIFIER_PARAM])
                 ?.let { it as? JsonPrimitive }
                 ?.takeIf { it.isString }
                 ?.content
@@ -150,6 +153,7 @@ private const val EXPERIMENT_VARIANT_PARAM = "experiment_variant"
 private const val OFFERING_STEP_TYPE = "offering"
 private const val OFFERING_PARAM = "offering"
 private const val OFFERING_IDENTIFIER_PARAM = "identifier"
+private const val FLAT_OFFERING_IDENTIFIER_PARAM = "offering_identifier"
 
 @InternalRevenueCatAPI
 @Serializable
