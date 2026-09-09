@@ -13,6 +13,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.LocaleList
+import androidx.compose.ui.unit.DpSize
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.Store
@@ -143,6 +144,14 @@ internal sealed interface PaywallState {
              */
             val mergedCustomVariables: Map<String, CustomVariableValue> =
                 defaultCustomVariables + customVariables
+
+            /**
+             * The paywall's measured bounds in dp, which window size rules evaluate against —
+             * a paywall in a sheet or pane sees its own size, not the app window's. Set by the
+             * paywall root's measurement; null until first measure, matching iOS.
+             */
+            var paywallBoundsDp: DpSize? by mutableStateOf(null)
+                @JvmSynthetic internal set
 
             val store: Store get() = purchases.store
 
@@ -521,7 +530,8 @@ internal val PaywallState.Loaded.Legacy.isInFullScreenMode: Boolean
  * `selected_package` visibility rules can't oscillate.
  *
  * Note this only covers the package component's own rules. A package hidden solely by an enclosing
- * stack's rule still resolves visible here.
+ * stack's rule still resolves visible here. The screen condition is pinned to COMPACT and the window
+ * size to unknown, so size-class and window-size visibility rules do not influence selection either.
  */
 private fun PaywallState.Loaded.Components.AvailablePackages.Info.resolvesVisible(
     customVariables: Map<String, CustomVariableValue>,
