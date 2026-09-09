@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <style name="RcCheckpointWindowAnimation">
+        <item name="android:windowEnterAnimation">@anim/rc_checkpoint_window_enter</item>
+        <item name="android:windowExitAnimation">@anim/rc_checkpoint_window_exit</item>
+    </style>
+
 </resources>

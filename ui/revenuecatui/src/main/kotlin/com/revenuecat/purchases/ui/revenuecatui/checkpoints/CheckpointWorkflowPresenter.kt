@@ -19,6 +19,7 @@ import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.helpers.EDGE_TO_EDGE_WINDOW_THEME
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.applyEdgeToEdge
@@ -86,6 +87,11 @@ internal class CheckpointWorkflowPresenter(
             .build()
         val dialog = ComponentDialog(activity, EDGE_TO_EDGE_WINDOW_THEME)
         dialog.window?.applyEdgeToEdge()
+        // A re-present after a configuration change replaces a window that was already there, so only a first
+        // present fades in.
+        if (pendingSavedState == null) {
+            dialog.window?.setWindowAnimations(R.style.RcCheckpointWindowAnimation)
+        }
         // Back must never fall through to the dispatcher's cancel fallback; the paywall's own BackHandler
         // decides what back does.
         dialog.setCancelable(false)
@@ -120,6 +126,7 @@ internal class CheckpointWorkflowPresenter(
             val isConfigurationChange = activity.isChangingConfigurations
             if (isConfigurationChange) {
                 pendingSavedState = dialog?.onSaveInstanceState()
+                dialog?.window?.setWindowAnimations(0)
             }
             // Always before the host's own window teardown, or the framework reports the dialog as leaked.
             dismissWindowOnly()
