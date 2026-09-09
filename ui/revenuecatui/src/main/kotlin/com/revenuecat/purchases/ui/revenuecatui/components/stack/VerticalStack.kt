@@ -31,8 +31,12 @@ internal fun VerticalStack(
     modifier: Modifier = Modifier,
     itemContent: @Composable (index: Int, item: ComponentStyle, modifier: Modifier) -> Unit,
 ) {
+    // Children resolve their size (including overrides and margins) themselves, so the stack cannot know up front
+    // whether a Fill child is constrained. Any Fill child therefore goes through ConstrainedFillLayout, which reads
+    // the resolved size from parent data at measure time.
+    val hasAnyFillHeight = items.any { it.size.height is Fill }
     val fitMinimumUsesFlexDistribution = size.height.requiresFitMinimumLayout(dimension.distribution)
-    if (!mainAxisUnbounded && (items.hasConstrainedFillHeight || fitMinimumUsesFlexDistribution)) {
+    if (!mainAxisUnbounded && (hasAnyFillHeight || fitMinimumUsesFlexDistribution)) {
         ConstrainedFillColumn(
             items = items,
             config = ConstrainedFillLayout.Config.Vertical(
@@ -55,7 +59,6 @@ internal fun VerticalStack(
         ),
         horizontalAlignment = dimension.alignment.toAlignment(),
     ) {
-        val hasAnyFillHeight = items.any { it.size.height is Fill }
         val shouldApplyFillSpacers = size.height.allowsFlexDistribution && !hasAnyFillHeight
         val fillSpaceSpacer: @Composable (Float) -> Unit = @Composable { weight ->
             Spacer(modifier = Modifier.weight(weight))
@@ -74,13 +77,7 @@ internal fun VerticalStack(
 
         edgeSpacerIfNeeded()
         items.forEachIndexed { index, item ->
-            val fillHeight = item.size.height as? Fill
-            val itemModifier = if (fillHeight != null && !mainAxisUnbounded) {
-                Modifier.weight(1f, fill = fillHeight.max == null)
-            } else {
-                Modifier
-            }
-            itemContent(index, item, itemModifier)
+            itemContent(index, item, Modifier)
 
             if (dimension.distribution.usesAllAvailableSpace && index != items.lastIndex) {
                 Spacer(modifier = Modifier.heightIn(min = spacing))
@@ -93,12 +90,6 @@ internal fun VerticalStack(
     }
 }
 
-private val List<ComponentStyle>.hasConstrainedFillHeight: Boolean
-    get() = any {
-        val fill = it.size.height as? Fill
-        fill != null && (fill.min != null || fill.max != null)
-    }
-
 @Composable
 private fun ConstrainedFillColumn(
     items: List<ComponentStyle>,
@@ -109,7 +100,6 @@ private fun ConstrainedFillColumn(
 ) {
     ConstrainedFillLayout(
         config = config,
-        fallbackFillConstraints = items.map { it.size.height as? Fill },
         spacing = spacing,
         modifier = modifier,
     ) {

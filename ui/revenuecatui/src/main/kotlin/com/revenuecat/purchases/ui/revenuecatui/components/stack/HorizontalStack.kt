@@ -31,8 +31,12 @@ internal fun HorizontalStack(
     modifier: Modifier = Modifier,
     itemContent: @Composable (index: Int, item: ComponentStyle, modifier: Modifier) -> Unit,
 ) {
+    // Children resolve their size (including overrides and margins) themselves, so the stack cannot know up front
+    // whether a Fill child is constrained. Any Fill child therefore goes through ConstrainedFillLayout, which reads
+    // the resolved size from parent data at measure time.
+    val hasAnyFillWidth = items.any { it.size.width is Fill }
     val fitMinimumUsesFlexDistribution = size.width.requiresFitMinimumLayout(dimension.distribution)
-    if (!mainAxisUnbounded && (items.hasConstrainedFillWidth || fitMinimumUsesFlexDistribution)) {
+    if (!mainAxisUnbounded && (hasAnyFillWidth || fitMinimumUsesFlexDistribution)) {
         ConstrainedFillRow(
             items = items,
             config = ConstrainedFillLayout.Config.Horizontal(
@@ -55,7 +59,6 @@ internal fun HorizontalStack(
             spacing = spacing,
         ),
     ) {
-        val hasAnyFillWidth = items.any { it.size.width is Fill }
         val shouldApplyFillSpacers = size.width.allowsFlexDistribution && !hasAnyFillWidth
         val fillSpaceSpacer: @Composable (Float) -> Unit = @Composable { weight ->
             Spacer(modifier = Modifier.weight(weight))
@@ -74,13 +77,7 @@ internal fun HorizontalStack(
 
         edgeSpacerIfNeeded()
         items.forEachIndexed { index, item ->
-            val fillWidth = item.size.width as? Fill
-            val itemModifier = if (fillWidth != null && !mainAxisUnbounded) {
-                Modifier.weight(1f, fill = fillWidth.max == null)
-            } else {
-                Modifier
-            }
-            itemContent(index, item, itemModifier)
+            itemContent(index, item, Modifier)
 
             if (dimension.distribution.usesAllAvailableSpace && index != items.lastIndex) {
                 Spacer(modifier = Modifier.widthIn(min = spacing))
@@ -93,12 +90,6 @@ internal fun HorizontalStack(
     }
 }
 
-private val List<ComponentStyle>.hasConstrainedFillWidth: Boolean
-    get() = any {
-        val fill = it.size.width as? Fill
-        fill != null && (fill.min != null || fill.max != null)
-    }
-
 @Composable
 private fun ConstrainedFillRow(
     items: List<ComponentStyle>,
@@ -109,7 +100,6 @@ private fun ConstrainedFillRow(
 ) {
     ConstrainedFillLayout(
         config = config,
-        fallbackFillConstraints = items.map { it.size.width as? Fill },
         spacing = spacing,
         modifier = modifier,
     ) {

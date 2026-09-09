@@ -181,6 +181,100 @@ class StackConstrainedFillDistributionTest {
     }
 
     @Test
+    fun `horizontal Fill child capped by an override does not take a full Fill share`() {
+        assertOverriddenFirstChildOccupies20dp(
+            horizontal = true,
+            overrideSize = Size(width = Fill(max = 20u), height = Fill()),
+        )
+    }
+
+    @Test
+    fun `vertical Fill child capped by an override does not take a full Fill share`() {
+        assertOverriddenFirstChildOccupies20dp(
+            horizontal = false,
+            overrideSize = Size(width = Fill(), height = Fill(max = 20u)),
+        )
+    }
+
+    @Test
+    fun `horizontal Fill child overridden to Fixed is not given Fill space`() {
+        assertOverriddenFirstChildOccupies20dp(
+            horizontal = true,
+            overrideSize = Size(width = Fixed(20u), height = Fill()),
+        )
+    }
+
+    @Test
+    fun `vertical Fill child overridden to Fixed is not given Fill space`() {
+        assertOverriddenFirstChildOccupies20dp(
+            horizontal = false,
+            overrideSize = Size(width = Fill(), height = Fixed(20u)),
+        )
+    }
+
+    /**
+     * The stack routes based on the children's *style* sizes, which are plain [Fill] here. Only the override knows
+     * about the constraint, so this verifies the stack picks up the resolved size from parent data at measure time.
+     */
+    private fun assertOverriddenFirstChildOccupies20dp(horizontal: Boolean, overrideSize: Size) {
+        val fillSize = Size(width = Fill(), height = Fill())
+        val firstChild = StackComponent(
+            components = emptyList(),
+            size = fillSize,
+            backgroundColor = ColorScheme(light = ColorInfo.Hex(Color.Red.toArgb())),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = emptyList(),
+                    properties = PartialStackComponent(size = overrideSize),
+                ),
+            ),
+        )
+        val secondChild = coloredBlock(size = fillSize, color = Color.Blue)
+        val stack = StackComponent(
+            components = listOf(firstChild, secondChild),
+            dimension = if (horizontal) {
+                Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START)
+            } else {
+                Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START)
+            },
+            size = if (horizontal) {
+                Size(width = Fixed(100u), height = Fixed(20u))
+            } else {
+                Size(width = Fixed(20u), height = Fixed(100u))
+            },
+        )
+        val style = styleFactory.create(stack).getOrThrow().componentStyle as StackComponentStyle
+
+        composeTestRule.setContent {
+            StackComponentView(
+                style = style,
+                state = FakePaywallState(components = emptyList()),
+                clickHandler = {},
+                modifier = Modifier.testTag("stack"),
+            )
+        }
+
+        composeTestRule.waitForIdle()
+        // First child should occupy 0..20dp; with an equal Fill split it would occupy 0..50dp instead.
+        val insideFirstChild = with(composeTestRule.density) { 10.dp.roundToPx() }
+        val insideSecondChild = with(composeTestRule.density) { 30.dp.roundToPx() }
+        val crossAxisPosition = with(composeTestRule.density) { 10.dp.roundToPx() }
+        val (firstX, firstY) = if (horizontal) {
+            insideFirstChild to crossAxisPosition
+        } else {
+            crossAxisPosition to insideFirstChild
+        }
+        val (secondX, secondY) = if (horizontal) {
+            insideSecondChild to crossAxisPosition
+        } else {
+            crossAxisPosition to insideSecondChild
+        }
+        composeTestRule.onNodeWithTag("stack")
+            .assertPixelColorEquals(Color.Red, firstX, firstY, width = 1, height = 1)
+            .assertPixelColorEquals(Color.Blue, secondX, secondY, width = 1, height = 1)
+    }
+
+    @Test
     fun `nested horizontal Fit minimum does not consume space reserved for sibling`() {
         assertNestedFitMinimum(horizontal = true)
     }
