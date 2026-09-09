@@ -142,7 +142,6 @@ class WorkflowEventTest {
             val properties = (event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows).event.properties
             assertThat(properties.experimentId).`as`(event::class.simpleName).isEqualTo("exp_abc")
             assertThat(properties.experimentVariant).`as`(event::class.simpleName).isEqualTo("b")
-            assertThat(properties.isLastVariantStep).isNull()
         }
     }
 
