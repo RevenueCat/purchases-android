@@ -44,7 +44,12 @@ internal sealed class CheckpointFlowContent {
  * the user navigated back (system back, or a navigate-back action on a workflow's first step) without purchasing
  * or restoring.
  */
-internal class CheckpointRun(val flowOutcome: CheckpointFlowOutcome?, val backedOut: Boolean)
+internal class CheckpointRun(
+    val flowOutcome: CheckpointFlowOutcome?,
+    val backedOut: Boolean,
+    // Releases whatever the SDK still has on screen for this run; invoked once the app has been told.
+    val finishPresentation: () -> Unit = {},
+)
 
 /**
  * Runs a checkpoint hit end to end: asks the core module what the checkpoint resolves to, and presents the
@@ -139,10 +144,14 @@ internal class CheckpointsManager(
         scope.launch {
             val activeEntitlementsBefore = cachedActiveEntitlementIds(purchases)
             val run = runCheckpoint(purchases, identifier, params)
-            if (run.backedOut) {
-                Logger.d("Checkpoint '$identifier': the user backed out, so the callback is not invoked.")
-            } else {
-                callback.onCheckpointPassed(run.toResult(activeEntitlementsBefore))
+            try {
+                if (run.backedOut) {
+                    Logger.d("Checkpoint '$identifier': the user backed out, so the callback is not invoked.")
+                } else {
+                    callback.onCheckpointPassed(run.toResult(activeEntitlementsBefore))
+                }
+            } finally {
+                run.finishPresentation()
             }
         }
     }
@@ -157,12 +166,23 @@ internal class CheckpointsManager(
     // A recorded purchase or restore means the user went through, however the window went away: checkpoint
     // paywalls don't auto-dismiss on restore, so a user who restored and then backed out still went through. A
     // paywall that went away without reporting anything was dismissed.
-    fun onPresentationFinished(callId: String, navigatedBack: Boolean = false) {
-        val finished = take(callId) ?: return
+    fun onPresentationFinished(
+        callId: String,
+        navigatedBack: Boolean = false,
+        finishPresentation: () -> Unit = {},
+    ) {
+        val finished = take(callId) ?: run {
+            finishPresentation()
+            return
+        }
         val recorded = finished.outcome
         val obtained = recorded is CheckpointFlowOutcome.Purchased || recorded is CheckpointFlowOutcome.Restored
         finished.flowFinished.complete(
-            CheckpointRun(recorded ?: CheckpointFlowOutcome.Dismissed, backedOut = navigatedBack && !obtained),
+            CheckpointRun(
+                recorded ?: CheckpointFlowOutcome.Dismissed,
+                backedOut = navigatedBack && !obtained,
+                finishPresentation = finishPresentation,
+            ),
         )
     }
 
