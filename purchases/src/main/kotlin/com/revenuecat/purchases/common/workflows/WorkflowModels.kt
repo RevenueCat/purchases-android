@@ -119,14 +119,14 @@ public data class WorkflowStep(
         }
 
     /**
-     * Set by the backend only on the steps of the enrolled variant, and echoed verbatim on step events so
-     * khepri can enroll on exposure. Null for steps outside an experiment.
+     * The experiment active on this step's path, set by the backend and echoed verbatim on step events.
+     * Null when no experiment applies to the step.
      */
     @InternalRevenueCatAPI
     public val experimentId: String?
         get() = stringParam(EXPERIMENT_ID_PARAM)
 
-    /** The enrolled variant key, alongside [experimentId]. */
+    /** The variant active on this step's path, alongside [experimentId]. */
     @InternalRevenueCatAPI
     public val experimentVariant: String?
         get() = stringParam(EXPERIMENT_VARIANT_PARAM)

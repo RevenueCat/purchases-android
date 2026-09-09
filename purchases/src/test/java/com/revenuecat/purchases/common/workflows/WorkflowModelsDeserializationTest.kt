@@ -65,7 +65,6 @@ internal class WorkflowModelsDeserializationTest {
 
     @Test
     fun `WorkflowStep experiment params are null when absent`() {
-        // Steps outside an enrolled variant (default combo, shared steps) carry no experiment params.
         val json = """
             {"id": "step_1", "type": "screen", "param_values": {"offering_identifier": "premium"}}
         """.trimIndent()
