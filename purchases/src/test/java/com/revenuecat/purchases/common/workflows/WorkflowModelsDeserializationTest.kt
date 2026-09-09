@@ -74,6 +74,16 @@ internal class WorkflowModelsDeserializationTest {
     }
 
     @Test
+    fun `WorkflowStep experiment params are read independently`() {
+        val json = """
+            {"id": "step_1", "type": "screen", "param_values": {"experiment_id": "exp_abc"}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.experimentId).isEqualTo("exp_abc")
+        assertThat(step.experimentVariant).isNull()
+    }
+
+    @Test
     fun `WorkflowStep experiment params are null when not strings`() {
         val json = """
             {"id": "step_1", "type": "screen", "param_values": {"experiment_id": 12, "experiment_variant": null}}

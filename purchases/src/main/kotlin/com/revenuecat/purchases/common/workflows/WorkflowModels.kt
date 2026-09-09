@@ -118,12 +118,12 @@ public data class WorkflowStep(
             }
         }
 
-    /** The experiment running on this step, or null if there is none. */
+    /** The step's `experiment_id` param, or null if it has none. */
     @InternalRevenueCatAPI
     public val experimentId: String?
         get() = stringParam(EXPERIMENT_ID_PARAM)
 
-    /** The variant of [experimentId] this step belongs to. */
+    /** The step's `experiment_variant` param, or null if it has none. */
     @InternalRevenueCatAPI
     public val experimentVariant: String?
         get() = stringParam(EXPERIMENT_VARIANT_PARAM)

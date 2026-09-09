@@ -147,7 +147,7 @@ class WorkflowEventTest {
     }
 
     @Test
-    fun `experiment params default to null so steps outside an experiment send nothing`() {
+    fun `experiment params are null when the step has none`() {
         val event = WorkflowEvent.StepStarted(
             creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date()),
             workflowId = "wfl_abc",

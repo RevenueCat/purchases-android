@@ -1338,7 +1338,6 @@ class PaywallViewModelWorkflowTest {
 
     @Test
     fun `step events echo the experiment params baked into the step`() {
-        // step-2 has no experiment params.
         val experimentStep1 = step1.copy(
             paramValues = mapOf(
                 "experiment_id" to JsonPrimitive("exp_abc"),
@@ -1364,8 +1363,9 @@ class PaywallViewModelWorkflowTest {
         assertThat(step1Started).hasSize(2)
         assertThat(step1Started.map { it.experimentId }).containsOnly("exp_abc")
         assertThat(step1Started.map { it.experimentVariant }).containsOnly("b")
+        // step-1 completes twice: once on forward navigation, once from closePaywall.
         val step1Completed = completed.filter { it.stepId == "step-1" }
-        assertThat(step1Completed).isNotEmpty
+        assertThat(step1Completed).hasSize(2)
         assertThat(step1Completed.map { it.experimentId }).containsOnly("exp_abc")
         assertThat(step1Completed.map { it.experimentVariant }).containsOnly("b")
         assertThat(close.stepId).isEqualTo("step-1")
@@ -1375,6 +1375,9 @@ class PaywallViewModelWorkflowTest {
         val step2Started = started.single { it.stepId == "step-2" }
         assertThat(step2Started.experimentId).isNull()
         assertThat(step2Started.experimentVariant).isNull()
+        val step2Completed = completed.single { it.stepId == "step-2" }
+        assertThat(step2Completed.experimentId).isNull()
+        assertThat(step2Completed.experimentVariant).isNull()
     }
 
     @Test
