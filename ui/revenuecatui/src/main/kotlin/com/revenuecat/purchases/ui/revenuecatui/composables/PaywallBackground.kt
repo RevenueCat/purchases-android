@@ -12,11 +12,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.revenuecat.purchases.paywalls.PaywallData
-import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
-import com.revenuecat.purchases.ui.revenuecatui.extensions.defaultBackgroundPlaceholder
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
 
 // Current implementation uses a transformation on API level < 31, modifier on > 31.
@@ -41,15 +38,7 @@ internal fun BoxScope.PaywallBackground(templateConfiguration: TemplateConfigura
             blur(BackgroundUIConstants.blurSize, edgeTreatment = BlurredEdgeTreatment.Unbounded)
         }
 
-    if (templateConfiguration.configuration.images.background == PaywallData.defaultBackgroundPlaceholder) {
-        LocalImage(
-            resource = R.drawable.default_background,
-            modifier = modifier,
-            contentScale = BackgroundUIConstants.contentScale,
-            transformation = backwardsCompatibleTransformation,
-            alpha = imageAlpha,
-        )
-    } else if (templateConfiguration.images.backgroundUri != null) {
+    if (templateConfiguration.images.backgroundUri != null) {
         // Don't display background images on footer unless it's blurred
         if (shouldBlur || templateConfiguration.mode.isFullScreen) {
             RemoteImage(
