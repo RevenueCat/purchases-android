@@ -75,7 +75,7 @@ class JWTTest {
     @Test
     fun `returns null when the header segment is invalid base64url`() {
         val encodedPayload = base64UrlEncode(JSONObject().toString())
-        val token = "###invalid-base64###.$encodedPayload.$validSignature"
+        val token = "$invalidBase64Segment.$encodedPayload.$validSignature"
 
         assertThat(JWT.decode(token)).isNull()
     }
@@ -83,7 +83,7 @@ class JWTTest {
     @Test
     fun `returns null when the payload segment is invalid base64url`() {
         val header = base64UrlEncode("""{"alg":"none"}""")
-        val token = "$header.###invalid-base64###.$validSignature"
+        val token = "$header.$invalidBase64Segment.$validSignature"
 
         assertThat(JWT.decode(token)).isNull()
     }
@@ -94,7 +94,7 @@ class JWTTest {
         // structurally valid if one of its segments isn't valid base64url.
         val header = base64UrlEncode("""{"alg":"none"}""")
         val encodedPayload = base64UrlEncode(JSONObject().toString())
-        val token = "$header.$encodedPayload.###invalid-base64###"
+        val token = "$header.$encodedPayload.$invalidBase64Segment"
 
         assertThat(JWT.decode(token)).isNull()
     }
@@ -122,6 +122,11 @@ class JWTTest {
     // A fake but structurally valid (i.e. base64url-decodable) signature segment, for tests
     // that need the header/payload decode path to succeed regardless of the signature.
     private val validSignature = base64UrlEncode("signature")
+
+    // A single character can never be valid base64 -- decoding requires at least 2 input
+    // characters to produce 1 output byte -- so this is guaranteed to fail to decode
+    // regardless of alphabet leniency toward any individual character.
+    private val invalidBase64Segment = "!"
 
     private fun buildToken(
         payload: JSONObject,
