@@ -39,6 +39,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.Background
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 
 private val previewBackground = Color(0xFFE2E8F0)
 private val containerBackground = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color(0xFFCBD5E1))))
@@ -197,6 +198,40 @@ private fun VerticalFixedChildrenOverflowMaximumPreview() {
 }
 
 @Preview(
+    name = "Stack · Nested vertical Fit minimum",
+    widthDp = 320,
+    heightDp = 390,
+    showBackground = true,
+)
+@Composable
+private fun VerticalNestedFitMinimumPreview() {
+    NestedFitMinimumPreview(
+        title = "Outer vertical Fit(min=280)",
+        detail = "The blue row should touch the bottom edge.",
+        style = nestedFitMinimumStyle(horizontal = false),
+        width = 240,
+        height = 280,
+    )
+}
+
+@Preview(
+    name = "Stack · Nested horizontal Fit minimum",
+    widthDp = 390,
+    heightDp = 210,
+    showBackground = true,
+)
+@Composable
+private fun HorizontalNestedFitMinimumPreview() {
+    NestedFitMinimumPreview(
+        title = "Outer horizontal Fit(min=320)",
+        detail = "The blue column should touch the trailing edge.",
+        style = nestedFitMinimumStyle(horizontal = true),
+        width = 320,
+        height = 72,
+    )
+}
+
+@Preview(
     name = "Stack · Horizontal uniform Fill distributions",
     widthDp = 320,
     heightDp = 450,
@@ -273,6 +308,37 @@ private fun VerticalNonuniformFillDistributionsPreview() {
                 distribution = distribution,
             )
         }
+    }
+}
+
+@Composable
+private fun NestedFitMinimumPreview(
+    title: String,
+    detail: String,
+    style: StackComponentStyle,
+    width: Int,
+    height: Int,
+) {
+    Column(
+        modifier = Modifier
+            .background(previewBackground)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(text = title)
+        Box(
+            modifier = Modifier
+                .requiredWidth(width.dp)
+                .requiredHeight(height.dp)
+                .border(width = 1.dp, color = Color.Magenta),
+        ) {
+            StackComponentView(
+                style = style,
+                state = previewEmptyState(),
+                clickHandler = {},
+            )
+        }
+        Text(text = detail)
     }
 }
 
@@ -428,6 +494,65 @@ private fun SizeConstraint.previewLabel(): String = when {
     this is Fit -> "Fit"
     this is Fixed -> "Fixed $value"
     else -> "Unknown"
+}
+
+private fun nestedFitMinimumStyle(horizontal: Boolean): StackComponentStyle {
+    val innerChildSize = if (horizontal) Fixed(40u) else Fixed(32u)
+    val innerStack = previewStackComponentStyle(
+        children = listOf(
+            previewChild(
+                label = if (horizontal) "L" else "Inner top",
+                color = childColors[0],
+                constraint = innerChildSize,
+                horizontal = horizontal,
+            ),
+            previewChild(
+                label = if (horizontal) "T" else "Inner bottom",
+                color = childColors[2],
+                constraint = innerChildSize,
+                horizontal = horizontal,
+            ),
+        ),
+        dimension = if (horizontal) {
+            Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.SPACE_BETWEEN)
+        } else {
+            Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.SPACE_BETWEEN)
+        },
+        size = if (horizontal) {
+            Size(width = Fit(min = 140u), height = Fill())
+        } else {
+            Size(width = Fill(), height = Fit(min = 120u))
+        },
+        spacing = 0.dp,
+        background = containerBackground,
+        padding = PaddingValues(0.dp),
+        shape = Shape.Rectangle(),
+        border = null,
+    )
+    val outerEnd = previewChild(
+        label = if (horizontal) "End" else "Outer bottom",
+        color = childColors[1],
+        constraint = innerChildSize,
+        horizontal = horizontal,
+    )
+    return previewStackComponentStyle(
+        children = listOf(innerStack, outerEnd),
+        dimension = if (horizontal) {
+            Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.SPACE_BETWEEN)
+        } else {
+            Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.SPACE_BETWEEN)
+        },
+        size = if (horizontal) {
+            Size(width = Fit(min = 320u), height = Fixed(72u))
+        } else {
+            Size(width = Fixed(240u), height = Fit(min = 280u))
+        },
+        spacing = 0.dp,
+        background = BackgroundStyles.Color(ColorStyles(ColorStyle.Solid(Color.White))),
+        padding = PaddingValues(0.dp),
+        shape = Shape.Rectangle(),
+        border = null,
+    )
 }
 
 private fun previewChild(

@@ -20,11 +20,13 @@ internal object ConstrainedFillLayout {
     internal sealed interface Config {
         val orientation: Orientation
         val distribution: FlexDistribution
+        val fitMainAxis: Boolean
 
         data class Horizontal(
             override val distribution: FlexDistribution,
             val arrangement: Arrangement.Horizontal,
             val alignment: Alignment.Vertical,
+            override val fitMainAxis: Boolean = false,
         ) : Config {
             override val orientation: Orientation = Orientation.Horizontal
         }
@@ -33,6 +35,7 @@ internal object ConstrainedFillLayout {
             override val distribution: FlexDistribution,
             val arrangement: Arrangement.Vertical,
             val alignment: Alignment.Horizontal,
+            override val fitMainAxis: Boolean = false,
         ) : Config {
             override val orientation: Orientation = Orientation.Vertical
         }
@@ -61,7 +64,6 @@ internal object ConstrainedFillLayout {
                 )
             }
 
-            val targetMainAxisSize = constraints.targetMainAxisSize(config.orientation)
             val placeables = arrayOfNulls<Placeable>(measurables.size)
             var nonFillSize = 0
             measurables.forEachIndexed { index, measurable ->
@@ -71,6 +73,19 @@ internal object ConstrainedFillLayout {
                 }
             }
 
+            val targetMainAxisSize = if (config.fitMainAxis) {
+                val minimumFillSize = allocateConstrainedFillSpace(
+                    availableSpace = 0,
+                    constraints = fillConstraints,
+                    density = this,
+                ).sum()
+                (nonFillSize + minimumFillSize + totalSpacing).coerceIn(
+                    constraints.mainAxisMin(config.orientation),
+                    constraints.mainAxisMax(config.orientation),
+                )
+            } else {
+                constraints.targetMainAxisSize(config.orientation)
+            }
             val availableForFill = (targetMainAxisSize - nonFillSize - totalSpacing).coerceAtLeast(0)
             val fillSizes = allocateConstrainedFillSpace(availableForFill, fillConstraints, this)
             measurables.forEachIndexed { index, measurable ->

@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
 import androidx.compose.ui.unit.Density
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
@@ -25,6 +26,25 @@ class StackSizeConstraintTest {
     fun `fill and fixed allow flex distribution`() {
         assertThat(Fill().allowsFlexDistribution).isTrue()
         assertThat(Fixed(100u).allowsFlexDistribution).isTrue()
+    }
+
+    @Test
+    fun `fit without a positive minimum keeps the existing layout path`() {
+        assertThat(Fit().requiresFitMinimumLayout(FlexDistribution.SPACE_BETWEEN)).isFalse()
+        assertThat(Fit(max = 100u).requiresFitMinimumLayout(FlexDistribution.SPACE_AROUND)).isFalse()
+        assertThat(Fit(min = 0u).requiresFitMinimumLayout(FlexDistribution.SPACE_EVENLY)).isFalse()
+    }
+
+    @Test
+    fun `fit with a positive minimum requires custom layout only for flexible distributions`() {
+        val fit = Fit(min = 100u)
+
+        assertThat(fit.requiresFitMinimumLayout(FlexDistribution.SPACE_BETWEEN)).isTrue()
+        assertThat(fit.requiresFitMinimumLayout(FlexDistribution.SPACE_AROUND)).isTrue()
+        assertThat(fit.requiresFitMinimumLayout(FlexDistribution.SPACE_EVENLY)).isTrue()
+        assertThat(fit.requiresFitMinimumLayout(FlexDistribution.START)).isFalse()
+        assertThat(fit.requiresFitMinimumLayout(FlexDistribution.CENTER)).isFalse()
+        assertThat(fit.requiresFitMinimumLayout(FlexDistribution.END)).isFalse()
     }
 
     @Test

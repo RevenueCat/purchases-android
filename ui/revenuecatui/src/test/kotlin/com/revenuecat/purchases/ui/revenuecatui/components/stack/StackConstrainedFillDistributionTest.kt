@@ -16,6 +16,7 @@ import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.assertions.assertPixelColorEquals
@@ -99,6 +100,99 @@ class StackConstrainedFillDistributionTest {
             secondColorPosition = 70,
         )
     }
+
+    @Test
+    fun `nested horizontal Fit minimum does not consume space reserved for sibling`() {
+        assertNestedFitMinimum(horizontal = true)
+    }
+
+    @Test
+    fun `nested vertical Fit minimum does not consume space reserved for sibling`() {
+        assertNestedFitMinimum(horizontal = false)
+    }
+
+    private fun assertNestedFitMinimum(horizontal: Boolean) {
+        val stack = nestedFitMinimumStack(horizontal)
+        val style = styleFactory.create(stack).getOrThrow().componentStyle as StackComponentStyle
+
+        composeTestRule.setContent {
+            StackComponentView(
+                style = style,
+                state = FakePaywallState(components = emptyList()),
+                clickHandler = {},
+                modifier = Modifier.testTag("stack"),
+            )
+        }
+
+        composeTestRule.waitForIdle()
+        val innerEndMainAxisPosition = with(composeTestRule.density) {
+            (if (horizontal) 120 else 104).dp.roundToPx()
+        }
+        val outerEndMainAxisPosition = with(composeTestRule.density) {
+            (if (horizontal) 300 else 264).dp.roundToPx()
+        }
+        val crossAxisPosition = with(composeTestRule.density) {
+            (if (horizontal) 36 else 120).dp.roundToPx()
+        }
+        val (innerEndX, innerEndY) = if (horizontal) {
+            innerEndMainAxisPosition to crossAxisPosition
+        } else {
+            crossAxisPosition to innerEndMainAxisPosition
+        }
+        val (outerEndX, outerEndY) = if (horizontal) {
+            outerEndMainAxisPosition to crossAxisPosition
+        } else {
+            crossAxisPosition to outerEndMainAxisPosition
+        }
+        composeTestRule.onNodeWithTag("stack")
+            .assertPixelColorEquals(Color.Green, innerEndX, innerEndY, width = 1, height = 1)
+            .assertPixelColorEquals(Color.Blue, outerEndX, outerEndY, width = 1, height = 1)
+    }
+
+    private fun nestedFitMinimumStack(horizontal: Boolean): StackComponent {
+        val innerChildSize = if (horizontal) {
+            Size(width = Fixed(40u), height = Fill())
+        } else {
+            Size(width = Fill(), height = Fixed(32u))
+        }
+        val innerStack = StackComponent(
+            components = listOf(
+                coloredBlock(innerChildSize, Color.Red),
+                coloredBlock(innerChildSize, Color.Green),
+            ),
+            dimension = if (horizontal) {
+                Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.SPACE_BETWEEN)
+            } else {
+                Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.SPACE_BETWEEN)
+            },
+            size = if (horizontal) {
+                Size(width = Fit(min = 140u), height = Fill())
+            } else {
+                Size(width = Fill(), height = Fit(min = 120u))
+            },
+            spacing = 0f,
+        )
+        return StackComponent(
+            components = listOf(innerStack, coloredBlock(innerChildSize, Color.Blue)),
+            dimension = if (horizontal) {
+                Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.SPACE_BETWEEN)
+            } else {
+                Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.SPACE_BETWEEN)
+            },
+            size = if (horizontal) {
+                Size(width = Fit(min = 320u), height = Fixed(72u))
+            } else {
+                Size(width = Fixed(240u), height = Fit(min = 280u))
+            },
+            spacing = 0f,
+        )
+    }
+
+    private fun coloredBlock(size: Size, color: Color) = StackComponent(
+        components = emptyList(),
+        size = size,
+        backgroundColor = ColorScheme(light = ColorInfo.Hex(color.toArgb())),
+    )
 
     private fun assertCappedFillDistribution(
         horizontal: Boolean,

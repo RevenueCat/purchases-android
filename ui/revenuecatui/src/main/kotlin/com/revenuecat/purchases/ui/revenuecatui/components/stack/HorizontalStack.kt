@@ -30,10 +30,16 @@ internal fun HorizontalStack(
     modifier: Modifier = Modifier,
     itemContent: @Composable (index: Int, item: ComponentStyle, modifier: Modifier) -> Unit,
 ) {
-    if (!mainAxisUnbounded && items.hasConstrainedFillWidth) {
+    val fitMinimumUsesFlexDistribution = size.width.requiresFitMinimumLayout(dimension.distribution)
+    if (!mainAxisUnbounded && (items.hasConstrainedFillWidth || fitMinimumUsesFlexDistribution)) {
         ConstrainedFillRow(
             items = items,
-            dimension = dimension,
+            config = ConstrainedFillLayout.Config.Horizontal(
+                distribution = dimension.distribution,
+                arrangement = dimension.distribution.toHorizontalArrangement(spacing),
+                alignment = dimension.alignment.toAlignment(),
+                fitMainAxis = size.width.hasPositiveFitMinimum,
+            ),
             spacing = spacing,
             modifier = modifier,
             itemContent = itemContent,
@@ -95,17 +101,13 @@ private val List<ComponentStyle>.hasConstrainedFillWidth: Boolean
 @Composable
 private fun ConstrainedFillRow(
     items: List<ComponentStyle>,
-    dimension: Dimension.Horizontal,
+    config: ConstrainedFillLayout.Config.Horizontal,
     spacing: Dp,
     modifier: Modifier = Modifier,
     itemContent: @Composable (index: Int, item: ComponentStyle, modifier: Modifier) -> Unit,
 ) {
     ConstrainedFillLayout(
-        config = ConstrainedFillLayout.Config.Horizontal(
-            distribution = dimension.distribution,
-            arrangement = dimension.distribution.toHorizontalArrangement(spacing),
-            alignment = dimension.alignment.toAlignment(),
-        ),
+        config = config,
         fillConstraints = items.map { it.size.width as? Fill },
         spacing = spacing,
         modifier = modifier,

@@ -30,10 +30,16 @@ internal fun VerticalStack(
     modifier: Modifier = Modifier,
     itemContent: @Composable (index: Int, item: ComponentStyle, modifier: Modifier) -> Unit,
 ) {
-    if (!mainAxisUnbounded && items.hasConstrainedFillHeight) {
+    val fitMinimumUsesFlexDistribution = size.height.requiresFitMinimumLayout(dimension.distribution)
+    if (!mainAxisUnbounded && (items.hasConstrainedFillHeight || fitMinimumUsesFlexDistribution)) {
         ConstrainedFillColumn(
             items = items,
-            dimension = dimension,
+            config = ConstrainedFillLayout.Config.Vertical(
+                distribution = dimension.distribution,
+                arrangement = dimension.distribution.toVerticalArrangement(spacing),
+                alignment = dimension.alignment.toAlignment(),
+                fitMainAxis = size.height.hasPositiveFitMinimum,
+            ),
             spacing = spacing,
             modifier = modifier,
             itemContent = itemContent,
@@ -95,17 +101,13 @@ private val List<ComponentStyle>.hasConstrainedFillHeight: Boolean
 @Composable
 private fun ConstrainedFillColumn(
     items: List<ComponentStyle>,
-    dimension: Dimension.Vertical,
+    config: ConstrainedFillLayout.Config.Vertical,
     spacing: Dp,
     modifier: Modifier = Modifier,
     itemContent: @Composable (index: Int, item: ComponentStyle, modifier: Modifier) -> Unit,
 ) {
     ConstrainedFillLayout(
-        config = ConstrainedFillLayout.Config.Vertical(
-            distribution = dimension.distribution,
-            arrangement = dimension.distribution.toVerticalArrangement(spacing),
-            alignment = dimension.alignment.toAlignment(),
-        ),
+        config = config,
         fillConstraints = items.map { it.size.height as? Fill },
         spacing = spacing,
         modifier = modifier,
