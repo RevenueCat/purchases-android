@@ -23,6 +23,7 @@ internal interface ProductDataResponseListener : PurchasingListener {
     fun getProductData(
         skus: Set<String>,
         marketplace: String,
+        logUnfetchedProducts: Boolean,
         onReceive: (List<StoreProduct>) -> Unit,
         onError: (PurchasesError) -> Unit,
     )

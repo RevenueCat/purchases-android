@@ -6,6 +6,9 @@ import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.ProductDetailsResponseListener
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryProductDetailsResult
+import com.android.billingclient.api.UnfetchedProduct
+import com.revenuecat.purchases.LogHandler
+import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -14,6 +17,8 @@ import com.revenuecat.purchases.google.productId
 import com.revenuecat.purchases.google.productList
 import com.revenuecat.purchases.google.productType
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.common.Config as PurchasesConfig
+import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.utils.mockProductDetails
 import io.mockk.Runs
 import io.mockk.every
@@ -73,6 +78,64 @@ internal class QueryProductDetailsUseCaseTest : BaseBillingUseCaseTest() {
 
         assertThat(receivedList).isNotNull
         assertThat(receivedList!!.size).isZero
+    }
+
+    @Test
+    fun `logUnfetchedProducts works`() {
+        val unfetchedProduct = UnfetchedProduct.fromJson(
+            """{"productId":"missing_product","type":"subs","statusCode":3,"serializedDocid":""}""",
+        )
+        val result = QueryProductDetailsResult.create(emptyList(), listOf(unfetchedProduct))
+        val listener = slot<ProductDetailsResponseListener>()
+        every { mockClient.queryProductDetailsAsync(any(), capture(listener)) } answers {
+            listener.captured.onProductDetailsResponse(billingClientOKResult, result)
+        }
+
+        val previousLogHandler = currentLogHandler
+        val previousLogLevel = PurchasesConfig.logLevel
+        val loggedMessages = mutableListOf<String>()
+        currentLogHandler = object : LogHandler {
+            override fun v(tag: String, msg: String) = Unit
+            override fun d(tag: String, msg: String) = Unit
+            override fun i(tag: String, msg: String) { loggedMessages.add(msg) }
+            override fun w(tag: String, msg: String) = Unit
+            override fun e(tag: String, msg: String, throwable: Throwable?) = Unit
+        }
+        PurchasesConfig.logLevel = LogLevel.VERBOSE
+
+        try {
+            val expectedMissingProductDetailsLog =
+                "ℹ️ Missing productDetails: UnfetchedProduct{productId='missing_product', productType='subs', statusCode=3}"
+            val expectedUnfetchedProductLog =
+                "ℹ️ Product not found: missing_product - Product Type: subs, Reason: PRODUCT_NOT_FOUND, Serialized doc ID: "
+
+            listOf(false, true).forEach { logUnfetchedProducts ->
+                val loggedMessagesBeforeQuery = loggedMessages.size
+                wrapper.queryProductDetailsAsync(
+                    productType = ProductType.SUBS,
+                    productIds = setOf("missing_product"),
+                    logUnfetchedProducts = logUnfetchedProducts,
+                    onReceive = {},
+                    onError = { fail("shouldn't be an error") },
+                )
+
+                val queryLogs = loggedMessages.drop(loggedMessagesBeforeQuery)
+                if (logUnfetchedProducts) {
+                    assertThat(queryLogs).contains(
+                        expectedMissingProductDetailsLog,
+                        expectedUnfetchedProductLog,
+                    )
+                } else {
+                    assertThat(queryLogs).doesNotContain(
+                        expectedMissingProductDetailsLog,
+                        expectedUnfetchedProductLog,
+                    )
+                }
+            }
+        } finally {
+            currentLogHandler = previousLogHandler
+            PurchasesConfig.logLevel = previousLogLevel
+        }
     }
 
     @Test
