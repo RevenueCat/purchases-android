@@ -84,6 +84,20 @@ internal class WorkflowManager(
         return workflow
     }
 
+    /**
+     * The `blob_ref` of the config item [workflowId] was served from, or `null` when it has none. Reported
+     * on experiment events only, so a failure here returns null rather than failing the caller's render.
+     */
+    suspend fun workflowBlobRef(workflowId: String): String? =
+        try {
+            workflowsConfigProvider.workflowBlobRef(workflowId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            errorLog(e) { "Failed to read the blob ref for workflow '$workflowId'." }
+            null
+        }
+
     /** Prewarms presentation assets without changing delivery or failing the caller. */
     fun prewarmWorkflowAssets(workflow: PublishedWorkflow, uiConfig: UiConfig) {
         scope.launch {

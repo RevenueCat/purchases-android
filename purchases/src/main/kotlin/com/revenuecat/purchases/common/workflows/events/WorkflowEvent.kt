@@ -16,6 +16,17 @@ import java.util.UUID
 @Serializable
 public sealed class WorkflowEvent : FeatureEvent {
 
+    /**
+     * The experiment a step belongs to, with the identity of the workflow payload it was served from so the
+     * backend can check the claim instead of trusting it.
+     */
+    @Serializable
+    public data class ExperimentData(
+        public val experimentId: String,
+        public val experimentVariant: String,
+        public val workflowBlobRef: String? = null,
+    )
+
     public abstract val creationData: CreationData
     public abstract val workflowId: String
     public abstract val stepId: String
@@ -40,8 +51,7 @@ public sealed class WorkflowEvent : FeatureEvent {
         public val entryReason: String? = null,
         public val isFirstStep: Boolean? = null,
         public val isLastStep: Boolean? = null,
-        public val experimentId: String? = null,
-        public val experimentVariant: String? = null,
+        public val experiment: ExperimentData? = null,
     ) : WorkflowEvent()
 
     @Serializable
@@ -54,8 +64,7 @@ public sealed class WorkflowEvent : FeatureEvent {
         public val toStepId: String? = null,
         public val isFirstStep: Boolean? = null,
         public val isLastStep: Boolean? = null,
-        public val experimentId: String? = null,
-        public val experimentVariant: String? = null,
+        public val experiment: ExperimentData? = null,
     ) : WorkflowEvent()
 
     /**
@@ -72,7 +81,6 @@ public sealed class WorkflowEvent : FeatureEvent {
         override val traceId: String,
         public val isFirstStep: Boolean? = null,
         public val isLastStep: Boolean? = null,
-        public val experimentId: String? = null,
-        public val experimentVariant: String? = null,
+        public val experiment: ExperimentData? = null,
     ) : WorkflowEvent()
 }

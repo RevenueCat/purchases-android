@@ -144,6 +144,10 @@ internal class WorkflowsConfigProvider(
             ?.toMap()
             .orEmpty()
 
+    /** The `blob_ref` of [workflowId]'s topic item, or `null` when the item is unknown or has none. */
+    suspend fun workflowBlobRef(workflowId: String): String? =
+        manager.topic(RemoteConfigTopic.Workflows)?.get(workflowId)?.blobRef
+
     /**
      * Resolves [workflowId] into a [PublishedWorkflow], or `null` when the item is unknown, its body can be
      * neither read nor downloaded, or the body fails to parse. Memory-first: a cached workflow returns
