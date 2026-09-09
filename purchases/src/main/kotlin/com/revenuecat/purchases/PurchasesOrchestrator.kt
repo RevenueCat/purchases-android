@@ -60,6 +60,7 @@ import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.security.SecureItemStorage
 import com.revenuecat.purchases.common.sha1
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
@@ -200,6 +201,10 @@ internal class PurchasesOrchestrator(
         localRulesEvaluator = localRulesEvaluator,
         getOfferings = { Purchases.sharedInstance.awaitOfferings() },
     ),
+    // IAM login (phase 1, step 2). No consumer yet - TokenManager (phase 3) will be the first reader.
+    // Exposed for tests the same way audiencesConfigProvider is above: internal, but with a testable getter.
+    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val iamSecureStorage: SecureItemStorage? = null,
 ) : LifecycleDelegate, CustomActivityLifecycleHandler {
 
     internal var state: PurchasesState

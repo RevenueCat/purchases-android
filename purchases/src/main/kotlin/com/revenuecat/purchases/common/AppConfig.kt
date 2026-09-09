@@ -20,6 +20,10 @@ internal class AppConfig(
     val store: Store,
     val isDebugBuild: Boolean,
     val apiKeyValidationResult: APIKeyValidator.ValidationResult,
+    // IAM login (see purchases/src/main/kotlin/com/revenuecat/purchases/common/security). Threaded from
+    // PurchasesConfiguration.iamEnabled so common/ code (Backend, HTTPClient, IdentityManager) can read it
+    // without a direct PurchasesConfiguration dependency.
+    val iamEnabled: Boolean = false,
     val dangerousSettings: DangerousSettings = DangerousSettings(autoSyncPurchases = true),
     // Should only be used for tests
     val runningTests: Boolean = false,
@@ -92,6 +96,7 @@ internal class AppConfig(
         if (showInAppMessagesAutomatically != other.showInAppMessagesAutomatically) return false
         if (isAppBackgrounded != other.isAppBackgrounded) return false
         if (apiKeyValidationResult != other.apiKeyValidationResult) return false
+        if (iamEnabled != other.iamEnabled) return false
 
         return true
     }
@@ -110,6 +115,7 @@ internal class AppConfig(
         result = 31 * result + showInAppMessagesAutomatically.hashCode()
         result = 31 * result + isAppBackgrounded.hashCode()
         result = 31 * result + apiKeyValidationResult.hashCode()
+        result = 31 * result + iamEnabled.hashCode()
         return result
     }
 
@@ -125,6 +131,7 @@ internal class AppConfig(
             "finishTransactions=$finishTransactions, " +
             "showInAppMessagesAutomatically=$showInAppMessagesAutomatically, " +
             "apiKeyValidationResult=$apiKeyValidationResult, " +
+            "iamEnabled=$iamEnabled, " +
             "baseURL=$baseURL)"
     }
 }

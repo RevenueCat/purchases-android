@@ -257,6 +257,101 @@ class PurchasesFactoryTest {
         purchases.close()
     }
 
+    // region IAM login
+
+    @Test
+    fun `creating purchases with iamEnabled disabled does not construct the IAM secure storage`() {
+        val application = spyk(ApplicationProvider.getApplicationContext<Application>())
+        every { application.applicationContext } returns application
+        every { application.checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns
+            PackageManager.PERMISSION_GRANTED
+        val configuration = PurchasesConfiguration.Builder(application, "fakeApiKey")
+            .appUserID("appUserID")
+            .store(Store.PLAY_STORE)
+            .build()
+
+        val purchases = purchasesFactory.createPurchases(
+            configuration = configuration,
+            platformInfo = PlatformInfo(flavor = "test", version = null),
+            proxyURL = null,
+            overrideBillingAbstract = mockk<BillingAbstract>(relaxed = true),
+        )
+
+        assertThat(purchases.purchasesOrchestrator.iamSecureStorage).isNull()
+        purchases.close()
+    }
+
+    @Test
+    fun `creating purchases with iamEnabled true constructs a readable and writable IAM secure storage`() {
+        val application = spyk(ApplicationProvider.getApplicationContext<Application>())
+        every { application.applicationContext } returns application
+        every { application.checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns
+            PackageManager.PERMISSION_GRANTED
+        val configuration = PurchasesConfiguration.Builder(application, "fakeApiKey")
+            .appUserID("appUserID")
+            .store(Store.PLAY_STORE)
+            .iamEnabled(true)
+            .build()
+
+        val purchases = purchasesFactory.createPurchases(
+            configuration = configuration,
+            platformInfo = PlatformInfo(flavor = "test", version = null),
+            proxyURL = null,
+            overrideBillingAbstract = mockk<BillingAbstract>(relaxed = true),
+        )
+
+        val storage = purchases.purchasesOrchestrator.iamSecureStorage
+        assertThat(storage).isNotNull()
+        storage!!.saveItem("test-identifier", "test-value".toByteArray())
+        assertThat(storage.readItem("test-identifier")).isEqualTo("test-value".toByteArray())
+        purchases.close()
+    }
+
+    @Test
+    fun `creating purchases with iamEnabled true twice with the same API key derives the same storage key`() {
+        val application = spyk(ApplicationProvider.getApplicationContext<Application>())
+        every { application.applicationContext } returns application
+        every { application.checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns
+            PackageManager.PERMISSION_GRANTED
+
+        val firstConfiguration = PurchasesConfiguration.Builder(application, "fakeApiKey")
+            .appUserID("appUserID")
+            .store(Store.PLAY_STORE)
+            .iamEnabled(true)
+            .build()
+        val firstPurchases = purchasesFactory.createPurchases(
+            configuration = firstConfiguration,
+            platformInfo = PlatformInfo(flavor = "test", version = null),
+            proxyURL = null,
+            overrideBillingAbstract = mockk<BillingAbstract>(relaxed = true),
+        )
+        val firstStorage = firstPurchases.purchasesOrchestrator.iamSecureStorage!!
+        firstStorage.saveItem("round-trip", "round-trip-value".toByteArray())
+        firstPurchases.close()
+
+        val secondConfiguration = PurchasesConfiguration.Builder(application, "fakeApiKey")
+            .appUserID("appUserID")
+            .store(Store.PLAY_STORE)
+            .iamEnabled(true)
+            .build()
+        val secondPurchases = purchasesFactory.createPurchases(
+            configuration = secondConfiguration,
+            platformInfo = PlatformInfo(flavor = "test", version = null),
+            proxyURL = null,
+            overrideBillingAbstract = mockk<BillingAbstract>(relaxed = true),
+        )
+        val secondStorage = secondPurchases.purchasesOrchestrator.iamSecureStorage!!
+
+        // A second instance, built through the same real PurchasesConfiguration -> AppConfig ->
+        // derivePassword -> EncryptedItemStorage.create chain with the same API key, must derive the
+        // identical encryption key to decrypt what the first instance wrote. This is what would break
+        // from accidental double-derivation, reading the wrong API key field, or a salt mismatch.
+        assertThat(secondStorage.readItem("round-trip")).isEqualTo("round-trip-value".toByteArray())
+        secondPurchases.close()
+    }
+
+    // endregion IAM login
+
     // region shouldInitializeDiagnostics
 
     @Test
