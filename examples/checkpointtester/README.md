@@ -66,15 +66,9 @@ know about and the `error_checkpoint` identifier above.
 
 **Subscriber attribute** — the person icon in the top bar opens a dialog that sets or unsets a single subscriber attribute. Attributes are part of the checkpoint rule evaluation scope, so this is how you flip which rule matches without rebuilding. *Unset* passes a `null` value, which is how the SDK deletes an attribute.
 
-**Listener log** — the second tab renders everything the app-wide `CheckpointListener` (registered in
-`MainApplication` as `CheckpointEventLog`) observed: an `onCheckpointHit` and an `onCheckpointCompleted` entry per
-run, regardless of which screen triggered it. Events are also written to logcat under the `CheckpointEventLog`
-tag.
-
 ## Structure
 
-- `MainApplication` — configures the SDK and registers the global `CheckpointListener`.
-- `checkpoints/CheckpointEventLog` — the `CheckpointListener` implementation backing the listener log.
+- `MainApplication` — configures the SDK.
 - `ui/screens/…` — one package per use case, each a screen plus a `ViewModel` holding its state across
   configuration changes.
 
