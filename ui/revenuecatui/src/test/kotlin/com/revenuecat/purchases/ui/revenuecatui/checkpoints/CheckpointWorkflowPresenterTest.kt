@@ -118,6 +118,7 @@ class CheckpointWorkflowPresenterTest {
         launchCheckpoint()
 
         lastOptions!!.dismissRequest()
+        finishPresentation()
 
         assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
         assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Dismissed)
@@ -129,6 +130,7 @@ class CheckpointWorkflowPresenterTest {
         launchCheckpoint()
 
         lastOptions!!.dismissRequestWithExitOffering!!(null, null, PaywallDismissReason.CLOSE)
+        finishPresentation()
 
         assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
         assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Dismissed)
@@ -141,6 +143,7 @@ class CheckpointWorkflowPresenterTest {
         val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Step misconfigured")
 
         lastOptions!!.dismissRequestWithExitOffering!!(null, PaywallResult.Error(error), PaywallDismissReason.CLOSE)
+        finishPresentation()
 
         assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
         assertThat((paywallOutcome() as CheckpointFlowOutcome.Error).error).isEqualTo(error)
@@ -152,10 +155,23 @@ class CheckpointWorkflowPresenterTest {
         launchCheckpoint()
 
         lastOptions!!.dismissRequestWithExitOffering!!(null, null, PaywallDismissReason.NAVIGATED_BACK)
+        finishPresentation()
 
         assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
         assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Dismissed)
         assertThat(backedOut()).isTrue
+    }
+
+    @Test
+    fun `the window stays up until the run's presentation is finished`() {
+        launchCheckpoint()
+
+        lastOptions!!.dismissRequest()
+
+        assertThat(result).isNotNull
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isTrue
+        finishPresentation()
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
     }
 
     @Test
@@ -345,6 +361,9 @@ class CheckpointWorkflowPresenterTest {
     }
 
     private fun currentCallId(): String = presentedCallIds.last()
+
+    // What checkpoint() does once the callback has returned.
+    private fun finishPresentation() = result!!.finishPresentation()
 
     private fun paywallOutcome(): CheckpointFlowOutcome? =
         result?.flowOutcome

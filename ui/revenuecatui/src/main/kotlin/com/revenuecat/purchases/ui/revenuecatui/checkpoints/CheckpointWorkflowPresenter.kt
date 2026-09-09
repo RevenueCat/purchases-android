@@ -180,10 +180,13 @@ internal class CheckpointWorkflowPresenter(
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
     }
 
+    // The window stays up until the app has been told, so whatever the callback puts on screen is already there
+    // when the flow goes away.
     private fun requestDismiss(reason: PaywallDismissReason) {
-        dismissWindowOnly()
-        teardown()
-        manager.onPresentationFinished(callId, navigatedBack = reason == PaywallDismissReason.NAVIGATED_BACK)
+        manager.onPresentationFinished(callId, navigatedBack = reason == PaywallDismissReason.NAVIGATED_BACK) {
+            dismissWindowOnly()
+            teardown()
+        }
     }
 
     // Safety net for dismissals this presenter didn't initiate (e.g. the system tearing the window down):

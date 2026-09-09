@@ -383,6 +383,37 @@ class CheckpointsManagerTest {
         }
 
     @Test
+    fun `the callback runs before the presented flow is released`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val events = mutableListOf<String>()
+        manager.checkpoint(mockPurchases, checkpointId, null) { events += "callback" }
+
+        manager.onPresentationFinished(currentCallId()) { events += "released" }
+
+        assertThat(events).containsExactly("callback", "released")
+    }
+
+    @Test
+    fun `a backed-out flow is released without invoking the callback`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val events = mutableListOf<String>()
+        manager.checkpoint(mockPurchases, checkpointId, null) { events += "callback" }
+
+        manager.onPresentationFinished(currentCallId(), navigatedBack = true) { events += "released" }
+
+        assertThat(events).containsExactly("released")
+    }
+
+    @Test
+    fun `finishing an unknown callId still releases what it was given`() {
+        var released = false
+
+        manager.onPresentationFinished("unknown-call-id") { released = true }
+
+        assertThat(released).isTrue
+    }
+
+    @Test
     fun `finishing an unknown callId is a no-op`() {
         manager.onPresentationFinished("unknown-call-id")
         manager.recordOutcome("unknown-call-id", CheckpointFlowOutcome.Dismissed)
