@@ -3,6 +3,10 @@
 The `purchases-admob-next-gen` module integrates RevenueCat with the
 [Google Mobile Ads Next-Gen SDK](https://developers.google.com/admob/android/next-gen/quick-start).
 
+> [!NOTE]
+> RevenueCat Ads features—including ad-event tracking, reward verification, and the AdMob adapters—are currently
+> in beta.
+
 **Kotlin only.** The load-and-track helpers are not available from Java. Java apps can still use the core
 [`AdTracker`](https://revenuecat.github.io/purchases-android/docs/core/com.revenuecat.purchases.ads.events/-ad-tracker/index.html)
 APIs directly.
