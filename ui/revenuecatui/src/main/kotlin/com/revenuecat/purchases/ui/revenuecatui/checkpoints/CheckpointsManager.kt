@@ -134,7 +134,7 @@ internal class CheckpointsManager(
         purchases: Purchases,
         identifier: String,
         params: CheckpointParams?,
-        callback: CheckpointCallback,
+        callback: CheckpointPassedCallback,
     ) {
         scope.launch {
             val activeEntitlementsBefore = cachedActiveEntitlementIds(purchases)

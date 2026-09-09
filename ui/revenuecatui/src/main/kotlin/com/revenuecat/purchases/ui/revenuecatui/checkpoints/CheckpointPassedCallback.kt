@@ -6,7 +6,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
  * Receives the outcome of a [com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint] call.
  */
 @InternalRevenueCatAPI
-public fun interface CheckpointCallback {
+public fun interface CheckpointPassedCallback {
 
     /**
      * Called on the main thread, at most once per checkpoint call, when the user passes the checkpoint.
