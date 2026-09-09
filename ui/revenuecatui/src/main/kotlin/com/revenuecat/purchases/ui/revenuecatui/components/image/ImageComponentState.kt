@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
@@ -37,7 +36,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.AspectRatio
-import com.revenuecat.purchases.ui.revenuecatui.components.modifier.clamp
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.adjustForMedia
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDelegate
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentStyle
@@ -270,52 +269,9 @@ internal class ImageComponentState(
      * Adjusts this size to take into account the size of the image.
      */
     private fun Size.adjustForImage(imageUrls: ImageUrls, density: Density): Size =
-        Size(
-            width = width.adjustDimension(
-                other = height,
-                thisImageDimensionPx = imageUrls.width,
-                otherImageDimensionPx = imageUrls.height,
-                density = density,
-            ),
-            height = height.adjustDimension(
-                other = width,
-                thisImageDimensionPx = imageUrls.height,
-                otherImageDimensionPx = imageUrls.width,
-                density = density,
-            ),
+        adjustForMedia(
+            widthPx = imageUrls.width,
+            heightPx = imageUrls.height,
+            density = density,
         )
-
-    /**
-     * Adjusts this size constraint to take into account the size of the image.
-     */
-    private fun SizeConstraint.adjustDimension(
-        other: SizeConstraint,
-        thisImageDimensionPx: UInt,
-        otherImageDimensionPx: UInt,
-        density: Density,
-    ): SizeConstraint = when (this) {
-        is Fit -> {
-            when (other) {
-                is Fit -> {
-                    val intrinsicSize = with(density) { thisImageDimensionPx.toInt().toDp().value.toUInt() }
-                    Fixed(clamp(intrinsicSize))
-                }
-                is Fill -> this
-
-                is Fixed -> {
-                    // If the other dimension is Fixed, we'll have to scale this one by the same factor.
-                    val otherImageDimensionDp = with(density) { otherImageDimensionPx.toInt().toDp() }
-                    val scaleFactor = other.value.toFloat() / otherImageDimensionDp.value
-                    val scaledSize = with(density) {
-                        (scaleFactor * thisImageDimensionPx.toInt()).toDp().value.toUInt()
-                    }
-                    Fixed(clamp(scaledSize))
-                }
-            }
-        }
-
-        is Fill,
-        is Fixed,
-        -> this
-    }
 }
