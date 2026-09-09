@@ -1938,6 +1938,45 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `an injected workflow resolves each step's offering from the injected offerings`() = runTest {
+        val secondOfferingId = "second_offering"
+        val secondOffering = Offering(
+            identifier = secondOfferingId,
+            serverDescription = "",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = null,
+            webCheckoutURL = null,
+        )
+        val twoOfferingWorkflow = workflow.copy(
+            steps = mapOf("step-1" to step1, "step-2" to step2.copy(paramValues = offeringParams(secondOfferingId))),
+        )
+        val offerings = Offerings(
+            testOffering,
+            mapOf(offeringId to testOffering, secondOfferingId to secondOffering),
+        )
+
+        val vm = PaywallViewModelImpl(
+            resourceProvider = MockResourceProvider(),
+            purchases = purchases,
+            options = PaywallOptions.Builder(dismissRequest = {})
+                .injectedWorkflow(twoOfferingWorkflow, offerings, uiConfig)
+                .build(),
+            colorScheme = TestData.Constants.currentColorScheme,
+            isDarkMode = false,
+            shouldDisplayBlock = null,
+            backgroundDispatcher = testDispatcher,
+        )
+        advanceUntilIdle()
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        assertThat(vm.workflowState.value?.stepStates?.get("step-1")?.offering?.identifier).isEqualTo(offeringId)
+        assertThat(vm.workflowState.value?.stepStates?.get("step-2")?.offering?.identifier)
+            .isEqualTo(secondOfferingId)
+        coVerify(exactly = 0) { purchases.awaitOfferings() }
+    }
+
+    @Test
     fun `navigation to a step without an offering identifier fails the workflow with an error`() {
         val stepWithoutOffering = step2.copy(paramValues = emptyMap())
         val workflowToStepWithoutOffering = workflow.copy(

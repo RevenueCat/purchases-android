@@ -3,7 +3,6 @@
 package com.revenuecat.purchases.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
-import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -30,11 +29,11 @@ import kotlinx.coroutines.CancellationException
  * Resolves a checkpoint through the `checkpoint_rules` topic: the checkpoint's rules are read from remote config
  * and evaluated in order against locally collected dimensions, and the first rule whose audience matches wins.
  *
- * The winner is final. If its workflow turns out to be unservable — no offering identifier on its initial step or
- * that step's screen, that offering absent from the fetched offerings, or its body unavailable — the checkpoint
- * resolves to
+ * The winner is final. If its workflow turns out to be unservable — its body unavailable, or the offerings its
+ * steps present unfetchable — the checkpoint resolves to
  * [CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE] rather than falling through to a rule the
- * customer was not the first choice for.
+ * customer was not the first choice for. Which offering each UI step presents is not checked here: the workflow is
+ * presented against the fetched offerings and a step whose offering is missing fails when it is reached.
  *
  * Resolution reads config across several suspension points, so a commit (or an identity change) can land halfway
  * through and leave the rules the winner was picked from stale. That answer is discarded and resolution starts
@@ -167,7 +166,7 @@ internal class CheckpointWorkflowResolverImpl(
         } else if (workflow.steps.values.any { it.isOfferingStep }) {
             unservableRule(rule, "a UI workflow cannot contain offering steps")
         } else {
-            resolveUiRule(checkpointIdentifier, rule, workflow, uiConfig, initialStep)
+            resolveUiRule(checkpointIdentifier, rule, workflow, uiConfig)
         }
     }
 
@@ -180,7 +179,7 @@ internal class CheckpointWorkflowResolverImpl(
         val offeringIdentifier = step.offeringIdentifier
             ?: return unservableRule(rule, "the offering step has no valid offering identifier")
 
-        val offering = loadOffering(checkpointIdentifier, offeringIdentifier)
+        val offering = loadOfferings(checkpointIdentifier)?.all?.get(offeringIdentifier)
             ?: return unservableRule(rule, "offering '$offeringIdentifier' was not found in offerings")
         debugLog {
             "Checkpoint resolved to offering '${offering.identifier}' from workflow '${rule.workflowId}'"
@@ -188,28 +187,22 @@ internal class CheckpointWorkflowResolverImpl(
         return CheckpointResolution.MatchedOffering(offering, checkpointRuleId = rule.id)
     }
 
-    @Suppress("ReturnCount")
     private suspend fun resolveUiRule(
         checkpointIdentifier: String,
         rule: CheckpointRule,
         workflow: PublishedWorkflow,
         uiConfig: UiConfig,
-        initialStep: WorkflowStep,
     ): CheckpointResolution {
-        val offeringId = workflow.offeringIdentifierFor(initialStep)
-            ?: return unservableRule(rule, "its initial step has no valid offering identifier")
-        val offering = loadOffering(checkpointIdentifier, offeringId)
-            ?: return unservableRule(rule, "offering '$offeringId' was not found in offerings")
-        debugLog {
-            "Checkpoint resolved to workflow '${rule.workflowId}' (offering: ${offering.identifier})"
-        }
+        val offerings = loadOfferings(checkpointIdentifier)
+            ?: return unservableRule(rule, "the offerings its steps present could not be fetched")
+        debugLog { "Checkpoint resolved to workflow '${rule.workflowId}'" }
         workflowManager.prewarmWorkflowAssets(workflow, uiConfig)
-        return CheckpointResolution.MatchedWorkflow(workflow, uiConfig, offering, checkpointRuleId = rule.id)
+        return CheckpointResolution.MatchedWorkflow(workflow, uiConfig, offerings, checkpointRuleId = rule.id)
     }
 
-    private suspend fun loadOffering(checkpointIdentifier: String, offeringIdentifier: String): Offering? =
+    private suspend fun loadOfferings(checkpointIdentifier: String): Offerings? =
         try {
-            getOfferings().all[offeringIdentifier]
+            getOfferings()
         } catch (e: PurchasesException) {
             errorLog { "Offerings could not be fetched for checkpoint '$checkpointIdentifier': ${e.error}" }
             null

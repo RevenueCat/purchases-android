@@ -23,14 +23,14 @@ class CheckpointEventTest {
     private val timestamp = Date(1699270688995)
 
     @Test
-    fun `a matched workflow reports present_ui with the workflow, offering and rule`() {
+    fun `a matched workflow reports present_ui with the workflow and rule but no offering`() {
         val event = matchedWorkflow(checkpointRuleId = "rule_wf1234").toEvent()
 
         assertThat(event.identifier).isEqualTo(identifier)
         assertThat(event.checkpointType).isEqualTo(CheckpointType.CUSTOM)
         assertThat(event.result).isEqualTo(CheckpointHitResult.PRESENT_UI)
         assertThat(event.workflowId).isEqualTo("wf1234")
-        assertThat(event.offeringId).isEqualTo("default")
+        assertThat(event.offeringId).isNull()
         assertThat(event.checkpointRuleId).isEqualTo("rule_wf1234")
         assertThat(event.timestamp).isEqualTo(timestamp)
     }
@@ -77,7 +77,7 @@ class CheckpointEventTest {
     private fun matchedWorkflow(checkpointRuleId: String?) = CheckpointResolution.MatchedWorkflow(
         workflow = workflow("wf1234"),
         uiConfig = mockk<UiConfig>(),
-        offering = offering("default"),
+        offerings = mockk(),
         checkpointRuleId = checkpointRuleId,
     )
 
