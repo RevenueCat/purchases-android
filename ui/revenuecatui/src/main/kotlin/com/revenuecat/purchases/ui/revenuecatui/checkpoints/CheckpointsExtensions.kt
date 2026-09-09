@@ -26,7 +26,7 @@ public suspend fun Purchases.awaitCheckpoint(
 
 /**
  * The [CheckpointsManager] owned by this [Purchases] instance, created on first use and kept in the
- * instance's opaque `checkpointManagerSlot`. Storing it there rather than in a singleton ties any in-flight
+ * instance's opaque `internalCpManagerSlot`. Storing it there rather than in a singleton ties any in-flight
  * presentation to the lifetime of the SDK instance, so reconfiguring the SDK cannot inherit a presentation that
  * will never complete.
  *
@@ -34,6 +34,6 @@ public suspend fun Purchases.awaitCheckpoint(
  */
 internal val Purchases.checkpointsManager: CheckpointsManager
     get() = synchronized(this) {
-        checkpointManagerSlot as? CheckpointsManager
-            ?: CheckpointsManager().also { checkpointManagerSlot = it }
+        internalCpManagerSlot as? CheckpointsManager
+            ?: CheckpointsManager().also { internalCpManagerSlot = it }
     }

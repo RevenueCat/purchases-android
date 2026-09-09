@@ -1604,7 +1604,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             mockCheckpointsConfigProvider.resolveCheckpoint("onboarding_complete")
         } returns CheckpointRulesResolution.NotConfigured
 
-        val resolution = purchases.resolveCheckpoint("onboarding_complete")
+        val resolution = purchases.internalResolveCp("onboarding_complete")
 
         assertThat(resolution).isEqualTo(
             CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.UNKNOWN_CHECKPOINT),
@@ -1630,7 +1630,7 @@ internal class PurchasesTest : BasePurchasesTest() {
             CheckpointRulesResolution.NotConfigured
         }
 
-        purchases.resolveCheckpoint("onboarding_complete")
+        purchases.internalResolveCp("onboarding_complete")
 
         verify(exactly = 1) { mockEventsManager.track(any<CheckpointEvent>()) }
     }
@@ -1642,7 +1642,7 @@ internal class PurchasesTest : BasePurchasesTest() {
 
         // "error_checkpoint" is the resolver's simulated-error hook, the only path that throws.
         assertThatThrownBy {
-            runBlocking { purchases.resolveCheckpoint("error_checkpoint") }
+            runBlocking { purchases.internalResolveCp("error_checkpoint") }
         }.isInstanceOf(PurchasesException::class.java)
 
         verify(exactly = 0) { mockEventsManager.track(any<CheckpointEvent>()) }
