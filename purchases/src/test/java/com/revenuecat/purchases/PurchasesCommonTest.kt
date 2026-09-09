@@ -22,6 +22,7 @@ import com.revenuecat.purchases.google.toInAppStoreProduct
 import com.revenuecat.purchases.google.toStoreProduct
 import com.revenuecat.purchases.interfaces.GetStoreProductsCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.interfaces.SyncAttributesAndOfferingsCallback
 import com.revenuecat.purchases.models.GoogleStoreProduct
 import com.revenuecat.purchases.models.GoogleSubscriptionOption
@@ -134,16 +135,68 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
         verifyClose()
     }
 
+    @Suppress("DEPRECATION")
     @Test
     fun `when setting listener for anonymous user, we set customer info helper listener`() {
         anonymousSetup(true)
         purchases.updatedCustomerInfoListener = updatedCustomerInfoListener
 
         verify(exactly = 1) {
-            mockCustomerInfoUpdateHandler.updatedCustomerInfoListener = null
+            mockCustomerInfoUpdateHandler.removeAllListeners()
         }
         verify(exactly = 1) {
             mockCustomerInfoUpdateHandler.updatedCustomerInfoListener = updatedCustomerInfoListener
+        }
+    }
+
+    @Test
+    fun `when adding a listener, we add it on the customer info update handler`() {
+        val listener = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+
+        purchases.addUpdatedCustomerInfoListener(listener)
+
+        verify(exactly = 1) {
+            mockCustomerInfoUpdateHandler.addUpdatedCustomerInfoListener(listener)
+        }
+    }
+
+    @Test
+    fun `when adding several listeners, all of them are registered on the handler`() {
+        val firstListener = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        val secondListener = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+
+        purchases.addUpdatedCustomerInfoListener(firstListener)
+        purchases.addUpdatedCustomerInfoListener(secondListener)
+
+        verify(exactly = 1) {
+            mockCustomerInfoUpdateHandler.addUpdatedCustomerInfoListener(firstListener)
+        }
+        verify(exactly = 1) {
+            mockCustomerInfoUpdateHandler.addUpdatedCustomerInfoListener(secondListener)
+        }
+    }
+
+    @Test
+    fun `when removing a specific listener, we remove it on the customer info update handler`() {
+        val listener = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+
+        purchases.removeUpdatedCustomerInfoListener(listener)
+
+        verify(exactly = 1) {
+            mockCustomerInfoUpdateHandler.removeUpdatedCustomerInfoListener(listener)
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `when removing the legacy listener, we only clear the legacy one`() {
+        purchases.removeUpdatedCustomerInfoListener()
+
+        verify(exactly = 1) {
+            mockCustomerInfoUpdateHandler.updatedCustomerInfoListener = null
+        }
+        verify(exactly = 0) {
+            mockCustomerInfoUpdateHandler.removeAllListeners()
         }
     }
 

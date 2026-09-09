@@ -26,6 +26,7 @@ import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.googleProduct
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
@@ -80,6 +81,10 @@ internal interface PurchasesType {
     suspend fun awaitGetUiConfig(): UiConfig
 
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution
+
+    fun addUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener)
+
+    fun removeUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener)
 }
 
 @Suppress("TooManyFunctions")
@@ -166,4 +171,12 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     @OptIn(InternalRevenueCatAPI::class)
     override suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         purchases.resolveWorkflow(offeringId)
+
+    override fun addUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
+        purchases.addUpdatedCustomerInfoListener(listener)
+    }
+
+    override fun removeUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
+        purchases.removeUpdatedCustomerInfoListener(listener)
+    }
 }

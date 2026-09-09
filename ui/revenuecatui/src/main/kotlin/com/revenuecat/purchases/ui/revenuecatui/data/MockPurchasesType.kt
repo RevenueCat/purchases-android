@@ -14,6 +14,7 @@ import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.CustomerCenterListener
+import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 
@@ -74,4 +75,11 @@ internal class MockPurchasesType(
     }
 
     override suspend fun resolveWorkflow(offeringId: String): WorkflowResolution = WorkflowResolution.NoWorkflow
+
+    override fun addUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
+        // No-op for mock
+    }
+    override fun removeUpdatedCustomerInfoListener(listener: UpdatedCustomerInfoListener) {
+        // No-op for mock
+    }
 }

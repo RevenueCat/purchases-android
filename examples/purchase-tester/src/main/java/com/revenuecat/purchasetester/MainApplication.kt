@@ -34,6 +34,23 @@ class MainApplication : Application(), UpdatedCustomerInfoListener {
         Purchases.logHandler = logHandler
     }
 
+    /**
+     * A second, independent listener registered alongside this Application via
+     * [Purchases.addUpdatedCustomerInfoListener]. It exists so the multi-listener support is
+     * observable at runtime: both this and [MainApplication] should log on every update.
+     *
+     * Verify with: adb logcat -s CustomerInfoListener SecondaryCustomerInfoListener
+     */
+    val secondaryCustomerInfoListener = UpdatedCustomerInfoListener { customerInfo ->
+        secondaryUpdateCount++
+        Log.d(
+            "SecondaryCustomerInfoListener",
+            "Update #$secondaryUpdateCount received at ${customerInfo.requestDate}",
+        )
+    }
+
+    private var secondaryUpdateCount = 0
+
     override fun onReceived(customerInfo: CustomerInfo) {
         lastCustomerInfoMutableLiveData.postValue(customerInfo)
         val message = "CustomerInfoListener received update at ${customerInfo.requestDate}"
