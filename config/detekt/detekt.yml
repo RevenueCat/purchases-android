@@ -49,3 +49,5 @@ revenuecat:
     active: true
     excludes: [ '**/examples/**' ]
     ignoreAnnotated: [ 'InternalRevenueCatAPI' ]
+  RedundantJvmNameWithSynthetic:
+    active: true
