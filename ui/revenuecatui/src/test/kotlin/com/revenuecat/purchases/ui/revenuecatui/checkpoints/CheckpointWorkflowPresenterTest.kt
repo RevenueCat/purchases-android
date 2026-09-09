@@ -60,7 +60,7 @@ class CheckpointWorkflowPresenterTest {
         controller = Robolectric.buildActivity(Activity::class.java).setup()
         mockPurchases = mockk {
             every { currentActivity } answers { controller.get() }
-            coEvery { resolveCheckpoint(any(), any()) } returns
+            coEvery { internalResolveCp(any(), any()) } returns
                 CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null)
         }
         manager = CheckpointsManager { callId, manager ->

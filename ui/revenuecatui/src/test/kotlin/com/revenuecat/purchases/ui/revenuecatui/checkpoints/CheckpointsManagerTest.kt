@@ -82,7 +82,7 @@ class CheckpointsManagerTest {
 
         manager.checkpoint(mockPurchases, "A-1_b", null)
 
-        coVerify(exactly = 1) { mockPurchases.resolveCheckpoint("A-1_b", emptyMap()) }
+        coVerify(exactly = 1) { mockPurchases.internalResolveCp("A-1_b", emptyMap()) }
     }
 
     @Test
@@ -92,7 +92,7 @@ class CheckpointsManagerTest {
         val result = manager.checkpoint(mockPurchases, invalidIdentifier, null) as CheckpointResult.NoAction
 
         assertThat(result.reason).isEqualTo(CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER)
-        coVerify(exactly = 0) { mockPurchases.resolveCheckpoint(any(), any()) }
+        coVerify(exactly = 0) { mockPurchases.internalResolveCp(any(), any()) }
         verify(exactly = 1) {
             Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(invalidIdentifier))
         }
@@ -122,7 +122,7 @@ class CheckpointsManagerTest {
     @Test
     fun `offering checkpoint completes while a UI checkpoint is being presented`() = runTest(dispatcher) {
         val offering = mockk<Offering>()
-        coEvery { mockPurchases.resolveCheckpoint(any(), any()) } returnsMany listOf(
+        coEvery { mockPurchases.internalResolveCp(any(), any()) } returnsMany listOf(
             CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null),
             CheckpointResolution.MatchedOffering(offering, checkpointRuleId = null),
         )
@@ -148,7 +148,7 @@ class CheckpointsManagerTest {
 
     @Test
     fun `resolution failure propagates to the caller`() = runTest(dispatcher) {
-        coEvery { mockPurchases.resolveCheckpoint(any(), any()) } throws PurchasesException(
+        coEvery { mockPurchases.internalResolveCp(any(), any()) } throws PurchasesException(
             PurchasesError(PurchasesErrorCode.ConfigurationError, "Simulated."),
         )
 
@@ -196,7 +196,7 @@ class CheckpointsManagerTest {
         )
 
         val customVariables = slot<Map<String, RulesDimensionValue>>()
-        coVerify { mockPurchases.resolveCheckpoint(checkpointId, capture(customVariables)) }
+        coVerify { mockPurchases.internalResolveCp(checkpointId, capture(customVariables)) }
         assertThat(customVariables.captured).isEqualTo(
             mapOf(
                 "goal" to RulesDimensionValue.StringValue("test"),
@@ -456,7 +456,7 @@ class CheckpointsManagerTest {
     }
 
     private fun resolvesTo(resolution: CheckpointResolution) {
-        coEvery { mockPurchases.resolveCheckpoint(any(), any()) } returns resolution
+        coEvery { mockPurchases.internalResolveCp(any(), any()) } returns resolution
     }
 
     private fun resolvesToWorkflow() {

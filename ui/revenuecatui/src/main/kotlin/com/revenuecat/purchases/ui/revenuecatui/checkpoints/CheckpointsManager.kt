@@ -35,7 +35,7 @@ internal class CheckpointRun(val result: CheckpointResult, val backedOut: Boolea
  * terminal outcome back to the suspended [checkpoint] call. Data-only results never claim that presentation
  * slot.
  *
- * There is one instance per [Purchases] instance, held in its `checkpointManagerSlot` and reached through
+ * There is one instance per [Purchases] instance, held in its `internalCpManagerSlot` and reached through
  * [checkpointsManager], so a reconfigured SDK starts with a free presentation slot. A workflow that is already
  * on screen keeps reporting to the manager that presented it, exactly once, even if the SDK is reconfigured
  * underneath it.
@@ -91,7 +91,7 @@ internal class CheckpointsManager(
             )
         }
 
-        val resolution = purchases.resolveCheckpoint(
+        val resolution = purchases.internalResolveCp(
             identifier,
             customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
         )
