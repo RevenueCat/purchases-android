@@ -4,13 +4,17 @@ import androidx.annotation.OptIn;
 
 import com.revenuecat.purchases.EntitlementInfo;
 import com.revenuecat.purchases.InternalRevenueCatAPI;
+import com.revenuecat.purchases.Offering;
 import com.revenuecat.purchases.Purchases;
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointsExtensionsKt;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ObtainedEntitlement;
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter;
 
+import java.util.Map;
 import java.util.Set;
 
 @SuppressWarnings({"unused"})
@@ -30,5 +34,21 @@ final class CheckpointsAPI {
     @OptIn(markerClass = InternalRevenueCatAPI.class)
     static void checkObtainedEntitlement(ObtainedEntitlement obtainedEntitlement) {
         EntitlementInfo entitlementInfo = obtainedEntitlement.getEntitlementInfo();
+    }
+
+    @OptIn(markerClass = InternalRevenueCatAPI.class)
+    static void checkPaywallPresenter(Purchases purchases) {
+        PaywallPresenter presenter = (PaywallPresenter.Params params, PaywallPresenter.Completion completion) -> {
+            Offering offering = params.getOffering();
+            String checkpointIdentifier = params.getCheckpointIdentifier();
+            Map<String, CustomVariableValue> customVariables = params.getCustomVariables();
+            completion.complete(PaywallPresenter.Completion.Result.Purchased.INSTANCE);
+            completion.complete(PaywallPresenter.Completion.Result.Closed.INSTANCE);
+            completion.complete(PaywallPresenter.Completion.Result.NavigatedBack.INSTANCE);
+            completion.complete(PaywallPresenter.Completion.Result.ContinuedWithoutPurchasing.INSTANCE);
+        };
+        CheckpointsExtensionsKt.setPaywallPresenter(purchases, presenter);
+        CheckpointsExtensionsKt.setPaywallPresenter(purchases, null);
+        PaywallPresenter current = CheckpointsExtensionsKt.getPaywallPresenter(purchases);
     }
 }

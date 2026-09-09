@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -20,6 +21,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.runs
 import io.mockk.unmockkObject
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -150,6 +152,33 @@ class CheckpointPassedCallbackTest {
     }
 
     @Test
+    fun `an app-owned presentation delivers the grants the SDK finds after syncing`() = runTest(dispatcher) {
+        cachedCustomerInfoHasActive("plus")
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfoWithActive("plus", "pro"))
+        }
+        val completion = presentThroughRegisteredPresenter()
+
+        checkpoint()
+        assertThat(results).isEmpty()
+
+        completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+
+        assertThat(results.obtained).containsExactly(setOf("pro"))
+    }
+
+    @Test
+    fun `an app-owned presentation the user backed out of never invokes the callback`() = runTest(dispatcher) {
+        val completion = presentThroughRegisteredPresenter()
+
+        checkpoint()
+        completion()!!.complete(PaywallPresenter.Completion.Result.NavigatedBack)
+
+        assertThat(results).isEmpty()
+        verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+    }
+
+    @Test
     fun `a missing cached customer info counts every entitlement active afterwards as granted`() =
         runTest(dispatcher) {
             noCachedCustomerInfo()
@@ -187,6 +216,16 @@ class CheckpointPassedCallbackTest {
 
     private val List<FlowResult?>.obtained: List<Set<String>?>
         get() = map { result -> result?.obtainedEntitlements?.map { it.entitlementInfo.identifier }?.toSet() }
+
+    // Registers a presenter for a matched offering and returns an accessor for the completion it was handed.
+    private fun presentThroughRegisteredPresenter(offering: Offering = mockk()): () -> PaywallPresenter.Completion? {
+        var completion: PaywallPresenter.Completion? = null
+        manager.paywallPresenter = PaywallPresenter { _, presentation ->
+            completion = presentation
+        }
+        resolvesTo(CheckpointResolution.MatchedOffering(offering, checkpointRuleId = null))
+        return { completion }
+    }
 
     private fun resolvesTo(resolution: CheckpointResolution) {
         coEvery { mockPurchases.internalResolveCp(any(), any()) } returns resolution
