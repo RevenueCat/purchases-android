@@ -3,6 +3,7 @@
 package com.revenuecat.purchases.admob.nextgen
 
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoadResult
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoader
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoaderCallback
@@ -117,6 +118,45 @@ class NativeAdBatchFlowTest {
         assertEquals(AdFormat.NATIVE, failedData.captured.adFormat)
         assertEquals("feed", failedData.captured.placement)
         assertEquals("native-unit", failedData.captured.adUnitId)
+    }
+
+    @Test
+    fun `callback batch tracks failure as banner for banner-only request`() {
+        val adRequest = nativeAdRequest("banner-unit", listOf(NativeAd.NativeAdType.BANNER))
+        val error = mockk<LoadAdError> {
+            every { code } returns LoadAdError.ErrorCode.NO_FILL
+        }
+        val trackingCallback = slot<NativeAdLoaderCallback>()
+
+        every { NativeAdLoader.load(adRequest, 1, capture(trackingCallback)) } just runs
+
+        adTracker.loadAndTrackNativeAds(adRequest, 1, "feed", RecordingNativeAdLoaderCallback())
+        trackingCallback.captured.onAdFailedToLoad(error)
+
+        val failedData = slot<AdFailedToLoadData>()
+        verify(exactly = 1) {
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
+        }
+        assertEquals(AdFormat.BANNER, failedData.captured.adFormat)
+    }
+
+    @Test
+    fun `flow batch tracks failure as banner for banner-only request`() = runBlocking {
+        val adRequest = nativeAdRequest("banner-unit", listOf(NativeAd.NativeAdType.BANNER))
+        val error = mockk<LoadAdError> {
+            every { code } returns LoadAdError.ErrorCode.NO_FILL
+        }
+        val sdkResult = NativeAdLoadResult.Failure(error)
+        coEvery { NativeAdLoader.load(adRequest, 1) } returns flowOf(sdkResult)
+
+        val results = adTracker.loadAndTrackNativeAds(adRequest, 1, placement = "feed").toList()
+
+        assertSame(sdkResult, results.single())
+        val failedData = slot<AdFailedToLoadData>()
+        verify(exactly = 1) {
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
+        }
+        assertEquals(AdFormat.BANNER, failedData.captured.adFormat)
     }
 
 }

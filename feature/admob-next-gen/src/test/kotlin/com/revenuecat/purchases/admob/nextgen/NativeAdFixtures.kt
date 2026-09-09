@@ -12,8 +12,12 @@ import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdRequest
 import io.mockk.every
 import io.mockk.mockk
 
-internal fun nativeAdRequest(adUnitId: String): NativeAdRequest = mockk {
+internal fun nativeAdRequest(
+    adUnitId: String,
+    nativeAdTypes: List<NativeAd.NativeAdType> = listOf(NativeAd.NativeAdType.NATIVE),
+): NativeAdRequest = mockk {
     every { this@mockk.adUnitId } returns adUnitId
+    every { this@mockk.nativeAdTypes } returns nativeAdTypes
 }
 
 internal fun nativeAd(network: String, responseId: String): NativeAd {
