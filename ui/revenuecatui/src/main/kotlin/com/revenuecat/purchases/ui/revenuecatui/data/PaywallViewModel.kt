@@ -1448,10 +1448,6 @@ internal class PaywallViewModelImpl(
         )
     }
 
-    /**
-     * The step's experiment params plus the payload they came from, or null when the step has none. Both
-     * params are required: half a pair identifies nothing the backend can check.
-     */
     private fun experimentData(step: WorkflowStep): WorkflowEvent.ExperimentData? {
         val experimentId = step.experimentId
         val experimentVariant = step.experimentVariant

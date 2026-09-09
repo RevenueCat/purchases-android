@@ -144,7 +144,6 @@ internal class WorkflowsConfigProvider(
             ?.toMap()
             .orEmpty()
 
-    /** The `blob_ref` of [workflowId]'s topic item, or `null` when the item is unknown or has none. */
     suspend fun workflowBlobRef(workflowId: String): String? =
         manager.topic(RemoteConfigTopic.Workflows)?.get(workflowId)?.blobRef
 

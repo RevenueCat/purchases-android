@@ -84,10 +84,7 @@ internal class WorkflowManager(
         return workflow
     }
 
-    /**
-     * The `blob_ref` of the config item [workflowId] was served from, or `null` when it has none. Reported
-     * on experiment events only, so a failure here returns null rather than failing the caller's render.
-     */
+    /** A failure returns null rather than failing the caller's render: this only feeds experiment events. */
     suspend fun workflowBlobRef(workflowId: String): String? =
         try {
             workflowsConfigProvider.workflowBlobRef(workflowId)
