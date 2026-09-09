@@ -19,6 +19,10 @@ public annotation class CheckpointParamsDsl
  * [customVariables] are both the values a checkpoint's targeting rules are evaluated against, readable as
  * `custom.<key>`, and the custom variables the presented paywall renders.
  *
+ * [paywallPresenter] presents the offering this call resolves to with app-owned UI, ahead of the presenter
+ * registered through [com.revenuecat.purchases.ui.revenuecatui.checkpoints.paywallPresenter]. When neither is set,
+ * the offering's configured paywall is presented, falling back to the default paywall.
+ *
  * Built through [Builder], or the DSL:
  * ```kotlin
  * val params = CheckpointParams {
@@ -27,12 +31,14 @@ public annotation class CheckpointParamsDsl
  *         "step" to 3
  *         "premium" to true
  *     }
+ *     paywallPresenter { params, completion -> presentCustomPaywall(params, completion) }
  * }
  * ```
  */
 @InternalRevenueCatAPI
 public class CheckpointParams private constructor(
     customVariables: Map<String, CustomVariableValue>,
+    public val paywallPresenter: PaywallPresenter?,
 ) {
 
     /**
@@ -45,16 +51,20 @@ public class CheckpointParams private constructor(
         CustomVariableKeyValidator.validateAndFilter(customVariables)
 
     override fun equals(other: Any?): Boolean =
-        other is CheckpointParams && other.customVariables == customVariables
+        other is CheckpointParams &&
+            other.customVariables == customVariables &&
+            other.paywallPresenter == paywallPresenter
 
-    override fun hashCode(): Int = customVariables.hashCode()
+    override fun hashCode(): Int = 31 * customVariables.hashCode() + paywallPresenter.hashCode()
 
-    override fun toString(): String = "CheckpointParams(customVariables=$customVariables)"
+    override fun toString(): String =
+        "CheckpointParams(customVariables=$customVariables, paywallPresenter=$paywallPresenter)"
 
     @CheckpointParamsDsl
     public class Builder {
 
         private var customVariables: Map<String, CustomVariableValue> = emptyMap()
+        private var paywallPresenter: PaywallPresenter? = null
 
         /** Replaces any previously set custom variables. */
         public fun setCustomVariables(customVariables: Map<String, CustomVariableValue>): Builder = apply {
@@ -67,7 +77,17 @@ public class CheckpointParams private constructor(
             customVariables = CustomVariablesBuilder().apply(block).build()
         }
 
-        public fun build(): CheckpointParams = CheckpointParams(customVariables)
+        /** Presents the offering this call resolves to; null leaves it to the registered presenter or the SDK. */
+        public fun setPaywallPresenter(paywallPresenter: PaywallPresenter?): Builder = apply {
+            this.paywallPresenter = paywallPresenter
+        }
+
+        /** Presents the offering this call resolves to, ahead of the registered presenter. */
+        @JvmSynthetic
+        public fun paywallPresenter(paywallPresenter: PaywallPresenter): Builder =
+            setPaywallPresenter(paywallPresenter)
+
+        public fun build(): CheckpointParams = CheckpointParams(customVariables, paywallPresenter)
     }
 
     /**

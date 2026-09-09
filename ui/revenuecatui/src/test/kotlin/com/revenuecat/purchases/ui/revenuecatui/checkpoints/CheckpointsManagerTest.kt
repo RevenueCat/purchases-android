@@ -694,6 +694,63 @@ class CheckpointsManagerTest {
         assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
     }
 
+    @Test
+    fun `a per-call presenter presents a matched offering when none is registered`() = runTest(dispatcher) {
+        val offering = mockk<Offering>()
+        val customerInfo = mockk<CustomerInfo>()
+        syncedCustomerInfoIs(customerInfo)
+        resolvesTo(CheckpointResolution.MatchedOffering(offering, checkpointRuleId = null))
+        var presented: Offering? = null
+        var completion: PaywallPresenter.Completion? = null
+        val params = CheckpointParams {
+            paywallPresenter { presenterParams, presentation ->
+                presented = presenterParams.offering
+                completion = presentation
+            }
+        }
+
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint(params) }
+
+        assertThat(presented).isEqualTo(offering)
+        assertThat(presentedCallIds).isEmpty()
+        completion!!.complete(PaywallPresenter.Completion.Result.Closed)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo, reportedPurchase = false))
+    }
+
+    @Test
+    fun `a per-call presenter takes precedence over the registered one`() = runTest(dispatcher) {
+        val registeredCompletion = presentThroughRegisteredPresenter()
+        var completion: PaywallPresenter.Completion? = null
+        val params = CheckpointParams { paywallPresenter { _, presentation -> completion = presentation } }
+
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint(params) }
+
+        assertThat(registeredCompletion()).isNull()
+        assertThat(completion).isNotNull
+        completion!!.complete(PaywallPresenter.Completion.Result.NavigatedBack)
+        call.join()
+
+        assertThat(run!!.backedOut).isTrue
+    }
+
+    @Test
+    fun `params without a presenter fall back to the registered one`() = runTest(dispatcher) {
+        val registeredCompletion = presentThroughRegisteredPresenter()
+        val params = CheckpointParams { customVariables { "source" to "test" } }
+
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint(params) }
+
+        registeredCompletion()!!.complete(PaywallPresenter.Completion.Result.NavigatedBack)
+        call.join()
+
+        assertThat(run!!.backedOut).isTrue
+    }
+
     // Registers a presenter for a matched offering and returns an accessor for the completion it was handed.
     private fun presentThroughRegisteredPresenter(): () -> PaywallPresenter.Completion? {
         var completion: PaywallPresenter.Completion? = null

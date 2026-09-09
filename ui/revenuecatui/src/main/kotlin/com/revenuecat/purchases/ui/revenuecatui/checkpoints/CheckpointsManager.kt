@@ -35,7 +35,7 @@ internal sealed class CheckpointFlowContent {
     class Workflow(val resolution: CheckpointResolution.MatchedWorkflow) : CheckpointFlowContent()
 
     /**
-     * A matched offering with no registered [PaywallPresenter]: the offering's configured paywall
+     * A matched offering with no [PaywallPresenter], per call or registered: the offering's configured paywall
      * is presented, falling back to the default paywall when it has none.
      */
     class OfferingFlow(val offering: Offering) : CheckpointFlowContent()
@@ -116,6 +116,7 @@ internal class CheckpointsManager(
         params: CheckpointParams?,
     ): CheckpointRun = withContext(Dispatchers.Main) {
         val customVariables = (params ?: CheckpointParams {}).customVariables
+        val presenter = params?.paywallPresenter ?: paywallPresenter
         if (!CheckpointIdentifierValidator.isValid(identifier)) {
             Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(identifier))
             return@withContext nothingPresented
@@ -132,7 +133,7 @@ internal class CheckpointsManager(
         try {
             when (resolution) {
                 is CheckpointResolution.MatchedOffering ->
-                    presentOffering(purchases, identifier, resolution.offering, customVariables)
+                    presentOffering(purchases, identifier, resolution.offering, customVariables, presenter)
                 is CheckpointResolution.MatchedWorkflow ->
                     present(purchases, CheckpointFlowContent.Workflow(resolution), customVariables)
                 is CheckpointResolution.NoAction -> nothingPresented
@@ -214,19 +215,20 @@ internal class CheckpointsManager(
     }
 
     /**
-     * Presents a matched offering through the registered [paywallPresenter] when there is one; the
-     * offering's own (or the default fallback) paywall otherwise. The app-owned presentation claims the same
-     * one-presentation-at-a-time slot as SDK-presented workflows and resolves through its completion's first
-     * report, after the SDK has synced the store purchases made during it.
+     * Presents a matched offering through [presenter] (the call's own, else the registered [paywallPresenter])
+     * when there is one; the offering's own (or the default fallback) paywall otherwise. The app-owned
+     * presentation claims the same one-presentation-at-a-time slot as SDK-presented workflows and resolves through
+     * its completion's first report, after the SDK has synced the store purchases made during it.
      */
     private suspend fun presentOffering(
         purchases: Purchases,
         identifier: String,
         offering: Offering,
         customVariables: Map<String, CustomVariableValue>,
+        presenter: PaywallPresenter?,
     ): CheckpointRun {
         val content = CheckpointFlowContent.OfferingFlow(offering)
-        val presenter = paywallPresenter ?: return present(purchases, content, customVariables)
+        if (presenter == null) return present(purchases, content, customVariables)
         val call = PendingCall(UUID.randomUUID().toString(), content, customVariables, CompletableDeferred())
         if (!claim(call)) return blockedByPresentedFlow
         try {

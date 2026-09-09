@@ -6,7 +6,8 @@ import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import dev.drewhamilton.poko.Poko
 
 /**
- * Presents the offering a checkpoint resolves to with app-owned UI, set through
+ * Presents the offering a checkpoint resolves to with app-owned UI. Set per call through
+ * [CheckpointParams.paywallPresenter], which takes precedence, or for every call through
  * [com.revenuecat.purchases.ui.revenuecatui.checkpoints.paywallPresenter]. When none is set, the offering's
  * configured paywall is presented instead, falling back to the default paywall.
  */
