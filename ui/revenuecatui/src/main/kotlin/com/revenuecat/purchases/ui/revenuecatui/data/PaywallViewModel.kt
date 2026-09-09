@@ -1420,6 +1420,8 @@ internal class PaywallViewModelImpl(
                 entryReason = entryReason.value,
                 isFirstStep = step.id == workflow.initialStepId,
                 isLastStep = isTerminalStep(workflow, step.id),
+                experimentId = step.experimentId,
+                experimentVariant = step.experimentVariant,
             ),
         )
     }
@@ -1435,6 +1437,8 @@ internal class PaywallViewModelImpl(
                 toStepId = toStepId,
                 isFirstStep = step.id == workflow.initialStepId,
                 isLastStep = isTerminalStep(workflow, step.id),
+                experimentId = step.experimentId,
+                experimentVariant = step.experimentVariant,
             ),
         )
     }
@@ -1481,6 +1485,8 @@ internal class PaywallViewModelImpl(
                 traceId = workflowTraceId,
                 isFirstStep = step.id == workflow.initialStepId,
                 isLastStep = isTerminalStep(workflow, step.id),
+                experimentId = step.experimentId,
+                experimentVariant = step.experimentVariant,
             ),
         )
     }

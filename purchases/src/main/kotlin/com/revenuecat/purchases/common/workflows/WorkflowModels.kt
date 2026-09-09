@@ -117,7 +117,21 @@ public data class WorkflowStep(
                 (element as? JsonPrimitive)?.takeIf { it.isString }?.content
             }
         }
+
+    /** The step's `experiment_id` param, or null if it has none. */
+    public val experimentId: String?
+        get() = stringParam(EXPERIMENT_ID_PARAM)
+
+    /** The step's `experiment_variant` param, or null if it has none. */
+    public val experimentVariant: String?
+        get() = stringParam(EXPERIMENT_VARIANT_PARAM)
+
+    private fun stringParam(key: String): String? =
+        (paramValues[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
 }
+
+private const val EXPERIMENT_ID_PARAM = "experiment_id"
+private const val EXPERIMENT_VARIANT_PARAM = "experiment_variant"
 
 @InternalRevenueCatAPI
 @Serializable
