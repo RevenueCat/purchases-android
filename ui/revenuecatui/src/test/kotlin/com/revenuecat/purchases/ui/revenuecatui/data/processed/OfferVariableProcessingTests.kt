@@ -533,6 +533,73 @@ class OfferVariableProcessingTests {
 
     // endregion
 
+    // region offer_price_with_zero
+
+    private val freeTrialOption = mockk<SubscriptionOption> {
+        every { freePhase } returns mockk<PricingPhase> {
+            every { price } returns Price(amountMicros = 0, currencyCode = "USD", formatted = "$0.00")
+            every { billingPeriod } returns Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M")
+            every { billingCycleCount } returns 1
+            every { recurrenceMode } returns RecurrenceMode.FINITE_RECURRING
+            every { pricePerDay(any()) } returns Price(
+                amountMicros = 0, currencyCode = "USD", formatted = "$0.00",
+            )
+            every { pricePerWeek(any()) } returns Price(
+                amountMicros = 0, currencyCode = "USD", formatted = "$0.00",
+            )
+            every { pricePerMonth(any()) } returns Price(
+                amountMicros = 0, currencyCode = "USD", formatted = "$0.00",
+            )
+        }
+        every { introPhase } returns null
+    }
+
+    @Test
+    fun `offer_price_with_zero renders the amount for a free trial`() {
+        val result = processTemplate(
+            template = "{{ product.offer_price_with_zero }}",
+            rcPackage = packageWithIntroOffer,
+            subscriptionOption = freeTrialOption,
+        )
+        assertThat(result).isEqualTo("$0.00")
+    }
+
+    @Test
+    fun `offer_price_with_zero per period variants render the amount for a free trial`() {
+        val result = processTemplate(
+            template = "{{ product.offer_price_with_zero_per_day }}|" +
+                "{{ product.offer_price_with_zero_per_week }}|" +
+                "{{ product.offer_price_with_zero_per_month }}",
+            rcPackage = packageWithIntroOffer,
+            subscriptionOption = freeTrialOption,
+        )
+        assertThat(result).isEqualTo("$0.00|$0.00|$0.00")
+    }
+
+    @Test
+    fun `offer_price still renders the localized word for a free trial`() {
+        val result = processTemplate(
+            template = "{{ product.offer_price }}|{{ product.offer_price_per_month }}",
+            rcPackage = packageWithIntroOffer,
+            subscriptionOption = freeTrialOption,
+        )
+        assertThat(result).isEqualTo("free|free")
+    }
+
+    @Test
+    fun `offer_price_with_zero matches offer_price for a paid offer`() {
+        val template = "{{ product.offer_price }}|{{ product.offer_price_with_zero }}"
+        val result = processTemplate(
+            template = template,
+            rcPackage = packageWithIntroOffer,
+            subscriptionOption = null,
+        )
+        val parts = result.split("|")
+        assertThat(parts[0]).isEqualTo(parts[1])
+    }
+
+    // endregion
+
     private fun processTemplate(
         template: String,
         rcPackage: Package,

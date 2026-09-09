@@ -513,6 +513,64 @@ internal class TextComponentViewVariablesTests(
                     "\$2.00"
                 )
 
+                Variable.PRODUCT_OFFER_PRICE_WITH_ZERO -> arrayOf(
+                    "{{ ${variableName.identifier} }}",
+                    Args(
+                        packages = listOf(packageYearlyUsdTwoOffers),
+                        locale = "en_US",
+                        storefrontCountryCode = "US",
+                        variableLocalizations = variableLocalizationKeysForEnUs(),
+                    ),
+                    // The amount where offer_price renders the word
+                    "\$0.00"
+                )
+
+                Variable.PRODUCT_OFFER_PRICE_WITH_ZERO_PER_DAY -> arrayOf(
+                    "{{ ${variableName.identifier} }}",
+                    Args(
+                        packages = listOf(packageYearlyUsdTwoOffers),
+                        locale = "en_US",
+                        storefrontCountryCode = "US",
+                        variableLocalizations = variableLocalizationKeysForEnUs(),
+                    ),
+                    "\$0.00"
+                )
+
+                Variable.PRODUCT_OFFER_PRICE_WITH_ZERO_PER_WEEK -> arrayOf(
+                    "{{ ${variableName.identifier} }}",
+                    Args(
+                        packages = listOf(packageYearlyUsdTwoOffers),
+                        locale = "en_US",
+                        storefrontCountryCode = "US",
+                        variableLocalizations = variableLocalizationKeysForEnUs(),
+                    ),
+                    "\$0.00"
+                )
+
+                Variable.PRODUCT_OFFER_PRICE_WITH_ZERO_PER_MONTH -> arrayOf(
+                    "{{ ${variableName.identifier} }}",
+                    Args(
+                        packages = listOf(packageYearlyUsdTwoOffers),
+                        locale = "en_US",
+                        storefrontCountryCode = "US",
+                        variableLocalizations = variableLocalizationKeysForEnUs(),
+                    ),
+                    // Same product fallback as offer_price_per_month: the offer period can't display in months
+                    "\$0.16"
+                )
+
+                Variable.PRODUCT_OFFER_PRICE_WITH_ZERO_PER_YEAR -> arrayOf(
+                    "{{ ${variableName.identifier} }}",
+                    Args(
+                        packages = listOf(packageYearlyUsdTwoOffers),
+                        locale = "en_US",
+                        storefrontCountryCode = "US",
+                        variableLocalizations = variableLocalizationKeysForEnUs(),
+                    ),
+                    // Same product fallback as offer_price_per_year
+                    "\$2.00"
+                )
+
                 Variable.PRODUCT_OFFER_PERIOD -> arrayOf(
                     "{{ ${variableName.identifier} }}",
                     Args(
