@@ -583,6 +583,19 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
+    fun `offering step carrying a flat offering_identifier resolves to that offering`() = runTest {
+        val step = offeringStep("default").copy(
+            paramValues = mapOf("offering_identifier" to JsonPrimitive("default")),
+        )
+        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow("wf1234", step)
+
+        val resolution = resolve()
+
+        assertThat(resolution).isInstanceOf(CheckpointResolution.MatchedOffering::class.java)
+        assertThat((resolution as CheckpointResolution.MatchedOffering).offering.identifier).isEqualTo("default")
+    }
+
+    @Test
     fun `unsupported workflow shapes do not fall through to a later rule`() = runTest {
         val baseOfferingStep = offeringStep("default")
         val invalidWorkflows = listOf(
