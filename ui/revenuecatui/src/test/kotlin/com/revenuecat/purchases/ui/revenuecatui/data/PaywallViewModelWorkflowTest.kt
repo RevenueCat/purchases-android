@@ -17,6 +17,7 @@ import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
@@ -51,6 +52,8 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.webview.webViewContextSnapshot
 import com.revenuecat.purchases.ui.revenuecatui.utils.Resumable
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -78,6 +81,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
@@ -1905,7 +1909,7 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `initial step with no offering on the step or its screen errors instead of rendering`() {
+    fun `initial step with no offering on the step or its screen renders without one`() {
         val stepWithoutOffering = step1.copy(paramValues = emptyMap())
         val workflowWithoutOffering = workflow.copy(
             steps = mapOf("step-1" to stepWithoutOffering, "step-2" to step2),
@@ -1918,9 +1922,55 @@ class PaywallViewModelWorkflowTest {
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(workflowWithoutOffering, testOfferings, null, uiConfig)
 
-        assertThat(vm.workflowState.value).isNull()
-        val error = vm.state.value as PaywallState.Error
-        assertThat(error.errorMessage).contains("Step 'step-1' has no offering identifier")
+        assertThat(vm.workflowState.value?.currentStepId).isEqualTo("step-1")
+        val loaded = vm.state.value as PaywallState.Loaded.Components
+        assertThat(loaded.workflowScreen?.hasOffering).isFalse
+        assertThat(loaded.offering.availablePackages).isEmpty()
+        every { purchases.store } returns Store.PLAY_STORE
+        val webViewStyle = mockk<WebViewComponentStyle> { every { rcPackage } returns null }
+        assertThat(webViewContextSnapshot(loaded, webViewStyle, darkMode = false).getValue("offering"))
+            .isEqualTo(JsonNull)
+    }
+
+    @Test
+    fun `a step without an offering gets the fallback step's default package as context`() {
+        val (base, offerings) = makeContextPackageWorkflow()
+        val wfl = base.copy(
+            screens = base.screens + (screenId1 to base.screens.getValue(screenId1).copy(offeringIdentifier = null)),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, offerings, null, uiConfig)
+
+        val step1State = vm.workflowState.value?.stepStates?.get("step-1")
+        assertThat(step1State).isNotNull
+        assertThat(step1State!!.workflowScreen?.hasOffering).isFalse
+        assertThat(step1State.offering.availablePackages).isEmpty()
+        assertThat(step1State.selectedPackageInfo?.rcPackage?.identifier).isEqualTo(PackageType.MONTHLY.identifier)
+    }
+
+    @Test
+    fun `a step without an offering emits no paywall events even when tagged as a paywall`() {
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+        val (base, offerings) = makeContextPackageWorkflow()
+        val taggedStep1 = base.steps.getValue("step-1").copy(metadata = screenTypeMetadata(WorkflowScreenType.PAYWALL))
+        val wfl = base.copy(
+            steps = base.steps + ("step-1" to taggedStep1),
+            screens = base.screens + (screenId1 to base.screens.getValue(screenId1).copy(offeringIdentifier = null)),
+        )
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(wfl, offerings, null, uiConfig)
+        vm.trackPaywallImpressionIfNeeded()
+
+        assertThat(captured.filterIsInstance<PaywallEvent>()).isEmpty()
+
+        vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
+        vm.trackPaywallImpressionIfNeeded()
+
+        val impressions = captured.filterIsInstance<PaywallEvent>().filter { it.type == PaywallEventType.IMPRESSION }
+        assertThat(impressions).hasSize(1)
     }
 
     @Test
@@ -1977,27 +2027,22 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `navigation to a step without an offering identifier fails the workflow with an error`() {
-        val stepWithoutOffering = step2.copy(paramValues = emptyMap())
-        val workflowToStepWithoutOffering = workflow.copy(
-            steps = mapOf("step-1" to step1, "step-2" to stepWithoutOffering),
-            screens = mapOf(
-                screenId1 to makeScreen(screenId1),
-                screenId2 to makeScreen(screenId2).copy(offeringIdentifier = null),
-            ),
-        )
+    fun `navigation to a step whose offering is not in offerings fails the workflow with an error`() {
+        val stepWithUnknownOffering = step2.copy(paramValues = offeringParams("unknown_offering"))
+        val workflowToStepWithUnknownOffering =
+            workflow.copy(steps = mapOf("step-1" to step1, "step-2" to stepWithUnknownOffering))
 
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
         val vm = createVm()
-        vm.startWorkflowPresentationFromResult(workflowToStepWithoutOffering, testOfferings, null, uiConfig)
+        vm.startWorkflowPresentationFromResult(workflowToStepWithUnknownOffering, testOfferings, null, uiConfig)
         captured.clear()
 
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
 
         assertThat(vm.workflowState.value).isNull()
         val error = vm.state.value as PaywallState.Error
-        assertThat(error.errorMessage).contains("Step 'step-2' has no offering identifier")
+        assertThat(error.errorMessage).contains("Offering 'unknown_offering' not found for step 'step-2'")
         assertThat(error.toPaywallResult().error.code).isEqualTo(PurchasesErrorCode.ConfigurationError)
         val workflowEvents = captured.filterIsInstance<WorkflowEvent>()
         assertThat(workflowEvents).hasSize(2)
@@ -2011,18 +2056,13 @@ class PaywallViewModelWorkflowTest {
 
     @Test
     fun `dismissing the error after a failed navigation does not repeat the workflow events`() {
-        val stepWithoutOffering = step2.copy(paramValues = emptyMap())
-        val workflowToStepWithoutOffering = workflow.copy(
-            steps = mapOf("step-1" to step1, "step-2" to stepWithoutOffering),
-            screens = mapOf(
-                screenId1 to makeScreen(screenId1),
-                screenId2 to makeScreen(screenId2).copy(offeringIdentifier = null),
-            ),
-        )
+        val stepWithUnknownOffering = step2.copy(paramValues = offeringParams("unknown_offering"))
+        val workflowToStepWithUnknownOffering =
+            workflow.copy(steps = mapOf("step-1" to step1, "step-2" to stepWithUnknownOffering))
         val captured = mutableListOf<FeatureEvent>()
         every { purchases.track(any()) } answers { captured.add(firstArg()) }
         val vm = createVm()
-        vm.startWorkflowPresentationFromResult(workflowToStepWithoutOffering, testOfferings, null, uiConfig)
+        vm.startWorkflowPresentationFromResult(workflowToStepWithUnknownOffering, testOfferings, null, uiConfig)
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
         captured.clear()
 
