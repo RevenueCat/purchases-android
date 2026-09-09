@@ -2285,6 +2285,92 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 ),
             ),
             arrayOf(
+                "window_width_condition '= 393' matches a fractional 392.7dp window",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowWidthRule(
+                                    operator = ComponentOverride.ComparisonOperator.EQUALS,
+                                    value = 393.0,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(392.7.dp, 852.dp),
+                    expected = expandedPartial,
+                ),
+            ),
+            arrayOf(
+                "window_width_condition '= 393' does not match a 394dp window",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowWidthRule(
+                                    operator = ComponentOverride.ComparisonOperator.EQUALS,
+                                    value = 393.0,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(394.dp, 852.dp),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "window_aspect_ratio_condition '= 0.462' matches the computed 390/844 ratio",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowAspectRatioRule(
+                                    operator = ComponentOverride.ComparisonOperator.EQUALS,
+                                    value = 0.462,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    // 390 / 844 = 0.46208..., within the 1e-3 equality tolerance of 0.462.
+                    windowDpSize = DpSize(390.dp, 844.dp),
+                    expected = expandedPartial,
+                ),
+            ),
+            arrayOf(
+                "window_aspect_ratio_condition '= 0.46' does not match the computed 390/844 ratio",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowAspectRatioRule(
+                                    operator = ComponentOverride.ComparisonOperator.EQUALS,
+                                    value = 0.46,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    // 390 / 844 = 0.46208..., 0.0021 away from 0.46: outside the 1e-3 tolerance.
+                    windowDpSize = DpSize(390.dp, 844.dp),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
                 "window_width_condition never matches when the window size is unknown",
                 Args(
                     availableOverrides = listOf(

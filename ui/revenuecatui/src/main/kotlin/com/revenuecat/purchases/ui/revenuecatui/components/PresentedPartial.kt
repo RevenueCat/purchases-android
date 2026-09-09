@@ -167,21 +167,28 @@ private fun ComponentOverride.Condition.evaluate(
 
 private fun ComponentOverride.Condition.evaluateWindowCondition(windowDpSize: DpSize?): Boolean = when (this) {
     is ComponentOverride.Condition.WindowWidthRule ->
-        evaluateComparison(operator, windowDpSize?.width?.value?.toDouble(), value)
+        evaluateComparison(operator, windowDpSize?.width?.value?.toDouble(), value, DIMENSION_EQUALITY_TOLERANCE_DP)
     is ComponentOverride.Condition.WindowHeightRule ->
-        evaluateComparison(operator, windowDpSize?.height?.value?.toDouble(), value)
+        evaluateComparison(operator, windowDpSize?.height?.value?.toDouble(), value, DIMENSION_EQUALITY_TOLERANCE_DP)
     is ComponentOverride.Condition.WindowAspectRatioRule ->
-        evaluateComparison(operator, windowDpSize?.aspectRatioOrNull(), value)
+        evaluateComparison(operator, windowDpSize?.aspectRatioOrNull(), value, ASPECT_RATIO_EQUALITY_TOLERANCE)
     else -> error("Non-window condition routed to window evaluation: $this")
 }
 
 private fun DpSize.aspectRatioOrNull(): Double? =
     if (height.value > 0f) width.value.toDouble() / height.value.toDouble() else null
 
+// EQUALS compares an authored value against a measurement, so the tolerance must be one an author can
+// actually hit: window dimensions can be fractional on non-integer density scales (0.5dp absorbs that),
+// and aspect ratios are divisions (a typed 0.462 must match a computed 0.46208...).
+private const val DIMENSION_EQUALITY_TOLERANCE_DP = 0.5
+private const val ASPECT_RATIO_EQUALITY_TOLERANCE = 1e-3
+
 private fun evaluateComparison(
     operator: ComponentOverride.ComparisonOperator,
     actual: Double?,
     expected: Double,
+    equalityTolerance: Double,
 ): Boolean {
     if (actual == null) return false
     return when (operator) {
@@ -189,7 +196,7 @@ private fun evaluateComparison(
         ComponentOverride.ComparisonOperator.GREATER_THAN -> actual > expected
         ComponentOverride.ComparisonOperator.LESS_THAN_OR_EQUAL -> actual <= expected
         ComponentOverride.ComparisonOperator.LESS_THAN -> actual < expected
-        ComponentOverride.ComparisonOperator.EQUALS -> abs(actual - expected) < NUMBER_COMPARISON_EPSILON
+        ComponentOverride.ComparisonOperator.EQUALS -> abs(actual - expected) < equalityTolerance
     }
 }
 
