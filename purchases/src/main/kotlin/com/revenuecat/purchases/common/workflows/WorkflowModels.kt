@@ -119,8 +119,8 @@ public data class WorkflowStep(
         }
 
     /**
-     * The experiment this step belongs to, baked into `param_values` by the backend for the steps of the
-     * enrolled variant only. Echoed verbatim on step events; null for steps outside an experiment.
+     * Set by the backend only on the steps of the enrolled variant, and echoed verbatim on step events so
+     * khepri can enroll on exposure. Null for steps outside an experiment.
      */
     @InternalRevenueCatAPI
     public val experimentId: String?

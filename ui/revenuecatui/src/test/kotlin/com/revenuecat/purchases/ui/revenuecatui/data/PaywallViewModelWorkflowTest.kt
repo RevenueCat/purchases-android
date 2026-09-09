@@ -1338,8 +1338,7 @@ class PaywallViewModelWorkflowTest {
 
     @Test
     fun `step events echo the experiment params baked into the step`() {
-        // The backend bakes experiment_id / experiment_variant into the steps of the enrolled variant.
-        // Every step event echoes them verbatim so khepri can enroll on exposure. step-2 has none.
+        // step-2 is outside the variant, so it has nothing to echo.
         val experimentStep1 = step1.copy(
             paramValues = mapOf(
                 "experiment_id" to JsonPrimitive("exp_abc"),
