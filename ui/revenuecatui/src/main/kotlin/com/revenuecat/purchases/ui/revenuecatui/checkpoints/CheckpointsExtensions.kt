@@ -29,7 +29,7 @@ import com.revenuecat.purchases.Purchases
 public fun Purchases.checkpoint(
     checkpointIdentifier: String,
     params: CheckpointParams?,
-    callback: CheckpointCallback,
+    callback: CheckpointPassedCallback,
 ) {
     checkpointsManager.checkpoint(this, checkpointIdentifier, params, callback)
 }
@@ -40,7 +40,7 @@ public fun Purchases.checkpoint(
 @InternalRevenueCatAPI
 public fun Purchases.checkpoint(
     checkpointIdentifier: String,
-    callback: CheckpointCallback,
+    callback: CheckpointPassedCallback,
 ) {
     checkpoint(checkpointIdentifier, params = null, callback = callback)
 }
