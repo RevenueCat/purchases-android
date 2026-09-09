@@ -5,7 +5,7 @@ import androidx.annotation.OptIn;
 import com.revenuecat.purchases.EntitlementInfo;
 import com.revenuecat.purchases.InternalRevenueCatAPI;
 import com.revenuecat.purchases.Purchases;
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointCallback;
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPassedCallback;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult;
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointsExtensionsKt;
@@ -18,7 +18,7 @@ final class CheckpointsAPI {
 
     @OptIn(markerClass = InternalRevenueCatAPI.class)
     static void check(Purchases purchases, CheckpointParams params) {
-        CheckpointCallback callback = (FlowResult result) -> {
+        CheckpointPassedCallback callback = (FlowResult result) -> {
             if (result != null) {
                 Set<ObtainedEntitlement> obtainedEntitlements = result.getObtainedEntitlements();
             }
