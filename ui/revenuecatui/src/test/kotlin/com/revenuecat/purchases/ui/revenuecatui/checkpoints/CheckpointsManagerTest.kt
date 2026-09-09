@@ -25,7 +25,6 @@ import io.mockk.runs
 import io.mockk.slot
 import io.mockk.unmockkObject
 import io.mockk.verify
-import io.mockk.verifyOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -49,7 +48,6 @@ class CheckpointsManagerTest {
 
     private lateinit var mockPurchases: Purchases
     private lateinit var mockActivity: Activity
-    private lateinit var mockListener: CheckpointListener
     private lateinit var mockPresenter: CheckpointWorkflowPresenter
     private val presentedCallIds = mutableListOf<String>()
 
@@ -63,7 +61,6 @@ class CheckpointsManagerTest {
         presentedCallIds.clear()
         mockActivity = mockk(relaxed = true)
         mockPresenter = mockk(relaxed = true)
-        mockListener = mockk(relaxed = true)
         mockPurchases = mockk {
             every { currentActivity } returns mockActivity
         }
@@ -71,7 +68,6 @@ class CheckpointsManagerTest {
             presentedCallIds += callId
             mockPresenter
         }
-        manager.checkpointListener = mockListener
     }
 
     @After
@@ -81,28 +77,22 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `valid checkpoint identifier reaches listener and resolution`() = runTest(dispatcher) {
+    fun `valid checkpoint identifier reaches resolution`() = runTest(dispatcher) {
         resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
 
         manager.checkpoint(mockPurchases, "A-1_b", null)
 
         coVerify(exactly = 1) { mockPurchases.resolveCheckpoint("A-1_b", emptyMap()) }
-        verify(exactly = 1) { mockListener.onCheckpointHit(match { it.identifier == "A-1_b" }) }
-        verify(exactly = 1) { mockListener.onCheckpointCompleted(match { it.identifier == "A-1_b" }) }
     }
 
     @Test
-    fun `invalid checkpoint identifier is logged and reported to listener without resolution`() = runTest(dispatcher) {
+    fun `invalid checkpoint identifier is logged and skips resolution`() = runTest(dispatcher) {
         val invalidIdentifier = " checkout😀"
 
         val result = manager.checkpoint(mockPurchases, invalidIdentifier, null) as CheckpointResult.NoAction
 
         assertThat(result.reason).isEqualTo(CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER)
         coVerify(exactly = 0) { mockPurchases.resolveCheckpoint(any(), any()) }
-        verifyOrder {
-            mockListener.onCheckpointHit(CheckpointHitContext(invalidIdentifier, emptyMap()))
-            mockListener.onCheckpointCompleted(CheckpointCompletedContext(invalidIdentifier, emptyMap(), result))
-        }
         verify(exactly = 1) {
             Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(invalidIdentifier))
         }
@@ -115,10 +105,6 @@ class CheckpointsManagerTest {
         val result = checkpoint() as CheckpointResult.NoAction
 
         assertThat(result.reason).isEqualTo(CheckpointResult.NoAction.Reason.UNKNOWN_CHECKPOINT)
-        verifyOrder {
-            mockListener.onCheckpointHit(CheckpointHitContext(checkpointId, emptyMap()))
-            mockListener.onCheckpointCompleted(CheckpointCompletedContext(checkpointId, emptyMap(), result))
-        }
     }
 
     @Test
@@ -131,10 +117,6 @@ class CheckpointsManagerTest {
 
         assertThat(result.offering).isEqualTo(offering)
         assertThat(presentedCallIds).isEmpty()
-        verifyOrder {
-            mockListener.onCheckpointHit(CheckpointHitContext(checkpointId, emptyMap()))
-            mockListener.onCheckpointCompleted(CheckpointCompletedContext(checkpointId, emptyMap(), result))
-        }
     }
 
     @Test
@@ -197,11 +179,6 @@ class CheckpointsManagerTest {
 
         val presented = result as CheckpointResult.PaywallPresented
         assertThat(presented.paywallOutcome).isEqualTo(CheckpointPaywallOutcome.Dismissed)
-        val customVariables = mapOf("goal" to CustomVariableValue.String("test"))
-        verifyOrder {
-            mockListener.onCheckpointHit(CheckpointHitContext(checkpointId, customVariables))
-            mockListener.onCheckpointCompleted(CheckpointCompletedContext(checkpointId, customVariables, presented))
-        }
     }
 
     @Test
@@ -417,14 +394,6 @@ class CheckpointsManagerTest {
         assertThat((result as CheckpointResult.PaywallPresented).paywallOutcome)
             .isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
         assertThat(manager.presentation(callId)).isNull()
-    }
-
-    @Test
-    fun `checkpoint works without a listener`() = runTest(dispatcher) {
-        manager.checkpointListener = null
-        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
-
-        assertThat(checkpoint()).isInstanceOf(CheckpointResult.NoAction::class.java)
     }
 
     private fun resolvesTo(resolution: CheckpointResolution) {
