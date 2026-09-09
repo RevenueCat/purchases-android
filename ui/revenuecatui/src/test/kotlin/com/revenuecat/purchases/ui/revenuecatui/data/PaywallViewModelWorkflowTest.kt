@@ -1338,7 +1338,7 @@ class PaywallViewModelWorkflowTest {
 
     @Test
     fun `step events echo the experiment params baked into the step`() {
-        // step-2 has no experiment on its path, so it has nothing to echo.
+        // step-2 has no experiment params.
         val experimentStep1 = step1.copy(
             paramValues = mapOf(
                 "experiment_id" to JsonPrimitive("exp_abc"),

@@ -118,15 +118,12 @@ public data class WorkflowStep(
             }
         }
 
-    /**
-     * The experiment active on this step's path, set by the backend and echoed verbatim on step events.
-     * Null when no experiment applies to the step.
-     */
+    /** The experiment running on this step, or null if there is none. */
     @InternalRevenueCatAPI
     public val experimentId: String?
         get() = stringParam(EXPERIMENT_ID_PARAM)
 
-    /** The variant active on this step's path, alongside [experimentId]. */
+    /** The variant of [experimentId] this step belongs to. */
     @InternalRevenueCatAPI
     public val experimentVariant: String?
         get() = stringParam(EXPERIMENT_VARIANT_PARAM)
