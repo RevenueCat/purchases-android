@@ -888,22 +888,18 @@ internal class PaywallViewModelImpl(
 
     private fun presentInjectedWorkflowIfNeeded(offeringSelection: OfferingSelection): Boolean {
         val injectedWorkflow = options.injectedWorkflow ?: return false
-        val offering = offeringSelection.offering
-        if (offering == null) {
+        val offerings = options.injectedWorkflowOfferings ?: Offerings(current = null, all = emptyMap())
+        if (offerings.all.isEmpty()) {
             Logger.w(
-                "Paywalls: injectedWorkflow set without a concrete Offering (use setOffering); " +
-                    "workflow screens may fail to resolve their packages.",
+                "Paywalls: injectedWorkflow set without any Offering (use setOffering); " +
+                    "workflow steps will fail to resolve their offering.",
             )
         }
-        val offerings = Offerings(
-            current = offering,
-            all = offering?.let { mapOf(it.identifier to it) } ?: emptyMap(),
-        )
         startWorkflowPresentation(
             injectedWorkflow,
             options.injectedWorkflowUiConfig,
             offerings,
-            offering?.presentedOfferingContext,
+            offeringSelection.offering?.presentedOfferingContext,
         )
         return true
     }
