@@ -73,5 +73,7 @@ internal class MockPurchasesType(
         throw NotImplementedError("Mock implementation for previews only")
     }
 
+    override suspend fun awaitWorkflowBlobRef(workflowId: String): String? = null
+
     override suspend fun resolveWorkflow(offeringId: String): WorkflowResolution = WorkflowResolution.NoWorkflow
 }

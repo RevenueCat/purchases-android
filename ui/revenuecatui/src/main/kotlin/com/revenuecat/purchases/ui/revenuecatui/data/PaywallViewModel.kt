@@ -210,6 +210,7 @@ internal class PaywallViewModelImpl(
 
     private var workflowNavigator: WorkflowNavigator? = null
     private var currentWorkflow: PublishedWorkflow? = null
+    private var currentWorkflowBlobRef: String? = null
     private var currentWorkflowUiConfig: UiConfig = emptyUiConfig()
     private var currentWorkflowOfferings: Offerings? = null
     private var currentWorkflowPresentedOfferingContext: PresentedOfferingContext? = null
@@ -398,6 +399,7 @@ internal class PaywallViewModelImpl(
         preWarmJob = null
         workflowNavigator = null
         currentWorkflow = null
+        currentWorkflowBlobRef = null
         currentWorkflowOfferings = null
         currentWorkflowPresentedOfferingContext = null
         currentWorkflowStepTracksPaywallEvents = true
@@ -968,11 +970,13 @@ internal class PaywallViewModelImpl(
             val workflowDeferred = async { purchases.awaitGetWorkflow(workflowId) }
             val uiConfigDeferred = async { purchases.awaitGetUiConfig() }
             val offeringsDeferred = async { preloadedOfferings ?: purchases.awaitOfferings() }
+            val blobRefDeferred = async { purchases.awaitWorkflowBlobRef(workflowId) }
             startWorkflowPresentation(
                 workflowDeferred.await(),
                 uiConfigDeferred.await(),
                 offeringsDeferred.await(),
                 offering.presentedOfferingContext,
+                blobRefDeferred.await(),
             )
         }
     }
@@ -1042,9 +1046,10 @@ internal class PaywallViewModelImpl(
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
         uiConfig: UiConfig = emptyUiConfig(),
+        workflowBlobRef: String? = null,
     ) {
         cancelStateUpdate()
-        startWorkflowPresentation(workflow, uiConfig, offerings, presentedOfferingContext)
+        startWorkflowPresentation(workflow, uiConfig, offerings, presentedOfferingContext, workflowBlobRef)
     }
 
     @Suppress("ReturnCount")
@@ -1053,6 +1058,7 @@ internal class PaywallViewModelImpl(
         uiConfig: UiConfig,
         offerings: Offerings,
         presentedOfferingContext: PresentedOfferingContext?,
+        workflowBlobRef: String? = null,
     ) {
         val initialStep = workflow.steps[workflow.initialStepId]
         if (initialStep == null) {
@@ -1068,6 +1074,7 @@ internal class PaywallViewModelImpl(
         trackCurrentWorkflowStepCompleted()
 
         currentWorkflow = workflow
+        currentWorkflowBlobRef = workflowBlobRef
         currentWorkflowUiConfig = uiConfig
         currentWorkflowOfferings = offerings
         currentWorkflowPresentedOfferingContext = presentedOfferingContext
@@ -1420,8 +1427,7 @@ internal class PaywallViewModelImpl(
                 entryReason = entryReason.value,
                 isFirstStep = step.id == workflow.initialStepId,
                 isLastStep = isTerminalStep(workflow, step.id),
-                experimentId = step.experimentId,
-                experimentVariant = step.experimentVariant,
+                experiment = experimentData(step),
             ),
         )
     }
@@ -1437,10 +1443,27 @@ internal class PaywallViewModelImpl(
                 toStepId = toStepId,
                 isFirstStep = step.id == workflow.initialStepId,
                 isLastStep = isTerminalStep(workflow, step.id),
-                experimentId = step.experimentId,
-                experimentVariant = step.experimentVariant,
+                experiment = experimentData(step),
             ),
         )
+    }
+
+    /**
+     * The step's experiment params plus the payload they came from, or null when the step has none. Both
+     * params are required: half a pair identifies nothing the backend can check.
+     */
+    private fun experimentData(step: WorkflowStep): WorkflowEvent.ExperimentData? {
+        val experimentId = step.experimentId
+        val experimentVariant = step.experimentVariant
+        return if (experimentId == null || experimentVariant == null) {
+            null
+        } else {
+            WorkflowEvent.ExperimentData(
+                experimentId = experimentId,
+                experimentVariant = experimentVariant,
+                workflowBlobRef = currentWorkflowBlobRef,
+            )
+        }
     }
 
     private fun isTerminalStep(workflow: PublishedWorkflow, stepId: String): Boolean {
@@ -1485,8 +1508,7 @@ internal class PaywallViewModelImpl(
                 traceId = workflowTraceId,
                 isFirstStep = step.id == workflow.initialStepId,
                 isLastStep = isTerminalStep(workflow, step.id),
-                experimentId = step.experimentId,
-                experimentVariant = step.experimentVariant,
+                experiment = experimentData(step),
             ),
         )
     }
