@@ -34,10 +34,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
@@ -136,7 +136,7 @@ internal fun StackComponentView(
     onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource? = null,
-    contentAlpha: Float = 1f,
+    contentAlpha: (() -> Float)? = null,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
     // Get a StackComponentState that calculates the overridden properties we should use.
@@ -241,7 +241,7 @@ private fun StackWithOverlaidBadge(
     alignment: TwoDimensionalAlignment,
     clickHandler: suspend (PaywallAction) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
-    contentAlpha: Float,
+    contentAlpha: (() -> Float)?,
     modifier: Modifier = Modifier,
     onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
@@ -284,7 +284,7 @@ private fun StackWithLongEdgeToEdgeBadge(
     topBadge: Boolean,
     clickHandler: suspend (PaywallAction) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
-    contentAlpha: Float,
+    contentAlpha: (() -> Float)?,
     modifier: Modifier = Modifier,
     onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
@@ -457,7 +457,7 @@ private fun StackWithShortEdgeToEdgeBadge(
     alignment: TwoDimensionalAlignment,
     clickHandler: suspend (PaywallAction) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
-    contentAlpha: Float,
+    contentAlpha: (() -> Float)?,
     modifier: Modifier = Modifier,
     onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
@@ -589,7 +589,7 @@ private fun MainStackComponent(
     state: PaywallState.Loaded.Components,
     clickHandler: suspend (PaywallAction) -> Unit,
     componentInteractionTracker: PaywallComponentInteractionTracker,
-    contentAlpha: Float,
+    contentAlpha: (() -> Float)?,
     modifier: Modifier = Modifier,
     onStackClick: (() -> Unit)? = null,
     enabled: Boolean = true,
@@ -652,7 +652,7 @@ private fun MainStackComponent(
                                     ) {
                                         windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
                                     }
-                                    .alpha(contentAlpha),
+                                    .contentAlpha(contentAlpha),
                             )
                         }
                     }
@@ -695,7 +695,7 @@ private fun MainStackComponent(
                                     ) {
                                         windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
                                     }
-                                    .alpha(contentAlpha),
+                                    .contentAlpha(contentAlpha),
                             )
                         }
                     }
@@ -741,7 +741,7 @@ private fun MainStackComponent(
                                     .conditional(applyTopInsets && stackState.ignoreHeaderHeight) {
                                         windowInsetsPadding(safeDrawingInsets.only(WindowInsetsSides.Top))
                                     }
-                                    .alpha(contentAlpha),
+                                    .contentAlpha(contentAlpha),
                             )
                         }
                     }
@@ -983,6 +983,19 @@ private val ComponentStyle.shouldIgnoreTopWindowInsets: Boolean
         is VideoComponentStyle -> ignoreTopWindowInsets
         is WebViewComponentStyle -> ignoreTopWindowInsets
         else -> false
+    }
+
+/**
+ * Mirrors [androidx.compose.ui.draw.alpha]: no graphics layer at all when [provider] is null, and clipping
+ * enabled when there is one. Reading [provider] inside the layer block keeps the animation in the draw phase
+ * instead of recomposing the stack on every frame.
+ */
+private fun Modifier.contentAlpha(provider: (() -> Float)?): Modifier =
+    applyIfNotNull(provider) { alpha ->
+        graphicsLayer {
+            this.alpha = alpha()
+            clip = true
+        }
     }
 
 @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES or Configuration.UI_MODE_TYPE_NORMAL)
@@ -1949,7 +1962,7 @@ private fun StackComponentView_Preview_ContentAlpha() {
         ),
         state = previewEmptyState(),
         clickHandler = {},
-        contentAlpha = 0.6f,
+        contentAlpha = { 0.6f },
     )
 }
 
