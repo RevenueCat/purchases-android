@@ -889,12 +889,6 @@ internal class PaywallViewModelImpl(
     private fun presentInjectedWorkflowIfNeeded(offeringSelection: OfferingSelection): Boolean {
         val injectedWorkflow = options.injectedWorkflow ?: return false
         val offerings = options.injectedWorkflowOfferings ?: Offerings(current = null, all = emptyMap())
-        if (offerings.all.isEmpty()) {
-            Logger.w(
-                "Paywalls: injectedWorkflow set without any Offering (use setOffering); " +
-                    "workflow steps will fail to resolve their offering.",
-            )
-        }
         startWorkflowPresentation(
             injectedWorkflow,
             options.injectedWorkflowUiConfig,
@@ -1200,7 +1194,9 @@ internal class PaywallViewModelImpl(
             }
         }
         if (!shouldApplyState) return
+        // A step without an offering has nothing to attribute paywall events to.
         currentWorkflowStepTracksPaywallEvents = newState is PaywallState.Loaded.Components &&
+            newState.workflowScreen?.hasOffering != false &&
             step.tracksPaywallEvents(workflow)
         val pendingTransition = if (fromStepId != null && navigationDirection != null) {
             WorkflowPendingTransition(
@@ -1257,13 +1253,15 @@ internal class PaywallViewModelImpl(
 
         val paywallComponents =
             WorkflowScreenMapper.toPaywallComponents(resolved.screen, resolved.screenId, uiConfig)
+        // A step without an offering renders its screen against a package-less placeholder: the screen can still
+        // use the workflow's default package as context, but has no packages of its own.
         val offering = Offering(
-            identifier = baseOffering.identifier,
-            serverDescription = baseOffering.serverDescription,
-            metadata = baseOffering.metadata,
-            availablePackages = baseOffering.availablePackages,
+            identifier = baseOffering?.identifier ?: "",
+            serverDescription = baseOffering?.serverDescription ?: "",
+            metadata = baseOffering?.metadata ?: emptyMap(),
+            availablePackages = baseOffering?.availablePackages ?: emptyList(),
             paywallComponents = paywallComponents,
-            webCheckoutURL = baseOffering.webCheckoutURL,
+            webCheckoutURL = baseOffering?.webCheckoutURL,
         )
         val offeringWithContext = presentedOfferingContext?.let { offering.copy(it) } ?: offering
 
@@ -1278,6 +1276,7 @@ internal class PaywallViewModelImpl(
                 stepId = step.id,
                 stepType = step.type,
                 screenType = step.stepScreenType,
+                hasOffering = baseOffering != null,
             ),
         )
     }
@@ -1517,16 +1516,15 @@ internal class PaywallViewModelImpl(
         val screen = workflow.screens[screenId]
             ?: return StepResolution.Invalid("Screen '$screenId' not found in workflow '${workflow.id}'")
         val offeringId = workflow.offeringIdentifierFor(step)
-            ?: return StepResolution.Invalid(
-                "Step '${step.id}' has no offering identifier in workflow '${workflow.id}'",
-            )
+            ?: return StepResolution.Ready(screenId, screen, offering = null)
         val offering = offerings[offeringId]
             ?: return StepResolution.Invalid("Offering '$offeringId' not found for step '${step.id}'")
         return StepResolution.Ready(screenId, screen, offering)
     }
 
     private sealed interface StepResolution {
-        class Ready(val screenId: String, val screen: WorkflowScreen, val offering: Offering) : StepResolution
+        /** [offering] is null when neither the step nor its screen declares one. */
+        class Ready(val screenId: String, val screen: WorkflowScreen, val offering: Offering?) : StepResolution
         class Invalid(val reason: String) : StepResolution
     }
 
@@ -1579,7 +1577,7 @@ internal class PaywallViewModelImpl(
         stateStore: PaywallStateStore? = null,
         workflowScreen: WorkflowScreenContext? = null,
     ): PaywallState {
-        if (offering.availablePackages.isEmpty()) {
+        if (offering.availablePackages.isEmpty() && workflowScreen?.hasOffering != false) {
             return PaywallState.Error("No packages available")
         }
 
