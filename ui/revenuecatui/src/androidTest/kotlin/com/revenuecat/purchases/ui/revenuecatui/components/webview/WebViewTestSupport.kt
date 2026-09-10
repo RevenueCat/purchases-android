@@ -17,6 +17,7 @@ internal fun deviceContextSnapshot(
     WebViewContextInput(
         customVariables = customVariables,
         offering = null,
+        packages = emptyList(),
         componentPackage = null,
         selectedPackage = null,
         store = Store.PLAY_STORE,

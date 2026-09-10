@@ -34,6 +34,7 @@ internal fun webViewContextSnapshot(
         WebViewContextInput(
             customVariables = state.mergedCustomVariables,
             offering = state.offering,
+            packages = state.paywallPackages,
             // Inside a package component the values describe that package; elsewhere they follow
             // the selection, matching what a text component resolves.
             componentPackage = style.rcPackage ?: selectedPackage,
@@ -61,10 +62,10 @@ internal fun webViewContextSnapshot(input: WebViewContextInput): JsonObject = bu
     }
     put(Keys.OFFERING, input.offering?.asJson() ?: JsonNull)
     putJsonArray(Keys.PACKAGES) {
-        input.offering?.availablePackages?.forEach { add(it.asJson(input)) }
+        input.packages.forEach { add(it.asJson(input)) }
     }
-    put(Keys.PACKAGE, input.componentPackage?.asJson(input) ?: JsonNull)
-    put(Keys.SELECTED_PACKAGE, input.selectedPackage?.asJson(input) ?: JsonNull)
+    put(Keys.PACKAGE, input.onPaywall(input.componentPackage)?.asJson(input) ?: JsonNull)
+    put(Keys.SELECTED_PACKAGE, input.onPaywall(input.selectedPackage)?.asJson(input) ?: JsonNull)
     putJsonObject(Keys.INPUTS) {}
     input.workflowScreen?.let { putWorkflow(it) }
     putJsonObject(Keys.DEVICE_META) {
@@ -74,6 +75,10 @@ internal fun webViewContextSnapshot(input: WebViewContextInput): JsonObject = bu
         put(Keys.UPDATED_AT, System.currentTimeMillis())
     }
 }
+
+/** iOS and web resolve both references against `packages`, so one outside the list is `null` everywhere. */
+private fun WebViewContextInput.onPaywall(pkg: Package?): Package? =
+    pkg?.takeIf { candidate -> packages.any { it.identifier == candidate.identifier } }
 
 private fun JsonObjectBuilder.putWorkflow(workflowScreen: WorkflowScreenContext) {
     putJsonObject(Keys.WORKFLOW) {
