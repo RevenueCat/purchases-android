@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.timeline
 
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -20,6 +19,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDel
 import com.revenuecat.purchases.ui.revenuecatui.components.style.TimelineComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.helpers.currentWindowWidthSizeClass
 
 @Stable
 @JvmSynthetic
@@ -48,7 +48,7 @@ private fun rememberUpdatedTimelineComponentState(
     selectedOfferEligibilityProvider: () -> OfferEligibility,
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
 ): TimelineComponentState {
-    val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val windowSize = currentWindowWidthSizeClass()
 
     return remember(style) {
         TimelineComponentState(

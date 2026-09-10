@@ -1,9 +1,12 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import androidx.annotation.VisibleForTesting
+import androidx.compose.material3.adaptive.currentWindowSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.toSize
 import androidx.window.core.layout.WindowHeightSizeClass
 import androidx.window.core.layout.WindowSizeClass
 import androidx.window.core.layout.WindowWidthSizeClass
@@ -11,6 +14,20 @@ import androidx.window.layout.WindowMetricsCalculator
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
+
+/**
+ * The window width size class, derived the same way `currentWindowAdaptiveInfo()` derives it, but without
+ * collecting folding features. Paywalls V2 components only ever read the width size class, and the folding
+ * feature flow behind `Posture` is one collector per call site.
+ *
+ * Distinct from [computeWindowWidthSizeClass], which reads the Activity density and is used by V1 paywalls.
+ */
+@Composable
+internal fun currentWindowWidthSizeClass(): WindowWidthSizeClass {
+    val windowSize = currentWindowSize()
+    val dpSize = with(LocalDensity.current) { windowSize.toSize().toDpSize() }
+    return WindowSizeClass.compute(dpSize.width.value, dpSize.height.value).windowWidthSizeClass
+}
 
 @Composable
 @ReadOnlyComposable
