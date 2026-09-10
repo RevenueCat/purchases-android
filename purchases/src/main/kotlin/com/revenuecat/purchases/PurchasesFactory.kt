@@ -57,8 +57,6 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopicStore
 import com.revenuecat.purchases.common.safeResume
 import com.revenuecat.purchases.common.safeResumeWithException
-import com.revenuecat.purchases.common.security.EncryptedItemStorage
-import com.revenuecat.purchases.common.security.derivePassword
 import com.revenuecat.purchases.common.uiconfig.UiConfigProvider
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.verification.SigningManager
@@ -89,10 +87,8 @@ import com.revenuecat.purchases.utils.UrlConnectionFactory
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import com.revenuecat.purchases.utils.prewarmTargetOfferingIds
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencyManager
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.suspendCancellableCoroutine
 import java.net.URL
-import java.security.GeneralSecurityException
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.ThreadFactory
@@ -157,28 +153,6 @@ internal class PurchasesFactory(
                 context
             } else {
                 application
-            }
-
-            // IAM login (phase 1, step 2): gated on iamEnabled so the vast majority of integrators who
-            // don't use this feature never pay the PBKDF2/file-I-O cost. EncryptedItemStorage.create() is
-            // suspend; bridged with runBlocking here rather than deferred to async/lazy init, since
-            // singleton wiring in this factory is otherwise synchronous end-to-end. A key-derivation
-            // failure degrades to "IAM storage unavailable this session" rather than crashing configure(),
-            // mirroring how signatureVerificationMode (further below) falls back to Disabled on its own
-            // setup error instead of crashing.
-            // No consumer yet - see PurchasesOrchestrator.iamSecureStorage.
-            val iamSecureStorage: EncryptedItemStorage? = if (appConfig.iamEnabled) {
-                val password = derivePassword(apiKey)
-                try {
-                    runBlocking { EncryptedItemStorage.create(contextForStorage, password) }
-                } catch (e: GeneralSecurityException) {
-                    errorLog { "Error creating IAM secure storage: ${e.message}. IAM login will be unavailable." }
-                    null
-                } finally {
-                    password.fill('\u0000')
-                }
-            } else {
-                null
             }
 
             val prefs = try {
@@ -610,7 +584,6 @@ internal class PurchasesFactory(
                 checkpointsConfigProvider = checkpointsConfigProvider,
                 audiencesConfigProvider = audiencesConfigProvider,
                 localRulesEvaluator = localRulesEvaluator,
-                iamSecureStorage = iamSecureStorage,
             )
 
             return Purchases(purchasesOrchestrator)
