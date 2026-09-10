@@ -109,7 +109,7 @@ class WorkflowEventTest {
     }
 
     @Test
-    fun `experiment params are echoed into backend properties for every workflow event`() {
+    fun `every workflow event copies the step experiment data into backend properties`() {
         val creationData = WorkflowEvent.CreationData(UUID.randomUUID(), Date())
         val events = listOf(
             WorkflowEvent.StepStarted(
@@ -117,24 +117,33 @@ class WorkflowEventTest {
                 workflowId = "wfl_abc",
                 stepId = "step-1",
                 traceId = "trace",
-                experimentId = "exp_abc",
-                experimentVariant = "b",
+                experiment = WorkflowEvent.ExperimentData(
+                    experimentId = "exp_abc",
+                    experimentVariant = "b",
+                    workflowBlobRef = "blob-ref-1",
+                ),
             ),
             WorkflowEvent.StepCompleted(
                 creationData = creationData,
                 workflowId = "wfl_abc",
                 stepId = "step-1",
                 traceId = "trace",
-                experimentId = "exp_abc",
-                experimentVariant = "b",
+                experiment = WorkflowEvent.ExperimentData(
+                    experimentId = "exp_abc",
+                    experimentVariant = "b",
+                    workflowBlobRef = "blob-ref-1",
+                ),
             ),
             WorkflowEvent.Close(
                 creationData = creationData,
                 workflowId = "wfl_abc",
                 stepId = "step-1",
                 traceId = "trace",
-                experimentId = "exp_abc",
-                experimentVariant = "b",
+                experiment = WorkflowEvent.ExperimentData(
+                    experimentId = "exp_abc",
+                    experimentVariant = "b",
+                    workflowBlobRef = "blob-ref-1",
+                ),
             ),
         )
 
@@ -142,6 +151,7 @@ class WorkflowEventTest {
             val properties = (event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows).event.properties
             assertThat(properties.experimentId).`as`(event::class.simpleName).isEqualTo("exp_abc")
             assertThat(properties.experimentVariant).`as`(event::class.simpleName).isEqualTo("b")
+            assertThat(properties.workflowBlobRef).`as`(event::class.simpleName).isEqualTo("blob-ref-1")
         }
     }
 
@@ -157,6 +167,7 @@ class WorkflowEventTest {
         val properties = (event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows).event.properties
         assertThat(properties.experimentId).isNull()
         assertThat(properties.experimentVariant).isNull()
+        assertThat(properties.workflowBlobRef).isNull()
     }
 
     @Test
