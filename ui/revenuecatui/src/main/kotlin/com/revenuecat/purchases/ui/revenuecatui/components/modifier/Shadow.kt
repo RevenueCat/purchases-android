@@ -19,9 +19,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.translate
 import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Color
@@ -34,8 +33,6 @@ import androidx.compose.ui.graphics.addOutline
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Density
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -47,10 +44,14 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.toColorSty
 internal fun Modifier.shadow(
     shadow: ShadowStyle,
     shape: Shape,
-) = this.drawBehind {
+) = this.drawWithCache {
+    // One outline serves both paths, and neither depends on anything the draw phase provides.
+    val outline = shape.createOutline(size, layoutDirection, this)
     // Where to draw
     val offset = Offset(x = shadow.x.toPx(), y = shadow.y.toPx())
-    val path = shape.toPath(size, layoutDirection, this, offset)
+    val shadowPath = Path().apply { addOutline(outline, offset) }
+    // Make sure we don't draw inside our original shape. This would be visible if the composable is transparent.
+    val clipPath = Path().apply { addOutline(outline) }
     // What to draw
     val paint = Paint().apply {
         when (shadow.color) {
@@ -64,22 +65,13 @@ internal fun Modifier.shadow(
     }
 
     // Actually drawing
-    drawIntoCanvas { canvas ->
-        canvas.save()
-        // Make sure we don't draw inside our original shape. This would be visible if the composable is transparent.
-        canvas.clipPath(shape.toPath(size, layoutDirection, this), ClipOp.Difference)
-        canvas.drawPath(path, paint)
-        canvas.restore()
-    }
-}
-
-private fun Shape.toPath(size: Size, layoutDirection: LayoutDirection, density: Density, offset: Offset? = null): Path {
-    val outline = createOutline(size, layoutDirection, density)
-
-    return if (offset == null) {
-        Path().apply { addOutline(outline) }
-    } else {
-        Path().apply { addOutline(outline, offset) }
+    onDrawBehind {
+        drawIntoCanvas { canvas ->
+            canvas.save()
+            canvas.clipPath(clipPath, ClipOp.Difference)
+            canvas.drawPath(shadowPath, paint)
+            canvas.restore()
+        }
     }
 }
 

@@ -104,9 +104,14 @@ internal fun CheckpointEvent.toBackendStoredEvent(
         version = BackendEvent.CHECKPOINT_EVENT_SCHEMA_VERSION,
         type = BackendEvent.CHECKPOINT_EVENT_TYPE,
         identifier = identifier,
+        checkpointType = checkpointType,
         appUserID = appUserID,
         appSessionID = appSessionID,
         timestamp = timestamp.time,
+        result = result,
+        workflowID = workflowId,
+        offeringID = offeringId,
+        checkpointRuleID = checkpointRuleId,
     ),
 )
 
@@ -571,6 +576,8 @@ internal fun WorkflowEvent.toBackendStoredEvent(
             entryReason = entryReason,
             isFirstStep = isFirstStep,
             isLastStep = isLastStep,
+            experimentId = experimentId,
+            experimentVariant = experimentVariant,
         )
         is WorkflowEvent.StepCompleted -> BackendEvent.Workflows.Properties(
             workflowId = workflowId,
@@ -579,6 +586,8 @@ internal fun WorkflowEvent.toBackendStoredEvent(
             toStepId = toStepId,
             isFirstStep = isFirstStep,
             isLastStep = isLastStep,
+            experimentId = experimentId,
+            experimentVariant = experimentVariant,
         )
         is WorkflowEvent.Close -> BackendEvent.Workflows.Properties(
             workflowId = workflowId,
@@ -586,6 +595,8 @@ internal fun WorkflowEvent.toBackendStoredEvent(
             traceId = traceId,
             isFirstStep = isFirstStep,
             isLastStep = isLastStep,
+            experimentId = experimentId,
+            experimentVariant = experimentVariant,
         )
     }
     return BackendStoredEvent.Workflows(

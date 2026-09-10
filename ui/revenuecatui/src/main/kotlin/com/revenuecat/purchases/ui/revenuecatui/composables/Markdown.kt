@@ -11,6 +11,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
@@ -114,7 +115,7 @@ internal fun Markdown(
     textFillMaxWidth: Boolean = false,
     applyFontSizeToParagraph: Boolean = true,
 ) {
-    val root = parser.parse(text) as Document
+    val root = remember(text) { parser.parse(text) as Document }
 
     val density = LocalDensity.current
     val paragraphPadding = with(density) {
@@ -261,10 +262,12 @@ private fun MDParagraph(
                 textAlign = textAlign ?: TextAlign.Unspecified,
             ),
         )
-        val styledText = buildAnnotatedString {
-            pushStyle(resolvedTextStyle.toSpanStyle())
-            appendMarkdownChildren(paragraph as Node, color, allowLinks, baseFontWeight = fontWeight)
-            pop()
+        val styledText = remember(paragraph, resolvedTextStyle, color, allowLinks, fontWeight) {
+            buildAnnotatedString {
+                pushStyle(resolvedTextStyle.toSpanStyle())
+                appendMarkdownChildren(paragraph as Node, color, allowLinks, baseFontWeight = fontWeight)
+                pop()
+            }
         }
         MarkdownText(
             text = styledText,

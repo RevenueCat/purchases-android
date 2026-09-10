@@ -25,23 +25,10 @@ public suspend fun Purchases.awaitCheckpoint(
 ): CheckpointResult = checkpointsManager.checkpoint(this, checkpointIdentifier, params)
 
 /**
- * Global listener for checkpoint activity, including the disposition of checkpoint-presented experiences.
- * Held by this [Purchases] instance, so it is cleared when the SDK is reconfigured.
- */
-@get:JvmSynthetic
-@set:JvmSynthetic
-@InternalRevenueCatAPI
-public var Purchases.checkpointListener: CheckpointListener?
-    get() = checkpointsManager.checkpointListener
-    set(value) {
-        checkpointsManager.checkpointListener = value
-    }
-
-/**
  * The [CheckpointsManager] owned by this [Purchases] instance, created on first use and kept in the
- * instance's opaque `checkpointManagerSlot`. Storing it there rather than in a singleton ties the listener
- * and any in-flight presentation to the lifetime of the SDK instance, so reconfiguring the SDK cannot
- * inherit a stale listener or a presentation that will never complete.
+ * instance's opaque `checkpointManagerSlot`. Storing it there rather than in a singleton ties any in-flight
+ * presentation to the lifetime of the SDK instance, so reconfiguring the SDK cannot inherit a presentation that
+ * will never complete.
  *
  * Synchronized on the receiver because reading and creating are two separate calls into the slot.
  */

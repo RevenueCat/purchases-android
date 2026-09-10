@@ -21,8 +21,11 @@ import com.revenuecat.purchases.UiConfig.AppConfig
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
+import com.revenuecat.purchases.paywalls.components.PartialStackComponent
 import com.revenuecat.purchases.paywalls.components.StackComponent
+import com.revenuecat.purchases.paywalls.components.TextComponent
 import com.revenuecat.purchases.paywalls.components.common.Background
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.ComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
@@ -45,6 +48,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
+import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toFontWeight
@@ -80,6 +84,117 @@ import java.net.URL
 import java.util.Date
 
 internal const val MILLIS_2025_01_25 = 1737763200000
+
+private const val WINDOW_SPLIT_MIN_WIDTH_DP = 700.0
+private const val WINDOW_SPLIT_MIN_HEIGHT_DP = 480.0
+private const val WINDOW_SPLIT_CONTENT_PANE_COLOR = 0xFFDCEBF5
+private const val WINDOW_SPLIT_PURCHASE_PANE_COLOR = 0xFFF5EFDC
+
+/**
+ * Two panes stacked vertically by default, side by side when the window is at least
+ * 700x480dp (so landscape phones stay stacked). Shared by the Compose previews and
+ * the Paparazzi snapshot test so both exercise the same window size conditions.
+ */
+@Suppress("LongMethod")
+@Composable
+@JvmSynthetic
+internal fun previewWindowSizeConditionsState(): PaywallState.Loaded.Components {
+    val textColor = ColorScheme(light = ColorInfo.Hex(Color.Black.toArgb()))
+    val contentPane = StackComponent(
+        components = listOf(
+            TextComponent(
+                text = LocalizationKey("split-title"),
+                color = textColor,
+            ),
+        ),
+        dimension = Dimension.Vertical(
+            alignment = HorizontalAlignment.CENTER,
+            distribution = FlexDistribution.START,
+        ),
+        size = Size(width = Fill(), height = Fill()),
+        backgroundColor = ColorScheme(light = ColorInfo.Hex(Color(WINDOW_SPLIT_CONTENT_PANE_COLOR).toArgb())),
+    )
+    val purchasePane = StackComponent(
+        components = listOf(
+            TextComponent(
+                text = LocalizationKey("split-package"),
+                color = textColor,
+            ),
+            TestData.Components.monthlyPackageComponent,
+        ),
+        dimension = Dimension.Vertical(
+            alignment = HorizontalAlignment.CENTER,
+            distribution = FlexDistribution.START,
+        ),
+        size = Size(width = Fill(), height = Fill()),
+        backgroundColor = ColorScheme(light = ColorInfo.Hex(Color(WINDOW_SPLIT_PURCHASE_PANE_COLOR).toArgb())),
+    )
+    val data = PaywallComponentsData(
+        id = "preview_window_size_conditions",
+        templateName = "template",
+        assetBaseURL = URL("https://assets.pawwalls.com"),
+        componentsConfig = ComponentsConfig(
+            base = PaywallComponentsConfig(
+                stack = StackComponent(
+                    components = listOf(contentPane, purchasePane),
+                    dimension = Dimension.Vertical(
+                        alignment = HorizontalAlignment.CENTER,
+                        distribution = FlexDistribution.START,
+                    ),
+                    size = Size(width = Fill(), height = Fill()),
+                    overrides = listOf(
+                        ComponentOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowWidthRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = WINDOW_SPLIT_MIN_WIDTH_DP,
+                                ),
+                                ComponentOverride.Condition.WindowHeightRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = WINDOW_SPLIT_MIN_HEIGHT_DP,
+                                ),
+                            ),
+                            properties = PartialStackComponent(
+                                dimension = Dimension.Horizontal(
+                                    alignment = VerticalAlignment.TOP,
+                                    distribution = FlexDistribution.START,
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                stickyFooter = null,
+            ),
+        ),
+        componentsLocalizations = nonEmptyMapOf(
+            LocaleId("en_US") to nonEmptyMapOf(
+                LocalizationKey("split-title") to LocalizationData.Text("Experience Pro today!"),
+                LocalizationKey("split-package") to LocalizationData.Text("Monthly — $9.99/mo"),
+            ),
+        ),
+        defaultLocaleIdentifier = LocaleId("en_US"),
+    )
+    val offering = Offering(
+        identifier = "window_size_conditions",
+        serverDescription = "serverDescription",
+        metadata = emptyMap(),
+        availablePackages = listOf(TestData.Packages.monthly),
+        paywallComponents = Offering.PaywallComponents(
+            uiConfig = previewUiConfig(
+                localizations = nonEmptyMapOf(LocaleId("en_US") to variableLocalizationKeysForEnUs()),
+            ),
+            data = data,
+        ),
+    )
+    val validated = offering.validatePaywallComponentsDataOrNullForPreviews()?.getOrThrow()!!
+    return offering.toComponentsPaywallState(
+        validationResult = validated,
+        storefrontCountryCode = null,
+        dateProvider = { Date(MILLIS_2025_01_25) },
+        purchases = MockPurchasesType(),
+    )
+}
 
 @Composable
 @JvmSynthetic

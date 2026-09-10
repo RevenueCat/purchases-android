@@ -6,6 +6,7 @@ import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
+import org.assertj.core.api.Assertions.assertThat
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
@@ -540,6 +541,102 @@ internal class ComponentOverridesTests {
                     """{ "type": "state_condition", "operator": "=", "name": "k", "value": {"nested": true} }""",
                     ComponentOverride.Condition.Unsupported,
                 ),
+                // Window width condition with each comparison operator
+                arrayOf(
+                    """{ "type": "window_width_condition", "operator": ">=", "value": 700 }""",
+                    ComponentOverride.Condition.WindowWidthRule(
+                        operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                        value = 700.0,
+                    ),
+                ),
+                arrayOf(
+                    """{ "type": "window_width_condition", "operator": ">", "value": 700 }""",
+                    ComponentOverride.Condition.WindowWidthRule(
+                        operator = ComponentOverride.ComparisonOperator.GREATER_THAN,
+                        value = 700.0,
+                    ),
+                ),
+                arrayOf(
+                    """{ "type": "window_width_condition", "operator": "<=", "value": 700 }""",
+                    ComponentOverride.Condition.WindowWidthRule(
+                        operator = ComponentOverride.ComparisonOperator.LESS_THAN_OR_EQUAL,
+                        value = 700.0,
+                    ),
+                ),
+                arrayOf(
+                    """{ "type": "window_width_condition", "operator": "<", "value": 700 }""",
+                    ComponentOverride.Condition.WindowWidthRule(
+                        operator = ComponentOverride.ComparisonOperator.LESS_THAN,
+                        value = 700.0,
+                    ),
+                ),
+                arrayOf(
+                    """{ "type": "window_width_condition", "operator": "=", "value": 700 }""",
+                    ComponentOverride.Condition.WindowWidthRule(
+                        operator = ComponentOverride.ComparisonOperator.EQUALS,
+                        value = 700.0,
+                    ),
+                ),
+                // Window height condition
+                arrayOf(
+                    """{ "type": "window_height_condition", "operator": ">=", "value": 480 }""",
+                    ComponentOverride.Condition.WindowHeightRule(
+                        operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                        value = 480.0,
+                    ),
+                ),
+                // Window aspect ratio condition
+                arrayOf(
+                    """{ "type": "window_aspect_ratio_condition", "operator": ">=", "value": 1.2 }""",
+                    ComponentOverride.Condition.WindowAspectRatioRule(
+                        operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                        value = 1.2,
+                    ),
+                ),
+                // Window condition with fractional value
+                arrayOf(
+                    """{ "type": "window_width_condition", "operator": ">=", "value": 700.5 }""",
+                    ComponentOverride.Condition.WindowWidthRule(
+                        operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                        value = 700.5,
+                    ),
+                ),
+                // Window condition with extra unknown fields deserializes successfully
+                arrayOf(
+                    """{ "type": "window_width_condition", "operator": ">=", "value": 700, "future_field": 1 }""",
+                    ComponentOverride.Condition.WindowWidthRule(
+                        operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                        value = 700.0,
+                    ),
+                ),
+                // Window condition with unknown operator falls back to Unsupported
+                arrayOf(
+                    """{ "type": "window_width_condition", "operator": "~=", "value": 700 }""",
+                    ComponentOverride.Condition.Unsupported,
+                ),
+                arrayOf(
+                    """{ "type": "window_height_condition", "operator": "~=", "value": 480 }""",
+                    ComponentOverride.Condition.Unsupported,
+                ),
+                // Window condition with missing value falls back to Unsupported
+                arrayOf(
+                    """{ "type": "window_width_condition", "operator": ">=" }""",
+                    ComponentOverride.Condition.Unsupported,
+                ),
+                arrayOf(
+                    """{ "type": "window_height_condition", "operator": ">=" }""",
+                    ComponentOverride.Condition.Unsupported,
+                ),
+                // Window condition with non-numeric value falls back to Unsupported
+                arrayOf(
+                    """{ "type": "window_width_condition", "operator": ">=", "value": "wide" }""",
+                    ComponentOverride.Condition.Unsupported,
+                ),
+                arrayOf(
+                    """{ "type": "window_height_condition", "operator": ">=", "value": "tall" }""",
+                    ComponentOverride.Condition.Unsupported,
+                ),
+
                 // SelectedPackage with extra unknown fields deserializes successfully
                 arrayOf(
                     """{ "type": "selected_package_condition", "operator": "in", "packages": ["a"], "future_field": true }""",
@@ -619,6 +716,29 @@ internal class ComponentOverridesTests {
 
             // Assert
             assert(actual == expected)
+        }
+    }
+
+    class WindowConditionIsRuleTests {
+
+        @Test
+        fun `Window size conditions are rules`() {
+            val width = ComponentOverride.Condition.WindowWidthRule(
+                operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                value = 700.0,
+            )
+            val height = ComponentOverride.Condition.WindowHeightRule(
+                operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                value = 480.0,
+            )
+            val aspectRatio = ComponentOverride.Condition.WindowAspectRatioRule(
+                operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                value = 1.2,
+            )
+
+            assertThat(width.isRule).isTrue
+            assertThat(height.isRule).isTrue
+            assertThat(aspectRatio.isRule).isTrue
         }
     }
 }

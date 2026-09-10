@@ -115,8 +115,8 @@ internal class CheckpointWorkflowResolverImpl(
             errorLog(e) { "UI config could not be fetched for checkpoint '$identifier'." }
             null
         } ?: return configurationUnavailable("UI config is unavailable for checkpoint '$identifier'.")
-        val result = resolveRule(identifier, workflowManager, rule, uiConfig)
-        return result.takeIf { checkpointsConfigProvider.isCurrent(rulesResolution) }
+        return resolveRule(identifier, workflowManager, rule, uiConfig)
+            .takeIf { checkpointsConfigProvider.isCurrent(rulesResolution) }
     }
 
     /**
@@ -190,7 +190,7 @@ internal class CheckpointWorkflowResolverImpl(
         debugLog {
             "Checkpoint resolved to offering '${offering.identifier}' from workflow '${rule.workflowId}'"
         }
-        return CheckpointResolution.MatchedOffering(offering)
+        return CheckpointResolution.MatchedOffering(offering, checkpointRuleId = rule.id)
     }
 
     @Suppress("ReturnCount")
@@ -220,7 +220,7 @@ internal class CheckpointWorkflowResolverImpl(
             "Checkpoint resolved to workflow '${rule.workflowId}' (offering: ${offering.identifier})"
         }
         workflowManager.prewarmWorkflowAssets(workflow, uiConfig)
-        return CheckpointResolution.MatchedWorkflow(workflow, uiConfig, offering)
+        return CheckpointResolution.MatchedWorkflow(workflow, uiConfig, offering, checkpointRuleId = rule.id)
     }
 
     private suspend fun loadOffering(checkpointIdentifier: String, offeringIdentifier: String): Offering? =

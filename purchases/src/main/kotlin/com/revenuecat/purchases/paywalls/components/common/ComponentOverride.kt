@@ -36,6 +36,29 @@ public class ComponentOverride<T : PartialComponent>(
         NOT_IN,
     }
 
+    /**
+     * Numeric comparison operators for layout condition evaluation (window size).
+     * [EQUALS] compares with a small epsilon tolerance but remains fragile against
+     * measured fractional sizes; it is intended for authored integer breakpoints.
+     */
+    @Serializable
+    public enum class ComparisonOperator {
+        @SerialName(">=")
+        GREATER_THAN_OR_EQUAL,
+
+        @SerialName(">")
+        GREATER_THAN,
+
+        @SerialName("<=")
+        LESS_THAN_OR_EQUAL,
+
+        @SerialName("<")
+        LESS_THAN,
+
+        @SerialName("=")
+        EQUALS,
+    }
+
     @Serializable(with = ConditionSerializer::class)
     public sealed interface Condition {
 
@@ -108,6 +131,41 @@ public class ComponentOverride<T : PartialComponent>(
             }
         }
 
+        /**
+         * Matches against the size proposed to the paywall (its bounds), same as iOS: a
+         * paywall in a sheet, dialog, or multi-window pane sees its own size, not the app
+         * window's. A fit-content axis matches the space available to it, not the final
+         * laid-out size. [value] is density-independent (Android dp / iOS points).
+         * Evaluates to false while the size is unknown and re-evaluates live as the
+         * paywall resizes. Conditions within one override AND together, so
+         * `WindowWidthRule >= 700` plus `WindowHeightRule >= 480` targets large windows
+         * while excluding landscape phones.
+         */
+        @Serializable
+        public data class WindowWidthRule(
+            public val operator: ComparisonOperator,
+            public val value: Double,
+        ) : Condition { override val isRule: Boolean get() = true }
+
+        /** See [WindowWidthRule]; same semantics for the window's height. */
+        @Serializable
+        public data class WindowHeightRule(
+            public val operator: ComparisonOperator,
+            public val value: Double,
+        ) : Condition { override val isRule: Boolean get() = true }
+
+        /**
+         * Matches when the window's aspect ratio (width / height: above 1 is landscape,
+         * below 1 is portrait) satisfies the comparison; rotation re-evaluates it. Pair
+         * with a width floor (e.g. [WindowWidthRule] >= 600) so small multi-window sizes
+         * don't match; never matches while the size is unknown or its height is zero.
+         */
+        @Serializable
+        public data class WindowAspectRatioRule(
+            public val operator: ComparisonOperator,
+            public val value: Double,
+        ) : Condition { override val isRule: Boolean get() = true }
+
         @Serializable
         public object Unsupported : Condition
     }
@@ -129,6 +187,9 @@ internal object ConditionSerializer : SealedDeserializerWithDefault<Condition>(
         "selected_package_condition" to { Condition.SelectedPackage.serializer() },
         "variable_condition" to { Condition.Variable.serializer() },
         "state_condition" to { Condition.State.serializer() },
+        "window_width_condition" to { Condition.WindowWidthRule.serializer() },
+        "window_height_condition" to { Condition.WindowHeightRule.serializer() },
+        "window_aspect_ratio_condition" to { Condition.WindowAspectRatioRule.serializer() },
     ),
     defaultValue = { Condition.Unsupported },
 )

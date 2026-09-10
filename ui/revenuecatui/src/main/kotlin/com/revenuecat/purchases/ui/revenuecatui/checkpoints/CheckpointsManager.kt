@@ -23,16 +23,16 @@ internal class CheckpointPresentation(
 )
 
 /**
- * Runs a checkpoint hit end to end: fires listener events, asks the core module what the checkpoint resolves
- * to, and either returns its data or presents the resolved workflow through [CheckpointWorkflowPresenter].
+ * Runs a checkpoint hit end to end: asks the core module what the checkpoint resolves to, and either returns
+ * its data or presents the resolved workflow through [CheckpointWorkflowPresenter].
  * Owns the one-presentation-at-a-time constraint and the pending call that routes a presented paywall's
  * terminal outcome back to the suspended [checkpoint] call. Data-only results never claim that presentation
  * slot.
  *
  * There is one instance per [Purchases] instance, held in its `checkpointManagerSlot` and reached through
- * [checkpointsManager], so the listener dies with the SDK instance that owns it and a reconfigured SDK starts
- * with a free presentation slot. A workflow that is already on screen keeps reporting to the manager that
- * presented it, exactly once, even if the SDK is reconfigured underneath it.
+ * [checkpointsManager], so a reconfigured SDK starts with a free presentation slot. A workflow that is already
+ * on screen keeps reporting to the manager that presented it, exactly once, even if the SDK is reconfigured
+ * underneath it.
  */
 internal class CheckpointsManager(
     private val presenterFactory: (callId: String, manager: CheckpointsManager) -> CheckpointWorkflowPresenter =
@@ -53,17 +53,12 @@ internal class CheckpointsManager(
         var presenter: CheckpointWorkflowPresenter? = null
     }
 
-    @get:Synchronized
-    @set:Synchronized
-    var checkpointListener: CheckpointListener? = null
-
     // At most one workflow may be presented at a time, so this single field is both the pending call and
     // the gate that enforces that rule: there is no second piece of state to fall out of sync with.
     private var pendingCall: PendingCall? = null
 
     /**
-     * Runs on the main dispatcher; listener callbacks fire on the main thread. For presented workflows,
-     * suspends until the paywall finishes.
+     * Runs on the main dispatcher. For presented workflows, suspends until the paywall finishes.
      *
      * @throws PurchasesException if the checkpoint workflow should run but can't.
      */
@@ -73,27 +68,22 @@ internal class CheckpointsManager(
         params: CheckpointParams?,
     ): CheckpointResult = withContext(Dispatchers.Main) {
         val customVariables = (params ?: CheckpointParams {}).customVariables
-        checkpointListener?.onCheckpointHit(CheckpointHitContext(identifier, customVariables))
         if (!CheckpointIdentifierValidator.isValid(identifier)) {
             Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(identifier))
-            val result = CheckpointResult.NoAction(CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER)
-            checkpointListener?.onCheckpointCompleted(CheckpointCompletedContext(identifier, customVariables, result))
-            return@withContext result
+            return@withContext CheckpointResult.NoAction(CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER)
         }
 
         val resolution = purchases.resolveCheckpoint(
             identifier,
             customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
         )
-        val result = when (resolution) {
+        when (resolution) {
             is CheckpointResolution.MatchedOffering -> CheckpointResult.ReceivedOffering(resolution.offering)
             is CheckpointResolution.MatchedWorkflow ->
                 CheckpointResult.PaywallPresented(present(purchases, resolution, customVariables))
             is CheckpointResolution.NoAction ->
                 CheckpointResult.NoAction(resolution.reason.toResultReason())
         }
-        checkpointListener?.onCheckpointCompleted(CheckpointCompletedContext(identifier, customVariables, result))
-        result
     }
 
     fun presentation(callId: String): CheckpointPresentation? =

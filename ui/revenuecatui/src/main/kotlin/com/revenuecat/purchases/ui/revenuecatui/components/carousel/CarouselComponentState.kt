@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
@@ -31,17 +32,20 @@ internal fun rememberUpdatedCarouselComponentState(
     paywallState: PaywallState.Loaded.Components,
 ): CarouselComponentState = rememberUpdatedCarouselComponentState(
     style = style,
+    windowDpSize = paywallState.paywallBoundsDp,
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
     customVariablesProvider = { paywallState.mergedCustomVariables },
 )
 
+@Suppress("LongParameterList")
 @Stable
 @JvmSynthetic
 @Composable
 private fun rememberUpdatedCarouselComponentState(
     style: CarouselComponentStyle,
+    windowDpSize: DpSize?,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
     selectedOfferEligibilityProvider: () -> OfferEligibility,
@@ -52,6 +56,7 @@ private fun rememberUpdatedCarouselComponentState(
     return remember(style) {
         CarouselComponentState(
             initialWindowSize = windowSize,
+            initialWindowDpSize = windowDpSize,
             style = style,
             selectedPackageInfoProvider = selectedPackageInfoProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
@@ -59,13 +64,18 @@ private fun rememberUpdatedCarouselComponentState(
             customVariablesProvider = customVariablesProvider,
         )
     }.apply {
-        update(windowSize = windowSize)
+        update(
+            windowSize = windowSize,
+            windowDpSize = windowDpSize,
+        )
     }
 }
 
+@Suppress("LongParameterList")
 @Stable
 internal class CarouselComponentState(
     initialWindowSize: WindowWidthSizeClass,
+    initialWindowDpSize: DpSize?,
     private val style: CarouselComponentStyle,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
@@ -74,6 +84,7 @@ internal class CarouselComponentState(
 ) {
 
     private var windowSize by mutableStateOf(initialWindowSize)
+    private var windowDpSize by mutableStateOf(initialWindowDpSize)
 
     private val packageAwareDelegate = PackageAwareDelegate(
         style = style,
@@ -94,6 +105,7 @@ internal class CarouselComponentState(
             conditionContext = ConditionContext(
                 selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
                 customVariables = customVariablesProvider(),
+                windowDpSize = windowDpSize,
             ),
         )
     }
@@ -151,7 +163,9 @@ internal class CarouselComponentState(
     @JvmSynthetic
     fun update(
         windowSize: WindowWidthSizeClass? = null,
+        windowDpSize: DpSize? = null,
     ) {
         if (windowSize != null) this.windowSize = windowSize
+        if (windowDpSize != null) this.windowDpSize = windowDpSize
     }
 }
