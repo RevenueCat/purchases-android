@@ -18,8 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.revenuecat.checkpointssample.paywall.PlayGamePaywall
 import com.revenuecat.checkpointssample.paywall.SamplePaywall
-import com.revenuecat.checkpointssample.paywall.SamplePaywallPresenter
+import com.revenuecat.checkpointssample.paywall.SamplePaywallPresenters
 import com.revenuecat.checkpointssample.ui.Screen
 import com.revenuecat.checkpointssample.ui.dialogs.SetAttributeDialog
 import com.revenuecat.checkpointssample.ui.screens.game.GameScreen
@@ -66,9 +67,11 @@ fun CheckpointsSampleApp(modifier: Modifier = Modifier) {
     }
 }
 
-// Renders the sample's paywall over the whole app whenever its PaywallPresenter has an offering to present.
+// Renders the sample's paywalls over the whole app whenever one of its PaywallPresenters has an offering to present.
 @Composable
 private fun SamplePaywallHost() {
-    val request by SamplePaywallPresenter.request.collectAsState()
-    request?.let { SamplePaywall(request = it) }
+    val globalRequest by SamplePaywallPresenters.global.request.collectAsState()
+    val playGameRequest by SamplePaywallPresenters.playGame.request.collectAsState()
+    globalRequest?.let { SamplePaywall(request = it) }
+    playGameRequest?.let { PlayGamePaywall(request = it) }
 }

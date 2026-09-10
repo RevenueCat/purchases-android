@@ -7,16 +7,21 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * The sample's app-owned paywall: presenting parks the request in a StateFlow, the app root renders a
- * SamplePaywall over everything while one is set, and the paywall reports back through the completion.
+ * An app-owned paywall presenter: presenting parks the request in a StateFlow, the app root renders a paywall over
+ * everything while one is set, and the paywall reports back through [Request.finish].
  */
 @OptIn(InternalRevenueCatAPI::class)
-object SamplePaywallPresenter : PaywallPresenter {
+class ParkedPaywallPresenter : PaywallPresenter {
 
-    class Request(
+    inner class Request(
         val params: PaywallPresenter.Params,
-        val completion: PaywallPresenter.Completion,
-    )
+        private val completion: PaywallPresenter.Completion,
+    ) {
+        fun finish(result: PaywallPresenter.Completion.Result) {
+            completion.complete(result)
+            _request.value = null
+        }
+    }
 
     private val _request = MutableStateFlow<Request?>(null)
     val request: StateFlow<Request?> = _request.asStateFlow()
@@ -24,8 +29,12 @@ object SamplePaywallPresenter : PaywallPresenter {
     override fun present(params: PaywallPresenter.Params, completion: PaywallPresenter.Completion) {
         _request.value = Request(params, completion)
     }
+}
 
-    fun clear() {
-        _request.value = null
-    }
+object SamplePaywallPresenters {
+    /** Registered on Purchases, so it presents any offering a checkpoint resolves to. */
+    val global = ParkedPaywallPresenter()
+
+    /** Passed in the CheckpointParams of the play_game call, ahead of [global]. */
+    val playGame = ParkedPaywallPresenter()
 }

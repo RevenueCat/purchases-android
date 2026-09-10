@@ -1,7 +1,7 @@
 package com.revenuecat.checkpointssample
 
 import android.app.Application
-import com.revenuecat.checkpointssample.paywall.SamplePaywallPresenter
+import com.revenuecat.checkpointssample.paywall.SamplePaywallPresenters
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
@@ -18,7 +18,8 @@ class MainApplication : Application() {
                 .appUserID(null)
                 .build(),
         )
-        // Offerings that checkpoints resolve to are presented by the sample's own paywall instead of the SDK's.
-        Purchases.sharedInstance.paywallPresenter = SamplePaywallPresenter
+        // Offerings that checkpoints resolve to are presented by the sample's own paywall instead of the SDK's,
+        // unless the call supplies its own presenter through CheckpointParams.
+        Purchases.sharedInstance.paywallPresenter = SamplePaywallPresenters.global
     }
 }

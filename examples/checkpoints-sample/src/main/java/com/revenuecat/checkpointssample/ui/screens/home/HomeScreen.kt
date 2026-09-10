@@ -2,6 +2,7 @@ package com.revenuecat.checkpointssample.ui.screens.home
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -10,6 +11,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -43,6 +45,17 @@ fun HomeScreen(
             Button(onClick = { viewModel.play(onPlay) }) {
                 Text(if (state.gameUnlocked) "Play game" else "Unlock and play")
             }
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text("Use call-site paywall", style = MaterialTheme.typography.bodyMedium)
+            Switch(
+                checked = state.useCallSitePaywall,
+                onCheckedChange = viewModel::setUseCallSitePaywall,
+                enabled = !state.loading,
+            )
         }
         state.message?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
         TextButton(onClick = viewModel::refresh) {

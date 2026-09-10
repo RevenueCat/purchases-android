@@ -2,22 +2,19 @@ package com.revenuecat.checkpointssample.paywall
 
 import android.app.Activity
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -29,6 +26,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -38,18 +36,17 @@ import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import kotlinx.coroutines.launch
 
 /**
- * A simple full-screen paywall for the offering behind [request]: the packages as selectable cards, a purchase
- * button, restore, and a close button. Reports how the user left it; the SDK works out what they obtained.
+ * A bottom-sheet paywall for the offering behind [request], one button per package. Tapping the scrim or "Not now"
+ * closes it; system back navigates back. Reports how the user left it; the SDK works out what they obtained.
  */
 @OptIn(InternalRevenueCatAPI::class)
 @Composable
-fun SamplePaywall(
+fun PlayGamePaywall(
     request: ParkedPaywallPresenter.Request,
     modifier: Modifier = Modifier,
 ) {
     val activity = LocalContext.current as? Activity
     val scope = rememberCoroutineScope()
-    var selected by remember(request) { mutableStateOf(request.params.offering.availablePackages.firstOrNull()) }
     var busy by remember(request) { mutableStateOf(false) }
     var message by remember(request) { mutableStateOf<String?>(null) }
 
@@ -68,30 +65,38 @@ fun SamplePaywall(
         }
     }
 
+    fun close() {
+        if (!busy) request.finish(PaywallPresenter.Completion.Result.Closed)
+    }
+
     BackHandler(enabled = !busy) { request.finish(PaywallPresenter.Completion.Result.NavigatedBack) }
 
-    Surface(modifier = modifier.fillMaxSize()) {
-        Box(modifier = Modifier.fillMaxSize().safeDrawingPadding()) {
-            IconButton(
-                onClick = { request.finish(PaywallPresenter.Completion.Result.Closed) },
-                enabled = !busy,
-                modifier = Modifier.align(Alignment.TopEnd).padding(8.dp),
-            ) {
-                Icon(Icons.Filled.Close, contentDescription = "Close")
-            }
-            PaywallBody(
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.5f))
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) { close() },
+        contentAlignment = Alignment.BottomCenter,
+    ) {
+        Surface(
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+            tonalElevation = 2.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
+        ) {
+            SheetContent(
                 request = request,
-                state = PaywallUiState(selected, busy, message, canPurchase = activity != null),
-                onSelect = { selected = it },
+                state = SheetUiState(busy, message, canPurchase = activity != null),
                 onPurchase = { pkg -> activity?.let { checkout { PaywallCheckout.purchase(it, pkg) } } },
                 onRestore = { checkout { PaywallCheckout.restore() } },
+                onClose = ::close,
             )
         }
     }
 }
 
-private class PaywallUiState(
-    val selected: Package?,
+private class SheetUiState(
     val busy: Boolean,
     val message: String?,
     val canPurchase: Boolean,
@@ -99,77 +104,52 @@ private class PaywallUiState(
 
 @OptIn(InternalRevenueCatAPI::class)
 @Composable
-private fun PaywallBody(
+private fun SheetContent(
     request: ParkedPaywallPresenter.Request,
-    state: PaywallUiState,
-    onSelect: (Package) -> Unit,
+    state: SheetUiState,
     onPurchase: (Package) -> Unit,
     onRestore: () -> Unit,
+    onClose: () -> Unit,
 ) {
-    val packages = request.params.offering.availablePackages
     val busy = state.busy
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+        modifier = Modifier
+            .navigationBarsPadding()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Unlock the Tapper game", style = MaterialTheme.typography.headlineMedium)
+        Text("One tap to play", style = MaterialTheme.typography.headlineSmall)
         Text(
-            text = "Presented by the sample's global PaywallPresenter for offering " +
+            text = "Presented by the presenter passed in CheckpointParams for offering " +
                 "\"${request.params.offering.identifier}\".",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
+        val packages = request.params.offering.availablePackages
         if (packages.isEmpty()) {
             Text("This offering has no packages.", style = MaterialTheme.typography.bodyMedium)
         }
         packages.forEach { packageToPurchase ->
-            PackageCard(
-                packageToPurchase = packageToPurchase,
-                selected = packageToPurchase == state.selected,
-                enabled = !busy,
-                onClick = { onSelect(packageToPurchase) },
-            )
+            Button(
+                onClick = { onPurchase(packageToPurchase) },
+                enabled = !busy && state.canPurchase,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    if (busy) "Please wait..." else "Unlock for ${packageToPurchase.product.price.formatted}",
+                )
+            }
         }
         state.message?.let {
             Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
         }
-        Button(
-            onClick = { state.selected?.let(onPurchase) },
-            enabled = !busy && state.selected != null && state.canPurchase,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(if (busy) "Please wait..." else "Continue")
-        }
         TextButton(onClick = onRestore, enabled = !busy) {
-            Text("Restore purchases")
+            Text("Restore")
         }
-    }
-}
-
-@Composable
-private fun PackageCard(
-    packageToPurchase: Package,
-    selected: Boolean,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    OutlinedCard(
-        onClick = onClick,
-        enabled = enabled,
-        border = BorderStroke(
-            width = if (selected) 2.dp else 1.dp,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-        ),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(packageToPurchase.identifier, style = MaterialTheme.typography.titleMedium)
-            Text(packageToPurchase.product.price.formatted, style = MaterialTheme.typography.titleMedium)
+        TextButton(onClick = onClose, enabled = !busy) {
+            Text("Not now")
         }
     }
 }

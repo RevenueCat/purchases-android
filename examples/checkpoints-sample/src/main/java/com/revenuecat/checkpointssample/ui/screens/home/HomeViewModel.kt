@@ -3,6 +3,7 @@ package com.revenuecat.checkpointssample.ui.screens.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.revenuecat.checkpointssample.Constants
+import com.revenuecat.checkpointssample.paywall.SamplePaywallPresenters
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
@@ -23,6 +24,7 @@ class HomeViewModel : ViewModel() {
         val activeEntitlements: List<String> = emptyList(),
         val message: String? = null,
         val gamesPlayed: Int = 0,
+        val useCallSitePaywall: Boolean = true,
     ) {
         val gameUnlocked: Boolean
             get() = activeEntitlements.isNotEmpty()
@@ -50,6 +52,10 @@ class HomeViewModel : ViewModel() {
         }
     }
 
+    fun setUseCallSitePaywall(enabled: Boolean) {
+        _state.update { it.copy(useCallSitePaywall = enabled) }
+    }
+
     @OptIn(InternalRevenueCatAPI::class)
     fun play(onAccessGranted: () -> Unit) {
         val current = _state.value
@@ -60,7 +66,10 @@ class HomeViewModel : ViewModel() {
         }
         Purchases.sharedInstance.checkpoint(
             Constants.PLAY_GAME_CHECKPOINT_ID,
-            CheckpointParams { customVariables { "games_played" to current.gamesPlayed } },
+            CheckpointParams {
+                customVariables { "games_played" to current.gamesPlayed }
+                if (current.useCallSitePaywall) paywallPresenter(SamplePaywallPresenters.playGame)
+            },
         ) { result ->
             // Only called once the gate lets the user through, so the game starts whatever was served (a null
             // result means nothing was). The grants are merged in so the card reflects what the user obtained.
