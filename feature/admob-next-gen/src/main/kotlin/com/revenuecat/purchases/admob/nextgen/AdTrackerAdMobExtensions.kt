@@ -26,6 +26,7 @@ import com.google.android.libraries.ads.mobile.sdk.rewardedinterstitial.Rewarded
 import com.revenuecat.purchases.admob.nextgen.tracking.NativeAdLoadResultHandler
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingAdLoadCallback
 import com.revenuecat.purchases.admob.nextgen.tracking.TrackingNativeAdLoaderCallback
+import com.revenuecat.purchases.admob.nextgen.tracking.failureAdFormat
 import com.revenuecat.purchases.admob.nextgen.tracking.trackAndConfigureAdLoadResult
 import com.revenuecat.purchases.ads.events.AdTracker
 import com.revenuecat.purchases.ads.events.types.AdFormat
@@ -587,7 +588,7 @@ public fun AdTracker.loadAndTrackNativeAd(
         trackingNativeAdLoaderCallback(
             delegate = loadCallback,
             placement = placement,
-            adUnitId = adRequest.adUnitId,
+            adRequest = adRequest,
             nativeAdEventCallback = nativeAdEventCallback,
             bannerAdEventCallback = bannerAdEventCallback,
         ),
@@ -616,6 +617,7 @@ public suspend fun AdTracker.loadAndTrackNativeAd(
     nativeAdLoadResultHandler(
         placement = placement,
         adUnitId = adRequest.adUnitId,
+        failureAdFormat = adRequest.failureAdFormat(),
         nativeAdEventCallback = nativeAdEventCallback,
         bannerAdEventCallback = bannerAdEventCallback,
     ).handle(result)
@@ -682,7 +684,7 @@ public fun AdTracker.loadAndTrackNativeAds(
         trackingNativeAdLoaderCallback(
             delegate = loadCallback,
             placement = placement,
-            adUnitId = adRequest.adUnitId,
+            adRequest = adRequest,
             nativeAdEventCallback = nativeAdEventCallback,
             bannerAdEventCallback = bannerAdEventCallback,
         ),
@@ -706,6 +708,7 @@ public suspend fun AdTracker.loadAndTrackNativeAds(
     val resultHandler = nativeAdLoadResultHandler(
         placement = placement,
         adUnitId = adRequest.adUnitId,
+        failureAdFormat = adRequest.failureAdFormat(),
         nativeAdEventCallback = nativeAdEventCallback,
         bannerAdEventCallback = bannerAdEventCallback,
     )
@@ -713,6 +716,23 @@ public suspend fun AdTracker.loadAndTrackNativeAds(
         resultHandler.handle(result)
     }
 }
+
+private fun trackingNativeAdLoaderCallback(
+    delegate: NativeAdLoaderCallback,
+    placement: String?,
+    adRequest: NativeAdRequest,
+    nativeAdEventCallback: NativeAdEventCallback?,
+    bannerAdEventCallback: BannerAdEventCallback?,
+): TrackingNativeAdLoaderCallback = TrackingNativeAdLoaderCallback(
+    delegate = delegate,
+    resultHandler = nativeAdLoadResultHandler(
+        placement = placement,
+        adUnitId = adRequest.adUnitId,
+        failureAdFormat = adRequest.failureAdFormat(),
+        nativeAdEventCallback = nativeAdEventCallback,
+        bannerAdEventCallback = bannerAdEventCallback,
+    ),
+)
 
 private fun trackingNativeAdLoaderCallback(
     delegate: NativeAdLoaderCallback,
@@ -725,6 +745,7 @@ private fun trackingNativeAdLoaderCallback(
     resultHandler = nativeAdLoadResultHandler(
         placement = placement,
         adUnitId = adUnitId,
+        failureAdFormat = AdFormat.NATIVE,
         nativeAdEventCallback = nativeAdEventCallback,
         bannerAdEventCallback = bannerAdEventCallback,
     ),
@@ -735,9 +756,11 @@ private fun nativeAdLoadResultHandler(
     adUnitId: String,
     nativeAdEventCallback: NativeAdEventCallback?,
     bannerAdEventCallback: BannerAdEventCallback?,
+    failureAdFormat: AdFormat = AdFormat.NATIVE,
 ): NativeAdLoadResultHandler = NativeAdLoadResultHandler(
     placement = placement,
     adUnitId = adUnitId,
+    failureAdFormat = failureAdFormat,
     configureAd = { ad -> ad.installTrackingEventCallback(nativeAdEventCallback, placement, adUnitId) },
     configureCustomNativeAd = { ad ->
         ad.installTrackingEventCallback(nativeAdEventCallback, placement, adUnitId)

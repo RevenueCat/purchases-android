@@ -4,6 +4,7 @@ package com.revenuecat.purchases.admob.nextgen
 
 import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoadResult
 import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoader
@@ -120,6 +121,28 @@ class NativeAdFlowTest {
     }
 
     @Test
+    fun `callback load tracks failure as banner for banner-only request`() {
+        val adRequest = nativeAdRequest("banner-unit", listOf(NativeAd.NativeAdType.BANNER))
+        val error = mockk<LoadAdError> {
+            every { code } returns LoadAdError.ErrorCode.NO_FILL
+        }
+        val trackingLoadCallback = slot<NativeAdLoaderCallback>()
+
+        every { NativeAdLoader.load(adRequest, capture(trackingLoadCallback)) } just runs
+
+        adTracker.loadAndTrackNativeAd(adRequest, "feed", RecordingNativeAdLoaderCallback())
+        trackingLoadCallback.captured.onAdFailedToLoad(error)
+
+        val failedData = slot<AdFailedToLoadData>()
+        verify(exactly = 1) {
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
+        }
+        assertEquals(AdFormat.BANNER, failedData.captured.adFormat)
+        assertEquals("feed", failedData.captured.placement)
+        assertEquals("banner-unit", failedData.captured.adUnitId)
+    }
+
+    @Test
     fun `suspending load returns and configures native result unchanged`() = runBlocking {
         val adRequest = nativeAdRequest("native-unit")
         val nativeAd = nativeAd("native-network", "native-response")
@@ -161,6 +184,26 @@ class NativeAdFlowTest {
         verify(exactly = 2) { adTracker.trackAdLoaded(capture(trackedLoads), AdCaptureMethod.ADAPTER) }
         assertEquals(listOf(AdFormat.NATIVE, AdFormat.BANNER), trackedLoads.map { it.adFormat })
         verify(exactly = 1) { adTracker.trackAdFailedToLoad(any(), AdCaptureMethod.ADAPTER) }
+    }
+
+    @Test
+    fun `suspending load tracks failure as banner for banner-only request`() = runBlocking {
+        val adRequest = nativeAdRequest("banner-unit", listOf(NativeAd.NativeAdType.BANNER))
+        val error = mockk<LoadAdError> {
+            every { code } returns LoadAdError.ErrorCode.NO_FILL
+        }
+        val sdkResult = NativeAdLoadResult.Failure(error)
+
+        coEvery { NativeAdLoader.load(adRequest) } returns sdkResult
+
+        val result = adTracker.loadAndTrackNativeAd(adRequest, placement = "feed")
+
+        assertSame(sdkResult, result)
+        val failedData = slot<AdFailedToLoadData>()
+        verify(exactly = 1) {
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
+        }
+        assertEquals(AdFormat.BANNER, failedData.captured.adFormat)
     }
 
     @Test

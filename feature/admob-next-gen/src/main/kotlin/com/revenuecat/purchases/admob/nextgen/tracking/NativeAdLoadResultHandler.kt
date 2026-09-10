@@ -12,6 +12,7 @@ internal class NativeAdLoadResultHandler(
     private val configureAd: (NativeAd) -> Unit,
     private val configureCustomNativeAd: (CustomNativeAd) -> Unit = {},
     private val configureBannerAd: (BannerAd) -> Unit = {},
+    private val failureAdFormat: AdFormat = AdFormat.NATIVE,
 ) {
     fun handle(result: NativeAdLoadResult) {
         when (result) {
@@ -28,7 +29,7 @@ internal class NativeAdLoadResultHandler(
                 configureBannerAd(result.ad)
             }
             is NativeAdLoadResult.Failure -> {
-                trackAdFailedToLoad(result.error, AdFormat.NATIVE, placement, adUnitId)
+                trackAdFailedToLoad(result.error, failureAdFormat, placement, adUnitId)
             }
         }
     }
