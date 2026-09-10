@@ -73,52 +73,6 @@ class PublishedWorkflowTest {
         assertThat(workflow.dismissExitOffer).isNull()
     }
 
-    @Test
-    fun `offeringIdentifierFor prefers the step's own offering over its screen's`() {
-        val step = step("step-1", "screen-1", offeringIdentifier = "step-offering")
-        val workflow = workflow(
-            steps = mapOf("step-1" to step),
-            screens = mapOf("screen-1" to screen("screen-1", offeringIdentifier = "screen-offering")),
-        )
-
-        assertThat(workflow.offeringIdentifierFor(step)).isEqualTo("step-offering")
-    }
-
-    @Test
-    fun `offeringIdentifierFor falls back to the screen's offering when the step has none`() {
-        val step = step("step-1", "screen-1")
-        val workflow = workflow(
-            steps = mapOf("step-1" to step),
-            screens = mapOf("screen-1" to screen("screen-1", offeringIdentifier = "screen-offering")),
-        )
-
-        assertThat(workflow.offeringIdentifierFor(step)).isEqualTo("screen-offering")
-    }
-
-    @Test
-    fun `offeringIdentifierFor is null when neither the step nor its screen has an offering`() {
-        val step = step("step-1", "screen-1")
-        val workflow = workflow(
-            steps = mapOf("step-1" to step),
-            screens = mapOf("screen-1" to screen("screen-1", offeringIdentifier = null)),
-        )
-
-        assertThat(workflow.offeringIdentifierFor(step)).isNull()
-    }
-
-    @Test
-    fun `offeringIdentifierFor is null when the step has no offering and its screen is unknown`() {
-        val stepWithoutScreen = step("step-1", screenId = null)
-        val stepWithMissingScreen = step("step-2", "missing-screen")
-        val workflow = workflow(
-            steps = mapOf("step-1" to stepWithoutScreen, "step-2" to stepWithMissingScreen),
-            screens = mapOf("screen-1" to screen("screen-1")),
-        )
-
-        assertThat(workflow.offeringIdentifierFor(stepWithoutScreen)).isNull()
-        assertThat(workflow.offeringIdentifierFor(stepWithMissingScreen)).isNull()
-    }
-
     private fun workflow(
         steps: Map<String, WorkflowStep>,
         screens: Map<String, WorkflowScreen>,

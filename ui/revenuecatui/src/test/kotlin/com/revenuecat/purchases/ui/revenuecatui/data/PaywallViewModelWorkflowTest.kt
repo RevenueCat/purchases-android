@@ -231,7 +231,7 @@ class PaywallViewModelWorkflowTest {
                 ),
             ),
             triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
-            // Like the backend, only the paywall step carries the offering; this one falls back to its screen's.
+            // Like the backend, only the paywall step carries an offering; this one renders without one.
             paramValues = emptyMap(),
             // Context (non-paywall) step: tagged with an empty screen_type so it suppresses paywall events.
             metadata = screenTypeMetadata(),
@@ -1896,28 +1896,9 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `initial step without an offering identifier falls back to its screen's offering`() {
+    fun `initial step without an offering renders without one even when its screen names one`() {
         val stepWithoutOffering = step1.copy(paramValues = emptyMap())
         val workflowWithoutOffering = workflow.copy(steps = mapOf("step-1" to stepWithoutOffering, "step-2" to step2))
-
-        val vm = createVm()
-        vm.startWorkflowPresentationFromResult(workflowWithoutOffering, testOfferings, null, uiConfig)
-
-        val loaded = vm.workflowState.value?.stepStates?.get("step-1")
-        assertThat(loaded).isNotNull
-        assertThat(loaded!!.offering.identifier).isEqualTo(offeringId)
-    }
-
-    @Test
-    fun `initial step with no offering on the step or its screen renders without one`() {
-        val stepWithoutOffering = step1.copy(paramValues = emptyMap())
-        val workflowWithoutOffering = workflow.copy(
-            steps = mapOf("step-1" to stepWithoutOffering, "step-2" to step2),
-            screens = mapOf(
-                screenId1 to makeScreen(screenId1).copy(offeringIdentifier = null),
-                screenId2 to makeScreen(screenId2),
-            ),
-        )
 
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(workflowWithoutOffering, testOfferings, null, uiConfig)
@@ -1935,12 +1916,8 @@ class PaywallViewModelWorkflowTest {
     @Test
     fun `a step without an offering gets the fallback step's default package as context`() {
         val (base, offerings) = makeContextPackageWorkflow()
-        val wfl = base.copy(
-            screens = base.screens + (screenId1 to base.screens.getValue(screenId1).copy(offeringIdentifier = null)),
-        )
-
         val vm = createVm()
-        vm.startWorkflowPresentationFromResult(wfl, offerings, null, uiConfig)
+        vm.startWorkflowPresentationFromResult(base, offerings, null, uiConfig)
 
         val step1State = vm.workflowState.value?.stepStates?.get("step-1")
         assertThat(step1State).isNotNull
@@ -1957,7 +1934,6 @@ class PaywallViewModelWorkflowTest {
         val taggedStep1 = base.steps.getValue("step-1").copy(metadata = screenTypeMetadata(WorkflowScreenType.PAYWALL))
         val wfl = base.copy(
             steps = base.steps + ("step-1" to taggedStep1),
-            screens = base.screens + (screenId1 to base.screens.getValue(screenId1).copy(offeringIdentifier = null)),
         )
 
         val vm = createVm()

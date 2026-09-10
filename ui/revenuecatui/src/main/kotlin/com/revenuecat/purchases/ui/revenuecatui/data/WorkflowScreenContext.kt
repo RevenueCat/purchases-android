@@ -8,7 +8,7 @@ internal data class WorkflowScreenContext(
     /** `null` when the backend did not tag the step; see `WorkflowStep.stepScreenType`. */
     val screenType: List<String>?,
     /**
-     * `false` when neither the step nor its screen declares an offering; the state's offering is then a
+     * `false` when the step declares no offering; the state's offering is then a
      * package-less placeholder.
      */
     val hasOffering: Boolean = true,
