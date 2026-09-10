@@ -87,11 +87,13 @@ internal class CheckpointWorkflowPresenter(
             .build()
         val dialog = ComponentDialog(activity, EDGE_TO_EDGE_WINDOW_THEME)
         dialog.window?.applyEdgeToEdge()
-        // A re-present after a configuration change replaces a window that was already there, so only a first
-        // present fades in.
-        if (pendingSavedState == null) {
-            dialog.window?.setWindowAnimations(R.style.RcCheckpointWindowAnimation)
+        // A re-present after a configuration change replaces a window that was already there, so it only fades out.
+        val animations = if (pendingSavedState == null) {
+            R.style.RcCheckpointWindowAnimation
+        } else {
+            R.style.RcCheckpointWindowAnimation_Represent
         }
+        dialog.window?.setWindowAnimations(animations)
         // Back must never fall through to the dispatcher's cancel fallback; the paywall's own BackHandler
         // decides what back does.
         dialog.setCancelable(false)

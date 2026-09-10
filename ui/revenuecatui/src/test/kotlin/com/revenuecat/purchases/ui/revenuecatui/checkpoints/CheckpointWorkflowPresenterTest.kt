@@ -268,13 +268,13 @@ class CheckpointWorkflowPresenterTest {
     }
 
     @Test
-    fun `a re-present after a configuration change does not animate`() {
+    fun `a re-present after a configuration change only fades out`() {
         launchCheckpoint()
 
         controller.recreate()
 
         val window = ShadowDialog.getLatestDialog().window!!
-        assertThat(window.attributes.windowAnimations).isNotEqualTo(R.style.RcCheckpointWindowAnimation)
+        assertThat(window.attributes.windowAnimations).isEqualTo(R.style.RcCheckpointWindowAnimation_Represent)
     }
 
     private fun launchCheckpoint(): Job = CoroutineScope(dispatcher).launch {
