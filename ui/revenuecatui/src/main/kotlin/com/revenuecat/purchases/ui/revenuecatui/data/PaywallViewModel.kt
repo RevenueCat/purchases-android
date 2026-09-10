@@ -970,13 +970,13 @@ internal class PaywallViewModelImpl(
             val workflowDeferred = async { purchases.awaitGetWorkflow(workflowId) }
             val uiConfigDeferred = async { purchases.awaitGetUiConfig() }
             val offeringsDeferred = async { preloadedOfferings ?: purchases.awaitOfferings() }
-            val blobRefDeferred = async { purchases.awaitWorkflowBlobRef(workflowId) }
+            val workflowBlobRefDeferred = async { purchases.awaitWorkflowBlobRef(workflowId) }
             startWorkflowPresentation(
                 workflowDeferred.await(),
                 uiConfigDeferred.await(),
                 offeringsDeferred.await(),
                 offering.presentedOfferingContext,
-                blobRefDeferred.await(),
+                workflowBlobRefDeferred.await(),
             )
         }
     }
@@ -1451,14 +1451,14 @@ internal class PaywallViewModelImpl(
     private fun experimentData(step: WorkflowStep): WorkflowEvent.ExperimentData? {
         val experimentId = step.experimentId
         val experimentVariant = step.experimentVariant
-        val blobRef = currentWorkflowBlobRef
-        return if (experimentId == null || experimentVariant == null || blobRef == null) {
+        val workflowBlobRef = currentWorkflowBlobRef
+        return if (experimentId == null || experimentVariant == null || workflowBlobRef == null) {
             null
         } else {
             WorkflowEvent.ExperimentData(
                 experimentId = experimentId,
                 experimentVariant = experimentVariant,
-                workflowBlobRef = blobRef,
+                workflowBlobRef = workflowBlobRef,
             )
         }
     }
