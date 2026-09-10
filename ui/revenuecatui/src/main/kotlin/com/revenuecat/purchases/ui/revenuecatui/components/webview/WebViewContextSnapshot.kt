@@ -76,7 +76,6 @@ internal fun webViewContextSnapshot(input: WebViewContextInput): JsonObject = bu
     }
 }
 
-/** iOS and web resolve both references against `packages`, so one outside the list is `null` everywhere. */
 private fun WebViewContextInput.onPaywall(pkg: Package?): Package? =
     pkg?.takeIf { candidate -> packages.any { it.identifier == candidate.identifier } }
 
