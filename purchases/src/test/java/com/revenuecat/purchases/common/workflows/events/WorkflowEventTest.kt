@@ -151,7 +151,7 @@ class WorkflowEventTest {
             val properties = (event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows).event.properties
             assertThat(properties.experimentId).`as`(event::class.simpleName).isEqualTo("exp_abc")
             assertThat(properties.experimentVariant).`as`(event::class.simpleName).isEqualTo("b")
-            assertThat(properties.blobRef).`as`(event::class.simpleName).isEqualTo("blob-ref-1")
+            assertThat(properties.workflowBlobRef).`as`(event::class.simpleName).isEqualTo("blob-ref-1")
         }
     }
 
@@ -167,7 +167,7 @@ class WorkflowEventTest {
         val properties = (event.toBackendStoredEvent("user_42") as BackendStoredEvent.Workflows).event.properties
         assertThat(properties.experimentId).isNull()
         assertThat(properties.experimentVariant).isNull()
-        assertThat(properties.blobRef).isNull()
+        assertThat(properties.workflowBlobRef).isNull()
     }
 
     @Test

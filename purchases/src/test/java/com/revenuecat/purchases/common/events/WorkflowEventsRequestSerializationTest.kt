@@ -86,7 +86,7 @@ class WorkflowEventsRequestSerializationTest {
                         properties = event.properties.copy(
                             experimentId = "exp_abc",
                             experimentVariant = "b",
-                            blobRef = "blob-ref-1",
+                            workflowBlobRef = "blob-ref-1",
                         ),
                     )
                 },

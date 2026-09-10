@@ -324,7 +324,7 @@ internal sealed class BackendEvent : Event {
             @SerialName("experiment_variant")
             val experimentVariant: String? = null,
             @SerialName("blob_ref")
-            val blobRef: String? = null,
+            val workflowBlobRef: String? = null,
         )
     }
 
