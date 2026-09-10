@@ -23,7 +23,13 @@ private fun SizeConstraint.addMargin(
     margin: UInt,
 ): SizeConstraint = when (this) {
     is Fixed -> Fixed(value + margin)
-    is Fill,
-    is Fit,
-    -> this
+    is Fill -> Fill(
+        min = min?.plus(margin),
+        max = max?.plus(margin),
+    )
+    is Fit -> Fit(
+        default = default,
+        min = min?.plus(margin),
+        max = max?.plus(margin),
+    )
 }

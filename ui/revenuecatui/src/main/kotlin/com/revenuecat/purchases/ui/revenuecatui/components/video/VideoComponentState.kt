@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.Size
-import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
@@ -38,6 +37,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toShape
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.AspectRatio
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.adjustForMedia
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageAwareDelegate
 import com.revenuecat.purchases.ui.revenuecatui.components.style.VideoComponentStyle
@@ -258,48 +258,11 @@ internal class VideoComponentState(
      * Adjusts this size to take into account the size of the video.
      */
     private fun Size.adjustForVideo(videoUrls: VideoUrls, density: Density): Size =
-        Size(
-            width = width.adjustDimension(
-                other = height,
-                thisDimensionPx = videoUrls.width,
-                otherDimensionPx = videoUrls.height,
-                density = density,
-            ),
-            height = height.adjustDimension(
-                other = width,
-                thisDimensionPx = videoUrls.height,
-                otherDimensionPx = videoUrls.width,
-                density = density,
-            ),
+        adjustForMedia(
+            widthPx = videoUrls.width,
+            heightPx = videoUrls.height,
+            density = density,
         )
-
-    /**
-     * Adjusts this size constraint to take into account the size of the video.
-     */
-    private fun SizeConstraint.adjustDimension(
-        other: SizeConstraint,
-        thisDimensionPx: UInt,
-        otherDimensionPx: UInt,
-        density: Density,
-    ): SizeConstraint = when (this) {
-        is Fit -> {
-            when (other) {
-                is Fit -> Fixed(with(density) { thisDimensionPx.toInt().toDp().value.toUInt() })
-                is Fill -> this
-
-                is Fixed -> {
-                    // If the other dimension is Fixed, we'll have to scale this one by the same factor.
-                    val otherDimensionDp = with(density) { otherDimensionPx.toInt().toDp() }
-                    val scaleFactor = other.value.toFloat() / otherDimensionDp.value
-                    Fixed(with(density) { (scaleFactor * thisDimensionPx.toInt()).toDp().value.toUInt() })
-                }
-            }
-        }
-
-        is Fill,
-        is Fixed,
-        -> this
-    }
 }
 
 @Stable
