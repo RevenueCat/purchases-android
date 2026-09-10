@@ -112,8 +112,14 @@ internal class ButtonVisibilityState(
         )
     }
 
+    /**
+     * Deliberately falls back to `true` rather than to the stack's visibility: the caller already
+     * gates on the stack's own resolved state, which accounts for overrides on that stack. Reading
+     * [ButtonComponentStyle.visible] here instead would reintroduce the stack's pre-override value
+     * and hide a button whose stack an override had revealed.
+     */
     @get:JvmSynthetic
-    val visible by derivedStateOf { presentedPartial?.partial?.visible ?: style.visible }
+    val visible by derivedStateOf { presentedPartial?.partial?.visible ?: style.buttonVisible ?: true }
 
     @JvmSynthetic
     fun update(windowSize: WindowWidthSizeClass, windowDpSize: DpSize?) {
