@@ -87,7 +87,7 @@ public object WorkflowScreenType {
 @Serializable
 public data class WorkflowStep(
     val id: String,
-    val type: String? = null,
+    val type: String,
     @SerialName("screen_id") val screenId: String? = null,
     @SerialName("param_values") val paramValues: Map<String, JsonElement> = emptyMap(),
     val triggers: List<WorkflowTrigger> = emptyList(),
