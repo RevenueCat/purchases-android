@@ -84,6 +84,17 @@ internal class WorkflowManager(
         return workflow
     }
 
+    /** A failure returns null rather than failing the caller's render: this only feeds experiment events. */
+    suspend fun workflowBlobRef(workflowId: String): String? =
+        try {
+            workflowsConfigProvider.workflowBlobRef(workflowId)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (@Suppress("TooGenericExceptionCaught") e: Throwable) {
+            errorLog(e) { "Failed to read the blob ref for workflow '$workflowId'." }
+            null
+        }
+
     /** Prewarms presentation assets without changing delivery or failing the caller. */
     fun prewarmWorkflowAssets(workflow: PublishedWorkflow, uiConfig: UiConfig) {
         scope.launch {
