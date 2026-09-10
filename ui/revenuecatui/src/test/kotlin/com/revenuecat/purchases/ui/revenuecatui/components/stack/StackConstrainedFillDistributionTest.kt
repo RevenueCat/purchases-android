@@ -1,5 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -344,6 +348,78 @@ class StackConstrainedFillDistributionTest {
             },
             spacing = 0f,
         )
+    }
+
+    @Test
+    fun `horizontal cross-axis Fill child stretches to its siblings under an unbounded height`() {
+        assertCrossAxisFillChildStretches(horizontal = true)
+    }
+
+    @Test
+    fun `vertical cross-axis Fill child stretches to its siblings under an unbounded width`() {
+        assertCrossAxisFillChildStretches(horizontal = false)
+    }
+
+    /**
+     * A Fit stack inside a scroll has an unbounded cross axis, so a cross-axis Fill child has nothing to fill. It must
+     * stretch to the tallest (widest) sibling like flexbox does, instead of collapsing to its (empty) content.
+     */
+    private fun assertCrossAxisFillChildStretches(horizontal: Boolean) {
+        val fixedSibling = coloredBlock(
+            size = if (horizontal) {
+                Size(width = Fill(max = 40u), height = Fixed(60u))
+            } else {
+                Size(width = Fixed(60u), height = Fill(max = 40u))
+            },
+            color = Color.Blue,
+        )
+        val crossAxisFillChild = coloredBlock(
+            size = if (horizontal) {
+                Size(width = Fill(max = 40u), height = Fill())
+            } else {
+                Size(width = Fill(), height = Fill(max = 40u))
+            },
+            color = Color.Red,
+        )
+        val stack = StackComponent(
+            components = listOf(fixedSibling, crossAxisFillChild),
+            dimension = if (horizontal) {
+                Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START)
+            } else {
+                Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START)
+            },
+            size = if (horizontal) {
+                Size(width = Fixed(100u), height = Fit())
+            } else {
+                Size(width = Fit(), height = Fixed(100u))
+            },
+        )
+        val style = styleFactory.create(stack).getOrThrow().componentStyle as StackComponentStyle
+
+        composeTestRule.setContent {
+            Box(
+                modifier = if (horizontal) {
+                    Modifier.verticalScroll(rememberScrollState())
+                } else {
+                    Modifier.horizontalScroll(rememberScrollState())
+                },
+            ) {
+                StackComponentView(
+                    style = style,
+                    state = FakePaywallState(components = emptyList()),
+                    clickHandler = {},
+                    modifier = Modifier.testTag("stack"),
+                )
+            }
+        }
+
+        composeTestRule.waitForIdle()
+        // The Fill child occupies 40..80dp on the main axis and must span the sibling's 60dp on the cross axis.
+        val insideFillChild = with(composeTestRule.density) { 60.dp.roundToPx() }
+        val nearCrossAxisEdge = with(composeTestRule.density) { 55.dp.roundToPx() }
+        val (x, y) = if (horizontal) insideFillChild to nearCrossAxisEdge else nearCrossAxisEdge to insideFillChild
+        composeTestRule.onNodeWithTag("stack")
+            .assertPixelColorEquals(Color.Red, x, y, width = 1, height = 1)
     }
 
     private fun coloredBlock(

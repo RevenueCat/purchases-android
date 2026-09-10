@@ -59,15 +59,20 @@ internal fun Modifier.size(
         ),
     )
 
-    val layoutWidth = placeable.width.coerceIn(incomingConstraints.minWidth, incomingConstraints.maxWidth)
-    val layoutHeight = placeable.height.coerceIn(incomingConstraints.minHeight, incomingConstraints.maxHeight)
+    // A real placeable already satisfies the constraints it was measured with; this only matters during intrinsic
+    // measurement, where Compose reports the content's intrinsic size and ignores minimums (e.g. an empty Fixed box
+    // would report 0). Without this, a parent bounding itself to its intrinsic size would collapse.
+    val contentWidth = placeable.width.coerceIn(widthConstraints.min, widthConstraints.max)
+    val contentHeight = placeable.height.coerceIn(heightConstraints.min, heightConstraints.max)
+    val layoutWidth = contentWidth.coerceIn(incomingConstraints.minWidth, incomingConstraints.maxWidth)
+    val layoutHeight = contentHeight.coerceIn(incomingConstraints.minHeight, incomingConstraints.maxHeight)
     val x = (horizontalAlignment ?: Alignment.CenterHorizontally).align(
-        size = placeable.width,
+        size = contentWidth,
         space = layoutWidth,
         layoutDirection = layoutDirection,
     )
     val y = (verticalAlignment ?: Alignment.CenterVertically).align(
-        size = placeable.height,
+        size = contentHeight,
         space = layoutHeight,
     )
 

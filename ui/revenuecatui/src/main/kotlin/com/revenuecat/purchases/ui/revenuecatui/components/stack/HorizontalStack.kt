@@ -47,6 +47,7 @@ internal fun HorizontalStack(
                 fitMainAxis = size.width.shouldFitMainAxis(hasAnyItemsWithFillWidth),
             ),
             spacing = spacing,
+            hasCrossAxisFillChild = items.any { it.size.height is Fill },
             modifier = modifier,
         ) {
             items.forEachIndexed { index, item ->

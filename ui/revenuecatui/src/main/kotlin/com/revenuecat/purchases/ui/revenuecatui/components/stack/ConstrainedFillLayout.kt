@@ -12,11 +12,13 @@ import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.MeasureResult
 import androidx.compose.ui.layout.MeasureScope
 import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.ComponentSizeParentDataModifier
+import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 
 /**
  * A Row/Column replacement that is only used when a stack has min/max size constraints on its main axis (see
@@ -52,18 +54,48 @@ internal object ConstrainedFillLayout {
      * Every child is expected to carry a [ComponentSizeParentDataModifier] describing its resolved size. Children are
      * matched to their constraints through that parent data rather than by index, so children that are not composed
      * (e.g. `visible = false`) do not shift the constraints of their siblings.
+     *
+     * @param hasCrossAxisFillChild Whether any child is Fill on the cross axis. Under an unbounded cross axis (e.g. a
+     * Fit row inside the root vertical scroll) such a child has nothing to fill and would collapse to its minimum.
+     * Flexbox stretches it to the tallest sibling instead, so the layout is then bounded to its own intrinsic
+     * cross-axis size, which Fill children can fill.
      */
     @Composable
     operator fun invoke(
         config: Config,
         spacing: Dp,
+        hasCrossAxisFillChild: Boolean,
         modifier: Modifier = Modifier,
         content: @Composable () -> Unit,
     ) {
-        Layout(modifier = modifier, content = content) { measurables, constraints ->
+        Layout(
+            modifier = modifier.conditional(hasCrossAxisFillChild) {
+                boundUnboundedCrossAxisToIntrinsicSize(config.orientation)
+            },
+            content = content,
+        ) { measurables, constraints ->
             measure(measurables, constraints, config, spacingPx = spacing.roundToPx())
         }
     }
+
+    private fun Modifier.boundUnboundedCrossAxisToIntrinsicSize(orientation: Orientation): Modifier =
+        layout { measurable, constraints ->
+            val bounded = when {
+                orientation == Orientation.Horizontal && constraints.maxHeight == Constraints.Infinity ->
+                    constraints.copy(
+                        maxHeight = measurable.maxIntrinsicHeight(constraints.maxWidth)
+                            .coerceAtLeast(constraints.minHeight),
+                    )
+                orientation == Orientation.Vertical && constraints.maxWidth == Constraints.Infinity ->
+                    constraints.copy(
+                        maxWidth = measurable.maxIntrinsicWidth(constraints.maxHeight)
+                            .coerceAtLeast(constraints.minWidth),
+                    )
+                else -> constraints
+            }
+            val placeable = measurable.measure(bounded)
+            layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+        }
 
     private fun MeasureScope.measure(
         measurables: List<Measurable>,

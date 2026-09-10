@@ -47,6 +47,7 @@ internal fun VerticalStack(
                 fitMainAxis = size.height.shouldFitMainAxis(hasAnyItemsWithFillHeight),
             ),
             spacing = spacing,
+            hasCrossAxisFillChild = items.any { it.size.width is Fill },
             modifier = modifier,
         ) {
             items.forEachIndexed { index, item ->
