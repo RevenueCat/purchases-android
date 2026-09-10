@@ -1530,7 +1530,7 @@ internal class PaywallViewModelImpl(
             ?: return StepResolution.Invalid("Step '${step.id}' has no screen_id in workflow '${workflow.id}'")
         val screen = workflow.screens[screenId]
             ?: return StepResolution.Invalid("Screen '$screenId' not found in workflow '${workflow.id}'")
-        val offeringId = workflow.offeringIdentifierFor(step)
+        val offeringId = step.offeringIdentifier
             ?: return StepResolution.Ready(screenId, screen, offering = null)
         val offering = offerings[offeringId]
             ?: return StepResolution.Invalid("Offering '$offeringId' not found for step '${step.id}'")
@@ -1538,7 +1538,7 @@ internal class PaywallViewModelImpl(
     }
 
     private sealed interface StepResolution {
-        /** [offering] is null when neither the step nor its screen declares one. */
+        /** [offering] is null when the step declares none. */
         class Ready(val screenId: String, val screen: WorkflowScreen, val offering: Offering?) : StepResolution
         class Invalid(val reason: String) : StepResolution
     }
