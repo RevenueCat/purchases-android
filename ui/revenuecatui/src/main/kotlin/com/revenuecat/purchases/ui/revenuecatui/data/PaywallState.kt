@@ -155,6 +155,13 @@ internal sealed interface PaywallState {
 
             val store: Store get() = purchases.store
 
+            /** A subset of the offering: packages the paywall never shows are not in it. */
+            val paywallPackages: List<Package> by lazy {
+                (packages.packagesOutsideTabs + packages.packagesByTab.toSortedMap().values.flatten())
+                    .map { it.pkg }
+                    .distinctBy { it.identifier }
+            }
+
             data class AvailablePackages(
                 val packagesOutsideTabs: List<Info>,
                 val packagesByTab: Map<Int, List<Info>>,
