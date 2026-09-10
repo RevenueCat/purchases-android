@@ -106,8 +106,15 @@ internal fun ButtonComponentView(
             derivedStateOf { if (myActionInProgress) 0f else if (anyActionInProgress) ALPHA_DISABLED else 1f }
         }
         val progressAlpha by remember { derivedStateOf { if (myActionInProgress) 1f else 0f } }
-        val animatedContentAlpha by animateFloatAsState(targetValue = contentAlpha)
+        val animatedContentAlpha = animateFloatAsState(targetValue = contentAlpha)
         val animatedProgressAlpha by animateFloatAsState(targetValue = progressAlpha)
+        // Handed down as a provider so the stack reads it while drawing instead of recomposing on every
+        // animation frame. Null while undimmed, so no graphics layer is added in the common case.
+        val contentAlphaProvider: (() -> Float)? = if (animatedContentAlpha.value == 1f) {
+            null
+        } else {
+            remember(animatedContentAlpha) { { animatedContentAlpha.value } }
+        }
 
         val layoutDirection = LocalLayoutDirection.current
         val marginTop = remember(style.stackComponentStyle.margin) {
@@ -135,7 +142,7 @@ internal fun ButtonComponentView(
                     // We're the button, so we're handling the click already.
                     clickHandler = { },
                     componentInteractionTracker = componentInteractionTracker,
-                    contentAlpha = animatedContentAlpha,
+                    contentAlpha = contentAlphaProvider,
                     enabled = !anyActionInProgress,
                     onStackClick = onStackClick@{
                         val paywallAction = buttonState.action ?: return@onStackClick
