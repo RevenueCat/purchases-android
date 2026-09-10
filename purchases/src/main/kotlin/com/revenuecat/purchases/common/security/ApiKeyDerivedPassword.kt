@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.common.security
 
+import com.revenuecat.purchases.common.errorLog
+
 /**
  * Derives the [EncryptedItemStorage] password from the SDK's configured API key.
  *
@@ -24,14 +26,23 @@ package com.revenuecat.purchases.common.security
  * the raw ciphertext file directly — not a determined attacker who already has more direct API
  * access via the key itself.
  *
+ * ## Failure handling
+ *
+ * A blank [apiKey] can't derive a meaningful password. Rather than throwing — which would crash
+ * the host app if a caller further up the chain doesn't happen to catch it — this logs an error
+ * and returns `null`. Callers should treat a `null` result the same way they treat any other
+ * IAM-storage-construction failure: IAM login is unavailable for this session, not a reason to
+ * crash `configure()`.
+ *
  * @param apiKey the SDK's configured API key (`PurchasesConfiguration.apiKey`)
  * @return a [CharArray] suitable for use as the `password` argument to
  *   [EncryptedItemStorage.create]. The caller is responsible for zeroing this array once it has
- *   been consumed.
- * @throws IllegalArgumentException if [apiKey] is blank
+ *   been consumed. `null`, having logged an error, if [apiKey] is blank.
  */
-@Throws(IllegalArgumentException::class)
-internal fun derivePassword(apiKey: String): CharArray {
-    require(apiKey.isNotBlank()) { "Cannot derive a storage password from a blank API key." }
+internal fun derivePassword(apiKey: String): CharArray? {
+    if (apiKey.isBlank()) {
+        errorLog { "Cannot derive an IAM storage password from a blank API key. IAM login will be unavailable." }
+        return null
+    }
     return apiKey.toCharArray()
 }
