@@ -2,6 +2,7 @@ package com.revenuecat.purchases.paywalls.components
 
 import com.revenuecat.purchases.ColorAlias
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.StateUpdate
 import com.revenuecat.purchases.paywalls.components.common.StateUpdateValue
@@ -654,6 +655,137 @@ internal class ButtonComponentTests {
                                 ),
                             ),
                             id = "btn-next-step",
+                        )
+                    ),
+                ),
+                arrayOf(
+                    "visible = false",
+                    Args(
+                        json = """
+                        {
+                          "type": "button",
+                          "visible": false,
+                          "action": {
+                            "type": "navigate_back"
+                          },
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = ButtonComponent(
+                            action = ButtonComponent.Action.NavigateBack,
+                            stack = StackComponent(components = emptyList()),
+                            visible = false,
+                        )
+                    ),
+                ),
+                arrayOf(
+                    "visible = true",
+                    Args(
+                        json = """
+                        {
+                          "type": "button",
+                          "visible": true,
+                          "action": {
+                            "type": "navigate_back"
+                          },
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          }
+                        }
+                        """.trimIndent(),
+                        expected = ButtonComponent(
+                            action = ButtonComponent.Action.NavigateBack,
+                            stack = StackComponent(components = emptyList()),
+                            visible = true,
+                        )
+                    ),
+                ),
+                arrayOf(
+                    "overrides with visible = false",
+                    Args(
+                        json = """
+                        {
+                          "type": "button",
+                          "action": {
+                            "type": "navigate_back"
+                          },
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "overrides": [
+                            {
+                              "conditions": [
+                                {
+                                  "type": "variable_condition",
+                                  "operator": "=",
+                                  "variable": "hard_paywall",
+                                  "value": "true"
+                                }
+                              ],
+                              "properties": {
+                                "visible": false
+                              }
+                            }
+                          ]
+                        }
+                        """.trimIndent(),
+                        expected = ButtonComponent(
+                            action = ButtonComponent.Action.NavigateBack,
+                            stack = StackComponent(components = emptyList()),
+                            overrides = listOf(
+                                ComponentOverride(
+                                    conditions = listOf(
+                                        ComponentOverride.Condition.Variable(
+                                            operator = ComponentOverride.EqualityOperator.EQUALS,
+                                            variable = "hard_paywall",
+                                            value = JsonPrimitive("true"),
+                                        ),
+                                    ),
+                                    properties = PartialButtonComponent(visible = false),
+                                ),
+                            ),
+                        )
+                    ),
+                ),
+                arrayOf(
+                    "overrides with selected condition",
+                    Args(
+                        json = """
+                        {
+                          "type": "button",
+                          "action": {
+                            "type": "navigate_back"
+                          },
+                          "stack": {
+                            "type": "stack",
+                            "components": []
+                          },
+                          "overrides": [
+                            {
+                              "conditions": [
+                                { "type": "selected" }
+                              ],
+                              "properties": {
+                                "visible": false
+                              }
+                            }
+                          ]
+                        }
+                        """.trimIndent(),
+                        expected = ButtonComponent(
+                            action = ButtonComponent.Action.NavigateBack,
+                            stack = StackComponent(components = emptyList()),
+                            overrides = listOf(
+                                ComponentOverride(
+                                    conditions = listOf(ComponentOverride.Condition.Selected),
+                                    properties = PartialButtonComponent(visible = false),
+                                ),
+                            ),
                         )
                     ),
                 ),

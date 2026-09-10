@@ -13,9 +13,11 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
+import com.revenuecat.purchases.paywalls.components.PartialButtonComponent
 import com.revenuecat.purchases.paywalls.components.PartialCarouselComponent
 import com.revenuecat.purchases.paywalls.components.PartialPackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
@@ -49,9 +51,11 @@ import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.paywalls.components.properties.Size as ComponentSize
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed as FixedSize
+import com.revenuecat.purchases.ui.revenuecatui.components.button.ButtonComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.carousel.CarouselComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
@@ -2059,6 +2063,157 @@ class VisibilityConditionTests {
         onNodeWithText(monthlyLabelValue).assertIsDisplayed()
     }
 
+
+    // endregion
+
+    // region Button visibility
+
+    private fun buttonOffering(id: String, button: ButtonComponent): Offering {
+        val data = PaywallComponentsData(
+            id = id,
+            templateName = "components",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(button)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = localeId,
+        )
+        return Offering(
+            identifier = id,
+            serverDescription = "Button visibility test",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+    }
+
+    private fun buttonComponent(
+        visible: Boolean? = null,
+        overrides: List<ComponentOverride<PartialButtonComponent>> = emptyList(),
+    ) = ButtonComponent(
+        action = ButtonComponent.Action.NavigateBack,
+        visible = visible,
+        overrides = overrides,
+        stack = StackComponent(
+            components = listOf(TextComponent(text = textKey, color = textColor)),
+        ),
+    )
+
+    /**
+     * A button with no visibility configuration renders, which is the pre-existing default.
+     */
+    @Test
+    fun `Button visible by default`(): Unit = with(composeTestRule) {
+        val button = buttonComponent()
+        val offering = buttonOffering("btn_default", button)
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val style = factory.create(button).getOrThrow().componentStyle as ButtonComponentStyle
+
+        setContent {
+            ButtonComponentView(style = style, state = state, onClick = { })
+        }
+
+        onNodeWithText(textValue).assertIsDisplayed()
+    }
+
+    /**
+     * The button's own `visible = false` hides it, matching purchases-ios 5.74.0.
+     */
+    @Test
+    fun `Button hidden when visible is false`(): Unit = with(composeTestRule) {
+        val button = buttonComponent(visible = false)
+        val offering = buttonOffering("btn_visible_false", button)
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val style = factory.create(button).getOrThrow().componentStyle as ButtonComponentStyle
+
+        setContent {
+            ButtonComponentView(style = style, state = state, onClick = { })
+        }
+
+        onNodeWithText(textValue).assertDoesNotExist()
+    }
+
+    /**
+     * This is the case reported in purchases-android#4214: a rule on the button itself, keyed on a
+     * custom variable, hides it. Before button-level overrides existed the override was dropped on
+     * deserialization and the button stayed on screen.
+     */
+    @Test
+    fun `Button hidden by matching variable override`(): Unit = with(composeTestRule) {
+        val button = buttonComponent(
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(
+                        ComponentOverride.Condition.Variable(
+                            operator = ComponentOverride.EqualityOperator.EQUALS,
+                            variable = "hard_paywall",
+                            value = JsonPrimitive("true"),
+                        ),
+                    ),
+                    properties = PartialButtonComponent(visible = false),
+                ),
+            ),
+        )
+        val offering = buttonOffering("btn_override_match", button)
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(
+            validated,
+            customVariables = mapOf("hard_paywall" to CustomVariableValue.String("true")),
+        )
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val style = factory.create(button).getOrThrow().componentStyle as ButtonComponentStyle
+
+        setContent {
+            ButtonComponentView(style = style, state = state, onClick = { })
+        }
+
+        onNodeWithText(textValue).assertDoesNotExist()
+    }
+
+    /**
+     * The same override must leave the button alone when its condition does not match, so a hide
+     * rule cannot hide the button unconditionally.
+     */
+    @Test
+    fun `Button still visible when variable override does not match`(): Unit = with(composeTestRule) {
+        val button = buttonComponent(
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(
+                        ComponentOverride.Condition.Variable(
+                            operator = ComponentOverride.EqualityOperator.EQUALS,
+                            variable = "hard_paywall",
+                            value = JsonPrimitive("true"),
+                        ),
+                    ),
+                    properties = PartialButtonComponent(visible = false),
+                ),
+            ),
+        )
+        val offering = buttonOffering("btn_override_no_match", button)
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(
+            validated,
+            customVariables = mapOf("hard_paywall" to CustomVariableValue.String("false")),
+        )
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val style = factory.create(button).getOrThrow().componentStyle as ButtonComponentStyle
+
+        setContent {
+            ButtonComponentView(style = style, state = state, onClick = { })
+        }
+
+        onNodeWithText(textValue).assertIsDisplayed()
+    }
 
     // endregion
 
