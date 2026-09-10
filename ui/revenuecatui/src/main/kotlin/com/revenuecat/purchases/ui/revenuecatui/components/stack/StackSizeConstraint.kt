@@ -14,3 +14,6 @@ internal val SizeConstraint.allowsFlexDistribution: Boolean
 
 internal fun SizeConstraint.requiresFitMinimumLayout(distribution: FlexDistribution): Boolean =
     hasPositiveFitMinimum && distribution.usesAllAvailableSpace
+
+internal fun SizeConstraint.shouldFitMainAxis(hasFillChildren: Boolean): Boolean =
+    this is Fit && (!hasFillChildren || hasPositiveFitMinimum)

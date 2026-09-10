@@ -73,5 +73,5 @@ private fun Fill.minimumPx(density: Density): Int = min?.toPx(density) ?: 0
 private fun Fill.maximumPx(density: Density): Int =
     maxOf(max?.toPx(density) ?: Constraints.Infinity, minimumPx(density))
 
-private fun UInt.toPx(density: Density): Int =
+internal fun UInt.toPx(density: Density): Int =
     (toDouble() * density.density).roundToInt().coerceAtLeast(0)

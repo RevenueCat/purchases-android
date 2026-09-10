@@ -35,15 +35,18 @@ internal fun HorizontalStack(
     // whether a Fill child is constrained. Any Fill child therefore goes through ConstrainedFillLayout, which reads
     // the resolved size from parent data at measure time.
     val hasAnyFillWidth = items.any { it.size.width is Fill }
+    val hasAnyFillHeight = items.any { it.size.height is Fill }
     val fitMinimumUsesFlexDistribution = size.width.requiresFitMinimumLayout(dimension.distribution)
-    if (!mainAxisUnbounded && (hasAnyFillWidth || fitMinimumUsesFlexDistribution)) {
+    val needsConstrainedLayout = hasAnyFillHeight ||
+        (!mainAxisUnbounded && (hasAnyFillWidth || fitMinimumUsesFlexDistribution))
+    if (needsConstrainedLayout) {
         ConstrainedFillRow(
             items = items,
             config = ConstrainedFillLayout.Config.Horizontal(
                 distribution = dimension.distribution,
                 arrangement = dimension.distribution.toHorizontalArrangement(spacing),
                 alignment = dimension.alignment.toAlignment(),
-                fitMainAxis = size.width.hasPositiveFitMinimum,
+                fitMainAxis = size.width.shouldFitMainAxis(hasAnyFillWidth),
             ),
             spacing = spacing,
             modifier = modifier,

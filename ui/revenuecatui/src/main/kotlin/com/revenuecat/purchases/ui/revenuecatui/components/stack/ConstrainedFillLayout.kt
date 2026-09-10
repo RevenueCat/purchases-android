@@ -7,14 +7,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.layout.MeasureResult
 import androidx.compose.ui.layout.MeasureScope
+import androidx.compose.ui.layout.MultiMeasureLayout
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
+import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.ComponentSizeParentDataModifier
 
@@ -44,74 +45,95 @@ internal object ConstrainedFillLayout {
     }
 
     /**
-     * Every child is expected to carry a [ComponentSizeParentDataModifier] describing its resolved main-axis size.
+     * Every child is expected to carry a [ComponentSizeParentDataModifier] describing its resolved size.
      * Children are matched to their constraints through that parent data rather than by index, so children that are
      * not composed (e.g. `visible = false`) do not shift the constraints of their siblings.
      */
     @Composable
+    @Suppress("DEPRECATION")
     operator fun invoke(
         config: Config,
         spacing: Dp,
         modifier: Modifier = Modifier,
         content: @Composable () -> Unit,
     ) {
-        Layout(modifier = modifier, content = content) { measurables, constraints ->
-            val fillConstraints = measurables.resolvedFillConstraints(config.orientation)
-            val spacingPx = spacing.roundToPx()
-            val totalSpacing = spacingPx * (measurables.size - 1).coerceAtLeast(0)
-
-            if (constraints.isFullyUnbounded(config.orientation)) {
-                val unbounded = constraints.forNonFillChild(consumed = 0, config.orientation)
-                val measured = measurables.map { it.measure(unbounded) }
-                return@Layout layoutAndPlace(
-                    placeables = measured,
-                    mainAxisSize = measured.sumOf { it.mainAxisSize(config.orientation) } + totalSpacing,
-                    constraints = constraints,
-                    config = config,
-                    spacing = spacingPx,
-                )
-            }
-
-            val placeables = arrayOfNulls<Placeable>(measurables.size)
-            measureNonFillChildren(measurables, fillConstraints, placeables, constraints, config, spacingPx)
-            val nonFillSize = placeables.filterNotNull().sumOf { it.mainAxisSize(config.orientation) }
-
-            val targetMainAxisSize = if (config.fitMainAxis) {
-                val minimumFillSize = allocateConstrainedFillSpace(
-                    availableSpace = 0,
-                    constraints = fillConstraints,
-                    density = this,
-                ).sum()
-                (nonFillSize + minimumFillSize + totalSpacing).coerceIn(
-                    constraints.mainAxisMin(config.orientation),
-                    constraints.mainAxisMax(config.orientation),
-                )
-            } else {
-                constraints.targetMainAxisSize(config.orientation)
-            }
-            val availableForFill = (targetMainAxisSize - nonFillSize - totalSpacing).coerceAtLeast(0)
-            val fillSizes = allocateConstrainedFillSpace(availableForFill, fillConstraints, this)
-            measurables.forEachIndexed { index, measurable ->
-                if (fillConstraints[index] != null) {
-                    placeables[index] = measurable.measure(
-                        constraints.withExactMainAxisSize(fillSizes[index], config.orientation),
-                    )
-                }
-            }
-
-            layoutAndPlace(
-                placeables = placeables.requireNoNulls().asList(),
-                mainAxisSize = targetMainAxisSize,
-                constraints = constraints,
-                config = config,
-                spacing = spacingPx,
-            )
+        MultiMeasureLayout(modifier = modifier, content = content) { measurables, constraints ->
+            measure(measurables, constraints, config, spacingPx = spacing.roundToPx())
         }
     }
 
-    private fun List<Measurable>.resolvedFillConstraints(orientation: Orientation): List<Fill?> = map { measurable ->
-        val size = (measurable.parentData as? ComponentSizeParentDataModifier)?.size
-        (if (orientation == Orientation.Horizontal) size?.width else size?.height) as? Fill
+    private fun MeasureScope.measure(
+        measurables: List<Measurable>,
+        constraints: Constraints,
+        config: Config,
+        spacingPx: Int,
+    ): MeasureResult {
+        val orientation = config.orientation
+        val resolvedSizes = measurables.map { (it.parentData as? ComponentSizeParentDataModifier)?.size }
+        val fillConstraints = resolvedSizes.map { it?.mainAxisConstraint(orientation) as? Fill }
+        val totalSpacing = spacingPx * (measurables.size - 1).coerceAtLeast(0)
+
+        val placeables: Array<Placeable>
+        val mainAxisSize: Int
+        if (constraints.isFullyUnbounded(orientation)) {
+            placeables = Array(measurables.size) { index ->
+                measurables[index].measure(constraints.forNonFillChild(consumed = 0, orientation))
+            }
+            mainAxisSize = placeables.sumOf { it.mainAxisSize(orientation) } + totalSpacing
+        } else {
+            val measured = arrayOfNulls<Placeable>(measurables.size)
+            measureNonFillChildren(measurables, fillConstraints, measured, constraints, config, spacingPx)
+            val nonFillSize = measured.filterNotNull().sumOf { it.mainAxisSize(orientation) }
+            mainAxisSize = targetMainAxisSize(config, constraints, fillConstraints, nonFillSize + totalSpacing)
+            val availableForFill = (mainAxisSize - nonFillSize - totalSpacing).coerceAtLeast(0)
+            val fillSizes = allocateConstrainedFillSpace(availableForFill, fillConstraints, density = this)
+            measurables.forEachIndexed { index, measurable ->
+                if (fillConstraints[index] != null) {
+                    measured[index] = measurable.measure(
+                        constraints.withExactMainAxisSize(fillSizes[index], orientation),
+                    )
+                }
+            }
+            placeables = measured.requireNoNulls()
+        }
+
+        remeasureCrossAxisFillChildren(
+            measurables = measurables,
+            resolvedSizes = resolvedSizes,
+            placeables = placeables,
+            constraints = constraints,
+            orientation = orientation,
+        )
+        return layoutAndPlace(
+            placeables = placeables.asList(),
+            mainAxisSize = mainAxisSize,
+            constraints = constraints,
+            config = config,
+            spacing = spacingPx,
+        )
+    }
+
+    /**
+     * A Fit stack with a positive minimum only grows to hug its content (with Fill children at their minimums); any
+     * other stack takes all the space it is offered.
+     */
+    private fun MeasureScope.targetMainAxisSize(
+        config: Config,
+        constraints: Constraints,
+        fillConstraints: List<Fill?>,
+        contentSize: Int,
+    ): Int {
+        val orientation = config.orientation
+        if (!config.fitMainAxis) {
+            return constraints.mainAxisMax(orientation)
+                .takeUnless { it == Constraints.Infinity }
+                ?: constraints.mainAxisMin(orientation)
+        }
+        val minimumFillSize = allocateConstrainedFillSpace(availableSpace = 0, fillConstraints, density = this).sum()
+        return (contentSize + minimumFillSize).coerceIn(
+            constraints.mainAxisMin(orientation),
+            constraints.mainAxisMax(orientation),
+        )
     }
 
     /**
@@ -140,19 +162,46 @@ internal object ConstrainedFillLayout {
             nonFillCount++
         }
     }
+
+    /**
+     * Under an unbounded cross axis (e.g. a Fit row inside the root vertical scroll) a cross-axis Fill child has
+     * nothing to fill and collapses to its minimum. Flexbox instead stretches it to the tallest sibling, so derive
+     * the stack's cross-axis size from the non-Fill siblings and remeasure the Fill children to exactly that.
+     *
+     * A bounded cross axis is deliberately left alone: there the Fill child already resolved against the parent's
+     * limit in `Modifier.size`, which is the behavior existing paywalls were built against.
+     */
+    private fun MeasureScope.remeasureCrossAxisFillChildren(
+        measurables: List<Measurable>,
+        resolvedSizes: List<Size?>,
+        placeables: Array<Placeable>,
+        constraints: Constraints,
+        orientation: Orientation,
+    ) {
+        if (constraints.crossAxisMax(orientation) != Constraints.Infinity) return
+
+        val crossAxisFills = resolvedSizes.map { it?.crossAxisConstraint(orientation) as? Fill }
+        if (crossAxisFills.all { it == null }) return
+
+        val nonFillCrossAxisSize = placeables.indices
+            .filter { crossAxisFills[it] == null }
+            .maxOfOrNull { placeables[it].crossAxisSize(orientation) }
+            ?: 0
+        val fillMinimum = crossAxisFills.maxOf { it?.min?.toPx(density = this) ?: 0 }
+        val targetCrossAxisSize = maxOf(constraints.crossAxisMin(orientation), nonFillCrossAxisSize, fillMinimum)
+
+        crossAxisFills.forEachIndexed { index, fill ->
+            if (fill == null) return@forEachIndexed
+            placeables[index] = measurables[index].measure(
+                Constraints.exact(
+                    mainAxisSize = placeables[index].mainAxisSize(orientation),
+                    crossAxisSize = targetCrossAxisSize,
+                    orientation = orientation,
+                ),
+            )
+        }
+    }
 }
-
-private fun Constraints.isFullyUnbounded(orientation: Orientation): Boolean =
-    mainAxisMax(orientation) == Constraints.Infinity && mainAxisMin(orientation) == 0
-
-private fun Constraints.targetMainAxisSize(orientation: Orientation): Int =
-    mainAxisMax(orientation).takeUnless { it == Constraints.Infinity } ?: mainAxisMin(orientation)
-
-private fun Constraints.mainAxisMin(orientation: Orientation): Int =
-    if (orientation == Orientation.Horizontal) minWidth else minHeight
-
-private fun Constraints.mainAxisMax(orientation: Orientation): Int =
-    if (orientation == Orientation.Horizontal) maxWidth else maxHeight
 
 /**
  * Like Row/Column, non-Fill children are measured without minimums and are only offered the main-axis space that
@@ -176,8 +225,15 @@ private fun Constraints.withExactMainAxisSize(size: Int, orientation: Orientatio
         copy(minWidth = 0, minHeight = size, maxHeight = size)
     }
 
-private fun Placeable.mainAxisSize(orientation: Orientation): Int =
-    if (orientation == Orientation.Horizontal) width else height
+private fun Constraints.Companion.exact(
+    mainAxisSize: Int,
+    crossAxisSize: Int,
+    orientation: Orientation,
+): Constraints = if (orientation == Orientation.Horizontal) {
+    fixed(width = mainAxisSize, height = crossAxisSize)
+} else {
+    fixed(width = crossAxisSize, height = mainAxisSize)
+}
 
 private fun MeasureScope.layoutAndPlace(
     placeables: List<Placeable>,
@@ -191,9 +247,7 @@ private fun MeasureScope.layoutAndPlace(
         constraints.mainAxisMin(orientation),
         constraints.mainAxisMax(orientation),
     )
-    val resolvedCrossAxisSize = placeables.maxOfOrNull {
-        if (orientation == Orientation.Horizontal) it.height else it.width
-    }
+    val resolvedCrossAxisSize = placeables.maxOfOrNull { it.crossAxisSize(orientation) }
         ?.coerceIn(constraints.crossAxisMin(orientation), constraints.crossAxisMax(orientation))
         ?: constraints.crossAxisMin(orientation)
     val sizes = placeables.map { it.mainAxisSize(orientation) }.toIntArray()
@@ -220,9 +274,3 @@ private fun MeasureScope.layoutAndPlace(
         }
     }
 }
-
-private fun Constraints.crossAxisMin(orientation: Orientation): Int =
-    if (orientation == Orientation.Horizontal) minHeight else minWidth
-
-private fun Constraints.crossAxisMax(orientation: Orientation): Int =
-    if (orientation == Orientation.Horizontal) maxHeight else maxWidth
