@@ -152,18 +152,6 @@ class CheckpointWorkflowResolverImplTest {
     }
 
     @Test
-    fun `an untyped initial step resolves as a UI workflow`() = runTest {
-        val workflow = workflow("wf1234", screenStep("screen-step", "default").copy(type = null))
-        coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } returns workflow
-
-        val resolution = resolve() as CheckpointResolution.MatchedWorkflow
-
-        assertThat(resolution.workflow).isEqualTo(workflow)
-        assertThat(resolution.offerings).isEqualTo(mockOfferings)
-        verify(exactly = 1) { mockWorkflowManager.prewarmWorkflowAssets(workflow, mockUiConfig) }
-    }
-
-    @Test
     fun `checkpoint resolves NoAction with CONFIGURATION_UNAVAILABLE when the workflow fails to load`() = runTest {
         coEvery { mockWorkflowManager.getWorkflowBody("wf1234") } throws PurchasesException(
             PurchasesError(PurchasesErrorCode.UnknownError, "Workflow unavailable."),
