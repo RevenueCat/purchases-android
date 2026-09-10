@@ -373,6 +373,27 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     }
 
     @Test
+    fun `paywallPackages lists packages outside tabs first, then by tab, without duplicates`() {
+        val state = paywallState(
+            packagesOutsideTabs = listOf(packageInfo(TestData.Packages.annual, isSelectedByDefault = true)),
+            packagesByTab = mapOf(
+                1 to listOf(packageInfo(TestData.Packages.weekly, isSelectedByDefault = false)),
+                0 to listOf(
+                    packageInfo(TestData.Packages.monthly, isSelectedByDefault = false),
+                    packageInfo(TestData.Packages.annual, isSelectedByDefault = false),
+                ),
+            ),
+            initialSelectedTabIndex = 0,
+        )
+
+        assertThat(state.paywallPackages).containsExactly(
+            TestData.Packages.annual,
+            TestData.Packages.monthly,
+            TestData.Packages.weekly,
+        )
+    }
+
+    @Test
     fun `Should not select a hidden package when switching to a tab with nothing visible`() {
         val state = paywallState(
             packagesOutsideTabs = emptyList(),
