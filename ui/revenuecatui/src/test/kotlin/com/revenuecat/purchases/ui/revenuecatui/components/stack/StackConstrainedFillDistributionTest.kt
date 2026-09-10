@@ -422,6 +422,49 @@ class StackConstrainedFillDistributionTest {
             .assertPixelColorEquals(Color.Red, x, y, width = 1, height = 1)
     }
 
+    /**
+     * Regression: the cross-axis stretch measures the row's intrinsic height, which runs every child's layout
+     * modifiers with unbounded constraints. A nested Fit column with Fill-height children tracks whether its main axis
+     * is unbounded in a state; if that tracking ran during the intrinsic pass it would flip the state on every frame
+     * and never settle.
+     */
+    @Test
+    fun `nested stack tracking its unbounded main axis inside a stretching row settles`() {
+        val nestedColumn = StackComponent(
+            components = listOf(
+                coloredBlock(size = Size(width = Fill(), height = Fill()), color = Color.Green),
+                coloredBlock(size = Size(width = Fill(min = 120u, max = 240u), height = Fill(min = 48u, max = 64u)), color = Color.Gray),
+            ),
+            dimension = Dimension.Vertical(HorizontalAlignment.CENTER, FlexDistribution.START),
+            size = Size(width = Fill(min = 120u, max = 240u), height = Fit(min = 120u, max = 160u)),
+        )
+        val row = StackComponent(
+            components = listOf(
+                coloredBlock(size = Size(width = Fit(min = 64u, max = 96u), height = Fit(min = 120u, max = 140u)), color = Color.Black),
+                nestedColumn,
+                coloredBlock(size = Size(width = Fill(max = 40u), height = Fill(max = 120u)), color = Color.Red),
+            ),
+            dimension = Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.START),
+            size = Size(width = Fill(), height = Fit()),
+        )
+        val style = styleFactory.create(row).getOrThrow().componentStyle as StackComponentStyle
+
+        composeTestRule.setContent {
+            Box(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                StackComponentView(
+                    style = style,
+                    state = FakePaywallState(components = emptyList()),
+                    clickHandler = {},
+                    modifier = Modifier.testTag("stack"),
+                )
+            }
+        }
+
+        // waitForIdle throws if composition never settles.
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("stack").assertExists()
+    }
+
     private fun coloredBlock(
         size: Size,
         color: Color,
