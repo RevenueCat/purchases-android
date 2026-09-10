@@ -459,6 +459,20 @@ class AppConfigTest {
         )
 
         assertThat(x).isNotEqualTo(y)
+
+        y = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
+            iamEnabled = true,
+        )
+
+        assertThat(x).isNotEqualTo(y)
     }
 
     @Test
@@ -516,8 +530,44 @@ class AppConfigTest {
                 "finishTransactions=true, " +
                 "showInAppMessagesAutomatically=false, " +
                 "apiKeyValidationResult=VALID, " +
+                "iamEnabled=false, " +
                 "baseURL=https://api.revenuecat.com/)")
     }
+
+    // region IAM login
+
+    @Test
+    fun `iamEnabled defaults to false`() {
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
+        )
+        assertThat(appConfig.iamEnabled).isFalse
+    }
+
+    @Test
+    fun `iamEnabled is set from constructor`() {
+        val appConfig = AppConfig(
+            context = mockk(relaxed = true),
+            purchasesAreCompletedBy = REVENUECAT,
+            showInAppMessagesAutomatically = false,
+            platformInfo = PlatformInfo(flavor = "native", version = "3.2.0"),
+            proxyURL = null,
+            store = Store.PLAY_STORE,
+            isDebugBuild = false,
+            apiKeyValidationResult = APIKeyValidator.ValidationResult.VALID,
+            iamEnabled = true,
+        )
+        assertThat(appConfig.iamEnabled).isTrue
+    }
+
+    // endregion IAM login
 
     // region Fallback API host
 

@@ -1,6 +1,9 @@
 package com.revenuecat.purchases.common.security
 
+import android.app.Application
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
@@ -340,6 +343,32 @@ class EncryptedItemStorageTest {
         storage.modifyItem("key", byteArrayOf(3), SecureItemAttributes(includedInBackup = false))
         assertThat(noBackupOnly().readItem("key")).isEqualTo(byteArrayOf(3))
         assertThat(backupOnly().readItem("key")).isNull()
+    }
+
+    // endregion
+
+    // region create() file layout
+
+    // Exercises the real create() factory (not the temp-file secondary constructor the rest of this
+    // suite uses) to lock in where it actually places files on disk.
+    @Test
+    fun `create nests backup and no-backup files under a RevenueCat subfolder`() = runTest {
+        val context = ApplicationProvider.getApplicationContext<Application>()
+
+        val created = EncryptedItemStorage.create(context, "test-password".toCharArray())
+        created.saveItem("backup-item", byteArrayOf(1))
+        created.saveItem("no-backup-item", byteArrayOf(2), SecureItemAttributes(includedInBackup = false))
+
+        val backupDir = File(context.filesDir, "RevenueCat")
+        val noBackupDir = File(context.noBackupFilesDir, "RevenueCat")
+        assertThat(backupDir).isDirectory()
+        assertThat(noBackupDir).isDirectory()
+        assertThat(backupDir.listFiles().orEmpty()).isNotEmpty()
+        assertThat(noBackupDir.listFiles().orEmpty()).isNotEmpty()
+
+        // Nothing should land directly at the root of filesDir/noBackupFilesDir.
+        assertThat(File(context.filesDir, "rc_secure_backup.json")).doesNotExist()
+        assertThat(File(context.noBackupFilesDir, "rc_secure_no_backup.json")).doesNotExist()
     }
 
     // endregion

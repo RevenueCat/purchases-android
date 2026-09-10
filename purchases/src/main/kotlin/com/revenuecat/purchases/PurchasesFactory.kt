@@ -134,9 +134,10 @@ internal class PurchasesFactory(
                 finalStore,
                 isDebugBuild(),
                 apiKeyValidationResult,
-                dangerousSettings,
-                runningIntegrationTests,
-                forceSigningError,
+                iamEnabled = iamEnabled,
+                dangerousSettings = dangerousSettings,
+                runningTests = runningIntegrationTests,
+                forceSigningErrors = forceSigningError,
                 baseUrlString = baseUrlString,
             )
 
