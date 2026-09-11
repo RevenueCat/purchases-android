@@ -161,14 +161,6 @@ Publish RCT tester to the specified track on Google Play
 
 Run backend integration tests
 
-### android update_golden_requests_backend_integration_tests
-
-```sh
-[bundle exec] fastlane android update_golden_requests_backend_integration_tests
-```
-
-Run backend integration tests and create PR if golden files change
-
 ### android run_purchases_integration_tests
 
 ```sh
@@ -294,6 +286,14 @@ Records Paywall template screenshots and pushes them to the repository at target
 ```
 
 Records Paparazzi screenshots for a given gradle_module
+
+### android generate_baseline_profiles
+
+```sh
+[bundle exec] fastlane android generate_baseline_profiles
+```
+
+Generate baseline profiles using Gradle Managed Devices and create a PR with the updated profiles
 
 ----
 
