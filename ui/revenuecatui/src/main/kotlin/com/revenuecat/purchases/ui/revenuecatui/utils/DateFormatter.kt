@@ -2,8 +2,9 @@ package com.revenuecat.purchases.ui.revenuecatui.utils
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import java.text.SimpleDateFormat
+import java.text.DateFormat
 import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Date
 import java.util.Locale
 
@@ -25,12 +26,12 @@ internal class DefaultDateFormatter : DateFormatter {
     @RequiresApi(Build.VERSION_CODES.O)
     private fun formatUsingDateTimeFormatter(date: Date, locale: Locale): String {
         val localDate = date.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate()
-        val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy", locale)
+        val formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
         return localDate.format(formatter)
     }
 
     private fun formatUsingSimpleDateFormat(date: Date, locale: Locale): String {
-        val formatter = SimpleDateFormat("dd MMM yyyy", locale)
+        val formatter = DateFormat.getDateInstance(DateFormat.MEDIUM, locale)
         return formatter.format(date)
     }
 }
