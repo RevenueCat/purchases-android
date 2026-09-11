@@ -1,5 +1,8 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.identity
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.models.toHexString
 import java.security.MessageDigest
 
