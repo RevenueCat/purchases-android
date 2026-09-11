@@ -40,6 +40,9 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
+import com.revenuecat.purchases.paywalls.components.common.StateUpdateValue
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FitMode
@@ -2068,7 +2071,11 @@ class VisibilityConditionTests {
 
     // region Button visibility
 
-    private fun buttonOffering(id: String, button: ButtonComponent): Offering {
+    private fun buttonOffering(
+        id: String,
+        button: ButtonComponent,
+        stateDeclarations: Map<String, StateDeclaration> = emptyMap(),
+    ): Offering {
         val data = PaywallComponentsData(
             id = id,
             templateName = "components",
@@ -2082,6 +2089,7 @@ class VisibilityConditionTests {
             ),
             componentsLocalizations = localizations,
             defaultLocaleIdentifier = localeId,
+            stateDeclarations = stateDeclarations,
         )
         return Offering(
             identifier = id,
@@ -2380,6 +2388,83 @@ class VisibilityConditionTests {
 
         setContent {
             PackageComponentView(style = annualStyle, state = state, clickHandler = { })
+        }
+
+        onNodeWithText(textValue).assertIsDisplayed()
+    }
+
+    private fun stateRuleButton(key: String) = buttonComponent(
+        overrides = listOf(
+            ComponentOverride(
+                conditions = listOf(
+                    ComponentOverride.Condition.State(
+                        operator = ComponentOverride.EqualityOperator.EQUALS,
+                        name = key,
+                        value = JsonPrimitive(true),
+                    ),
+                ),
+                properties = PartialButtonComponent(visible = false),
+            ),
+        ),
+    )
+
+    private fun booleanDeclaration(default: Boolean) =
+        StateDeclaration(type = StateDeclaration.ValueType.BOOLEAN, defaultValue = JsonPrimitive(default))
+
+    /**
+     * A button is the component that writes paywall state via `state_updates`, so "hide this button
+     * once the sheet it opened is open" is an expected rule.
+     */
+    @Test
+    fun `Button hidden when a state rule starts matching`(): Unit = with(composeTestRule) {
+        val key = "planComparisonOpen"
+        val button = stateRuleButton(key)
+        val offering = buttonOffering("btn_state_rule", button, mapOf(key to booleanDeclaration(default = false)))
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val style = factory.create(button).getOrThrow().componentStyle as ButtonComponentStyle
+
+        setContent {
+            ButtonComponentView(style = style, state = state, onClick = { })
+        }
+
+        onNodeWithText(textValue).assertIsDisplayed()
+
+        state.stateStore.applyUpdates(listOf(StateUpdate.Set(key, StateUpdateValue.Literal(JsonPrimitive(true)))))
+        waitForIdle()
+
+        onNodeWithText(textValue).assertDoesNotExist()
+    }
+
+    @Test
+    fun `Button hidden when a state rule matches the declared default`(): Unit = with(composeTestRule) {
+        val key = "planComparisonOpen"
+        val button = stateRuleButton(key)
+        val offering = buttonOffering("btn_state_default", button, mapOf(key to booleanDeclaration(default = true)))
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val style = factory.create(button).getOrThrow().componentStyle as ButtonComponentStyle
+
+        setContent {
+            ButtonComponentView(style = style, state = state, onClick = { })
+        }
+
+        onNodeWithText(textValue).assertDoesNotExist()
+    }
+
+    @Test
+    fun `Button still visible when the state key was never declared`(): Unit = with(composeTestRule) {
+        val button = stateRuleButton("neverDeclared")
+        val offering = buttonOffering("btn_state_undeclared", button)
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val style = factory.create(button).getOrThrow().componentStyle as ButtonComponentStyle
+
+        setContent {
+            ButtonComponentView(style = style, state = state, onClick = { })
         }
 
         onNodeWithText(textValue).assertIsDisplayed()
