@@ -113,18 +113,13 @@ fun UseCasesScreen(
             ListItem(
                 headlineContent = { Text(text = useCase.title) },
                 supportingContent = { Text(text = useCase.description) },
-                modifier = Modifier.clickable(enabled = !state.running) {
-                    viewModel.hit(useCase.identifier)
-                },
+                modifier = Modifier.clickable { viewModel.hit(useCase.identifier) },
             )
             HorizontalDivider()
         }
         item {
             Text(
-                text = when {
-                    state.running -> "Running the checkpoint…"
-                    else -> state.message ?: "Tap one of the outcomes above to run it here."
-                },
+                text = state.message ?: "Tap one of the outcomes above to run it here.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp),

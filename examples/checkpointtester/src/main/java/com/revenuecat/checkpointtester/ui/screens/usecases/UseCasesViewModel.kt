@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.update
 class UseCasesViewModel : ViewModel() {
 
     data class UiState(
-        val running: Boolean = false,
         val message: String? = null,
     )
 
@@ -27,10 +26,9 @@ class UseCasesViewModel : ViewModel() {
 
     @OptIn(InternalRevenueCatAPI::class)
     fun hit(identifier: String) {
-        if (_state.value.running) return
-        _state.update { it.copy(running = true, message = null) }
+        _state.update { it.copy(message = null) }
         Purchases.sharedInstance.checkpoint(identifier, PaywallPresenters.params()) { result ->
-            _state.update { it.copy(running = false, message = result.summary()) }
+            _state.update { it.copy(message = result.summary()) }
         }
     }
 }

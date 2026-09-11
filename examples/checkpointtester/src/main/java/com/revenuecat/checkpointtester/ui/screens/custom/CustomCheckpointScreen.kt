@@ -2,14 +2,11 @@ package com.revenuecat.checkpointtester.ui.screens.custom
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -19,7 +16,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
@@ -47,13 +43,13 @@ fun CustomCheckpointScreen(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        HitCheckpointSection(enabled = state.runningFor == null, onHit = viewModel::hit)
+        HitCheckpointSection(onHit = viewModel::hit)
         ResultCard(state)
     }
 }
 
 @Composable
-private fun HitCheckpointSection(enabled: Boolean, onHit: (String) -> Unit) {
+private fun HitCheckpointSection(onHit: (String) -> Unit) {
     var identifier by rememberSaveable { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
@@ -65,7 +61,7 @@ private fun HitCheckpointSection(enabled: Boolean, onHit: (String) -> Unit) {
         )
         Button(
             onClick = { onHit(identifier) },
-            enabled = enabled && identifier.isNotBlank(),
+            enabled = identifier.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(text = "Run checkpoint")
@@ -83,7 +79,6 @@ private fun ResultCard(state: UiState) {
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             when {
-                state.runningFor != null -> WaitingRow(state.runningFor)
                 state.title == null -> Text(
                     text = "Run a checkpoint to see its result here.",
                     style = MaterialTheme.typography.bodyMedium,
@@ -111,17 +106,6 @@ private fun ResultCard(state: UiState) {
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun WaitingRow(identifier: String) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-        Text(text = "Waiting for '$identifier'…", style = MaterialTheme.typography.bodyMedium)
     }
 }
 

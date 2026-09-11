@@ -46,8 +46,7 @@ fun HardPaywallScreen(
         } else {
             LockedContent(
                 attempts = state.attempts,
-                message = if (state.running) "Presenting the paywall…" else state.message,
-                canRetry = !state.running,
+                message = state.message,
                 onRetry = viewModel::hit,
             )
         }
@@ -78,7 +77,7 @@ private fun PremiumContent(message: String?) {
 }
 
 @Composable
-private fun LockedContent(attempts: Int, message: String?, canRetry: Boolean, onRetry: () -> Unit) {
+private fun LockedContent(attempts: Int, message: String?, onRetry: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
             modifier = Modifier
@@ -96,7 +95,7 @@ private fun LockedContent(attempts: Int, message: String?, canRetry: Boolean, on
                 style = MaterialTheme.typography.bodyMedium,
             )
             message?.let { Text(text = it, style = MaterialTheme.typography.bodyMedium) }
-            Button(onClick = onRetry, enabled = canRetry) {
+            Button(onClick = onRetry) {
                 Text(text = "Try again")
             }
         }

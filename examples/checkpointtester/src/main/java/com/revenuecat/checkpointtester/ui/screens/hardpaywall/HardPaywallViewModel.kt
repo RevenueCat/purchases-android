@@ -13,12 +13,12 @@ import kotlinx.coroutines.flow.update
 
 /**
  * Hard paywall: access is granted only when the user obtains an entitlement through the checkpoint. Every other
- * outcome, a dismissal included, leaves the content locked and lets the user try again.
+ * outcome, a dismissal included, leaves the content locked and lets the user try again. Backing out of the flow
+ * never reaches the callback, so nothing here waits on it.
  */
 class HardPaywallViewModel : ViewModel() {
 
     data class UiState(
-        val running: Boolean = false,
         val unlocked: Boolean = false,
         val message: String? = null,
         val attempts: Int = 0,
@@ -33,8 +33,8 @@ class HardPaywallViewModel : ViewModel() {
 
     @OptIn(InternalRevenueCatAPI::class)
     fun hit() {
-        if (_state.value.running || _state.value.unlocked) return
-        _state.update { it.copy(running = true, message = null, attempts = it.attempts + 1) }
+        if (_state.value.unlocked) return
+        _state.update { it.copy(message = null, attempts = it.attempts + 1) }
         Purchases.sharedInstance.checkpoint(
             "hard_paywall",
             PaywallPresenters.params {
@@ -53,10 +53,10 @@ class HardPaywallViewModel : ViewModel() {
     }
 
     private fun unlock(message: String) {
-        _state.update { it.copy(running = false, unlocked = true, message = message) }
+        _state.update { it.copy(unlocked = true, message = message) }
     }
 
     private fun stayLocked(message: String) {
-        _state.update { it.copy(running = false, unlocked = false, message = message) }
+        _state.update { it.copy(unlocked = false, message = message) }
     }
 }

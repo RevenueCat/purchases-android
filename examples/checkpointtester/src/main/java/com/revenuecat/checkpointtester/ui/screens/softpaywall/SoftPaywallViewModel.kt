@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.update
 class SoftPaywallViewModel : ViewModel() {
 
     data class UiState(
-        val running: Boolean = false,
         val upgraded: Boolean = false,
         val message: String? = null,
         val hasRun: Boolean = false,
@@ -33,8 +32,7 @@ class SoftPaywallViewModel : ViewModel() {
 
     @OptIn(InternalRevenueCatAPI::class)
     fun hit() {
-        if (_state.value.running) return
-        _state.update { it.copy(running = true, message = null, hasRun = true) }
+        _state.update { it.copy(message = null, hasRun = true) }
         Purchases.sharedInstance.checkpoint("soft_paywall", PaywallPresenters.params()) { result ->
             if (result != null && result.obtainedEntitlements.isNotEmpty()) {
                 upgraded(result.summary())
@@ -45,11 +43,11 @@ class SoftPaywallViewModel : ViewModel() {
     }
 
     private fun upgraded(message: String) {
-        _state.update { it.copy(running = false, upgraded = true, message = message) }
+        _state.update { it.copy(upgraded = true, message = message) }
     }
 
     private fun free(message: String) {
         // A later dismissal doesn't take away an earlier purchase, so `upgraded` only ever moves forward.
-        _state.update { it.copy(running = false, message = message) }
+        _state.update { it.copy(message = message) }
     }
 }

@@ -28,7 +28,6 @@ class EntitlementGateViewModel : ViewModel() {
         val loading: Boolean = false,
         val activeEntitlements: List<String> = emptyList(),
         val customerInfoError: String? = null,
-        val running: Boolean = false,
         val message: String? = null,
         val checkpointSkipped: Boolean = false,
         val hasRun: Boolean = false,
@@ -43,9 +42,9 @@ class EntitlementGateViewModel : ViewModel() {
 
     @OptIn(InternalRevenueCatAPI::class)
     fun refresh() {
-        if (_state.value.loading || _state.value.running) return
+        if (_state.value.loading) return
         _state.update {
-            it.copy(loading = true, customerInfoError = null, checkpointSkipped = false, hasRun = true)
+            it.copy(loading = true, customerInfoError = null, checkpointSkipped = false, hasRun = true, message = null)
         }
         viewModelScope.launch {
             val customerInfo = try {
@@ -63,9 +62,7 @@ class EntitlementGateViewModel : ViewModel() {
                 return@launch
             }
 
-            _state.update {
-                it.copy(loading = false, activeEntitlements = active, running = true, message = null)
-            }
+            _state.update { it.copy(loading = false, activeEntitlements = active) }
             Purchases.sharedInstance.checkpoint(
                 "entitlement_gate",
                 PaywallPresenters.params { customVariables { "gate" to "entitlement" } },
@@ -73,7 +70,6 @@ class EntitlementGateViewModel : ViewModel() {
                 val granted = result?.obtainedEntitlements.orEmpty().map { it.entitlementInfo.identifier }
                 _state.update {
                     it.copy(
-                        running = false,
                         message = result.summary(),
                         activeEntitlements = (it.activeEntitlements + granted).distinct().sorted(),
                     )
