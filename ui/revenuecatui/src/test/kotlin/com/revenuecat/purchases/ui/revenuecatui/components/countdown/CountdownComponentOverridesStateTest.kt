@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.countdown
 
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
@@ -45,9 +47,11 @@ class CountdownComponentOverridesStateTest {
     private fun state(
         style: CountdownComponentStyle,
         windowSize: WindowWidthSizeClass = WindowWidthSizeClass.COMPACT,
+        windowDpSize: DpSize? = null,
         selectedPackageInfo: PaywallState.Loaded.Components.SelectedPackageInfo? = null,
     ) = CountdownComponentState(
         initialWindowSize = windowSize,
+        initialWindowDpSize = windowDpSize,
         style = style,
         selectedPackageInfoProvider = { selectedPackageInfo },
         selectedTabIndexProvider = { 0 },
@@ -98,5 +102,26 @@ class CountdownComponentOverridesStateTest {
         assertThat(state(style, selectedPackageInfo = null).visible).isFalse()
         // Selected: the override applies.
         assertThat(state(style, selectedPackageInfo = selectedPackageInfo).visible).isTrue()
+    }
+
+    @Test
+    fun `hides a base-visible countdown under a matching window width rule`() {
+        val overrides = listOf(
+            PresentedOverride(
+                conditions = listOf(
+                    ComponentOverride.Condition.WindowWidthRule(
+                        operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                        value = 700.0,
+                    ),
+                ),
+                properties = PresentedCountdownPartial(PartialCountdownComponent(visible = false)),
+            ),
+        )
+        val style = styleWithOverrides(visible = true, overrides = overrides)
+
+        // Unknown bounds never match; narrow bounds don't match; wide bounds hide the countdown.
+        assertThat(state(style, windowDpSize = null).visible).isTrue()
+        assertThat(state(style, windowDpSize = DpSize(390.dp, 844.dp)).visible).isTrue()
+        assertThat(state(style, windowDpSize = DpSize(904.dp, 640.dp)).visible).isFalse()
     }
 }
