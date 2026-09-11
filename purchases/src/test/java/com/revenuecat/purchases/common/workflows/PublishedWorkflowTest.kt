@@ -10,6 +10,8 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import java.net.URL
@@ -84,16 +86,28 @@ class PublishedWorkflowTest {
         singleStepFallbackId = singleStepFallbackId,
     )
 
-    private fun step(id: String, screenId: String, nextStepId: String? = null) = WorkflowStep(
+    private fun step(
+        id: String,
+        screenId: String?,
+        nextStepId: String? = null,
+        offeringIdentifier: String? = null,
+    ) = WorkflowStep(
         id = id,
         type = "screen",
         screenId = screenId,
+        paramValues = offeringIdentifier?.let {
+            mapOf("offering" to JsonObject(mapOf("identifier" to JsonPrimitive(it))))
+        }.orEmpty(),
         triggerActions = nextStepId?.let {
             mapOf("next" to WorkflowTriggerAction.Step(stepId = it))
         } ?: emptyMap(),
     )
 
-    private fun screen(screenId: String, exitOfferingId: String? = null) = WorkflowScreen(
+    private fun screen(
+        screenId: String,
+        exitOfferingId: String? = null,
+        offeringIdentifier: String? = "offering",
+    ) = WorkflowScreen(
         name = screenId,
         templateName = "template_v2",
         revision = 1,
@@ -101,7 +115,7 @@ class PublishedWorkflowTest {
         componentsConfig = componentsConfig,
         componentsLocalizations = mapOf(defaultLocaleId to emptyMap()),
         defaultLocaleIdentifier = defaultLocaleId,
-        offeringIdentifier = "offering",
+        offeringIdentifier = offeringIdentifier,
         exitOffers = exitOfferingId?.let { ExitOffers(dismiss = ExitOffer(offeringId = it)) },
     )
 }

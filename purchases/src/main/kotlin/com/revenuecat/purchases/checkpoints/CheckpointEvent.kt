@@ -74,7 +74,6 @@ internal fun CheckpointResolution.toCheckpointEvent(identifier: String, timestam
             checkpointType = CheckpointType.CUSTOM,
             result = CheckpointHitResult.PRESENT_UI,
             workflowId = workflow.id,
-            offeringId = offering.identifier,
             checkpointRuleId = checkpointRuleId,
             timestamp = timestamp,
         )

@@ -97,6 +97,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -113,6 +114,8 @@ private const val TEST_WAIT_MS = 5_000L
 @RunWith(AndroidJUnit4::class)
 class PaywallViewModelTest {
     private val defaultOffering = TestData.template2Offering
+    private val defaultOfferingParams =
+        mapOf("offering" to JsonObject(mapOf("identifier" to JsonPrimitive(defaultOffering.identifier))))
     private val defaultLocaleIdentifier = LocaleId("en_US")
     private val localizations = nonEmptyMapOf(
         defaultLocaleIdentifier to nonEmptyMapOf(
@@ -1434,8 +1437,10 @@ class PaywallViewModelTest {
                 ),
             ),
             triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
+            paramValues = defaultOfferingParams,
         )
-        val stepTwo = WorkflowStep(id = "step-2", type = "screen", screenId = "screen-1")
+        val stepTwo =
+            WorkflowStep(id = "step-2", type = "screen", screenId = "screen-1", paramValues = defaultOfferingParams)
         val workflow = PublishedWorkflow(
             id = "wfl-test",
             displayName = "Test Workflow",
@@ -1492,7 +1497,8 @@ class PaywallViewModelTest {
             defaultLocaleIdentifier = defaultLocaleIdentifier,
             offeringIdentifier = defaultOffering.identifier,
         )
-        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
+        val stepOne =
+            WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1", paramValues = defaultOfferingParams)
         val workflow = PublishedWorkflow(
             id = "wfl-test",
             displayName = "Test Workflow",
@@ -3141,6 +3147,25 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `closePaywall forwards an error result through dismissRequestWithExitOffering`() {
+        var receivedResult: PaywallResult? = null
+        val model = create(dismissRequestWithExitOffering = { _, result -> receivedResult = result })
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Step misconfigured")
+
+        model.closePaywall(result = PaywallResult.Error(error))
+
+        assertThat((receivedResult as PaywallResult.Error).error).isEqualTo(error)
+    }
+
+    @Test
+    fun `an error state without a purchases error dismisses as an unknown error`() {
+        val result = PaywallState.Error("Something broke").toPaywallResult()
+
+        assertThat(result.error.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        assertThat(result.error.underlyingErrorMessage).isEqualTo("Something broke")
+    }
+
+    @Test
     fun `Custom callback purchase logic success calls dismissRequestWithExitOffering when set`() = runTest {
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.MY_APP
 
@@ -3295,7 +3320,8 @@ class PaywallViewModelTest {
             defaultLocaleIdentifier = defaultLocaleIdentifier,
             offeringIdentifier = defaultOffering.identifier,
         )
-        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
+        val stepOne =
+            WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1", paramValues = defaultOfferingParams)
         val workflow = PublishedWorkflow(
             id = "wfl-test",
             displayName = "Test Workflow",
@@ -3378,7 +3404,8 @@ class PaywallViewModelTest {
             defaultLocaleIdentifier = defaultLocaleIdentifier,
             offeringIdentifier = defaultOffering.identifier,
         )
-        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
+        val stepOne =
+            WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1", paramValues = defaultOfferingParams)
         val workflow = PublishedWorkflow(
             id = workflowId,
             displayName = "Real Workflow",
@@ -3508,7 +3535,14 @@ class PaywallViewModelTest {
             id = "wfl-test",
             displayName = "Test Workflow",
             initialStepId = "step-1",
-            steps = mapOf("step-1" to WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")),
+            steps = mapOf(
+                "step-1" to WorkflowStep(
+                    id = "step-1",
+                    type = "screen",
+                    screenId = "screen-1",
+                    paramValues = defaultOfferingParams,
+                ),
+            ),
             screens = mapOf("screen-1" to workflowScreen),
         )
         coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Found("wfl-test")

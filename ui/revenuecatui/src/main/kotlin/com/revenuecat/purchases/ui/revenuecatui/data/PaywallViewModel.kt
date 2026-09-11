@@ -25,6 +25,7 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
+import com.revenuecat.purchases.common.workflows.WorkflowScreen
 import com.revenuecat.purchases.common.workflows.WorkflowScreenType
 import com.revenuecat.purchases.common.workflows.WorkflowStep
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
@@ -348,10 +349,7 @@ internal class PaywallViewModelImpl(
 
     override fun closePaywall(result: PaywallResult?) {
         Logger.d("Paywalls: Close paywall initiated")
-        trackCurrentWorkflowStepCompleted()
-        if (!workflowCompletedInSession) {
-            trackCurrentWorkflowAbandoned()
-        }
+        trackCurrentWorkflowLeft()
         trackPaywallClose()
         val exitOffering = if (!_purchaseCompleted.value && shouldTriggerExitOfferForCurrentStep) {
             preloadedExitOffering
@@ -890,22 +888,12 @@ internal class PaywallViewModelImpl(
 
     private fun presentInjectedWorkflowIfNeeded(offeringSelection: OfferingSelection): Boolean {
         val injectedWorkflow = options.injectedWorkflow ?: return false
-        val offering = offeringSelection.offering
-        if (offering == null) {
-            Logger.w(
-                "Paywalls: injectedWorkflow set without a concrete Offering (use setOffering); " +
-                    "workflow screens may fail to resolve their packages.",
-            )
-        }
-        val offerings = Offerings(
-            current = offering,
-            all = offering?.let { mapOf(it.identifier to it) } ?: emptyMap(),
-        )
+        val offerings = options.injectedWorkflowOfferings ?: Offerings(current = null, all = emptyMap())
         startWorkflowPresentation(
             injectedWorkflow,
             options.injectedWorkflowUiConfig,
             offerings,
-            offering?.presentedOfferingContext,
+            offeringSelection.offering?.presentedOfferingContext,
         )
         return true
     }
@@ -1221,7 +1209,9 @@ internal class PaywallViewModelImpl(
             }
         }
         if (!shouldApplyState) return
+        // A step without an offering has nothing to attribute paywall events to.
         currentWorkflowStepTracksPaywallEvents = newState is PaywallState.Loaded.Components &&
+            newState.workflowScreen?.hasOffering != false &&
             step.tracksPaywallEvents(workflow)
         val pendingTransition = if (fromStepId != null && navigationDirection != null) {
             WorkflowPendingTransition(
@@ -1232,25 +1222,27 @@ internal class PaywallViewModelImpl(
         } else {
             null
         }
+        if (newState !is PaywallState.Loaded.Components) {
+            failWorkflowPresentation(newState)
+            return
+        }
         // Set workflowState before _state so a recomposition that lands between the two writes
         // sees the workflow branch and the correct step, not the single-page branch.
-        // On error, clear workflowState so the UI falls through to the normal error path rather
-        // than entering workflow mode with a currentStepId absent from stepStates.
-        if (newState !is PaywallState.Loaded.Components) {
-            currentWorkflowStep?.let { currentStep ->
-                trackWorkflowStepCompleted(step = currentStep, toStepId = null)
-            }
-        }
-        _workflowState.value = if (newState is PaywallState.Loaded.Components) {
-            WorkflowPaywallUiState(
-                currentStepId = step.id,
-                stepStates = workflowStepStateCache.toMap(),
-                pendingTransition = pendingTransition,
-            )
-        } else {
-            null
-        }
+        _workflowState.value = WorkflowPaywallUiState(
+            currentStepId = step.id,
+            stepStates = workflowStepStateCache.toMap(),
+            pendingTransition = pendingTransition,
+        )
         _state.value = newState
+    }
+
+    // Clearing workflowState makes the UI fall through to the normal error path instead of entering workflow
+    // mode with a currentStepId absent from stepStates; dismissing that error closes the paywall.
+    private fun failWorkflowPresentation(errorState: PaywallState) {
+        trackCurrentWorkflowLeft()
+        updateExitOfferData(ExitOfferData.Unavailable())
+        _workflowState.value = null
+        _state.value = errorState
     }
 
     override fun onTransitionComplete(transitionId: Int) {
@@ -1260,7 +1252,6 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    @Suppress("ReturnCount")
     private fun computeStateForStep(
         step: WorkflowStep,
         workflow: PublishedWorkflow,
@@ -1269,23 +1260,23 @@ internal class PaywallViewModelImpl(
         presentedOfferingContext: PresentedOfferingContext?,
         stateStore: PaywallStateStore?,
     ): PaywallState {
-        val screenId = step.screenId
-            ?: return PaywallState.Error("Step '${step.id}' has no screen_id in workflow '${workflow.id}'")
-        val screen = workflow.screens[screenId]
-            ?: return PaywallState.Error("Screen '$screenId' not found in workflow '${workflow.id}'")
-        val offeringId = screen.offeringIdentifier
-            ?: return PaywallState.Error("Screen '$screenId' has no offering_id in workflow '${workflow.id}'")
-        val baseOffering = offerings[offeringId]
-            ?: return PaywallState.Error("Offering '$offeringId' not found for screen '$screenId'")
+        val resolved = when (val resolution = resolveStep(step, workflow, offerings)) {
+            is StepResolution.Invalid -> return resolution.toErrorState()
+            is StepResolution.Ready -> resolution
+        }
+        val baseOffering = resolved.offering
 
-        val paywallComponents = WorkflowScreenMapper.toPaywallComponents(screen, screenId, uiConfig)
+        val paywallComponents =
+            WorkflowScreenMapper.toPaywallComponents(resolved.screen, resolved.screenId, uiConfig)
+        // A step without an offering renders its screen against a package-less placeholder: the screen can still
+        // use the workflow's default package as context, but has no packages of its own.
         val offering = Offering(
-            identifier = baseOffering.identifier,
-            serverDescription = baseOffering.serverDescription,
-            metadata = baseOffering.metadata,
-            availablePackages = baseOffering.availablePackages,
+            identifier = baseOffering?.identifier ?: "",
+            serverDescription = baseOffering?.serverDescription ?: "",
+            metadata = baseOffering?.metadata ?: emptyMap(),
+            availablePackages = baseOffering?.availablePackages ?: emptyList(),
             paywallComponents = paywallComponents,
-            webCheckoutURL = baseOffering.webCheckoutURL,
+            webCheckoutURL = baseOffering?.webCheckoutURL,
         )
         val offeringWithContext = presentedOfferingContext?.let { offering.copy(it) } ?: offering
 
@@ -1300,6 +1291,7 @@ internal class PaywallViewModelImpl(
                 stepId = step.id,
                 stepType = step.type,
                 screenType = step.stepScreenType,
+                hasOffering = baseOffering != null,
             ),
         )
     }
@@ -1344,8 +1336,8 @@ internal class PaywallViewModelImpl(
         val workflow = currentWorkflow ?: return
         val offerings = currentWorkflowOfferings ?: return
         val candidate = navigator.peekTriggerStep(componentId, triggerType) ?: return
-        validateStep(candidate, workflow, offerings)?.let { error ->
-            Logger.e("Cannot navigate to step '${candidate.id}': $error")
+        (resolveStep(candidate, workflow, offerings) as? StepResolution.Invalid)?.let { invalid ->
+            failWorkflowPresentation(invalid.toErrorState())
             return
         }
         val fromStep = navigator.currentStep
@@ -1379,9 +1371,9 @@ internal class PaywallViewModelImpl(
         val workflow = currentWorkflow ?: return false
         val offerings = currentWorkflowOfferings ?: return false
         val candidate = navigator.peekBackStep ?: return false
-        validateStep(candidate, workflow, offerings)?.let { error ->
-            Logger.e("Cannot navigate back to step '${candidate.id}': $error")
-            return false
+        (resolveStep(candidate, workflow, offerings) as? StepResolution.Invalid)?.let { invalid ->
+            failWorkflowPresentation(invalid.toErrorState())
+            return true
         }
         val fromStep = navigator.currentStep
         val fromStepId = fromStep?.id
@@ -1502,6 +1494,13 @@ internal class PaywallViewModelImpl(
         }
     }
 
+    private fun trackCurrentWorkflowLeft() {
+        trackCurrentWorkflowStepCompleted()
+        if (!workflowCompletedInSession) {
+            trackCurrentWorkflowAbandoned()
+        }
+    }
+
     /**
      * Fires [WorkflowEvent.Close] for the step the user is currently on, if any. No-op for
      * non-workflow paywalls. This is the workflow-level abandonment signal: unlike paywall_close it is
@@ -1526,17 +1525,26 @@ internal class PaywallViewModelImpl(
     }
 
     @Suppress("ReturnCount")
-    private fun validateStep(step: WorkflowStep, workflow: PublishedWorkflow, offerings: Offerings): String? {
+    private fun resolveStep(step: WorkflowStep, workflow: PublishedWorkflow, offerings: Offerings): StepResolution {
         val screenId = step.screenId
-            ?: return "Step '${step.id}' has no screen_id in workflow '${workflow.id}'"
+            ?: return StepResolution.Invalid("Step '${step.id}' has no screen_id in workflow '${workflow.id}'")
         val screen = workflow.screens[screenId]
-            ?: return "Screen '$screenId' not found in workflow '${workflow.id}'"
-        val offeringId = screen.offeringIdentifier
-            ?: return "Screen '$screenId' has no offering_id in workflow '${workflow.id}'"
-        offerings[offeringId]
-            ?: return "Offering '$offeringId' not found for screen '$screenId'"
-        return null
+            ?: return StepResolution.Invalid("Screen '$screenId' not found in workflow '${workflow.id}'")
+        val offeringId = step.offeringIdentifier
+            ?: return StepResolution.Ready(screenId, screen, offering = null)
+        val offering = offerings[offeringId]
+            ?: return StepResolution.Invalid("Offering '$offeringId' not found for step '${step.id}'")
+        return StepResolution.Ready(screenId, screen, offering)
     }
+
+    private sealed interface StepResolution {
+        /** [offering] is null when the step declares none. */
+        class Ready(val screenId: String, val screen: WorkflowScreen, val offering: Offering?) : StepResolution
+        class Invalid(val reason: String) : StepResolution
+    }
+
+    private fun StepResolution.Invalid.toErrorState(): PaywallState.Error =
+        PaywallState.Error(reason, PurchasesError(PurchasesErrorCode.ConfigurationError, reason))
 
     /**
      * Whether this workflow step reports paywall events (`paywall_impression` / `paywall_close`),
@@ -1584,7 +1592,7 @@ internal class PaywallViewModelImpl(
         stateStore: PaywallStateStore? = null,
         workflowScreen: WorkflowScreenContext? = null,
     ): PaywallState {
-        if (offering.availablePackages.isEmpty()) {
+        if (offering.availablePackages.isEmpty() && workflowScreen?.hasOffering != false) {
             return PaywallState.Error("No packages available")
         }
 
