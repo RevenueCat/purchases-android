@@ -9,7 +9,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -135,11 +134,11 @@ internal fun Rect.isVisibleInViewport(viewportWidth: Int, viewportHeight: Int): 
 }
 
 @Composable
-private fun rememberVideoContentState(
+internal fun rememberVideoContentState(
     videoUrls: VideoUrls,
     repository: FileRepository,
 ): URI {
-    val videoUrl = rememberSaveable(videoUrls.url) {
+    val videoUrl = remember(videoUrls) {
         resolveVideoUrl(videoUrls, repository)
     }
 
