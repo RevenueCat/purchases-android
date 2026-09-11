@@ -2,6 +2,7 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.dp
@@ -75,6 +76,61 @@ internal class WindowSizeSelectionReconcileWindowTests {
                 controller.setWindowSizeInexact(width = 900.dp, height = 600.dp)
                 waitForIdle()
                 assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+            },
+        )
+    }
+
+    @Test
+    fun `a state added after bounds settle is reconciled too`(): Unit = with(composeTestRule) {
+        fun hiddenOnWideState() = FakePaywallState(
+            components = listOf(
+                PackageComponent(
+                    packageId = TestData.Packages.monthly.identifier,
+                    isSelectedByDefault = true,
+                    stack = StackComponent(components = emptyList()),
+                    overrides = listOf(
+                        ComponentOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowWidthRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = 700.0,
+                                ),
+                            ),
+                            properties = PartialPackageComponent(visible = false),
+                        ),
+                    ),
+                ),
+                PackageComponent(
+                    packageId = TestData.Packages.annual.identifier,
+                    isSelectedByDefault = false,
+                    stack = StackComponent(components = emptyList()),
+                ),
+            ),
+            packages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+        )
+
+        val firstState = hiddenOnWideState()
+        val lateState = hiddenOnWideState()
+        val states = mutableStateOf(listOf(firstState))
+
+        windowChangingTest(
+            arrange = { states },
+            act = { statesState ->
+                MeasurePaywallBounds(statesState.value) {
+                    Box(Modifier.fillMaxSize())
+                }
+            },
+            assert = { controller ->
+                controller.setWindowSizeInexact(width = 900.dp, height = 600.dp)
+                waitForIdle()
+                assertThat(firstState.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+                // Selection was resolved before any bounds were known.
+                assertThat(lateState.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+
+                // A prewarmed state joining while the bounds stay constant must be reconciled too.
+                states.value = listOf(firstState, lateState)
+                waitForIdle()
+                assertThat(lateState.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
             },
         )
     }
