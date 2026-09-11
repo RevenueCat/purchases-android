@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">AdMob Next-Gen Sample</string>
+    <string name="native_ad_icon">Advertiser icon</string>
+</resources>
