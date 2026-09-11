@@ -13,7 +13,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
 @OptIn(InternalRevenueCatAPI::class)
-class WindowSizeSelectionReconcileTests {
+internal class WindowSizeSelectionReconcileTests {
 
     private val wideWindow = DpSize(800.dp, 600.dp)
     private val narrowWindow = DpSize(400.dp, 800.dp)
@@ -80,27 +80,9 @@ class WindowSizeSelectionReconcileTests {
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
     }
 
-    @Test
-    fun `keeps the selection when nothing is visible at the measured window size`() {
-        val state = FakePaywallState(
-            components = listOf(
-                packageComponent(
-                    packageId = TestData.Packages.monthly.identifier,
-                    isSelectedByDefault = true,
-                    overrides = listOf(hiddenWhenWiderThan(width = 700.0)),
-                ),
-                packageComponent(
-                    packageId = TestData.Packages.annual.identifier,
-                    overrides = listOf(hiddenWhenWiderThan(width = 700.0)),
-                ),
-            ),
-            packages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
-        )
-
-        state.reconcileSelectionForWindowSize(wideWindow)
-
-        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
-    }
+    // The nothing-visible case lives in PaywallStateLoadedComponentsPackageSelectionTests: this
+    // file's FakePaywallState synthesizes an always-visible component per package, which would
+    // make that test pass vacuously.
 
     @Test
     fun `keeps the replacement when resizing back makes the original visible again`() {

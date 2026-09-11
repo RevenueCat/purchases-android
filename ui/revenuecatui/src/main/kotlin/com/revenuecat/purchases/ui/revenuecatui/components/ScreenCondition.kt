@@ -6,7 +6,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -51,7 +53,9 @@ internal fun MeasurePaywallBounds(
         for (state in states) {
             state.paywallBoundsDp = bounds
         }
-        LaunchedEffect(bounds) {
+        // Keyed on states too: workflow prewarming can add states while bounds stay constant,
+        // and those join with a selection that was resolved before the bounds were known.
+        LaunchedEffect(bounds, states) {
             for (state in states) {
                 state.reconcileSelectionForWindowSize(bounds)
             }
@@ -75,6 +79,10 @@ internal enum class ScreenCondition {
     ;
 
     companion object {
+        // WindowWidthSizeClass breakpoints (WindowSizeClass.kt).
+        private val MIN_WIDTH_MEDIUM = 600.dp
+        private val MIN_WIDTH_EXPANDED = 840.dp
+
         @JvmSynthetic
         fun from(sizeClass: WindowWidthSizeClass) =
             when (sizeClass) {
@@ -85,6 +93,15 @@ internal enum class ScreenCondition {
                     Logger.d("Unexpected WindowWidthSizeClass: '$sizeClass'. Falling back to COMPACT.")
                     COMPACT
                 }
+            }
+
+        /** The condition the renderer would use at [width], for evaluation at a known size. */
+        @JvmSynthetic
+        fun forWindowWidth(width: Dp): ScreenCondition =
+            when {
+                width < MIN_WIDTH_MEDIUM -> COMPACT
+                width < MIN_WIDTH_EXPANDED -> MEDIUM
+                else -> EXPANDED
             }
     }
 }
