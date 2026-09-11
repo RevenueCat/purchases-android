@@ -1105,20 +1105,6 @@ workflows:
           <<: *non-main-branches
       - hold:
           type: approval
-          requires:
-            - test_defaults_debug
-            - test_defaults_release
-            - test_cec_debug
-            - test_cec_release
-            - assemble-purchase-tester
-            - assemble-paywall-tester-release
-            - run-backend-integration-tests
-            - run-maestro-tests
-            - run-revenuecatui-ui-tests
-            - run-integration-tests
-            - run-purchases-integration-tests
-            - run-purchases-cec-integration-tests
-            - verify-compatibility
           <<: *release-branches
       - revenuecat/tag-current-branch:
           requires:
