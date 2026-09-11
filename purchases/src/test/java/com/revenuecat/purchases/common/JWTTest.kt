@@ -123,10 +123,15 @@ class JWTTest {
     // that need the header/payload decode path to succeed regardless of the signature.
     private val validSignature = base64UrlEncode("signature")
 
-    // A single character can never be valid base64 -- decoding requires at least 2 input
-    // characters to produce 1 output byte -- so this is guaranteed to fail to decode
-    // regardless of alphabet leniency toward any individual character.
-    private val invalidBase64Segment = "!"
+    // `android.util.Base64.decode()` is lenient about *characters*: anything outside the
+    // base64url alphabet (e.g. "!" or "#") is silently skipped rather than rejected, so a
+    // segment built out of "invalid" characters can still decode successfully once the
+    // non-alphabet noise is dropped. What it does *not* tolerate is a dangling, incomplete
+    // trailing group: with `NO_PADDING`, a lone leftover base64 alphabet character (a length
+    // of 1 mod 4) can't be completed into a full output byte, and decode() explicitly treats
+    // that as illegal and throws `IllegalArgumentException`. A single alphabet character is
+    // therefore a reliably-invalid segment, whereas non-alphabet characters are not.
+    private val invalidBase64Segment = "A"
 
     private fun buildToken(
         payload: JSONObject,
