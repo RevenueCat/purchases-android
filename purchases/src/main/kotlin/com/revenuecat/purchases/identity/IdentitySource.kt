@@ -31,6 +31,6 @@ public enum class IdentitySource(public val rawValue: String) {
          *   source (e.g. a newer wire value this SDK version doesn't recognize yet).
          */
         public fun fromRawValue(value: String): IdentitySource? =
-            entries.firstOrNull { it.rawValue == value }
+            values().firstOrNull { it.rawValue == value }
     }
 }

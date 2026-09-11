@@ -39,7 +39,7 @@ class IdentitySourceTests {
 
     @Test
     fun `every case round trips through its own rawValue`() {
-        IdentitySource.entries.forEach { source ->
+        IdentitySource.values().forEach { source ->
             assertThat(IdentitySource.fromRawValue(source.rawValue)).isEqualTo(source)
         }
     }
