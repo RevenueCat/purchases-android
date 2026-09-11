@@ -228,12 +228,25 @@ internal class CheckpointsManager(
         presenter: PaywallPresenter?,
     ): CheckpointRun {
         val content = CheckpointFlowContent.OfferingFlow(offering)
-        if (presenter == null) return present(purchases, content, customVariables)
+        return if (presenter == null) {
+            present(purchases, content, customVariables)
+        } else {
+            presentThroughPresenter(purchases, identifier, content, customVariables, presenter)
+        }
+    }
+
+    private suspend fun presentThroughPresenter(
+        purchases: Purchases,
+        identifier: String,
+        content: CheckpointFlowContent.OfferingFlow,
+        customVariables: Map<String, CustomVariableValue>,
+        presenter: PaywallPresenter,
+    ): CheckpointRun {
         val call = PendingCall(UUID.randomUUID().toString(), content, customVariables, CompletableDeferred())
         if (!claim(call)) return blockedByPresentedFlow
         try {
             presenter.present(
-                PaywallPresenter.Params(offering, identifier, customVariables),
+                PaywallPresenter.Params(content.offering, identifier, customVariables),
                 PresenterCompletion(call.callId, purchases),
             )
             return call.flowFinished.await()
