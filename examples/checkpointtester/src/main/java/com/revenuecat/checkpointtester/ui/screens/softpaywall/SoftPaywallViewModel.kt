@@ -1,6 +1,7 @@
 package com.revenuecat.checkpointtester.ui.screens.softpaywall
 
 import androidx.lifecycle.ViewModel
+import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.checkpoints.summary
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
@@ -12,7 +13,7 @@ import kotlinx.coroutines.flow.update
 
 /**
  * Soft paywall: the result never blocks anything, it only decides which banner the always-visible content gets.
- * This screen also shows the simplest possible call, without any CheckpointParams.
+ * This screen also shows the simplest call: no custom variables, only the tester's presenter selection.
  */
 class SoftPaywallViewModel : ViewModel() {
 
@@ -34,7 +35,7 @@ class SoftPaywallViewModel : ViewModel() {
     fun hit() {
         if (_state.value.running) return
         _state.update { it.copy(running = true, message = null, hasRun = true) }
-        Purchases.sharedInstance.checkpoint("soft_paywall") { result ->
+        Purchases.sharedInstance.checkpoint("soft_paywall", PaywallPresenters.params()) { result ->
             if (result != null && result.obtainedEntitlements.isNotEmpty()) {
                 upgraded(result.summary())
             } else {

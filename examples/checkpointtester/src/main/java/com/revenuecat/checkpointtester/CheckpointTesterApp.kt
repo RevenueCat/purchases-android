@@ -22,10 +22,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.revenuecat.checkpointtester.checkpoints.DummyPaywallPresenter
+import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.ui.Screen
-import com.revenuecat.checkpointtester.ui.dialogs.DummyPaywallDialog
 import com.revenuecat.checkpointtester.ui.dialogs.SetAttributeDialog
+import com.revenuecat.checkpointtester.ui.paywalls.GlobalPaywall
+import com.revenuecat.checkpointtester.ui.paywalls.LocalPaywall
 import com.revenuecat.checkpointtester.ui.screens.custom.CustomCheckpointScreen
 import com.revenuecat.checkpointtester.ui.screens.gate.EntitlementGateScreen
 import com.revenuecat.checkpointtester.ui.screens.hardpaywall.HardPaywallScreen
@@ -98,15 +99,15 @@ fun CheckpointTesterApp(
             }
         }
         if (showAttributeDialog) SetAttributeDialog(onDismiss = { showAttributeDialog = false })
-        DummyPaywallHost()
+        AppPaywallHost()
     }
 }
 
-// Renders the dummy custom paywall whenever the app's PaywallPresenter has an offering to present.
+// Renders the app-owned paywall whenever one of the tester's presenters has an offering to present.
 @Composable
-private fun DummyPaywallHost() {
-    val paywallRequest by DummyPaywallPresenter.request.collectAsState()
-    paywallRequest?.let { request ->
-        DummyPaywallDialog(request = request)
-    }
+private fun AppPaywallHost() {
+    val globalRequest by PaywallPresenters.global.request.collectAsState()
+    val localRequest by PaywallPresenters.local.request.collectAsState()
+    globalRequest?.let { GlobalPaywall(request = it) }
+    localRequest?.let { LocalPaywall(request = it) }
 }

@@ -1,6 +1,7 @@
 package com.revenuecat.checkpointtester.ui.screens.usecases
 
 import androidx.lifecycle.ViewModel
+import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.checkpoints.summary
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
@@ -28,7 +29,7 @@ class UseCasesViewModel : ViewModel() {
     fun hit(identifier: String) {
         if (_state.value.running) return
         _state.update { it.copy(running = true, message = null) }
-        Purchases.sharedInstance.checkpoint(identifier) { result ->
+        Purchases.sharedInstance.checkpoint(identifier, PaywallPresenters.params()) { result ->
             _state.update { it.copy(running = false, message = result.summary()) }
         }
     }

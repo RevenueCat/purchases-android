@@ -1,10 +1,10 @@
 package com.revenuecat.checkpointtester.ui.screens.hardpaywall
 
 import androidx.lifecycle.ViewModel
+import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.checkpoints.summary
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -37,7 +37,7 @@ class HardPaywallViewModel : ViewModel() {
         _state.update { it.copy(running = true, message = null, attempts = it.attempts + 1) }
         Purchases.sharedInstance.checkpoint(
             "hard_paywall",
-            CheckpointParams {
+            PaywallPresenters.params {
                 customVariables {
                     "gate" to "hard"
                     "attempt" to _state.value.attempts
