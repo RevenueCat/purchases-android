@@ -10,7 +10,9 @@ import com.revenuecat.purchases.Purchases
  *
  * If a flow is presented, the callback is invoked when the user "goes through" the flow. That means,
  * the flow is "closed" and/or a purchase/restore happens. It will not be called if the user backs out of the flow
- * (system back, or a back action on a flow's first step).
+ * (system back, or a back action on a flow's first step). Only one checkpoint flow is presented at a time: a
+ * checkpoint that resolves to a flow while another one is already on screen is ignored and its callback is never
+ * invoked, since the call that presented the flow is the one that reports.
  *
  * The callback [FlowResult] will be:
  * - null when nothing was presented: no rule matched, nothing could be served, or presenting failed;
