@@ -1,12 +1,11 @@
 package com.revenuecat.checkpointtester
 
 import android.app.Application
-import com.revenuecat.checkpointtester.checkpoints.DummyPaywallPresenter
+import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.paywallPresenter
 
 class MainApplication : Application() {
 
@@ -20,6 +19,6 @@ class MainApplication : Application() {
                 .diagnosticsEnabled(true)
                 .build(),
         )
-        Purchases.sharedInstance.paywallPresenter = DummyPaywallPresenter
+        PaywallPresenters.select(PaywallPresenters.mode.value)
     }
 }

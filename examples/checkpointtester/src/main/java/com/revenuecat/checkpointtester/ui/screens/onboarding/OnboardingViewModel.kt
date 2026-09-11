@@ -1,10 +1,10 @@
 package com.revenuecat.checkpointtester.ui.screens.onboarding
 
 import androidx.lifecycle.ViewModel
+import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.checkpoints.summary
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -69,7 +69,7 @@ class OnboardingViewModel : ViewModel() {
         _state.update { it.copy(running = true, message = null) }
         Purchases.sharedInstance.checkpoint(
             "onboarding_complete",
-            CheckpointParams { customVariables { "step" to Step.Personalize.name } },
+            PaywallPresenters.params { customVariables { "step" to Step.Personalize.name } },
         ) { result ->
             // Whatever happened, onboarding completes: a flow outcome must not strand the user mid-flow.
             _state.update { it.copy(running = false, message = result.summary(), step = Step.Done) }

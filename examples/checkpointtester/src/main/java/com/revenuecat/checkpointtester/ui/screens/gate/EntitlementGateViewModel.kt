@@ -2,6 +2,7 @@ package com.revenuecat.checkpointtester.ui.screens.gate
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.checkpoints.summary
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
@@ -9,7 +10,6 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitCustomerInfo
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -68,7 +68,7 @@ class EntitlementGateViewModel : ViewModel() {
             }
             Purchases.sharedInstance.checkpoint(
                 "entitlement_gate",
-                CheckpointParams { customVariables { "gate" to "entitlement" } },
+                PaywallPresenters.params { customVariables { "gate" to "entitlement" } },
             ) { result ->
                 val granted = result?.obtainedEntitlements.orEmpty().map { it.entitlementInfo.identifier }
                 _state.update {

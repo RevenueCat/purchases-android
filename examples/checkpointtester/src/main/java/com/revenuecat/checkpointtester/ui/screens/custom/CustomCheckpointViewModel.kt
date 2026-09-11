@@ -1,6 +1,7 @@
 package com.revenuecat.checkpointtester.ui.screens.custom
 
 import androidx.lifecycle.ViewModel
+import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.checkpoints.summary
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
@@ -34,7 +35,7 @@ class CustomCheckpointViewModel : ViewModel() {
         val checkpointIdentifier = identifier.trim()
         if (checkpointIdentifier.isEmpty() || _state.value.runningFor != null) return
         _state.update { UiState(runningFor = checkpointIdentifier) }
-        Purchases.sharedInstance.checkpoint(checkpointIdentifier) { result ->
+        Purchases.sharedInstance.checkpoint(checkpointIdentifier, PaywallPresenters.params()) { result ->
             _state.value = result.toUiState()
         }
     }
