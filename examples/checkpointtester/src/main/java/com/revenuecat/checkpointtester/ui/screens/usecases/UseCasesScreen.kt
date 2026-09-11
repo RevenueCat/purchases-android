@@ -56,14 +56,15 @@ private val NAVIGATED_USE_CASES = listOf(
 private val INLINE_USE_CASES = listOf(
     InlineUseCase(
         identifier = "offering_checkpoint",
-        title = "App-owned offering",
-        description = "A terminal offering workflow returns offering data without presenting RevenueCat UI.",
+        title = "Offering fallback paywall",
+        description = "A terminal offering workflow presents the offering's paywall, falling back to the " +
+            "default paywall until custom presenters exist.",
     ),
     InlineUseCase(
         identifier = "unknown_checkpoint",
         title = "No action",
         description = "An identifier the dashboard doesn't know about. " +
-            "Resolves without presenting anything. Expect NoAction with reason UNKNOWN_CHECKPOINT.",
+            "Resolves without presenting anything: the callback receives null.",
     ),
     InlineUseCase(
         identifier = "error_checkpoint",

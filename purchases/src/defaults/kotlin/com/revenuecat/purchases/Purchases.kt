@@ -209,7 +209,7 @@ public class Purchases internal constructor(
     @get:JvmSynthetic
     @set:JvmSynthetic
     @InternalRevenueCatAPI
-    public var checkpointManagerSlot: Any? by purchasesOrchestrator::checkpointManagerSlot
+    public var internalCpManagerSlot: Any? by purchasesOrchestrator::checkpointManagerSlot
 
     /**
      * The most recently started [Activity] that is still usable, tracked from the SDK's activity lifecycle
@@ -229,7 +229,7 @@ public class Purchases internal constructor(
     @JvmSynthetic
     @Throws(PurchasesException::class)
     @InternalRevenueCatAPI
-    public suspend fun resolveCheckpoint(
+    public suspend fun internalResolveCp(
         checkpointIdentifier: String,
         customVariables: Map<String, RulesDimensionValue> = emptyMap(),
     ): CheckpointResolution = purchasesOrchestrator.resolveCheckpoint(checkpointIdentifier, customVariables)

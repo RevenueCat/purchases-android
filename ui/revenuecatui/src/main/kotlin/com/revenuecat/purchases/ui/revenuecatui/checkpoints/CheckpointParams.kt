@@ -14,7 +14,7 @@ import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 public annotation class CheckpointParamsDsl
 
 /**
- * Per-call parameters for [com.revenuecat.purchases.ui.revenuecatui.checkpoints.awaitCheckpoint].
+ * Per-call parameters for [com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint].
  *
  * [customVariables] are both the values a checkpoint's targeting rules are evaluated against, readable as
  * `custom.<key>`, and the custom variables the presented paywall renders.
