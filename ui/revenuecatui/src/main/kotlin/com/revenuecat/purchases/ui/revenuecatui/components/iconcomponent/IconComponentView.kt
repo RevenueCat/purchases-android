@@ -22,6 +22,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.resolveComponentSizeParentData
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
@@ -67,6 +68,7 @@ internal fun IconComponentView(
 
     Box(
         modifier = modifier
+            .resolveComponentSizeParentData(iconState.sizePlusMargin)
             .size(iconState.sizePlusMargin)
             .padding(iconState.margin),
     ) {

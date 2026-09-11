@@ -1,9 +1,22 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
+import com.revenuecat.purchases.paywalls.components.CountdownComponent
+import com.revenuecat.purchases.paywalls.components.PartialStackComponent
+import com.revenuecat.purchases.paywalls.components.properties.Dimension
+import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
+import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
+import com.revenuecat.purchases.paywalls.components.properties.Shape
+import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedStackPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -26,6 +39,112 @@ class StackSizeConstraintTest {
         assertThat(Fill().allowsFlexDistribution).isTrue()
         assertThat(Fixed(100u).allowsFlexDistribution).isTrue()
     }
+
+    @Test
+    fun `stacks without any min or max keep using Row and Column`() {
+        // Every combination pre-existing paywalls can express must stay on the Row/Column path.
+        val children = listOf(
+            stackStyle(Size(width = Fill(), height = Fill())),
+            stackStyle(Size(width = Fit(), height = Fit())),
+            stackStyle(Size(width = Fixed(10u), height = Fixed(10u))),
+        )
+        val stackSizes = listOf(
+            Size(width = Fill(), height = Fill()),
+            Size(width = Fit(), height = Fit()),
+            Size(width = Fixed(100u), height = Fixed(100u)),
+            Size(width = Fit(max = 100u), height = Fit(max = 100u)),
+        )
+
+        for (stackSize in stackSizes) {
+            for (distribution in FlexDistribution.values()) {
+                for (orientation in Orientation.values()) {
+                    assertThat(needsConstrainedFillLayout(stackSize, distribution, children, orientation))
+                        .describedAs("size=$stackSize distribution=$distribution orientation=$orientation")
+                        .isFalse()
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `a child with a limited Fill on the main axis needs the constrained layout`() {
+        val children = listOf(stackStyle(Size(width = Fill(max = 100u), height = Fill())))
+        val stackSize = Size(width = Fill(), height = Fill())
+
+        assertThat(needsConstrainedFillLayout(stackSize, FlexDistribution.START, children, Orientation.Horizontal))
+            .isTrue()
+        assertThat(needsConstrainedFillLayout(stackSize, FlexDistribution.START, children, Orientation.Vertical))
+            .isFalse()
+    }
+
+    @Test
+    fun `a child whose override introduces a limited Fill needs the constrained layout`() {
+        val child = stackStyle(
+            size = Size(width = Fill(), height = Fill()),
+            overrides = listOf(
+                PresentedOverride(
+                    conditions = emptyList(),
+                    properties = PresentedStackPartial(
+                        backgroundStyles = null,
+                        borderStyles = null,
+                        shadowStyles = null,
+                        badgeStyle = null,
+                        partial = PartialStackComponent(size = Size(width = Fill(), height = Fill(min = 20u))),
+                    ),
+                ),
+            ),
+        )
+        val stackSize = Size(width = Fill(), height = Fill())
+
+        assertThat(needsConstrainedFillLayout(stackSize, FlexDistribution.START, listOf(child), Orientation.Vertical))
+            .isTrue()
+        assertThat(needsConstrainedFillLayout(stackSize, FlexDistribution.START, listOf(child), Orientation.Horizontal))
+            .isFalse()
+    }
+
+    @Test
+    fun `a Fit stack with a positive minimum needs the constrained layout only when Row or Column would expand it`() {
+        val stackSize = Size(width = Fit(min = 100u), height = Fit())
+        val fillChild = listOf(stackStyle(Size(width = Fill(), height = Fill())))
+        val fixedChild = listOf(stackStyle(Size(width = Fixed(10u), height = Fixed(10u))))
+
+        // Fill children and SPACE_* spacers use `weight`, which would expand the Fit stack to the parent's maximum.
+        assertThat(needsConstrainedFillLayout(stackSize, FlexDistribution.START, fillChild, Orientation.Horizontal))
+            .isTrue()
+        assertThat(
+            needsConstrainedFillLayout(stackSize, FlexDistribution.SPACE_BETWEEN, fixedChild, Orientation.Horizontal),
+        ).isTrue()
+        // Nothing weighted: Modifier.size alone handles the minimum.
+        assertThat(needsConstrainedFillLayout(stackSize, FlexDistribution.START, fixedChild, Orientation.Horizontal))
+            .isFalse()
+        // The minimum is on the width, so a vertical stack is unaffected.
+        assertThat(needsConstrainedFillLayout(stackSize, FlexDistribution.SPACE_BETWEEN, fillChild, Orientation.Vertical))
+            .isFalse()
+    }
+
+    private fun stackStyle(
+        size: Size,
+        overrides: List<PresentedOverride<PresentedStackPartial>> = emptyList(),
+    ): StackComponentStyle = StackComponentStyle(
+        children = emptyList(),
+        dimension = Dimension.Vertical(alignment = HorizontalAlignment.CENTER, distribution = FlexDistribution.START),
+        visible = true,
+        size = size,
+        spacing = 0.dp,
+        background = null,
+        padding = PaddingValues(0.dp),
+        margin = PaddingValues(0.dp),
+        shape = Shape.Rectangle(),
+        border = null,
+        shadow = null,
+        badge = null,
+        scrollOrientation = null,
+        rcPackage = null,
+        tabIndex = null,
+        countdownDate = null,
+        countFrom = CountdownComponent.CountFrom.DAYS,
+        overrides = overrides,
+    )
 
     @Test
     fun `fill minimum is reserved before distributing remaining space`() {
