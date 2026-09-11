@@ -43,10 +43,15 @@ internal sealed class CheckpointFlowContent {
  * including when resolving or presenting failed), and [backedOut], true when the presented flow went away because
  * the user navigated back (system back, or a navigate-back action on a workflow's first step) without purchasing
  * or restoring.
+ *
+ * [blockedByPresentedFlow] is true when the checkpoint resolved to a flow that was not presented because another
+ * checkpoint flow was already on screen. That earlier call is the one the app is waiting on, so a blocked run is
+ * not reported as passed.
  */
 internal class CheckpointRun(
     val flowOutcome: CheckpointFlowOutcome?,
     val backedOut: Boolean,
+    val blockedByPresentedFlow: Boolean = false,
     // Releases whatever the SDK still has on screen for this run; invoked once the app has been told.
     val finishPresentation: () -> Unit = {},
 )
@@ -90,6 +95,8 @@ internal class CheckpointsManager(
     private var pendingCall: PendingCall? = null
 
     private val nothingPresented = CheckpointRun(flowOutcome = null, backedOut = false)
+    private val blockedByPresentedFlow =
+        CheckpointRun(flowOutcome = null, backedOut = false, blockedByPresentedFlow = true)
 
     /**
      * Runs a checkpoint hit: resolves the checkpoint and presents whatever it resolved to, suspending until the
@@ -133,7 +140,8 @@ internal class CheckpointsManager(
 
     /**
      * The checkpoint API: runs the checkpoint and invokes [callback] with what the user obtained, at most once
-     * and on the main thread, unless the user backed out of the presented flow. Never throws.
+     * and on the main thread. The callback is skipped when the user backed out of the presented flow, and when
+     * the checkpoint resolved to a flow while another checkpoint flow was already on screen. Never throws.
      */
     fun checkpoint(
         purchases: Purchases,
@@ -145,10 +153,14 @@ internal class CheckpointsManager(
             val activeEntitlementsBefore = cachedActiveEntitlementIds(purchases)
             val run = runCheckpoint(purchases, identifier, params)
             try {
-                if (run.backedOut) {
-                    Logger.d("Checkpoint '$identifier': the user backed out, so the callback is not invoked.")
-                } else {
-                    callback.onCheckpointPassed(run.toResult(activeEntitlementsBefore))
+                when {
+                    run.blockedByPresentedFlow -> Logger.w(
+                        "Checkpoint '$identifier': another checkpoint flow is already being presented, so this " +
+                            "call is ignored and its callback is not invoked.",
+                    )
+                    run.backedOut ->
+                        Logger.d("Checkpoint '$identifier': the user backed out, so the callback is not invoked.")
+                    else -> callback.onCheckpointPassed(run.toResult(activeEntitlementsBefore))
                 }
             } finally {
                 run.finishPresentation()
@@ -207,12 +219,7 @@ internal class CheckpointsManager(
         )
         val call = PendingCall(UUID.randomUUID().toString(), content, customVariables, CompletableDeferred())
         val claimed = synchronized(this) { (pendingCall == null).also { if (it) pendingCall = call } }
-        if (!claimed) {
-            presentationError(
-                PurchasesErrorCode.OperationAlreadyInProgressError,
-                "Another checkpoint workflow is already being presented.",
-            )
-        }
+        if (!claimed) return blockedByPresentedFlow
         try {
             val presenter = presenterFactory(call.callId, this)
             withPendingCall(call.callId) { it.presenter = presenter }
