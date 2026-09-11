@@ -153,6 +153,14 @@ internal sealed interface PaywallState {
             var paywallBoundsDp: DpSize? by mutableStateOf(null)
                 @JvmSynthetic internal set
 
+            /**
+             * The screen condition the renderer resolves size-class overrides with — derived from
+             * the app window, not the paywall bounds, which can fall in different size classes in
+             * a sheet or pane. Set alongside [paywallBoundsDp] by the paywall root's measurement.
+             */
+            var windowScreenCondition: ScreenCondition by mutableStateOf(ScreenCondition.COMPACT)
+                @JvmSynthetic internal set
+
             val store: Store get() = purchases.store
 
             /** A subset of the offering: packages the paywall never shows are not in it. */
@@ -432,20 +440,23 @@ internal sealed interface PaywallState {
              */
             fun reconcileSelectionForWindowSize(windowDpSize: DpSize?) {
                 if (windowDpSize == null) return
-                val screenCondition = ScreenCondition.forWindowWidth(windowDpSize.width)
+                val screenCondition = windowScreenCondition
                 // Tab-scoped: the same uniqueId can exist in several tabs with different rules,
-                // and only the active tab's copy (or an outside-tabs copy) is on screen.
+                // and only the active tab's copy (or an outside-tabs copy) is on screen. The
+                // selection stays as long as ANY on-screen copy renders visible.
                 val activeContext = packages.packagesOutsideTabs +
                     packages.packagesByTab[selectedTabIndex].orEmpty()
-                val current = selectedPackageUniqueId?.let { uid -> activeContext.find { it.uniqueId == uid } }
-                    ?: return
-                val currentRendersVisible = current.resolvesVisible(
-                    customVariables = mergedCustomVariables,
-                    windowDpSize = windowDpSize,
-                    screenCondition = screenCondition,
-                    selectedPackageId = current.pkg.identifier,
-                    viewState = ComponentViewState.SELECTED,
-                )
+                val uid = selectedPackageUniqueId ?: return
+                val copies = activeContext.filter { it.uniqueId == uid }
+                val currentRendersVisible = copies.isEmpty() || copies.any { copy ->
+                    copy.resolvesVisible(
+                        customVariables = mergedCustomVariables,
+                        windowDpSize = windowDpSize,
+                        screenCondition = screenCondition,
+                        selectedPackageId = copy.pkg.identifier,
+                        viewState = ComponentViewState.SELECTED,
+                    )
+                }
                 if (!currentRendersVisible) {
                     val replacement = defaultUniqueIdForCurrentContext(windowDpSize, screenCondition)
                     if (replacement != null) {
@@ -485,29 +496,34 @@ internal sealed interface PaywallState {
              */
             fun peekDefaultPackageUniqueIdAfterSheetDismiss(windowDpSize: DpSize? = paywallBoundsDp): String? {
                 val tabPackages = packages.packagesByTab[selectedTabIndex]
-                val screenCondition = windowDpSize?.let { ScreenCondition.forWindowWidth(it.width) }
-                    ?: ScreenCondition.COMPACT
+                val screenCondition = windowScreenCondition
                 // A default authored outside the tabs outranks a tab package that was never authored as
                 // one, so the tab's own default is consulted first and its first visible package last.
                 // Remembered ids are skipped when hidden at the measured bounds, so this peek and the
-                // reconcile after [resetToDefaultPackage] land on the same package.
+                // reconcile after [resetToDefaultPackage] land on the same package. The init-time
+                // fallback is the true last resort, kept even when hidden (matching reconcile's
+                // stay-put behavior when nothing is visible).
                 return tabPackages?.authoredDefaultIfVisible(mergedCustomVariables, windowDpSize, screenCondition)
                     ?.uniqueId
                     ?: uniqueIdIfVisibleAtBounds(initialSelectedPackageOutsideTabs, windowDpSize, screenCondition)
                     ?: uniqueIdIfVisibleAtBounds(selectedPackageByTab[selectedTabIndex], windowDpSize, screenCondition)
                     ?: tabPackages?.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)?.uniqueId
+                    ?: packages.packagesOutsideTabs.firstVisible(mergedCustomVariables, windowDpSize, screenCondition)
+                        ?.uniqueId
                     ?: visibleFallbackForHiddenDefaultOutsideTabs
             }
 
-            /** [uniqueId] when it renders at the measured bounds; null when hidden. Unknown ids pass through. */
+            /** [uniqueId] when any of its copies renders at the measured bounds; null when all are hidden. */
             private fun uniqueIdIfVisibleAtBounds(
                 uniqueId: String?,
                 windowDpSize: DpSize?,
                 screenCondition: ScreenCondition,
             ): String? = uniqueId?.takeIf { uid ->
-                val info = (packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty())
-                    .find { it.uniqueId == uid }
-                info == null || info.resolvesVisible(mergedCustomVariables, windowDpSize, screenCondition)
+                val copies = (packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty())
+                    .filter { it.uniqueId == uid }
+                copies.isEmpty() || copies.any {
+                    it.resolvesVisible(mergedCustomVariables, windowDpSize, screenCondition)
+                }
             }
 
             fun peekSelectedPackageInfoAfterSheetDismiss(): SelectedPackageInfo? {
