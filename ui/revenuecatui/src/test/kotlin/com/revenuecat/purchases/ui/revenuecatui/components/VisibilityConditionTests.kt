@@ -13,9 +13,11 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.CarouselComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
+import com.revenuecat.purchases.paywalls.components.PartialButtonComponent
 import com.revenuecat.purchases.paywalls.components.PartialCarouselComponent
 import com.revenuecat.purchases.paywalls.components.PartialPackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
@@ -38,6 +40,9 @@ import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsConfig
 import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
+import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
+import com.revenuecat.purchases.paywalls.components.common.StateUpdate
+import com.revenuecat.purchases.paywalls.components.common.StateUpdateValue
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.paywalls.components.properties.FitMode
@@ -49,9 +54,11 @@ import com.revenuecat.purchases.paywalls.components.properties.VideoUrls
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.paywalls.components.properties.Size as ComponentSize
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed as FixedSize
+import com.revenuecat.purchases.ui.revenuecatui.components.button.ButtonComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.carousel.CarouselComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.pkg.PackageComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.stack.StackComponentView
+import com.revenuecat.purchases.ui.revenuecatui.components.style.ButtonComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.CarouselComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.PackageComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
@@ -2059,6 +2066,409 @@ class VisibilityConditionTests {
         onNodeWithText(monthlyLabelValue).assertIsDisplayed()
     }
 
+
+    // endregion
+
+    // region Button visibility
+
+    private fun buttonOffering(
+        id: String,
+        button: ButtonComponent,
+        stateDeclarations: Map<String, StateDeclaration> = emptyMap(),
+    ): Offering {
+        val data = PaywallComponentsData(
+            id = id,
+            templateName = "components",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(button)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = localeId,
+            stateDeclarations = stateDeclarations,
+        )
+        return Offering(
+            identifier = id,
+            serverDescription = "Button visibility test",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+    }
+
+    private fun buttonComponent(
+        visible: Boolean? = null,
+        overrides: List<ComponentOverride<PartialButtonComponent>> = emptyList(),
+    ) = ButtonComponent(
+        action = ButtonComponent.Action.NavigateBack,
+        visible = visible,
+        overrides = overrides,
+        stack = StackComponent(
+            components = listOf(TextComponent(text = textKey, color = textColor)),
+        ),
+    )
+
+    /**
+     * A button with no visibility configuration renders, which is the pre-existing default.
+     */
+    @Test
+    fun `Button visible by default`(): Unit = with(composeTestRule) {
+        val button = buttonComponent()
+        val offering = buttonOffering("btn_default", button)
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val style = factory.create(button).getOrThrow().componentStyle as ButtonComponentStyle
+
+        setContent {
+            ButtonComponentView(style = style, state = state, onClick = { })
+        }
+
+        onNodeWithText(textValue).assertIsDisplayed()
+    }
+
+    /**
+     * The button's own `visible = false` hides it, matching purchases-ios 5.74.0.
+     */
+    @Test
+    fun `Button hidden when visible is false`(): Unit = with(composeTestRule) {
+        val button = buttonComponent(visible = false)
+        val offering = buttonOffering("btn_visible_false", button)
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val style = factory.create(button).getOrThrow().componentStyle as ButtonComponentStyle
+
+        setContent {
+            ButtonComponentView(style = style, state = state, onClick = { })
+        }
+
+        onNodeWithText(textValue).assertDoesNotExist()
+    }
+
+    /**
+     * This is the case reported in purchases-android#4214: a rule on the button itself, keyed on a
+     * custom variable, hides it. Before button-level overrides existed the override was dropped on
+     * deserialization and the button stayed on screen.
+     */
+    @Test
+    fun `Button hidden by matching variable override`(): Unit = with(composeTestRule) {
+        val button = buttonComponent(
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(
+                        ComponentOverride.Condition.Variable(
+                            operator = ComponentOverride.EqualityOperator.EQUALS,
+                            variable = "hard_paywall",
+                            value = JsonPrimitive("true"),
+                        ),
+                    ),
+                    properties = PartialButtonComponent(visible = false),
+                ),
+            ),
+        )
+        val offering = buttonOffering("btn_override_match", button)
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(
+            validated,
+            customVariables = mapOf("hard_paywall" to CustomVariableValue.String("true")),
+        )
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val style = factory.create(button).getOrThrow().componentStyle as ButtonComponentStyle
+
+        setContent {
+            ButtonComponentView(style = style, state = state, onClick = { })
+        }
+
+        onNodeWithText(textValue).assertDoesNotExist()
+    }
+
+    /**
+     * The same override must leave the button alone when its condition does not match, so a hide
+     * rule cannot hide the button unconditionally.
+     */
+    @Test
+    fun `Button still visible when variable override does not match`(): Unit = with(composeTestRule) {
+        val button = buttonComponent(
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(
+                        ComponentOverride.Condition.Variable(
+                            operator = ComponentOverride.EqualityOperator.EQUALS,
+                            variable = "hard_paywall",
+                            value = JsonPrimitive("true"),
+                        ),
+                    ),
+                    properties = PartialButtonComponent(visible = false),
+                ),
+            ),
+        )
+        val offering = buttonOffering("btn_override_no_match", button)
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(
+            validated,
+            customVariables = mapOf("hard_paywall" to CustomVariableValue.String("false")),
+        )
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val style = factory.create(button).getOrThrow().componentStyle as ButtonComponentStyle
+
+        setContent {
+            ButtonComponentView(style = style, state = state, onClick = { })
+        }
+
+        onNodeWithText(textValue).assertIsDisplayed()
+    }
+
+    /**
+     * A button whose inner stack is hidden by default but revealed by a matching override on that
+     * stack must render. The button's own gate has to stay out of the way when the button declares
+     * no visibility of its own, otherwise it re-reads the stack's pre-override value and wins.
+     */
+    @Test
+    fun `Button visible when its stack is revealed by a stack override`(): Unit = with(composeTestRule) {
+        val button = ButtonComponent(
+            action = ButtonComponent.Action.NavigateBack,
+            stack = StackComponent(
+                components = listOf(TextComponent(text = textKey, color = textColor)),
+                visible = false,
+                overrides = listOf(
+                    ComponentOverride(
+                        conditions = listOf(
+                            ComponentOverride.Condition.Variable(
+                                operator = ComponentOverride.EqualityOperator.EQUALS,
+                                variable = "reveal",
+                                value = JsonPrimitive("true"),
+                            ),
+                        ),
+                        properties = PartialStackComponent(visible = true),
+                    ),
+                ),
+            ),
+        )
+        val offering = buttonOffering("btn_stack_override_reveals", button)
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(
+            validated,
+            customVariables = mapOf("reveal" to CustomVariableValue.String("true")),
+        )
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val style = factory.create(button).getOrThrow().componentStyle as ButtonComponentStyle
+
+        setContent {
+            ButtonComponentView(style = style, state = state, onClick = { })
+        }
+
+        onNodeWithText(textValue).assertIsDisplayed()
+    }
+
+    /**
+     * A `selected` override on the button resolves against the package the button sits in, which is
+     * the one piece of wiring the button does not share with PackageComponent: the button is not a
+     * package context itself, so selection is read from the stack it wraps.
+     */
+    @Test
+    fun `Button hidden by selected override when its package is selected`(): Unit = with(composeTestRule) {
+        val button = ButtonComponent(
+            action = ButtonComponent.Action.NavigateBack,
+            stack = StackComponent(
+                components = listOf(TextComponent(text = textKey, color = textColor)),
+            ),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Selected),
+                    properties = PartialButtonComponent(visible = false),
+                ),
+            ),
+        )
+        val monthlyPkg = PackageComponent(
+            packageId = TestData.Packages.monthly.identifier,
+            isSelectedByDefault = true,
+            stack = StackComponent(
+                components = listOf(TextComponent(text = monthlyLabelKey, color = textColor), button),
+            ),
+        )
+
+        val data = PaywallComponentsData(
+            id = "btn_selected_override",
+            templateName = "components",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(monthlyPkg)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = localeId,
+        )
+        val offering = Offering(
+            identifier = "btn-selected-override",
+            serverDescription = "Button selected override test",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val pkgStyle = factory.create(monthlyPkg).getOrThrow().componentStyle as PackageComponentStyle
+
+        setContent {
+            PackageComponentView(style = pkgStyle, state = state, clickHandler = { })
+        }
+
+        // The package itself renders, so this is the button being hidden rather than the whole tree.
+        onNodeWithText(monthlyLabelValue).assertIsDisplayed()
+        onNodeWithText(textValue).assertDoesNotExist()
+    }
+
+    /**
+     * Control for the test above: the same tree with the package unselected must show the button,
+     * proving that test is not passing because the button never renders inside a package at all.
+     */
+    @Test
+    fun `Button shown by selected override when its package is not selected`(): Unit = with(composeTestRule) {
+        val button = ButtonComponent(
+            action = ButtonComponent.Action.NavigateBack,
+            stack = StackComponent(
+                components = listOf(TextComponent(text = textKey, color = textColor)),
+            ),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Selected),
+                    properties = PartialButtonComponent(visible = false),
+                ),
+            ),
+        )
+        val annualPkg = PackageComponent(
+            packageId = TestData.Packages.annual.identifier,
+            isSelectedByDefault = false,
+            stack = StackComponent(
+                components = listOf(TextComponent(text = annualLabelKey, color = textColor), button),
+            ),
+        )
+        val monthlyPkg = PackageComponent(
+            packageId = TestData.Packages.monthly.identifier,
+            isSelectedByDefault = true,
+            stack = StackComponent(
+                components = listOf(TextComponent(text = monthlyLabelKey, color = textColor)),
+            ),
+        )
+
+        val data = PaywallComponentsData(
+            id = "btn_selected_override_control",
+            templateName = "components",
+            assetBaseURL = URL("https://assets.pawwalls.com"),
+            componentsConfig = ComponentsConfig(
+                base = PaywallComponentsConfig(
+                    stack = StackComponent(components = listOf(monthlyPkg, annualPkg)),
+                    background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
+                    stickyFooter = null,
+                ),
+            ),
+            componentsLocalizations = localizations,
+            defaultLocaleIdentifier = localeId,
+        )
+        val offering = Offering(
+            identifier = "btn-selected-override-control",
+            serverDescription = "Button selected override control",
+            metadata = emptyMap(),
+            availablePackages = listOf(TestData.Packages.monthly, TestData.Packages.annual),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        )
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val annualStyle = factory.create(annualPkg).getOrThrow().componentStyle as PackageComponentStyle
+
+        setContent {
+            PackageComponentView(style = annualStyle, state = state, clickHandler = { })
+        }
+
+        onNodeWithText(textValue).assertIsDisplayed()
+    }
+
+    private fun stateRuleButton(key: String) = buttonComponent(
+        overrides = listOf(
+            ComponentOverride(
+                conditions = listOf(
+                    ComponentOverride.Condition.State(
+                        operator = ComponentOverride.EqualityOperator.EQUALS,
+                        name = key,
+                        value = JsonPrimitive(true),
+                    ),
+                ),
+                properties = PartialButtonComponent(visible = false),
+            ),
+        ),
+    )
+
+    private fun booleanDeclaration(default: Boolean) =
+        StateDeclaration(type = StateDeclaration.ValueType.BOOLEAN, defaultValue = JsonPrimitive(default))
+
+    /**
+     * A button is the component that writes paywall state via `state_updates`, so "hide this button
+     * once the sheet it opened is open" is an expected rule.
+     */
+    @Test
+    fun `Button hidden when a state rule starts matching`(): Unit = with(composeTestRule) {
+        val key = "planComparisonOpen"
+        val button = stateRuleButton(key)
+        val offering = buttonOffering("btn_state_rule", button, mapOf(key to booleanDeclaration(default = false)))
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val style = factory.create(button).getOrThrow().componentStyle as ButtonComponentStyle
+
+        setContent {
+            ButtonComponentView(style = style, state = state, onClick = { })
+        }
+
+        onNodeWithText(textValue).assertIsDisplayed()
+
+        state.stateStore.applyUpdates(listOf(StateUpdate.Set(key, StateUpdateValue.Literal(JsonPrimitive(true)))))
+        waitForIdle()
+
+        onNodeWithText(textValue).assertDoesNotExist()
+    }
+
+    @Test
+    fun `Button hidden when a state rule matches the declared default`(): Unit = with(composeTestRule) {
+        val key = "planComparisonOpen"
+        val button = stateRuleButton(key)
+        val offering = buttonOffering("btn_state_default", button, mapOf(key to booleanDeclaration(default = true)))
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val style = factory.create(button).getOrThrow().componentStyle as ButtonComponentStyle
+
+        setContent {
+            ButtonComponentView(style = style, state = state, onClick = { })
+        }
+
+        onNodeWithText(textValue).assertDoesNotExist()
+    }
+
+    @Test
+    fun `Button still visible when the state key was never declared`(): Unit = with(composeTestRule) {
+        val button = stateRuleButton("neverDeclared")
+        val offering = buttonOffering("btn_state_undeclared", button)
+        val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
+        val state = offering.toComponentsPaywallState(validated)
+        val factory = StyleFactory(localizations = localizations, offering = offering)
+        val style = factory.create(button).getOrThrow().componentStyle as ButtonComponentStyle
+
+        setContent {
+            ButtonComponentView(style = style, state = state, onClick = { })
+        }
+
+        onNodeWithText(textValue).assertIsDisplayed()
+    }
 
     // endregion
 
