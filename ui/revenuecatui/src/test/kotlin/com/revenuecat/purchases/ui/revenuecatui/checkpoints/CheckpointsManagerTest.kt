@@ -61,6 +61,7 @@ class CheckpointsManagerTest {
         Dispatchers.setMain(dispatcher)
         mockkObject(Logger)
         every { Logger.e(any()) } just runs
+        every { Logger.w(any()) } just runs
         presentedCallIds.clear()
         results.clear()
         mockActivity = mockk(relaxed = true)
@@ -142,11 +143,10 @@ class CheckpointsManagerTest {
         )
         val presentedCall = launch { runCheckpoint() }
 
-        checkpointFailsWith(
-            PurchasesErrorCode.OperationAlreadyInProgressError,
-            "Another checkpoint workflow is already being presented.",
-        )
+        val run = runCheckpoint()
 
+        assertThat(run.blockedByPresentedFlow).isTrue
+        assertThat(run.flowOutcome).isNull()
         assertThat(presentedCallIds).hasSize(1)
         presentedCall.cancel()
     }
@@ -288,16 +288,39 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `concurrent checkpoint fails with OperationAlreadyInProgressError`() = runTest(dispatcher) {
+    fun `a concurrent checkpoint is blocked by the presented flow`() = runTest(dispatcher) {
         resolvesToWorkflow()
         val firstCall = launch { runCheckpoint() }
 
-        checkpointFailsWith(
-            PurchasesErrorCode.OperationAlreadyInProgressError,
-            "Another checkpoint workflow is already being presented.",
-        )
+        val run = runCheckpoint()
 
+        assertThat(run.blockedByPresentedFlow).isTrue
+        assertThat(run.flowOutcome).isNull()
         firstCall.cancel()
+    }
+
+    @Test
+    fun `a checkpoint blocked by the presented flow never invokes its callback`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        checkpoint()
+
+        checkpoint()
+
+        assertThat(results).isEmpty()
+        finishPaywall(CheckpointFlowOutcome.Dismissed)
+        assertThat(results).containsExactly(FlowResult(obtainedEntitlements = emptySet()))
+        assertThat(presentedCallIds).hasSize(1)
+    }
+
+    @Test
+    fun `an unmatched checkpoint still passes null while another flow is presented`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        checkpoint()
+        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
+
+        checkpoint()
+
+        assertThat(results).containsExactly(null)
     }
 
     @Test
