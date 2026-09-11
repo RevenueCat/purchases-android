@@ -49,15 +49,11 @@ fun EntitlementGateScreen(
             checkpointSkipped = state.checkpointSkipped,
         )
 
-        Button(
-            onClick = viewModel::refresh,
-            enabled = !state.loading && !state.running,
-        ) {
+        Button(onClick = viewModel::refresh, enabled = !state.loading) {
             Text(text = "Refresh")
         }
 
-        val status = if (state.running) "Running the checkpoint…" else state.message
-        status?.let {
+        state.message?.let {
             Text(
                 text = it,
                 style = MaterialTheme.typography.bodyMedium,

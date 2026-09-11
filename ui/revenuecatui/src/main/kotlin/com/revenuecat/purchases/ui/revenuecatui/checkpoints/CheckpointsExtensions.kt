@@ -4,20 +4,23 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 
 /**
- * Registers that [checkpointIdentifier] was reached. Depending on the configured targeting rules, this may present a
- * flow or do nothing. [callback] is invoked at most once, on the main thread. If no rules are matched,
- * or if presenting fails, the callback is invoked with null.
- *
- * If a flow is presented, the callback is invoked when the user "goes through" the flow. That means,
- * the flow is "closed" and/or a purchase/restore happens. It will not be called if the user backs out of the flow
- * (system back, or a back action on a flow's first step). Only one checkpoint flow is presented at a time: a
- * checkpoint that resolves to a flow while another one is already on screen is ignored and its callback is never
- * invoked, since the call that presented the flow is the one that reports.
- *
- * The callback [FlowResult] will be:
- * - null when nothing was presented: no rule matched, nothing could be served, or presenting failed;
+ * Registers that [checkpointIdentifier] was hit. Depending on the configured targeting rules, this may present a
+ * flow or do nothing. [callback] is invoked at most once, on the main thread, when the user goes through the
+ * checkpoint:
+ * - with null when nothing was presented: no rule matched, nothing could be served, or presenting failed;
  * - with what the user obtained when the presented flow ended with a purchase or restore, or through a close
- *   action, if anything.
+ *   action.
+ *
+ * It is not invoked when the user backs out of the presented flow (system back, or a back action on a flow's
+ * first step): the flow is dismissed and the app keeps the user where they were. Don't model a checkpoint as a
+ * pending operation the user waits on.
+ *
+ * Only one checkpoint flow is presented at a time. A checkpoint that resolves to a flow while another one is
+ * already on screen is ignored and its callback is never invoked: the call that presented the flow is the one
+ * that reports.
+ *
+ * Every checkpoint is a soft gate today. Hard gates, configured in the dashboard, will additionally require the
+ * user to meet a backend-provided rule (typically holding an entitlement) before the callback is invoked.
  *
  * This call never throws. Why nothing was presented, and any failure, are reported in the logs.
  *
@@ -46,6 +49,19 @@ public fun Purchases.checkpoint(
 ) {
     checkpoint(checkpointIdentifier, params = null, callback = callback)
 }
+
+/**
+ * Presents the offerings checkpoints resolve to with app-owned UI, unless the call supplies its own through
+ * [CheckpointParams.paywallPresenter]. When neither is set, an offering's configured paywall is presented
+ * instead, falling back to the default paywall. Held by this [Purchases] instance, so it is cleared when the SDK
+ * is reconfigured.
+ */
+@InternalRevenueCatAPI
+public var Purchases.paywallPresenter: PaywallPresenter?
+    get() = checkpointsManager.paywallPresenter
+    set(value) {
+        checkpointsManager.paywallPresenter = value
+    }
 
 /**
  * The [CheckpointsManager] owned by this [Purchases] instance, created on first use and kept in the

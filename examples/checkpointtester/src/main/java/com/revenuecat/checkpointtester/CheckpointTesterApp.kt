@@ -1,5 +1,6 @@
 package com.revenuecat.checkpointtester
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -11,6 +12,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,8 +23,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.ui.Screen
 import com.revenuecat.checkpointtester.ui.dialogs.SetAttributeDialog
+import com.revenuecat.checkpointtester.ui.paywalls.GlobalPaywall
+import com.revenuecat.checkpointtester.ui.paywalls.LocalPaywall
 import com.revenuecat.checkpointtester.ui.screens.custom.CustomCheckpointScreen
 import com.revenuecat.checkpointtester.ui.screens.gate.EntitlementGateScreen
 import com.revenuecat.checkpointtester.ui.screens.hardpaywall.HardPaywallScreen
@@ -50,52 +55,62 @@ fun CheckpointTesterApp(
         ?: Screen.UseCases
     var showAttributeDialog by remember { mutableStateOf(false) }
 
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text(text = currentScreen.title) },
-                navigationIcon = {
-                    if (currentScreen != Screen.UseCases) {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+    Box(modifier = modifier) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(text = currentScreen.title) },
+                    navigationIcon = {
+                        if (currentScreen != Screen.UseCases) {
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            }
                         }
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showAttributeDialog = true }) {
-                        Icon(Icons.Filled.Person, contentDescription = "Set subscriber attribute")
-                    }
-                },
-            )
-        },
-    ) { paddingValues ->
-        val contentModifier = Modifier.padding(paddingValues)
-        NavHost(navController = navController, startDestination = Screen.UseCases.route) {
-            composable(Screen.UseCases.route) {
-                UseCasesScreen(
-                    onNavigate = { navController.navigate(it.route) },
-                    modifier = contentModifier,
+                    },
+                    actions = {
+                        IconButton(onClick = { showAttributeDialog = true }) {
+                            Icon(Icons.Filled.Person, contentDescription = "Set subscriber attribute")
+                        }
+                    },
                 )
+            },
+        ) { paddingValues ->
+            val contentModifier = Modifier.padding(paddingValues)
+            NavHost(navController = navController, startDestination = Screen.UseCases.route) {
+                composable(Screen.UseCases.route) {
+                    UseCasesScreen(
+                        onNavigate = { navController.navigate(it.route) },
+                        modifier = contentModifier,
+                    )
+                }
+                composable(Screen.HardPaywall.route) {
+                    HardPaywallScreen(modifier = contentModifier)
+                }
+                composable(Screen.SoftPaywall.route) {
+                    SoftPaywallScreen(modifier = contentModifier)
+                }
+                composable(Screen.Onboarding.route) {
+                    OnboardingScreen(modifier = contentModifier)
+                }
+                composable(Screen.EntitlementGate.route) {
+                    EntitlementGateScreen(modifier = contentModifier)
+                }
+                composable(Screen.CustomCheckpoint.route) {
+                    CustomCheckpointScreen(modifier = contentModifier)
+                }
             }
-            composable(Screen.HardPaywall.route) {
-                HardPaywallScreen(modifier = contentModifier)
-            }
-            composable(Screen.SoftPaywall.route) {
-                SoftPaywallScreen(modifier = contentModifier)
-            }
-            composable(Screen.Onboarding.route) {
-                OnboardingScreen(modifier = contentModifier)
-            }
-            composable(Screen.EntitlementGate.route) {
-                EntitlementGateScreen(modifier = contentModifier)
-            }
-            composable(Screen.CustomCheckpoint.route) {
-                CustomCheckpointScreen(modifier = contentModifier)
-            }
+            if (showAttributeDialog) SetAttributeDialog(onDismiss = { showAttributeDialog = false })
         }
-        if (showAttributeDialog) {
-            SetAttributeDialog(onDismiss = { showAttributeDialog = false })
-        }
+        AppPaywallHost()
     }
+}
+
+// Renders the app-owned paywall over the whole app, top bar included, whenever one of the tester's presenters has
+// an offering to present.
+@Composable
+private fun AppPaywallHost() {
+    val globalRequest by PaywallPresenters.global.request.collectAsState()
+    val localRequest by PaywallPresenters.local.request.collectAsState()
+    globalRequest?.let { GlobalPaywall(request = it) }
+    localRequest?.let { LocalPaywall(request = it) }
 }

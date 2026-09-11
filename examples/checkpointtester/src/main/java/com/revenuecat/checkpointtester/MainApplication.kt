@@ -1,12 +1,15 @@
 package com.revenuecat.checkpointtester
 
 import android.app.Application
+import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
+import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesConfiguration
 
 class MainApplication : Application() {
 
+    @OptIn(InternalRevenueCatAPI::class)
     override fun onCreate() {
         super.onCreate()
         Purchases.logLevel = LogLevel.VERBOSE
@@ -16,5 +19,6 @@ class MainApplication : Application() {
                 .diagnosticsEnabled(true)
                 .build(),
         )
+        PaywallPresenters.select(PaywallPresenters.mode.value)
     }
 }

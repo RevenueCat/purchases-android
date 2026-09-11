@@ -42,13 +42,10 @@ fun SoftPaywallScreen(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        OutcomeBanner(
-            upgraded = state.upgraded,
-            message = if (state.running) "Presenting the paywall…" else state.message,
-        )
+        OutcomeBanner(upgraded = state.upgraded, message = state.message)
         AlwaysAvailableContent()
 
-        OutlinedButton(onClick = viewModel::hit, enabled = !state.running) {
+        OutlinedButton(onClick = viewModel::hit) {
             Text(text = "Hit the checkpoint again")
         }
     }
