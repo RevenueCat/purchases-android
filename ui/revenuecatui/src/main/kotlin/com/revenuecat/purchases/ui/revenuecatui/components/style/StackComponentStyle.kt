@@ -49,6 +49,13 @@ internal data class StackComponentStyle(
     @get:JvmSynthetic
     val scrollOrientation: Orientation?,
     /**
+     * True when the component's overflow deserialized to `Overflow.NONE` (`"default"`, `"none"`, or
+     * an unrecognized value) — used by the root stack to opt out of the outer vertical scroll it
+     * gets by default.
+     */
+    @get:JvmSynthetic
+    val scrollExplicitlyDisabled: Boolean = false,
+    /**
      * If this is non-null and equal to the currently selected package, the `selected` [overrides] will be used if
      * available.
      */

@@ -447,6 +447,7 @@ internal class StackComponentTests {
                 }
                 arrayOf(serialized, expected)
             } + listOf(
+                arrayOf("\"default\"", StackComponent.Overflow.NONE),
                 arrayOf("\"some_unknown_overflow\"", StackComponent.Overflow.NONE),
             )
         }
