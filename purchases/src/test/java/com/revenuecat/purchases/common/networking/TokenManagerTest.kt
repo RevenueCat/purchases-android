@@ -41,10 +41,9 @@ class TokenManagerTest {
     }
 
     @Test
-    fun `set-set-delete calls are no-ops when disabled, not crashes`() = runTest {
+    fun `save-delete calls are no-ops when disabled, not crashes`() = runTest {
         val manager = TokenManager(context, "test_api_key", enabled = false, scope = testScope())
 
-        manager.setCurrentAccessToken("user", "token")
         manager.saveTokens("user", "access", "refresh", "id")
         manager.deleteTokens("user")
         manager.deleteAccessToken("user")
@@ -78,7 +77,7 @@ class TokenManagerTest {
         assertThat(manager.hasCurrentAccessToken("user")).isFalse()
 
         // A write attempted before storage is ready is silently dropped, not queued.
-        manager.setCurrentAccessToken("user", "token")
+        manager.saveTokens("user", "access", "refresh", "id")
         manager.awaitStorageInitialized()
         assertThat(manager.currentAccessToken("user")).isNull()
     }
@@ -89,7 +88,7 @@ class TokenManagerTest {
         manager.awaitStorageInitialized()
 
         assertThat(manager.currentAccessToken("user")).isNull()
-        manager.setCurrentAccessToken("user", "token")
+        manager.saveTokens("user", "access", "refresh", "id")
         assertThat(manager.currentAccessToken("user")).isNull()
     }
 
@@ -102,14 +101,14 @@ class TokenManagerTest {
         val manager = readyManager()
 
         assertThat(manager.currentAccessToken("user")).isNull()
-        manager.setCurrentAccessToken("user", "access-token-value")
+        manager.saveTokens("user", accessToken = "access-token-value", refreshToken = "refresh", idToken = "id")
         assertThat(manager.currentAccessToken("user")).isEqualTo("access-token-value")
     }
 
     @Test
     fun `two instances built from the same API key derive the same storage key`() = runTest {
         val first = readyManager(apiKey = "shared_api_key")
-        first.setCurrentAccessToken("user", "from-first-instance")
+        first.saveTokens("user", accessToken = "from-first-instance", refreshToken = "refresh", idToken = "id")
 
         // A second instance, built independently from the same API key and context, must derive the exact
         // same encryption key to be able to read what the first instance wrote.
@@ -120,7 +119,7 @@ class TokenManagerTest {
     @Test
     fun `two instances built from different API keys do not share readable storage`() = runTest {
         val first = readyManager(apiKey = "api_key_one")
-        first.setCurrentAccessToken("user", "from-first-instance")
+        first.saveTokens("user", accessToken = "from-first-instance", refreshToken = "refresh", idToken = "id")
 
         val second = readyManager(apiKey = "api_key_two")
         // Different derived key: either a decode/decrypt failure (surfaced as SecureStorageException from the
@@ -137,44 +136,13 @@ class TokenManagerTest {
 
     // endregion
 
-    // region per-user get/set round trips
-
-    @Test
-    fun `access token get-set round trips`() = runTest {
-        val manager = readyManager()
-        manager.setCurrentAccessToken("user", "access-token")
-        assertThat(manager.currentAccessToken("user")).isEqualTo("access-token")
-    }
-
-    @Test
-    fun `refresh token get-set round trips`() = runTest {
-        val manager = readyManager()
-        manager.setCurrentRefreshToken("user", "refresh-token")
-        assertThat(manager.currentRefreshToken("user")).isEqualTo("refresh-token")
-    }
-
-    @Test
-    fun `ID token get-set round trips`() = runTest {
-        val manager = readyManager()
-        manager.setCurrentIDToken("user", "id-token")
-        assertThat(manager.currentIDToken("user")).isEqualTo("id-token")
-    }
-
-    @Test
-    fun `setting a token to null clears it`() = runTest {
-        val manager = readyManager()
-        manager.setCurrentAccessToken("user", "access-token")
-        manager.setCurrentAccessToken("user", null)
-        assertThat(manager.currentAccessToken("user")).isNull()
-    }
+    // region read access
 
     @Test
     fun `tokens are isolated between users`() = runTest {
         val manager = readyManager()
-        manager.setCurrentAccessToken("user-a", "a-access")
-        manager.setCurrentRefreshToken("user-a", "a-refresh")
-        manager.setCurrentAccessToken("user-b", "b-access")
-        manager.setCurrentRefreshToken("user-b", "b-refresh")
+        manager.saveTokens("user-a", accessToken = "a-access", refreshToken = "a-refresh", idToken = "a-id")
+        manager.saveTokens("user-b", accessToken = "b-access", refreshToken = "b-refresh", idToken = "b-id")
 
         assertThat(manager.currentAccessToken("user-a")).isEqualTo("a-access")
         assertThat(manager.currentRefreshToken("user-a")).isEqualTo("a-refresh")
@@ -187,19 +155,10 @@ class TokenManagerTest {
         val manager = readyManager()
         assertThat(manager.hasCurrentAccessToken("user")).isFalse()
 
-        manager.setCurrentAccessToken("user", "access-token")
+        manager.saveTokens("user", accessToken = "access-token", refreshToken = "refresh", idToken = "id")
         assertThat(manager.hasCurrentAccessToken("user")).isTrue()
 
-        manager.setCurrentAccessToken("user", null)
-        assertThat(manager.hasCurrentAccessToken("user")).isFalse()
-    }
-
-    @Test
-    fun `hasCurrentAccessToken is unaffected by a stored refresh or ID token alone`() = runTest {
-        val manager = readyManager()
-        manager.setCurrentRefreshToken("user", "refresh-token")
-        manager.setCurrentIDToken("user", "id-token")
-
+        manager.deleteAccessToken("user")
         assertThat(manager.hasCurrentAccessToken("user")).isFalse()
     }
 

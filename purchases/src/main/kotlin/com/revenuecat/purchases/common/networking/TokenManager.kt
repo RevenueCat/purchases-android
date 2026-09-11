@@ -77,7 +77,7 @@ internal class TokenManager(
         null
     }
 
-    // region Per-token access
+    // region Read access
 
     /** The current access token stored for [appUserID], or `null` if none is stored (or storage isn't ready). */
     fun currentAccessToken(appUserID: String): String? = readToken(accessTokenKey(appUserID))
@@ -87,21 +87,6 @@ internal class TokenManager(
 
     /** The current ID token stored for [appUserID], or `null` if none is stored (or storage isn't ready). */
     fun currentIDToken(appUserID: String): String? = readToken(idTokenKey(appUserID))
-
-    /** Sets (or, if `null`, clears) the access token stored for [appUserID]. No-op if storage isn't ready. */
-    fun setCurrentAccessToken(appUserID: String, accessToken: String?) {
-        writeToken(accessTokenKey(appUserID), accessToken)
-    }
-
-    /** Sets (or, if `null`, clears) the refresh token stored for [appUserID]. No-op if storage isn't ready. */
-    fun setCurrentRefreshToken(appUserID: String, refreshToken: String?) {
-        writeToken(refreshTokenKey(appUserID), refreshToken)
-    }
-
-    /** Sets (or, if `null`, clears) the ID token stored for [appUserID]. No-op if storage isn't ready. */
-    fun setCurrentIDToken(appUserID: String, idToken: String?) {
-        writeToken(idTokenKey(appUserID), idToken)
-    }
 
     /**
      * Whether an access token is currently stored for [appUserID]. `false` if storage isn't ready, independent
@@ -115,22 +100,23 @@ internal class TokenManager(
     // region Bulk operations
 
     /**
-     * Saves all three tokens for [appUserID] in one call, e.g. after a successful login or token refresh.
-     * No-op if storage isn't ready.
+     * Saves all three tokens for [appUserID] in one call, e.g. after a successful login or token refresh. The
+     * only way to write a token into this storage — there's no per-token setter, so a caller can never update
+     * one slot without the other two. No-op if storage isn't ready.
      */
     fun saveTokens(appUserID: String, accessToken: String, refreshToken: String, idToken: String) {
-        setCurrentAccessToken(appUserID, accessToken)
-        setCurrentRefreshToken(appUserID, refreshToken)
-        setCurrentIDToken(appUserID, idToken)
+        writeToken(accessTokenKey(appUserID), accessToken)
+        writeToken(refreshTokenKey(appUserID), refreshToken)
+        writeToken(idTokenKey(appUserID), idToken)
     }
 
     /**
      * Clears all three token slots for [appUserID], e.g. for a full logout. No-op if storage isn't ready.
      */
     fun deleteTokens(appUserID: String) {
-        setCurrentAccessToken(appUserID, null)
-        setCurrentRefreshToken(appUserID, null)
-        setCurrentIDToken(appUserID, null)
+        writeToken(accessTokenKey(appUserID), null)
+        writeToken(refreshTokenKey(appUserID), null)
+        writeToken(idTokenKey(appUserID), null)
     }
 
     /**
@@ -139,7 +125,7 @@ internal class TokenManager(
      * full logout, e.g. forcing a refresh on the next request. No-op if storage isn't ready.
      */
     fun deleteAccessToken(appUserID: String) {
-        setCurrentAccessToken(appUserID, null)
+        writeToken(accessTokenKey(appUserID), null)
     }
 
     // endregion
