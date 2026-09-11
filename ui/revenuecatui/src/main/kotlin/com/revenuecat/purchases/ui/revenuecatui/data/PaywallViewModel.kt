@@ -920,8 +920,9 @@ internal class PaywallViewModelImpl(
 
     /**
      * Resolves [workflowOffering] to its workflow and either presents it or decides how to fall back: a
-     * workflowless offering renders its own paywall, and an unreadable workflows topic renders the default
-     * paywall.
+     * workflowless offering renders its own paywall, an unreadable workflows topic renders the default
+     * paywall, and a workflow that is only an offering step (a checkpoint's terminal offering) has no UI of its
+     * own, so the offering renders its own paywall as well.
      */
     @Suppress("ReturnCount")
     private suspend fun presentWorkflowOrResolveFallback(
@@ -931,8 +932,7 @@ internal class PaywallViewModelImpl(
         when (val resolution = purchases.resolveWorkflow(workflowOffering.identifier)) {
             is WorkflowResolution.Found -> {
                 try {
-                    presentWorkflow(resolution.workflowId, workflowOffering, preloadedOfferings)
-                    return WorkflowOutcome.Presented
+                    return presentWorkflow(resolution.workflowId, workflowOffering, preloadedOfferings)
                 } catch (e: PurchasesException) {
                     // The workflow id resolved but its body or ui config could not be served. Reloading offerings
                     // would only yield the offering's skipped-away components, so surface the error instead of
@@ -965,20 +965,35 @@ internal class PaywallViewModelImpl(
         }
     }
 
-    private suspend fun presentWorkflow(workflowId: String, offering: Offering, preloadedOfferings: Offerings?) {
-        coroutineScope {
-            val workflowDeferred = async { purchases.awaitGetWorkflow(workflowId) }
-            val uiConfigDeferred = async { purchases.awaitGetUiConfig() }
-            val offeringsDeferred = async { preloadedOfferings ?: purchases.awaitOfferings() }
-            val workflowBlobRefDeferred = async { purchases.awaitWorkflowBlobRef(workflowId) }
-            startWorkflowPresentation(
-                workflowDeferred.await(),
-                uiConfigDeferred.await(),
-                offeringsDeferred.await(),
-                offering.presentedOfferingContext,
-                workflowBlobRefDeferred.await(),
+    private suspend fun presentWorkflow(
+        workflowId: String,
+        offering: Offering,
+        preloadedOfferings: Offerings?,
+    ): WorkflowOutcome = coroutineScope {
+        val workflowDeferred = async { purchases.awaitGetWorkflow(workflowId) }
+        val uiConfigDeferred = async { purchases.awaitGetUiConfig() }
+        val offeringsDeferred = async { preloadedOfferings ?: purchases.awaitOfferings() }
+        val workflowBlobRefDeferred = async { purchases.awaitWorkflowBlobRef(workflowId) }
+        val workflow = workflowDeferred.await()
+        if (workflow.steps[workflow.initialStepId]?.isOfferingStep == true) {
+            Logger.d(
+                "Paywalls: Workflow '$workflowId' for offering '${offering.identifier}' is an offering workflow. " +
+                    "Presenting the offering's own paywall.",
             )
+            uiConfigDeferred.cancel()
+            offeringsDeferred.cancel()
+            workflowBlobRefDeferred.cancel()
+            clearWorkflowState()
+            return@coroutineScope WorkflowOutcome.Fallback(offering, preloadedOfferings)
         }
+        startWorkflowPresentation(
+            workflow,
+            uiConfigDeferred.await(),
+            offeringsDeferred.await(),
+            offering.presentedOfferingContext,
+            workflowBlobRefDeferred.await(),
+        )
+        WorkflowOutcome.Presented
     }
 
     private suspend fun resolveOfferingSelection(offeringSelection: OfferingSelection): ResolvedOfferingSelection =
