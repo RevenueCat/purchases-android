@@ -41,6 +41,7 @@ import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedButtonPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedCarouselPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedCountdownPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedPackagePartial
@@ -569,9 +570,7 @@ internal class StyleFactory(
             is VideoComponent -> createVideoComponentStyle(component)
             is FallbackHeaderComponent -> Result.Success(null)
             is WebViewComponent -> createWebViewComponentStyle(component)
-            is CountdownComponent -> createCountdownComponentStyle(
-                component,
-            )
+            is CountdownComponent -> createCountdownComponentStyle(component)
         }
     }
 
@@ -604,13 +603,22 @@ internal class StyleFactory(
                 first = createStackComponentStyle(component.countdownStack),
                 second = component.endStack?.let { createStackComponentStyle(it) }.orSuccessfullyNull(),
                 third = component.fallback?.let { createStackComponentStyle(it) }.orSuccessfullyNull(),
-            ) { countdownStack, endStack, fallbackStack ->
+                fourth = component.overrides
+                    .toPresentedOverrides(stripRules) { partial -> Result.Success(PresentedCountdownPartial(partial)) }
+                    .mapError { nonEmptyListOf(it) },
+            ) { countdownStack, endStack, fallbackStack, presentedOverrides ->
                 CountdownComponentStyle(
                     date = component.style.date,
                     countFrom = component.countFrom,
                     countdownStackComponentStyle = countdownStack,
                     endStackComponentStyle = endStack,
                     fallbackStackComponentStyle = fallbackStack,
+                    visible = component.visible ?: DEFAULT_VISIBILITY,
+                    overrides = presentedOverrides,
+                    rcPackage = rcPackage,
+                    resolvedOffer = resolvedOffer,
+                    tabIndex = tabControlIndex,
+                    offerEligibility = offerEligibility,
                 )
             }
         }
