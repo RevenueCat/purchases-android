@@ -12,6 +12,7 @@ import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedPackagePartial
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -525,8 +526,9 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
             initialSelectedTabIndex = null,
         )
         state.update(selectedPackageUniqueId = mediumOnly.uniqueId)
+        state.windowScreenCondition = ScreenCondition.MEDIUM
 
-        // 700dp wide is the medium size class: the renderer shows this package, so reconcile keeps it.
+        // The renderer shows this package on a medium window, so reconcile keeps it.
         state.reconcileSelectionForWindowSize(DpSize(700.dp, 600.dp))
 
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
@@ -572,8 +574,9 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
             initialSelectedTabIndex = null,
         )
         state.update(selectedPackageUniqueId = hiddenCurrent.uniqueId)
+        state.windowScreenCondition = ScreenCondition.MEDIUM
 
-        // 700dp wide is the medium size class: the authored default is hidden there too.
+        // The authored default is hidden on a medium window too, so it can't be the replacement.
         state.reconcileSelectionForWindowSize(DpSize(700.dp, 600.dp))
 
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
@@ -620,6 +623,28 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
         state.reconcileSelectionForWindowSize(DpSize(800.dp, 600.dp))
 
         assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Reconcile keeps the selection while any on-screen copy is visible`() {
+        val hiddenOutsideCopy = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = false,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+        )
+        val visibleTabCopy = packageInfo(TestData.Packages.monthly, isSelectedByDefault = false)
+        val tabDefault = packageInfo(TestData.Packages.annual, isSelectedByDefault = true)
+        val state = paywallState(
+            packagesOutsideTabs = listOf(hiddenOutsideCopy),
+            packagesByTab = mapOf(0 to listOf(visibleTabCopy, tabDefault)),
+            initialSelectedTabIndex = 0,
+        )
+        state.update(selectedPackageUniqueId = visibleTabCopy.uniqueId)
+
+        // The hidden outside-tabs copy must not mask the visible copy on the active tab.
+        state.reconcileSelectionForWindowSize(DpSize(800.dp, 600.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
     }
 
     @Test
