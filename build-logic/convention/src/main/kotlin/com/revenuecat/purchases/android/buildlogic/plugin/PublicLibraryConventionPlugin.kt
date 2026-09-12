@@ -5,6 +5,7 @@ import com.revenuecat.purchases.android.buildlogic.convention.configureApisFlavo
 import com.revenuecat.purchases.android.buildlogic.convention.configureConditionalPublishing
 import com.revenuecat.purchases.android.buildlogic.convention.configureDokka
 import com.revenuecat.purchases.android.buildlogic.convention.configureMetalava
+import com.revenuecat.purchases.android.buildlogic.convention.configurePublishedCapabilities
 import com.revenuecat.purchases.android.buildlogic.ktx.libs
 import com.revenuecat.purchases.android.buildlogic.ktx.plugins
 import org.gradle.api.Plugin
@@ -26,6 +27,7 @@ class PublicLibraryConventionPlugin : Plugin<Project> {
 
         configureAndroidLibrary()
         configureApisFlavors()
+        configurePublishedCapabilities()
         configureConditionalPublishing()
         configureMetalava()
         configureDokka()
