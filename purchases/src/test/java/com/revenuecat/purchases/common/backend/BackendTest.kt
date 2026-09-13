@@ -75,6 +75,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import java.io.IOException
+import java.net.SocketTimeoutException
 import java.net.URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
@@ -1687,6 +1688,44 @@ class BackendTest {
         asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
             lock.countDown()
         }, onError = onReceiveOfferingsErrorHandler)
+        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
+        assertThat(lock.count).isEqualTo(0)
+        verify(exactly = 1) {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetOfferings(appUserID),
+                body = null,
+                postFieldsToSign = null,
+                any(),
+            )
+        }
+    }
+
+    @Test
+    fun `given multiple get offerings calls for same user, all coalesced callers receive the error when the request times out`() {
+        every {
+            mockClient.performRequest(
+                mockBaseURL,
+                Endpoint.GetOfferings(appUserID),
+                body = null,
+                postFieldsToSign = null,
+                any(),
+            )
+        } answers {
+            Thread.sleep(200)
+            throw SocketTimeoutException("Read timed out")
+        }
+        val lock = CountDownLatch(2)
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
+            fail<Unit>("Should be error")
+        }, onError = { _, _ ->
+            lock.countDown()
+        })
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
+            fail<Unit>("Should be error")
+        }, onError = { _, _ ->
+            lock.countDown()
+        })
         lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
         assertThat(lock.count).isEqualTo(0)
         verify(exactly = 1) {
