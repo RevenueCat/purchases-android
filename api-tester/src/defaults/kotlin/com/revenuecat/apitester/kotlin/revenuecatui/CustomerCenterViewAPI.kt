@@ -37,5 +37,6 @@ private class CustomerCenterViewAPI {
         view.setDismissHandler(dismissHandler)
         view.setCustomerCenterListener(null)
         view.setCustomerCenterListener(listener)
+        view.navigateBack()
     }
 }
