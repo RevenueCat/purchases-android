@@ -113,21 +113,21 @@ class IdentityManagerTests {
 
     @Test
     fun testConfigureWithAnonymousUserIDGeneratesAnAppUserID() {
-        mockCleanCaches()
+        mockNoCachedAppUserID()
         identityManager.configure(null)
         assertCorrectlyIdentifiedWithAnonymous()
     }
 
     @Test
     fun testConfigureWithEmptyUserIDGeneratesAnAnonymousAppUserID() {
-        mockCleanCaches()
+        mockNoCachedAppUserID()
         identityManager.configure(" ")
         assertCorrectlyIdentifiedWithAnonymous()
     }
 
     @Test
     fun testAnonymousIDsMatchesFormat() {
-        mockCleanCaches()
+        mockNoCachedAppUserID()
         identityManager.configure(null)
         assertCorrectlyIdentifiedWithAnonymous()
     }
@@ -152,7 +152,7 @@ class IdentityManagerTests {
 
     @Test
     fun testConfigureWithAnonymousUserSavesTheIDInTheCache() {
-        mockCleanCaches()
+        mockNoCachedAppUserID()
         identityManager.configure(null)
         assertCorrectlyIdentifiedWithAnonymous()
     }
@@ -536,7 +536,7 @@ class IdentityManagerTests {
 
     @Test
     fun `when configuring with a specific user, subscriber attributes are cleaned up`() {
-        mockCleanCaches()
+        mockNoCachedAppUserID()
         identityManager.configure("cesar")
         verify {
             mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache("cesar", any())
@@ -545,7 +545,7 @@ class IdentityManagerTests {
 
     @Test
     fun `when configuring with an anonymous user, subscriber attributes are cleaned up`() {
-        mockCleanCaches()
+        mockNoCachedAppUserID()
         identityManager.configure(null)
         assertThat(cachedAppUserIDSlot.captured).isNotNull
         verify {
@@ -555,7 +555,7 @@ class IdentityManagerTests {
 
     @Test
     fun `when configuring with a specific user, cache is cleaned up`() {
-        mockCleanCaches()
+        mockNoCachedAppUserID()
         identityManager.configure("cesar")
         verify {
             mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache("cesar", any())
@@ -564,7 +564,7 @@ class IdentityManagerTests {
 
     @Test
     fun `when configuring with an anonymous user, cache is cleaned up`() {
-        mockCleanCaches()
+        mockNoCachedAppUserID()
         identityManager.configure(null)
         assertThat(cachedAppUserIDSlot.captured).isNotNull
         verify {
@@ -574,14 +574,14 @@ class IdentityManagerTests {
 
     @Test
     fun testConfigureCleansUpOldAttributionDataCacheForAnonymousUsers() {
-        mockCleanCaches()
+        mockNoCachedAppUserID()
         identityManager.configure(null)
         verify(exactly = 1) { mockDeviceCache.cleanupOldAttributionData() }
     }
 
     @Test
     fun testConfigureCleansUpOldAttributionDataCacheForNonAnonymousUsers() {
-        mockCleanCaches()
+        mockNoCachedAppUserID()
         identityManager.configure("cesar")
         verify(exactly = 1) { mockDeviceCache.cleanupOldAttributionData() }
     }
@@ -661,6 +661,7 @@ class IdentityManagerTests {
     @Test
     fun `we don't invalidate customer info and etag caches if no customer info cached`() {
         val userId = "test-app-user-id"
+        mockNoCachedAppUserID()
         every { mockDeviceCache.getCachedCustomerInfo(userId) } returns null
         every { mockBackend.verificationMode } returns SignatureVerificationMode.Informational(mockk())
         identityManager = createIdentityManager()
@@ -715,7 +716,7 @@ class IdentityManagerTests {
 
     @Test
     fun `configure in preview mode uses fixed user ID`() {
-        mockCleanCaches()
+        mockNoCachedAppUserID()
         identityManager = createIdentityManager(uiPreviewMode = true)
         identityManager.configure(null)
         assertThat(cachedAppUserIDSlot.isCaptured).isTrue
@@ -724,7 +725,7 @@ class IdentityManagerTests {
 
     @Test
     fun `configure in preview mode ignores provided user ID`() {
-        mockCleanCaches()
+        mockNoCachedAppUserID()
         identityManager = createIdentityManager(uiPreviewMode = true)
         identityManager.configure("real-user")
         assertThat(cachedAppUserIDSlot.isCaptured).isTrue
@@ -952,6 +953,7 @@ class IdentityManagerTests {
             }
         }
         every { mockDeviceCache.getCachedCustomerInfo(userId) } returns mockCustomerInfo
+        mockNoCachedAppUserID()
         if (shouldClearCustomerInfoAndETagCaches) {
             every { mockDeviceCache.clearCustomerInfoCache(userId, mockEditor) } just Runs
             every { mockBackend.clearCaches() } just Runs
@@ -1012,7 +1014,7 @@ class IdentityManagerTests {
         every { mockBackend.clearCaches() } just Runs
     }
 
-    private fun mockCleanCaches() {
+    private fun mockNoCachedAppUserID() {
         every { mockDeviceCache.getCachedAppUserID() } returns null
         every { mockDeviceCache.getLegacyCachedAppUserID() } returns null
     }
