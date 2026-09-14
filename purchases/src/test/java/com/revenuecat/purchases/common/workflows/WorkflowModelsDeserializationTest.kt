@@ -23,6 +23,20 @@ internal class WorkflowModelsDeserializationTest {
     }
 
     @Test
+    fun `WorkflowStep isOfferingStep is true only for offering steps`() {
+        val offeringStep = JsonTools.json.decodeFromString(
+            WorkflowStep.serializer(),
+            """{"id": "step_1", "type": "offering"}""",
+        )
+        val screenStep = JsonTools.json.decodeFromString(
+            WorkflowStep.serializer(),
+            """{"id": "step_2", "type": "screen", "screen_id": "screen_1"}""",
+        )
+        assertThat(offeringStep.isOfferingStep).isTrue
+        assertThat(screenStep.isOfferingStep).isFalse
+    }
+
+    @Test
     fun `WorkflowStep stepScreenType is empty when tagged with empty array`() {
         // A step the backend tagged with no known type. Empty (not null) means "explicitly not a
         // paywall", which suppresses paywall events.

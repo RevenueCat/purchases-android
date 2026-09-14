@@ -983,6 +983,34 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
+    fun `an offering whose topic workflow is an offering step renders its own paywall`() = runTest {
+        // A checkpoint's terminal offering workflow is mapped to its offering in the workflows topic, but it has
+        // no screen to render: presenting the offering must not try to render it as a UI workflow.
+        val offeringStep = WorkflowStep(id = "offering-step", type = "offering")
+        val offeringWorkflow = PublishedWorkflow(
+            id = "wfl-offering",
+            displayName = "Offering",
+            initialStepId = offeringStep.id,
+            steps = mapOf(offeringStep.id to offeringStep),
+            screens = emptyMap(),
+            metadata = emptyMap(),
+            singleStepFallbackId = null,
+        )
+        coEvery { purchases.resolveWorkflow(offeringId) } returns WorkflowResolution.Found(offeringWorkflow.id)
+        coEvery { purchases.awaitGetWorkflow(offeringWorkflow.id) } returns offeringWorkflow
+        // Fetched alongside the workflow body; the fallback decision cancels them.
+        coEvery { purchases.awaitGetUiConfig() } returns uiConfig
+        coEvery { purchases.awaitOfferings() } returns testOfferings
+
+        val vm = createVm()
+        advanceUntilIdle()
+
+        assertThat(vm.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
+        assertThat(vm.state.value).isNotInstanceOf(PaywallState.Error::class.java)
+        assertThat(vm.workflowState.value).isNull()
+    }
+
+    @Test
     fun `warm cache renders the workflow on the first composition with no Loading state`() {
         // Model Dispatchers.Main.immediate with an unconfined main dispatcher so viewModelScope.launch runs
         // eagerly, as in production. On a warm cache every suspend read resolves without suspending (mockk

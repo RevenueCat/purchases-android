@@ -124,12 +124,18 @@ public data class WorkflowStep(
     public val experimentVariant: String?
         get() = stringParam(EXPERIMENT_VARIANT_PARAM)
 
+    /** A terminal step that resolves to an offering instead of rendering a screen. */
+    @InternalRevenueCatAPI
+    public val isOfferingStep: Boolean
+        get() = type == OFFERING_STEP_TYPE
+
     private fun stringParam(key: String): String? =
         (paramValues[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
 }
 
 private const val EXPERIMENT_ID_PARAM = "experiment_id"
 private const val EXPERIMENT_VARIANT_PARAM = "experiment_variant"
+private const val OFFERING_STEP_TYPE = "offering"
 
 @InternalRevenueCatAPI
 @Serializable

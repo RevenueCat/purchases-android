@@ -158,13 +158,13 @@ internal class CheckpointWorkflowResolverImpl(
         }
         val initialStep = workflow.steps[workflow.initialStepId]
             ?: return unservableRule(rule, "its initial step was not found")
-        return if (initialStep.type == OFFERING_STEP_TYPE) {
+        return if (initialStep.isOfferingStep) {
             if (workflow.steps.size != 1) {
                 unservableRule(rule, "an offering step cannot be mixed with other steps")
             } else {
                 resolveOfferingRule(checkpointIdentifier, rule, initialStep)
             }
-        } else if (workflow.steps.values.any { it.type == OFFERING_STEP_TYPE }) {
+        } else if (workflow.steps.values.any { it.isOfferingStep }) {
             unservableRule(rule, "a UI workflow cannot contain offering steps")
         } else {
             resolveUiRule(checkpointIdentifier, workflowManager, rule, workflow, uiConfig)
@@ -259,7 +259,6 @@ internal class CheckpointWorkflowResolverImpl(
 
     private companion object {
         const val SIMULATED_ERROR_CHECKPOINT_ID = "error_checkpoint"
-        const val OFFERING_STEP_TYPE = "offering"
         const val OFFERING_IDENTIFIER_PARAM = "offering_identifier"
     }
 }
