@@ -6,6 +6,10 @@ internal object IdentityStrings {
     const val ALIAS_OLD_USER_ID_TO_CURRENT_SUCCESSFUL = "Successfully aliased old user ID %s to current user ID %s."
     const val LOG_IN_ERROR_MISSING_APP_USER_ID = "Error logging in: appUserID can't be null, empty or blank"
     const val IDENTIFYING_APP_USER_ID = "Identifying App User ID: %s"
+    const val CONFIGURED_APP_USER_ID_DIFFERS_FROM_CACHED =
+        "The App User ID passed to configure differs from the cached App User ID. " +
+            "This does not automatically log in or alias the cached user. " +
+            "Call logIn with the new App User ID to transfer purchases and attributes."
     const val EMPTY_APP_USER_ID_WILL_BECOME_ANONYMOUS = "Identifying with empty App User ID will be " +
         "treated as anonymous."
     const val SETTING_NEW_ANON_ID = "Setting new anonymous App User ID - %s"
