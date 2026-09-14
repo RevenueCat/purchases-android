@@ -47,6 +47,8 @@ import java.security.GeneralSecurityException
  * @param scope the [CoroutineScope] storage construction runs on; constructor-injectable so tests can control
  *   or await it. Defaults to a dedicated [SupervisorJob] + [Dispatchers.IO] scope, cancelled by [close].
  */
+
+@Suppress("TooManyFunctions")
 internal class TokenManager(
     context: Context,
     apiKey: String,
