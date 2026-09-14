@@ -10,6 +10,8 @@ import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowScreenContext
 internal data class WebViewContextInput(
     val customVariables: Map<String, CustomVariableValue>,
     val offering: Offering?,
+    /** The packages the paywall shows. */
+    val packages: List<Package>,
     /** Its own when the component sits inside a package, else the selection. */
     val componentPackage: Package?,
     val selectedPackage: Package?,

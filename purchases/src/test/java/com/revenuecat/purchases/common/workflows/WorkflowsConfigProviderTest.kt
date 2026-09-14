@@ -69,6 +69,32 @@ internal class WorkflowsConfigProviderTest {
     }
 
     @Test
+    fun `workflowBlobRef pairs a cached body with the ref captured alongside it`() = runTest {
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        stubWorkflowBody(WF_CURRENT)
+        provider.warm(generation = 0)
+        val warmedRef = configItem(prefetch = false, offeringId = CURRENT_OFFERING).blobRef
+
+        // The live topic moves to a new ref while the warmed body stays in memory.
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns topicWith(
+            WF_CURRENT to RemoteConfiguration.ConfigItem(blobRef = "ref-moved", prefetch = false),
+        )
+
+        assertThat(provider.getWorkflow(WF_CURRENT)).isNotNull
+        assertThat(provider.workflowBlobRef(WF_CURRENT)).isEqualTo(warmedRef)
+    }
+
+    @Test
+    fun `workflowBlobRef falls back to the topic when nothing is cached`() = runTest {
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns topicWith(
+            WF_CURRENT to RemoteConfiguration.ConfigItem(blobRef = "ref-from-topic", prefetch = false),
+        )
+
+        assertThat(provider.workflowBlobRef(WF_CURRENT)).isEqualTo("ref-from-topic")
+    }
+
+    @Test
     fun `getWorkflow returns a warmed workflow from memory without re-reading`() = runTest {
         stubTopic()
         stubWorkflowBody(WF_PREFETCH)

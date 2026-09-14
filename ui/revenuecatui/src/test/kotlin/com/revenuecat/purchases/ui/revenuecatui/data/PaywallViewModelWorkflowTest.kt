@@ -454,6 +454,7 @@ class PaywallViewModelWorkflowTest {
             every { purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
             every { track(any()) } just Runs
             coEvery { awaitOfferings() } returns testOfferings
+            coEvery { awaitWorkflowBlobRef(any()) } returns null
             coEvery { awaitCustomerInfo(any()) } returns mockk {
                 every { activeSubscriptions } returns setOf()
                 every { nonSubscriptionTransactions } returns listOf()
@@ -1337,7 +1338,7 @@ class PaywallViewModelWorkflowTest {
     }
 
     @Test
-    fun `step events echo the experiment params baked into the step`() {
+    fun `no experiment is reported without the workflow blob ref`() {
         val experimentStep1 = step1.copy(
             paramValues = mapOf(
                 "experiment_id" to JsonPrimitive("exp_abc"),
@@ -1350,6 +1351,31 @@ class PaywallViewModelWorkflowTest {
 
         val vm = createVm()
         vm.startWorkflowPresentationFromResult(experimentWorkflow, testOfferings, null, uiConfig)
+
+        val started = captured.filterIsInstance<WorkflowEvent.StepStarted>().single()
+        assertThat(started.experiment).isNull()
+    }
+
+    @Test
+    fun `step events carry the step experiment data and the workflow blob ref`() {
+        val experimentStep1 = step1.copy(
+            paramValues = mapOf(
+                "experiment_id" to JsonPrimitive("exp_abc"),
+                "experiment_variant" to JsonPrimitive("b"),
+            ),
+        )
+        val experimentWorkflow = workflow.copy(steps = mapOf("step-1" to experimentStep1, "step-2" to step2))
+        val captured = mutableListOf<FeatureEvent>()
+        every { purchases.track(any()) } answers { captured.add(firstArg()) }
+
+        val vm = createVm()
+        vm.startWorkflowPresentationFromResult(
+            experimentWorkflow,
+            testOfferings,
+            null,
+            uiConfig,
+            workflowBlobRef = "blob-ref-1",
+        )
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
         vm.onTransitionComplete(vm.workflowState.value!!.pendingTransition!!.id)
         vm.handleBackNavigation()
@@ -1361,23 +1387,23 @@ class PaywallViewModelWorkflowTest {
 
         val step1Started = started.filter { it.stepId == "step-1" }
         assertThat(step1Started).hasSize(2)
-        assertThat(step1Started.map { it.experimentId }).containsOnly("exp_abc")
-        assertThat(step1Started.map { it.experimentVariant }).containsOnly("b")
+        assertThat(step1Started.map { it.experiment?.experimentId }).containsOnly("exp_abc")
+        assertThat(step1Started.map { it.experiment?.experimentVariant }).containsOnly("b")
+        assertThat(step1Started.map { it.experiment?.workflowBlobRef }).containsOnly("blob-ref-1")
         // step-1 completes twice: once on forward navigation, once from closePaywall.
         val step1Completed = completed.filter { it.stepId == "step-1" }
         assertThat(step1Completed).hasSize(2)
-        assertThat(step1Completed.map { it.experimentId }).containsOnly("exp_abc")
-        assertThat(step1Completed.map { it.experimentVariant }).containsOnly("b")
+        assertThat(step1Completed.map { it.experiment?.experimentId }).containsOnly("exp_abc")
+        assertThat(step1Completed.map { it.experiment?.experimentVariant }).containsOnly("b")
         assertThat(close.stepId).isEqualTo("step-1")
-        assertThat(close.experimentId).isEqualTo("exp_abc")
-        assertThat(close.experimentVariant).isEqualTo("b")
+        assertThat(close.experiment?.experimentId).isEqualTo("exp_abc")
+        assertThat(close.experiment?.experimentVariant).isEqualTo("b")
+        assertThat(close.experiment?.workflowBlobRef).isEqualTo("blob-ref-1")
 
         val step2Started = started.single { it.stepId == "step-2" }
-        assertThat(step2Started.experimentId).isNull()
-        assertThat(step2Started.experimentVariant).isNull()
+        assertThat(step2Started.experiment).isNull()
         val step2Completed = completed.single { it.stepId == "step-2" }
-        assertThat(step2Completed.experimentId).isNull()
-        assertThat(step2Completed.experimentVariant).isNull()
+        assertThat(step2Completed.experiment).isNull()
     }
 
     @Test

@@ -90,6 +90,12 @@ internal fun ButtonComponentView(
         return
     }
 
+    // The button's own visibility, which rules can target independently of its inner stack.
+    val buttonVisibility = rememberUpdatedButtonVisibilityState(style = style, paywallState = state)
+    if (!buttonVisibility.visible) {
+        return
+    }
+
     TransitionView(transition = style.transition) {
         // Get a ButtonComponentState that calculates the stateful properties we should use.
         val buttonState = rememberButtonComponentState(

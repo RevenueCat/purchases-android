@@ -474,6 +474,11 @@ public class Purchases internal constructor(
     public suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         purchasesOrchestrator.resolveWorkflow(offeringId)
 
+    @InternalRevenueCatAPI
+    @JvmSynthetic
+    public suspend fun awaitWorkflowBlobRef(workflowId: String): String? =
+        purchasesOrchestrator.workflowBlobRef(workflowId)
+
     /**
      * Gets the StoreProduct(s) for the given list of product ids for all product types.
      * @param [productIds] List of productIds

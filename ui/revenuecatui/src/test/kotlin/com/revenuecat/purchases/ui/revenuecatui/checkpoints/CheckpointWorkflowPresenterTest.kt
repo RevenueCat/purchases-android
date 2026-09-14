@@ -14,6 +14,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.R
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -256,6 +257,24 @@ class CheckpointWorkflowPresenterTest {
         val window = ShadowDialog.getLatestDialog().window!!
         assertThat(window.attributes.flags and WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED)
             .isNotEqualTo(0)
+    }
+
+    @Test
+    fun `a first present fades the workflow window in and out`() {
+        launchCheckpoint()
+
+        val window = ShadowDialog.getLatestDialog().window!!
+        assertThat(window.attributes.windowAnimations).isEqualTo(R.style.RcCheckpointWindowAnimation)
+    }
+
+    @Test
+    fun `a re-present after a configuration change only fades out`() {
+        launchCheckpoint()
+
+        controller.recreate()
+
+        val window = ShadowDialog.getLatestDialog().window!!
+        assertThat(window.attributes.windowAnimations).isEqualTo(R.style.RcCheckpointWindowAnimation_Represent)
     }
 
     private fun launchCheckpoint(): Job = CoroutineScope(dispatcher).launch {

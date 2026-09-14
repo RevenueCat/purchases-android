@@ -26,6 +26,7 @@ import kotlinx.serialization.json.jsonObject
 internal fun testContextSnapshot(
     customVariables: Map<String, CustomVariableValue> = emptyMap(),
     offering: Offering? = null,
+    packages: List<Package> = offering?.availablePackages.orEmpty(),
     componentPackage: Package? = null,
     selectedPackage: Package? = null,
     store: Store = Store.PLAY_STORE,
@@ -37,6 +38,7 @@ internal fun testContextSnapshot(
     WebViewContextInput(
         customVariables = customVariables,
         offering = offering,
+        packages = packages,
         componentPackage = componentPackage,
         selectedPackage = selectedPackage,
         store = store,

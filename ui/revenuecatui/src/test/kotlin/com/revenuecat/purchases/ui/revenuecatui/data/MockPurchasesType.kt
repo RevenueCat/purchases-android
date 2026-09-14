@@ -71,4 +71,6 @@ internal class MockPurchasesType(
     }
 
     override suspend fun resolveWorkflow(offeringId: String): WorkflowResolution = WorkflowResolution.NoWorkflow
+
+    override suspend fun awaitWorkflowBlobRef(workflowId: String): String? = null
 }

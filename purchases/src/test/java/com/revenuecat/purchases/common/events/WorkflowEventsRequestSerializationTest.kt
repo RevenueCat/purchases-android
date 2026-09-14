@@ -86,6 +86,7 @@ class WorkflowEventsRequestSerializationTest {
                         properties = event.properties.copy(
                             experimentId = "exp_abc",
                             experimentVariant = "b",
+                            workflowBlobRef = "blob-ref-1",
                         ),
                     )
                 },
@@ -96,6 +97,7 @@ class WorkflowEventsRequestSerializationTest {
 
         assertThat(requestString).contains("\"experiment_id\":\"exp_abc\"")
         assertThat(requestString).contains("\"experiment_variant\":\"b\"")
+        assertThat(requestString).contains("\"blob_ref\":\"blob-ref-1\"")
     }
 
     @Test
@@ -104,6 +106,7 @@ class WorkflowEventsRequestSerializationTest {
 
         assertThat(requestString).doesNotContain("experiment_id")
         assertThat(requestString).doesNotContain("experiment_variant")
+        assertThat(requestString).doesNotContain("blob_ref")
     }
 
     @Test
