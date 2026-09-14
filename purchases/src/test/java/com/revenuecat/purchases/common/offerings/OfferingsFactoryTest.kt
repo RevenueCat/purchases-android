@@ -768,6 +768,7 @@ class OfferingsFactoryTest {
             billing.queryProductDetailsAsync(
                 type,
                 productIds.toSet(),
+                any(),
                 captureLambda(),
                 any(),
             )

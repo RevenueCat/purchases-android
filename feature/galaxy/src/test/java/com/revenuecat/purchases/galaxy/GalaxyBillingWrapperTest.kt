@@ -171,9 +171,10 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
         )
 
         verify(exactly = 1) {
-            productDataHandler.getProductDetails(
+                productDataHandler.getProductDetails(
                 productIds = capture(idsSlot),
                 productType = capture(typeSlot),
+                logUnfetchedProducts = any(),
                 onReceive = capture(onReceiveSlot),
                 onError = capture(onErrorSlot),
             )
@@ -202,7 +203,7 @@ class GalaxyBillingWrapperTest : GalaxyStoreTest() {
             onError = { fail("should be ignored") },
         )
 
-        verify(exactly = 0) { productDataHandler.getProductDetails(any(), any(), any(), any()) }
+        verify(exactly = 0) { productDataHandler.getProductDetails(any(), any(), any(), any(), any()) }
     }
 
     @OptIn(GalaxySerialOperation::class)

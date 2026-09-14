@@ -61,6 +61,7 @@ public abstract class BillingAbstract(
     public abstract fun queryProductDetailsAsync(
         productType: ProductType,
         productIds: Set<String>,
+        logUnfetchedProducts: Boolean = true,
         onReceive: StoreProductsCallback,
         onError: PurchasesErrorCallback,
     )
