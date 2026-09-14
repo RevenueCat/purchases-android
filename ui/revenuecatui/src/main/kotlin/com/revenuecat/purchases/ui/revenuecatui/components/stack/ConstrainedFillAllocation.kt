@@ -26,16 +26,9 @@ internal fun allocateConstrainedFillSpace(
 
     while (remainingIndices.isNotEmpty()) {
         val equalShare = remainingSpace.toDouble() / remainingIndices.size
-        val minimumConstrainedIndices = remainingIndices.filter { index ->
+        val constrainedIndices = remainingIndices.filter { index ->
             val fill = requireNotNull(constraints[index])
-            equalShare < fill.minimumPx(density)
-        }
-        val constrainedIndices = if (minimumConstrainedIndices.isNotEmpty()) {
-            minimumConstrainedIndices
-        } else {
-            remainingIndices.filter { index ->
-                equalShare > requireNotNull(constraints[index]).maximumPx(density)
-            }
+            equalShare < fill.minimumPx(density) || equalShare > fill.maximumPx(density)
         }
 
         if (constrainedIndices.isEmpty()) {
@@ -53,7 +46,7 @@ internal fun allocateConstrainedFillSpace(
 
         constrainedIndices.forEach { index ->
             val fill = requireNotNull(constraints[index])
-            val allocation = if (minimumConstrainedIndices.isNotEmpty()) {
+            val allocation = if (equalShare < fill.minimumPx(density)) {
                 fill.minimumPx(density)
             } else {
                 fill.maximumPx(density)

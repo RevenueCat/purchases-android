@@ -2,8 +2,10 @@ package com.revenuecat.purchases.ui.revenuecatui.components.stack
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -116,6 +118,43 @@ class StackConstrainedFillDistributionTest {
     @Test
     fun `vertical constrained Fill allocation includes resolved margins`() {
         assertConstrainedFillAllocationIncludesMargins(horizontal = false)
+    }
+
+    @Test
+    fun `horizontal Fit maximum clamps its frame without shrinking overflowing fixed children`() {
+        val stack = StackComponent(
+            components = listOf(
+                coloredBlock(Size(width = Fixed(64u), height = Fill()), Color.Red),
+                coloredBlock(Size(width = Fixed(64u), height = Fill()), Color.Blue),
+                coloredBlock(Size(width = Fixed(64u), height = Fill()), Color.Green),
+            ),
+            dimension = Dimension.Horizontal(VerticalAlignment.CENTER, FlexDistribution.CENTER),
+            size = Size(width = Fit(max = 160u), height = Fixed(40u)),
+            spacing = 8f,
+        )
+        val style = styleFactory.create(stack).getOrThrow().componentStyle as StackComponentStyle
+
+        composeTestRule.setContent {
+            Box(
+                modifier = Modifier
+                    .requiredSize(width = 300.dp, height = 80.dp)
+                    .testTag("canvas"),
+                contentAlignment = Alignment.Center,
+            ) {
+                StackComponentView(
+                    style = style,
+                    state = FakePaywallState(components = emptyList()),
+                    clickHandler = {},
+                )
+            }
+        }
+
+        composeTestRule.waitForIdle()
+        val y = with(composeTestRule.density) { 40.dp.roundToPx() }
+        composeTestRule.onNodeWithTag("canvas")
+            .assertPixelColorEquals(Color.Red, dpToPx(50), y, width = 1, height = 1)
+            .assertPixelColorEquals(Color.Blue, dpToPx(120), y, width = 1, height = 1)
+            .assertPixelColorEquals(Color.Green, dpToPx(250), y, width = 1, height = 1)
     }
 
     private fun assertConstrainedFillAllocationIncludesMargins(horizontal: Boolean) {
@@ -473,6 +512,8 @@ class StackConstrainedFillDistributionTest {
         size = size,
         backgroundColor = ColorScheme(light = ColorInfo.Hex(color.toArgb())),
     )
+
+    private fun dpToPx(value: Int): Int = with(composeTestRule.density) { value.dp.roundToPx() }
 
     private fun assertCappedFillDistribution(
         horizontal: Boolean,

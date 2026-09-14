@@ -34,6 +34,14 @@ class MediaSizeTest {
     }
 
     @Test
+    fun `width minimum is the finite target for flexible fit media`() {
+        val size = Size(width = Fit(min = 120u), height = Fit())
+
+        assertThat(size.adjustForMedia(widthPx = 1024u, heightPx = 1024u, density = Density(3f)))
+            .isEqualTo(Size(width = Fixed(120u), height = Fixed(120u)))
+    }
+
+    @Test
     fun `most restrictive maximum scales both fit dimensions`() {
         val size = Size(width = Fit(max = 150u), height = Fit(max = 40u))
 
