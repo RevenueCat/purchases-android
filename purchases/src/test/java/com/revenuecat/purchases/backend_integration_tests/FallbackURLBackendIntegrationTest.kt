@@ -52,7 +52,7 @@ internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
 
     @Test
     fun `can perform verified product entitlement mapping backend request`() {
-        setupTest(SignatureVerificationMode.Enforced())
+        setupTest(SignatureVerificationMode.Enforced)
         ensureBlockFinishes { latch ->
             backend.getProductEntitlementMapping(
                 onSuccessHandler = { productEntitlementMapping ->
@@ -105,7 +105,7 @@ internal class FallbackURLBackendIntegrationTest: BaseBackendIntegrationTest() {
 
     @Test
     fun `can perform verified offerings backend request`() {
-        setupTest(SignatureVerificationMode.Enforced())
+        setupTest(SignatureVerificationMode.Enforced)
         ensureBlockFinishes { latch ->
             backend.getOfferings(
                 appUserID = "test-user-id",
