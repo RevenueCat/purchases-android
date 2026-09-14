@@ -10,11 +10,14 @@ import android.widget.EditText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -47,7 +50,7 @@ class CheckpointWorkflowPresenterTest {
 
     private val presentedCallIds = mutableListOf<String>()
     private var lastOptions: PaywallOptions? = null
-    private var result: CheckpointResult? = null
+    private var result: CheckpointRun? = null
     private var contentFactory: (Activity) -> View = { activity -> View(activity) }
     private val contentViews = mutableListOf<View>()
 
@@ -118,6 +121,54 @@ class CheckpointWorkflowPresenterTest {
 
         assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
         assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Dismissed)
+        assertThat(backedOut()).isFalse
+    }
+
+    @Test
+    fun `a dismissal with a close reason completes the call as Dismissed`() {
+        launchCheckpoint()
+
+        lastOptions!!.dismissRequestWithExitOffering!!(null, null, PaywallDismissReason.CLOSE)
+
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
+        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Dismissed)
+        assertThat(backedOut()).isFalse
+    }
+
+    @Test
+    fun `a dismissal carrying an error result completes the call with that error`() {
+        launchCheckpoint()
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Step misconfigured")
+
+        lastOptions!!.dismissRequestWithExitOffering!!(null, PaywallResult.Error(error), PaywallDismissReason.CLOSE)
+
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
+        assertThat((paywallOutcome() as CheckpointPaywallOutcome.Error).error).isEqualTo(error)
+        assertThat(backedOut()).isFalse
+    }
+
+    @Test
+    fun `a dismissal with a navigated-back reason completes the call as Dismissed and backed out`() {
+        launchCheckpoint()
+
+        lastOptions!!.dismissRequestWithExitOffering!!(null, null, PaywallDismissReason.NAVIGATED_BACK)
+
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
+        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Dismissed)
+        assertThat(backedOut()).isTrue
+    }
+
+    @Test
+    fun `a purchase recorded before backing out is the delivered outcome`() {
+        val customerInfo = mockk<CustomerInfo>()
+        val storeTransaction = mockk<StoreTransaction>()
+        launchCheckpoint()
+        manager.recordOutcome(currentCallId(), CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+
+        lastOptions!!.dismissRequestWithExitOffering!!(null, null, PaywallDismissReason.NAVIGATED_BACK)
+
+        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+        assertThat(backedOut()).isFalse
     }
 
     @Test
@@ -290,13 +341,15 @@ class CheckpointWorkflowPresenterTest {
     }
 
     private fun launchCheckpoint(): Job = CoroutineScope(dispatcher).launch {
-        result = manager.checkpoint(mockPurchases, "test_checkpoint", null)
+        result = manager.runCheckpoint(mockPurchases, "test_checkpoint", null)
     }
 
     private fun currentCallId(): String = presentedCallIds.last()
 
     private fun paywallOutcome(): CheckpointPaywallOutcome? =
-        (result as? CheckpointResult.PaywallPresented)?.paywallOutcome
+        (result?.result as? CheckpointResult.PaywallPresented)?.paywallOutcome
+
+    private fun backedOut(): Boolean? = result?.backedOut
 
     private companion object {
         const val CONTENT_VIEW_ID = 4242

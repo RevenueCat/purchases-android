@@ -56,7 +56,7 @@ public class PaywallOptions internal constructor(
     public val purchaseLogic: PaywallPurchaseLogic?,
     internal val mode: PaywallMode,
     public val dismissRequest: () -> Unit,
-    internal val dismissRequestWithExitOffering: ((exitOffering: Offering?, result: PaywallResult?) -> Unit)? = null,
+    internal val dismissRequestWithExitOffering: DismissRequestWithExitOffering? = null,
     /**
      * Custom variables to be used in paywall text. These values will replace `{{ custom.key }}` or
      * `{{ $custom.key }}` placeholders in the paywall configuration.
@@ -126,7 +126,7 @@ public class PaywallOptions internal constructor(
         purchaseLogic: PaywallPurchaseLogic? = this.purchaseLogic,
         mode: PaywallMode = this.mode,
         dismissRequest: () -> Unit = this.dismissRequest,
-        dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = this.dismissRequestWithExitOffering,
+        dismissRequestWithExitOffering: DismissRequestWithExitOffering? = this.dismissRequestWithExitOffering,
         customVariables: Map<String, CustomVariableValue> = this.customVariables,
         injectedWorkflow: PublishedWorkflow? = this.injectedWorkflow,
         injectedWorkflowUiConfig: UiConfig = this.injectedWorkflowUiConfig,
@@ -156,7 +156,7 @@ public class PaywallOptions internal constructor(
         internal var listener: PaywallListener? = null
         internal var purchaseLogic: PaywallPurchaseLogic? = null
         internal var mode: PaywallMode = PaywallMode.default
-        internal var dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null
+        internal var dismissRequestWithExitOffering: DismissRequestWithExitOffering? = null
         internal var customVariables: Map<String, CustomVariableValue> = emptyMap()
         internal var injectedWorkflow: PublishedWorkflow? = null
         internal var injectedWorkflowUiConfig: UiConfig = emptyUiConfig()
@@ -207,7 +207,7 @@ public class PaywallOptions internal constructor(
         }
 
         internal fun setDismissRequestWithExitOffering(
-            dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)?,
+            dismissRequestWithExitOffering: DismissRequestWithExitOffering?,
         ) = apply {
             this.dismissRequestWithExitOffering = dismissRequestWithExitOffering
         }
@@ -267,6 +267,22 @@ public class PaywallOptions internal constructor(
             return PaywallOptions(this)
         }
     }
+}
+
+/**
+ * Internal dismissal channel that, unlike [PaywallOptions.dismissRequest], carries the exit offering to present
+ * (if any), the result to deliver, and how the paywall was dismissed.
+ */
+internal typealias DismissRequestWithExitOffering =
+    (exitOffering: Offering?, result: PaywallResult?, reason: PaywallDismissReason) -> Unit
+
+/** How a paywall was dismissed, reported through [DismissRequestWithExitOffering]. */
+internal enum class PaywallDismissReason {
+    /** The user backed out: system back, or a navigate-back action on a workflow's first step. */
+    NAVIGATED_BACK,
+
+    /** Any other dismissal: a close action, a web checkout hand-off, or a completed purchase or restore. */
+    CLOSE,
 }
 
 /**

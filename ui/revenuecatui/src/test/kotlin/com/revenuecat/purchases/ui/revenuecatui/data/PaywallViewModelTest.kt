@@ -54,6 +54,7 @@ import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
@@ -3129,12 +3130,14 @@ class PaywallViewModelTest {
         var dismissWithExitOfferingInvoked = false
         var receivedExitOffering: Offering? = mockk()
         var receivedResult: PaywallResult? = PaywallResult.Cancelled
+        var receivedReason: PaywallDismissReason? = null
 
         val model = create(
-            dismissRequestWithExitOffering = { exitOffering, result ->
+            dismissRequestWithExitOffering = { exitOffering, result, reason ->
                 dismissWithExitOfferingInvoked = true
                 receivedExitOffering = exitOffering
                 receivedResult = result
+                receivedReason = reason
             },
         )
 
@@ -3143,13 +3146,28 @@ class PaywallViewModelTest {
         assertThat(dismissWithExitOfferingInvoked).isTrue()
         assertThat(receivedExitOffering).isNull()
         assertThat(receivedResult).isNull()
+        assertThat(receivedReason).isEqualTo(PaywallDismissReason.CLOSE)
+        assertThat(dismissInvoked).isFalse()
+    }
+
+    @Test
+    fun `closePaywall forwards a navigated-back reason to dismissRequestWithExitOffering`() {
+        var receivedReason: PaywallDismissReason? = null
+
+        val model = create(
+            dismissRequestWithExitOffering = { _, _, reason -> receivedReason = reason },
+        )
+
+        model.closePaywall(reason = PaywallDismissReason.NAVIGATED_BACK)
+
+        assertThat(receivedReason).isEqualTo(PaywallDismissReason.NAVIGATED_BACK)
         assertThat(dismissInvoked).isFalse()
     }
 
     @Test
     fun `closePaywall forwards an error result through dismissRequestWithExitOffering`() {
         var receivedResult: PaywallResult? = null
-        val model = create(dismissRequestWithExitOffering = { _, result -> receivedResult = result })
+        val model = create(dismissRequestWithExitOffering = { _, result, _ -> receivedResult = result })
         val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Step misconfigured")
 
         model.closePaywall(result = PaywallResult.Error(error))
@@ -3182,7 +3200,7 @@ class PaywallViewModelTest {
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
-            dismissRequestWithExitOffering = { exitOffering, result ->
+            dismissRequestWithExitOffering = { exitOffering, result, _ ->
                 dismissWithExitOfferingInvoked = true
                 receivedResult = result
                 assertThat(exitOffering).isNull()
@@ -3215,7 +3233,7 @@ class PaywallViewModelTest {
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
-            dismissRequestWithExitOffering = { exitOffering, result ->
+            dismissRequestWithExitOffering = { exitOffering, result, _ ->
                 dismissWithExitOfferingInvoked = true
                 receivedResult = result
                 assertThat(exitOffering).isNull()
@@ -3249,7 +3267,7 @@ class PaywallViewModelTest {
 
             val model = create(
                 customPurchaseLogic = myAppPurchaseLogic,
-                dismissRequestWithExitOffering = { exitOffering, result ->
+                dismissRequestWithExitOffering = { exitOffering, result, _ ->
                     dismissWithExitOfferingInvoked = true
                     receivedResult = result
                     assertThat(exitOffering).isNull()
@@ -3284,7 +3302,7 @@ class PaywallViewModelTest {
 
             val model = create(
                 customPurchaseLogic = myAppPurchaseLogic,
-                dismissRequestWithExitOffering = { exitOffering, result ->
+                dismissRequestWithExitOffering = { exitOffering, result, _ ->
                     dismissWithExitOfferingInvoked = true
                     receivedResult = result
                     assertThat(exitOffering).isNull()
@@ -3609,7 +3627,7 @@ class PaywallViewModelTest {
         offering: Offering? = null,
         customPurchaseLogic: PaywallPurchaseLogic? = null,
         mode: PaywallMode = PaywallMode.default,
-        dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
+        dismissRequestWithExitOffering: ((Offering?, PaywallResult?, PaywallDismissReason) -> Unit)? = null,
         dismissRequest: () -> Unit = { dismissInvoked = true },
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
