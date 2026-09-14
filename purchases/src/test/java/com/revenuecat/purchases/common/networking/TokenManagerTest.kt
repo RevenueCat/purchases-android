@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.common.security.SecureStorageException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -261,6 +262,7 @@ class TokenManagerTest {
 
     // endregion
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private fun testScope(): CoroutineScope = CoroutineScope(UnconfinedTestDispatcher())
 
     private suspend fun readyManager(apiKey: String = "test_api_key"): TokenManager {
