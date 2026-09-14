@@ -134,19 +134,6 @@ internal class WorkflowsConfigProvider(
     suspend fun workflowIdForOfferingId(offeringId: String): String? =
         (resolveWorkflow(offeringId) as? WorkflowResolution.Found)?.workflowId
 
-    /**
-     * Every workflow id in the `workflows` topic that maps to an `offering_identifier`, mapped to that offering.
-     * Workflows without one are omitted: they can't be presented, so no caller has a use for them. Empty when the
-     * topic is unavailable. May trigger a `/v1/config` sync on a cold cache.
-     */
-    suspend fun offeringIdByWorkflowId(): Map<String, String> =
-        manager.topic(RemoteConfigTopic.Workflows)
-            ?.mapNotNull { (workflowId, item) ->
-                item.metadata.stringOrNull(KEY_OFFERING_IDENTIFIER)?.let { workflowId to it }
-            }
-            ?.toMap()
-            .orEmpty()
-
     suspend fun workflowBlobRef(workflowId: String): String? =
         cache.cached?.workflowBlobRefs?.get(workflowId)
             ?: manager.topic(RemoteConfigTopic.Workflows)?.get(workflowId)?.blobRef

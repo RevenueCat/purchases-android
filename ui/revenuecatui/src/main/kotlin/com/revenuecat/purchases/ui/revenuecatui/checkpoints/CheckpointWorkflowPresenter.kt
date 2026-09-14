@@ -81,7 +81,7 @@ internal class CheckpointWorkflowPresenter(
         host = activity
         val resolution = presentation.resolution
         val options = PaywallOptions.Builder(dismissRequest = ::requestDismiss)
-            .injectedWorkflow(resolution.workflow, resolution.offering, resolution.uiConfig)
+            .injectedWorkflow(resolution.workflow, resolution.offerings, resolution.uiConfig)
             .setCustomVariables(presentation.customVariables)
             .setListener(outcomeListener)
             .build()

@@ -147,6 +147,117 @@ internal class WorkflowModelsDeserializationTest {
     }
 
     @Test
+    fun `WorkflowStep offeringIdentifier reads param_values offering identifier`() {
+        val json = """
+            {"id": "step_1", "type": "screen", "param_values": {"offering": {"identifier": "default"}}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isEqualTo("default")
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier is null when param_values lacks offering`() {
+        val json = """
+            {"id": "step_1", "type": "screen", "param_values": {"other": "value"}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier is null when offering is null`() {
+        val json = """
+            {"id": "step_1", "type": "screen", "param_values": {"offering": null}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier is null when offering is not an object`() {
+        val json = """
+            {"id": "step_1", "type": "screen", "param_values": {"offering": "default"}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier is null when offering has no identifier`() {
+        val json = """
+            {"id": "step_1", "type": "screen", "param_values": {"offering": {}}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier is null for a null identifier`() {
+        val json = """
+            {"id": "step_1", "type": "screen", "param_values": {"offering": {"identifier": null}}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier is null for a non-string identifier`() {
+        val json = """
+            {"id": "step_1", "type": "screen", "param_values": {"offering": {"identifier": 42}}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier is null for a blank identifier`() {
+        val json = """
+            {"id": "step_1", "type": "screen", "param_values": {"offering": {"identifier": "  "}}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier falls back to the flat offering_identifier`() {
+        val json = """
+            {"id": "step_1", "type": "screen", "param_values": {"offering_identifier": "default"}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isEqualTo("default")
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier prefers the nested offering over the flat offering_identifier`() {
+        val json = """
+            {"id": "step_1", "type": "screen", "param_values": {"offering": {"identifier": "nested"}, "offering_identifier": "flat"}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isEqualTo("nested")
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier falls back to the flat offering_identifier when the nested one is invalid`() {
+        val json = """
+            {"id": "step_1", "type": "screen", "param_values": {"offering": {"identifier": 42}, "offering_identifier": "flat"}}
+        """.trimIndent()
+        val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+        assertThat(step.offeringIdentifier).isNull()
+    }
+
+    @Test
+    fun `WorkflowStep offeringIdentifier is null for a non-string or blank flat offering_identifier`() {
+        listOf(
+            """{"id": "step_1", "type": "screen", "param_values": {"offering_identifier": 42}}""",
+            """{"id": "step_1", "type": "screen", "param_values": {"offering_identifier": null}}""",
+            """{"id": "step_1", "type": "screen", "param_values": {"offering_identifier": "  "}}""",
+        ).forEach { json ->
+            val step = JsonTools.json.decodeFromString(WorkflowStep.serializer(), json)
+            assertThat(step.offeringIdentifier).describedAs(json).isNull()
+        }
+    }
+
+    @Test
     fun `WorkflowScreen reads state_declarations`() {
         val json = """
             {
