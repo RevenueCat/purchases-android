@@ -244,7 +244,7 @@ class TokenManagerTest {
             idToken = fakeIDToken(amr = listOf("anonymous")),
         )
 
-        assertThat(manager.currentIdentitySources("user")).containsExactly(IdentitySource.ANONYMOUS)
+        assertThat(manager.currentIdentitySources("user")).containsExactly(IdentitySource.ANONYMOUS.rawValue)
         assertThat(manager.isCurrentIdentityAnonymous("user")).isTrue()
         assertThat(manager.currentIdentitySource("user")).isEqualTo(IdentitySource.ANONYMOUS)
     }
@@ -260,7 +260,7 @@ class TokenManagerTest {
         )
 
         assertThat(manager.currentIdentitySources("user"))
-            .containsExactly(IdentitySource.ANONYMOUS, IdentitySource.GOOGLE)
+            .containsExactly(IdentitySource.ANONYMOUS.rawValue, IdentitySource.GOOGLE.rawValue)
         assertThat(manager.isCurrentIdentityAnonymous("user")).isFalse()
         assertThat(manager.currentIdentitySource("user")).isEqualTo(IdentitySource.GOOGLE)
     }
@@ -281,7 +281,7 @@ class TokenManagerTest {
     }
 
     @Test
-    fun `an unrecognized amr entry is dropped rather than failing the whole list`() = runTest {
+    fun `an unrecognized amr entry is kept as a raw string, not dropped`() = runTest {
         val manager = readyManager()
         manager.saveTokens(
             "user",
@@ -290,7 +290,25 @@ class TokenManagerTest {
             idToken = fakeIDToken(amr = listOf("google", "some_future_provider")),
         )
 
-        assertThat(manager.currentIdentitySources("user")).containsExactly(IdentitySource.GOOGLE)
+        assertThat(manager.currentIdentitySources("user")).containsExactly("google", "some_future_provider")
+    }
+
+    @Test
+    fun `an unrecognized, non-anonymous source alongside anonymous is not reported as anonymous`() = runTest {
+        // The regression this guards against: if an unrecognized amr entry were silently dropped before
+        // the anonymous check ran, this would incorrectly look anonymous once "some_future_provider" (a
+        // real, non-anonymous linked identity this SDK version just doesn't have a name for yet) had been
+        // filtered out of the list.
+        val manager = readyManager()
+        manager.saveTokens(
+            "user",
+            accessToken = "access",
+            refreshToken = "refresh",
+            idToken = fakeIDToken(amr = listOf("anonymous", "some_future_provider")),
+        )
+
+        assertThat(manager.currentIdentitySources("user")).containsExactly("anonymous", "some_future_provider")
+        assertThat(manager.isCurrentIdentityAnonymous("user")).isFalse()
     }
 
     @Test
@@ -304,6 +322,22 @@ class TokenManagerTest {
         )
 
         assertThat(manager.currentIdentitySource("user")).isEqualTo(IdentitySource.SIGN_IN_WITH_APPLE)
+    }
+
+    @Test
+    fun `currentIdentitySource is null, not a stale earlier value, when the last entry is unrecognized`() = runTest {
+        // Mirrors the isCurrentIdentityAnonymous regression above: the last raw entry is the one that
+        // matters here, so an unrecognized one must report null rather than falling back to the last
+        // *recognized* entry ("google") from earlier in the list.
+        val manager = readyManager()
+        manager.saveTokens(
+            "user",
+            accessToken = "access",
+            refreshToken = "refresh",
+            idToken = fakeIDToken(amr = listOf("google", "some_future_provider")),
+        )
+
+        assertThat(manager.currentIdentitySource("user")).isNull()
     }
 
     // endregion
