@@ -33,6 +33,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -614,7 +615,7 @@ private fun MainStackComponent(
         if (stackState.children.isEmpty()) {
             Box(
                 modifier = outerModifier
-                    .size(stackState.size)
+                    .stackSize(stackState.size, stackState.dimension)
                     .then(rootModifier),
             )
         } else {
@@ -632,7 +633,7 @@ private fun MainStackComponent(
                         items = stackState.children,
                         mainAxisUnbounded = mainAxisUnbounded.value,
                         modifier = outerModifier
-                            .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
+                            .stackSize(stackState.size, dimension)
                             .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
                                 scrollable(state, orientation)
                             }
@@ -668,7 +669,7 @@ private fun MainStackComponent(
                         items = stackState.children,
                         mainAxisUnbounded = mainAxisUnbounded.value,
                         modifier = outerModifier
-                            .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
+                            .stackSize(stackState.size, dimension)
                             .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
                                 scrollable(state, orientation)
                             }
@@ -708,11 +709,7 @@ private fun MainStackComponent(
                     }
                     Box(
                         modifier = outerModifier
-                            .size(
-                                size = stackState.size,
-                                horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
-                                verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
-                            )
+                            .stackSize(stackState.size, dimension)
                             .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
                                 scrollable(state, orientation)
                             }
@@ -901,6 +898,49 @@ private fun MainStackComponent(
             overlay()
         }
     }
+}
+
+private fun Modifier.stackSize(size: Size, dimension: Dimension): Modifier = when (dimension) {
+    is Dimension.Horizontal -> size(
+        size = size,
+        horizontalAlignment = dimension.distribution.toHorizontalOverflowAlignment(),
+        verticalAlignment = dimension.alignment.toAlignment(),
+    )
+    is Dimension.Vertical -> size(
+        size = size,
+        horizontalAlignment = dimension.alignment.toAlignment(),
+        verticalAlignment = dimension.distribution.toVerticalOverflowAlignment(),
+    )
+    is Dimension.ZLayer -> size(
+        size = size,
+        horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
+        verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
+    )
+}
+
+/**
+ * When a minimum makes stack content larger than the space offered by its parent, keep the beginning of START/END
+ * content reachable instead of centering the overflow around the parent's edge. SPACE_* has no single edge anchor,
+ * so it keeps [Modifier.size]'s centered fallback.
+ */
+private fun FlexDistribution.toHorizontalOverflowAlignment(): Alignment.Horizontal? = when (this) {
+    FlexDistribution.START -> Alignment.Start
+    FlexDistribution.END -> Alignment.End
+    FlexDistribution.CENTER -> Alignment.CenterHorizontally
+    FlexDistribution.SPACE_BETWEEN,
+    FlexDistribution.SPACE_AROUND,
+    FlexDistribution.SPACE_EVENLY,
+    -> null
+}
+
+private fun FlexDistribution.toVerticalOverflowAlignment(): Alignment.Vertical? = when (this) {
+    FlexDistribution.START -> Alignment.Top
+    FlexDistribution.END -> Alignment.Bottom
+    FlexDistribution.CENTER -> Alignment.CenterVertically
+    FlexDistribution.SPACE_BETWEEN,
+    FlexDistribution.SPACE_AROUND,
+    FlexDistribution.SPACE_EVENLY,
+    -> null
 }
 
 private val TwoDimensionalAlignment.isTop: Boolean
