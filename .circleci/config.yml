@@ -186,6 +186,23 @@ jobs:
           command: bundle exec fastlane android build_admob_integration_sample
       - android/save_build_cache
 
+  assemble-admob-next-gen-integration-sample-app:
+    <<: *android-executor
+    shell: /bin/bash --login -o pipefail
+    steps:
+      - checkout
+      - revenuecat/install-mise-tools:
+          tools: java,ruby
+      - revenuecat/install-gem-unix-dependencies:
+          cache-version: v1
+      - android/accept_licenses
+      - android-dependencies
+      - android/restore_build_cache
+      - run:
+          name: Build sample app
+          command: bundle exec fastlane android build_admob_next_gen_integration_sample
+      - android/save_build_cache
+
   prepare-tests:
     <<: *android-executor
     shell: /bin/bash --login -o pipefail
@@ -987,6 +1004,7 @@ workflows:
           requires:
             - deploy-snapshot
       - assemble-admob-integration-sample-app
+      - assemble-admob-next-gen-integration-sample-app
 
   build-test-deploy:
     when:
@@ -1050,6 +1068,10 @@ workflows:
             - prepare-tests
           <<: *non-main-branches
       - assemble-admob-integration-sample-app:
+          requires:
+            - prepare-tests
+          <<: *non-main-branches
+      - assemble-admob-next-gen-integration-sample-app:
           requires:
             - prepare-tests
           <<: *non-main-branches
