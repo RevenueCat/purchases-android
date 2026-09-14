@@ -52,7 +52,6 @@ class StackSizeConstraintTest {
             Size(width = Fill(), height = Fill()),
             Size(width = Fit(), height = Fit()),
             Size(width = Fixed(100u), height = Fixed(100u)),
-            Size(width = Fit(max = 100u), height = Fit(max = 100u)),
         )
 
         for (stackSize in stackSizes) {
@@ -64,6 +63,22 @@ class StackSizeConstraintTest {
                 }
             }
         }
+    }
+
+    @Test
+    fun `a Fit stack with a maximum needs the constrained layout to preserve overflowing children`() {
+        val stackSize = Size(width = Fit(max = 100u), height = Fit())
+        val fixedChildren = listOf(
+            stackStyle(Size(width = Fixed(80u), height = Fixed(10u))),
+            stackStyle(Size(width = Fixed(80u), height = Fixed(10u))),
+        )
+
+        assertThat(
+            needsConstrainedFillLayout(stackSize, FlexDistribution.CENTER, fixedChildren, Orientation.Horizontal),
+        ).isTrue()
+        assertThat(
+            needsConstrainedFillLayout(stackSize, FlexDistribution.CENTER, fixedChildren, Orientation.Vertical),
+        ).isFalse()
     }
 
     @Test
@@ -180,25 +195,36 @@ class StackSizeConstraintTest {
     }
 
     @Test
-    fun `fill minimum is applied before sibling maximum`() {
+    fun `fill minimum and sibling maximum are both preserved when they exceed available space`() {
         val allocations = allocateConstrainedFillSpace(
             availableSpace = 100,
             constraints = listOf(Fill(min = 100u), Fill(max = 40u)),
             density = Density(1f),
         )
 
-        assertThat(allocations).containsExactly(100, 0)
+        assertThat(allocations).containsExactly(100, 40)
     }
 
     @Test
-    fun `space remaining after minimum is balanced between maximum constrained siblings`() {
+    fun `minimum and maximum constrained siblings keep their limits when they overflow`() {
         val allocations = allocateConstrainedFillSpace(
             availableSpace = 100,
             constraints = listOf(Fill(min = 80u), Fill(max = 20u), Fill(max = 20u)),
             density = Density(1f),
         )
 
-        assertThat(allocations).containsExactly(80, 10, 10)
+        assertThat(allocations).containsExactly(80, 20, 20)
+    }
+
+    @Test
+    fun `minimum and maximum siblings redistribute the preview harness remainder`() {
+        val allocations = allocateConstrainedFillSpace(
+            availableSpace = 224,
+            constraints = listOf(Fill(max = 60u), Fill(), Fill(min = 140u)),
+            density = Density(1f),
+        )
+
+        assertThat(allocations).containsExactly(60, 24, 140)
     }
 
     @Test

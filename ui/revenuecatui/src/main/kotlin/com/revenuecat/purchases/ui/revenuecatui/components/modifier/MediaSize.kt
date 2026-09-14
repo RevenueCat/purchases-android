@@ -69,7 +69,12 @@ private fun adjustFitDimensions(
         width.effectiveMaximum.scaleFor(intrinsicWidth, fallback = Float.POSITIVE_INFINITY),
         height.effectiveMaximum.scaleFor(intrinsicHeight, fallback = Float.POSITIVE_INFINITY),
     )
-    val scale = if (minimumScale <= maximumScale) {
+    val scale = if ((width.min ?: 0u) > 0u) {
+        // Resizable media has no intrinsic layout width on iOS. A Fit width with a minimum therefore uses that
+        // minimum as its finite target, with the height following the aspect ratio. Do the same instead of using
+        // the source bitmap's pixel dimensions, which can make a high-resolution asset hundreds of dp wide.
+        minimumScale
+    } else if (minimumScale <= maximumScale) {
         1f.coerceIn(minimumScale, maximumScale)
     } else {
         // The two axes cannot both satisfy their limits without distortion. Match the existing size behavior by

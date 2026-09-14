@@ -33,6 +33,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -117,11 +118,9 @@ import androidx.compose.ui.geometry.Size as ComposeSize
  *   non-clickable (no ripple, no gesture detection). When non-null, the stack draws a Material
  *   ripple clipped to the stack's shape. Distinct from [clickHandler].
  *
- *   Overflow-safe drawing — i.e. nested children that extend outside the parent's bounds (badges
- *   with offsets, drop shadows) staying visible during press — is currently only guaranteed for
- *   the *plain* render path: stacks with no video background, no nested badge, and no overlay.
- *   On those other paths a `clip(composeShape)` still gates descendant rendering, so overflowing
- *   children can be cropped while the ripple is active.
+ *   In the plain render path, stacks without an explicit shape keep overflowing descendants
+ *   visible. Supplying a shape clips descendants to it. Video, nested-badge, and overlay paths
+ *   retain their existing clipping behavior.
  * @param enabled When `false`, the underlying `Modifier.clickable` is gated off — clicks and the
  *   ripple are suppressed, and the node is announced as disabled to accessibility services. Only
  *   meaningful when [onStackClick] is non-null. Use for transient disabled states such as
@@ -614,7 +613,7 @@ private fun MainStackComponent(
         if (stackState.children.isEmpty()) {
             Box(
                 modifier = outerModifier
-                    .size(stackState.size)
+                    .stackSize(stackState.size, stackState.dimension)
                     .then(rootModifier),
             )
         } else {
@@ -632,7 +631,7 @@ private fun MainStackComponent(
                         items = stackState.children,
                         mainAxisUnbounded = mainAxisUnbounded.value,
                         modifier = outerModifier
-                            .size(stackState.size, verticalAlignment = dimension.alignment.toAlignment())
+                            .stackSize(stackState.size, dimension)
                             .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
                                 scrollable(state, orientation)
                             }
@@ -668,7 +667,7 @@ private fun MainStackComponent(
                         items = stackState.children,
                         mainAxisUnbounded = mainAxisUnbounded.value,
                         modifier = outerModifier
-                            .size(stackState.size, horizontalAlignment = dimension.alignment.toAlignment())
+                            .stackSize(stackState.size, dimension)
                             .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
                                 scrollable(state, orientation)
                             }
@@ -708,11 +707,7 @@ private fun MainStackComponent(
                     }
                     Box(
                         modifier = outerModifier
-                            .size(
-                                size = stackState.size,
-                                horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
-                                verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
-                            )
+                            .stackSize(stackState.size, dimension)
                             .applyIfNotNull(scrollState, stackState.scrollOrientation) { state, orientation ->
                                 scrollable(state, orientation)
                             }
@@ -819,9 +814,8 @@ private fun MainStackComponent(
             //   `Modifier.weight` reach the parent Row/Column) and owns the click gesture +
             //   semantics — this co-locates `OnClick` with the caller's `testTag` / `Role` on
             //   one merged semantics node.
-            // - The inner stack draws its content (shadow, background, border, padding) without
-            //   any shape clip, so children that intentionally overflow the parent's bounds
-            //   (e.g. badges with offsets, overflowing shadows) remain visible.
+            // - The inner stack draws its content (shadow, background, border, padding), clipping
+            //   descendants only when the component JSON supplies a shape.
             // - The sibling `Box` provides the shape-clipped Material ripple via
             //   `Modifier.indication`, sharing the same `InteractionSource` as the wrapper's
             //   clickable so press events drive its draw.
@@ -836,6 +830,7 @@ private fun MainStackComponent(
                 stack(
                     Modifier,
                     outerShapeModifier
+                        .conditional(stackState.shouldClipToShape) { clip(composeShape) }
                         .then(borderModifier)
                         .then(innerShapeModifier)
                         .conditional(stackState.applyBottomWindowInsets) {
@@ -857,6 +852,7 @@ private fun MainStackComponent(
             stack(
                 modifier,
                 outerShapeModifier
+                    .conditional(stackState.shouldClipToShape) { clip(composeShape) }
                     .then(borderModifier)
                     .then(innerShapeModifier)
                     .conditional(stackState.applyBottomWindowInsets) {
@@ -901,6 +897,49 @@ private fun MainStackComponent(
             overlay()
         }
     }
+}
+
+private fun Modifier.stackSize(size: Size, dimension: Dimension): Modifier = when (dimension) {
+    is Dimension.Horizontal -> size(
+        size = size,
+        horizontalAlignment = dimension.distribution.toHorizontalOverflowAlignment(),
+        verticalAlignment = dimension.alignment.toAlignment(),
+    )
+    is Dimension.Vertical -> size(
+        size = size,
+        horizontalAlignment = dimension.alignment.toAlignment(),
+        verticalAlignment = dimension.distribution.toVerticalOverflowAlignment(),
+    )
+    is Dimension.ZLayer -> size(
+        size = size,
+        horizontalAlignment = dimension.alignment.toHorizontalAlignmentOrNull(),
+        verticalAlignment = dimension.alignment.toVerticalAlignmentOrNull(),
+    )
+}
+
+/**
+ * When a minimum makes stack content larger than the space offered by its parent, keep the beginning of START/END
+ * content reachable instead of centering the overflow around the parent's edge. SPACE_* has no single edge anchor,
+ * so it keeps [Modifier.size]'s centered fallback.
+ */
+private fun FlexDistribution.toHorizontalOverflowAlignment(): Alignment.Horizontal? = when (this) {
+    FlexDistribution.START -> Alignment.Start
+    FlexDistribution.END -> Alignment.End
+    FlexDistribution.CENTER -> Alignment.CenterHorizontally
+    FlexDistribution.SPACE_BETWEEN,
+    FlexDistribution.SPACE_AROUND,
+    FlexDistribution.SPACE_EVENLY,
+    -> null
+}
+
+private fun FlexDistribution.toVerticalOverflowAlignment(): Alignment.Vertical? = when (this) {
+    FlexDistribution.START -> Alignment.Top
+    FlexDistribution.END -> Alignment.Bottom
+    FlexDistribution.CENTER -> Alignment.CenterVertically
+    FlexDistribution.SPACE_BETWEEN,
+    FlexDistribution.SPACE_AROUND,
+    FlexDistribution.SPACE_EVENLY,
+    -> null
 }
 
 private val TwoDimensionalAlignment.isTop: Boolean

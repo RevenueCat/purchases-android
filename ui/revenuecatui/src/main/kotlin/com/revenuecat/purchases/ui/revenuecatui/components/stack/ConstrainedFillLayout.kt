@@ -23,7 +23,8 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.conditional
 /**
  * A Row/Column replacement that is only used when a stack has min/max size constraints on its main axis (see
  * [needsConstrainedFillLayout]). It divides the main axis between Fill children while honoring their minimums and
- * maximums, and lets a Fit stack with a positive minimum hug its content.
+ * maximums, lets a Fit stack with a positive minimum hug its content, and preserves child overflow beyond a Fit
+ * maximum.
  */
 internal object ConstrainedFillLayout {
     internal sealed interface Config {
@@ -184,7 +185,13 @@ internal object ConstrainedFillLayout {
             if (fillConstraints[index] != null) return@forEachIndexed
             val gaps = if (config.distribution.usesAllAvailableSpace) index else nonFillCount
             val consumed = nonFillSize + spacingPx * gaps
-            val placeable = measurable.measure(constraints.forNonFillChild(consumed, config.orientation))
+            val placeable = measurable.measure(
+                constraints.forNonFillChild(
+                    consumed = consumed,
+                    orientation = config.orientation,
+                    fitMainAxis = config.fitMainAxis,
+                ),
+            )
             placeables[index] = placeable
             nonFillSize += placeable.mainAxisSize(config.orientation)
             nonFillCount++
@@ -208,17 +215,39 @@ private fun Constraints.crossAxisMax(orientation: Orientation): Int =
     if (orientation == Orientation.Horizontal) maxHeight else maxWidth
 
 /**
- * Like Row/Column, non-Fill children are measured without minimums and are only offered the main-axis space that
- * previous siblings left over.
+ * Like Row/Column, non-Fill children are measured without minimums and are normally only offered the main-axis space
+ * that previous siblings left over. A Fit main axis measures them without a main-axis maximum so the stack can clamp
+ * its own frame without shrinking the content that should overflow it.
  */
-private fun Constraints.forNonFillChild(consumed: Int, orientation: Orientation): Constraints {
+private fun Constraints.forNonFillChild(
+    consumed: Int,
+    orientation: Orientation,
+    fitMainAxis: Boolean = false,
+): Constraints {
     val mainAxisMax = mainAxisMax(orientation)
-    if (mainAxisMax == Constraints.Infinity) return copy(minWidth = 0, minHeight = 0)
-    val remaining = (mainAxisMax - consumed).coerceAtLeast(0)
-    return if (orientation == Orientation.Horizontal) {
-        copy(minWidth = 0, minHeight = 0, maxWidth = remaining)
-    } else {
-        copy(minWidth = 0, minHeight = 0, maxHeight = remaining)
+    return when {
+        fitMainAxis && orientation == Orientation.Horizontal ->
+            copy(minWidth = 0, maxWidth = Constraints.Infinity, minHeight = 0)
+
+        fitMainAxis ->
+            copy(minWidth = 0, minHeight = 0, maxHeight = Constraints.Infinity)
+
+        mainAxisMax == Constraints.Infinity ->
+            copy(minWidth = 0, minHeight = 0)
+
+        orientation == Orientation.Horizontal ->
+            copy(
+                minWidth = 0,
+                minHeight = 0,
+                maxWidth = (mainAxisMax - consumed).coerceAtLeast(0),
+            )
+
+        else ->
+            copy(
+                minWidth = 0,
+                minHeight = 0,
+                maxHeight = (mainAxisMax - consumed).coerceAtLeast(0),
+            )
     }
 }
 

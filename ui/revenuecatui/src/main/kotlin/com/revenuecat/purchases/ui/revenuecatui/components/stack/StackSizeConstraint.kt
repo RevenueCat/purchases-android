@@ -43,6 +43,9 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponen
 internal val SizeConstraint.hasPositiveFitMinimum: Boolean
     get() = this is Fit && (min ?: 0u) > 0u
 
+private val SizeConstraint.hasFitMaximum: Boolean
+    get() = this is Fit && max != null
+
 internal val SizeConstraint.allowsFlexDistribution: Boolean
     get() = this !is Fit || hasPositiveFitMinimum
 
@@ -65,6 +68,8 @@ internal fun Size.mainAxis(orientation: Orientation): SizeConstraint =
  * - Redistribute leftover space when a `weight`ed child is capped by a maximum or floored by a minimum.
  * - Hug a Fit stack that has a positive minimum: any `weight` (Fill child or SPACE_* spacer) expands it to the
  *   parent's maximum instead.
+ * - Preserve and arrange children that are larger than a Fit stack's maximum instead of shrinking later children
+ *   into the remaining proposal.
  */
 internal fun needsConstrainedFillLayout(
     stackSize: Size,
@@ -77,7 +82,8 @@ internal fun needsConstrainedFillLayout(
     val hasLimitedFillChild = children.any { child ->
         child.candidateSizes.any { it.mainAxis(orientation).isLimitedFill }
     }
-    return hasLimitedFillChild ||
+    return mainAxis.hasFitMaximum ||
+        hasLimitedFillChild ||
         (mainAxis.hasPositiveFitMinimum && (hasFillChild || distribution.usesAllAvailableSpace))
 }
 
