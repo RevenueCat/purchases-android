@@ -2,11 +2,13 @@ package com.revenuecat.purchases.common.networking
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.common.JWT
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.security.EncryptedItemStorage
 import com.revenuecat.purchases.common.security.SecureItemStorage
 import com.revenuecat.purchases.common.security.SecureStorageException
 import com.revenuecat.purchases.common.security.derivePassword
+import com.revenuecat.purchases.identity.IdentitySource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -107,6 +109,44 @@ internal class TokenManager(
      * present.
      */
     fun hasCurrentAccessToken(appUserID: String): Boolean = currentAccessToken(appUserID) != null
+
+    // endregion
+
+    // region Identity introspection
+
+    /**
+     * The identity provider(s) listed in the `amr` (Authentication Methods References) claim of the ID
+     * token currently stored for [appUserID], decoded via [JWT] and mapped through
+     * [IdentitySource.fromRawValue]. A raw value that isn't a recognized [IdentitySource] (e.g. a newer
+     * wire value this SDK version doesn't know about yet) is silently dropped rather than failing the
+     * whole list.
+     *
+     * `null` if there's no ID token stored for [appUserID] (including because storage isn't ready) or the
+     * stored value isn't a well-formed JWT -- never because the `amr` claim happens to be empty; an empty
+     * `amr` claim yields an empty list, not `null`.
+     */
+    fun currentIdentitySources(appUserID: String): List<IdentitySource>? {
+        val amr = currentIDToken(appUserID)?.let { JWT.decode(it) }?.amr ?: return null
+        return amr.mapNotNull { IdentitySource.fromRawValue(it) }
+    }
+
+    /**
+     * Whether [appUserID]'s currently stored identity is anonymous: every source in
+     * [currentIdentitySources] is [IdentitySource.ANONYMOUS], and at least one source is listed at all.
+     * `false` when there's no readable identity to introspect in the first place ([currentIdentitySources]
+     * returns `null`), same as when it returns an empty list.
+     */
+    fun isCurrentIdentityAnonymous(appUserID: String): Boolean {
+        val sources = currentIdentitySources(appUserID)
+        return !sources.isNullOrEmpty() && sources.all { it == IdentitySource.ANONYMOUS }
+    }
+
+    /**
+     * The most recently listed entry in [currentIdentitySources] for [appUserID] -- the last source in the
+     * stored ID token's `amr` claim -- or `null` if there's no readable identity to introspect.
+     */
+    fun currentIdentitySource(appUserID: String): IdentitySource? =
+        currentIdentitySources(appUserID)?.lastOrNull()
 
     // endregion
 

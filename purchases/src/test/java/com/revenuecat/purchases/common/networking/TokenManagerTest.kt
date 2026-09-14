@@ -1,25 +1,29 @@
 package com.revenuecat.purchases.common.networking
 
 import android.app.Application
+import android.util.Base64
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.identity.IdentitySource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * Tests for [TokenManager]'s storage plumbing and construction (IAM phase 3, step 7). These deliberately go
- * through the real `derivePassword -> EncryptedItemStorage.create` chain (a real [Application] context, a real
- * API key, no test doubles for storage) rather than mocking storage construction, since [TokenManager]'s whole
- * purpose in this step is to own that chain correctly — a mocked storage would only prove the mock works, not
- * catch integration mistakes like accidental double-derivation, reading the wrong API key field, or a salt
- * mismatch between instances.
+ * Tests for [TokenManager]'s storage plumbing, construction, and identity introspection (IAM phase 3, steps
+ * 7-8). These deliberately go through the real `derivePassword -> EncryptedItemStorage.create` chain (a real
+ * [Application] context, a real API key, no test doubles for storage) rather than mocking storage
+ * construction, since [TokenManager]'s whole purpose in this step is to own that chain correctly — a mocked
+ * storage would only prove the mock works, not catch integration mistakes like accidental double-derivation,
+ * reading the wrong API key field, or a salt mismatch between instances.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -205,6 +209,102 @@ class TokenManagerTest {
 
     // endregion
 
+    // region identity introspection
+
+    @Test
+    fun `currentIdentitySources, isCurrentIdentityAnonymous and currentIdentitySource are null-ish with no ID token`() =
+        runTest {
+            val manager = readyManager()
+
+            assertThat(manager.currentIdentitySources("user")).isNull()
+            assertThat(manager.isCurrentIdentityAnonymous("user")).isFalse()
+            assertThat(manager.currentIdentitySource("user")).isNull()
+        }
+
+    @Test
+    fun `a malformed ID token is handled gracefully, not as a crash`() = runTest {
+        val manager = readyManager()
+        manager.saveTokens("user", accessToken = "access", refreshToken = "refresh", idToken = "not-a-jwt")
+
+        assertThat(manager.currentIdentitySources("user")).isNull()
+        assertThat(manager.isCurrentIdentityAnonymous("user")).isFalse()
+        assertThat(manager.currentIdentitySource("user")).isNull()
+    }
+
+    @Test
+    fun `a single anonymous source is reported as anonymous`() = runTest {
+        val manager = readyManager()
+        manager.saveTokens(
+            "user",
+            accessToken = "access",
+            refreshToken = "refresh",
+            idToken = fakeIDToken(amr = listOf("anonymous")),
+        )
+
+        assertThat(manager.currentIdentitySources("user")).containsExactly(IdentitySource.ANONYMOUS)
+        assertThat(manager.isCurrentIdentityAnonymous("user")).isTrue()
+        assertThat(manager.currentIdentitySource("user")).isEqualTo(IdentitySource.ANONYMOUS)
+    }
+
+    @Test
+    fun `mixed sources - a linked identity - are not reported as anonymous`() = runTest {
+        val manager = readyManager()
+        manager.saveTokens(
+            "user",
+            accessToken = "access",
+            refreshToken = "refresh",
+            idToken = fakeIDToken(amr = listOf("anonymous", "google")),
+        )
+
+        assertThat(manager.currentIdentitySources("user"))
+            .containsExactly(IdentitySource.ANONYMOUS, IdentitySource.GOOGLE)
+        assertThat(manager.isCurrentIdentityAnonymous("user")).isFalse()
+        assertThat(manager.currentIdentitySource("user")).isEqualTo(IdentitySource.GOOGLE)
+    }
+
+    @Test
+    fun `an empty amr list yields an empty, not null, list of sources - and is not anonymous`() = runTest {
+        val manager = readyManager()
+        manager.saveTokens(
+            "user",
+            accessToken = "access",
+            refreshToken = "refresh",
+            idToken = fakeIDToken(amr = emptyList()),
+        )
+
+        assertThat(manager.currentIdentitySources("user")).isEmpty()
+        assertThat(manager.isCurrentIdentityAnonymous("user")).isFalse()
+        assertThat(manager.currentIdentitySource("user")).isNull()
+    }
+
+    @Test
+    fun `an unrecognized amr entry is dropped rather than failing the whole list`() = runTest {
+        val manager = readyManager()
+        manager.saveTokens(
+            "user",
+            accessToken = "access",
+            refreshToken = "refresh",
+            idToken = fakeIDToken(amr = listOf("google", "some_future_provider")),
+        )
+
+        assertThat(manager.currentIdentitySources("user")).containsExactly(IdentitySource.GOOGLE)
+    }
+
+    @Test
+    fun `currentIdentitySource is the last listed source, not the first`() = runTest {
+        val manager = readyManager()
+        manager.saveTokens(
+            "user",
+            accessToken = "access",
+            refreshToken = "refresh",
+            idToken = fakeIDToken(amr = listOf("google", "apple")),
+        )
+
+        assertThat(manager.currentIdentitySource("user")).isEqualTo(IdentitySource.SIGN_IN_WITH_APPLE)
+    }
+
+    // endregion
+
     // region bulk operations
 
     @Test
@@ -310,4 +410,22 @@ class TokenManagerTest {
         manager.awaitStorageInitialized()
         return manager
     }
+
+    /**
+     * A syntactically-valid (but unsigned and unverified) JWT with the given [amr] claim - or no `amr`
+     * claim at all when [amr] is `null` - suitable for exercising [TokenManager]'s identity-introspection
+     * methods, which only ever read that one claim out of a stored ID token.
+     */
+    private fun fakeIDToken(amr: List<String>?): String {
+        val payload = JSONObject().apply {
+            if (amr != null) put("amr", JSONArray(amr))
+        }
+        val header = base64Url("""{"alg":"none"}""")
+        val body = base64Url(payload.toString())
+        val signature = base64Url("")
+        return "$header.$body.$signature"
+    }
+
+    private fun base64Url(value: String): String =
+        Base64.encodeToString(value.toByteArray(Charsets.UTF_8), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
 }
