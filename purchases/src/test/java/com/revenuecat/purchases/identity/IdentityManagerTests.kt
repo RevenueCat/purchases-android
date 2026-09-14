@@ -8,6 +8,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.VerificationResult
+import com.revenuecat.purchases.assertWarnLog
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.Delay
@@ -17,6 +18,7 @@ import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsMa
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.paywalls.PaywallAssetWarming
+import com.revenuecat.purchases.strings.IdentityStrings
 import com.revenuecat.purchases.subscriberattributes.SubscriberAttributesManager
 import com.revenuecat.purchases.subscriberattributes.caching.SubscriberAttributesCache
 import com.revenuecat.purchases.utils.SyncDispatcher
@@ -137,6 +139,15 @@ class IdentityManagerTests {
         every { mockSubscriberAttributesCache.cleanUpSubscriberAttributeCache("cesar", any()) } just Runs
         identityManager.configure("cesar")
         assertCorrectlyIdentified("cesar")
+    }
+
+    @Test
+    fun `configure with a different App User ID than cached logs a warning`() {
+        mockCachedAnonymousUser()
+
+        assertWarnLog("⚠️ ${IdentityStrings.CONFIGURED_APP_USER_ID_DIFFERS_FROM_CACHED}") {
+            identityManager.configure("rick")
+        }
     }
 
     @Test
