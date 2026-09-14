@@ -949,6 +949,7 @@ internal class StyleFactory(
             countFrom = countFrom,
             overrides = presentedOverrides,
             applyTopWindowInsets = applyTopWindowInsets,
+            shouldClipToShape = component.shape != null,
         )
     }
 

@@ -166,6 +166,11 @@ internal class StackComponentState(
     val shape by derivedStateOf { presentedPartial?.partial?.shape ?: style.shape }
 
     @get:JvmSynthetic
+    val shouldClipToShape by derivedStateOf {
+        presentedPartial?.partial?.shape != null || style.shouldClipToShape
+    }
+
+    @get:JvmSynthetic
     val border by derivedStateOf { presentedPartial?.borderStyles ?: style.border }
 
     @get:JvmSynthetic

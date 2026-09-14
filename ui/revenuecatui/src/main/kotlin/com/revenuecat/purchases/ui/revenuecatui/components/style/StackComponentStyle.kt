@@ -106,4 +106,11 @@ internal data class StackComponentStyle(
      */
     @get:JvmSynthetic
     val applyHorizontalWindowInsets: Boolean = false,
+    /**
+     * Whether this stack's content should be clipped to [shape]. This is distinct from [shape] itself because
+     * stacks without a shape in the component JSON still receive a default rectangle for background and border
+     * drawing.
+     */
+    @get:JvmSynthetic
+    val shouldClipToShape: Boolean = false,
 ) : ComponentStyle, PackageContext

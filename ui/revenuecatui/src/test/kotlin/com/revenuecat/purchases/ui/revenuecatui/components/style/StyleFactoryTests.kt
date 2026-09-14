@@ -35,6 +35,7 @@ import com.revenuecat.purchases.paywalls.components.properties.Dimension
 import com.revenuecat.purchases.paywalls.components.properties.FlexDistribution
 import com.revenuecat.purchases.paywalls.components.properties.HorizontalAlignment
 import com.revenuecat.purchases.paywalls.components.properties.ImageUrls
+import com.revenuecat.purchases.paywalls.components.properties.Shape
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
@@ -193,12 +194,27 @@ class StyleFactoryTests {
         val style = (result as Result.Success).value.componentStyle as StackComponentStyle
         assertThat(style.spacing).isEqualTo(8.dp)
         assertThat(style.children).hasSize(2)
+        assertThat(style.shouldClipToShape).isFalse()
         with(style.children[0] as TextComponentStyle) {
             assertThat(texts[localeId]).isEqualTo(localizations.getValue(localeId)[LOCALIZATION_KEY_TEXT_1]!!.value)
         }
         with(style.children[1] as TextComponentStyle) {
             assertThat(texts[localeId]).isEqualTo(localizations.getValue(localeId)[LOCALIZATION_KEY_TEXT_2]!!.value)
         }
+    }
+
+    @Test
+    fun `Should clip a StackComponentStyle when the component has a shape`() {
+        val stackComponent = StackComponent(
+            components = emptyList(),
+            shape = Shape.Rectangle(),
+        )
+
+        val result = styleFactory.create(stackComponent)
+
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val style = (result as Result.Success).value.componentStyle as StackComponentStyle
+        assertThat(style.shouldClipToShape).isTrue()
     }
 
     @Test

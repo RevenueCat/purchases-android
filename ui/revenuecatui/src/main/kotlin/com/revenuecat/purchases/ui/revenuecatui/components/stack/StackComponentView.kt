@@ -118,11 +118,9 @@ import androidx.compose.ui.geometry.Size as ComposeSize
  *   non-clickable (no ripple, no gesture detection). When non-null, the stack draws a Material
  *   ripple clipped to the stack's shape. Distinct from [clickHandler].
  *
- *   Overflow-safe drawing — i.e. nested children that extend outside the parent's bounds (badges
- *   with offsets, drop shadows) staying visible during press — is currently only guaranteed for
- *   the *plain* render path: stacks with no video background, no nested badge, and no overlay.
- *   On those other paths a `clip(composeShape)` still gates descendant rendering, so overflowing
- *   children can be cropped while the ripple is active.
+ *   In the plain render path, stacks without an explicit shape keep overflowing descendants
+ *   visible. Supplying a shape clips descendants to it. Video, nested-badge, and overlay paths
+ *   retain their existing clipping behavior.
  * @param enabled When `false`, the underlying `Modifier.clickable` is gated off — clicks and the
  *   ripple are suppressed, and the node is announced as disabled to accessibility services. Only
  *   meaningful when [onStackClick] is non-null. Use for transient disabled states such as
@@ -816,9 +814,8 @@ private fun MainStackComponent(
             //   `Modifier.weight` reach the parent Row/Column) and owns the click gesture +
             //   semantics — this co-locates `OnClick` with the caller's `testTag` / `Role` on
             //   one merged semantics node.
-            // - The inner stack draws its content (shadow, background, border, padding) without
-            //   any shape clip, so children that intentionally overflow the parent's bounds
-            //   (e.g. badges with offsets, overflowing shadows) remain visible.
+            // - The inner stack draws its content (shadow, background, border, padding), clipping
+            //   descendants only when the component JSON supplies a shape.
             // - The sibling `Box` provides the shape-clipped Material ripple via
             //   `Modifier.indication`, sharing the same `InteractionSource` as the wrapper's
             //   clickable so press events drive its draw.
@@ -833,6 +830,7 @@ private fun MainStackComponent(
                 stack(
                     Modifier,
                     outerShapeModifier
+                        .conditional(stackState.shouldClipToShape) { clip(composeShape) }
                         .then(borderModifier)
                         .then(innerShapeModifier)
                         .conditional(stackState.applyBottomWindowInsets) {
@@ -854,6 +852,7 @@ private fun MainStackComponent(
             stack(
                 modifier,
                 outerShapeModifier
+                    .conditional(stackState.shouldClipToShape) { clip(composeShape) }
                     .then(borderModifier)
                     .then(innerShapeModifier)
                     .conditional(stackState.applyBottomWindowInsets) {
