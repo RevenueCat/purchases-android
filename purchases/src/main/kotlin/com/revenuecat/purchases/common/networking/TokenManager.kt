@@ -162,6 +162,29 @@ internal class TokenManager(
 
     // endregion
 
+    // region Authorization headers
+
+    /**
+     * The `Authorization` header(s) to attach to an IAM-authenticated request made on behalf of [appUserID]:
+     * `mapOf("Authorization" to "Bearer <access token>")` when [enabled] and an access token is currently
+     * readable for [appUserID], an empty map otherwise -- including when [isIAMEndpoint] is `true`, since the
+     * token-issuing endpoints themselves (`/auth/login`, `/auth/token`, `/auth/revoke`) always authenticate
+     * with the SDK's API key instead, never with a bearer token from a previous session (a caller must never
+     * attach both).
+     *
+     * [isIAMEndpoint] stands in for `Endpoint.isIAMEndpoint`, added by a later step migrating IAM-aware
+     * endpoints (see the IAM implementation plan's Step 14). It's threaded through as a plain parameter here,
+     * rather than this method taking an `Endpoint` itself, so this behavior -- and its tests -- don't have to
+     * wait on that migration landing first; callers pass the real check once it exists.
+     */
+    fun authorizationHeaders(appUserID: String, isIAMEndpoint: Boolean): Map<String, String> {
+        if (!enabled || isIAMEndpoint) return emptyMap()
+        val token = currentAccessToken(appUserID) ?: return emptyMap()
+        return mapOf("Authorization" to "Bearer $token")
+    }
+
+    // endregion
+
     // region Bulk operations
 
     /**
