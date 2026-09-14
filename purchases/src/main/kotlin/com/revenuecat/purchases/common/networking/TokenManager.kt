@@ -178,9 +178,8 @@ internal class TokenManager(
      * wait on that migration landing first; callers pass the real check once it exists.
      */
     fun authorizationHeaders(appUserID: String, isIAMEndpoint: Boolean): Map<String, String> {
-        if (!enabled || isIAMEndpoint) return emptyMap()
-        val token = currentAccessToken(appUserID) ?: return emptyMap()
-        return mapOf("Authorization" to "Bearer $token")
+        val token = if (enabled && !isIAMEndpoint) currentAccessToken(appUserID) else null
+        return token?.let { mapOf("Authorization" to "Bearer $it") } ?: emptyMap()
     }
 
     // endregion
