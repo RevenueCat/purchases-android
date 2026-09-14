@@ -1103,9 +1103,12 @@ workflows:
             parameters:
               backend_environment: ["production", "load_shedder_us_east_1", "load_shedder_us_east_2"]
           <<: *non-main-branches
-      - hold:
+      - wait-for-pr-approval:
           type: approval
+          <<: *release-branches
+      - revenuecat/tag-current-branch:
           requires:
+            - wait-for-pr-approval
             - test_defaults_debug
             - test_defaults_release
             - test_cec_debug
@@ -1119,10 +1122,6 @@ workflows:
             - run-purchases-integration-tests
             - run-purchases-cec-integration-tests
             - verify-compatibility
-          <<: *release-branches
-      - revenuecat/tag-current-branch:
-          requires:
-            - hold
           <<: *release-branches
       - deploy:
           <<: *release-tags
