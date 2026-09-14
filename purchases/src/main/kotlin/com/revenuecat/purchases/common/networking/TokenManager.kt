@@ -5,6 +5,7 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.security.EncryptedItemStorage
 import com.revenuecat.purchases.common.security.SecureItemStorage
+import com.revenuecat.purchases.common.security.SecureStorageException
 import com.revenuecat.purchases.common.security.derivePassword
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,6 +39,12 @@ import java.security.GeneralSecurityException
  * A blank API key ([derivePassword] returning `null`) or a [GeneralSecurityException] during key derivation
  * both leave storage permanently unavailable for this instance's lifetime (already logged by [derivePassword]
  * or this class, respectively) rather than crashing configuration.
+ *
+ * Once storage is ready, a [SecureStorageException] from an individual read or write is handled the same
+ * way rather than escaping as a crash: a read reports the value as absent and a write is a no-op (both
+ * logged). The most common cause isn't a hardware/IO failure but a decrypt failure -- a value on disk was
+ * encrypted under a *different* derived key than this instance's, e.g. leftover data from a previous API
+ * key sharing the same on-disk storage file (reconfiguring from a sandbox to a production key, say).
  *
  * @param context the application context; the same direct-boot-aware context other file-backed singletons in
  *   this SDK use.
@@ -91,11 +98,15 @@ internal class TokenManager(
     fun currentIDToken(appUserID: String): String? = readToken(idTokenKey(appUserID))
 
     /**
-     * Whether an access token is currently stored for [appUserID]. `false` if storage isn't ready, independent
-     * of whether one would otherwise be present.
+     * Whether an access token is currently stored *and readable* for [appUserID]. Deliberately computed from
+     * [currentAccessToken] rather than a raw on-disk presence check: a value can exist on disk left over from
+     * a *previous* API key's storage (e.g. reconfiguring the SDK from a sandbox to a production key, which
+     * shares the same on-disk storage file) without there being any way to actually decrypt it back, and this
+     * should never report `true` for a token that [currentAccessToken] can't actually produce. `false` if
+     * storage isn't ready or the stored value can't be read, independent of whether one would otherwise be
+     * present.
      */
-    fun hasCurrentAccessToken(appUserID: String): Boolean =
-        storage?.containsItem(accessTokenKey(appUserID)) == true
+    fun hasCurrentAccessToken(appUserID: String): Boolean = currentAccessToken(appUserID) != null
 
     // endregion
 
@@ -148,10 +159,19 @@ internal class TokenManager(
     }
 
     private fun readToken(identifier: String): String? =
-        storage?.readItem(identifier)?.toString(Charsets.UTF_8)
+        try {
+            storage?.readItem(identifier)?.toString(Charsets.UTF_8)
+        } catch (e: SecureStorageException) {
+            errorLog(e) { "Failed to read IAM token '$identifier'; treating it as absent." }
+            null
+        }
 
     private fun writeToken(identifier: String, value: String?) {
-        storage?.modifyItem(identifier, value?.toByteArray(Charsets.UTF_8))
+        try {
+            storage?.modifyItem(identifier, value?.toByteArray(Charsets.UTF_8))
+        } catch (e: SecureStorageException) {
+            errorLog(e) { "Failed to write IAM token '$identifier'; treating it as a no-op." }
+        }
     }
 
     private companion object {
