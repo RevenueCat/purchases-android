@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common.networking
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.revenuecat.purchases.common.security.SecureStorageException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.isActive
@@ -122,17 +121,12 @@ class TokenManagerTest {
         val first = readyManager(apiKey = "api_key_one")
         first.saveTokens("user", accessToken = "from-first-instance", refreshToken = "refresh", idToken = "id")
 
+        // Different derived key: the underlying storage shares its on-disk files across TokenManager
+        // instances built from the same context regardless of API key, so this hits a genuine decrypt
+        // failure rather than simply finding nothing - and currentAccessToken must swallow that rather
+        // than let it escape as a crash (see the dedicated tests below for that guarantee on its own).
         val second = readyManager(apiKey = "api_key_two")
-        // Different derived key: either a decode/decrypt failure (surfaced as SecureStorageException from the
-        // underlying storage) or, since these two instances also don't share encrypted files on disk in this
-        // test's context, simply no value at all. Either is an acceptable "not readable" outcome; a successful
-        // read of the first instance's plaintext value would not be.
-        val secondValue = try {
-            second.currentAccessToken("user")
-        } catch (e: SecureStorageException) {
-            null
-        }
-        assertThat(secondValue).isNotEqualTo("from-first-instance")
+        assertThat(second.currentAccessToken("user")).isNull()
     }
 
     // endregion
@@ -161,6 +155,52 @@ class TokenManagerTest {
 
         manager.deleteAccessToken("user")
         assertThat(manager.hasCurrentAccessToken("user")).isFalse()
+    }
+
+    // endregion
+
+    // region resilience to unreadable stored data
+
+    @Test
+    fun `a value that can't be decrypted is treated as absent for every token, not as a crash`() = runTest {
+        val first = readyManager(apiKey = "api_key_one")
+        first.saveTokens("user", accessToken = "from-first-instance", refreshToken = "refresh", idToken = "id")
+
+        // Same on-disk storage file, different derived key - e.g. reconfiguring the SDK from a sandbox to a
+        // production API key. The stored ciphertext genuinely exists under this identifier; it just can't be
+        // decrypted with this instance's key.
+        val second = readyManager(apiKey = "api_key_two")
+
+        assertThat(second.currentAccessToken("user")).isNull()
+        assertThat(second.currentRefreshToken("user")).isNull()
+        assertThat(second.currentIDToken("user")).isNull()
+    }
+
+    @Test
+    fun `hasCurrentAccessToken is false, not true, for a value left over from a different API key`() = runTest {
+        val first = readyManager(apiKey = "api_key_one")
+        first.saveTokens("user", accessToken = "from-first-instance", refreshToken = "refresh", idToken = "id")
+
+        val second = readyManager(apiKey = "api_key_two")
+
+        // The identifier genuinely exists on disk (the first instance wrote it) - hasCurrentAccessToken must
+        // still report false here rather than true, since currentAccessToken can never actually produce a
+        // value for it under this instance's key.
+        assertThat(second.hasCurrentAccessToken("user")).isFalse()
+    }
+
+    @Test
+    fun `a fresh write cleanly overwrites a leftover undecryptable value for the same identifier`() = runTest {
+        val first = readyManager(apiKey = "api_key_one")
+        first.saveTokens("user", accessToken = "from-first-instance", refreshToken = "refresh", idToken = "id")
+
+        val second = readyManager(apiKey = "api_key_two")
+        second.saveTokens("user", accessToken = "from-second-instance", refreshToken = "refresh", idToken = "id")
+
+        // Writing doesn't need to decrypt the existing ciphertext first, so this recovers cleanly even though
+        // the identifier was previously unreadable under this instance's key.
+        assertThat(second.currentAccessToken("user")).isEqualTo("from-second-instance")
+        assertThat(second.hasCurrentAccessToken("user")).isTrue()
     }
 
     // endregion
