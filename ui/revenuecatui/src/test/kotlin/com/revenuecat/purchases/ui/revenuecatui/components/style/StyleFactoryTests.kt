@@ -11,6 +11,7 @@ import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
 import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
+import com.revenuecat.purchases.paywalls.components.PackageSelection
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialButtonComponent
@@ -98,6 +99,32 @@ class StyleFactoryTests {
             variableLocalizations = variableLocalizations,
             offering = offering
         )
+    }
+
+    @Test
+    fun `Local stack defaults use component ids and stay outside parent selection`() {
+        val monthly = PackageComponent(
+            id = "monthly-card",
+            packageId = "\$rc_monthly",
+            isSelectedByDefault = false,
+            stack = StackComponent(components = emptyList()),
+        )
+        val local = StackComponent(
+            components = listOf(monthly),
+            packageSelection = PackageSelection(mode = "local", defaultPackageComponentId = "monthly-card"),
+        )
+        val annual = PackageComponent(
+            id = "annual-card",
+            packageId = "\$rc_annual",
+            isSelectedByDefault = true,
+            stack = StackComponent(components = emptyList()),
+        )
+        val result = styleFactory.create(StackComponent(components = listOf(annual, local))).getOrThrow()
+        assertThat(result.availablePackages.packagesOutsideTabs.map { it.pkg.identifier }).containsExactly("\$rc_annual")
+        assertThat(result.availablePackages.allPackages.map { it.pkg.identifier }).containsExactly("\$rc_annual", "\$rc_monthly")
+        val rootStyle = result.componentStyle as StackComponentStyle
+        val localStyle = rootStyle.children[1] as StackComponentStyle
+        assertThat(localStyle.localPackages!!.packagesOutsideTabs.single().isSelectedByDefault).isTrue()
     }
 
     @Test

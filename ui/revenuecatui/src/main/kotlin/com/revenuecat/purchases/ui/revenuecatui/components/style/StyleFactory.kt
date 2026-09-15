@@ -285,13 +285,74 @@ internal class StyleFactory(
         val offerEligibility: OfferEligibility?
             get() = packageInfo?.let { calculateOfferEligibility(it.resolvedOffer, it.pkg) }
 
-        private val packagesOutsideTabs = mutableListOf<AvailablePackages.Info>()
-        private val packagesByTab = mutableMapOf<Int, MutableList<AvailablePackages.Info>>()
+        private var packagesOutsideTabs = mutableListOf<AvailablePackages.Info>()
+        private var packagesByTab = mutableMapOf<Int, MutableList<AvailablePackages.Info>>()
+        private var nestedPackages = mutableListOf<AvailablePackages.Info>()
+        private var localDefaultComponentId: String? = null
+        private var inLocalSelectionScope = false
+        private var hasDeclaredPackages = false
         val packages: AvailablePackages
             get() = AvailablePackages(
                 packagesOutsideTabs = packagesOutsideTabs,
                 packagesByTab = packagesByTab,
+                nestedPackages = nestedPackages,
+                hasDeclaredPackages = hasDeclaredPackages,
             )
+
+        fun <T> withLocalPackageSelection(
+            defaultComponentId: String?,
+            block: StyleFactoryScope.() -> T,
+        ): Triple<T, AvailablePackages, Int?> {
+            val previousOutside = packagesOutsideTabs
+            val previousTabs = packagesByTab
+            val previousNested = nestedPackages
+            val previousDefault = localDefaultComponentId
+            val previousLocal = inLocalSelectionScope
+            val previousDeclared = hasDeclaredPackages
+            val previousTabIndex = tabIndex
+            val previousDefaultTab = defaultTabIndex
+            val previousPackage = packageInfo
+            val previousTabControl = tabControl
+            val previousTabControlIndex = tabControlIndex
+            packagesOutsideTabs = mutableListOf()
+            packagesByTab = mutableMapOf()
+            nestedPackages = mutableListOf()
+            localDefaultComponentId = defaultComponentId
+            inLocalSelectionScope = true
+            hasDeclaredPackages = false
+            tabIndex = null
+            defaultTabIndex = null
+            packageInfo = null
+            tabControl = null
+            tabControlIndex = null
+            try {
+                val result = block()
+                val localPackages = packages
+                previousNested.addAll(localPackages.allPackages)
+                return Triple(result, localPackages, defaultTabIndex)
+            } finally {
+                packagesOutsideTabs = previousOutside
+                packagesByTab = previousTabs
+                nestedPackages = previousNested
+                localDefaultComponentId = previousDefault
+                inLocalSelectionScope = previousLocal
+                hasDeclaredPackages = previousDeclared
+                tabIndex = previousTabIndex
+                defaultTabIndex = previousDefaultTab
+                packageInfo = previousPackage
+                tabControl = previousTabControl
+                tabControlIndex = previousTabControlIndex
+            }
+        }
+
+        fun isDefaultPackage(component: PackageComponent): Boolean =
+            if (inLocalSelectionScope && tabIndex == null) {
+                localDefaultComponentId != null && localDefaultComponentId == component.id
+            } else {
+                component.isSelectedByDefault
+            }
+
+        fun recordDeclaredPackage() { hasDeclaredPackages = true }
 
         /**
          * Temporarily changes the properties that influence a component's selected state, for the duration of [block].
@@ -553,7 +614,10 @@ internal class StyleFactory(
         return when (component) {
             is ButtonComponent -> createButtonComponentStyleOrNull(component)
             is ImageComponent -> createImageComponentStyle(component)
-            is PackageComponent -> createPackageComponentStyle(component)
+            is PackageComponent -> {
+                recordDeclaredPackage()
+                createPackageComponentStyle(component)
+            }
             is PurchaseButtonComponent -> createPurchaseButtonComponentStyle(component)
             is StackComponent -> createStackComponentStyle(component)
             is HeaderComponent -> createHeaderComponentStyle(component)
@@ -697,7 +761,7 @@ internal class StyleFactory(
                 withSelectedScope(
                     packageInfo = AvailablePackages.Info(
                         pkg = rcPackage,
-                        isSelectedByDefault = component.isSelectedByDefault,
+                        isSelectedByDefault = isDefaultPackage(component),
                         resolvedOffer = resolvedOffer,
                         visible = component.visible ?: DEFAULT_VISIBILITY,
                         visibilityOverrides = (presentedOverridesResult as? Result.Success)?.value.orEmpty(),
@@ -720,7 +784,7 @@ internal class StyleFactory(
                         PackageComponentStyle(
                             stackComponentStyle = stack,
                             rcPackage = rcPackage,
-                            isSelectedByDefault = component.isSelectedByDefault,
+                            isSelectedByDefault = isDefaultPackage(component),
                             componentName = component.name,
                             isSelectable = purchaseButtons == 0,
                             resolvedOffer = resolvedOffer,
@@ -909,6 +973,19 @@ internal class StyleFactory(
 
     @Suppress("CyclomaticComplexMethod")
     private fun StyleFactoryScope.createStackComponentStyle(
+        component: StackComponent,
+    ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> {
+        val selection = component.packageSelection
+        if (selection?.mode != "local") return createStackContentsStyle(component)
+        val (result, localPackages, localTabIndex) = withLocalPackageSelection(selection.defaultPackageComponentId) {
+            createStackContentsStyle(component)
+        }
+        return result.map { style ->
+            style.copy(localPackages = localPackages, localDefaultTabIndex = localTabIndex)
+        }
+    }
+
+    private fun StyleFactoryScope.createStackContentsStyle(
         component: StackComponent,
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         // Build the PresentedOverrides.
