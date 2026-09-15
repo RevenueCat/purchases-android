@@ -3,7 +3,6 @@ package com.revenuecat.purchases.common.verification
 import android.util.Base64
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.crypto.tink.subtle.Ed25519Sign
-import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.VerificationResult
@@ -12,7 +11,6 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.utils.Result
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.assertj.core.api.Assertions.assertThat
@@ -23,7 +21,6 @@ import org.robolectric.annotation.Config
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.security.SecureRandom
-import kotlin.coroutines.CoroutineContext
 
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -51,6 +48,7 @@ class SigningManagerTest {
         }
         intermediateKeyVerifier = mockk()
         intermediateSignatureHelper = mockk<IntermediateSignatureHelper>().apply {
+            every { canVerify() } returns true
             every { createIntermediateKeyVerifierIfVerified(any()) } returns Result.Success(intermediateKeyVerifier)
         }
 
@@ -379,14 +377,13 @@ class SigningManagerTest {
     }
 
     @Test
-    fun `verifyResponse creates the root verifier on first use and reuses it afterwards`() {
+    fun `verifyResponse reuses the lazily created root verifier across verifications`() {
         var createdRootVerifiers = 0
         val signingManager = SigningManager(
-            lazyInformationalMode { createdRootVerifiers++; realTestRootVerifier() },
+            informationalModeWithRootVerifier { createdRootVerifiers++; realTestRootVerifier() },
             appConfig,
             apiKey,
         )
-        assertThat(createdRootVerifiers).isZero
 
         assertThat(callVerifyResponse(signingManager)).isEqualTo(VerificationResult.VERIFIED)
         assertThat(callVerifyResponse(signingManager)).isEqualTo(VerificationResult.VERIFIED)
@@ -396,7 +393,7 @@ class SigningManagerTest {
     @Test
     fun `verifyResponse returns not requested if the root verifier cannot be created`() {
         val signingManager = SigningManager(
-            lazyInformationalMode { throw IllegalStateException("Can not use Ed25519 in FIPS-mode.") },
+            informationalModeWithRootVerifier { throw IllegalStateException("Can not use Ed25519 in FIPS-mode.") },
             appConfig,
             apiKey,
         )
@@ -405,69 +402,15 @@ class SigningManagerTest {
 
     // endregion
 
-    // region warmUpVerifierAsync
-
-    @Test
-    fun `warmUpVerifierAsync creates the root verifier`() {
-        var createdRootVerifiers = 0
-        val signingManager = SigningManager(
-            lazyInformationalMode { createdRootVerifiers++; realTestRootVerifier() },
-            appConfig,
-            apiKey,
-            CoroutineScope(Dispatchers.Unconfined),
-        )
-
-        signingManager.warmUpVerifierAsync()
-
-        assertThat(createdRootVerifiers).isEqualTo(1)
-    }
-
-    @Test
-    fun `warmUpVerifierAsync verifies responses without creating a second root verifier`() {
-        var createdRootVerifiers = 0
-        val signingManager = SigningManager(
-            lazyInformationalMode { createdRootVerifiers++; realTestRootVerifier() },
-            appConfig,
-            apiKey,
-            CoroutineScope(Dispatchers.Unconfined),
-        )
-
-        signingManager.warmUpVerifierAsync()
-
-        assertThat(callVerifyResponse(signingManager)).isEqualTo(VerificationResult.VERIFIED)
-        assertThat(createdRootVerifiers).isEqualTo(1)
-    }
-
-    @Test
-    fun `warmUpVerifierAsync does not create a verifier when verification is disabled`() {
-        var dispatchedBlocks = 0
-        val countingScope = CoroutineScope(CountingDispatcher { dispatchedBlocks++ })
-        val signingManager = SigningManager(SignatureVerificationMode.Disabled, appConfig, apiKey, countingScope)
-
-        signingManager.warmUpVerifierAsync()
-
-        assertThat(dispatchedBlocks).isZero
-    }
-
-    // endregion
-
     // region Helpers
 
-    private fun lazyInformationalMode(
+    private fun informationalModeWithRootVerifier(
         rootVerifierProvider: () -> SignatureVerifier,
-    ) = SignatureVerificationMode.fromEntitlementVerificationMode(
-        EntitlementVerificationMode.INFORMATIONAL,
-        rootVerifierProvider,
+    ) = SignatureVerificationMode.Informational(
+        IntermediateSignatureHelper(rootVerifierProvider, CoroutineScope(Dispatchers.Unconfined)),
     )
 
     private fun realTestRootVerifier() = DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")
-
-    private class CountingDispatcher(private val onDispatch: () -> Unit) : CoroutineDispatcher() {
-        override fun dispatch(context: CoroutineContext, block: Runnable) {
-            onDispatch()
-            block.run()
-        }
-    }
 
     private fun callVerifyResponse(
         signingManager: SigningManager,
