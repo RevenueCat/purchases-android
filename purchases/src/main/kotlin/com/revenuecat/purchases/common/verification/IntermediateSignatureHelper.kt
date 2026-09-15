@@ -20,18 +20,18 @@ internal class IntermediateSignatureHelper(
     constructor(rootSignatureVerifier: SignatureVerifier) : this({ rootSignatureVerifier })
 
     /**
-     * Created lazily, and warmed up in the background below, because creating it initializes Tink's Ed25519
-     * constant table. That takes hundreds of milliseconds on Tink versions newer than the one we declare (an
-     * app can get one transitively from another SDK), and this class is built while `Purchases.configure`
-     * runs on the main thread. Null when Tink refuses to create it, which disables verification.
+     * Created lazily, and warmed up in the background below, because the Tink verifier's constructor
+     * initializes the Ed25519 constant table. That takes hundreds of milliseconds, and this class is built while
+     * `Purchases.configure` runs on the main thread. Null when Tink refuses to create it, which disables
+     * verification.
      */
     private val rootSignatureVerifier: Lazy<SignatureVerifier?> = lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         try {
             rootSignatureVerifierProvider()
         } catch (e: IllegalStateException) {
-            // Tink throws when it is restricted to FIPS mode, since Ed25519 is not FIPS compatible. Fail open
-            // instead of crashing: verification reports NOT_REQUESTED. The null is memoized, so the failed
-            // attempt is never repeated.
+            // Tink throws when restricted to FIPS mode. SignatureVerificationMode already checks that before
+            // choosing a mode, so this only covers a restriction applied after configure. Fail open instead of
+            // crashing: the null is memoized and verification reports NOT_REQUESTED.
             errorLog { "Error creating signature verifier: ${e.message}. Disabling signature verification." }
             null
         }
