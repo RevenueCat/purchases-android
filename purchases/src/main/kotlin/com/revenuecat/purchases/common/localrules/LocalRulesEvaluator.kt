@@ -7,6 +7,7 @@ import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.rules.RulesEngine
 
 internal sealed class LocalRulesEvaluationException(message: String) : Exception(message) {
@@ -66,15 +67,19 @@ internal class LocalRulesEvaluator(
         logPrefix: String = "",
         predicateFor: suspend (Rule) -> Result<String>,
     ): Result<Rule?> {
-        if (rules.isEmpty()) return Result.success(null)
+        if (rules.isEmpty()) {
+            verboseLog { "${logPrefix}No rules to evaluate." }
+            return Result.success(null)
+        }
 
         val snapshot = dimensionResolver.snapshot(customVariables).fold(
             onSuccess = { snapshot -> snapshot },
             onFailure = { error ->
+                warnLog { "${logPrefix}Failed to resolve dimensions: ${error.message}" }
                 return Result.failure(LocalRulesEvaluationException.DimensionResolution(error))
             },
         )
-        verboseLog { "${logPrefix}Evaluating ${rules.size} rules against dimensions ${snapshot.values.keys.sorted()}." }
+        verboseLog { "${logPrefix}Evaluating ${rules.size} rules." }
 
         var firstFailure: LocalRulesEvaluationException.PredicateEvaluation? = null
         for ((index, rule) in rules.withIndex()) {
@@ -87,7 +92,7 @@ internal class LocalRulesEvaluator(
                             "does not supply."
                     }
                 } else {
-                    debugLog { "${logPrefix}Rule ${index + 1} could not be evaluated (${error.javaClass.simpleName})." }
+                    debugLog { "${logPrefix}Rule ${index + 1} could not be evaluated (${error.message})." }
                     if (firstFailure == null) {
                         firstFailure = LocalRulesEvaluationException.PredicateEvaluation(index, error)
                     }
