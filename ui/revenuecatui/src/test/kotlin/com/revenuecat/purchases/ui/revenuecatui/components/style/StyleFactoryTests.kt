@@ -102,29 +102,35 @@ class StyleFactoryTests {
     }
 
     @Test
-    fun `Local stack defaults use component ids and stay outside parent selection`() {
+    fun `Local stack defaults use package flags and stay outside parent selection`() {
         val monthly = PackageComponent(
-            id = "monthly-card",
             packageId = "\$rc_monthly",
-            isSelectedByDefault = false,
+            isSelectedByDefault = true,
             stack = StackComponent(components = emptyList()),
         )
         val local = StackComponent(
-            components = listOf(monthly),
-            packageSelection = PackageSelection(mode = "local", defaultPackageComponentId = "monthly-card"),
+            components = listOf(
+                PackageComponent(
+                    packageId = "\$rc_annual",
+                    isSelectedByDefault = false,
+                    stack = StackComponent(components = emptyList()),
+                ),
+                monthly,
+            ),
+            packageSelection = PackageSelection(mode = "local"),
         )
         val annual = PackageComponent(
-            id = "annual-card",
             packageId = "\$rc_annual",
             isSelectedByDefault = true,
             stack = StackComponent(components = emptyList()),
         )
         val result = styleFactory.create(StackComponent(components = listOf(annual, local))).getOrThrow()
         assertThat(result.availablePackages.packagesOutsideTabs.map { it.pkg.identifier }).containsExactly("\$rc_annual")
-        assertThat(result.availablePackages.allPackages.map { it.pkg.identifier }).containsExactly("\$rc_annual", "\$rc_monthly")
+        assertThat(result.availablePackages.allPackages.map { it.pkg.identifier }).containsExactly("\$rc_annual", "\$rc_annual", "\$rc_monthly")
         val rootStyle = result.componentStyle as StackComponentStyle
         val localStyle = rootStyle.children[1] as StackComponentStyle
-        assertThat(localStyle.localPackages!!.packagesOutsideTabs.single().isSelectedByDefault).isTrue()
+        assertThat(localStyle.localPackages!!.packagesOutsideTabs.map { it.isSelectedByDefault })
+            .containsExactly(false, true)
     }
 
     @Test

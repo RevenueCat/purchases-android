@@ -126,7 +126,4 @@ internal object StackOverflowDeserializer : EnumDeserializerWithDefault<StackCom
 public class PackageSelection(
     @get:JvmSynthetic
     public val mode: String,
-    @get:JvmSynthetic
-    @SerialName("default_package_component_id")
-    public val defaultPackageComponentId: String? = null,
 )
