@@ -1790,11 +1790,10 @@ class BillingWrapperTest {
         }
 
         assertThat(listenerSlot.captured).isNotNull
-        val purchaseToken = null
+        val inAppMessageResult = mockk<InAppMessageResult>()
+        every { inAppMessageResult.responseCode } returns InAppMessageResponseCode.NO_ACTION_NEEDED
         assertVerboseLog(BillingStrings.BILLING_INAPP_MESSAGE_NONE) {
-            listenerSlot.captured.onInAppMessageResponse(
-                InAppMessageResult(InAppMessageResponseCode.NO_ACTION_NEEDED, purchaseToken)
-            )
+            listenerSlot.captured.onInAppMessageResponse(inAppMessageResult)
         }
     }
 
@@ -1810,11 +1809,10 @@ class BillingWrapperTest {
         }
 
         assertThat(listenerSlot.captured).isNotNull
-        val purchaseToken = null
+        val inAppMessageResult = mockk<InAppMessageResult>()
+        every { inAppMessageResult.responseCode } returns InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED
         assertDebugLog(BillingStrings.BILLING_INAPP_MESSAGE_UPDATE) {
-            listenerSlot.captured.onInAppMessageResponse(
-                InAppMessageResult(InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED, purchaseToken)
-            )
+            listenerSlot.captured.onInAppMessageResponse(inAppMessageResult)
         }
         assertThat(subscriptionStatusChanged).isTrue
     }
