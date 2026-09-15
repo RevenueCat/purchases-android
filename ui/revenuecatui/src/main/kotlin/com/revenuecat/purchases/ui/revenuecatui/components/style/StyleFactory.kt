@@ -297,9 +297,19 @@ internal class StyleFactory(
                 hasDeclaredPackages = hasDeclaredPackages,
             )
 
+        data class LocalPackageSelectionResult<T>(
+            val value: T,
+            val packages: AvailablePackages,
+            val defaultTabIndex: Int?,
+        )
+
+        /**
+         * Collects packages for a local stack without adding them to the parent's selectable packages.
+         * Layout and interaction context stay shared; package and tab selection context is restored afterward.
+         */
         fun <T> withLocalPackageSelection(
             block: StyleFactoryScope.() -> T,
-        ): Triple<T, AvailablePackages, Int?> {
+        ): LocalPackageSelectionResult<T> {
             val previousOutside = packagesOutsideTabs
             val previousTabs = packagesByTab
             val previousNested = nestedPackages
@@ -322,7 +332,7 @@ internal class StyleFactory(
                 val result = block()
                 val localPackages = packages
                 previousNested.addAll(localPackages.allPackages)
-                return Triple(result, localPackages, defaultTabIndex)
+                return LocalPackageSelectionResult(result, localPackages, defaultTabIndex)
             } finally {
                 packagesOutsideTabs = previousOutside
                 packagesByTab = previousTabs
@@ -961,11 +971,14 @@ internal class StyleFactory(
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> {
         val selection = component.packageSelection
         if (selection?.mode != "local") return createStackContentsStyle(component)
-        val (result, localPackages, localTabIndex) = withLocalPackageSelection {
+        val localSelection = withLocalPackageSelection {
             createStackContentsStyle(component)
         }
-        return result.map { style ->
-            style.copy(localPackages = localPackages, localDefaultTabIndex = localTabIndex)
+        return localSelection.value.map { style ->
+            style.copy(
+                localPackages = localSelection.packages,
+                localDefaultTabIndex = localSelection.defaultTabIndex,
+            )
         }
     }
 
