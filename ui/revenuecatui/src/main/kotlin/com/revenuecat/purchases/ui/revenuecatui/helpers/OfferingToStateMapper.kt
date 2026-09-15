@@ -36,6 +36,9 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
+import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.getBestMatch
@@ -226,8 +229,15 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
         // This is a temporary hack to make the root component fill the screen. This will be removed once we have a
         // definite solution for positioning the root component.
         val rootComponent = (backendRootComponent as? StackComponentStyle)
-            ?.takeIf { it.size.height is SizeConstraint.Fit }
-            ?.copy(size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fill()))
+            ?.takeIf { it.size.height is Fit }
+            ?.let { rootStack ->
+                rootStack.copy(
+                    size = Size(
+                        width = rootStack.size.width.asFill(),
+                        height = rootStack.size.height.asFill(),
+                    ),
+                )
+            }
             ?: backendRootComponent
 
         PaywallValidationResult.Components(
@@ -249,6 +259,12 @@ internal fun Offering.validatePaywallComponentsDataOrNull(
             stateDeclarations = componentsData.stateDeclarations.orEmpty(),
         )
     }
+}
+
+private fun SizeConstraint.asFill(): Fill = when (this) {
+    is Fit -> Fill(min = min, max = max)
+    is Fill -> this
+    is Fixed -> Fill()
 }
 
 @Suppress("ReturnCount")

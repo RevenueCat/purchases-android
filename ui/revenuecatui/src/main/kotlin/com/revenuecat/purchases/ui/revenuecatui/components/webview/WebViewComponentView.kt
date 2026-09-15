@@ -39,6 +39,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fi
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fit
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fixed
 import com.revenuecat.purchases.ui.revenuecatui.BuildConfig
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.clamp
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
@@ -240,9 +241,13 @@ internal fun resolveAxis(
     unbounded: Boolean,
 ): SizeConstraint =
     when (constraint) {
-        is Fit -> Fixed(if (contentCssPx > 0) contentCssPx.toUInt() else constraint.default ?: placeholder)
+        is Fit -> {
+            val baseSize = if (contentCssPx > 0) contentCssPx.toUInt() else constraint.default ?: placeholder
+            Fixed(constraint.clamp(baseSize))
+        }
         is Fill -> if (unbounded) {
-            Fixed(if (contentCssPx > 0) contentCssPx.toUInt() else placeholder)
+            val baseSize = if (contentCssPx > 0) contentCssPx.toUInt() else placeholder
+            Fixed(constraint.clamp(baseSize))
         } else {
             constraint
         }

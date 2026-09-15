@@ -1,7 +1,9 @@
 package com.revenuecat.purchases.paywalls.components.properties
 
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.api.BuildConfig
 import org.intellij.lang.annotations.Language
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.experimental.runners.Enclosed
 import org.junit.runner.RunWith
@@ -17,6 +19,7 @@ internal class SizeTests {
             @Language("json")
             val json: String,
             val expected: SizeConstraint,
+            val requiresMinMaxSizing: Boolean = false,
         )
 
         companion object {
@@ -82,7 +85,8 @@ internal class SizeTests {
                               "max": 100
                             }
                         """.trimIndent(),
-                        expected = SizeConstraint.Fit(min = 20u, max = 100u)
+                        expected = SizeConstraint.Fit(min = 20u, max = 100u),
+                        requiresMinMaxSizing = true,
                     )
                 ),
                 arrayOf(
@@ -95,7 +99,8 @@ internal class SizeTests {
                               "max": 20
                             }
                         """.trimIndent(),
-                        expected = SizeConstraint.Fit(min = 40u, max = 20u)
+                        expected = SizeConstraint.Fit(min = 40u, max = 20u),
+                        requiresMinMaxSizing = true,
                     )
                 ),
                 arrayOf(
@@ -130,7 +135,8 @@ internal class SizeTests {
                               "min": 20
                             }
                         """.trimIndent(),
-                        expected = SizeConstraint.Fill(min = 20u)
+                        expected = SizeConstraint.Fill(min = 20u),
+                        requiresMinMaxSizing = true,
                     )
                 ),
                 arrayOf(
@@ -142,7 +148,8 @@ internal class SizeTests {
                               "max": 100
                             }
                         """.trimIndent(),
-                        expected = SizeConstraint.Fill(max = 100u)
+                        expected = SizeConstraint.Fill(max = 100u),
+                        requiresMinMaxSizing = true,
                     )
                 ),
                 arrayOf(
@@ -155,7 +162,8 @@ internal class SizeTests {
                               "max": 100
                             }
                         """.trimIndent(),
-                        expected = SizeConstraint.Fill(min = 20u, max = 100u)
+                        expected = SizeConstraint.Fill(min = 20u, max = 100u),
+                        requiresMinMaxSizing = true,
                     )
                 ),
                 arrayOf(
@@ -217,6 +225,11 @@ internal class SizeTests {
 
         @Test
         fun `Should properly deserialize SizeConstraint`() {
+            assumeTrue(
+                "Requires ENABLE_PAYWALL_MIN_MAX_SIZING=true",
+                !args.requiresMinMaxSizing || BuildConfig.ENABLE_PAYWALL_MIN_MAX_SIZING,
+            )
+
             // Arrange, Act
             val actual = JsonTools.json.decodeFromString<SizeConstraint>(args.json)
 
