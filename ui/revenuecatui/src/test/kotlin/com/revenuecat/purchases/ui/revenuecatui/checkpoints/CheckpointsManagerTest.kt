@@ -589,12 +589,12 @@ class CheckpointsManagerTest {
             call.join()
 
             assertThat(run!!.flowOutcome)
-                .isEqualTo(CheckpointFlowOutcome.Finished(customerInfo, reportedPurchase = true))
+                .isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
             assertThat(run!!.backedOut).isFalse
         }
 
     @Test
-    fun `a closed report resolves as finished without a reported purchase`() = runTest(dispatcher) {
+    fun `a closed report resolves as finished`() = runTest(dispatcher) {
         val customerInfo = mockk<CustomerInfo>()
         syncedCustomerInfoIs(customerInfo)
         val completion = presentThroughRegisteredPresenter()
@@ -604,7 +604,7 @@ class CheckpointsManagerTest {
         completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
         call.join()
 
-        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo, reportedPurchase = false))
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
         assertThat(run!!.backedOut).isFalse
     }
 
@@ -633,7 +633,7 @@ class CheckpointsManagerTest {
         completion()!!.complete(PaywallPresenter.Completion.Result.ContinuedWithoutPurchasing)
         call.join()
 
-        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo, reportedPurchase = false))
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
         assertThat(run!!.backedOut).isFalse
     }
 
@@ -648,7 +648,7 @@ class CheckpointsManagerTest {
         completion()!!.complete(object : PaywallPresenter.Completion.Result() {})
         call.join()
 
-        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo, reportedPurchase = false))
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
         verify(exactly = 1) { Logger.e(match { it.startsWith("Unknown paywall presenter result") }) }
     }
 
@@ -680,7 +680,7 @@ class CheckpointsManagerTest {
         completion()!!.complete(PaywallPresenter.Completion.Result.NavigatedBack)
         call.join()
 
-        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo, reportedPurchase = false))
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
         verify(exactly = 1) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
     }
 
@@ -761,7 +761,7 @@ class CheckpointsManagerTest {
         completion!!.complete(PaywallPresenter.Completion.Result.Closed)
         call.join()
 
-        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo, reportedPurchase = false))
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
     }
 
     @Test

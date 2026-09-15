@@ -30,14 +30,12 @@ internal abstract class CheckpointFlowOutcome {
 
     /**
      * An app-owned presentation through [PaywallPresenter] finished with the user going through it.
-     * [customerInfo] is the customer's information after syncing the store purchases made during it;
-     * [reportedPurchase] tells whether the app reported a purchase or restore rather than a close action. What
-     * the user obtained is read from [customerInfo] either way.
+     * [customerInfo] is the customer's information after syncing the store purchases made during it; what the
+     * user obtained is read from it, whatever the app reported.
      */
     @Poko
     class Finished(
         val customerInfo: CustomerInfo,
-        val reportedPurchase: Boolean,
     ) : CheckpointFlowOutcome()
 
     /**

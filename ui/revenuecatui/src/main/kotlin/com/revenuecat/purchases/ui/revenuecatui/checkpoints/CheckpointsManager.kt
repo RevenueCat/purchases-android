@@ -277,16 +277,16 @@ internal class CheckpointsManager(
 
         override fun complete(result: PaywallPresenter.Completion.Result) {
             when (result) {
-                PaywallPresenter.Completion.Result.Purchased -> finished(reportedPurchase = true)
+                PaywallPresenter.Completion.Result.Purchased,
                 PaywallPresenter.Completion.Result.Closed,
                 PaywallPresenter.Completion.Result.ContinuedWithoutPurchasing,
-                -> finished(reportedPurchase = false)
+                -> finished()
                 PaywallPresenter.Completion.Result.NavigatedBack -> navigatedBack()
                 // The hierarchy is closed but not sealed; a result this code doesn't know is the safest thing it
                 // can be: the user left without purchasing and passes the checkpoint.
                 else -> {
                     Logger.e("Unknown paywall presenter result '$result'; treating it as closed.")
-                    finished(reportedPurchase = false)
+                    finished()
                 }
             }
         }
@@ -301,7 +301,7 @@ internal class CheckpointsManager(
 
         // FETCH_CURRENT posts the store purchases the SDK hasn't seen yet (e.g. made through the app's own
         // billing client) before fetching, so the outcome reflects whatever the app's paywall sold.
-        private fun finished(reportedPurchase: Boolean) {
+        private fun finished() {
             val call = take(callId) ?: return
             purchases.getCustomerInfo(
                 CacheFetchPolicy.FETCH_CURRENT,
@@ -309,7 +309,7 @@ internal class CheckpointsManager(
                     override fun onReceived(customerInfo: CustomerInfo) {
                         call.flowFinished.complete(
                             CheckpointRun(
-                                CheckpointFlowOutcome.Finished(customerInfo, reportedPurchase),
+                                CheckpointFlowOutcome.Finished(customerInfo),
                                 backedOut = false,
                             ),
                         )
