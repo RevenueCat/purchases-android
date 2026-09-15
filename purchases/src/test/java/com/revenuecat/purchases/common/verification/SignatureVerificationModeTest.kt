@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.verification
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.crypto.tink.config.internal.TinkFipsUtil
 import com.revenuecat.purchases.EntitlementVerificationMode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -23,6 +24,21 @@ class SignatureVerificationModeTest {
 //         assertThat(
 //             SignatureVerificationMode.fromEntitlementVerificationMode(EntitlementVerificationMode.ENFORCED)
 //         ).isInstanceOf(SignatureVerificationMode.Enforced::class.java)
+    }
+
+    @Test
+    fun `fromEntitlementVerificationMode disables verification when Tink is restricted to FIPS mode`() {
+        TinkFipsUtil.setFipsRestricted()
+        try {
+            assertThat(
+                SignatureVerificationMode.fromEntitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
+            ).isEqualTo(SignatureVerificationMode.Disabled)
+            assertThat(
+                SignatureVerificationMode.fromEntitlementVerificationMode(EntitlementVerificationMode.DISABLED)
+            ).isEqualTo(SignatureVerificationMode.Disabled)
+        } finally {
+            TinkFipsUtil.unsetFipsRestricted()
+        }
     }
 
     @Test

@@ -136,6 +136,7 @@ internal class SigningManager(
         }
         val intermediateSignatureHelper = signatureVerificationMode.intermediateSignatureHelper
             ?: return VerificationResult.NOT_REQUESTED
+        if (!intermediateSignatureHelper.canVerify()) return VerificationResult.NOT_REQUESTED
 
         if (signatureString == null) {
             errorLog { NetworkStrings.VERIFICATION_MISSING_SIGNATURE.format(urlPath) }
