@@ -21,8 +21,9 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * Tests for [TokenManager]'s storage plumbing, construction, and identity introspection (IAM phase 3, steps
- * 7-8). These deliberately go through the real `derivePassword -> EncryptedItemStorage.create` chain (a real
+ * Tests for [TokenManager]'s storage plumbing, construction, identity introspection, and authorization
+ * headers (IAM phase 3, steps 7-9). These deliberately go through the real
+ * `derivePassword -> EncryptedItemStorage.create` chain (a real
  * [Application] context, a real API key, no test doubles for storage) rather than mocking storage
  * construction, since [TokenManager]'s whole purpose in this step is to own that chain correctly — a mocked
  * storage would only prove the mock works, not catch integration mistakes like accidental double-derivation,
@@ -338,6 +339,43 @@ class TokenManagerTest {
         )
 
         assertThat(manager.currentIdentitySource("user")).isNull()
+    }
+
+    // endregion
+
+    // region authorization headers
+
+    @Test
+    fun `authorizationHeaders is empty when disabled, even with a token present`() = runTest {
+        // A disabled instance never has readable storage to begin with, so this also locks in that
+        // authorizationHeaders checks `enabled` directly rather than only ever seeing "no token".
+        val manager = TokenManager(context, "test_api_key", enabled = false, scope = testScope())
+
+        assertThat(manager.authorizationHeaders("user", isIAMEndpoint = false)).isEmpty()
+    }
+
+    @Test
+    fun `authorizationHeaders is empty when enabled but no access token is stored`() = runTest {
+        val manager = readyManager()
+
+        assertThat(manager.authorizationHeaders("user", isIAMEndpoint = false)).isEmpty()
+    }
+
+    @Test
+    fun `authorizationHeaders carries a Bearer header for the stored access token`() = runTest {
+        val manager = readyManager()
+        manager.saveTokens("user", accessToken = "access-token-value", refreshToken = "refresh", idToken = "id")
+
+        assertThat(manager.authorizationHeaders("user", isIAMEndpoint = false))
+            .isEqualTo(mapOf("Authorization" to "Bearer access-token-value"))
+    }
+
+    @Test
+    fun `authorizationHeaders is empty for an IAM auth endpoint, even with a token present`() = runTest {
+        val manager = readyManager()
+        manager.saveTokens("user", accessToken = "access-token-value", refreshToken = "refresh", idToken = "id")
+
+        assertThat(manager.authorizationHeaders("user", isIAMEndpoint = true)).isEmpty()
     }
 
     // endregion
