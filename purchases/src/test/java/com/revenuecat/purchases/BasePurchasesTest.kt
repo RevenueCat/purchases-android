@@ -29,6 +29,7 @@ import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.audiences.AudiencesConfigProvider
 import com.revenuecat.purchases.common.checkpoints.CheckpointsConfigProvider
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.common.workflows.WorkflowsConfigProvider
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
@@ -99,6 +100,7 @@ internal open class BasePurchasesTest {
     internal val mockPurchaseParamsValidator = mockk<PurchaseParamsValidator>()
     internal val mockWorkflowManager = mockk<WorkflowManager>(relaxed = true)
     internal val mockRemoteConfigManager = mockk<RemoteConfigManager>(relaxed = true)
+    internal val mockTokenManager = mockk<TokenManager>(relaxed = true)
     internal val mockUiConfigProvider = mockk<UiConfigProvider>(relaxed = true)
     internal val mockWorkflowsConfigProvider = mockk<WorkflowsConfigProvider>(relaxed = true)
     internal val mockCheckpointsConfigProvider = mockk<CheckpointsConfigProvider>(relaxed = true)
@@ -529,6 +531,7 @@ internal open class BasePurchasesTest {
             workflowsConfigProvider = mockWorkflowsConfigProvider,
             checkpointsConfigProvider = mockCheckpointsConfigProvider,
             audiencesConfigProvider = mockAudiencesConfigProvider,
+            tokenManager = mockTokenManager,
         )
 
         purchases = Purchases(

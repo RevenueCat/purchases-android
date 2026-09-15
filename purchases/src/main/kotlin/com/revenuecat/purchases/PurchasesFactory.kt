@@ -43,6 +43,7 @@ import com.revenuecat.purchases.common.networking.DeviceConnectivityChecker
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.SourceHealthChecker
+import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offerings.OfferingsFactory
 import com.revenuecat.purchases.common.offerings.OfferingsManager
@@ -221,6 +222,16 @@ internal class PurchasesFactory(
             val signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey)
 
             val cache = DeviceCache(prefs, apiKey)
+
+            // TokenManager owns constructing IAM's secure token storage end-to-end (context, API key,
+            // iamEnabled in; a ready-or-not SecureItemStorage never leaves this class) since it's the only
+            // thing that ever touches it, and PurchasesOrchestrator holds a reference to it regardless of
+            // whether anything has called into it yet (see IAM phase 3, step 7).
+            val tokenManager = TokenManager(
+                context = contextForStorage,
+                apiKey = apiKey,
+                enabled = appConfig.iamEnabled,
+            )
 
             val localeProvider = DefaultLocaleProvider()
 
@@ -584,6 +595,7 @@ internal class PurchasesFactory(
                 checkpointsConfigProvider = checkpointsConfigProvider,
                 audiencesConfigProvider = audiencesConfigProvider,
                 localRulesEvaluator = localRulesEvaluator,
+                tokenManager = tokenManager,
             )
 
             return Purchases(purchasesOrchestrator)

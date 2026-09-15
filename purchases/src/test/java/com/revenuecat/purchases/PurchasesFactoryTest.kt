@@ -230,6 +230,51 @@ class PurchasesFactoryTest {
     }
 
     @Test
+    fun `creating purchases with iamEnabled threads it into the constructed TokenManager`() {
+        val application = spyk(ApplicationProvider.getApplicationContext<Application>())
+        every { application.applicationContext } returns application
+        every { application.checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns
+            PackageManager.PERMISSION_GRANTED
+        val configuration = PurchasesConfiguration.Builder(application, "fakeApiKey")
+            .appUserID("appUserID")
+            .store(Store.PLAY_STORE)
+            .iamEnabled(true)
+            .build()
+
+        val purchases = purchasesFactory.createPurchases(
+            configuration = configuration,
+            platformInfo = PlatformInfo(flavor = "test", version = null),
+            proxyURL = null,
+            overrideBillingAbstract = mockk<BillingAbstract>(relaxed = true),
+        )
+
+        assertThat(purchases.purchasesOrchestrator.tokenManager.enabled).isTrue()
+        purchases.close()
+    }
+
+    @Test
+    fun `creating purchases without iamEnabled constructs a disabled TokenManager`() {
+        val application = spyk(ApplicationProvider.getApplicationContext<Application>())
+        every { application.applicationContext } returns application
+        every { application.checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns
+            PackageManager.PERMISSION_GRANTED
+        val configuration = PurchasesConfiguration.Builder(application, "fakeApiKey")
+            .appUserID("appUserID")
+            .store(Store.PLAY_STORE)
+            .build()
+
+        val purchases = purchasesFactory.createPurchases(
+            configuration = configuration,
+            platformInfo = PlatformInfo(flavor = "test", version = null),
+            proxyURL = null,
+            overrideBillingAbstract = mockk<BillingAbstract>(relaxed = true),
+        )
+
+        assertThat(purchases.purchasesOrchestrator.tokenManager.enabled).isFalse()
+        purchases.close()
+    }
+
+    @Test
     fun `creating purchases with custom entitlement computation constructs the config graph disabled`() {
         val application = spyk(ApplicationProvider.getApplicationContext<Application>())
         every { application.applicationContext } returns application
