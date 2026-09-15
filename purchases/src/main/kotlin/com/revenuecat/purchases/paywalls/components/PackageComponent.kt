@@ -34,6 +34,8 @@ public class PackageComponent(
     public val visible: Boolean? = null,
     @get:JvmSynthetic
     public val overrides: List<ComponentOverride<PartialPackageComponent>> = emptyList(),
+    @get:JvmSynthetic
+    public val id: String? = null,
 ) : PaywallComponent
 
 @InternalRevenueCatAPI
