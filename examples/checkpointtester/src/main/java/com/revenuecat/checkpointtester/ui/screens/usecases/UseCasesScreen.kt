@@ -1,13 +1,20 @@
 package com.revenuecat.checkpointtester.ui.screens.usecases
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -16,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.ui.Screen
 import com.revenuecat.checkpointtester.ui.theme.CheckpointTesterTheme
 
@@ -56,9 +64,9 @@ private val NAVIGATED_USE_CASES = listOf(
 private val INLINE_USE_CASES = listOf(
     InlineUseCase(
         identifier = "offering_checkpoint",
-        title = "Offering fallback paywall",
-        description = "A terminal offering workflow presents the offering's paywall, falling back to the " +
-            "default paywall until custom presenters exist.",
+        title = "Offering checkpoint",
+        description = "A terminal offering workflow. Who presents the offering depends on the paywall " +
+            "presenter selected above: the SDK, the global presenter, or the one passed in this call.",
     ),
     InlineUseCase(
         identifier = "unknown_checkpoint",
@@ -80,8 +88,13 @@ fun UseCasesScreen(
     viewModel: UseCasesViewModel = viewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val presenterMode by PaywallPresenters.mode.collectAsState()
 
     LazyColumn(modifier = modifier.fillMaxSize()) {
+        item {
+            SectionHeader(text = "Paywall presenter")
+            PresenterSelector(mode = presenterMode, onSelect = PaywallPresenters::select)
+        }
         item {
             SectionHeader(text = "App-driven use cases")
         }
@@ -100,23 +113,48 @@ fun UseCasesScreen(
             ListItem(
                 headlineContent = { Text(text = useCase.title) },
                 supportingContent = { Text(text = useCase.description) },
-                modifier = Modifier.clickable(enabled = !state.running) {
-                    viewModel.hit(useCase.identifier)
-                },
+                modifier = Modifier.clickable { viewModel.hit(useCase.identifier) },
             )
             HorizontalDivider()
         }
         item {
             Text(
-                text = when {
-                    state.running -> "Running the checkpoint…"
-                    else -> state.message ?: "Tap one of the outcomes above to run it here."
-                },
+                text = state.message ?: "Tap one of the outcomes above to run it here.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(16.dp),
             )
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PresenterSelector(
+    mode: PaywallPresenters.Mode,
+    onSelect: (PaywallPresenters.Mode) -> Unit,
+) {
+    val modes = PaywallPresenters.Mode.entries
+    Column(
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+            modes.forEachIndexed { index, candidate ->
+                SegmentedButton(
+                    selected = candidate == mode,
+                    onClick = { onSelect(candidate) },
+                    shape = SegmentedButtonDefaults.itemShape(index = index, count = modes.size),
+                ) {
+                    Text(text = candidate.label)
+                }
+            }
+        }
+        Text(
+            text = mode.description,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

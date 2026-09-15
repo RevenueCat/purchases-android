@@ -1,6 +1,7 @@
 package com.revenuecat.checkpointtester.ui.screens.custom
 
 import androidx.lifecycle.ViewModel
+import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.checkpoints.summary
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
@@ -9,7 +10,6 @@ import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 
 /**
  * Runs whatever identifier is typed in, so a checkpoint configured in the dashboard can be tried without
@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.update
 class CustomCheckpointViewModel : ViewModel() {
 
     data class UiState(
-        val runningFor: String? = null,
         val title: String? = null,
         val detail: String? = null,
         val raw: String? = null,
@@ -32,9 +31,9 @@ class CustomCheckpointViewModel : ViewModel() {
     @OptIn(InternalRevenueCatAPI::class)
     fun hit(identifier: String) {
         val checkpointIdentifier = identifier.trim()
-        if (checkpointIdentifier.isEmpty() || _state.value.runningFor != null) return
-        _state.update { UiState(runningFor = checkpointIdentifier) }
-        Purchases.sharedInstance.checkpoint(checkpointIdentifier) { result ->
+        if (checkpointIdentifier.isEmpty()) return
+        _state.value = UiState()
+        Purchases.sharedInstance.checkpoint(checkpointIdentifier, PaywallPresenters.params()) { result ->
             _state.value = result.toUiState()
         }
     }

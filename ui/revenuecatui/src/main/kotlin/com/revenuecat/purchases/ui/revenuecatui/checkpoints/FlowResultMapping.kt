@@ -40,6 +40,8 @@ internal fun CheckpointRun.toResult(activeEntitlementsBefore: Set<String>?): Flo
             FlowResult(obtainedEntitlements(outcome.customerInfo, activeEntitlementsBefore))
         is CheckpointFlowOutcome.Restored ->
             FlowResult(obtainedEntitlements(outcome.customerInfo, activeEntitlementsBefore))
+        is CheckpointFlowOutcome.Finished ->
+            FlowResult(obtainedEntitlements(outcome.customerInfo, activeEntitlementsBefore))
         // Dismissed, WebCheckoutOpened, and any future outcome without an in-app grant signal.
         else -> FlowResult(obtainedEntitlements = emptySet())
     }

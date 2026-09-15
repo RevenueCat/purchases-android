@@ -1,6 +1,7 @@
 package com.revenuecat.checkpointtester.ui.screens.usecases
 
 import androidx.lifecycle.ViewModel
+import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.checkpoints.summary
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
@@ -17,7 +18,6 @@ import kotlinx.coroutines.flow.update
 class UseCasesViewModel : ViewModel() {
 
     data class UiState(
-        val running: Boolean = false,
         val message: String? = null,
     )
 
@@ -26,10 +26,9 @@ class UseCasesViewModel : ViewModel() {
 
     @OptIn(InternalRevenueCatAPI::class)
     fun hit(identifier: String) {
-        if (_state.value.running) return
-        _state.update { it.copy(running = true, message = null) }
-        Purchases.sharedInstance.checkpoint(identifier) { result ->
-            _state.update { it.copy(running = false, message = result.summary()) }
+        _state.update { it.copy(message = null) }
+        Purchases.sharedInstance.checkpoint(identifier, PaywallPresenters.params()) { result ->
+            _state.update { it.copy(message = result.summary()) }
         }
     }
 }

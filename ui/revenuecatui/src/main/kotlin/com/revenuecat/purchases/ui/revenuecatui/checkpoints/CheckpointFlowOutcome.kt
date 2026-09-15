@@ -29,6 +29,16 @@ internal abstract class CheckpointFlowOutcome {
     ) : CheckpointFlowOutcome()
 
     /**
+     * An app-owned presentation through [PaywallPresenter] finished with the user going through it.
+     * [customerInfo] is the customer's information after syncing the store purchases made during it; what the
+     * user obtained is read from it, whatever the app reported.
+     */
+    @Poko
+    class Finished(
+        val customerInfo: CustomerInfo,
+    ) : CheckpointFlowOutcome()
+
+    /**
      * A purchase or restore failed with [error], or the flow could not be kept on screen (e.g. a failed
      * re-present after a configuration change). Cancellations are reported as [Dismissed] instead.
      */
