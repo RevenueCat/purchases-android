@@ -2,6 +2,8 @@ package com.revenuecat.purchases.ui.revenuecatui.data
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.intl.LocaleList
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
@@ -10,6 +12,7 @@ import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedPackagePartial
+import com.revenuecat.purchases.ui.revenuecatui.components.ScreenCondition
 import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ColorStyle
@@ -415,6 +418,272 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
 
         assertThat(state.selectedPackageInfo).isNull()
     }
+
+    // endregion
+
+    // region window size rules
+
+    @Test
+    fun `Switching tabs reconciles a remembered selection hidden by a window size rule`() {
+        val state = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = mapOf(
+                0 to listOf(packageInfo(TestData.Packages.weekly, isSelectedByDefault = true)),
+                1 to listOf(
+                    packageInfo(
+                        TestData.Packages.monthly,
+                        isSelectedByDefault = true,
+                        visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+                    ),
+                    packageInfo(TestData.Packages.annual, isSelectedByDefault = false),
+                ),
+            ),
+            initialSelectedTabIndex = 0,
+        )
+        state.paywallBoundsDp = DpSize(800.dp, 600.dp)
+
+        state.update(selectedTabIndex = 1)
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Resetting to the default package reconciles a default hidden by a window size rule`() {
+        val hiddenDefault = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = true,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+        )
+        val visiblePackage = packageInfo(TestData.Packages.annual, isSelectedByDefault = false)
+        val state = paywallState(
+            packagesOutsideTabs = listOf(hiddenDefault, visiblePackage),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        state.paywallBoundsDp = DpSize(800.dp, 600.dp)
+        state.update(selectedPackageUniqueId = visiblePackage.uniqueId)
+
+        state.resetToDefaultPackage()
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Reconciles a user-selected package hidden by a window size rule`() {
+        val hideable = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = false,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+        )
+        val visibleDefault = packageInfo(TestData.Packages.annual, isSelectedByDefault = true)
+        val state = paywallState(
+            packagesOutsideTabs = listOf(hideable, visibleDefault),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        state.update(selectedPackageUniqueId = hideable.uniqueId)
+
+        state.reconcileSelectionForWindowSize(DpSize(800.dp, 600.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Reconcile keeps the selection when nothing is visible at the measured window size`() {
+        val hiddenDefault = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = true,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+        )
+        val hiddenOther = packageInfo(
+            TestData.Packages.annual,
+            isSelectedByDefault = false,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+        )
+        val state = paywallState(
+            packagesOutsideTabs = listOf(hiddenDefault, hiddenOther),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+
+        state.reconcileSelectionForWindowSize(DpSize(800.dp, 600.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
+    fun `Reconcile keeps a selected package that is visible only under the medium size class`() {
+        val mediumOnly = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = false,
+            visible = false,
+            visibilityOverrides = listOf(visibleWhenOverride(ComponentOverride.Condition.Medium)),
+        )
+        val other = packageInfo(TestData.Packages.annual, isSelectedByDefault = true)
+        val state = paywallState(
+            packagesOutsideTabs = listOf(mediumOnly, other),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        state.update(selectedPackageUniqueId = mediumOnly.uniqueId)
+        state.windowScreenCondition = ScreenCondition.MEDIUM
+
+        // The renderer shows this package on a medium window, so reconcile keeps it.
+        state.reconcileSelectionForWindowSize(DpSize(700.dp, 600.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
+    fun `Reconcile keeps a selected package that is visible only while selected`() {
+        val selectedOnly = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = false,
+            visible = false,
+            visibilityOverrides = listOf(visibleWhenOverride(ComponentOverride.Condition.Selected)),
+        )
+        val other = packageInfo(TestData.Packages.annual, isSelectedByDefault = true)
+        val state = paywallState(
+            packagesOutsideTabs = listOf(selectedOnly, other),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        state.update(selectedPackageUniqueId = selectedOnly.uniqueId)
+
+        state.reconcileSelectionForWindowSize(DpSize(400.dp, 800.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
+    fun `Reconcile does not move the selection onto a package hidden at the current size class`() {
+        val hiddenCurrent = packageInfo(
+            TestData.Packages.weekly,
+            isSelectedByDefault = false,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 650.0)),
+        )
+        val mediumHiddenDefault = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = true,
+            visibilityOverrides = listOf(hiddenWhenOverride(ComponentOverride.Condition.Medium)),
+        )
+        val visibleOther = packageInfo(TestData.Packages.annual, isSelectedByDefault = false)
+        val state = paywallState(
+            packagesOutsideTabs = listOf(hiddenCurrent, mediumHiddenDefault, visibleOther),
+            packagesByTab = emptyMap(),
+            initialSelectedTabIndex = null,
+        )
+        state.update(selectedPackageUniqueId = hiddenCurrent.uniqueId)
+        state.windowScreenCondition = ScreenCondition.MEDIUM
+
+        // The authored default is hidden on a medium window too, so it can't be the replacement.
+        state.reconcileSelectionForWindowSize(DpSize(700.dp, 600.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Reconcile evaluates the active tab's copy of the selected package`() {
+        val visibleCopy = packageInfo(TestData.Packages.monthly, isSelectedByDefault = false)
+        val hiddenCopy = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = false,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+        )
+        val tabDefault = packageInfo(TestData.Packages.annual, isSelectedByDefault = true)
+        val state = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = mapOf(0 to listOf(visibleCopy), 1 to listOf(hiddenCopy, tabDefault)),
+            initialSelectedTabIndex = 1,
+        )
+        state.update(selectedPackageUniqueId = hiddenCopy.uniqueId)
+
+        // The visible tab-0 copy must not mask the hidden copy on the active tab.
+        state.reconcileSelectionForWindowSize(DpSize(800.dp, 600.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Reconcile prefers the tab's authored default over one outside the tabs, matching sheet dismiss`() {
+        val hiddenSelected = packageInfo(
+            TestData.Packages.weekly,
+            isSelectedByDefault = false,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+        )
+        val outsideDefault = packageInfo(TestData.Packages.monthly, isSelectedByDefault = true)
+        val tabDefault = packageInfo(TestData.Packages.annual, isSelectedByDefault = true)
+        val state = paywallState(
+            packagesOutsideTabs = listOf(hiddenSelected, outsideDefault),
+            packagesByTab = mapOf(0 to listOf(tabDefault)),
+            initialSelectedTabIndex = 0,
+        )
+        state.update(selectedPackageUniqueId = hiddenSelected.uniqueId)
+
+        state.reconcileSelectionForWindowSize(DpSize(800.dp, 600.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
+    fun `Reconcile keeps the selection while any on-screen copy is visible`() {
+        val hiddenOutsideCopy = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = false,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+        )
+        val visibleTabCopy = packageInfo(TestData.Packages.monthly, isSelectedByDefault = false)
+        val tabDefault = packageInfo(TestData.Packages.annual, isSelectedByDefault = true)
+        val state = paywallState(
+            packagesOutsideTabs = listOf(hiddenOutsideCopy),
+            packagesByTab = mapOf(0 to listOf(visibleTabCopy, tabDefault)),
+            initialSelectedTabIndex = 0,
+        )
+        state.update(selectedPackageUniqueId = visibleTabCopy.uniqueId)
+
+        // The hidden outside-tabs copy must not mask the visible copy on the active tab.
+        state.reconcileSelectionForWindowSize(DpSize(800.dp, 600.dp))
+
+        assertThat(state.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
+    fun `Peek after sheet dismiss skips a default hidden at the measured bounds`() {
+        val hiddenDefault = packageInfo(
+            TestData.Packages.monthly,
+            isSelectedByDefault = true,
+            visibilityOverrides = listOf(hiddenWhenWiderThanOverride(width = 700.0)),
+        )
+        val visibleOther = packageInfo(TestData.Packages.annual, isSelectedByDefault = false)
+        val state = paywallState(
+            packagesOutsideTabs = emptyList(),
+            packagesByTab = mapOf(0 to listOf(hiddenDefault, visibleOther)),
+            initialSelectedTabIndex = 0,
+        )
+        state.paywallBoundsDp = DpSize(800.dp, 600.dp)
+
+        assertThat(state.peekDefaultPackageUniqueIdAfterSheetDismiss()).isEqualTo(visibleOther.uniqueId)
+    }
+
+    private fun hiddenWhenWiderThanOverride(width: Double) = PresentedOverride(
+        conditions = listOf(
+            ComponentOverride.Condition.WindowWidthRule(
+                operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                value = width,
+            ),
+        ),
+        properties = PresentedPackagePartial(partial = PartialPackageComponent(visible = false)),
+    )
+
+    private fun visibleWhenOverride(condition: ComponentOverride.Condition) = PresentedOverride(
+        conditions = listOf(condition),
+        properties = PresentedPackagePartial(partial = PartialPackageComponent(visible = true)),
+    )
+
+    private fun hiddenWhenOverride(condition: ComponentOverride.Condition) = PresentedOverride(
+        conditions = listOf(condition),
+        properties = PresentedPackagePartial(partial = PartialPackageComponent(visible = false)),
+    )
 
     // endregion
 
