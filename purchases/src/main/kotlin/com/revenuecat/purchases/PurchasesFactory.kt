@@ -208,17 +208,14 @@ internal class PurchasesFactory(
                 warnLog { "Diagnostics are only supported on Android N or newer." }
             }
 
-            val signatureVerificationMode = try {
-                SignatureVerificationMode.fromEntitlementVerificationMode(
-                    verificationMode,
-                )
-            } catch (e: IllegalStateException) {
-                // If we're not able to create the signature verifier, we should disable signature verification
-                // instead of crashing
-                errorLog { "Error creating signature verifier: ${e.message}. Disabling signature verification." }
-                SignatureVerificationMode.Disabled
-            }
+            val signatureVerificationMode = SignatureVerificationMode.fromEntitlementVerificationMode(
+                verificationMode,
+            )
             val signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey)
+            // The root verifier is created lazily, because building it initializes Tink's Ed25519 constant
+            // table and that costs substantial time on newer Tink versions.
+            // Warm it up here so the cost lands on a background thread and overlaps the first request.
+            signingManager.warmUpVerifierAsync()
 
             val cache = DeviceCache(prefs, apiKey)
 

@@ -9,6 +9,10 @@ import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.Result
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import java.security.MessageDigest
 import java.security.SecureRandom
 
@@ -16,6 +20,7 @@ internal class SigningManager(
     val signatureVerificationMode: SignatureVerificationMode,
     private val appConfig: AppConfig,
     private val apiKey: String,
+    private val warmUpScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
     private companion object {
         const val NONCE_BYTES_SIZE = 12
@@ -77,6 +82,20 @@ internal class SigningManager(
                 requestTime.toByteArray() +
                 (eTag?.toByteArray() ?: byteArrayOf()) +
                 (body ?: byteArrayOf())
+        }
+    }
+
+    /**
+     * Creates the root signature verifier in the background, so that initializing Tink's Ed25519 constant
+     * table does not block the thread that calls `Purchases.configure`. Correctness does not depend on this
+     * finishing: [verifyResponse] runs on a network thread and waits for the same verifier if it gets there
+     * first. Doing this work here means it overlaps the first request instead of delaying it.
+     */
+    fun warmUpVerifierAsync() {
+        if (!signatureVerificationMode.shouldVerify) return
+        warmUpScope.launch {
+            val verificationAvailable = signatureVerificationMode.warmUp()
+            verboseLog { "Signature verifier ready. Signature verification available: $verificationAvailable" }
         }
     }
 

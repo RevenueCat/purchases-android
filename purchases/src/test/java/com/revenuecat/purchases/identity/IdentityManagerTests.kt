@@ -16,6 +16,7 @@ import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.offerings.OfferingsCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
+import com.revenuecat.purchases.common.verification.IntermediateSignatureHelper
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.paywalls.PaywallAssetWarming
 import com.revenuecat.purchases.strings.IdentityStrings
@@ -592,7 +593,7 @@ class IdentityManagerTests {
         setupCustomerInfoCacheInvalidationTest(
             userId,
             VerificationResult.NOT_REQUESTED,
-            SignatureVerificationMode.Informational(mockk()),
+            SignatureVerificationMode.Informational(mockk<IntermediateSignatureHelper>()),
             true
         )
         identityManager.configure(userId)
@@ -610,7 +611,7 @@ class IdentityManagerTests {
         setupCustomerInfoCacheInvalidationTest(
             userId,
             VerificationResult.NOT_REQUESTED,
-            SignatureVerificationMode.Enforced(mockk()),
+            SignatureVerificationMode.Enforced(mockk<IntermediateSignatureHelper>()),
             true
         )
         identityManager.configure(userId)
@@ -628,7 +629,7 @@ class IdentityManagerTests {
         setupCustomerInfoCacheInvalidationTest(
             userId,
             VerificationResult.VERIFIED,
-            SignatureVerificationMode.Informational(mockk()),
+            SignatureVerificationMode.Informational(mockk<IntermediateSignatureHelper>()),
             shouldClearCustomerInfoAndETagCaches = false
         )
         identityManager.configure(userId)
@@ -663,7 +664,7 @@ class IdentityManagerTests {
         val userId = "test-app-user-id"
         mockNoCachedAppUserID()
         every { mockDeviceCache.getCachedCustomerInfo(userId) } returns null
-        every { mockBackend.verificationMode } returns SignatureVerificationMode.Informational(mockk())
+        every { mockBackend.verificationMode } returns SignatureVerificationMode.Informational(mockk<IntermediateSignatureHelper>())
         identityManager = createIdentityManager()
         identityManager.configure(userId)
         verify(exactly = 0) {
