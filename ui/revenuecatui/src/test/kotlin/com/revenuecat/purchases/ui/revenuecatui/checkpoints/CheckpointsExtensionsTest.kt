@@ -20,7 +20,7 @@ class CheckpointsExtensionsTest {
         val manager = purchases.checkpointsManager
 
         assertThat(purchases.checkpointsManager).isSameAs(manager)
-        assertThat(purchases.checkpointManagerSlot).isSameAs(manager)
+        assertThat(purchases.internalCpManagerSlot).isSameAs(manager)
     }
 
     @Test
@@ -35,8 +35,8 @@ class CheckpointsExtensionsTest {
     private fun purchasesWithSlot(): Purchases {
         var slot: Any? = null
         return mockk {
-            every { checkpointManagerSlot } answers { slot }
-            every { checkpointManagerSlot = any() } answers { slot = firstArg() }
+            every { internalCpManagerSlot } answers { slot }
+            every { internalCpManagerSlot = any() } answers { slot = firstArg() }
         }
     }
 }

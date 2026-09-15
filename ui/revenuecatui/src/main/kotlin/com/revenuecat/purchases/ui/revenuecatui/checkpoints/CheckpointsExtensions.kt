@@ -2,31 +2,54 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.PurchasesException
 
 /**
- * Registers that [checkpointIdentifier] was hit. Depending on the configured targeting rules, this may
- * auto-present an experience (the call resolves when it finishes) or do nothing.
+ * Registers that [checkpointIdentifier] was reached. Depending on the configured targeting rules, this may present a
+ * flow or do nothing. [callback] is invoked at most once, on the main thread. If no rules are matched,
+ * or if presenting fails, the callback is invoked with null.
+ *
+ * If a flow is presented, the callback is invoked when the user "goes through" the flow. That means,
+ * the flow is "closed" and/or a purchase/restore happens. It will not be called if the user backs out of the flow
+ * (system back, or a back action on a flow's first step). Only one checkpoint flow is presented at a time: a
+ * checkpoint that resolves to a flow while another one is already on screen is ignored and its callback is never
+ * invoked, since the call that presented the flow is the one that reports.
+ *
+ * The callback [FlowResult] will be:
+ * - null when nothing was presented: no rule matched, nothing could be served, or presenting failed;
+ * - with what the user obtained when the presented flow ended with a purchase or restore, or through a close
+ *   action, if anything.
+ *
+ * This call never throws. Why nothing was presented, and any failure, are reported in the logs.
  *
  * @param checkpointIdentifier The checkpoint identifier, as configured in the RevenueCat dashboard. It must start
  * with an ASCII letter, contain only ASCII letters, numbers, underscores, and hyphens, and be no more than 255
  * characters.
  * @param params Optional per-call parameters, like custom properties usable in targeting rules.
- * @throws [PurchasesException] with a [PurchasesError] if the checkpoint could not be handled.
- * @return The [CheckpointResult] for this checkpoint.
+ * @param callback Receives the [FlowResult], or null, once the user goes through the checkpoint.
  */
-@JvmSynthetic
-@Throws(PurchasesException::class)
 @InternalRevenueCatAPI
-public suspend fun Purchases.awaitCheckpoint(
+public fun Purchases.checkpoint(
     checkpointIdentifier: String,
-    params: CheckpointParams? = null,
-): CheckpointResult = checkpointsManager.checkpoint(this, checkpointIdentifier, params)
+    params: CheckpointParams?,
+    callback: CheckpointPassedCallback,
+) {
+    checkpointsManager.checkpoint(this, checkpointIdentifier, params, callback)
+}
+
+/**
+ * [checkpoint] without per-call parameters.
+ */
+@InternalRevenueCatAPI
+public fun Purchases.checkpoint(
+    checkpointIdentifier: String,
+    callback: CheckpointPassedCallback,
+) {
+    checkpoint(checkpointIdentifier, params = null, callback = callback)
+}
 
 /**
  * The [CheckpointsManager] owned by this [Purchases] instance, created on first use and kept in the
- * instance's opaque `checkpointManagerSlot`. Storing it there rather than in a singleton ties any in-flight
+ * instance's opaque `internalCpManagerSlot`. Storing it there rather than in a singleton ties any in-flight
  * presentation to the lifetime of the SDK instance, so reconfiguring the SDK cannot inherit a presentation that
  * will never complete.
  *
@@ -34,6 +57,6 @@ public suspend fun Purchases.awaitCheckpoint(
  */
 internal val Purchases.checkpointsManager: CheckpointsManager
     get() = synchronized(this) {
-        checkpointManagerSlot as? CheckpointsManager
-            ?: CheckpointsManager().also { checkpointManagerSlot = it }
+        internalCpManagerSlot as? CheckpointsManager
+            ?: CheckpointsManager().also { internalCpManagerSlot = it }
     }
