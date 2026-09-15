@@ -1,11 +1,12 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import androidx.annotation.VisibleForTesting
-import androidx.compose.material3.adaptive.currentWindowSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.toSize
 import androidx.window.core.layout.WindowHeightSizeClass
 import androidx.window.core.layout.WindowSizeClass
@@ -20,12 +21,19 @@ import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
  * collecting folding features. Paywalls V2 components only ever read the width size class, and the folding
  * feature flow behind `Posture` is one collector per call site.
  *
+ * This inlines what `currentWindowSize()` does, because that function is not [ReadOnlyComposable] and so
+ * cannot be called from here.
+ *
  * Distinct from [computeWindowWidthSizeClass], which reads the Activity density and is used by V1 paywalls.
  */
 @Composable
+@ReadOnlyComposable
 internal fun currentWindowWidthSizeClass(): WindowWidthSizeClass {
-    val windowSize = currentWindowSize()
-    val dpSize = with(LocalDensity.current) { windowSize.toSize().toDpSize() }
+    // Read for its side effect, exactly as `currentWindowSize()` does: the window metrics below are not
+    // snapshot state, so this read is what invalidates callers on a configuration change.
+    LocalConfiguration.current
+    val bounds = WindowMetricsCalculator.getOrCreate().computeCurrentWindowMetrics(LocalContext.current).bounds
+    val dpSize = with(LocalDensity.current) { IntSize(bounds.width(), bounds.height()).toSize().toDpSize() }
     return WindowSizeClass.compute(dpSize.width.value, dpSize.height.value).windowWidthSizeClass
 }
 
