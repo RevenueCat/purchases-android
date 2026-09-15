@@ -59,6 +59,9 @@ internal class WorkflowsConfigProvider(
         // Raw body bytes per workflow, decoded lazily (on first access, on the caller's thread) and retained.
         val workflows: Map<String, Lazy<PublishedWorkflow?>>,
         val offeringToWorkflowId: Map<String, String>,
+        // Captured in the same pass as the bodies so a cached body and its ref cannot come from
+        // different generations.
+        val workflowBlobRefs: Map<String, String>,
     )
 
     private val cache = GenerationGuardedCache<Cached>()
@@ -131,18 +134,9 @@ internal class WorkflowsConfigProvider(
     suspend fun workflowIdForOfferingId(offeringId: String): String? =
         (resolveWorkflow(offeringId) as? WorkflowResolution.Found)?.workflowId
 
-    /**
-     * Every workflow id in the `workflows` topic that maps to an `offering_identifier`, mapped to that offering.
-     * Workflows without one are omitted: they can't be presented, so no caller has a use for them. Empty when the
-     * topic is unavailable. May trigger a `/v1/config` sync on a cold cache.
-     */
-    suspend fun offeringIdByWorkflowId(): Map<String, String> =
-        manager.topic(RemoteConfigTopic.Workflows)
-            ?.mapNotNull { (workflowId, item) ->
-                item.metadata.stringOrNull(KEY_OFFERING_IDENTIFIER)?.let { workflowId to it }
-            }
-            ?.toMap()
-            .orEmpty()
+    suspend fun workflowBlobRef(workflowId: String): String? =
+        cache.cached?.workflowBlobRefs?.get(workflowId)
+            ?: manager.topic(RemoteConfigTopic.Workflows)?.get(workflowId)?.blobRef
 
     /**
      * Resolves [workflowId] into a [PublishedWorkflow], or `null` when the item is unknown, its body can be
@@ -214,6 +208,7 @@ internal class WorkflowsConfigProvider(
         if (isWarmAtOrAbove(generation)) return
         val topic = manager.committedTopicOrNull(RemoteConfigTopic.Workflows) ?: return
         val offeringToWorkflowId = LinkedHashMap<String, String>()
+        val workflowBlobRefs = LinkedHashMap<String, String>()
         val currentOfferingId = currentOfferingIdProvider()
         val eligibleIds = mutableListOf<String>()
         topic.entries.forEach { (workflowId, item) ->
@@ -222,6 +217,7 @@ internal class WorkflowsConfigProvider(
                 // Last entry wins on duplicates, matching workflowIdForOfferingId.
                 offeringToWorkflowId[offeringId] = workflowId
             }
+            item.blobRef?.let { workflowBlobRefs[workflowId] = it }
             if (item.prefetch || (offeringId != null && offeringId == currentOfferingId)) {
                 eligibleIds += workflowId
             }
@@ -238,7 +234,7 @@ internal class WorkflowsConfigProvider(
             "Warmed workflows cache: ${workflows.size} eligible workflow(s), " +
                 "${offeringToWorkflowId.size} offering mapping(s)."
         }
-        cache.store(generation, Cached(workflows, offeringToWorkflowId))
+        cache.store(generation, Cached(workflows, offeringToWorkflowId, workflowBlobRefs))
 
         announceWorkflowsToPrewarm(offeringToWorkflowId)
     }

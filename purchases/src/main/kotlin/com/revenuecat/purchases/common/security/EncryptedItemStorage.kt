@@ -33,12 +33,13 @@ import javax.crypto.spec.SecretKeySpec
  * ## Backup behaviour
  *
  * The [SecureItemAttributes.includedInBackup] attribute controls which partition an item is
- * written to:
+ * written to, both nested under a `RevenueCat` subfolder so this SDK's files are grouped
+ * together rather than sitting loose at the root of the app's storage:
  *
- * - `true` (the default): the item is stored under [Context.getFilesDir], which participates
- *   in Android Auto Backup.
- * - `false`: the item is stored under [Context.getNoBackupFilesDir], which is explicitly
- *   excluded from Auto Backup by the OS — no additional XML configuration required.
+ * - `true` (the default): the item is stored under [Context.getFilesDir]`/RevenueCat`, which
+ *   participates in Android Auto Backup.
+ * - `false`: the item is stored under [Context.getNoBackupFilesDir]`/RevenueCat`, which is
+ *   explicitly excluded from Auto Backup by the OS — no additional XML configuration required.
  *
  * ## AEAD associated data
  *
@@ -72,6 +73,11 @@ internal class EncryptedItemStorage private constructor(
         private const val DEFAULT_SALT = "revenuecat"
         private const val DEFAULT_STORAGE_NAME = "rc_secure"
 
+        // All of this SDK's files on disk are grouped under this subfolder, rather than sitting
+        // loose at the root of the app's storage directories, mirroring the convention already used
+        // by ETagPayloadStore/RemoteConfigDiskCache/RemoteConfigBlobStore.
+        private const val VENDOR_DIRECTORY = "RevenueCat"
+
         /**
          * Create an [EncryptedItemStorage] backed by PBKDF2-derived AES-256-GCM.
          *
@@ -103,8 +109,14 @@ internal class EncryptedItemStorage private constructor(
                 SecretKeySpec(keyBytes, KEY_ALGORITHM)
             }
 
-            val backupFile = File(context.filesDir, "${DEFAULT_STORAGE_NAME}_backup.json")
-            val noBackupFile = File(context.noBackupFilesDir, "${DEFAULT_STORAGE_NAME}_no_backup.json")
+            val backupFile = File(
+                File(context.filesDir, VENDOR_DIRECTORY),
+                "${DEFAULT_STORAGE_NAME}_backup.json",
+            )
+            val noBackupFile = File(
+                File(context.noBackupFilesDir, VENDOR_DIRECTORY),
+                "${DEFAULT_STORAGE_NAME}_no_backup.json",
+            )
 
             val (backup, noBackup) = withContext(ioDispatcher) {
                 Partition(backupFile, loadStore(backupFile)) to Partition(noBackupFile, loadStore(noBackupFile))

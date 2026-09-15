@@ -6,6 +6,8 @@ import com.revenuecat.purchases.paywalls.components.ButtonComponent
 import com.revenuecat.purchases.paywalls.components.PaywallTransition
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.properties.Size
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedButtonPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyMap
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import dev.drewhamilton.poko.Poko
@@ -22,6 +24,14 @@ internal data class ButtonComponentStyle(
     val componentName: String? = null,
     @get:JvmSynthetic
     val componentId: String? = null,
+    /**
+     * The button's own visibility, independent of the stack it wraps. Null means the button has no
+     * `visible` of its own, so it falls back to its stack's, preserving pre-existing behavior.
+     */
+    @get:JvmSynthetic
+    val buttonVisible: Boolean? = null,
+    @get:JvmSynthetic
+    val overrides: List<PresentedOverride<PresentedButtonPartial>> = emptyList(),
 ) : ComponentStyle {
 
     internal sealed interface Action {
@@ -97,6 +107,6 @@ internal data class ButtonComponentStyle(
         }
     }
 
-    override val visible: Boolean = stackComponentStyle.visible
+    override val visible: Boolean = buttonVisible ?: stackComponentStyle.visible
     override val size: Size = stackComponentStyle.size
 }

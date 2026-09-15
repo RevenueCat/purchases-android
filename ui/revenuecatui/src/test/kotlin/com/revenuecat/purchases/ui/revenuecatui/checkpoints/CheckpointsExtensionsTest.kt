@@ -20,7 +20,7 @@ class CheckpointsExtensionsTest {
         val manager = purchases.checkpointsManager
 
         assertThat(purchases.checkpointsManager).isSameAs(manager)
-        assertThat(purchases.checkpointManagerSlot).isSameAs(manager)
+        assertThat(purchases.internalCpManagerSlot).isSameAs(manager)
     }
 
     @Test
@@ -31,38 +31,12 @@ class CheckpointsExtensionsTest {
         assertThat(first.checkpointsManager).isNotSameAs(second.checkpointsManager)
     }
 
-    @Test
-    fun `the listener round-trips through the instance's manager`() {
-        val purchases = purchasesWithSlot()
-        val listener = mockk<CheckpointListener>()
-
-        purchases.checkpointListener = listener
-
-        assertThat(purchases.checkpointListener).isSameAs(listener)
-        assertThat((purchases.checkpointManagerSlot as CheckpointsManager).checkpointListener)
-            .isSameAs(listener)
-
-        purchases.checkpointListener = null
-
-        assertThat(purchases.checkpointListener).isNull()
-    }
-
-    @Test
-    fun `a listener set on one Purchases instance does not leak into the next`() {
-        val first = purchasesWithSlot()
-        first.checkpointListener = mockk()
-
-        val second = purchasesWithSlot()
-
-        assertThat(second.checkpointListener).isNull()
-    }
-
     // Mirrors the real slot: a per-instance field the UI module reads and writes.
     private fun purchasesWithSlot(): Purchases {
         var slot: Any? = null
         return mockk {
-            every { checkpointManagerSlot } answers { slot }
-            every { checkpointManagerSlot = any() } answers { slot = firstArg() }
+            every { internalCpManagerSlot } answers { slot }
+            every { internalCpManagerSlot = any() } answers { slot = firstArg() }
         }
     }
 }

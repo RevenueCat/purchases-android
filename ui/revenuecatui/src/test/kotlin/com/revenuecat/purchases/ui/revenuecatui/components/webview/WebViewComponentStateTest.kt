@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
@@ -47,6 +49,7 @@ class WebViewComponentStateTest {
         selectedPackageInfo: PaywallState.Loaded.Components.SelectedPackageInfo? = null,
     ) = WebViewComponentState(
         initialWindowSize = windowSize,
+        initialWindowDpSize = DpSize(400.dp, 800.dp),
         style = style,
         selectedPackageInfoProvider = { selectedPackageInfo },
         selectedTabIndexProvider = { 0 },

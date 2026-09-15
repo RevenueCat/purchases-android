@@ -5,6 +5,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PresentedOfferingContext
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.CustomVariableKeyValidator
@@ -55,7 +56,7 @@ public class PaywallOptions internal constructor(
     public val purchaseLogic: PaywallPurchaseLogic?,
     internal val mode: PaywallMode,
     public val dismissRequest: () -> Unit,
-    internal val dismissRequestWithExitOffering: ((exitOffering: Offering?, result: PaywallResult?) -> Unit)? = null,
+    internal val dismissRequestWithExitOffering: DismissRequestWithExitOffering? = null,
     /**
      * Custom variables to be used in paywall text. These values will replace `{{ custom.key }}` or
      * `{{ $custom.key }}` placeholders in the paywall configuration.
@@ -63,6 +64,7 @@ public class PaywallOptions internal constructor(
     public val customVariables: Map<String, CustomVariableValue> = emptyMap(),
     internal val injectedWorkflow: PublishedWorkflow? = null,
     internal val injectedWorkflowUiConfig: UiConfig = emptyUiConfig(),
+    internal val injectedWorkflowOfferings: Offerings? = null,
 ) {
     public companion object {
         private const val hashMultiplier = 31
@@ -80,6 +82,7 @@ public class PaywallOptions internal constructor(
         customVariables = builder.customVariables,
         injectedWorkflow = builder.injectedWorkflow,
         injectedWorkflowUiConfig = builder.injectedWorkflowUiConfig,
+        injectedWorkflowOfferings = builder.injectedWorkflowOfferings,
     )
 
     // Only key fields that affect the paywall's identity and rendering logic are used in hashCode.
@@ -92,6 +95,7 @@ public class PaywallOptions internal constructor(
         result = hashMultiplier * result + customVariables.hashCode()
         result = hashMultiplier * result + injectedWorkflow.hashCode()
         result = hashMultiplier * result + injectedWorkflowUiConfig.hashCode()
+        result = hashMultiplier * result + injectedWorkflowOfferings.hashCode()
         return result
     }
 
@@ -109,6 +113,7 @@ public class PaywallOptions internal constructor(
             this.customVariables != other.customVariables -> false
             this.injectedWorkflow != other.injectedWorkflow -> false
             this.injectedWorkflowUiConfig != other.injectedWorkflowUiConfig -> false
+            this.injectedWorkflowOfferings != other.injectedWorkflowOfferings -> false
             else -> this.dismissRequest == other.dismissRequest
         }
     }
@@ -121,10 +126,11 @@ public class PaywallOptions internal constructor(
         purchaseLogic: PaywallPurchaseLogic? = this.purchaseLogic,
         mode: PaywallMode = this.mode,
         dismissRequest: () -> Unit = this.dismissRequest,
-        dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = this.dismissRequestWithExitOffering,
+        dismissRequestWithExitOffering: DismissRequestWithExitOffering? = this.dismissRequestWithExitOffering,
         customVariables: Map<String, CustomVariableValue> = this.customVariables,
         injectedWorkflow: PublishedWorkflow? = this.injectedWorkflow,
         injectedWorkflowUiConfig: UiConfig = this.injectedWorkflowUiConfig,
+        injectedWorkflowOfferings: Offerings? = this.injectedWorkflowOfferings,
     ): PaywallOptions = PaywallOptions(
         offeringSelection = offeringSelection,
         shouldDisplayDismissButton = shouldDisplayDismissButton,
@@ -137,6 +143,7 @@ public class PaywallOptions internal constructor(
         customVariables = customVariables,
         injectedWorkflow = injectedWorkflow,
         injectedWorkflowUiConfig = injectedWorkflowUiConfig,
+        injectedWorkflowOfferings = injectedWorkflowOfferings,
     )
 
     @Suppress("TooManyFunctions")
@@ -149,10 +156,11 @@ public class PaywallOptions internal constructor(
         internal var listener: PaywallListener? = null
         internal var purchaseLogic: PaywallPurchaseLogic? = null
         internal var mode: PaywallMode = PaywallMode.default
-        internal var dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null
+        internal var dismissRequestWithExitOffering: DismissRequestWithExitOffering? = null
         internal var customVariables: Map<String, CustomVariableValue> = emptyMap()
         internal var injectedWorkflow: PublishedWorkflow? = null
         internal var injectedWorkflowUiConfig: UiConfig = emptyUiConfig()
+        internal var injectedWorkflowOfferings: Offerings? = null
 
         public fun setOffering(offering: Offering?): Builder = apply {
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
@@ -199,7 +207,7 @@ public class PaywallOptions internal constructor(
         }
 
         internal fun setDismissRequestWithExitOffering(
-            dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)?,
+            dismissRequestWithExitOffering: DismissRequestWithExitOffering?,
         ) = apply {
             this.dismissRequestWithExitOffering = dismissRequestWithExitOffering
         }
@@ -219,7 +227,7 @@ public class PaywallOptions internal constructor(
          * it from the backend, together with the [Offering] it renders against. Internal
          * RevenueCat use only (e.g. mobile app preview).
          *
-         * The workflow's screens resolve their packages from [offering]; pass the single
+         * The workflow's steps resolve their offering from [offering] only; pass the single
          * offering the workflow references (prefer single-offering workflows in preview), or
          * null for workflows without an associated offering. This sets the offering for you,
          * so there's no need to also call [setOffering]. Optionally pass [uiConfig] to style the
@@ -231,16 +239,50 @@ public class PaywallOptions internal constructor(
             offering: Offering?,
             uiConfig: UiConfig = emptyUiConfig(),
         ): Builder = apply {
-            this.injectedWorkflow = workflow
-            this.injectedWorkflowUiConfig = uiConfig
+            injectedWorkflow(
+                workflow,
+                Offerings(current = offering, all = offering?.let { mapOf(it.identifier to it) }.orEmpty()),
+                uiConfig,
+            )
             this.offeringSelection = offering?.let { OfferingSelection.OfferingType(it) }
                 ?: OfferingSelection.None
+        }
+
+        /**
+         * Injects a pre-built workflow whose steps resolve their offering from [offerings] as they are reached, the
+         * way a fetched workflow does. Leaves the offering selection alone, so no presented offering context is
+         * stamped on the steps' offerings.
+         */
+        internal fun injectedWorkflow(
+            workflow: PublishedWorkflow,
+            offerings: Offerings,
+            uiConfig: UiConfig,
+        ): Builder = apply {
+            this.injectedWorkflow = workflow
+            this.injectedWorkflowOfferings = offerings
+            this.injectedWorkflowUiConfig = uiConfig
         }
 
         public fun build(): PaywallOptions {
             return PaywallOptions(this)
         }
     }
+}
+
+/**
+ * Internal dismissal channel that, unlike [PaywallOptions.dismissRequest], carries the exit offering to present
+ * (if any), the result to deliver, and how the paywall was dismissed.
+ */
+internal typealias DismissRequestWithExitOffering =
+    (exitOffering: Offering?, result: PaywallResult?, reason: PaywallDismissReason) -> Unit
+
+/** How a paywall was dismissed, reported through [DismissRequestWithExitOffering]. */
+internal enum class PaywallDismissReason {
+    /** The user backed out: system back, or a navigate-back action on a workflow's first step. */
+    NAVIGATED_BACK,
+
+    /** Any other dismissal: a close action, a web checkout hand-off, or a completed purchase or restore. */
+    CLOSE,
 }
 
 /**

@@ -2,6 +2,8 @@ package com.revenuecat.purchases.ui.revenuecatui.components
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.common.ComponentOverride
@@ -51,6 +53,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
         val customVariables: Map<String, CustomVariableValue> = emptyMap(),
         val stateValues: Map<String, JsonPrimitive> = emptyMap(),
         val stateDefaults: Map<String, JsonPrimitive> = emptyMap(),
+        val windowDpSize: DpSize? = null,
     )
 
     @Suppress("LargeClass")
@@ -2176,6 +2179,457 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                     expected = compactPartial,
                 ),
             ),
+            arrayOf(
+                "window_width_condition '>= 700' matches a tablet-sized window",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowWidthRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = 700.0,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(904.dp, 640.dp),
+                    expected = expandedPartial,
+                ),
+            ),
+            arrayOf(
+                "window_aspect_ratio_condition '>= 1.2' matches a landscape window and not portrait",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowAspectRatioRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = 1.2,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(1024.dp, 768.dp),
+                    expected = expandedPartial,
+                ),
+            ),
+            arrayOf(
+                "window_aspect_ratio_condition '>= 1.2' does not match the same window rotated to portrait",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowAspectRatioRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = 1.2,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(768.dp, 1024.dp),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "window_aspect_ratio_condition never matches a zero-height window",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowAspectRatioRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = 1.2,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(1024.dp, 0.dp),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "window_width_condition '>= 700' does not match a phone-sized window",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowWidthRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = 700.0,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(402.dp, 874.dp),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "window_width_condition '= 393' matches a fractional 392.7dp window",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowWidthRule(
+                                    operator = ComponentOverride.ComparisonOperator.EQUALS,
+                                    value = 393.0,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(392.7.dp, 852.dp),
+                    expected = expandedPartial,
+                ),
+            ),
+            arrayOf(
+                "window_width_condition '= 393' does not match a 394dp window",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowWidthRule(
+                                    operator = ComponentOverride.ComparisonOperator.EQUALS,
+                                    value = 393.0,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(394.dp, 852.dp),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "window_aspect_ratio_condition '= 0.462' matches the computed 390/844 ratio",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowAspectRatioRule(
+                                    operator = ComponentOverride.ComparisonOperator.EQUALS,
+                                    value = 0.462,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    // 390 / 844 = 0.46208..., within the 1e-3 equality tolerance of 0.462.
+                    windowDpSize = DpSize(390.dp, 844.dp),
+                    expected = expandedPartial,
+                ),
+            ),
+            arrayOf(
+                "window_aspect_ratio_condition '= 0.46' does not match the computed 390/844 ratio",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowAspectRatioRule(
+                                    operator = ComponentOverride.ComparisonOperator.EQUALS,
+                                    value = 0.46,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    // 390 / 844 = 0.46208..., 0.0021 away from 0.46: outside the 1e-3 tolerance.
+                    windowDpSize = DpSize(390.dp, 844.dp),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "window_width_condition never matches when the window size is unknown",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowWidthRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = 0.0,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = null,
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "window_height_condition never matches when the window size is unknown",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowHeightRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = 0.0,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = null,
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "combined width and height conditions do not match a landscape phone",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowWidthRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = 700.0,
+                                ),
+                                ComponentOverride.Condition.WindowHeightRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = 480.0,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(874.dp, 402.dp),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "combined width and height conditions match a large window",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowWidthRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = 700.0,
+                                ),
+                                ComponentOverride.Condition.WindowHeightRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = 480.0,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(904.dp, 640.dp),
+                    expected = expandedPartial,
+                ),
+            ),
+            arrayOf(
+                "window_width_condition '> 700' does not match a 700dp-wide window",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowWidthRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN,
+                                    value = 700.0,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(700.dp, 640.dp),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "window_width_condition '> 700' matches a 701dp-wide window",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowWidthRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN,
+                                    value = 700.0,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(701.dp, 640.dp),
+                    expected = expandedPartial,
+                ),
+            ),
+            arrayOf(
+                "window_width_condition '<= 700' matches a 700dp-wide window",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowWidthRule(
+                                    operator = ComponentOverride.ComparisonOperator.LESS_THAN_OR_EQUAL,
+                                    value = 700.0,
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(700.dp, 640.dp),
+                    expected = compactPartial,
+                ),
+            ),
+            arrayOf(
+                "window_width_condition '< 700' does not match a 700dp-wide window",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowWidthRule(
+                                    operator = ComponentOverride.ComparisonOperator.LESS_THAN,
+                                    value = 700.0,
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(700.dp, 640.dp),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "window_width_condition '= 700 + 1e-12' matches a 700dp-wide window within epsilon",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowWidthRule(
+                                    operator = ComponentOverride.ComparisonOperator.EQUALS,
+                                    value = 700.0 + 1e-12,
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(700.dp, 640.dp),
+                    expected = compactPartial,
+                ),
+            ),
+            arrayOf(
+                "window_width_condition '= 700.5' does not match a 700dp-wide window",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowWidthRule(
+                                    operator = ComponentOverride.ComparisonOperator.EQUALS,
+                                    value = 700.5,
+                                ),
+                            ),
+                            properties = compactPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(700.dp, 640.dp),
+                    expected = null,
+                ),
+            ),
+            arrayOf(
+                "window_height_condition '>= 480' matches a 640dp-tall window",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowHeightRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = 480.0,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(904.dp, 640.dp),
+                    expected = expandedPartial,
+                ),
+            ),
+            arrayOf(
+                "window_height_condition '>= 480' does not match a 402dp-tall window",
+                Args(
+                    availableOverrides = listOf(
+                        PresentedOverride(
+                            conditions = listOf(
+                                ComponentOverride.Condition.WindowHeightRule(
+                                    operator = ComponentOverride.ComparisonOperator.GREATER_THAN_OR_EQUAL,
+                                    value = 480.0,
+                                ),
+                            ),
+                            properties = expandedPartial,
+                        ),
+                    ),
+                    windowSize = COMPACT,
+                    offerEligibility = Ineligible,
+                    state = DEFAULT,
+                    windowDpSize = DpSize(874.dp, 402.dp),
+                    expected = null,
+                ),
+            ),
         )
     }
 
@@ -2190,6 +2644,7 @@ internal class BuildPresentedPartialTests(@Suppress("UNUSED_PARAMETER") name: St
                 selectedPackageId = args.selectedPackageId,
                 customVariables = args.customVariables,
                 stateReader = { key -> args.stateValues[key] ?: args.stateDefaults[key] },
+                windowDpSize = args.windowDpSize,
             ),
         )
 

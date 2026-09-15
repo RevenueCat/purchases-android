@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
@@ -9,7 +10,10 @@ import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
 
@@ -18,95 +22,185 @@ import java.util.UUID
  * observe a call that was taken between two accessors.
  */
 internal class CheckpointPresentation(
-    val resolution: CheckpointResolution.MatchedWorkflow,
+    val content: CheckpointFlowContent,
     val customVariables: Map<String, CustomVariableValue>,
 )
 
+/** What [CheckpointWorkflowPresenter] renders for a presented checkpoint. */
+internal sealed class CheckpointFlowContent {
+
+    class Workflow(val resolution: CheckpointResolution.MatchedWorkflow) : CheckpointFlowContent()
+
+    /**
+     * A matched offering. Until offering presenters exist, the offering's configured paywall is presented,
+     * falling back to the default paywall when it has none.
+     */
+    class OfferingFlow(val offering: Offering) : CheckpointFlowContent()
+}
+
 /**
- * Runs a checkpoint hit end to end: fires listener events, asks the core module what the checkpoint resolves
- * to, and either returns its data or presents the resolved workflow through [CheckpointWorkflowPresenter].
- * Owns the one-presentation-at-a-time constraint and the pending call that routes a presented paywall's
- * terminal outcome back to the suspended [checkpoint] call. Data-only results never claim that presentation
- * slot.
+ * What a checkpoint run produced: the terminal [flowOutcome] of whatever it presented (null when nothing was,
+ * including when resolving or presenting failed), and [backedOut], true when the presented flow went away because
+ * the user navigated back (system back, or a navigate-back action on a workflow's first step) without purchasing
+ * or restoring.
  *
- * There is one instance per [Purchases] instance, held in its `checkpointManagerSlot` and reached through
- * [checkpointsManager], so the listener dies with the SDK instance that owns it and a reconfigured SDK starts
- * with a free presentation slot. A workflow that is already on screen keeps reporting to the manager that
- * presented it, exactly once, even if the SDK is reconfigured underneath it.
+ * [blockedByPresentedFlow] is true when the checkpoint resolved to a flow that was not presented because another
+ * checkpoint flow was already on screen. That earlier call is the one the app is waiting on, so a blocked run is
+ * not reported as passed.
  */
+internal class CheckpointRun(
+    val flowOutcome: CheckpointFlowOutcome?,
+    val backedOut: Boolean,
+    val blockedByPresentedFlow: Boolean = false,
+    // Releases whatever the SDK still has on screen for this run; invoked once the app has been told.
+    val finishPresentation: () -> Unit = {},
+)
+
+/**
+ * Runs a checkpoint hit end to end: asks the core module what the checkpoint resolves to, and presents the
+ * resolved flow through [CheckpointWorkflowPresenter]. Owns the one-presentation-at-a-time constraint and the
+ * pending call that routes a presented flow's terminal outcome back to the suspended [runCheckpoint] call. Runs
+ * that present nothing never claim that presentation slot.
+ *
+ * There is one instance per [Purchases] instance, held in its `internalCpManagerSlot` and reached through
+ * [checkpointsManager], so a reconfigured SDK starts with a free presentation slot. A workflow that is already
+ * on screen keeps reporting to the manager that presented it, exactly once, even if the SDK is reconfigured
+ * underneath it.
+ */
+@Suppress("TooManyFunctions")
 internal class CheckpointsManager(
+    // Owns the coroutines behind the callback-based gate API, so an un-awaited checkpoint lives and dies with
+    // the Purchases instance holding this manager rather than with any caller scope.
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
     private val presenterFactory: (callId: String, manager: CheckpointsManager) -> CheckpointWorkflowPresenter =
         { callId, manager -> CheckpointWorkflowPresenter(callId, manager) },
 ) {
 
     private class PendingCall(
         val callId: String,
-        val resolution: CheckpointResolution.MatchedWorkflow,
+        val content: CheckpointFlowContent,
         val customVariables: Map<String, CustomVariableValue>,
-        val paywallFinished: CompletableDeferred<CheckpointPaywallOutcome>,
+        val flowFinished: CompletableDeferred<CheckpointRun>,
     ) {
         // Null until the paywall reports something; kept on the call rather than the presented window so
         // losing the window (configuration change) doesn't reset it.
-        var outcome: CheckpointPaywallOutcome? = null
+        var outcome: CheckpointFlowOutcome? = null
 
         // Only used to take an orphaned workflow window down when its call is abandoned.
         var presenter: CheckpointWorkflowPresenter? = null
     }
 
-    @get:Synchronized
-    @set:Synchronized
-    var checkpointListener: CheckpointListener? = null
-
     // At most one workflow may be presented at a time, so this single field is both the pending call and
     // the gate that enforces that rule: there is no second piece of state to fall out of sync with.
     private var pendingCall: PendingCall? = null
 
+    private val nothingPresented = CheckpointRun(flowOutcome = null, backedOut = false)
+    private val blockedByPresentedFlow =
+        CheckpointRun(flowOutcome = null, backedOut = false, blockedByPresentedFlow = true)
+
     /**
-     * Runs on the main dispatcher; listener callbacks fire on the main thread. For presented workflows,
-     * suspends until the paywall finishes.
-     *
-     * @throws PurchasesException if the checkpoint workflow should run but can't.
+     * Runs a checkpoint hit: resolves the checkpoint and presents whatever it resolved to, suspending until the
+     * presented flow finishes. Never throws: a resolution or presentation failure is logged and comes back as a
+     * run that presented nothing. Completion is reported by [checkpoint].
      */
-    suspend fun checkpoint(
+    suspend fun runCheckpoint(
         purchases: Purchases,
         identifier: String,
         params: CheckpointParams?,
-    ): CheckpointResult = withContext(Dispatchers.Main) {
+    ): CheckpointRun = withContext(Dispatchers.Main) {
         val customVariables = (params ?: CheckpointParams {}).customVariables
-        checkpointListener?.onCheckpointHit(CheckpointHitContext(identifier, customVariables))
         if (!CheckpointIdentifierValidator.isValid(identifier)) {
             Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(identifier))
-            val result = CheckpointResult.NoAction(CheckpointResult.NoAction.Reason.INVALID_CHECKPOINT_IDENTIFIER)
-            checkpointListener?.onCheckpointCompleted(CheckpointCompletedContext(identifier, customVariables, result))
-            return@withContext result
+            return@withContext nothingPresented
         }
+        val resolution = try {
+            purchases.internalResolveCp(
+                identifier,
+                customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
+            )
+        } catch (e: PurchasesException) {
+            Logger.e("Checkpoint '$identifier' could not be resolved: ${e.error}")
+            return@withContext nothingPresented
+        }
+        try {
+            when (resolution) {
+                // No offering presenter exists yet, so the offering's (or the default fallback) paywall is
+                // presented instead of returning the offering for app-owned presentation.
+                is CheckpointResolution.MatchedOffering ->
+                    present(purchases, CheckpointFlowContent.OfferingFlow(resolution.offering), customVariables)
+                is CheckpointResolution.MatchedWorkflow ->
+                    present(purchases, CheckpointFlowContent.Workflow(resolution), customVariables)
+                is CheckpointResolution.NoAction -> nothingPresented
+            }
+        } catch (_: PurchasesException) {
+            // Already logged by presentationError.
+            nothingPresented
+        }
+    }
 
-        val resolution = purchases.resolveCheckpoint(
-            identifier,
-            customVariables.mapValues { (_, value) -> value.asRulesDimensionValue },
-        )
-        val result = when (resolution) {
-            is CheckpointResolution.MatchedOffering -> CheckpointResult.ReceivedOffering(resolution.offering)
-            is CheckpointResolution.MatchedWorkflow ->
-                CheckpointResult.PaywallPresented(present(purchases, resolution, customVariables))
-            is CheckpointResolution.NoAction ->
-                CheckpointResult.NoAction(resolution.reason.toResultReason())
+    /**
+     * The checkpoint API: runs the checkpoint and invokes [callback] with what the user obtained, at most once
+     * and on the main thread. The callback is skipped when the user backed out of the presented flow, and when
+     * the checkpoint resolved to a flow while another checkpoint flow was already on screen. Never throws.
+     */
+    fun checkpoint(
+        purchases: Purchases,
+        identifier: String,
+        params: CheckpointParams?,
+        callback: CheckpointPassedCallback,
+    ) {
+        scope.launch {
+            val activeEntitlementsBefore = cachedActiveEntitlementIds(purchases)
+            val run = runCheckpoint(purchases, identifier, params)
+            try {
+                when {
+                    run.blockedByPresentedFlow -> Logger.w(
+                        "Checkpoint '$identifier': another checkpoint flow is already being presented, so this " +
+                            "call is ignored and its callback is not invoked.",
+                    )
+                    run.backedOut ->
+                        Logger.d("Checkpoint '$identifier': the user backed out, so the callback is not invoked.")
+                    else -> callback.onCheckpointPassed(run.toResult(activeEntitlementsBefore))
+                }
+            } finally {
+                run.finishPresentation()
+            }
         }
-        checkpointListener?.onCheckpointCompleted(CheckpointCompletedContext(identifier, customVariables, result))
-        result
     }
 
     fun presentation(callId: String): CheckpointPresentation? =
-        withPendingCall(callId) { CheckpointPresentation(it.resolution, it.customVariables) }
+        withPendingCall(callId) { CheckpointPresentation(it.content, it.customVariables) }
 
-    fun recordOutcome(callId: String, outcome: CheckpointPaywallOutcome) {
-        withPendingCall(callId) { it.outcome = outcome }
+    // A purchase or restore is what the user went through for, so a later error, web checkout or dismissal must
+    // not erase it. A later purchase or restore still replaces it with newer CustomerInfo.
+    fun recordOutcome(callId: String, outcome: CheckpointFlowOutcome) {
+        withPendingCall(callId) {
+            if (!it.outcome.isObtained || outcome.isObtained) {
+                it.outcome = outcome
+            }
+        }
     }
 
-    fun onPresentationFinished(callId: String) {
-        val finished = take(callId) ?: return
-        // A paywall that went away without reporting anything was dismissed.
-        finished.paywallFinished.complete(finished.outcome ?: CheckpointPaywallOutcome.Dismissed)
+    // A recorded purchase or restore means the user went through, however the window went away: checkpoint
+    // paywalls don't auto-dismiss on restore, so a user who restored and then backed out still went through. A
+    // paywall that went away without reporting anything was dismissed.
+    fun onPresentationFinished(
+        callId: String,
+        navigatedBack: Boolean = false,
+        finishPresentation: () -> Unit = {},
+    ) {
+        val finished = take(callId) ?: run {
+            finishPresentation()
+            return
+        }
+        val recorded = finished.outcome
+        finished.flowFinished.complete(
+            CheckpointRun(
+                recorded ?: CheckpointFlowOutcome.Dismissed,
+                backedOut = navigatedBack && !recorded.isObtained,
+                finishPresentation = finishPresentation,
+            ),
+        )
     }
 
     // Like onPresentationFinished, for a presentation that failed: an outcome the paywall already reported
@@ -114,31 +208,28 @@ internal class CheckpointsManager(
     // reporting anything surfaces as an error rather than a phantom dismissal.
     fun onPresentationFailed(callId: String, error: PurchasesError) {
         val failed = take(callId) ?: return
-        failed.paywallFinished.complete(failed.outcome ?: CheckpointPaywallOutcome.Error(error))
+        failed.flowFinished.complete(
+            CheckpointRun(failed.outcome ?: CheckpointFlowOutcome.Error(error), backedOut = false),
+        )
     }
 
     private suspend fun present(
         purchases: Purchases,
-        resolution: CheckpointResolution.MatchedWorkflow,
+        content: CheckpointFlowContent,
         customVariables: Map<String, CustomVariableValue>,
-    ): CheckpointPaywallOutcome {
+    ): CheckpointRun {
         val activity = purchases.currentActivity ?: presentationError(
             PurchasesErrorCode.ConfigurationError,
             "Cannot present checkpoint workflow: no started Activity found.",
         )
-        val call = PendingCall(UUID.randomUUID().toString(), resolution, customVariables, CompletableDeferred())
+        val call = PendingCall(UUID.randomUUID().toString(), content, customVariables, CompletableDeferred())
         val claimed = synchronized(this) { (pendingCall == null).also { if (it) pendingCall = call } }
-        if (!claimed) {
-            presentationError(
-                PurchasesErrorCode.OperationAlreadyInProgressError,
-                "Another checkpoint workflow is already being presented.",
-            )
-        }
+        if (!claimed) return blockedByPresentedFlow
         try {
             val presenter = presenterFactory(call.callId, this)
             withPendingCall(call.callId) { it.presenter = presenter }
             presenter.show(activity)
-            return call.paywallFinished.await()
+            return call.flowFinished.await()
         } catch (e: CancellationException) {
             abandon(call.callId)
             throw e
@@ -171,20 +262,12 @@ internal class CheckpointsManager(
     private fun <T> withPendingCall(callId: String, block: (PendingCall) -> T): T? =
         synchronized(this) { pendingCall?.takeIf { it.callId == callId }?.let(block) }
 
+    private val CheckpointFlowOutcome?.isObtained: Boolean
+        get() = this is CheckpointFlowOutcome.Purchased || this is CheckpointFlowOutcome.Restored
+
     private fun presentationError(code: PurchasesErrorCode, message: String): Nothing {
         val error = PurchasesError(code, message)
         Logger.e(error.toString())
         throw PurchasesException(error)
     }
 }
-
-// Exhaustive by construction: a reason added to the core seam is a compile error here rather than a
-// silently unmapped value.
-private fun CheckpointResolution.NoAction.Reason.toResultReason(): CheckpointResult.NoAction.Reason =
-    when (this) {
-        CheckpointResolution.NoAction.Reason.NO_MATCH -> CheckpointResult.NoAction.Reason.NO_MATCH
-        CheckpointResolution.NoAction.Reason.CONFIGURATION_UNAVAILABLE ->
-            CheckpointResult.NoAction.Reason.CONFIGURATION_UNAVAILABLE
-        CheckpointResolution.NoAction.Reason.UNKNOWN_CHECKPOINT ->
-            CheckpointResult.NoAction.Reason.UNKNOWN_CHECKPOINT
-    }

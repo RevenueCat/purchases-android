@@ -134,9 +134,10 @@ internal class PurchasesFactory(
                 finalStore,
                 isDebugBuild(),
                 apiKeyValidationResult,
-                dangerousSettings,
-                runningIntegrationTests,
-                forceSigningError,
+                iamEnabled = iamEnabled,
+                dangerousSettings = dangerousSettings,
+                runningTests = runningIntegrationTests,
+                forceSigningErrors = forceSigningError,
                 baseUrlString = baseUrlString,
             )
 
@@ -207,16 +208,9 @@ internal class PurchasesFactory(
                 warnLog { "Diagnostics are only supported on Android N or newer." }
             }
 
-            val signatureVerificationMode = try {
-                SignatureVerificationMode.fromEntitlementVerificationMode(
-                    verificationMode,
-                )
-            } catch (e: IllegalStateException) {
-                // If we're not able to create the signature verifier, we should disable signature verification
-                // instead of crashing
-                errorLog { "Error creating signature verifier: ${e.message}. Disabling signature verification." }
-                SignatureVerificationMode.Disabled
-            }
+            val signatureVerificationMode = SignatureVerificationMode.fromEntitlementVerificationMode(
+                verificationMode,
+            )
             val signingManager = SigningManager(signatureVerificationMode, appConfig, apiKey)
 
             val cache = DeviceCache(prefs, apiKey)

@@ -76,7 +76,13 @@ internal class IdentityManager(
                     ?: deviceCache.getLegacyCachedAppUserID()
                     ?: generateRandomID()
             }
-            else -> appUserID
+            else -> {
+                val cachedAppUserID = deviceCache.getCachedAppUserID() ?: deviceCache.getLegacyCachedAppUserID()
+                if (cachedAppUserID != null && appUserID != cachedAppUserID) {
+                    log(LogIntent.WARNING) { IdentityStrings.CONFIGURED_APP_USER_ID_DIFFERS_FROM_CACHED }
+                }
+                appUserID
+            }
         }
         log(LogIntent.USER) { IdentityStrings.IDENTIFYING_APP_USER_ID.format(appUserIDToUse) }
 

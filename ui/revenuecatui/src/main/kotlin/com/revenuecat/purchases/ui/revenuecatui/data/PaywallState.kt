@@ -13,12 +13,16 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.intl.LocaleList
+import androidx.compose.ui.unit.DpSize
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig.VariableConfig
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
 import com.revenuecat.purchases.ui.revenuecatui.components.ConditionContext
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedOverride
@@ -54,10 +58,13 @@ internal sealed interface PaywallState {
     object Loading : PaywallState
 
     @Immutable
-    data class Error(val errorMessage: String) : PaywallState {
+    data class Error(val errorMessage: String, val error: PurchasesError? = null) : PaywallState {
         init {
             Logger.e("Paywall transitioned to error state: $errorMessage")
         }
+
+        fun toPaywallResult(): PaywallResult.Error =
+            PaywallResult.Error(error ?: PurchasesError(PurchasesErrorCode.UnknownError, errorMessage))
     }
 
     @Stable
@@ -144,7 +151,22 @@ internal sealed interface PaywallState {
             val mergedCustomVariables: Map<String, CustomVariableValue> =
                 defaultCustomVariables + customVariables
 
+            /**
+             * The paywall's measured bounds in dp, which window size rules evaluate against —
+             * a paywall in a sheet or pane sees its own size, not the app window's. Set by the
+             * paywall root's measurement; null until first measure, matching iOS.
+             */
+            var paywallBoundsDp: DpSize? by mutableStateOf(null)
+                @JvmSynthetic internal set
+
             val store: Store get() = purchases.store
+
+            /** A subset of the offering: packages the paywall never shows are not in it. */
+            val paywallPackages: List<Package> by lazy {
+                (packages.packagesOutsideTabs + packages.packagesByTab.toSortedMap().values.flatten())
+                    .map { it.pkg }
+                    .distinctBy { it.identifier }
+            }
 
             data class AvailablePackages(
                 val packagesOutsideTabs: List<Info>,
@@ -521,7 +543,8 @@ internal val PaywallState.Loaded.Legacy.isInFullScreenMode: Boolean
  * `selected_package` visibility rules can't oscillate.
  *
  * Note this only covers the package component's own rules. A package hidden solely by an enclosing
- * stack's rule still resolves visible here.
+ * stack's rule still resolves visible here. The screen condition is pinned to COMPACT and the window
+ * size to unknown, so size-class and window-size visibility rules do not influence selection either.
  */
 private fun PaywallState.Loaded.Components.AvailablePackages.Info.resolvesVisible(
     customVariables: Map<String, CustomVariableValue>,

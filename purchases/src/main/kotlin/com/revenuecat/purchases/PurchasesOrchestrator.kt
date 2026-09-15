@@ -698,6 +698,9 @@ internal class PurchasesOrchestrator(
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         workflowManager.resolveWorkflow(offeringId)
 
+    suspend fun workflowBlobRef(workflowId: String): String? =
+        workflowManager.workflowBlobRef(workflowId)
+
     suspend fun getUiConfig(): UiConfig {
         if (appConfig.uiPreviewMode || remoteConfigManager.isDisabled) {
             val message = if (appConfig.uiPreviewMode) {

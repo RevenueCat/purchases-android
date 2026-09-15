@@ -10,10 +10,14 @@ import android.widget.EditText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.R
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -46,7 +50,7 @@ class CheckpointWorkflowPresenterTest {
 
     private val presentedCallIds = mutableListOf<String>()
     private var lastOptions: PaywallOptions? = null
-    private var result: CheckpointResult? = null
+    private var result: CheckpointRun? = null
     private var contentFactory: (Activity) -> View = { activity -> View(activity) }
     private val contentViews = mutableListOf<View>()
 
@@ -56,7 +60,7 @@ class CheckpointWorkflowPresenterTest {
         controller = Robolectric.buildActivity(Activity::class.java).setup()
         mockPurchases = mockk {
             every { currentActivity } answers { controller.get() }
-            coEvery { resolveCheckpoint(any(), any()) } returns
+            coEvery { internalResolveCp(any(), any()) } returns
                 CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null)
         }
         manager = CheckpointsManager { callId, manager ->
@@ -84,6 +88,18 @@ class CheckpointWorkflowPresenterTest {
     }
 
     @Test
+    fun `the workflow is presented against the offerings the checkpoint resolved to`() {
+        val resolution = CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null)
+        coEvery { mockPurchases.internalResolveCp(any(), any()) } returns resolution
+
+        launchCheckpoint()
+
+        assertThat(lastOptions!!.injectedWorkflow).isSameAs(resolution.workflow)
+        assertThat(lastOptions!!.injectedWorkflowOfferings).isSameAs(resolution.offerings)
+        assertThat(lastOptions!!.injectedWorkflowUiConfig).isSameAs(resolution.uiConfig)
+    }
+
+    @Test
     fun `showing a stale callId does not present and does not disturb the live call`() {
         launchCheckpoint()
         val liveDialog = ShadowDialog.getLatestDialog()
@@ -102,9 +118,73 @@ class CheckpointWorkflowPresenterTest {
         launchCheckpoint()
 
         lastOptions!!.dismissRequest()
+        finishPresentation()
 
         assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
-        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Dismissed)
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(backedOut()).isFalse
+    }
+
+    @Test
+    fun `a dismissal with a close reason completes the call as Dismissed`() {
+        launchCheckpoint()
+
+        lastOptions!!.dismissRequestWithExitOffering!!(null, null, PaywallDismissReason.CLOSE)
+        finishPresentation()
+
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(backedOut()).isFalse
+    }
+
+    @Test
+    fun `a dismissal carrying an error result completes the call with that error`() {
+        launchCheckpoint()
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Step misconfigured")
+
+        lastOptions!!.dismissRequestWithExitOffering!!(null, PaywallResult.Error(error), PaywallDismissReason.CLOSE)
+        finishPresentation()
+
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
+        assertThat((paywallOutcome() as CheckpointFlowOutcome.Error).error).isEqualTo(error)
+        assertThat(backedOut()).isFalse
+    }
+
+    @Test
+    fun `a dismissal with a navigated-back reason completes the call as Dismissed and backed out`() {
+        launchCheckpoint()
+
+        lastOptions!!.dismissRequestWithExitOffering!!(null, null, PaywallDismissReason.NAVIGATED_BACK)
+        finishPresentation()
+
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(backedOut()).isTrue
+    }
+
+    @Test
+    fun `the window stays up until the run's presentation is finished`() {
+        launchCheckpoint()
+
+        lastOptions!!.dismissRequest()
+
+        assertThat(result).isNotNull
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isTrue
+        finishPresentation()
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
+    }
+
+    @Test
+    fun `a purchase recorded before backing out is the delivered outcome`() {
+        val customerInfo = mockk<CustomerInfo>()
+        val storeTransaction = mockk<StoreTransaction>()
+        launchCheckpoint()
+        manager.recordOutcome(currentCallId(), CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+
+        lastOptions!!.dismissRequestWithExitOffering!!(null, null, PaywallDismissReason.NAVIGATED_BACK)
+
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+        assertThat(backedOut()).isFalse
     }
 
     @Test
@@ -126,12 +206,12 @@ class CheckpointWorkflowPresenterTest {
         val customerInfo = mockk<CustomerInfo>()
         val storeTransaction = mockk<StoreTransaction>()
         launchCheckpoint()
-        manager.recordOutcome(currentCallId(), CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+        manager.recordOutcome(currentCallId(), CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
 
         controller.recreate()
         lastOptions!!.dismissRequest()
 
-        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
     }
 
     @Test
@@ -139,14 +219,14 @@ class CheckpointWorkflowPresenterTest {
         val customerInfo = mockk<CustomerInfo>()
         val storeTransaction = mockk<StoreTransaction>()
         launchCheckpoint()
-        manager.recordOutcome(currentCallId(), CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+        manager.recordOutcome(currentCallId(), CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
         val dialog = ShadowDialog.getLatestDialog()
 
         controller.get().finish()
         controller.pause().stop().destroy()
 
         assertThat(dialog.isShowing).isFalse
-        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
     }
 
     @Test
@@ -180,7 +260,7 @@ class CheckpointWorkflowPresenterTest {
         ShadowDialog.getLatestDialog().dismiss()
         shadowOf(Looper.getMainLooper()).idle()
 
-        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Dismissed)
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Dismissed)
     }
 
     @Test
@@ -213,12 +293,12 @@ class CheckpointWorkflowPresenterTest {
         val customerInfo = mockk<CustomerInfo>()
         val storeTransaction = mockk<StoreTransaction>()
         launchCheckpoint()
-        manager.recordOutcome(currentCallId(), CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+        manager.recordOutcome(currentCallId(), CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
         contentFactory = { throw IllegalStateException("content failed") }
 
         controller.recreate()
 
-        assertThat(paywallOutcome()).isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo, storeTransaction))
+        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
     }
 
     @Test
@@ -229,8 +309,8 @@ class CheckpointWorkflowPresenterTest {
         controller.recreate()
 
         val outcome = paywallOutcome()
-        assertThat(outcome).isInstanceOf(CheckpointPaywallOutcome.Error::class.java)
-        assertThat((outcome as CheckpointPaywallOutcome.Error).error.code)
+        assertThat(outcome).isInstanceOf(CheckpointFlowOutcome.Error::class.java)
+        assertThat((outcome as CheckpointFlowOutcome.Error).error.code)
             .isEqualTo(PurchasesErrorCode.ConfigurationError)
     }
 
@@ -258,14 +338,37 @@ class CheckpointWorkflowPresenterTest {
             .isNotEqualTo(0)
     }
 
+    @Test
+    fun `a first present fades the workflow window in and out`() {
+        launchCheckpoint()
+
+        val window = ShadowDialog.getLatestDialog().window!!
+        assertThat(window.attributes.windowAnimations).isEqualTo(R.style.RcCheckpointWindowAnimation)
+    }
+
+    @Test
+    fun `a re-present after a configuration change only fades out`() {
+        launchCheckpoint()
+
+        controller.recreate()
+
+        val window = ShadowDialog.getLatestDialog().window!!
+        assertThat(window.attributes.windowAnimations).isEqualTo(R.style.RcCheckpointWindowAnimation_Represent)
+    }
+
     private fun launchCheckpoint(): Job = CoroutineScope(dispatcher).launch {
-        result = manager.checkpoint(mockPurchases, "test_checkpoint", null)
+        result = manager.runCheckpoint(mockPurchases, "test_checkpoint", null)
     }
 
     private fun currentCallId(): String = presentedCallIds.last()
 
-    private fun paywallOutcome(): CheckpointPaywallOutcome? =
-        (result as? CheckpointResult.PaywallPresented)?.paywallOutcome
+    // What checkpoint() does once the callback has returned.
+    private fun finishPresentation() = result!!.finishPresentation()
+
+    private fun paywallOutcome(): CheckpointFlowOutcome? =
+        result?.flowOutcome
+
+    private fun backedOut(): Boolean? = result?.backedOut
 
     private companion object {
         const val CONTENT_VIEW_ID = 4242

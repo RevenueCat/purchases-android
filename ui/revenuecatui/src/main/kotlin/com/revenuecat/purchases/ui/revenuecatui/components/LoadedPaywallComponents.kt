@@ -103,48 +103,49 @@ internal fun LoadedPaywallComponents(
     }
 
     CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
-        PaywallComponentsScaffold(
-            state = state,
-            modifier = modifier,
-            headerContent = state.header?.let { headerStyle ->
-                {
-                    ComponentView(
-                        style = headerStyle,
-                        state = state,
-                        onClick = onClick,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            },
-            footerContent = state.stickyFooter?.let { footerStyle ->
-                {
-                    ComponentView(
-                        style = footerStyle,
-                        state = state,
-                        onClick = onClick,
-                        componentInteractionTracker = componentInteractionTracker,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            },
-        ) {
-            ComponentView(
-                style = state.stack,
+        MeasurePaywallBounds(state, modifier) {
+            PaywallComponentsScaffold(
                 state = state,
-                onClick = onClick,
-                componentInteractionTracker = componentInteractionTracker,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .conditional(shouldWrapMainContentInVerticalScroll) {
-                        verticalScroll(mainScrollState)
+                headerContent = state.header?.let { headerStyle ->
+                    {
+                        ComponentView(
+                            style = headerStyle,
+                            state = state,
+                            onClick = onClick,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
-                    .conditional(state.header != null && !state.mainStackHasHeroImage) {
-                        headerTopPadding(state)
+                },
+                footerContent = state.stickyFooter?.let { footerStyle ->
+                    {
+                        ComponentView(
+                            style = footerStyle,
+                            state = state,
+                            onClick = onClick,
+                            componentInteractionTracker = componentInteractionTracker,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
                     }
-                    .conditional(state.stickyFooter != null) {
-                        footerBottomPadding(state)
-                    },
-            )
+                },
+            ) {
+                ComponentView(
+                    style = state.stack,
+                    state = state,
+                    onClick = onClick,
+                    componentInteractionTracker = componentInteractionTracker,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .conditional(shouldWrapMainContentInVerticalScroll) {
+                            verticalScroll(mainScrollState)
+                        }
+                        .conditional(state.header != null && !state.mainStackHasHeroImage) {
+                            headerTopPadding(state)
+                        }
+                        .conditional(state.stickyFooter != null) {
+                            footerBottomPadding(state)
+                        },
+                )
+            }
         }
     }
 }

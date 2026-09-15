@@ -78,6 +78,38 @@ class WorkflowEventsRequestSerializationTest {
     }
 
     @Test
+    fun `experiment params use their khepri wire names`() {
+        val withExperiment = EventsRequest(
+            listOf(
+                (request.events.first() as BackendEvent.Workflows).let { event ->
+                    event.copy(
+                        properties = event.properties.copy(
+                            experimentId = "exp_abc",
+                            experimentVariant = "b",
+                            workflowBlobRef = "blob-ref-1",
+                        ),
+                    )
+                },
+            ),
+        )
+
+        val requestString = JsonProvider.defaultJson.encodeToString(withExperiment)
+
+        assertThat(requestString).contains("\"experiment_id\":\"exp_abc\"")
+        assertThat(requestString).contains("\"experiment_variant\":\"b\"")
+        assertThat(requestString).contains("\"blob_ref\":\"blob-ref-1\"")
+    }
+
+    @Test
+    fun `experiment params are omitted from JSON when the step has none`() {
+        val requestString = JsonProvider.defaultJson.encodeToString(request)
+
+        assertThat(requestString).doesNotContain("experiment_id")
+        assertThat(requestString).doesNotContain("experiment_variant")
+        assertThat(requestString).doesNotContain("blob_ref")
+    }
+
+    @Test
     fun `workflow_type absent from JSON output`() {
         val requestString = JsonProvider.defaultJson.encodeToString(request)
         assertThat(requestString).doesNotContain("workflow_type")

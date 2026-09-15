@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.verification
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.crypto.tink.config.internal.TinkFipsUtil
 import com.revenuecat.purchases.EntitlementVerificationMode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -26,19 +27,24 @@ class SignatureVerificationModeTest {
     }
 
     @Test
-    fun `shouldVerify has correct values for all the verification modes`() {
-        assertThat(SignatureVerificationMode.Disabled.shouldVerify).isFalse
-        assertThat(SignatureVerificationMode.Informational().shouldVerify).isTrue
-        assertThat(SignatureVerificationMode.Enforced().shouldVerify).isTrue
+    fun `fromEntitlementVerificationMode disables verification when Tink is restricted to FIPS mode`() {
+        TinkFipsUtil.setFipsRestricted()
+        try {
+            assertThat(
+                SignatureVerificationMode.fromEntitlementVerificationMode(EntitlementVerificationMode.INFORMATIONAL)
+            ).isEqualTo(SignatureVerificationMode.Disabled)
+            assertThat(
+                SignatureVerificationMode.fromEntitlementVerificationMode(EntitlementVerificationMode.DISABLED)
+            ).isEqualTo(SignatureVerificationMode.Disabled)
+        } finally {
+            TinkFipsUtil.unsetFipsRestricted()
+        }
     }
 
     @Test
-    fun `intermediateSignatureHelper has values in enabled verification modes`() {
-        var verificationMode: SignatureVerificationMode = SignatureVerificationMode.Disabled
-        assertThat(verificationMode.intermediateSignatureHelper).isNull()
-        verificationMode = SignatureVerificationMode.Informational()
-        assertThat(verificationMode.intermediateSignatureHelper).isNotNull
-        verificationMode = SignatureVerificationMode.Enforced()
-        assertThat(verificationMode.intermediateSignatureHelper).isNotNull
+    fun `shouldVerify has correct values for all the verification modes`() {
+        assertThat(SignatureVerificationMode.Disabled.shouldVerify).isFalse
+        assertThat(SignatureVerificationMode.Informational.shouldVerify).isTrue
+        assertThat(SignatureVerificationMode.Enforced.shouldVerify).isTrue
     }
 }
