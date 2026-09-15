@@ -288,8 +288,6 @@ internal class StyleFactory(
         private var packagesOutsideTabs = mutableListOf<AvailablePackages.Info>()
         private var packagesByTab = mutableMapOf<Int, MutableList<AvailablePackages.Info>>()
         private var nestedPackages = mutableListOf<AvailablePackages.Info>()
-        private var localDefaultComponentId: String? = null
-        private var inLocalSelectionScope = false
         private var hasDeclaredPackages = false
         val packages: AvailablePackages
             get() = AvailablePackages(
@@ -300,14 +298,11 @@ internal class StyleFactory(
             )
 
         fun <T> withLocalPackageSelection(
-            defaultComponentId: String?,
             block: StyleFactoryScope.() -> T,
         ): Triple<T, AvailablePackages, Int?> {
             val previousOutside = packagesOutsideTabs
             val previousTabs = packagesByTab
             val previousNested = nestedPackages
-            val previousDefault = localDefaultComponentId
-            val previousLocal = inLocalSelectionScope
             val previousDeclared = hasDeclaredPackages
             val previousTabIndex = tabIndex
             val previousDefaultTab = defaultTabIndex
@@ -317,8 +312,6 @@ internal class StyleFactory(
             packagesOutsideTabs = mutableListOf()
             packagesByTab = mutableMapOf()
             nestedPackages = mutableListOf()
-            localDefaultComponentId = defaultComponentId
-            inLocalSelectionScope = true
             hasDeclaredPackages = false
             tabIndex = null
             defaultTabIndex = null
@@ -334,8 +327,6 @@ internal class StyleFactory(
                 packagesOutsideTabs = previousOutside
                 packagesByTab = previousTabs
                 nestedPackages = previousNested
-                localDefaultComponentId = previousDefault
-                inLocalSelectionScope = previousLocal
                 hasDeclaredPackages = previousDeclared
                 tabIndex = previousTabIndex
                 defaultTabIndex = previousDefaultTab
@@ -344,13 +335,6 @@ internal class StyleFactory(
                 tabControlIndex = previousTabControlIndex
             }
         }
-
-        fun isDefaultPackage(component: PackageComponent): Boolean =
-            if (inLocalSelectionScope && tabIndex == null) {
-                localDefaultComponentId != null && localDefaultComponentId == component.id
-            } else {
-                component.isSelectedByDefault
-            }
 
         fun recordDeclaredPackage() { hasDeclaredPackages = true }
 
@@ -761,7 +745,7 @@ internal class StyleFactory(
                 withSelectedScope(
                     packageInfo = AvailablePackages.Info(
                         pkg = rcPackage,
-                        isSelectedByDefault = isDefaultPackage(component),
+                        isSelectedByDefault = component.isSelectedByDefault,
                         resolvedOffer = resolvedOffer,
                         visible = component.visible ?: DEFAULT_VISIBILITY,
                         visibilityOverrides = (presentedOverridesResult as? Result.Success)?.value.orEmpty(),
@@ -784,7 +768,7 @@ internal class StyleFactory(
                         PackageComponentStyle(
                             stackComponentStyle = stack,
                             rcPackage = rcPackage,
-                            isSelectedByDefault = isDefaultPackage(component),
+                            isSelectedByDefault = component.isSelectedByDefault,
                             componentName = component.name,
                             isSelectable = purchaseButtons == 0,
                             resolvedOffer = resolvedOffer,
@@ -977,7 +961,7 @@ internal class StyleFactory(
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> {
         val selection = component.packageSelection
         if (selection?.mode != "local") return createStackContentsStyle(component)
-        val (result, localPackages, localTabIndex) = withLocalPackageSelection(selection.defaultPackageComponentId) {
+        val (result, localPackages, localTabIndex) = withLocalPackageSelection {
             createStackContentsStyle(component)
         }
         return result.map { style ->
