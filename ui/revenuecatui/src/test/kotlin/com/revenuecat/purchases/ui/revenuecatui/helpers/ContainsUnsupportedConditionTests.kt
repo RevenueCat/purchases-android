@@ -651,6 +651,22 @@ internal class ContainsUnsupportedConditionTests {
     // region CountdownComponent
 
     @Test
+    fun `CountdownComponent detects unsupported in its own overrides`() {
+        val countdown = CountdownComponent(
+            style = CountdownComponent.CountdownStyle(type = "fixed", date = Date()),
+            countdownStack = emptyStack(),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Unsupported),
+                    properties = com.revenuecat.purchases.paywalls.components.PartialCountdownComponent(),
+                ),
+            ),
+        )
+        val stack = emptyStack(components = listOf(countdown))
+        assertTrue(stack.containsUnsupportedCondition())
+    }
+
+    @Test
     fun `CountdownComponent detects unsupported in countdownStack`() {
         val countdown = CountdownComponent(
             style = CountdownComponent.CountdownStyle(type = "fixed", date = Date()),

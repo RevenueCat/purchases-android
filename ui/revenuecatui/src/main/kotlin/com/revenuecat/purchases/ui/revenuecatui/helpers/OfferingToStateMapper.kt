@@ -525,7 +525,8 @@ internal fun PaywallComponent.containsUnsupportedCondition(): Boolean = when (th
                 it.description?.overrides?.hasUnsupportedCondition() == true ||
                 it.icon.overrides.hasUnsupportedCondition()
         }
-    is CountdownComponent -> countdownStack.containsUnsupportedCondition() ||
+    is CountdownComponent -> overrides.hasUnsupportedCondition() ||
+        countdownStack.containsUnsupportedCondition() ||
         endStack?.containsUnsupportedCondition() == true ||
         fallback?.containsUnsupportedCondition() == true
     is TabControlButtonComponent -> stack.containsUnsupportedCondition()
