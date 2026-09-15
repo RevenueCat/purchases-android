@@ -1,3 +1,5 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.paywallstester.ui.screens.checkpoints
 
 import androidx.lifecycle.ViewModel
@@ -11,6 +13,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.FlowResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -29,11 +32,16 @@ interface CheckpointsViewModel {
         val recents: List<String> = emptyList(),
         val waitingFor: String? = null,
         val lastResult: CheckpointResultUi? = null,
+        val presentWithAppPaywall: Boolean = false,
     )
 
     val state: StateFlow<UiState>
 
+    val paywallRequest: StateFlow<AppPaywallPresenter.Request?>
+
     fun hit(identifier: String)
+
+    fun setPresentWithAppPaywall(enabled: Boolean)
 }
 
 internal class CheckpointsViewModelImpl(
@@ -54,22 +62,47 @@ internal class CheckpointsViewModelImpl(
 
     private val _state = MutableStateFlow(UiState(recents = recentCheckpointsStore.recents()))
 
-    @OptIn(InternalRevenueCatAPI::class)
+    private val appPaywallPresenter = AppPaywallPresenter(onFinished = ::onAppPaywallFinished)
+
+    override val paywallRequest: StateFlow<AppPaywallPresenter.Request?>
+        get() = appPaywallPresenter.request
+
+    // Never blocks on the previous callback: the SDK skips it when the user backs out of a paywall or when another
+    // checkpoint flow is already on screen, so waiting for it would leave the screen stuck.
     override fun hit(identifier: String) {
         val checkpointIdentifier = identifier.trim()
-        if (checkpointIdentifier.isEmpty() || _state.value.waitingFor != null) return
+        if (checkpointIdentifier.isEmpty()) return
         val updatedRecents = recentCheckpointsStore.recordUse(checkpointIdentifier)
         _state.update { it.copy(recents = updatedRecents, waitingFor = checkpointIdentifier) }
-        Purchases.sharedInstance.checkpoint(
-            checkpointIdentifier,
-            CheckpointParams { customVariables { "source" to "paywall-tester" } },
-        ) { result ->
+        val params = CheckpointParams {
+            customVariables { "source" to "paywall-tester" }
+            if (_state.value.presentWithAppPaywall) paywallPresenter(appPaywallPresenter)
+        }
+        Purchases.sharedInstance.checkpoint(checkpointIdentifier, params) { result ->
             _state.update { it.copy(waitingFor = null, lastResult = result.toUi()) }
         }
     }
 
+    override fun setPresentWithAppPaywall(enabled: Boolean) {
+        _state.update { it.copy(presentWithAppPaywall = enabled) }
+    }
+
+    private fun onAppPaywallFinished(result: PaywallPresenter.Completion.Result) {
+        if (result != PaywallPresenter.Completion.Result.NavigatedBack) return
+        _state.update {
+            it.copy(
+                waitingFor = null,
+                lastResult = CheckpointResultUi(
+                    title = "Backed out",
+                    detail = "The user navigated back, so the checkpoint callback is not invoked.",
+                    isError = false,
+                    raw = "NavigatedBack",
+                ),
+            )
+        }
+    }
+
     // Why nothing was presented, and any failure, are in the SDK logs.
-    @OptIn(InternalRevenueCatAPI::class)
     private fun FlowResult?.toUi(): CheckpointResultUi = if (this == null) {
         CheckpointResultUi(
             title = "Nothing presented",
