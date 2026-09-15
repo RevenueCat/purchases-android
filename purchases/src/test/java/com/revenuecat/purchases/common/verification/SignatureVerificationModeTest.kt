@@ -44,17 +44,7 @@ class SignatureVerificationModeTest {
     @Test
     fun `shouldVerify has correct values for all the verification modes`() {
         assertThat(SignatureVerificationMode.Disabled.shouldVerify).isFalse
-        assertThat(SignatureVerificationMode.Informational().shouldVerify).isTrue
-        assertThat(SignatureVerificationMode.Enforced().shouldVerify).isTrue
-    }
-
-    @Test
-    fun `intermediateSignatureHelper has values in enabled verification modes`() {
-        var verificationMode: SignatureVerificationMode = SignatureVerificationMode.Disabled
-        assertThat(verificationMode.intermediateSignatureHelper).isNull()
-        verificationMode = SignatureVerificationMode.Informational()
-        assertThat(verificationMode.intermediateSignatureHelper).isNotNull
-        verificationMode = SignatureVerificationMode.Enforced()
-        assertThat(verificationMode.intermediateSignatureHelper).isNotNull
+        assertThat(SignatureVerificationMode.Informational.shouldVerify).isTrue
+        assertThat(SignatureVerificationMode.Enforced.shouldVerify).isTrue
     }
 }
