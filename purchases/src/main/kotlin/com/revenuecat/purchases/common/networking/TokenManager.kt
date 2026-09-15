@@ -1,60 +1,40 @@
 package com.revenuecat.purchases.common.networking
 
 import android.content.Context
-import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.security.EncryptedItemStorage
 import com.revenuecat.purchases.common.security.SecureItemStorage
 import com.revenuecat.purchases.common.security.SecureStorageException
 import com.revenuecat.purchases.common.security.derivePassword
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
 import java.security.GeneralSecurityException
 
 /**
- * Owns IAM login's persisted token state: the access/refresh/ID tokens for each app user, kept in a
- * [SecureItemStorage] this class constructs and owns for its entire lifetime.
+ * Owns IAM login's persisted access/refresh/ID tokens, backed by a [SecureItemStorage] this class
+ * constructs and owns for its lifetime.
  *
- * ## Construction
+ * Construction is async and coroutine-driven: [EncryptedItemStorage.create] is kicked off on [scope] at
+ * construction time, and every operation below suspends on that result via [storage] before doing
+ * anything else -- callers never see a "not ready yet" state, they just wait. A blank API key or a
+ * [GeneralSecurityException] deriving the password leaves storage permanently unavailable (logged, not
+ * thrown); a [SecureStorageException] from an individual read or write is handled the same way -- a read
+ * reports the value as absent, a write is a no-op -- most often caused by data left over from a previous
+ * API key sharing the same on-disk file.
  *
- * `TokenManager` is built from the same raw ingredients [EncryptedItemStorage.create] itself needs — the
- * application [Context], the SDK's configured API key, and whether IAM is enabled — rather than a pre-built
- * [SecureItemStorage]. This class is the only thing that ever touches this storage, and it's what
- * `PurchasesOrchestrator` ends up holding a reference to regardless of whether anything has called into it yet,
- * so it's the natural owner of the construction lifecycle rather than parking that state somewhere ahead of a
- * real consumer.
+ * Every public operation is `suspend`; callers integrate through coroutines, or a callback-based bridge
+ * if they can't.
  *
- * Construction is async: when [enabled], this class owns a [CoroutineScope] (mirroring the
- * `UiConfigProvider`/`RemoteConfigManager` pattern already used elsewhere in this codebase) and launches
- * [EncryptedItemStorage.create] on it as soon as it's constructed. This keeps `create()`'s `suspend` signature
- * intact and never blocks the thread that constructs a `TokenManager` — nothing needs the result before
- * `Purchases.configure()` returns. The resolved storage lands in a `@Volatile`-guarded holder; until it resolves, every
- * token operation below treats storage as unavailable the same way it already does when [enabled] is `false` —
- * not a new failure mode, just an existing one with a second cause.
- *
- * A blank API key ([derivePassword] returning `null`) or a [GeneralSecurityException] during key derivation
- * both leave storage permanently unavailable for this instance's lifetime (already logged by [derivePassword]
- * or this class, respectively) rather than crashing configuration.
- *
- * Once storage is ready, a [SecureStorageException] from an individual read or write is handled the same
- * way rather than escaping as a crash: a read reports the value as absent and a write is a no-op (both
- * logged). The most common cause isn't a hardware/IO failure but a decrypt failure -- a value on disk was
- * encrypted under a *different* derived key than this instance's, e.g. leftover data from a previous API
- * key sharing the same on-disk storage file (reconfiguring from a sandbox to a production key, say).
- *
- * @param context the application context; the same direct-boot-aware context other file-backed singletons in
- *   this SDK use.
- * @param apiKey the SDK's configured API key, used to derive the storage's encryption password.
- * @param enabled whether IAM login is enabled for this SDK configuration (`AppConfig.iamEnabled`). When `false`,
- *   storage is never constructed and every operation below is a no-op.
- * @param scope the [CoroutineScope] storage construction runs on; constructor-injectable so tests can control
- *   or await it. Defaults to a dedicated [SupervisorJob] + [Dispatchers.IO] scope, cancelled by [close].
+ * @param context application context used to construct the underlying storage.
+ * @param apiKey the SDK's configured API key; derives the storage's encryption password.
+ * @param enabled whether IAM login is enabled. When `false`, storage is never constructed and every
+ *   operation is a no-op.
+ * @param scope owns storage construction; constructor-injectable for tests, cancelled by [close].
  */
-
 @Suppress("TooManyFunctions")
 internal class TokenManager(
     context: Context,
@@ -63,23 +43,16 @@ internal class TokenManager(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
 ) {
 
-    @Volatile
-    private var storage: SecureItemStorage? = null
-
-    // Non-null only when `enabled`, so `awaitStorageInitialized` is a no-op for a disabled instance.
-    private val storageInitJob: Job? = if (enabled) {
-        scope.launch {
-            val password = derivePassword(apiKey) ?: return@launch
+    private val storageDeferred: Deferred<SecureItemStorage?>? = if (enabled) {
+        scope.async {
+            val password = derivePassword(apiKey) ?: return@async null
             try {
-                storage = EncryptedItemStorage.create(context, password)
+                EncryptedItemStorage.create(context, password)
             } catch (e: GeneralSecurityException) {
-                errorLog(e) {
-                    "Failed to initialize IAM secure storage; IAM login will be unavailable this session."
-                }
+                errorLog(e) { "Failed to initialize IAM secure storage; IAM login will be unavailable." }
+                null
             } finally {
-                // EncryptedItemStorage.create's KDoc makes zeroing the caller's responsibility once the
-                // password has been consumed; this is the only call site, so it's done unconditionally here.
-                password.fill('\u0000')
+                password.fill('\u0000') // caller's responsibility to zero once consumed
             }
         }
     } else {
@@ -88,56 +61,45 @@ internal class TokenManager(
 
     // region Read access
 
-    /** The current access token stored for [appUserID], or `null` if none is stored (or storage isn't ready). */
-    fun currentAccessToken(appUserID: String): String? = readToken(accessTokenKey(appUserID))
+    /** The current access token stored for [appUserID], or `null` if none is stored. */
+    suspend fun currentAccessToken(appUserID: String): String? = readToken(accessTokenKey(appUserID))
 
-    /** The current refresh token stored for [appUserID], or `null` if none is stored (or storage isn't ready). */
-    fun currentRefreshToken(appUserID: String): String? = readToken(refreshTokenKey(appUserID))
+    /** The current refresh token stored for [appUserID], or `null` if none is stored. */
+    suspend fun currentRefreshToken(appUserID: String): String? = readToken(refreshTokenKey(appUserID))
 
-    /** The current ID token stored for [appUserID], or `null` if none is stored (or storage isn't ready). */
-    fun currentIDToken(appUserID: String): String? = readToken(idTokenKey(appUserID))
+    /** The current ID token stored for [appUserID], or `null` if none is stored. */
+    suspend fun currentIDToken(appUserID: String): String? = readToken(idTokenKey(appUserID))
 
     /**
-     * Whether an access token is currently stored *and readable* for [appUserID]. Deliberately computed from
-     * [currentAccessToken] rather than a raw on-disk presence check: a value can exist on disk left over from
-     * a *previous* API key's storage (e.g. reconfiguring the SDK from a sandbox to a production key, which
-     * shares the same on-disk storage file) without there being any way to actually decrypt it back, and this
-     * should never report `true` for a token that [currentAccessToken] can't actually produce. `false` if
-     * storage isn't ready or the stored value can't be read, independent of whether one would otherwise be
-     * present.
+     * Whether an access token is currently stored *and readable* for [appUserID]. Computed from
+     * [currentAccessToken] rather than a raw presence check, so data left over from a different API key --
+     * undecryptable under this instance's key -- never reports `true`.
      */
-    fun hasCurrentAccessToken(appUserID: String): Boolean = currentAccessToken(appUserID) != null
+    suspend fun hasCurrentAccessToken(appUserID: String): Boolean = currentAccessToken(appUserID) != null
 
     // endregion
 
     // region Bulk operations
 
-    /**
-     * Saves all three tokens for [appUserID] in one call, e.g. after a successful login or token refresh. The
-     * only way to write a token into this storage — there's no per-token setter, so a caller can never update
-     * one slot without the other two. No-op if storage isn't ready.
-     */
-    fun saveTokens(appUserID: String, accessToken: String, refreshToken: String, idToken: String) {
+    /** Saves all three tokens for [appUserID], e.g. after login or a token refresh. */
+    suspend fun saveTokens(appUserID: String, accessToken: String, refreshToken: String, idToken: String) {
         writeToken(accessTokenKey(appUserID), accessToken)
         writeToken(refreshTokenKey(appUserID), refreshToken)
         writeToken(idTokenKey(appUserID), idToken)
     }
 
-    /**
-     * Clears all three token slots for [appUserID], e.g. for a full logout. No-op if storage isn't ready.
-     */
-    fun deleteTokens(appUserID: String) {
+    /** Clears all three token slots for [appUserID], e.g. for a full logout. */
+    suspend fun deleteTokens(appUserID: String) {
         writeToken(accessTokenKey(appUserID), null)
         writeToken(refreshTokenKey(appUserID), null)
         writeToken(idTokenKey(appUserID), null)
     }
 
     /**
-     * Clears only the access-token slot for [appUserID], leaving its refresh and ID tokens untouched. Local-only
-     * — never triggers a network call. Used where the SDK needs to invalidate a cached access token without a
-     * full logout, e.g. forcing a refresh on the next request. No-op if storage isn't ready.
+     * Clears only the access-token slot for [appUserID]. Local-only, no network call -- used to force a
+     * refresh on the next request without a full logout.
      */
-    fun deleteAccessToken(appUserID: String) {
+    suspend fun deleteAccessToken(appUserID: String) {
         writeToken(accessTokenKey(appUserID), null)
     }
 
@@ -148,27 +110,19 @@ internal class TokenManager(
         scope.cancel()
     }
 
-    /**
-     * Suspends until this instance's async storage construction has finished (successfully or not). A no-op
-     * when [enabled] is `false`, since no construction was ever started. For tests only — production callers
-     * are designed to tolerate "storage not ready yet" rather than wait for it.
-     */
-    @VisibleForTesting
-    internal suspend fun awaitStorageInitialized() {
-        storageInitJob?.join()
-    }
+    private suspend fun storage(): SecureItemStorage? = storageDeferred?.await()
 
-    private fun readToken(identifier: String): String? =
+    private suspend fun readToken(identifier: String): String? =
         try {
-            storage?.readItem(identifier)?.toString(Charsets.UTF_8)
+            storage()?.readItem(identifier)?.toString(Charsets.UTF_8)
         } catch (e: SecureStorageException) {
             errorLog(e) { "Failed to read IAM token '$identifier'; treating it as absent." }
             null
         }
 
-    private fun writeToken(identifier: String, value: String?) {
+    private suspend fun writeToken(identifier: String, value: String?) {
         try {
-            storage?.modifyItem(identifier, value?.toByteArray(Charsets.UTF_8))
+            storage()?.modifyItem(identifier, value?.toByteArray(Charsets.UTF_8))
         } catch (e: SecureStorageException) {
             errorLog(e) { "Failed to write IAM token '$identifier'; treating it as a no-op." }
         }
