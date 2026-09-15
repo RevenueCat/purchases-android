@@ -1,12 +1,17 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.common.networking
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.common.JWT
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.security.EncryptedItemStorage
 import com.revenuecat.purchases.common.security.SecureItemStorage
 import com.revenuecat.purchases.common.security.SecureStorageException
 import com.revenuecat.purchases.common.security.derivePassword
+import com.revenuecat.purchases.identity.IdentitySource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -107,6 +112,53 @@ internal class TokenManager(
      * present.
      */
     fun hasCurrentAccessToken(appUserID: String): Boolean = currentAccessToken(appUserID) != null
+
+    // endregion
+
+    // region Identity introspection
+
+    /**
+     * The identity provider(s) listed in the `amr` (Authentication Methods References) claim of the ID
+     * token currently stored for [appUserID], as their raw wire values (e.g. `"anonymous"`, `"google"`) --
+     * deliberately *not* mapped through [IdentitySource.fromRawValue] here. A value this SDK version
+     * doesn't recognize yet (e.g. a newer wire value) is kept rather than silently dropped: dropping it
+     * would let [isCurrentIdentityAnonymous] see only the *recognized* remainder of the list, which can
+     * make an identity that is actually linked to an unrecognized, non-anonymous provider look anonymous
+     * once the one entry that would have said otherwise has been filtered out. Raw values are converted to
+     * [IdentitySource] only where a single one is actually consumed, e.g. [currentIdentitySource].
+     *
+     * `null` if there's no ID token stored for [appUserID] (including because storage isn't ready) or the
+     * stored value isn't a well-formed JWT -- never because the `amr` claim happens to be empty; an empty
+     * `amr` claim yields an empty list, not `null`.
+     */
+    fun currentIdentitySources(appUserID: String): List<String>? =
+        currentIDToken(appUserID)?.let { JWT.decode(it) }?.amr
+
+    /**
+     * Whether [appUserID]'s currently stored identity is anonymous: every raw value in
+     * [currentIdentitySources] equals [IdentitySource.ANONYMOUS]'s raw wire value, and at least one source
+     * is listed at all. Comparing raw strings here (rather than mapping each one through
+     * [IdentitySource.fromRawValue] first, the way [currentIdentitySource] does) is what makes this safe
+     * against an unrecognized, *not*-actually-anonymous entry sitting alongside `"anonymous"` in the `amr`
+     * claim -- that entry can't quietly be dropped and produce a false positive here, since nothing is ever
+     * dropped from [currentIdentitySources] in the first place.
+     *
+     * `false` when there's no readable identity to introspect in the first place ([currentIdentitySources]
+     * returns `null`), same as when it returns an empty list.
+     */
+    fun isCurrentIdentityAnonymous(appUserID: String): Boolean {
+        val sources = currentIdentitySources(appUserID)
+        return !sources.isNullOrEmpty() && sources.all { it == IdentitySource.ANONYMOUS.rawValue }
+    }
+
+    /**
+     * The most recently listed entry in [currentIdentitySources] for [appUserID] -- the last raw value in
+     * the stored ID token's `amr` claim -- mapped through [IdentitySource.fromRawValue]. `null` if there's
+     * no readable identity to introspect at all, or if that last entry isn't a source this SDK version
+     * recognizes yet.
+     */
+    fun currentIdentitySource(appUserID: String): IdentitySource? =
+        currentIdentitySources(appUserID)?.lastOrNull()?.let { IdentitySource.fromRawValue(it) }
 
     // endregion
 
