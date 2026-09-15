@@ -171,8 +171,14 @@ internal class CheckpointsManager(
     fun presentation(callId: String): CheckpointPresentation? =
         withPendingCall(callId) { CheckpointPresentation(it.content, it.customVariables) }
 
+    // A purchase or restore is what the user went through for, so a later error, web checkout or dismissal must
+    // not erase it. A later purchase or restore still replaces it with newer CustomerInfo.
     fun recordOutcome(callId: String, outcome: CheckpointFlowOutcome) {
-        withPendingCall(callId) { it.outcome = outcome }
+        withPendingCall(callId) {
+            if (!it.outcome.isObtained || outcome.isObtained) {
+                it.outcome = outcome
+            }
+        }
     }
 
     // A recorded purchase or restore means the user went through, however the window went away: checkpoint
@@ -188,11 +194,10 @@ internal class CheckpointsManager(
             return
         }
         val recorded = finished.outcome
-        val obtained = recorded is CheckpointFlowOutcome.Purchased || recorded is CheckpointFlowOutcome.Restored
         finished.flowFinished.complete(
             CheckpointRun(
                 recorded ?: CheckpointFlowOutcome.Dismissed,
-                backedOut = navigatedBack && !obtained,
+                backedOut = navigatedBack && !recorded.isObtained,
                 finishPresentation = finishPresentation,
             ),
         )
@@ -256,6 +261,9 @@ internal class CheckpointsManager(
      */
     private fun <T> withPendingCall(callId: String, block: (PendingCall) -> T): T? =
         synchronized(this) { pendingCall?.takeIf { it.callId == callId }?.let(block) }
+
+    private val CheckpointFlowOutcome?.isObtained: Boolean
+        get() = this is CheckpointFlowOutcome.Purchased || this is CheckpointFlowOutcome.Restored
 
     private fun presentationError(code: PurchasesErrorCode, message: String): Nothing {
         val error = PurchasesError(code, message)

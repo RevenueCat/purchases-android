@@ -288,6 +288,50 @@ class CheckpointsManagerTest {
     }
 
     @Test
+    fun `a later error does not replace a recorded restore`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val customerInfo = mockk<CustomerInfo>()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        manager.recordOutcome(currentCallId(), CheckpointFlowOutcome.Restored(customerInfo))
+
+        finishPaywall(CheckpointFlowOutcome.Error(mockk()))
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Restored(customerInfo))
+    }
+
+    @Test
+    fun `a later web checkout does not replace a recorded purchase`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val customerInfo = mockk<CustomerInfo>()
+        val storeTransaction = mockk<StoreTransaction>()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        manager.recordOutcome(currentCallId(), CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+
+        finishPaywall(CheckpointFlowOutcome.WebCheckoutOpened)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+    }
+
+    @Test
+    fun `a later purchase replaces a recorded restore`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val customerInfo = mockk<CustomerInfo>()
+        val storeTransaction = mockk<StoreTransaction>()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        manager.recordOutcome(currentCallId(), CheckpointFlowOutcome.Restored(mockk()))
+
+        finishPaywall(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+    }
+
+    @Test
     fun `a concurrent checkpoint is blocked by the presented flow`() = runTest(dispatcher) {
         resolvesToWorkflow()
         val firstCall = launch { runCheckpoint() }
