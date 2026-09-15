@@ -296,10 +296,14 @@ internal fun Modifier.footerBottomPadding(state: PaywallState.Loaded.Components)
 /**
  * Returns whether the caller should wrap [rootStack] in an outer `verticalScroll` modifier.
  * Returns `false` when the root stack already scrolls vertically (overflow = SCROLL on a vertical
- * dimension), because two vertical scroll modifiers on the same axis crash at runtime.
+ * dimension), because two vertical scroll modifiers on the same axis crash at runtime, and when
+ * the root stack explicitly opts out of scrolling (an overflow that deserialized to NONE:
+ * "default", "none", or an unrecognized value).
  */
-internal fun shouldWrapMainContentInVerticalScroll(rootStack: ComponentStyle): Boolean =
-    (rootStack as? StackComponentStyle)?.scrollOrientation != Orientation.Vertical
+internal fun shouldWrapMainContentInVerticalScroll(rootStack: ComponentStyle): Boolean {
+    val stack = rootStack as? StackComponentStyle ?: return true
+    return stack.scrollOrientation != Orientation.Vertical && !stack.scrollExplicitlyDisabled
+}
 
 internal suspend fun handleClick(
     action: PaywallAction,
