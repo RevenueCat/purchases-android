@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.verification
 
 import com.revenuecat.purchases.EntitlementVerificationMode
+import com.revenuecat.purchases.common.errorLog
 
 internal sealed class SignatureVerificationMode {
     companion object {
@@ -11,11 +12,27 @@ internal sealed class SignatureVerificationMode {
             return when (verificationMode) {
                 EntitlementVerificationMode.DISABLED -> Disabled
                 EntitlementVerificationMode.INFORMATIONAL ->
-                    Informational(IntermediateSignatureHelper(rootVerifierProvider))
+                    if (DefaultSignatureVerifier.isSupported()) {
+                        Informational(IntermediateSignatureHelper(rootVerifierProvider))
+                    } else {
+                        disabledBecauseVerifierUnsupported()
+                    }
                 // Hidden ENFORCED mode temporarily. Will be added back in the future.
                 // EntitlementVerificationMode.ENFORCED ->
-                //     Enforced(IntermediateSignatureHelper(rootVerifierProvider))
+                //     if (DefaultSignatureVerifier.isSupported()) {
+                //         Enforced(IntermediateSignatureHelper(rootVerifierProvider))
+                //     } else {
+                //         disabledBecauseVerifierUnsupported()
+                //     }
             }
+        }
+
+        private fun disabledBecauseVerifierUnsupported(): SignatureVerificationMode {
+            errorLog {
+                "Tink is restricted to FIPS mode, so the signature verifier cannot be created. " +
+                    "Disabling signature verification."
+            }
+            return Disabled
         }
 
         // Passes a provider rather than a verifier so that creating it stays off the thread that builds the
