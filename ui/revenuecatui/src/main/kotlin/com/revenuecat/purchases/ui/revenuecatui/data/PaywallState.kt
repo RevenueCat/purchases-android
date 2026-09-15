@@ -32,6 +32,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toJavaLocale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toLocaleId
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.BackgroundStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.style.ComponentStyle
+import com.revenuecat.purchases.ui.revenuecatui.components.style.StackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.composables.SimpleSheetState
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.ProcessedLocalizedConfiguration
@@ -138,6 +139,51 @@ internal sealed interface PaywallState {
             private val viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
         ) : Loaded {
 
+            internal fun localSelectionState(style: StackComponentStyle): Components? {
+                val localPackages = style.localPackages?.takeIf {
+                    it.hasDeclaredPackages || it.packagesOutsideTabs.isNotEmpty() || it.packagesByTab.isNotEmpty()
+                } ?: return null
+                return Components(
+                    stack = style,
+                    header = null,
+                    stickyFooter = null,
+                    background = background,
+                    showPricesWithDecimals = showPricesWithDecimals,
+                    variableConfig = variableConfig,
+                    variableDataProvider = variableDataProvider,
+                    offering = offering,
+                    locales = locales,
+                    storefrontCountryCode = storefrontCountryCode,
+                    dateProvider = dateProvider,
+                    packages = localPackages,
+                    customVariables = customVariables,
+                    defaultCustomVariables = defaultCustomVariables,
+                    initialLocaleList = LocaleList(locale),
+                    initialSelectedTabIndex = style.localDefaultTabIndex,
+                    initialSheetState = sheet,
+                    purchases = purchases,
+                    workflowScreen = workflowScreen,
+                    stateStore = stateStore,
+                    viewModelActionInProgress = viewModelActionInProgress,
+                ).also { child ->
+                    if (child.selectedPackageInfo == null) {
+                        localPackages.packagesOutsideTabs.firstOrNull {
+                            it.resolvesVisible(mergedCustomVariables)
+                        }?.let { child.update(it.uniqueId) }
+                    }
+                }
+            }
+
+            internal fun reconcileLocalSelection(initialize: Boolean = false) {
+                val activePackages = packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty()
+                val visible = activePackages.filter {
+                    it.resolvesVisible(mergedCustomVariables, paywallBoundsDp, windowScreenCondition)
+                }
+                if (initialize || visible.none { it.uniqueId == selectedPackageUniqueId }) {
+                    selectedPackageUniqueId = defaultUniqueIdForCurrentContext(paywallBoundsDp, windowScreenCondition)
+                }
+            }
+
             /**
              * Custom variables merged from dashboard defaults and developer-provided overrides.
              * Developer-provided values take precedence.
@@ -165,7 +211,7 @@ internal sealed interface PaywallState {
 
             /** A subset of the offering: packages the paywall never shows are not in it. */
             val paywallPackages: List<Package> by lazy {
-                (packages.packagesOutsideTabs + packages.packagesByTab.toSortedMap().values.flatten())
+                packages.allPackages
                     .map { it.pkg }
                     .distinctBy { it.identifier }
             }
@@ -173,6 +219,8 @@ internal sealed interface PaywallState {
             data class AvailablePackages(
                 val packagesOutsideTabs: List<Info>,
                 val packagesByTab: Map<Int, List<Info>>,
+                val nestedPackages: List<Info> = emptyList(),
+                val hasDeclaredPackages: Boolean = false,
             ) {
                 data class Info(
                     val pkg: Package,
@@ -207,10 +255,15 @@ internal sealed interface PaywallState {
                     AvailablePackages(
                         packagesOutsideTabs = packagesOutsideTabs + with?.packagesOutsideTabs.orEmpty(),
                         packagesByTab = packagesByTab.ifEmpty { with?.packagesByTab.orEmpty() },
+                        nestedPackages = nestedPackages + with?.nestedPackages.orEmpty(),
+                        hasDeclaredPackages = hasDeclaredPackages || with?.hasDeclaredPackages == true,
                     )
 
+                val allPackages: List<Info>
+                    get() = packagesOutsideTabs + packagesByTab.toSortedMap().values.flatten() + nestedPackages
+
                 val hasAnyPackages: Boolean
-                    get() = packagesOutsideTabs.isNotEmpty() || packagesByTab.isNotEmpty()
+                    get() = allPackages.isNotEmpty()
             }
 
             data class SelectedPackageInfo(

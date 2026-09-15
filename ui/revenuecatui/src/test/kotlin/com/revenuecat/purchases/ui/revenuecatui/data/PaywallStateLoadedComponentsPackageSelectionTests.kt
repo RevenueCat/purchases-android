@@ -40,6 +40,58 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     private val localeId = LocaleId("en_US")
 
     @Test
+    fun `local selection changes do not mutate the parent and reopen starts at default`() {
+        val parent = paywallState(
+            listOf(packageInfo(TestData.Packages.annual, true)), emptyMap(), null,
+        )
+        val style = previewStackComponentStyle(children = emptyList()).copy(
+            localPackages = PaywallState.Loaded.Components.AvailablePackages(
+                packagesOutsideTabs = listOf(
+                    packageInfo(TestData.Packages.monthly, true),
+                    packageInfo(TestData.Packages.weekly, false),
+                ),
+                packagesByTab = emptyMap(),
+                hasDeclaredPackages = true,
+            ),
+        )
+        val child = requireNotNull(parent.localSelectionState(style))
+        assertThat(child.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+        child.update(TestData.Packages.weekly.identifier)
+        assertThat(child.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.weekly)
+        assertThat(parent.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+        assertThat(parent.localSelectionState(style)?.selectedPackageInfo?.rcPackage)
+            .isEqualTo(TestData.Packages.monthly)
+    }
+
+    @Test
+    fun `informational scope inherits but unavailable local packages do not inherit`() {
+        val parent = paywallState(listOf(packageInfo(TestData.Packages.annual, true)), emptyMap(), null)
+        val style = previewStackComponentStyle(children = emptyList()).copy(
+            localPackages = PaywallState.Loaded.Components.AvailablePackages(emptyList(), emptyMap()),
+        )
+        assertThat(parent.localSelectionState(style)).isNull()
+        val unavailable = style.copy(localPackages = style.localPackages!!.copy(hasDeclaredPackages = true))
+        assertThat(parent.localSelectionState(unavailable)).isNotNull()
+        assertThat(parent.localSelectionState(unavailable)?.selectedPackageInfo).isNull()
+    }
+
+    @Test
+    fun `hidden local packages never fall back to the parent selection`() {
+        val parent = paywallState(listOf(packageInfo(TestData.Packages.annual, true)), emptyMap(), null)
+        val style = previewStackComponentStyle(children = emptyList()).copy(
+            localPackages = PaywallState.Loaded.Components.AvailablePackages(
+                packagesOutsideTabs = listOf(packageInfo(TestData.Packages.monthly, true, visible = false)),
+                packagesByTab = emptyMap(),
+                hasDeclaredPackages = true,
+            ),
+        )
+        val local = requireNotNull(parent.localSelectionState(style))
+        local.reconcileLocalSelection(initialize = true)
+        assertThat(local.selectedPackageInfo).isNull()
+        assertThat(parent.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+    }
+
+    @Test
     fun `Should select default package from tab 0 when initialSelectedTabIndex is null`() {
         // Arrange: packages only in tabs, no initialSelectedTabIndex
         val defaultPackage = TestData.Packages.monthly
