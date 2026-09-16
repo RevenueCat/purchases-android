@@ -187,6 +187,37 @@ internal sealed class Endpoint(
                 false
         }
 
+    /**
+     * Whether a response that fails signature verification is rejected regardless of the configured
+     * [com.revenuecat.purchases.common.verification.SignatureVerificationMode]. Implies
+     * [supportsSignatureVerification].
+     */
+    val requiresSignatureVerification: Boolean
+        get() = when (this) {
+            is GetRemoteConfig,
+            is GetRemoteConfigFallback,
+            ->
+                true
+            is GetCustomerInfo,
+            LogIn,
+            PostReceipt,
+            is GetOfferings,
+            GetProductEntitlementMapping,
+            PostRedeemWebPurchase,
+            is GetVirtualCurrencies,
+            is GetRewardVerification,
+            is GetAmazonReceipt,
+            is PostAttributes,
+            PostDiagnostics,
+            PostEvents,
+            is GetCustomerCenterConfig,
+            PostCreateSupportTicket,
+            is WebBillingGetProducts,
+            is AliasUsers,
+            ->
+                false
+        }
+
     val supportsFallbackBaseURLs: Boolean
         get() = fallbackPath != null
 

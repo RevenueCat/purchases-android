@@ -24,6 +24,9 @@ internal object NetworkStrings {
     const val VERIFICATION_MISSING_BODY_OR_ETAG = "Verification: Request to '%s' requires a body or etag" +
         " but none provided."
     const val VERIFICATION_INVALID_SIZE = "Verification: Request to '%s' has signature with wrong size. '%s'"
+    const val VERIFICATION_REMOTE_CONFIG_DISCARDED = "Verification: Discarded the remote config response from '%s' " +
+        "because its signature failed verification. Keeping the cached configuration. If requests go through a " +
+        "proxy, make sure it forwards the X-Signature and X-RevenueCat-Request-Time headers."
     const val VERIFICATION_ERROR = "Verification: Request to '%s' failed verification."
     const val VERIFICATION_SUCCESS = "Verification: Request to '%s' verified successfully."
 }
