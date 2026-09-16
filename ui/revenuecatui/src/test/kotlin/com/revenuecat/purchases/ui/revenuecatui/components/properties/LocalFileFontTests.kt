@@ -20,6 +20,27 @@ class LocalFileFontTests {
     private val anyFile = File("/data/user/0/com.example/cache/rc_paywall_fonts/font.otf")
 
     @Test
+    fun `fonts sharing a file but differing in weight or style are not equal`() {
+        // Two FontsConfig entries pointing at the same URL land on the same cached file, so weight and style
+        // are what tell those fonts apart. They also drive the variation settings and Compose's font matching.
+        val regular = localFileFont(file = anyFile, weight = FontWeight(400), style = FontStyle.Normal)
+        val bold = localFileFont(file = anyFile, weight = FontWeight(700), style = FontStyle.Normal)
+        val italic = localFileFont(file = anyFile, weight = FontWeight(400), style = FontStyle.Italic)
+
+        assertThat(regular).isNotEqualTo(bold)
+        assertThat(regular).isNotEqualTo(italic)
+    }
+
+    @Test
+    fun `fonts with the same file weight and style are equal`() {
+        val first = localFileFont(file = anyFile, weight = FontWeight(400), style = FontStyle.Normal)
+        val second = localFileFont(file = anyFile, weight = FontWeight(400), style = FontStyle.Normal)
+
+        assertThat(first).isEqualTo(second)
+        assertThat(first.hashCode()).isEqualTo(second.hashCode())
+    }
+
+    @Test
     fun `localFileFont preserves weight and style`() {
         val font = localFileFont(file = anyFile, weight = FontWeight(600), style = FontStyle.Italic)
 
