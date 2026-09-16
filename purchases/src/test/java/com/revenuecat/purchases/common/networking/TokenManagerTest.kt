@@ -1,22 +1,30 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
 package com.revenuecat.purchases.common.networking
 
 import android.app.Application
+import android.util.Base64
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.identity.IdentitySource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
+import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * Tests for [TokenManager]'s storage plumbing and construction (IAM phase 3, step 7). These go through the
- * real `derivePassword -> EncryptedItemStorage.create` chain -- a real [Application] context, a real API
- * key, no test doubles for storage -- since this step's whole purpose is to own that chain correctly.
+ * Tests for [TokenManager]'s storage plumbing, construction, and identity introspection (IAM phase 3,
+ * steps 7-8). These go through the real `derivePassword -> EncryptedItemStorage.create` chain -- a real
+ * [Application] context, a real API key, no test doubles for storage -- since this step's whole purpose is
+ * to own that chain correctly.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -165,6 +173,132 @@ class TokenManagerTest {
 
     // endregion
 
+    // region identity introspection
+
+    @Test
+    fun `currentIdentitySources, isCurrentIdentityAnonymous and currentIdentitySource are null-ish with no ID token`() =
+        runTest {
+            val manager = manager()
+
+            assertThat(manager.currentIdentitySources("user")).isNull()
+            assertThat(manager.isCurrentIdentityAnonymous("user")).isFalse()
+            assertThat(manager.currentIdentitySource("user")).isNull()
+        }
+
+    @Test
+    fun `a malformed ID token is handled gracefully, not as a crash`() = runTest {
+        val manager = manager()
+        manager.saveTokens("user", accessToken = "access", refreshToken = "refresh", idToken = "not-a-jwt")
+
+        assertThat(manager.currentIdentitySources("user")).isNull()
+        assertThat(manager.isCurrentIdentityAnonymous("user")).isFalse()
+        assertThat(manager.currentIdentitySource("user")).isNull()
+    }
+
+    @Test
+    fun `a single anonymous source is reported as anonymous`() = runTest {
+        val manager = manager()
+        manager.saveTokens(
+            "user",
+            accessToken = "access",
+            refreshToken = "refresh",
+            idToken = fakeIDToken(amr = listOf("anonymous")),
+        )
+
+        assertThat(manager.currentIdentitySources("user")).containsExactly(IdentitySource.ANONYMOUS.rawValue)
+        assertThat(manager.isCurrentIdentityAnonymous("user")).isTrue()
+        assertThat(manager.currentIdentitySource("user")).isEqualTo(IdentitySource.ANONYMOUS)
+    }
+
+    @Test
+    fun `mixed sources - a linked identity - are not reported as anonymous`() = runTest {
+        val manager = manager()
+        manager.saveTokens(
+            "user",
+            accessToken = "access",
+            refreshToken = "refresh",
+            idToken = fakeIDToken(amr = listOf("anonymous", "google")),
+        )
+
+        assertThat(manager.currentIdentitySources("user"))
+            .containsExactly(IdentitySource.ANONYMOUS.rawValue, IdentitySource.GOOGLE.rawValue)
+        assertThat(manager.isCurrentIdentityAnonymous("user")).isFalse()
+        assertThat(manager.currentIdentitySource("user")).isEqualTo(IdentitySource.GOOGLE)
+    }
+
+    @Test
+    fun `an empty amr list yields an empty, not null, list of sources - and is not anonymous`() = runTest {
+        val manager = manager()
+        manager.saveTokens(
+            "user",
+            accessToken = "access",
+            refreshToken = "refresh",
+            idToken = fakeIDToken(amr = emptyList()),
+        )
+
+        assertThat(manager.currentIdentitySources("user")).isEmpty()
+        assertThat(manager.isCurrentIdentityAnonymous("user")).isFalse()
+        assertThat(manager.currentIdentitySource("user")).isNull()
+    }
+
+    @Test
+    fun `an unrecognized amr entry is kept as a raw string, not dropped`() = runTest {
+        val manager = manager()
+        manager.saveTokens(
+            "user",
+            accessToken = "access",
+            refreshToken = "refresh",
+            idToken = fakeIDToken(amr = listOf("google", "some_future_provider")),
+        )
+
+        assertThat(manager.currentIdentitySources("user")).containsExactly("google", "some_future_provider")
+    }
+
+    @Test
+    fun `an unrecognized, non-anonymous source alongside anonymous is not reported as anonymous`() = runTest {
+        // The regression this guards against: dropping an unrecognized amr entry before the anonymous check
+        // ran would make this look anonymous once "some_future_provider" -- a real, non-anonymous linked
+        // identity this SDK version just doesn't have a name for yet -- had been filtered out.
+        val manager = manager()
+        manager.saveTokens(
+            "user",
+            accessToken = "access",
+            refreshToken = "refresh",
+            idToken = fakeIDToken(amr = listOf("anonymous", "some_future_provider")),
+        )
+
+        assertThat(manager.currentIdentitySources("user")).containsExactly("anonymous", "some_future_provider")
+        assertThat(manager.isCurrentIdentityAnonymous("user")).isFalse()
+    }
+
+    @Test
+    fun `currentIdentitySource is the last listed source, not the first`() = runTest {
+        val manager = manager()
+        manager.saveTokens(
+            "user",
+            accessToken = "access",
+            refreshToken = "refresh",
+            idToken = fakeIDToken(amr = listOf("google", "apple")),
+        )
+
+        assertThat(manager.currentIdentitySource("user")).isEqualTo(IdentitySource.SIGN_IN_WITH_APPLE)
+    }
+
+    @Test
+    fun `currentIdentitySource is null, not a stale earlier value, when the last entry is unrecognized`() = runTest {
+        val manager = manager()
+        manager.saveTokens(
+            "user",
+            accessToken = "access",
+            refreshToken = "refresh",
+            idToken = fakeIDToken(amr = listOf("google", "some_future_provider")),
+        )
+
+        assertThat(manager.currentIdentitySource("user")).isNull()
+    }
+
+    // endregion
+
     // region bulk operations
 
     @Test
@@ -253,4 +387,22 @@ class TokenManagerTest {
 
     private fun manager(apiKey: String = "test_api_key"): TokenManager =
         TokenManager(context, apiKey, enabled = true, scope = testScope())
+
+    /**
+     * A syntactically-valid (but unsigned and unverified) JWT with the given [amr] claim -- or no `amr`
+     * claim at all when [amr] is `null` -- suitable for exercising identity-introspection methods, which
+     * only ever read that one claim out of a stored ID token.
+     */
+    private fun fakeIDToken(amr: List<String>?): String {
+        val payload = JSONObject().apply {
+            if (amr != null) put("amr", JSONArray(amr))
+        }
+        val header = base64Url("""{"alg":"none"}""")
+        val body = base64Url(payload.toString())
+        val signature = base64Url("")
+        return "$header.$body.$signature"
+    }
+
+    private fun base64Url(value: String): String =
+        Base64.encodeToString(value.toByteArray(Charsets.UTF_8), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
 }
