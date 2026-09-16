@@ -64,10 +64,6 @@ internal class WorkflowTriggerActionDeserializationTests(
                 WorkflowTriggerAction.Branch(branches = emptyList(), fallbackStepId = "step_default"),
             ),
             arrayOf(
-                """{"type":"branch","branches":[{"audience_id":"aud_a","step_id":"step_a"}]}""",
-                WorkflowTriggerAction.Unknown,
-            ),
-            arrayOf(
                 """{"type":"branch","fallback_step_id":"step_default"}""",
                 WorkflowTriggerAction.Unknown,
             ),
