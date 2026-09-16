@@ -48,6 +48,33 @@ internal class WorkflowTriggerActionDeserializationTests(
             arrayOf("""{"type":"step"}""", WorkflowTriggerAction.Unknown),
             arrayOf("""{"type":"navigate"}""", WorkflowTriggerAction.Unknown),
             arrayOf("""{"type":"some_future_unknown_action_type"}""", WorkflowTriggerAction.Unknown),
+            arrayOf(
+                """{"type":"branch","branches":[{"audience_id":"aud_a","step_id":"step_a"},""" +
+                    """{"audience_id":"aud_b","step_id":"step_b"}],"fallback_step_id":"step_default"}""",
+                WorkflowTriggerAction.Branch(
+                    branches = listOf(
+                        WorkflowTriggerAction.Branch.Route(audienceId = "aud_a", stepId = "step_a"),
+                        WorkflowTriggerAction.Branch.Route(audienceId = "aud_b", stepId = "step_b"),
+                    ),
+                    fallbackStepId = "step_default",
+                ),
+            ),
+            arrayOf(
+                """{"type":"branch","branches":[],"fallback_step_id":"step_default"}""",
+                WorkflowTriggerAction.Branch(branches = emptyList(), fallbackStepId = "step_default"),
+            ),
+            arrayOf(
+                """{"type":"branch","branches":[{"audience_id":"aud_a","step_id":"step_a"}]}""",
+                WorkflowTriggerAction.Unknown,
+            ),
+            arrayOf(
+                """{"type":"branch","fallback_step_id":"step_default"}""",
+                WorkflowTriggerAction.Unknown,
+            ),
+            arrayOf(
+                """{"type":"branch","branches":[{"step_id":"step_a"}],"fallback_step_id":"step_default"}""",
+                WorkflowTriggerAction.Unknown,
+            ),
         )
     }
 
