@@ -137,10 +137,17 @@ internal sealed interface PaywallState {
             val stateStore: PaywallStateStore = PaywallStateStore(emptyMap()),
             /** The view model's gate, so every step of a workflow reads the one flag. */
             private val viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
+            private val sharedPackageSelection: PackageSelectionState? = null,
         ) : Loaded {
 
-            internal fun independentSelectionState(style: StackComponentStyle): Components? {
-                val independentPackages = style.independentPackages?.takeIf {
+            /** One selection shared by the root, tabs, sheets, and their purchase buttons. */
+            class PackageSelectionState(initialPackage: SelectedPackageInfo?) {
+                var packageInfo by mutableStateOf(initialPackage)
+                var allowsWorkflowDefault by mutableStateOf(true)
+            }
+
+            internal fun defaultScopeState(style: StackComponentStyle): Components? {
+                val defaultScopePackages = style.defaultScopePackages?.takeIf {
                     it.hasDeclaredPackages || it.packagesOutsideTabs.isNotEmpty() || it.packagesByTab.isNotEmpty()
                 } ?: return null
                 return Components(
@@ -155,31 +162,30 @@ internal sealed interface PaywallState {
                     locales = locales,
                     storefrontCountryCode = storefrontCountryCode,
                     dateProvider = dateProvider,
-                    packages = independentPackages,
+                    packages = defaultScopePackages,
                     customVariables = customVariables,
                     defaultCustomVariables = defaultCustomVariables,
                     initialLocaleList = LocaleList(locale),
-                    initialSelectedTabIndex = style.independentDefaultTabIndex,
+                    initialSelectedTabIndex = style.defaultScopeTabIndex,
                     initialSheetState = sheet,
                     purchases = purchases,
                     workflowScreen = workflowScreen,
                     stateStore = stateStore,
                     viewModelActionInProgress = viewModelActionInProgress,
+                    sharedPackageSelection = packageSelectionState,
                 ).also { child ->
-                    if (child.selectedPackageInfo == null) {
-                        independentPackages.packagesOutsideTabs.firstOrNull {
-                            it.resolvesVisible(mergedCustomVariables)
-                        }?.let { child.update(it.uniqueId) }
-                    }
+                    child.reconcileDefaultScopeSelection(initialize = true)
                 }
             }
 
-            internal fun reconcileIndependentSelection(initialize: Boolean = false) {
+            internal fun reconcileDefaultScopeSelection(initialize: Boolean = false) {
                 val activePackages = packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty()
                 val visible = activePackages.filter {
                     it.resolvesVisible(mergedCustomVariables, paywallBoundsDp, windowScreenCondition)
                 }
                 if (initialize || visible.none { it.uniqueId == selectedPackageUniqueId }) {
+                    // An empty selection in a declared package scope must also clear the shared CTA.
+                    packageSelectionState.allowsWorkflowDefault = false
                     selectedPackageUniqueId = defaultUniqueIdForCurrentContext(paywallBoundsDp, windowScreenCondition)
                 }
             }
@@ -349,7 +355,12 @@ internal sealed interface PaywallState {
                 // Last, so a default declared inside a tab still wins.
                 ?: visibleFallbackForHiddenDefaultOutsideTabs
 
-            private var selectedPackageUniqueId by mutableStateOf(initialSelectedPackageUniqueId)
+            private val packageSelectionState = sharedPackageSelection
+                ?: PackageSelectionState(packageInfoForUniqueId(initialSelectedPackageUniqueId))
+
+            private var selectedPackageUniqueId: String?
+                get() = packageSelectionState.packageInfo?.uniqueId
+                set(value) { packageSelectionState.packageInfo = packageInfoForUniqueId(value) }
 
             private var defaultPackageInfo: SelectedPackageInfo? by mutableStateOf(null)
 
@@ -360,18 +371,21 @@ internal sealed interface PaywallState {
             }
 
             val selectedPackageInfo by derivedStateOf {
-                val ownSelection = selectedPackageUniqueId?.let { uniqueId ->
-                    findPackageInfoByUniqueId(uniqueId)?.let { info ->
+                packageSelectionState.packageInfo
+                    ?: defaultPackageInfo.takeIf { packageSelectionState.allowsWorkflowDefault }
+            }
+
+            private fun packageInfoForUniqueId(uniqueId: String?): SelectedPackageInfo? =
+                uniqueId?.let { id ->
+                    findPackageInfoByUniqueId(id)?.let { info ->
                         SelectedPackageInfo(
                             rcPackage = info.pkg,
                             resolvedOffer = info.resolvedOffer,
-                            uniqueId = uniqueId,
+                            uniqueId = id,
                             offerEligibility = calculateOfferEligibility(info.resolvedOffer, info.pkg),
                         )
                     }
                 }
-                ownSelection ?: defaultPackageInfo
-            }
 
             private fun findPackageInfoByUniqueId(uniqueId: String): AvailablePackages.Info? {
                 return packages.packagesOutsideTabs.find { it.uniqueId == uniqueId }
