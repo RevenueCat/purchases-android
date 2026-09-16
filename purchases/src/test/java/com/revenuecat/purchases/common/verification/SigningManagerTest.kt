@@ -98,22 +98,29 @@ class SigningManagerTest {
     }
 
     @Test
-    fun `shouldVerifyEndpoint returns false for required endpoints in every mode when required verifications are disabled`() {
+    fun `shouldVerifyEndpoint follows the mode for required endpoints when required verifications are disabled`() {
         every { appConfig.disableRequiredSignatureVerifications } returns true
 
-        listOf(disabledSigningManager, informationalSigningManager, enforcedSigningManager).forEach { signingManager ->
-            assertThat(signingManager.shouldVerifyEndpoint(Endpoint.GetRemoteConfig("app"))).isFalse
-            assertThat(signingManager.shouldVerifyEndpoint(Endpoint.GetRemoteConfigFallback("app"))).isFalse
+        listOf(Endpoint.GetRemoteConfig("app"), Endpoint.GetRemoteConfigFallback("app")).forEach { endpoint ->
+            assertThat(disabledSigningManager.shouldVerifyEndpoint(endpoint)).isFalse
+            assertThat(informationalSigningManager.shouldVerifyEndpoint(endpoint)).isTrue
+            assertThat(enforcedSigningManager.shouldVerifyEndpoint(endpoint)).isTrue
         }
     }
 
     @Test
-    fun `shouldVerifyEndpoint keeps following the mode for other endpoints when required verifications are disabled`() {
+    fun `requiresVerification is true only for required endpoints`() {
+        assertThat(disabledSigningManager.requiresVerification(Endpoint.GetRemoteConfig("app"))).isTrue
+        assertThat(disabledSigningManager.requiresVerification(Endpoint.GetRemoteConfigFallback("app"))).isTrue
+        assertThat(disabledSigningManager.requiresVerification(Endpoint.PostReceipt)).isFalse
+    }
+
+    @Test
+    fun `requiresVerification is false for required endpoints when required verifications are disabled`() {
         every { appConfig.disableRequiredSignatureVerifications } returns true
 
-        assertThat(disabledSigningManager.shouldVerifyEndpoint(Endpoint.PostReceipt)).isFalse
-        assertThat(informationalSigningManager.shouldVerifyEndpoint(Endpoint.PostReceipt)).isTrue
-        assertThat(enforcedSigningManager.shouldVerifyEndpoint(Endpoint.PostReceipt)).isTrue
+        assertThat(enforcedSigningManager.requiresVerification(Endpoint.GetRemoteConfig("app"))).isFalse
+        assertThat(enforcedSigningManager.requiresVerification(Endpoint.GetRemoteConfigFallback("app"))).isFalse
     }
 
     @Test

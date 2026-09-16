@@ -190,8 +190,8 @@ internal sealed class Endpoint(
     /**
      * Whether a response that fails signature verification is rejected regardless of the configured
      * [com.revenuecat.purchases.common.verification.SignatureVerificationMode]. Implies
-     * [supportsSignatureVerification]. The `disableRequiredSignatureVerifications` dangerous setting turns
-     * verification off entirely for these endpoints.
+     * [supportsSignatureVerification]. The `disableRequiredSignatureVerifications` dangerous setting makes these
+     * endpoints follow the mode like any other.
      */
     val requiresSignatureVerification: Boolean
         get() = when (this) {

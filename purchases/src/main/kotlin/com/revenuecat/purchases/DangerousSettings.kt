@@ -18,10 +18,10 @@ public class DangerousSettings internal constructor(
     public val autoSyncPurchases: Boolean = true,
 
     /**
-     * Disables the signature verification the SDK otherwise always performs on responses from the remote config
-     * endpoints, regardless of the configured [EntitlementVerificationMode]. When enabled, those responses are
-     * accepted without checking they were produced by RevenueCat. Off by default; only enable this if
-     * suggested by the RevenueCat support team.
+     * The SDK always verifies the signature of remote config responses and rejects the ones that fail, regardless
+     * of the configured [EntitlementVerificationMode]. When this is enabled, those responses follow the configured
+     * [EntitlementVerificationMode] like every other request instead. Off by default; only enable this if suggested
+     * by the RevenueCat support team.
      */
     public val disableRequiredSignatureVerifications: Boolean = false,
 

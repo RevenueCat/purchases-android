@@ -1173,8 +1173,8 @@ internal class Backend(
         lastRefreshTime: Date?,
         prefetchedBlobs: List<String>,
         // The server's own request time, so the caller can replay it rather than a device-clock value. Only a
-        // response whose signature verified reaches this callback; HTTPClient rejects any other as an error. The
-        // exception is the disableRequiredSignatureVerifications dangerous setting, which disables verification.
+        // response whose signature verified reaches this callback; HTTPClient rejects any other as an error, unless
+        // the disableRequiredSignatureVerifications dangerous setting makes this endpoint follow the verification mode.
         onSuccess: (RCContainer?, Date?) -> Unit,
         onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit,
     ) {

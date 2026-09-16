@@ -36,6 +36,9 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         mockSigningManager = mockk()
         every { mockSigningManager.signatureVerificationMode } returns SignatureVerificationMode.Informational
         every { mockSigningManager.shouldVerifyEndpoint(any()) } returns true
+        every { mockSigningManager.requiresVerification(any()) } answers {
+            firstArg<Endpoint>().requiresSignatureVerification
+        }
         every { mockSigningManager.createRandomNonce() } returns "test-nonce"
         client = createClient()
     }
@@ -667,39 +670,33 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     }
 
     @Test
-    fun `performRequest does not verify a remote config response when required verifications are disabled`() {
-        listOf(
-            SignatureVerificationMode.Disabled,
-            SignatureVerificationMode.Informational,
-            SignatureVerificationMode.Enforced,
-        ).forEach { mode ->
-            val appConfig = createAppConfig(disableRequiredSignatureVerifications = true)
-            client = createClient(
-                appConfig = appConfig,
-                signingManager = SigningManager(mode, appConfig, "test-api-key"),
-            )
-            val endpoint = Endpoint.GetRemoteConfig("app")
-            enqueueRCFormat(buildContainer("{\"config\":true}".toByteArray()))
-
-            val result = client.performRequest(
-                baseURL,
-                endpoint,
-                body = null,
-                postFieldsToSign = null,
-                requestHeaders = emptyMap()
-            )
-
-            assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
-            assertThat(server.takeRequest().getHeader("X-Nonce")).isNull()
-        }
-    }
-
-    @Test
-    fun `performRequest does not verify a remote config fallback response when required verifications are disabled`() {
+    fun `performRequest does not verify a remote config response with verification disabled when required verifications are disabled`() {
         val appConfig = createAppConfig(disableRequiredSignatureVerifications = true)
         client = createClient(
             appConfig = appConfig,
-            signingManager = SigningManager(SignatureVerificationMode.Enforced, appConfig, "test-api-key"),
+            signingManager = SigningManager(SignatureVerificationMode.Disabled, appConfig, "test-api-key"),
+        )
+        val endpoint = Endpoint.GetRemoteConfig("app")
+        enqueueRCFormat(buildContainer("{\"config\":true}".toByteArray()))
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            requestHeaders = emptyMap()
+        )
+
+        assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
+        assertThat(server.takeRequest().getHeader("X-Nonce")).isNull()
+    }
+
+    @Test
+    fun `performRequest does not verify a remote config fallback response with verification disabled when required verifications are disabled`() {
+        val appConfig = createAppConfig(disableRequiredSignatureVerifications = true)
+        client = createClient(
+            appConfig = appConfig,
+            signingManager = SigningManager(SignatureVerificationMode.Disabled, appConfig, "test-api-key"),
         )
         val endpoint = Endpoint.GetRemoteConfigFallback("app")
         enqueue(
@@ -717,6 +714,45 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         )
 
         assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
+    }
+
+    @Test
+    fun `performRequest returns a failed remote config response without throwing with verification informational when required verifications are disabled`() {
+        every { mockSigningManager.requiresVerification(any()) } returns false
+        val endpoint = Endpoint.GetRemoteConfig("app")
+
+        mockSigningResult(VerificationResult.FAILED)
+        enqueueRCFormat(buildContainer("{\"config\":true}".toByteArray()))
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            requestHeaders = emptyMap()
+        )
+
+        assertThat(result.verificationResult).isEqualTo(VerificationResult.FAILED)
+    }
+
+    @Test
+    fun `performRequest throws for a remote config response with verification enforced when required verifications are disabled`() {
+        every { mockSigningManager.requiresVerification(any()) } returns false
+        every { mockSigningManager.signatureVerificationMode } returns SignatureVerificationMode.Enforced
+        val endpoint = Endpoint.GetRemoteConfig("app")
+
+        mockSigningResult(VerificationResult.FAILED)
+        enqueueRCFormat(buildContainer("{\"config\":true}".toByteArray()))
+
+        assertThatExceptionOfType(SignatureVerificationException::class.java).isThrownBy {
+            client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = emptyMap()
+            )
+        }
     }
 
     @Test

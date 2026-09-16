@@ -352,16 +352,16 @@ internal class HTTPClient(
     }
 
     /**
-     * Rejects a response whose signature failed verification when the [endpoint] requires verification or the SDK
-     * runs in [SignatureVerificationMode.Enforced]. Thrown from inside the attempt so its `finally` block still
-     * records the real status code and verification result in diagnostics. Nothing unverified has been cached at
-     * this point: [ETagManager] never stores a `FAILED` result.
+     * Rejects a response whose signature failed verification when the SDK runs in
+     * [SignatureVerificationMode.Enforced] or the [endpoint] passes [SigningManager.requiresVerification]. Thrown
+     * from inside the attempt so its `finally` block still records the real status code and verification result in
+     * diagnostics. Nothing unverified has been cached at this point: [ETagManager] never stores a `FAILED` result.
      */
     private fun throwIfVerificationRejected(endpoint: Endpoint, result: HTTPResult, isFallbackURL: Boolean) {
         if (result.verificationResult == VerificationResult.FAILED &&
             (
-                endpoint.requiresSignatureVerification ||
-                    signingManager.signatureVerificationMode is SignatureVerificationMode.Enforced
+                signingManager.signatureVerificationMode is SignatureVerificationMode.Enforced ||
+                    signingManager.requiresVerification(endpoint)
                 )
         ) {
             throw SignatureVerificationException(endpoint.getPath(useFallback = isFallbackURL))
