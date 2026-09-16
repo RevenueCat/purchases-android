@@ -38,11 +38,10 @@ public fun interface PaywallPresenter {
      * How a [PaywallPresenter] reports the way its presentation ended. Only the first report counts; later
      * reports, including reports for a checkpoint call that no longer exists, are ignored.
      *
-     * After [Result.Purchased], [Result.Closed] and [Result.ContinuedWithoutPurchasing] the SDK syncs any store
-     * purchase made during the presentation, refreshes the customer's information, and resolves the checkpoint with
-     * what the user obtained. Purchases made through the SDK or through the app's own billing client are both
-     * picked up; an app that disabled automatic purchase syncing must call
-     * [com.revenuecat.purchases.Purchases.syncPurchases] before reporting.
+     * After [Result.Continued] and [Result.Closed] the SDK syncs any store purchase not yet sent to RevenueCat,
+     * refreshes the customer's information, and resolves the checkpoint with what the user obtained. Purchases made
+     * through the SDK or through the app's own billing client are both picked up; an app that disabled automatic
+     * purchase syncing must call [com.revenuecat.purchases.Purchases.syncPurchases] before reporting.
      */
     @InternalRevenueCatAPI
     public fun interface Completion {
@@ -54,9 +53,13 @@ public fun interface PaywallPresenter {
         @InternalRevenueCatAPI
         public abstract class Result internal constructor() {
 
-            /** The user purchased or restored from the app's UI, which is now gone. */
-            public object Purchased : Result() {
-                override fun toString(): String = "Purchased"
+            /**
+             * The user went through the app's UI and the flow continues: they purchased, restored, or chose to
+             * continue without buying. The SDK syncs any store purchase not yet sent to RevenueCat and reads what
+             * the user obtained from the refreshed customer information, so the app need not say which it was.
+             */
+            public object Continued : Result() {
+                override fun toString(): String = "Continued"
             }
 
             /**
@@ -74,14 +77,6 @@ public fun interface PaywallPresenter {
              */
             public object NavigatedBack : Result() {
                 override fun toString(): String = "NavigatedBack"
-            }
-
-            /**
-             * The user chose to continue past the app's UI without purchasing. Behaves like [Closed] today; the
-             * two will diverge once flows can carry on after the app's UI.
-             */
-            public object ContinuedWithoutPurchasing : Result() {
-                override fun toString(): String = "ContinuedWithoutPurchasing"
             }
         }
     }

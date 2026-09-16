@@ -54,10 +54,9 @@ final class CheckpointsAPI {
             Offering offering = params.getOffering();
             String checkpointIdentifier = params.getCheckpointIdentifier();
             Map<String, CustomVariableValue> customVariables = params.getCustomVariables();
-            completion.complete(PaywallPresenter.Completion.Result.Purchased.INSTANCE);
+            completion.complete(PaywallPresenter.Completion.Result.Continued.INSTANCE);
             completion.complete(PaywallPresenter.Completion.Result.Closed.INSTANCE);
             completion.complete(PaywallPresenter.Completion.Result.NavigatedBack.INSTANCE);
-            completion.complete(PaywallPresenter.Completion.Result.ContinuedWithoutPurchasing.INSTANCE);
         };
         CheckpointsExtensionsKt.setPaywallPresenter(purchases, presenter);
         CheckpointsExtensionsKt.setPaywallPresenter(purchases, null);

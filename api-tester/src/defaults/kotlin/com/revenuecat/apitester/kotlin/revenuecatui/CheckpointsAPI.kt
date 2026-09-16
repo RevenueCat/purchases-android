@@ -54,19 +54,17 @@ private class CheckpointsAPI {
             val offering: Offering = params.offering
             val checkpointIdentifier: String = params.checkpointIdentifier
             val customVariables: Map<String, CustomVariableValue> = params.customVariables
-            completion.complete(PaywallPresenter.Completion.Result.Purchased)
+            completion.complete(PaywallPresenter.Completion.Result.Continued)
             completion.complete(PaywallPresenter.Completion.Result.Closed)
             completion.complete(PaywallPresenter.Completion.Result.NavigatedBack)
-            completion.complete(PaywallPresenter.Completion.Result.ContinuedWithoutPurchasing)
         }
     }
 
     fun checkCompletionResult(result: PaywallPresenter.Completion.Result) {
         when (result) {
-            PaywallPresenter.Completion.Result.Purchased -> {}
+            PaywallPresenter.Completion.Result.Continued -> {}
             PaywallPresenter.Completion.Result.Closed -> {}
             PaywallPresenter.Completion.Result.NavigatedBack -> {}
-            PaywallPresenter.Completion.Result.ContinuedWithoutPurchasing -> {}
             // The hierarchy is closed but not sealed, so consumers must handle cases added later.
             else -> {}
         }

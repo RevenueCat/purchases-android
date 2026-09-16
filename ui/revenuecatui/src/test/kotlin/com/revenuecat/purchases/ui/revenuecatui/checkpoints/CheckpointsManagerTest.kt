@@ -561,7 +561,7 @@ class CheckpointsManagerTest {
     }
 
     @Test
-    fun `a registered presenter presents a matched offering and its purchased report resolves the run`() =
+    fun `a registered presenter presents a matched offering and its continued report resolves the run`() =
         runTest(dispatcher) {
             val offering = mockk<Offering>()
             val customerInfo = mockk<CustomerInfo>()
@@ -585,7 +585,7 @@ class CheckpointsManagerTest {
             assertThat(presentedCallIds).isEmpty()
             verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
 
-            completion!!.complete(PaywallPresenter.Completion.Result.Purchased)
+            completion!!.complete(PaywallPresenter.Completion.Result.Continued)
             call.join()
 
             assertThat(run!!.flowOutcome)
@@ -630,7 +630,7 @@ class CheckpointsManagerTest {
         var run: CheckpointRun? = null
         val call = launch { run = runCheckpoint() }
 
-        completion()!!.complete(PaywallPresenter.Completion.Result.ContinuedWithoutPurchasing)
+        completion()!!.complete(PaywallPresenter.Completion.Result.Continued)
         call.join()
 
         assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
@@ -675,8 +675,7 @@ class CheckpointsManagerTest {
         val call = launch { run = runCheckpoint() }
 
         completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
-        completion()!!.complete(PaywallPresenter.Completion.Result.ContinuedWithoutPurchasing)
-        completion()!!.complete(PaywallPresenter.Completion.Result.Purchased)
+        completion()!!.complete(PaywallPresenter.Completion.Result.Continued)
         completion()!!.complete(PaywallPresenter.Completion.Result.NavigatedBack)
         call.join()
 

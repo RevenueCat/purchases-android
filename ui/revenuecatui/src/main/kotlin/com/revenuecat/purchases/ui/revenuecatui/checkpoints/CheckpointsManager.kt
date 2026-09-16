@@ -255,7 +255,7 @@ internal class CheckpointsManager(
 
     // Routes an app-owned presentation's report back to its pending call. slot.take() removes the call, so only the
     // first report wins and the one-presentation slot is released with it, before the sync that follows a
-    // purchased or closed report: the app's UI is already gone, so a new checkpoint may present meanwhile.
+    // continued or closed report: the app's UI is already gone, so a new checkpoint may present meanwhile.
     private inner class PresenterCompletion(
         private val callId: String,
         private val purchases: Purchases,
@@ -263,9 +263,8 @@ internal class CheckpointsManager(
 
         override fun complete(result: PaywallPresenter.Completion.Result) {
             when (result) {
-                PaywallPresenter.Completion.Result.Purchased,
+                PaywallPresenter.Completion.Result.Continued,
                 PaywallPresenter.Completion.Result.Closed,
-                PaywallPresenter.Completion.Result.ContinuedWithoutPurchasing,
                 -> finished()
                 PaywallPresenter.Completion.Result.NavigatedBack -> navigatedBack()
                 // The hierarchy is closed but not sealed; a result this code doesn't know is the safest thing it

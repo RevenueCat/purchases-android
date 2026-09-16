@@ -63,7 +63,7 @@ fun GlobalPaywall(
         message = null
         scope.launch {
             when (val outcome = action()) {
-                CheckoutOutcome.Completed -> request.finish(PaywallPresenter.Completion.Result.Purchased)
+                CheckoutOutcome.Completed -> request.finish(PaywallPresenter.Completion.Result.Continued)
                 CheckoutOutcome.Cancelled -> busy = false
                 is CheckoutOutcome.Failed -> {
                     busy = false
@@ -151,7 +151,7 @@ private fun PaywallBody(
             Text("Restore purchases")
         }
         TextButton(
-            onClick = { request.finish(PaywallPresenter.Completion.Result.ContinuedWithoutPurchasing) },
+            onClick = { request.finish(PaywallPresenter.Completion.Result.Continued) },
             enabled = !busy,
         ) {
             Text("Continue without buying")
