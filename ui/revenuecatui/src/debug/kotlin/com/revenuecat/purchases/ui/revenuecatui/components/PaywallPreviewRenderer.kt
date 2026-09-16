@@ -40,7 +40,7 @@ import java.util.Date
  */
 internal object PaywallPreviewRenderer {
 
-    data class Fixture(
+    internal data class Fixture(
         val offering: Offering,
         val paywallComponents: Offering.PaywallComponents,
     )

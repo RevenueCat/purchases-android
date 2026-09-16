@@ -12,6 +12,7 @@ import org.robolectric.RobolectricTestRunner
 
 @OptIn(InternalRevenueCatAPI::class)
 @RunWith(RobolectricTestRunner::class)
+@Suppress("FunctionNaming")
 internal class PaywallPreviewRendererTest {
 
     @Test
@@ -20,7 +21,7 @@ internal class PaywallPreviewRendererTest {
 
         assertThat(fixture.offering.identifier).isEqualTo("json-preview")
         assertThat(fixture.offering.serverDescription).isEqualTo("JSON paywall preview")
-        assertThat(fixture.offering.availablePackages).hasSize(3)
+        assertThat(fixture.offering.availablePackages).hasSize(PaywallPreviewRenderer.defaultPackages.size)
         assertThat(fixture.offering.availablePackages.map { it.identifier }).containsExactly(
             "\$rc_weekly",
             "\$rc_monthly",
