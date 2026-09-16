@@ -2,7 +2,6 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -22,6 +21,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponen
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateStore
+import com.revenuecat.purchases.ui.revenuecatui.helpers.currentWindowWidthSizeClass
 
 @Stable
 @JvmSynthetic
@@ -52,7 +52,7 @@ private fun rememberUpdatedWebViewComponentState(
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
     stateStoreProvider: () -> PaywallStateStore,
 ): WebViewComponentState {
-    val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val windowSize = currentWindowWidthSizeClass()
 
     return remember(style) {
         WebViewComponentState(

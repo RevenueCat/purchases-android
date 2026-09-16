@@ -3,7 +3,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.image
 
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -44,6 +43,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.ImageComponentS
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateStore
+import com.revenuecat.purchases.ui.revenuecatui.helpers.currentWindowWidthSizeClass
 
 @Stable
 @JvmSynthetic
@@ -76,7 +76,7 @@ private fun rememberUpdatedImageComponentState(
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
     stateStoreProvider: () -> PaywallStateStore,
 ): ImageComponentState {
-    val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val windowSize = currentWindowWidthSizeClass()
     val density = LocalDensity.current
     val darkMode = isSystemInDarkTheme()
     val layoutDirection = LocalLayoutDirection.current

@@ -5,7 +5,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components.stack
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -32,6 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateStore
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
+import com.revenuecat.purchases.ui.revenuecatui.helpers.currentWindowWidthSizeClass
 
 @Stable
 @JvmSynthetic
@@ -62,7 +62,7 @@ private fun rememberUpdatedStackComponentState(
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
     stateStoreProvider: () -> PaywallStateStore,
 ): StackComponentState {
-    val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val windowSize = currentWindowWidthSizeClass()
     val layoutDirection = LocalLayoutDirection.current
 
     return remember(style) {
