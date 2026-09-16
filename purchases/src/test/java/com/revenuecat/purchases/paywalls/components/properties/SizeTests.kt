@@ -241,7 +241,7 @@ internal class SizeTests {
     class StripMinMaxWhenDisabledTests {
 
         @Test
-        fun `Should ignore fit min and max when min/max sizing is disabled`() {
+        fun `Should ignore fit min and max when min max sizing is disabled`() {
             assumeTrue(
                 "Requires ENABLE_PAYWALL_MIN_MAX_SIZING=false",
                 !BuildConfig.ENABLE_PAYWALL_MIN_MAX_SIZING,
@@ -263,7 +263,7 @@ internal class SizeTests {
         }
 
         @Test
-        fun `Should ignore fill min and max when min/max sizing is disabled`() {
+        fun `Should ignore fill min and max when min max sizing is disabled`() {
             assumeTrue(
                 "Requires ENABLE_PAYWALL_MIN_MAX_SIZING=false",
                 !BuildConfig.ENABLE_PAYWALL_MIN_MAX_SIZING,
