@@ -342,21 +342,21 @@ internal fun SimpleSheetState.show(
     onClick: suspend (PaywallAction) -> Unit,
 ) {
     val stack = sheet.stack as? StackComponentStyle
-    val localState = stack?.let { state.localSelectionState(it) }?.also {
+    val independentState = stack?.let { state.independentSelectionState(it) }?.also {
         it.paywallBoundsDp = state.paywallBoundsDp
         it.windowScreenCondition = state.windowScreenCondition
-        it.reconcileLocalSelection(initialize = true)
+        it.reconcileIndependentSelection(initialize = true)
     }
-    val sheetState = localState ?: state
-    val sheetStack = if (localState != null) stack.copy(localPackages = null) else sheet.stack
+    val sheetState = independentState ?: state
+    val sheetStack = if (independentState != null) stack.copy(independentPackages = null) else sheet.stack
     show(
         backgroundBlur = sheet.backgroundBlur,
         content = {
-            if (localState != null) {
-                localState.paywallBoundsDp = state.paywallBoundsDp
-                localState.headerHeightPx = state.headerHeightPx
-                localState.windowScreenCondition = state.windowScreenCondition
-                localState.reconcileLocalSelection()
+            if (independentState != null) {
+                independentState.paywallBoundsDp = state.paywallBoundsDp
+                independentState.headerHeightPx = state.headerHeightPx
+                independentState.windowScreenCondition = state.windowScreenCondition
+                independentState.reconcileIndependentSelection()
             }
             ComponentView(
                 style = sheetStack,
@@ -376,7 +376,7 @@ internal fun SimpleSheetState.show(
         contentKey = sheet.id,
         onDismiss = {
             val sheetSelected = sheetState.selectedPackageInfo
-            val resulting = if (stack?.localPackages != null) {
+            val resulting = if (stack?.independentPackages != null) {
                 state.selectedPackageInfo
             } else {
                 state.peekSelectedPackageInfoAfterSheetDismiss()
@@ -388,7 +388,7 @@ internal fun SimpleSheetState.show(
                     resultingRootPackage = resulting?.rcPackage,
                 ),
             )
-            if ((sheet.stack as? StackComponentStyle)?.localPackages == null) state.resetToDefaultPackage()
+            if ((sheet.stack as? StackComponentStyle)?.independentPackages == null) state.resetToDefaultPackage()
         },
     )
 }

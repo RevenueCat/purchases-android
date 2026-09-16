@@ -139,8 +139,8 @@ internal sealed interface PaywallState {
             private val viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
         ) : Loaded {
 
-            internal fun localSelectionState(style: StackComponentStyle): Components? {
-                val localPackages = style.localPackages?.takeIf {
+            internal fun independentSelectionState(style: StackComponentStyle): Components? {
+                val independentPackages = style.independentPackages?.takeIf {
                     it.hasDeclaredPackages || it.packagesOutsideTabs.isNotEmpty() || it.packagesByTab.isNotEmpty()
                 } ?: return null
                 return Components(
@@ -155,11 +155,11 @@ internal sealed interface PaywallState {
                     locales = locales,
                     storefrontCountryCode = storefrontCountryCode,
                     dateProvider = dateProvider,
-                    packages = localPackages,
+                    packages = independentPackages,
                     customVariables = customVariables,
                     defaultCustomVariables = defaultCustomVariables,
                     initialLocaleList = LocaleList(locale),
-                    initialSelectedTabIndex = style.localDefaultTabIndex,
+                    initialSelectedTabIndex = style.independentDefaultTabIndex,
                     initialSheetState = sheet,
                     purchases = purchases,
                     workflowScreen = workflowScreen,
@@ -167,14 +167,14 @@ internal sealed interface PaywallState {
                     viewModelActionInProgress = viewModelActionInProgress,
                 ).also { child ->
                     if (child.selectedPackageInfo == null) {
-                        localPackages.packagesOutsideTabs.firstOrNull {
+                        independentPackages.packagesOutsideTabs.firstOrNull {
                             it.resolvesVisible(mergedCustomVariables)
                         }?.let { child.update(it.uniqueId) }
                     }
                 }
             }
 
-            internal fun reconcileLocalSelection(initialize: Boolean = false) {
+            internal fun reconcileIndependentSelection(initialize: Boolean = false) {
                 val activePackages = packages.packagesOutsideTabs + packages.packagesByTab[selectedTabIndex].orEmpty()
                 val visible = activePackages.filter {
                     it.resolvesVisible(mergedCustomVariables, paywallBoundsDp, windowScreenCondition)

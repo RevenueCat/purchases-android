@@ -297,19 +297,19 @@ internal class StyleFactory(
                 hasDeclaredPackages = hasDeclaredPackages,
             )
 
-        data class LocalPackageSelectionResult<T>(
+        data class IndependentPackageSelectionResult<T>(
             val value: T,
             val packages: AvailablePackages,
             val defaultTabIndex: Int?,
         )
 
         /**
-         * Collects packages for a local stack without adding them to the parent's selectable packages.
+         * Collects packages for a independent stack without adding them to the parent's selectable packages.
          * Layout and interaction context stay shared; package and tab selection context is restored afterward.
          */
-        fun <T> withLocalPackageSelection(
+        fun <T> withIndependentPackageSelection(
             block: StyleFactoryScope.() -> T,
-        ): LocalPackageSelectionResult<T> {
+        ): IndependentPackageSelectionResult<T> {
             val previousOutside = packagesOutsideTabs
             val previousTabs = packagesByTab
             val previousNested = nestedPackages
@@ -330,9 +330,9 @@ internal class StyleFactory(
             tabControlIndex = null
             try {
                 val result = block()
-                val localPackages = packages
-                previousNested.addAll(localPackages.allPackages)
-                return LocalPackageSelectionResult(result, localPackages, defaultTabIndex)
+                val independentPackages = packages
+                previousNested.addAll(independentPackages.allPackages)
+                return IndependentPackageSelectionResult(result, independentPackages, defaultTabIndex)
             } finally {
                 packagesOutsideTabs = previousOutside
                 packagesByTab = previousTabs
@@ -970,14 +970,14 @@ internal class StyleFactory(
         component: StackComponent,
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> {
         val selection = component.packageSelection
-        if (selection?.mode != "local") return createStackContentsStyle(component)
-        val localSelection = withLocalPackageSelection {
+        if (selection?.mode != "independent") return createStackContentsStyle(component)
+        val independentSelection = withIndependentPackageSelection {
             createStackContentsStyle(component)
         }
-        return localSelection.value.map { style ->
+        return independentSelection.value.map { style ->
             style.copy(
-                localPackages = localSelection.packages,
-                localDefaultTabIndex = localSelection.defaultTabIndex,
+                independentPackages = independentSelection.packages,
+                independentDefaultTabIndex = independentSelection.defaultTabIndex,
             )
         }
     }

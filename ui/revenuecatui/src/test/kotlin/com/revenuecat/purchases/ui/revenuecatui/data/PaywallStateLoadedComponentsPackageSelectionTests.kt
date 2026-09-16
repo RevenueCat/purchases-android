@@ -40,12 +40,12 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     private val localeId = LocaleId("en_US")
 
     @Test
-    fun `local selection changes do not mutate the parent and reopen starts at default`() {
+    fun `independent selection changes do not mutate the parent and reopen starts at default`() {
         val parent = paywallState(
             listOf(packageInfo(TestData.Packages.annual, true)), emptyMap(), null,
         )
         val style = previewStackComponentStyle(children = emptyList()).copy(
-            localPackages = PaywallState.Loaded.Components.AvailablePackages(
+            independentPackages = PaywallState.Loaded.Components.AvailablePackages(
                 packagesOutsideTabs = listOf(
                     packageInfo(TestData.Packages.monthly, true),
                     packageInfo(TestData.Packages.weekly, false),
@@ -54,40 +54,40 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
                 hasDeclaredPackages = true,
             ),
         )
-        val child = requireNotNull(parent.localSelectionState(style))
+        val child = requireNotNull(parent.independentSelectionState(style))
         assertThat(child.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
         child.update(TestData.Packages.weekly.identifier)
         assertThat(child.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.weekly)
         assertThat(parent.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
-        assertThat(parent.localSelectionState(style)?.selectedPackageInfo?.rcPackage)
+        assertThat(parent.independentSelectionState(style)?.selectedPackageInfo?.rcPackage)
             .isEqualTo(TestData.Packages.monthly)
     }
 
     @Test
-    fun `informational scope inherits but unavailable local packages do not inherit`() {
+    fun `informational scope inherits but unavailable independent packages do not inherit`() {
         val parent = paywallState(listOf(packageInfo(TestData.Packages.annual, true)), emptyMap(), null)
         val style = previewStackComponentStyle(children = emptyList()).copy(
-            localPackages = PaywallState.Loaded.Components.AvailablePackages(emptyList(), emptyMap()),
+            independentPackages = PaywallState.Loaded.Components.AvailablePackages(emptyList(), emptyMap()),
         )
-        assertThat(parent.localSelectionState(style)).isNull()
-        val unavailable = style.copy(localPackages = style.localPackages!!.copy(hasDeclaredPackages = true))
-        assertThat(parent.localSelectionState(unavailable)).isNotNull()
-        assertThat(parent.localSelectionState(unavailable)?.selectedPackageInfo).isNull()
+        assertThat(parent.independentSelectionState(style)).isNull()
+        val unavailable = style.copy(independentPackages = style.independentPackages!!.copy(hasDeclaredPackages = true))
+        assertThat(parent.independentSelectionState(unavailable)).isNotNull()
+        assertThat(parent.independentSelectionState(unavailable)?.selectedPackageInfo).isNull()
     }
 
     @Test
-    fun `hidden local packages never fall back to the parent selection`() {
+    fun `hidden independent packages never fall back to the parent selection`() {
         val parent = paywallState(listOf(packageInfo(TestData.Packages.annual, true)), emptyMap(), null)
         val style = previewStackComponentStyle(children = emptyList()).copy(
-            localPackages = PaywallState.Loaded.Components.AvailablePackages(
+            independentPackages = PaywallState.Loaded.Components.AvailablePackages(
                 packagesOutsideTabs = listOf(packageInfo(TestData.Packages.monthly, true, visible = false)),
                 packagesByTab = emptyMap(),
                 hasDeclaredPackages = true,
             ),
         )
-        val local = requireNotNull(parent.localSelectionState(style))
-        local.reconcileLocalSelection(initialize = true)
-        assertThat(local.selectedPackageInfo).isNull()
+        val independent = requireNotNull(parent.independentSelectionState(style))
+        independent.reconcileIndependentSelection(initialize = true)
+        assertThat(independent.selectedPackageInfo).isNull()
         assertThat(parent.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
     }
 
