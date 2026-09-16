@@ -63,6 +63,7 @@ fun AppInfoScreen(
     var isDebugBottomSheetVisible by remember { mutableStateOf(false) }
     var showLogInDialog by remember { mutableStateOf(false) }
     var showApiKeyDialog by remember { mutableStateOf(false) }
+    var showSubscriberAttributesDialog by remember { mutableStateOf(false) }
     var showCustomerCenterView by remember { mutableStateOf(false) }
     var isClearingFileCache by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -84,12 +85,12 @@ fun AppInfoScreen(
         )
     }
 
+    val state by viewModel.state.collectAsState()
     Column(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        val state by viewModel.state.collectAsState()
         val activity = LocalContext.current as MainActivity
         val currentUserID by remember { derivedStateOf { state.appUserID } }
         val currentApiKeyDescription by remember { derivedStateOf { state.apiKeyDescription } }
@@ -103,6 +104,9 @@ fun AppInfoScreen(
         }
         Button(onClick = { viewModel.logOut() }) {
             Text(text = "Log out")
+        }
+        Button(onClick = { showSubscriberAttributesDialog = true }) {
+            Text(text = "Subscriber attributes")
         }
         Button(onClick = { showApiKeyDialog = true }) {
             Text(text = "Switch API key")
@@ -182,6 +186,15 @@ fun AppInfoScreen(
 
     if (showLogInDialog) {
         LoginDialog(viewModel) { showLogInDialog = false }
+    }
+    if (showSubscriberAttributesDialog) {
+        SubscriberAttributesDialog(
+            attributes = state.subscriberAttributes,
+            onSet = viewModel::setSubscriberAttribute,
+            onClear = viewModel::clearSubscriberAttribute,
+            onClearAll = viewModel::clearAllSubscriberAttributes,
+            onDismiss = { showSubscriberAttributesDialog = false },
+        )
     }
     if (showApiKeyDialog) {
         ApiKeyDialog(
@@ -363,6 +376,9 @@ fun AppInfoScreenPreview() {
             override fun logOut() {}
             override fun switchApiKey(newApiKey: String) {}
             override fun refresh() {}
+            override fun setSubscriberAttribute(key: String, value: String) {}
+            override fun clearSubscriberAttribute(key: String) {}
+            override fun clearAllSubscriberAttributes() {}
         },
         tappedOnCustomerCenter = {},
         tappedOnCheckpoints = {},

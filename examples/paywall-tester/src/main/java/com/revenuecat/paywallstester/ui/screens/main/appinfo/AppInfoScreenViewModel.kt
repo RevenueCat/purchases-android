@@ -8,6 +8,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.revenuecat.paywallstester.ConfigurePurchasesUseCase
 import com.revenuecat.paywallstester.Constants
 import com.revenuecat.paywallstester.data.ApiKeyStore
+import com.revenuecat.paywallstester.data.SubscriberAttributesStore
 import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewModel.UiState
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
@@ -25,6 +26,7 @@ interface AppInfoScreenViewModel {
         val appUserID: String,
         val apiKeyDescription: String,
         val activeEntitlements: List<String>,
+        val subscriberAttributes: Map<String, String> = emptyMap(),
     ) {
         companion object {
             val Empty = UiState(
@@ -41,11 +43,15 @@ interface AppInfoScreenViewModel {
     fun logOut()
     fun switchApiKey(newApiKey: String)
     fun refresh()
+    fun setSubscriberAttribute(key: String, value: String)
+    fun clearSubscriberAttribute(key: String)
+    fun clearAllSubscriberAttributes()
 }
 
 internal class AppInfoScreenViewModelImpl(
     private val configurePurchases: ConfigurePurchasesUseCase,
     private val apiKeyStore: ApiKeyStore,
+    private val subscriberAttributesStore: SubscriberAttributesStore,
 ) : ViewModel(), AppInfoScreenViewModel {
 
     companion object {
@@ -55,6 +61,7 @@ internal class AppInfoScreenViewModelImpl(
                 AppInfoScreenViewModelImpl(
                     configurePurchases = ConfigurePurchasesUseCase(context),
                     apiKeyStore = ApiKeyStore(context),
+                    subscriberAttributesStore = SubscriberAttributesStore(context),
                 )
             }
         }
@@ -96,9 +103,13 @@ internal class AppInfoScreenViewModelImpl(
     }
 
     override fun switchApiKey(newApiKey: String) {
+        if (newApiKey == Purchases.sharedInstance.currentConfiguration.apiKey) return
+        clearAllSubscriberAttributes()
+        subscriberAttributesStore.clearAll()
         apiKeyStore.setLastUsedApiKey(newApiKey)
         configurePurchases(newApiKey)
         updateApiKeyDescription()
+        updateAppUserID()
     }
 
     override fun refresh() {
@@ -108,8 +119,36 @@ internal class AppInfoScreenViewModelImpl(
         }
     }
 
+    override fun setSubscriberAttribute(key: String, value: String) {
+        val trimmedKey = key.trim()
+        if (trimmedKey.isEmpty()) return
+        Purchases.sharedInstance.setAttributes(mapOf(trimmedKey to value))
+        val attributes = subscriberAttributesStore.set(Purchases.sharedInstance.appUserID, trimmedKey, value)
+        _state.update { it.copy(subscriberAttributes = attributes) }
+    }
+
+    override fun clearSubscriberAttribute(key: String) {
+        Purchases.sharedInstance.setAttributes(mapOf(key to null))
+        val attributes = subscriberAttributesStore.remove(Purchases.sharedInstance.appUserID, key)
+        _state.update { it.copy(subscriberAttributes = attributes) }
+    }
+
+    override fun clearAllSubscriberAttributes() {
+        val keys = _state.value.subscriberAttributes.keys
+        if (keys.isEmpty()) return
+        Purchases.sharedInstance.setAttributes(keys.associateWith { null })
+        val attributes = subscriberAttributesStore.clear(Purchases.sharedInstance.appUserID)
+        _state.update { it.copy(subscriberAttributes = attributes) }
+    }
+
     private fun updateAppUserID() {
-        _state.update { it.copy(appUserID = Purchases.sharedInstance.appUserID) }
+        val appUserID = Purchases.sharedInstance.appUserID
+        _state.update {
+            it.copy(
+                appUserID = appUserID,
+                subscriberAttributes = subscriberAttributesStore.attributes(appUserID),
+            )
+        }
     }
 
     private fun updateApiKeyDescription() {
