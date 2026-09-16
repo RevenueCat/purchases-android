@@ -16,6 +16,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.properties.BorderStyl
 import com.revenuecat.purchases.ui.revenuecatui.components.properties.ShadowStyles
 import com.revenuecat.purchases.ui.revenuecatui.components.state.PackageContext
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState.Loaded.Components.AvailablePackages
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import java.util.Date
 
@@ -24,6 +25,8 @@ import java.util.Date
 internal data class StackComponentStyle(
     @get:JvmSynthetic
     val children: List<ComponentStyle>,
+    val defaultScopePackages: AvailablePackages? = null,
+    val defaultScopeTabIndex: Int? = null,
     @get:JvmSynthetic
     val dimension: Dimension,
     @get:JvmSynthetic

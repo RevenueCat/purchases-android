@@ -68,6 +68,7 @@ import com.revenuecat.purchases.paywalls.components.properties.VerticalAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentView
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.WithOptionalBackgroundOverlay
+import com.revenuecat.purchases.ui.revenuecatui.components.handleClick
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toAlignment
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toHorizontalAlignmentOrNull
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toPaddingValues
@@ -139,6 +140,34 @@ internal fun StackComponentView(
     contentAlpha: (() -> Float)? = null,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
+    val scopeState = remember(style, state) {
+        state.defaultScopeState(style)?.also {
+            it.paywallBoundsDp = state.paywallBoundsDp
+            it.windowScreenCondition = state.windowScreenCondition
+            it.reconcileDefaultScopeSelection(initialize = true)
+        }
+    }
+    if (scopeState != null) {
+        scopeState.paywallBoundsDp = state.paywallBoundsDp
+        scopeState.headerHeightPx = state.headerHeightPx
+        scopeState.windowScreenCondition = state.windowScreenCondition
+        scopeState.reconcileDefaultScopeSelection()
+        StackComponentView(
+            style = remember(style) { style.copy(defaultScopePackages = null) },
+            state = scopeState,
+            clickHandler = { action ->
+                handleClick(action, scopeState, clickHandler, componentInteractionTracker)
+            },
+            modifier = modifier,
+            onStackClick = onStackClick,
+            enabled = enabled,
+            interactionSource = interactionSource,
+            contentAlpha = contentAlpha,
+            componentInteractionTracker = componentInteractionTracker,
+        )
+        return
+    }
+
     // Get a StackComponentState that calculates the overridden properties we should use.
     val stackState = rememberUpdatedStackComponentState(
         style = style,

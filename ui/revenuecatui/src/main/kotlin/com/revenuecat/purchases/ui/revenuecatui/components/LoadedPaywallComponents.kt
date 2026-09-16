@@ -341,17 +341,31 @@ internal fun SimpleSheetState.show(
     componentInteractionTracker: PaywallComponentInteractionTracker,
     onClick: suspend (PaywallAction) -> Unit,
 ) {
+    val stack = sheet.stack as? StackComponentStyle
+    val scopeState = stack?.let { state.defaultScopeState(it) }?.also {
+        it.paywallBoundsDp = state.paywallBoundsDp
+        it.windowScreenCondition = state.windowScreenCondition
+        it.reconcileDefaultScopeSelection(initialize = true)
+    }
+    val sheetState = scopeState ?: state
+    val sheetStack = if (scopeState != null) stack.copy(defaultScopePackages = null) else sheet.stack
     show(
         backgroundBlur = sheet.backgroundBlur,
         content = {
+            if (scopeState != null) {
+                scopeState.paywallBoundsDp = state.paywallBoundsDp
+                scopeState.headerHeightPx = state.headerHeightPx
+                scopeState.windowScreenCondition = state.windowScreenCondition
+                scopeState.reconcileDefaultScopeSelection()
+            }
             ComponentView(
-                style = sheet.stack,
-                state = state,
+                style = sheetStack,
+                state = sheetState,
                 componentInteractionTracker = componentInteractionTracker,
                 onClick = { action ->
                     when (action) {
                         is PaywallAction.External.NavigateBack -> hide()
-                        else -> onClick(action)
+                        else -> handleClick(action, sheetState, onClick, componentInteractionTracker)
                     }
                 },
                 modifier = Modifier
@@ -361,8 +375,12 @@ internal fun SimpleSheetState.show(
         },
         contentKey = sheet.id,
         onDismiss = {
-            val sheetSelected = state.selectedPackageInfo
-            val resulting = state.peekSelectedPackageInfoAfterSheetDismiss()
+            val sheetSelected = sheetState.selectedPackageInfo
+            val resulting = if (stack?.defaultScopePackages != null) {
+                state.selectedPackageInfo
+            } else {
+                state.peekSelectedPackageInfoAfterSheetDismiss()
+            }
             componentInteractionTracker.track(
                 paywallPackageSelectionSheetClose(
                     sheetComponentName = sheet.name,
@@ -370,7 +388,7 @@ internal fun SimpleSheetState.show(
                     resultingRootPackage = resulting?.rcPackage,
                 ),
             )
-            state.resetToDefaultPackage()
+            if ((sheet.stack as? StackComponentStyle)?.defaultScopePackages == null) state.resetToDefaultPackage()
         },
     )
 }
