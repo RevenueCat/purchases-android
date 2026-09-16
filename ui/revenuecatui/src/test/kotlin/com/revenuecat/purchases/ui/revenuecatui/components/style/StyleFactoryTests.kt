@@ -13,6 +13,7 @@ import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
+import com.revenuecat.purchases.paywalls.components.PartialButtonComponent
 import com.revenuecat.purchases.paywalls.components.PartialPackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.PartialWebViewComponent
@@ -1630,6 +1631,85 @@ class StyleFactoryTests {
         assertThat(result).isInstanceOf(Result.Success::class.java)
         val pkgStyle = (result as Result.Success).value.componentStyle as PackageComponentStyle
         assertThat(pkgStyle.overrides).hasSize(1)
+    }
+
+    @Test
+    fun `ButtonComponentStyle visible defaults to true when component visible is null`() {
+        // Arrange
+        val buttonComponent = ButtonComponent(
+            action = ButtonComponent.Action.NavigateBack,
+            visible = null,
+            stack = StackComponent(components = emptyList()),
+        )
+
+        // Act
+        val result = styleFactory.create(buttonComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val buttonStyle = (result as Result.Success).value.componentStyle as ButtonComponentStyle
+        assertThat(buttonStyle.visible).isTrue()
+    }
+
+    @Test
+    fun `ButtonComponentStyle visible is false when component visible is false`() {
+        // Arrange
+        val buttonComponent = ButtonComponent(
+            action = ButtonComponent.Action.NavigateBack,
+            visible = false,
+            stack = StackComponent(components = emptyList()),
+        )
+
+        // Act
+        val result = styleFactory.create(buttonComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val buttonStyle = (result as Result.Success).value.componentStyle as ButtonComponentStyle
+        assertThat(buttonStyle.visible).isFalse()
+    }
+
+    @Test
+    fun `ButtonComponentStyle overrides are populated from component overrides`() {
+        // Arrange
+        val buttonComponent = ButtonComponent(
+            action = ButtonComponent.Action.NavigateBack,
+            stack = StackComponent(components = emptyList()),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    properties = PartialButtonComponent(visible = false),
+                ),
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(buttonComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val buttonStyle = (result as Result.Success).value.componentStyle as ButtonComponentStyle
+        assertThat(buttonStyle.overrides).hasSize(1)
+        assertThat(buttonStyle.overrides[0].properties.partial.visible).isFalse()
+    }
+
+    @Test
+    fun `ButtonComponentStyle visible falls back to its stack when the button has no visible`() {
+        // Arrange: a hidden stack inside a button with no visibility of its own. This is the
+        // pre-existing behavior and must survive the button growing its own visible property.
+        val buttonComponent = ButtonComponent(
+            action = ButtonComponent.Action.NavigateBack,
+            visible = null,
+            stack = StackComponent(components = emptyList(), visible = false),
+        )
+
+        // Act
+        val result = styleFactory.create(buttonComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val buttonStyle = (result as Result.Success).value.componentStyle as ButtonComponentStyle
+        assertThat(buttonStyle.visible).isFalse()
     }
 
     @Test

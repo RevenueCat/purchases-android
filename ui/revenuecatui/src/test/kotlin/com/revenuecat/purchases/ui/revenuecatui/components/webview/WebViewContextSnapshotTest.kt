@@ -176,13 +176,30 @@ internal class WebViewContextSnapshotTest {
     }
 
     @Test
-    fun `packages carries every available package in order`() {
+    fun `packages carries the packages the paywall shows, not the whole offering`() {
         val offering = TestData.template7CustomPackageOffering
+        val shown = offering.availablePackages.drop(1).reversed()
 
-        val packages = testContextSnapshot(offering = offering).getValue("packages").jsonArray
+        val packages = testContextSnapshot(offering = offering, packages = shown).getValue("packages").jsonArray
 
         assertThat(packages.map { it.jsonObject.getValue("identifier").jsonPrimitive.content })
-            .isEqualTo(offering.availablePackages.map { it.identifier })
+            .isEqualTo(shown.map { it.identifier })
+    }
+
+    @Test
+    fun `package and selected_package are null when they are not on the paywall`() {
+        val offering = TestData.template7CustomPackageOffering
+        val hidden = offering.availablePackages.first()
+
+        val snapshot = testContextSnapshot(
+            offering = offering,
+            packages = offering.availablePackages - hidden,
+            componentPackage = hidden,
+            selectedPackage = hidden,
+        )
+
+        assertThat(snapshot.getValue("package")).isEqualTo(JsonNull)
+        assertThat(snapshot.getValue("selected_package")).isEqualTo(JsonNull)
     }
 
     @Test
@@ -282,8 +299,10 @@ internal class WebViewContextSnapshotTest {
 
     @Test
     fun `is_auto_renewing is false for a prepaid base plan`() {
+        val prepaid = prepaidPackage()
         val product = testContextSnapshot(
-            componentPackage = prepaidPackage(),
+            packages = listOf(prepaid),
+            componentPackage = prepaid,
         ).productOfPackage()
 
         assertThat(product.getValue("is_auto_renewing").jsonPrimitive.boolean).isFalse()

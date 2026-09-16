@@ -28,9 +28,10 @@ internal fun resolveOfferPrice(
     discountPhase: PricingPhase?,
     locale: Locale,
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    freeTrialRendering: FreeTrialRendering,
     productFallback: () -> String?,
 ): String? =
-    discountPhase?.productOfferPrice(locale, localizedVariableKeys) ?: productFallback()
+    discountPhase?.productOfferPrice(locale, localizedVariableKeys, freeTrialRendering) ?: productFallback()
 
 internal fun resolveOfferPeriod(
     discountPhase: PricingPhase?,
@@ -39,11 +40,20 @@ internal fun resolveOfferPeriod(
 ): String? =
     discountPhase?.let(discountValue) ?: productFallback()
 
+/**
+ * Whether a zero priced offer shows the localized word ("Free") or the formatted amount ("$0.00").
+ */
+internal enum class FreeTrialRendering {
+    WORD,
+    AMOUNT,
+}
+
 internal fun PricingPhase.productOfferPrice(
     locale: Locale,
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    freeTrialRendering: FreeTrialRendering,
 ): String? =
-    if (price.amountMicros == 0L) {
+    if (freeTrialRendering == FreeTrialRendering.WORD && price.amountMicros == 0L) {
         localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.FREE_PRICE)
     } else {
         price.getFormatted(locale)
@@ -52,37 +62,50 @@ internal fun PricingPhase.productOfferPrice(
 internal fun PricingPhase.productOfferPricePerDay(
     locale: Locale,
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    freeTrialRendering: FreeTrialRendering,
 ): String? =
-    productOfferPricePerPeriod(locale, localizedVariableKeys, Period.Unit.DAY) { pricePerDay(locale) }
+    productOfferPricePerPeriod(locale, localizedVariableKeys, Period.Unit.DAY, freeTrialRendering) {
+        pricePerDay(locale)
+    }
 
 internal fun PricingPhase.productOfferPricePerWeek(
     locale: Locale,
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    freeTrialRendering: FreeTrialRendering,
 ): String? =
-    productOfferPricePerPeriod(locale, localizedVariableKeys, Period.Unit.WEEK) { pricePerWeek(locale) }
+    productOfferPricePerPeriod(locale, localizedVariableKeys, Period.Unit.WEEK, freeTrialRendering) {
+        pricePerWeek(locale)
+    }
 
 internal fun PricingPhase.productOfferPricePerMonth(
     locale: Locale,
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    freeTrialRendering: FreeTrialRendering,
 ): String? =
-    productOfferPricePerPeriod(locale, localizedVariableKeys, Period.Unit.MONTH) { pricePerMonth(locale) }
+    productOfferPricePerPeriod(locale, localizedVariableKeys, Period.Unit.MONTH, freeTrialRendering) {
+        pricePerMonth(locale)
+    }
 
 internal fun PricingPhase.productOfferPricePerYear(
     locale: Locale,
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
+    freeTrialRendering: FreeTrialRendering,
 ): String? =
-    productOfferPricePerPeriod(locale, localizedVariableKeys, Period.Unit.YEAR) { pricePerYear(locale) }
+    productOfferPricePerPeriod(locale, localizedVariableKeys, Period.Unit.YEAR, freeTrialRendering) {
+        pricePerYear(locale)
+    }
 
 internal fun PricingPhase.productOfferPricePerPeriod(
     locale: Locale,
     localizedVariableKeys: Map<VariableLocalizationKey, String>,
     unit: Period.Unit,
+    freeTrialRendering: FreeTrialRendering,
     calculatePrice: PricingPhase.() -> Price,
 ): String? =
     takeIf { it.canDisplay(unit) }
         ?.calculatePrice()
         ?.let { offerPrice ->
-            if (offerPrice.amountMicros == 0L) {
+            if (freeTrialRendering == FreeTrialRendering.WORD && offerPrice.amountMicros == 0L) {
                 localizedVariableKeys.getStringOrLogError(VariableLocalizationKey.FREE_PRICE)
             } else {
                 offerPrice.getFormatted(locale)

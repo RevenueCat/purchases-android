@@ -2,6 +2,7 @@ package com.revenuecat.purchases.checkpoints
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 
@@ -12,14 +13,29 @@ import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 @InternalRevenueCatAPI
 public sealed class CheckpointResolution {
 
-    /** The checkpoint selected [offering] without requiring RevenueCat-managed UI. */
-    public data class MatchedOffering(val offering: Offering) : CheckpointResolution()
+    /**
+     * The checkpoint selected [offering] without requiring RevenueCat-managed UI.
+     *
+     * [checkpointRuleId] identifies the rule that was served, for the hit event to attribute. It is null when
+     * the rules topic did not carry an id for that rule.
+     */
+    public data class MatchedOffering(
+        val offering: Offering,
+        val checkpointRuleId: String?,
+    ) : CheckpointResolution()
 
-    /** The checkpoint matched [workflow], which should be presented against [offering]. */
+    /**
+     * The checkpoint matched [workflow]. Each step resolves the offering it presents from [offerings] when it is
+     * reached; a step whose offering is missing fails at presentation time, not here.
+     *
+     * [checkpointRuleId] identifies the rule that was served, for the hit event to attribute. It is null when
+     * the rules topic did not carry an id for that rule.
+     */
     public data class MatchedWorkflow(
         val workflow: PublishedWorkflow,
         val uiConfig: UiConfig,
-        val offering: Offering,
+        val offerings: Offerings,
+        val checkpointRuleId: String?,
     ) : CheckpointResolution()
 
     /** Nothing should be served for this checkpoint; the user continues uninterrupted. */

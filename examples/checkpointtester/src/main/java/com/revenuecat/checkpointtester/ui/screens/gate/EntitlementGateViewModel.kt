@@ -2,16 +2,15 @@ package com.revenuecat.checkpointtester.ui.screens.gate
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
+import com.revenuecat.checkpointtester.checkpoints.summary
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.awaitCustomerInfo
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.awaitCheckpoint
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,8 +19,8 @@ import kotlinx.coroutines.launch
 
 /**
  * The closest thing here to a real integration: the app checks entitlements first and only reaches the checkpoint
- * when nothing is active. A purchase or restore carries its own [CustomerInfo] on the outcome, so the refreshed
- * entitlements come straight off the result with no second fetch.
+ * when nothing is active. The gate result carries the entitlements the user obtained, so the displayed list is
+ * updated straight from the grants with no second fetch.
  */
 class EntitlementGateViewModel : ViewModel() {
 
@@ -29,7 +28,6 @@ class EntitlementGateViewModel : ViewModel() {
         val loading: Boolean = false,
         val activeEntitlements: List<String> = emptyList(),
         val customerInfoError: String? = null,
-        val running: Boolean = false,
         val message: String? = null,
         val checkpointSkipped: Boolean = false,
         val hasRun: Boolean = false,
@@ -44,9 +42,9 @@ class EntitlementGateViewModel : ViewModel() {
 
     @OptIn(InternalRevenueCatAPI::class)
     fun refresh() {
-        if (_state.value.loading || _state.value.running) return
+        if (_state.value.loading) return
         _state.update {
-            it.copy(loading = true, customerInfoError = null, checkpointSkipped = false, hasRun = true)
+            it.copy(loading = true, customerInfoError = null, checkpointSkipped = false, hasRun = true, message = null)
         }
         viewModelScope.launch {
             val customerInfo = try {
@@ -64,54 +62,20 @@ class EntitlementGateViewModel : ViewModel() {
                 return@launch
             }
 
-            _state.update {
-                it.copy(loading = false, activeEntitlements = active, running = true, message = null)
+            _state.update { it.copy(loading = false, activeEntitlements = active) }
+            Purchases.sharedInstance.checkpoint(
+                "entitlement_gate",
+                PaywallPresenters.params { customVariables { "gate" to "entitlement" } },
+            ) { result ->
+                val granted = result?.obtainedEntitlements.orEmpty().map { it.entitlementInfo.identifier }
+                _state.update {
+                    it.copy(
+                        message = result.summary(),
+                        activeEntitlements = (it.activeEntitlements + granted).distinct().sorted(),
+                    )
+                }
             }
-            try {
-                val result = Purchases.sharedInstance.awaitCheckpoint(
-                    "entitlement_gate",
-                    CheckpointParams { customVariables { "gate" to "entitlement" } },
-                )
-                handleCheckpointResult(result)
-            } catch (e: PurchasesException) {
-                finish("Checkpoint failed: ${e.message}")
-            }
         }
-    }
-
-    @OptIn(InternalRevenueCatAPI::class)
-    private fun handleCheckpointResult(result: CheckpointResult) {
-        when (result) {
-            is CheckpointResult.ReceivedOffering ->
-                finish("Offering ${result.offering.identifier} returned; the app should present it.")
-            is CheckpointResult.PaywallPresented -> handlePaywallOutcome(result.paywallOutcome)
-            is CheckpointResult.NoAction -> finish("No paywall shown (${result.reason}).")
-            else -> finish("Unknown checkpoint result.")
-        }
-    }
-
-    @OptIn(InternalRevenueCatAPI::class)
-    private fun handlePaywallOutcome(outcome: CheckpointPaywallOutcome) {
-        when (outcome) {
-            // The outcome carries the up-to-date CustomerInfo, so there's no need to fetch again.
-            is CheckpointPaywallOutcome.Purchased -> granted("Purchased.", outcome.customerInfo)
-            is CheckpointPaywallOutcome.Restored -> granted("Restored.", outcome.customerInfo)
-            CheckpointPaywallOutcome.Dismissed -> finish("Dismissed, still no entitlement.")
-            CheckpointPaywallOutcome.WebCheckoutOpened ->
-                finish("Left to pay via web checkout; entitlements not confirmed yet.")
-            is CheckpointPaywallOutcome.Error -> finish("Paywall error: ${outcome.error.message}")
-            else -> finish("Unknown paywall outcome.")
-        }
-    }
-
-    private fun granted(message: String, customerInfo: CustomerInfo) {
-        _state.update {
-            it.copy(running = false, message = message, activeEntitlements = customerInfo.activeEntitlements())
-        }
-    }
-
-    private fun finish(message: String) {
-        _state.update { it.copy(running = false, message = message) }
     }
 
     private fun CustomerInfo.activeEntitlements(): List<String> = entitlements.active.keys.sorted()

@@ -2,7 +2,6 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.text
 
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -13,6 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
+import androidx.compose.ui.unit.DpSize
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.models.SubscriptionOption
 import com.revenuecat.purchases.paywalls.components.CountdownComponent
@@ -35,6 +35,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.TextComponentSt
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateStore
+import com.revenuecat.purchases.ui.revenuecatui.helpers.currentWindowWidthSizeClass
 
 @Stable
 @JvmSynthetic
@@ -44,6 +45,7 @@ internal fun rememberUpdatedTextComponentState(
     paywallState: PaywallState.Loaded.Components,
 ): TextComponentState = rememberUpdatedTextComponentState(
     style = style,
+    windowDpSize = paywallState.paywallBoundsDp,
     localeProvider = { paywallState.locale },
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
@@ -58,6 +60,7 @@ internal fun rememberUpdatedTextComponentState(
 @Composable
 private fun rememberUpdatedTextComponentState(
     style: TextComponentStyle,
+    windowDpSize: DpSize?,
     localeProvider: () -> Locale,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
@@ -65,7 +68,7 @@ private fun rememberUpdatedTextComponentState(
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
     stateStoreProvider: () -> PaywallStateStore,
 ): TextComponentState {
-    val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val windowSize = currentWindowWidthSizeClass()
 
     val countdownState = style.countdownDate?.let { date ->
         rememberCountdownState(date)
@@ -74,6 +77,7 @@ private fun rememberUpdatedTextComponentState(
     return remember(style) {
         TextComponentState(
             initialWindowSize = windowSize,
+            initialWindowDpSize = windowDpSize,
             style = style,
             localeProvider = localeProvider,
             selectedPackageInfoProvider = selectedPackageInfoProvider,
@@ -85,6 +89,7 @@ private fun rememberUpdatedTextComponentState(
     }.apply {
         update(
             windowSize = windowSize,
+            windowDpSize = windowDpSize,
             countdownTime = countdownState?.countdownTime,
         )
     }
@@ -94,6 +99,7 @@ private fun rememberUpdatedTextComponentState(
 @Stable
 internal class TextComponentState(
     initialWindowSize: WindowWidthSizeClass,
+    initialWindowDpSize: DpSize?,
     private val style: TextComponentStyle,
     private val localeProvider: () -> Locale,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
@@ -103,6 +109,7 @@ internal class TextComponentState(
     private val stateStoreProvider: () -> PaywallStateStore = { PaywallStateStore(emptyMap()) },
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
+    private var windowDpSize by mutableStateOf(initialWindowDpSize)
 
     private val packageAwareDelegate = PackageAwareDelegate(
         style = style,
@@ -154,6 +161,7 @@ internal class TextComponentState(
                 selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
                 customVariables = customVariablesProvider(),
                 stateReader = stateStoreProvider()::currentValueOrDefault,
+                windowDpSize = windowDpSize,
             ),
         )
     }
@@ -221,9 +229,11 @@ internal class TextComponentState(
     @JvmSynthetic
     fun update(
         windowSize: WindowWidthSizeClass? = null,
+        windowDpSize: DpSize? = null,
         countdownTime: CountdownTime? = this.countdownTime,
     ) {
         if (windowSize != null) this.windowSize = windowSize
+        if (windowDpSize != null) this.windowDpSize = windowDpSize
         this.countdownTime = countdownTime
     }
 }

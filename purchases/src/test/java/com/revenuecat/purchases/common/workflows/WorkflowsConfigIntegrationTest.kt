@@ -9,7 +9,6 @@ import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.emptyUiConfig
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.currentLogHandler
@@ -65,7 +64,7 @@ class WorkflowsConfigIntegrationTest {
     private lateinit var provider: WorkflowsConfigProvider
     private lateinit var manager: RemoteConfigManager
 
-    private lateinit var onSuccess: (RCContainer?, Date?, VerificationResult) -> Unit
+    private lateinit var onSuccess: (RCContainer?, Date?) -> Unit
 
     /** Stateful stand-in for the persisted config file: write stashes, read returns the latest. */
     private var persistedState: PersistedRemoteConfigurationState? = null
@@ -407,7 +406,7 @@ class WorkflowsConfigIntegrationTest {
                     backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any())
                 }
 
-                onSuccess.invoke(containerWith(NO_PAYWALLS_CONFIG), Date(), VerificationResult.VERIFIED)
+                onSuccess.invoke(containerWith(NO_PAYWALLS_CONFIG), Date())
 
                 assertThat(completed).isTrue()
                 repeat(2) {
@@ -479,7 +478,6 @@ class WorkflowsConfigIntegrationTest {
                     customVariablesRef to customVariables,
                 ),
                 Date(),
-                VerificationResult.VERIFIED,
             )
 
             assertThat(completed).isTrue()
@@ -546,7 +544,7 @@ class WorkflowsConfigIntegrationTest {
 
     private fun sync(configJson: String, vararg blobs: Pair<String, String>) {
         manager.refreshRemoteConfig(appInBackground = false, appUserID = "user-1", fetchContext = RemoteConfigFetchContext.AppStart)
-        onSuccess.invoke(containerWith(configJson, *blobs), Date(), VerificationResult.VERIFIED)
+        onSuccess.invoke(containerWith(configJson, *blobs), Date())
     }
 
     private fun minimalWorkflow(id: String) = PublishedWorkflow(

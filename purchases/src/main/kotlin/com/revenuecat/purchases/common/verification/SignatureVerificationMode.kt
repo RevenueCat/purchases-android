@@ -1,49 +1,42 @@
 package com.revenuecat.purchases.common.verification
 
 import com.revenuecat.purchases.EntitlementVerificationMode
+import com.revenuecat.purchases.common.errorLog
 
 internal sealed class SignatureVerificationMode {
     companion object {
         fun fromEntitlementVerificationMode(
             verificationMode: EntitlementVerificationMode,
-            rootVerifier: SignatureVerifier? = null,
         ): SignatureVerificationMode {
             return when (verificationMode) {
                 EntitlementVerificationMode.DISABLED -> Disabled
                 EntitlementVerificationMode.INFORMATIONAL ->
-                    Informational(IntermediateSignatureHelper(rootVerifier ?: DefaultSignatureVerifier()))
+                    if (DefaultSignatureVerifier.isSupported()) Informational else disabledBecauseVerifierUnsupported()
                 // Hidden ENFORCED mode temporarily. Will be added back in the future.
                 // EntitlementVerificationMode.ENFORCED ->
-                //     Enforced(signatureVerifier ?: DefaultSignatureVerifier())
+                //     if (DefaultSignatureVerifier.isSupported()) Enforced else disabledBecauseVerifierUnsupported()
             }
         }
 
-        private fun createIntermediateSignatureHelper(): IntermediateSignatureHelper {
-            return IntermediateSignatureHelper(DefaultSignatureVerifier())
+        private fun disabledBecauseVerifierUnsupported(): SignatureVerificationMode {
+            errorLog {
+                "Tink is restricted to FIPS mode, so the signature verifier cannot be created. " +
+                    "Disabling signature verification."
+            }
+            return Disabled
         }
     }
     object Disabled : SignatureVerificationMode()
-    data class Informational(
-        override val intermediateSignatureHelper: IntermediateSignatureHelper = createIntermediateSignatureHelper(),
-    ) : SignatureVerificationMode()
-    data class Enforced(
-        override val intermediateSignatureHelper: IntermediateSignatureHelper = createIntermediateSignatureHelper(),
-    ) : SignatureVerificationMode()
+    object Informational : SignatureVerificationMode()
+    object Enforced : SignatureVerificationMode()
 
     val shouldVerify: Boolean
         get() = when (this) {
             Disabled ->
                 false
-            is Informational,
-            is Enforced,
+            Informational,
+            Enforced,
             ->
                 true
-        }
-
-    open val intermediateSignatureHelper: IntermediateSignatureHelper?
-        get() = when (this) {
-            is Disabled -> null
-            is Informational -> intermediateSignatureHelper
-            is Enforced -> intermediateSignatureHelper
         }
 }

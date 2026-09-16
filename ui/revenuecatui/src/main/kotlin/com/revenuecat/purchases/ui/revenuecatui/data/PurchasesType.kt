@@ -80,6 +80,8 @@ internal interface PurchasesType {
     suspend fun awaitGetUiConfig(): UiConfig
 
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution
+
+    suspend fun awaitWorkflowBlobRef(workflowId: String): String?
 }
 
 @Suppress("TooManyFunctions")
@@ -166,4 +168,8 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     @OptIn(InternalRevenueCatAPI::class)
     override suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         purchases.resolveWorkflow(offeringId)
+
+    @OptIn(InternalRevenueCatAPI::class)
+    override suspend fun awaitWorkflowBlobRef(workflowId: String): String? =
+        purchases.awaitWorkflowBlobRef(workflowId)
 }

@@ -245,7 +245,7 @@ class LocalRulesEvaluatorTest {
     fun `every rule's outcome is logged without predicates or values`() {
         assertLogs(
             listOf(
-                LogMessage(LogLevel.VERBOSE, "Evaluating 2 rules against dimensions [evaluated_at, platform]."),
+                LogMessage(LogLevel.VERBOSE, "Evaluating 2 rules."),
                 LogMessage(LogLevel.VERBOSE, "Rule 1 did not match."),
                 LogMessage(LogLevel.VERBOSE, "Rule 2 matched."),
             ),
@@ -267,7 +267,7 @@ class LocalRulesEvaluatorTest {
 
     @Test
     fun `an unevaluable predicate is logged by failure kind`() {
-        assertDebugLog("Rule 1 could not be evaluated (Parse).") {
+        assertDebugLog("Rule 1 could not be evaluated (failed to parse predicate JSON: Expected a ':' after a key at 9 [character 10 line 1]).") {
             runTest { evaluator().match(listOf(TestRule("only", malformedPredicate))) }
         }
     }

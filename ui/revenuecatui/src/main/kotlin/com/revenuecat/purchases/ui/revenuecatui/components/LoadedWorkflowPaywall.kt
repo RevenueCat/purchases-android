@@ -121,16 +121,28 @@ internal fun LoadedWorkflowPaywall(
         }
     }
 
-    PaywallComponentsScaffold(
-        state = currentState,
-        modifier = modifier,
-        background = null,
-        headerContent = if (!isLeavingHeader) headerComposable else null,
-    ) {
-        if (isLeavingHeader && headerComposable != null) {
-            // Box required to overlay the LEAVING header above WorkflowStepsContent.
-            // Only present during a header→no-header transition; not added in the common case.
-            Box(Modifier.fillMaxSize()) {
+    // Measured once at the root so the header — composed by the scaffold, outside any step's
+    // subtree — sees the bounds on its first frame; every step fills the same scaffold.
+    MeasurePaywallBounds(states = stepStates.values.toList(), modifier = modifier) {
+        PaywallComponentsScaffold(
+            state = currentState,
+            background = null,
+            headerContent = if (!isLeavingHeader) headerComposable else null,
+        ) {
+            if (isLeavingHeader && headerComposable != null) {
+                // Box required to overlay the LEAVING header above WorkflowStepsContent.
+                // Only present during a header→no-header transition; not added in the common case.
+                Box(Modifier.fillMaxSize()) {
+                    WorkflowStepsContent(
+                        currentStepId = currentStepId,
+                        stepStates = stepStates,
+                        transitionState = transitionState,
+                        clickHandler = clickHandler,
+                        componentInteractionTracker = componentInteractionTracker,
+                    )
+                    headerComposable()
+                }
+            } else {
                 WorkflowStepsContent(
                     currentStepId = currentStepId,
                     stepStates = stepStates,
@@ -138,16 +150,7 @@ internal fun LoadedWorkflowPaywall(
                     clickHandler = clickHandler,
                     componentInteractionTracker = componentInteractionTracker,
                 )
-                headerComposable()
             }
-        } else {
-            WorkflowStepsContent(
-                currentStepId = currentStepId,
-                stepStates = stepStates,
-                transitionState = transitionState,
-                clickHandler = clickHandler,
-                componentInteractionTracker = componentInteractionTracker,
-            )
         }
     }
 }
@@ -219,7 +222,7 @@ private fun WorkflowStepsContent(
  * Off-screen (parked) steps still receive a click handler, but it short-circuits because they are
  * translated off-screen and can't receive touches.
  */
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 private fun WorkflowStepContent(
     stepId: String,

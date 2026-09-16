@@ -7,8 +7,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import com.revenuecat.purchases.Offering
-import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.composables.RevenueCatDialogScaffold
 import com.revenuecat.purchases.ui.revenuecatui.helpers.shouldDisplayPaywall
 import kotlinx.coroutines.launch
@@ -96,7 +94,7 @@ private fun PaywallDialogContent(
             paywallDialogOptions = paywallDialogOptions,
             offeringSelection = offeringSelection,
             dismissRequest = { onDismissRequest(null) },
-            dismissRequestWithExitOffering = { exitOffering, _ ->
+            dismissRequestWithExitOffering = { exitOffering, _, _ ->
                 onDismissRequest(exitOffering?.let { OfferingSelection.OfferingType(it) })
             },
         )
@@ -122,7 +120,7 @@ private fun buildPaywallOptions(
     paywallDialogOptions: PaywallDialogOptions,
     offeringSelection: OfferingSelection,
     dismissRequest: () -> Unit,
-    dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
+    dismissRequestWithExitOffering: DismissRequestWithExitOffering? = null,
 ): PaywallOptions {
     return PaywallOptions.Builder(dismissRequest = dismissRequest)
         .setOfferingSelection(offeringSelection)

@@ -21,7 +21,6 @@ import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.entry
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -66,6 +65,32 @@ internal class WorkflowsConfigProviderTest {
         // The ineligible workflow's body is never read.
         coVerify(exactly = 0) { manager.blobData(RemoteConfigTopic.Workflows, WF_OTHER, any<(ByteArray) -> ByteArray?>()) }
         assertThat(provider.isWarmForCurrentOffering()).isTrue
+    }
+
+    @Test
+    fun `workflowBlobRef pairs a cached body with the ref captured alongside it`() = runTest {
+        stubTopic()
+        stubWorkflowBody(WF_PREFETCH)
+        stubWorkflowBody(WF_CURRENT)
+        provider.warm(generation = 0)
+        val warmedRef = configItem(prefetch = false, offeringId = CURRENT_OFFERING).blobRef
+
+        // The live topic moves to a new ref while the warmed body stays in memory.
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns topicWith(
+            WF_CURRENT to RemoteConfiguration.ConfigItem(blobRef = "ref-moved", prefetch = false),
+        )
+
+        assertThat(provider.getWorkflow(WF_CURRENT)).isNotNull
+        assertThat(provider.workflowBlobRef(WF_CURRENT)).isEqualTo(warmedRef)
+    }
+
+    @Test
+    fun `workflowBlobRef falls back to the topic when nothing is cached`() = runTest {
+        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns topicWith(
+            WF_CURRENT to RemoteConfiguration.ConfigItem(blobRef = "ref-from-topic", prefetch = false),
+        )
+
+        assertThat(provider.workflowBlobRef(WF_CURRENT)).isEqualTo("ref-from-topic")
     }
 
     @Test
@@ -367,25 +392,6 @@ internal class WorkflowsConfigProviderTest {
 
             assertThat(provider.resolveWorkflow(CURRENT_OFFERING)).isEqualTo(WorkflowResolution.Unavailable)
         }
-
-    @Test
-    fun `offeringIdByWorkflowId omits workflows with no offering identifier`() = runTest {
-        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns topicWith(
-            WF_PREFETCH to configItem(prefetch = true, offeringId = null),
-            WF_CURRENT to configItem(prefetch = false, offeringId = CURRENT_OFFERING),
-            WF_OTHER to configItem(prefetch = false, offeringId = OTHER_OFFERING),
-        )
-
-        assertThat(provider.offeringIdByWorkflowId())
-            .containsOnly(entry(WF_CURRENT, CURRENT_OFFERING), entry(WF_OTHER, OTHER_OFFERING))
-    }
-
-    @Test
-    fun `offeringIdByWorkflowId is empty when the topic cannot be read`() = runTest {
-        coEvery { manager.topic(RemoteConfigTopic.Workflows) } returns null
-
-        assertThat(provider.offeringIdByWorkflowId()).isEmpty()
-    }
 
     @Test
     fun `warm does not announce a workflow outside the prewarm set`() = runTest {

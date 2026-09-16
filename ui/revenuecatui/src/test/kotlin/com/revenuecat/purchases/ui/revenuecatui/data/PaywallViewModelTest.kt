@@ -54,6 +54,7 @@ import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
@@ -97,6 +98,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -113,6 +115,8 @@ private const val TEST_WAIT_MS = 5_000L
 @RunWith(AndroidJUnit4::class)
 class PaywallViewModelTest {
     private val defaultOffering = TestData.template2Offering
+    private val defaultOfferingParams =
+        mapOf("offering" to JsonObject(mapOf("identifier" to JsonPrimitive(defaultOffering.identifier))))
     private val defaultLocaleIdentifier = LocaleId("en_US")
     private val localizations = nonEmptyMapOf(
         defaultLocaleIdentifier to nonEmptyMapOf(
@@ -238,6 +242,7 @@ class PaywallViewModelTest {
         dismissInvoked = false
 
         coEvery { purchases.awaitOfferings() } returns offerings
+        coEvery { purchases.awaitWorkflowBlobRef(any()) } returns null
         coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
 
@@ -1433,8 +1438,10 @@ class PaywallViewModelTest {
                 ),
             ),
             triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
+            paramValues = defaultOfferingParams,
         )
-        val stepTwo = WorkflowStep(id = "step-2", type = "screen", screenId = "screen-1")
+        val stepTwo =
+            WorkflowStep(id = "step-2", type = "screen", screenId = "screen-1", paramValues = defaultOfferingParams)
         val workflow = PublishedWorkflow(
             id = "wfl-test",
             displayName = "Test Workflow",
@@ -1491,7 +1498,8 @@ class PaywallViewModelTest {
             defaultLocaleIdentifier = defaultLocaleIdentifier,
             offeringIdentifier = defaultOffering.identifier,
         )
-        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
+        val stepOne =
+            WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1", paramValues = defaultOfferingParams)
         val workflow = PublishedWorkflow(
             id = "wfl-test",
             displayName = "Test Workflow",
@@ -3122,12 +3130,14 @@ class PaywallViewModelTest {
         var dismissWithExitOfferingInvoked = false
         var receivedExitOffering: Offering? = mockk()
         var receivedResult: PaywallResult? = PaywallResult.Cancelled
+        var receivedReason: PaywallDismissReason? = null
 
         val model = create(
-            dismissRequestWithExitOffering = { exitOffering, result ->
+            dismissRequestWithExitOffering = { exitOffering, result, reason ->
                 dismissWithExitOfferingInvoked = true
                 receivedExitOffering = exitOffering
                 receivedResult = result
+                receivedReason = reason
             },
         )
 
@@ -3136,7 +3146,41 @@ class PaywallViewModelTest {
         assertThat(dismissWithExitOfferingInvoked).isTrue()
         assertThat(receivedExitOffering).isNull()
         assertThat(receivedResult).isNull()
+        assertThat(receivedReason).isEqualTo(PaywallDismissReason.CLOSE)
         assertThat(dismissInvoked).isFalse()
+    }
+
+    @Test
+    fun `closePaywall forwards a navigated-back reason to dismissRequestWithExitOffering`() {
+        var receivedReason: PaywallDismissReason? = null
+
+        val model = create(
+            dismissRequestWithExitOffering = { _, _, reason -> receivedReason = reason },
+        )
+
+        model.closePaywall(reason = PaywallDismissReason.NAVIGATED_BACK)
+
+        assertThat(receivedReason).isEqualTo(PaywallDismissReason.NAVIGATED_BACK)
+        assertThat(dismissInvoked).isFalse()
+    }
+
+    @Test
+    fun `closePaywall forwards an error result through dismissRequestWithExitOffering`() {
+        var receivedResult: PaywallResult? = null
+        val model = create(dismissRequestWithExitOffering = { _, result, _ -> receivedResult = result })
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Step misconfigured")
+
+        model.closePaywall(result = PaywallResult.Error(error))
+
+        assertThat((receivedResult as PaywallResult.Error).error).isEqualTo(error)
+    }
+
+    @Test
+    fun `an error state without a purchases error dismisses as an unknown error`() {
+        val result = PaywallState.Error("Something broke").toPaywallResult()
+
+        assertThat(result.error.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        assertThat(result.error.underlyingErrorMessage).isEqualTo("Something broke")
     }
 
     @Test
@@ -3156,7 +3200,7 @@ class PaywallViewModelTest {
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
-            dismissRequestWithExitOffering = { exitOffering, result ->
+            dismissRequestWithExitOffering = { exitOffering, result, _ ->
                 dismissWithExitOfferingInvoked = true
                 receivedResult = result
                 assertThat(exitOffering).isNull()
@@ -3189,7 +3233,7 @@ class PaywallViewModelTest {
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
-            dismissRequestWithExitOffering = { exitOffering, result ->
+            dismissRequestWithExitOffering = { exitOffering, result, _ ->
                 dismissWithExitOfferingInvoked = true
                 receivedResult = result
                 assertThat(exitOffering).isNull()
@@ -3223,7 +3267,7 @@ class PaywallViewModelTest {
 
             val model = create(
                 customPurchaseLogic = myAppPurchaseLogic,
-                dismissRequestWithExitOffering = { exitOffering, result ->
+                dismissRequestWithExitOffering = { exitOffering, result, _ ->
                     dismissWithExitOfferingInvoked = true
                     receivedResult = result
                     assertThat(exitOffering).isNull()
@@ -3258,7 +3302,7 @@ class PaywallViewModelTest {
 
             val model = create(
                 customPurchaseLogic = myAppPurchaseLogic,
-                dismissRequestWithExitOffering = { exitOffering, result ->
+                dismissRequestWithExitOffering = { exitOffering, result, _ ->
                     dismissWithExitOfferingInvoked = true
                     receivedResult = result
                     assertThat(exitOffering).isNull()
@@ -3294,7 +3338,8 @@ class PaywallViewModelTest {
             defaultLocaleIdentifier = defaultLocaleIdentifier,
             offeringIdentifier = defaultOffering.identifier,
         )
-        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
+        val stepOne =
+            WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1", paramValues = defaultOfferingParams)
         val workflow = PublishedWorkflow(
             id = "wfl-test",
             displayName = "Test Workflow",
@@ -3377,7 +3422,8 @@ class PaywallViewModelTest {
             defaultLocaleIdentifier = defaultLocaleIdentifier,
             offeringIdentifier = defaultOffering.identifier,
         )
-        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
+        val stepOne =
+            WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1", paramValues = defaultOfferingParams)
         val workflow = PublishedWorkflow(
             id = workflowId,
             displayName = "Real Workflow",
@@ -3507,7 +3553,14 @@ class PaywallViewModelTest {
             id = "wfl-test",
             displayName = "Test Workflow",
             initialStepId = "step-1",
-            steps = mapOf("step-1" to WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")),
+            steps = mapOf(
+                "step-1" to WorkflowStep(
+                    id = "step-1",
+                    type = "screen",
+                    screenId = "screen-1",
+                    paramValues = defaultOfferingParams,
+                ),
+            ),
             screens = mapOf("screen-1" to workflowScreen),
         )
         coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Found("wfl-test")
@@ -3574,7 +3627,7 @@ class PaywallViewModelTest {
         offering: Offering? = null,
         customPurchaseLogic: PaywallPurchaseLogic? = null,
         mode: PaywallMode = PaywallMode.default,
-        dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
+        dismissRequestWithExitOffering: ((Offering?, PaywallResult?, PaywallDismissReason) -> Unit)? = null,
         dismissRequest: () -> Unit = { dismissInvoked = true },
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
