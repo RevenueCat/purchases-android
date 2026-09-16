@@ -21,10 +21,10 @@ import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 
 /**
- * Tests for [TokenManager]'s storage plumbing, construction, identity introspection, and authorization
- * headers (IAM phase 3, steps 7-9). These go through the real `derivePassword -> EncryptedItemStorage.create`
- * chain -- a real [Application] context, a real API key, no test doubles for storage -- since this step's
- * whole purpose is to own that chain correctly.
+ * Tests for [TokenManager]'s storage plumbing, construction, identity introspection, authorization
+ * headers, and the token refresh state machine (IAM phase 3, steps 7-10). These go through the real
+ * `derivePassword -> EncryptedItemStorage.create` chain -- a real [Application] context, a real API key,
+ * no test doubles for storage -- since this step's whole purpose is to own that chain correctly.
  */
 @RunWith(AndroidJUnit4::class)
 @Config(manifest = Config.NONE)
@@ -400,6 +400,170 @@ class TokenManagerTest {
         manager.deleteAccessToken("user")
 
         assertThat(manager.currentRefreshToken("user")).isEqualTo("refresh")
+    }
+
+    // endregion
+
+    // region token refresh state machine
+
+    @Test
+    fun `tokenRefreshRequest is a no-op when there is no stored refresh token`() = runTest {
+        val manager = manager()
+        var called = false
+
+        val request = manager.tokenRefreshRequest(
+            "user",
+            statusCode = RCHTTPStatusCodes.UNAUTHORIZED,
+            alreadyRetriedRefresh = false,
+        ) { called = true }
+
+        assertThat(request).isNull()
+        assertThat(called).isFalse()
+    }
+
+    @Test
+    fun `tokenRefreshRequest is a no-op for a request that already retried a refresh once`() = runTest {
+        val manager = manager()
+        manager.saveTokens("user", accessToken = "access", refreshToken = "refresh", idToken = "id")
+        var called = false
+
+        val request = manager.tokenRefreshRequest(
+            "user",
+            statusCode = RCHTTPStatusCodes.UNAUTHORIZED,
+            alreadyRetriedRefresh = true,
+        ) { called = true }
+
+        assertThat(request).isNull()
+        assertThat(called).isFalse()
+    }
+
+    @Test
+    fun `tokenRefreshRequest is a no-op for a non-401 response`() = runTest {
+        val manager = manager()
+        manager.saveTokens("user", accessToken = "access", refreshToken = "refresh", idToken = "id")
+        var called = false
+
+        val request = manager.tokenRefreshRequest(
+            "user",
+            statusCode = RCHTTPStatusCodes.FORBIDDEN,
+            alreadyRetriedRefresh = false,
+        ) { called = true }
+
+        assertThat(request).isNull()
+        assertThat(called).isFalse()
+    }
+
+    @Test
+    fun `the first caller for a user gets a TokenRefreshRequest to actually perform`() = runTest {
+        val manager = manager()
+        manager.saveTokens("user", accessToken = "access", refreshToken = "refresh-token", idToken = "id")
+
+        val request = manager.tokenRefreshRequest(
+            "user",
+            statusCode = RCHTTPStatusCodes.UNAUTHORIZED,
+            alreadyRetriedRefresh = false,
+        ) {}
+
+        assertThat(request).isEqualTo(TokenManager.TokenRefreshRequest("user", "refresh-token"))
+    }
+
+    @Test
+    fun `a concurrent caller for the same user is folded into the in-flight refresh, and both get notified`() =
+        runTest {
+            val manager = manager()
+            manager.saveTokens("user", accessToken = "access", refreshToken = "refresh-token", idToken = "id")
+            var firstResult: TokenManager.TokenSet? = null
+            var secondResult: TokenManager.TokenSet? = null
+            var secondWasCalled = false
+
+            val firstRequest = manager.tokenRefreshRequest(
+                "user",
+                statusCode = RCHTTPStatusCodes.UNAUTHORIZED,
+                alreadyRetriedRefresh = false,
+            ) { firstResult = it }
+            val secondRequest = manager.tokenRefreshRequest(
+                "user",
+                statusCode = RCHTTPStatusCodes.UNAUTHORIZED,
+                alreadyRetriedRefresh = false,
+            ) {
+                secondWasCalled = true
+                secondResult = it
+            }
+
+            // Only the first caller gets a request to actually perform; the second is folded into it rather
+            // than starting a redundant refresh of its own.
+            assertThat(firstRequest).isNotNull()
+            assertThat(secondRequest).isNull()
+
+            val refreshedTokens = TokenManager.TokenSet(
+                accessToken = "new-access",
+                refreshToken = "new-refresh",
+                idToken = "new-id",
+            )
+            manager.handleTokenRefreshResponse("user", refreshedTokens)
+
+            assertThat(firstResult).isEqualTo(refreshedTokens)
+            assertThat(secondWasCalled).isTrue()
+            assertThat(secondResult).isEqualTo(refreshedTokens)
+        }
+
+    @Test
+    fun `a successful refresh saves all three tokens and notifies reportTokenUpdate`() = runTest {
+        val manager = manager()
+        manager.saveTokens("user", accessToken = "old-access", refreshToken = "old-refresh", idToken = "old-id")
+        var notified: TokenManager.TokenSet? = null
+
+        manager.tokenRefreshRequest(
+            "user",
+            statusCode = RCHTTPStatusCodes.UNAUTHORIZED,
+            alreadyRetriedRefresh = false,
+        ) { notified = it }
+
+        val refreshedTokens = TokenManager.TokenSet(
+            accessToken = "new-access",
+            refreshToken = "new-refresh",
+            idToken = "new-id",
+        )
+        manager.handleTokenRefreshResponse("user", refreshedTokens)
+
+        assertThat(notified).isEqualTo(refreshedTokens)
+        assertThat(manager.currentAccessToken("user")).isEqualTo("new-access")
+        assertThat(manager.currentRefreshToken("user")).isEqualTo("new-refresh")
+        assertThat(manager.currentIDToken("user")).isEqualTo("new-id")
+    }
+
+    @Test
+    fun `a failed refresh notifies null and clears in-flight state so a subsequent request can retry`() = runTest {
+        val manager = manager()
+        manager.saveTokens("user", accessToken = "access", refreshToken = "refresh-token", idToken = "id")
+        var notifiedWith: TokenManager.TokenSet? = TokenManager.TokenSet("x", "y", "z")
+        var wasNotified = false
+
+        manager.tokenRefreshRequest(
+            "user",
+            statusCode = RCHTTPStatusCodes.UNAUTHORIZED,
+            alreadyRetriedRefresh = false,
+        ) {
+            wasNotified = true
+            notifiedWith = it
+        }
+
+        manager.handleTokenRefreshResponse("user", null)
+
+        assertThat(wasNotified).isTrue()
+        assertThat(notifiedWith).isNull()
+        // A failed refresh never touches storage.
+        assertThat(manager.currentAccessToken("user")).isEqualTo("access")
+
+        // The in-flight state was cleared by the failure, so a fresh request is eligible to trigger a new
+        // refresh rather than being folded into the (already-resolved) previous one.
+        val secondRequest = manager.tokenRefreshRequest(
+            "user",
+            statusCode = RCHTTPStatusCodes.UNAUTHORIZED,
+            alreadyRetriedRefresh = false,
+        ) {}
+
+        assertThat(secondRequest).isEqualTo(TokenManager.TokenRefreshRequest("user", "refresh-token"))
     }
 
     // endregion
