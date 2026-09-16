@@ -2167,18 +2167,14 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         every {
             mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
         } returns VerificationResult.FAILED
-        every { mockSigningManager.signatureVerificationMode } returns SignatureVerificationMode.Enforced
+        every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
 
         client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
 
         // The host is on the reduced tier after an earlier timeout.
         timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
 
-        enqueue(
-            endpoint.getPath(),
-            HTTPResult.createResult(verificationResult = VerificationResult.FAILED),
-            verificationResult = VerificationResult.FAILED,
-        )
+        enqueue(endpoint.getPath(), HTTPResult.createResult())
 
         assertThatThrownBy {
             client.performRequest(

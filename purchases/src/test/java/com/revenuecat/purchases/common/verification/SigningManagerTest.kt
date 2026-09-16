@@ -52,14 +52,12 @@ class SigningManagerTest {
             every { createIntermediateKeyVerifierIfVerified(any()) } returns Result.Success(intermediateKeyVerifier)
         }
 
-        disabledSigningManager = SigningManager(
-            SignatureVerificationMode.Disabled, appConfig, apiKey, intermediateSignatureHelper,
-        )
+        disabledSigningManager = SigningManager(SignatureVerificationMode.Disabled, appConfig, apiKey)
         informationalSigningManager = SigningManager(
-            SignatureVerificationMode.Informational, appConfig, apiKey, intermediateSignatureHelper,
+            SignatureVerificationMode.Informational(intermediateSignatureHelper), appConfig, apiKey,
         )
         enforcedSigningManager = SigningManager(
-            SignatureVerificationMode.Enforced, appConfig, apiKey, intermediateSignatureHelper,
+            SignatureVerificationMode.Enforced(intermediateSignatureHelper), appConfig, apiKey,
         )
     }
 
@@ -88,17 +86,6 @@ class SigningManagerTest {
     @Test
     fun `shouldVerifyEndpoint returns false if endpoint does not support validation and mode enforced`() {
         assertThat(enforcedSigningManager.shouldVerifyEndpoint(Endpoint.PostDiagnostics)).isFalse
-    }
-
-    @Test
-    fun `shouldVerifyEndpoint returns true if endpoint requires verification and verification mode disabled`() {
-        assertThat(disabledSigningManager.shouldVerifyEndpoint(Endpoint.GetRemoteConfig("app"))).isTrue
-        assertThat(disabledSigningManager.shouldVerifyEndpoint(Endpoint.GetRemoteConfigFallback("app"))).isTrue
-    }
-
-    @Test
-    fun `shouldVerifyEndpoint returns false if endpoint does not support validation and mode disabled`() {
-        assertThat(disabledSigningManager.shouldVerifyEndpoint(Endpoint.PostDiagnostics)).isFalse
     }
 
     // endpoint
@@ -175,20 +162,9 @@ class SigningManagerTest {
     }
 
     @Test
-    fun `verifyResponse verifies if verification mode disabled`() {
-        every { intermediateKeyVerifier.verify(any(), any()) } returns true
-        assertThat(callVerifyResponse(disabledSigningManager)).isEqualTo(VerificationResult.VERIFIED)
-
-        every { intermediateKeyVerifier.verify(any(), any()) } returns false
-        assertThat(callVerifyResponse(disabledSigningManager)).isEqualTo(VerificationResult.FAILED)
-    }
-
-    @Test
-    fun `verifyResponse returns not requested if the root verifier cannot be created with verification disabled`() {
-        val signingManager = signingManagerWithRootVerifier(SignatureVerificationMode.Disabled) {
-            throw IllegalStateException("Can not use Ed25519 in FIPS-mode.")
-        }
-        assertThat(callVerifyResponse(signingManager)).isEqualTo(VerificationResult.NOT_REQUESTED)
+    fun `verifyResponse returns NOT_REQUESTED if verification mode disabled`() {
+        val verificationResult = callVerifyResponse(disabledSigningManager)
+        assertThat(verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
     }
 
     @Test
@@ -263,10 +239,9 @@ class SigningManagerTest {
     fun `verifyResponse with real data verifies correctly`() {
         val rootVerifier = DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")
         val signingManager = SigningManager(
-            SignatureVerificationMode.Informational,
+            SignatureVerificationMode.Informational(IntermediateSignatureHelper(rootVerifier)),
             appConfig,
             apiKey,
-            IntermediateSignatureHelper(rootVerifier),
         )
         val verificationResult = callVerifyResponse(signingManager)
         assertThat(verificationResult).isEqualTo(VerificationResult.VERIFIED)
@@ -276,10 +251,9 @@ class SigningManagerTest {
     fun `verifyResponse with encoded url verifies correctly`() {
         val rootVerifier = DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")
         val signingManager = SigningManager(
-            SignatureVerificationMode.Informational,
+            SignatureVerificationMode.Informational(IntermediateSignatureHelper(rootVerifier)),
             appConfig,
             apiKey,
-            IntermediateSignatureHelper(rootVerifier),
         )
         val verificationResult = callVerifyResponse(
             signingManager,
@@ -293,10 +267,9 @@ class SigningManagerTest {
     fun `verifyResponse with both payload and etag verifies correctly`() {
         val rootVerifier = DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")
         val signingManager = SigningManager(
-            SignatureVerificationMode.Informational,
+            SignatureVerificationMode.Informational(IntermediateSignatureHelper(rootVerifier)),
             appConfig,
             apiKey,
-            IntermediateSignatureHelper(rootVerifier),
         )
         val verificationResult = callVerifyResponse(
             signingManager,
@@ -311,10 +284,9 @@ class SigningManagerTest {
     fun `verifyResponse with slightly different data does not verify correctly`() {
         val rootVerifier = DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")
         val signingManager = SigningManager(
-            SignatureVerificationMode.Informational,
+            SignatureVerificationMode.Informational(IntermediateSignatureHelper(rootVerifier)),
             appConfig,
             apiKey,
-            IntermediateSignatureHelper(rootVerifier),
         )
         assertThat(
             callVerifyResponse(signingManager, requestTime = "1677005916011") // Wrong request time
@@ -341,10 +313,9 @@ class SigningManagerTest {
     fun `verifyResponse with post fields to sign verifies correctly`() {
         val rootVerifier = DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")
         val signingManager = SigningManager(
-            SignatureVerificationMode.Informational,
+            SignatureVerificationMode.Informational(IntermediateSignatureHelper(rootVerifier)),
             appConfig,
             apiKey,
-            IntermediateSignatureHelper(rootVerifier),
         )
         val postParamsHeader = "test-field-1,test-field-2:sha256:0a1d806f908079361fc0d18073dfcfcacb730afe4ace3d0478602479892e81d3"
         val verificationResult = callVerifyResponse(
@@ -358,10 +329,11 @@ class SigningManagerTest {
     @Test
     fun `verifyResponse verifies a binary body signed as raw bytes`() {
         val signingManager = SigningManager(
-            SignatureVerificationMode.Informational,
+            SignatureVerificationMode.Informational(
+                IntermediateSignatureHelper(DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")),
+            ),
             appConfig,
             apiKey,
-            IntermediateSignatureHelper(realTestRootVerifier()),
         )
         val salt = ByteArray(16).apply { SecureRandom().nextBytes(this) }
         val configChecksum = ByteArray(24) { it.toByte() }
@@ -382,10 +354,11 @@ class SigningManagerTest {
     @Test
     fun `verifyResponse fails for a binary body that does not match the signed bytes`() {
         val signingManager = SigningManager(
-            SignatureVerificationMode.Informational,
+            SignatureVerificationMode.Informational(
+                IntermediateSignatureHelper(DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")),
+            ),
             appConfig,
             apiKey,
-            IntermediateSignatureHelper(realTestRootVerifier()),
         )
         val salt = ByteArray(16).apply { SecureRandom().nextBytes(this) }
         val configChecksum = ByteArray(24) { it.toByte() }
@@ -406,7 +379,11 @@ class SigningManagerTest {
     @Test
     fun `verifyResponse reuses the lazily created root verifier across verifications`() {
         var createdRootVerifiers = 0
-        val signingManager = signingManagerWithRootVerifier { createdRootVerifiers++; realTestRootVerifier() }
+        val signingManager = SigningManager(
+            informationalModeWithRootVerifier { createdRootVerifiers++; realTestRootVerifier() },
+            appConfig,
+            apiKey,
+        )
 
         assertThat(callVerifyResponse(signingManager)).isEqualTo(VerificationResult.VERIFIED)
         assertThat(callVerifyResponse(signingManager)).isEqualTo(VerificationResult.VERIFIED)
@@ -415,9 +392,11 @@ class SigningManagerTest {
 
     @Test
     fun `verifyResponse returns not requested if the root verifier cannot be created`() {
-        val signingManager = signingManagerWithRootVerifier {
-            throw IllegalStateException("Can not use Ed25519 in FIPS-mode.")
-        }
+        val signingManager = SigningManager(
+            informationalModeWithRootVerifier { throw IllegalStateException("Can not use Ed25519 in FIPS-mode.") },
+            appConfig,
+            apiKey,
+        )
         assertThat(callVerifyResponse(signingManager)).isEqualTo(VerificationResult.NOT_REQUESTED)
     }
 
@@ -425,13 +404,9 @@ class SigningManagerTest {
 
     // region Helpers
 
-    private fun signingManagerWithRootVerifier(
-        mode: SignatureVerificationMode = SignatureVerificationMode.Informational,
+    private fun informationalModeWithRootVerifier(
         rootVerifierProvider: () -> SignatureVerifier,
-    ) = SigningManager(
-        mode,
-        appConfig,
-        apiKey,
+    ) = SignatureVerificationMode.Informational(
         IntermediateSignatureHelper(rootVerifierProvider, CoroutineScope(Dispatchers.Unconfined)),
     )
 

@@ -14,6 +14,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.RewardVerificationError
 import com.revenuecat.purchases.RewardVerificationPollStatus
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.backendName
 import com.revenuecat.purchases.common.caching.WorkflowMetadata
 import com.revenuecat.purchases.common.events.EventsRequest
@@ -115,12 +116,12 @@ internal typealias RewardVerificationResultCallback =
     Pair<(RewardVerificationPollStatus) -> Unit, (RewardVerificationError) -> Unit>
 
 internal typealias RemoteConfigCallback = Pair<
-    (RCContainer?, requestDate: Date?) -> Unit,
+    (RCContainer?, requestDate: Date?, VerificationResult) -> Unit,
     (PurchasesError, errorHandlingBehavior: GetRemoteConfigErrorHandlingBehavior) -> Unit,
     >
 
 internal typealias RemoteConfigFallbackCallback = Pair<
-    (RemoteConfiguration) -> Unit,
+    (RemoteConfiguration, VerificationResult) -> Unit,
     (PurchasesError) -> Unit,
     >
 
@@ -1172,9 +1173,8 @@ internal class Backend(
         manifest: String?,
         lastRefreshTime: Date?,
         prefetchedBlobs: List<String>,
-        // The server's own request time, so the caller can replay it rather than a device-clock value. Only a
-        // response whose signature verified reaches this callback; HTTPClient rejects any other as an error.
-        onSuccess: (RCContainer?, Date?) -> Unit,
+        // The server's own request time, so the caller can replay it rather than a device-clock value.
+        onSuccess: (RCContainer?, Date?, VerificationResult) -> Unit,
         onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit,
     ) {
         val endpoint = Endpoint.GetRemoteConfig(domain)
@@ -1210,18 +1210,11 @@ internal class Backend(
             }
 
             override fun onError(error: PurchasesError) {
-                val behavior = if (error.code == PurchasesErrorCode.SignatureVerificationError) {
-                    // The response was received but rejected by this client, so the fallback host is not tried.
-                    errorLog { NetworkStrings.VERIFICATION_REMOTE_CONFIG_DISCARDED.format(path) }
-                    GetRemoteConfigErrorHandlingBehavior.SHOULD_NOT_TRY_FALLBACK
-                } else {
-                    // Transport/IO failure: no HTTP status, the endpoint may recover on a future sync.
-                    GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY
-                }
                 synchronized(this@Backend) {
                     remoteConfigCallbacks.remove(cacheKey)
                 }?.forEach { (_, onErrorHandler) ->
-                    onErrorHandler(error, behavior)
+                    // Transport/IO failure: no HTTP status, the endpoint may recover on a future sync.
+                    onErrorHandler(error, GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
                 }
             }
 
@@ -1232,7 +1225,7 @@ internal class Backend(
                     if (result.isSuccessful()) {
                         if (result.responseCode == RCHTTPStatusCodes.NO_CONTENT) {
                             // 204: nothing changed, no container to parse.
-                            onSuccessHandler(null, result.requestDate)
+                            onSuccessHandler(null, result.requestDate, result.verificationResult)
                             return@forEach
                         }
                         val payload = result.payload
@@ -1248,7 +1241,11 @@ internal class Backend(
                             return@forEach
                         }
                         try {
-                            onSuccessHandler(RCContainer.parse(payload.bytes), result.requestDate)
+                            onSuccessHandler(
+                                RCContainer.parse(payload.bytes),
+                                result.requestDate,
+                                result.verificationResult,
+                            )
                         } catch (e: RCContainerFormatException) {
                             // Parse failure of an otherwise-successful response; keep retrying.
                             onErrorHandler(
@@ -1287,7 +1284,7 @@ internal class Backend(
     fun getRemoteConfigFallback(
         appInBackground: Boolean,
         domain: String,
-        onSuccess: (RemoteConfiguration) -> Unit,
+        onSuccess: (RemoteConfiguration, VerificationResult) -> Unit,
         onError: (PurchasesError) -> Unit,
     ) {
         val fallbackURL = appConfig.fallbackBaseURLs.firstOrNull()
@@ -1329,7 +1326,10 @@ internal class Backend(
                 }?.forEach { (onSuccessHandler, onErrorHandler) ->
                     if (result.isSuccessful()) {
                         try {
-                            onSuccessHandler(RemoteConfiguration.parse(result.payloadText.encodeToByteArray()))
+                            onSuccessHandler(
+                                RemoteConfiguration.parse(result.payloadText.encodeToByteArray()),
+                                result.verificationResult,
+                            )
                         } catch (e: SerializationException) {
                             onErrorHandler(e.toPurchasesError().also { errorLog(it) })
                         }

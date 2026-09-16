@@ -3,6 +3,7 @@ package com.revenuecat.purchases.common.remoteconfig
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
 import com.revenuecat.purchases.common.networking.RCContainer
@@ -54,7 +55,7 @@ class RemoteConfigManagerIntegrationTest {
     private var capturedManifest: String? = null
     private var capturedLastRefreshTime: Date? = null
     private var capturedPrefetchedBlobs: List<String>? = null
-    private lateinit var onSuccess: (RCContainer?, Date?) -> Unit
+    private lateinit var onSuccess: (RCContainer?, Date?, VerificationResult) -> Unit
 
     @Before
     fun setup() {
@@ -385,7 +386,7 @@ class RemoteConfigManagerIntegrationTest {
     }
 
     private fun settle(container: RCContainer?) {
-        onSuccess.invoke(container, Date())
+        onSuccess.invoke(container, Date(), VerificationResult.VERIFIED)
     }
 
     private companion object {
