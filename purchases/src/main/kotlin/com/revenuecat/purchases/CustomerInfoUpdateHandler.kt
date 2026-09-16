@@ -37,16 +37,22 @@ internal class CustomerInfoUpdateHandler constructor(
 
     private var lastSentCustomerInfo: CustomerInfo? = null
 
-    fun cacheAndNotifyListeners(customerInfo: CustomerInfo) {
-        cacheAndNotifyListeners(customerInfo, identityManager.currentAppUserID)
-    }
-
     fun cacheAndNotifyListeners(customerInfo: CustomerInfo, appUserID: String) {
         deviceCache.cacheCustomerInfo(appUserID, customerInfo)
-        notifyListeners(customerInfo)
+        notifyListeners(customerInfo, appUserID)
     }
 
-    fun notifyListeners(customerInfo: CustomerInfo) {
+    fun notifyListeners(customerInfo: CustomerInfo, appUserID: String) {
+        val currentAppUserID = identityManager.currentAppUserID
+        if (appUserID != currentAppUserID) {
+            log(LogIntent.DEBUG) {
+                CustomerInfoStrings.NOT_NOTIFYING_LISTENER_CUSTOMERINFO_FOR_PREVIOUS_USER.format(
+                    appUserID,
+                    currentAppUserID,
+                )
+            }
+            return
+        }
         synchronized(this@CustomerInfoUpdateHandler) { updatedCustomerInfoListener to lastSentCustomerInfo }
             .let { (listener, lastSentCustomerInfo) ->
                 if (lastSentCustomerInfo != customerInfo) {
@@ -70,8 +76,9 @@ internal class CustomerInfoUpdateHandler constructor(
         if (listener != null) {
             log(LogIntent.DEBUG) { ConfigureStrings.LISTENER_SET }
             if (!appConfig.customEntitlementComputation) {
-                getCachedCustomerInfo(identityManager.currentAppUserID)?.let {
-                    notifyListeners(it)
+                val appUserID = identityManager.currentAppUserID
+                getCachedCustomerInfo(appUserID)?.let {
+                    notifyListeners(it, appUserID)
                 }
             }
         }

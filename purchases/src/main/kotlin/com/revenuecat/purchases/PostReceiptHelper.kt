@@ -372,7 +372,7 @@ constructor(
                         unsyncedSubscriberAttributesByKey,
                         postReceiptResponse.body.getAttributeErrors(),
                     )
-                    customerInfoUpdateHandler.cacheAndNotifyListeners(postReceiptResponse.customerInfo)
+                    customerInfoUpdateHandler.cacheAndNotifyListeners(postReceiptResponse.customerInfo, appUserID)
                     onSuccess(postReceiptResponse)
                 },
                 onError = { error, errorHandlingBehavior, responseBody ->
@@ -421,7 +421,7 @@ constructor(
         offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
             appUserID,
             onSuccess = { customerInfo ->
-                customerInfoUpdateHandler.notifyListeners(customerInfo)
+                customerInfoUpdateHandler.notifyListeners(customerInfo, appUserID)
                 onSuccess(customerInfo)
             },
             onError = { error ->

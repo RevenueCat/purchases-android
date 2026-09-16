@@ -6,7 +6,7 @@ import com.revenuecat.purchases.common.BillingAbstract
 @Suppress("LongParameterList")
 internal fun Purchases.Companion.configureSdk(
     context: Context,
-    appUserID: String,
+    appUserID: String?,
     billingAbstract: BillingAbstract,
     entitlementVerificationMode: EntitlementVerificationMode? = null,
     forceServerErrorStrategy: ForceServerErrorStrategy? = null,
@@ -15,8 +15,10 @@ internal fun Purchases.Companion.configureSdk(
 ) {
     Purchases.configure(
         PurchasesConfiguration.Builder(context, Constants.apiKey)
-            .appUserID(appUserID)
             .apply {
+                if (appUserID != null) {
+                    appUserID(appUserID)
+                }
                 if (entitlementVerificationMode != null) {
                     entitlementVerificationMode(entitlementVerificationMode)
                 }

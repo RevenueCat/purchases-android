@@ -379,10 +379,10 @@ internal open class BasePurchasesTest {
     protected fun mockCustomerInfoUpdateHandler() {
         with(mockCustomerInfoUpdateHandler) {
             every {
-                cacheAndNotifyListeners(any())
+                cacheAndNotifyListeners(any(), any())
             } just Runs
             every {
-                notifyListeners(any())
+                notifyListeners(any(), any())
             } just Runs
             every {
                 updatedCustomerInfoListener = any()
