@@ -10,6 +10,7 @@ import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PresentationSlot.PendingCall
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -61,9 +62,10 @@ internal class CheckpointRun(
 
 /**
  * Runs a checkpoint hit end to end: asks the core module what the checkpoint resolves to, and presents the
- * resolved flow through [CheckpointWorkflowPresenter]. Owns the one-presentation-at-a-time constraint and the
- * pending call that routes a presented flow's terminal outcome back to the suspended [runCheckpoint] call. Runs
- * that present nothing never claim that presentation slot.
+ * resolved flow through [CheckpointWorkflowPresenter]. Owns the checkpoint policy: how outcomes supersede each
+ * other and how a finished or failed presentation resolves the suspended [runCheckpoint] call. The pending call
+ * itself, and the one-presentation-at-a-time rule, live in [PresentationSlot]; runs that present nothing never
+ * claim that slot.
  *
  * There is one instance per [Purchases] instance, held in its `internalCpManagerSlot` and reached through
  * [checkpointsManager], so a reconfigured SDK starts with a free presentation slot. A workflow that is already
@@ -79,27 +81,11 @@ internal class CheckpointsManager(
         { callId, manager -> CheckpointWorkflowPresenter(callId, manager) },
 ) {
 
-    private class PendingCall(
-        val callId: String,
-        val content: CheckpointFlowContent,
-        val customVariables: Map<String, CustomVariableValue>,
-        val flowFinished: CompletableDeferred<CheckpointRun>,
-    ) {
-        // Null until the paywall reports something; kept on the call rather than the presented window so
-        // losing the window (configuration change) doesn't reset it.
-        var outcome: CheckpointFlowOutcome? = null
-
-        // Only used to take an orphaned workflow window down when its call is abandoned.
-        var presenter: CheckpointWorkflowPresenter? = null
-    }
-
     @get:Synchronized
     @set:Synchronized
     var paywallPresenter: PaywallPresenter? = null
 
-    // At most one workflow may be presented at a time, so this single field is both the pending call and
-    // the gate that enforces that rule: there is no second piece of state to fall out of sync with.
-    private var pendingCall: PendingCall? = null
+    private val slot = PresentationSlot()
 
     private val nothingPresented = CheckpointRun(flowOutcome = null, backedOut = false)
     private val blockedByPresentedFlow =
@@ -175,12 +161,12 @@ internal class CheckpointsManager(
     }
 
     fun presentation(callId: String): CheckpointPresentation? =
-        withPendingCall(callId) { CheckpointPresentation(it.content, it.customVariables) }
+        slot.with(callId) { CheckpointPresentation(it.content, it.customVariables) }
 
     // A purchase or restore is what the user went through for, so a later error, web checkout or dismissal must
     // not erase it. A later purchase or restore still replaces it with newer CustomerInfo.
     fun recordOutcome(callId: String, outcome: CheckpointFlowOutcome) {
-        withPendingCall(callId) {
+        slot.with(callId) {
             if (!it.outcome.isObtained || outcome.isObtained) {
                 it.outcome = outcome
             }
@@ -195,7 +181,7 @@ internal class CheckpointsManager(
         navigatedBack: Boolean = false,
         finishPresentation: () -> Unit = {},
     ) {
-        val finished = take(callId) ?: run {
+        val finished = slot.take(callId) ?: run {
             finishPresentation()
             return
         }
@@ -213,7 +199,7 @@ internal class CheckpointsManager(
     // (e.g. a purchase before the configuration change) still wins, but a workflow that failed before
     // reporting anything surfaces as an error rather than a phantom dismissal.
     fun onPresentationFailed(callId: String, error: PurchasesError) {
-        val failed = take(callId) ?: return
+        val failed = slot.take(callId) ?: return
         failed.flowFinished.complete(
             CheckpointRun(failed.outcome ?: CheckpointFlowOutcome.Error(error), backedOut = false),
         )
@@ -248,7 +234,7 @@ internal class CheckpointsManager(
         presenter: PaywallPresenter,
     ): CheckpointRun {
         val call = PendingCall(UUID.randomUUID().toString(), content, customVariables, CompletableDeferred())
-        if (!claim(call)) return blockedByPresentedFlow
+        if (!slot.claim(call)) return blockedByPresentedFlow
         try {
             presenter.present(
                 PaywallPresenter.Params(content.offering, identifier, customVariables),
@@ -267,7 +253,7 @@ internal class CheckpointsManager(
         }
     }
 
-    // Routes an app-owned presentation's report back to its pending call. take() removes the call, so only the
+    // Routes an app-owned presentation's report back to its pending call. slot.take() removes the call, so only the
     // first report wins and the one-presentation slot is released with it, before the sync that follows a
     // purchased or closed report: the app's UI is already gone, so a new checkpoint may present meanwhile.
     private inner class PresenterCompletion(
@@ -292,7 +278,7 @@ internal class CheckpointsManager(
         }
 
         private fun navigatedBack() {
-            take(callId)?.let { call ->
+            slot.take(callId)?.let { call ->
                 call.flowFinished.complete(
                     CheckpointRun(CheckpointFlowOutcome.Dismissed, backedOut = true),
                 )
@@ -302,7 +288,7 @@ internal class CheckpointsManager(
         // FETCH_CURRENT posts the store purchases the SDK hasn't seen yet (e.g. made through the app's own
         // billing client) before fetching, so the outcome reflects whatever the app's paywall sold.
         private fun finished() {
-            val call = take(callId) ?: return
+            val call = slot.take(callId) ?: return
             purchases.getCustomerInfo(
                 CacheFetchPolicy.FETCH_CURRENT,
                 object : ReceiveCustomerInfoCallback {
@@ -335,10 +321,10 @@ internal class CheckpointsManager(
             "Cannot present checkpoint workflow: no started Activity found.",
         )
         val call = PendingCall(UUID.randomUUID().toString(), content, customVariables, CompletableDeferred())
-        if (!claim(call)) return blockedByPresentedFlow
+        if (!slot.claim(call)) return blockedByPresentedFlow
         try {
             val presenter = presenterFactory(call.callId, this)
-            withPendingCall(call.callId) { it.presenter = presenter }
+            slot.with(call.callId) { it.presenter = presenter }
             presenter.show(activity)
             return call.flowFinished.await()
         } catch (e: CancellationException) {
@@ -353,30 +339,12 @@ internal class CheckpointsManager(
         }
     }
 
-    // The single pendingCall field is the one-presentation-at-a-time gate; claiming fails while any
-    // presentation, SDK- or app-owned, is live.
-    private fun claim(call: PendingCall): Boolean =
-        synchronized(this) { (pendingCall == null).also { if (it) pendingCall = call } }
-
     // Counterpart of onPresentationFinished for calls that fail or get cancelled before the presented workflow
     // reports: releases the slot and takes the orphaned paywall down with the caller that asked for it.
     // Always runs on the main thread, inside the checkpoint() dispatch.
     private fun abandon(callId: String) {
-        take(callId)?.presenter?.abandon()
+        slot.take(callId)?.presenter?.abandon()
     }
-
-    private fun take(callId: String): PendingCall? = withPendingCall(callId) {
-        pendingCall = null
-        it
-    }
-
-    /**
-     * Runs [block] under the lock on the pending call, but only if [callId] still identifies it. Matching on
-     * the id is what makes a late report from an abandoned or process-restored activity a no-op instead of
-     * something that disturbs the call that replaced it, so every accessor goes through here.
-     */
-    private fun <T> withPendingCall(callId: String, block: (PendingCall) -> T): T? =
-        synchronized(this) { pendingCall?.takeIf { it.callId == callId }?.let(block) }
 
     private val CheckpointFlowOutcome?.isObtained: Boolean
         get() = this is CheckpointFlowOutcome.Purchased || this is CheckpointFlowOutcome.Restored
