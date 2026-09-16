@@ -12,6 +12,6 @@ jobs:
   approve:
     permissions:
       pull-requests: read
-    uses: revenuecat/sdk-github-workflows/.github/workflows/approve-release-hold.yml@main # TODO pin to v9 once released
+    uses: revenuecat/sdk-github-workflows/.github/workflows/approve-release-hold.yml@c7a3b97c331c9d5bbddaaae3e25697d76fb6b9c7 # v9
     secrets:
       CIRCLECI_TOKEN: ${{ secrets.CIRCLECI_TOKEN }}
