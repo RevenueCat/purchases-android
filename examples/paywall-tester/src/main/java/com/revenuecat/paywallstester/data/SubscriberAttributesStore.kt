@@ -35,6 +35,13 @@ internal class SubscriberAttributesStore(
 
     fun clear(appUserID: String): Map<String, String> = save(appUserID, emptyMap())
 
+    fun clearAll() {
+        val keys = sharedPreferences.all.keys.filter { it.startsWith(KEY_PREFIX) }
+        sharedPreferences.edit {
+            keys.forEach { remove(it) }
+        }
+    }
+
     private fun save(appUserID: String, attributes: Map<String, String>): Map<String, String> {
         sharedPreferences.edit {
             if (attributes.isEmpty()) {

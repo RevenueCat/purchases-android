@@ -103,9 +103,12 @@ internal class AppInfoScreenViewModelImpl(
     }
 
     override fun switchApiKey(newApiKey: String) {
+        clearAllSubscriberAttributes()
+        subscriberAttributesStore.clearAll()
         apiKeyStore.setLastUsedApiKey(newApiKey)
         configurePurchases(newApiKey)
         updateApiKeyDescription()
+        updateAppUserID()
     }
 
     override fun refresh() {
