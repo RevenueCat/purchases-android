@@ -519,6 +519,7 @@ class AppConfigTest {
                 "isDebugBuild=false, " +
                 "dangerousSettings=DangerousSettings(" +
                 "autoSyncPurchases=true, " +
+                "disableRequiredSignatureVerifications=false, " +
                 "customEntitlementComputation=false, " +
                 "uiPreviewMode=false, " +
                 "applyObfuscatedAccountIdToSubscriptionChanges=false, " +
