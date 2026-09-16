@@ -49,6 +49,27 @@ private class LocalFileFont(
     typefaceLoader = LocalFileFontTypefaceLoader,
     variationSettings = FontVariation.Settings(weight, style),
 ) {
+    // AndroidFont does not implement equals, so without this every resolve() of the same downloaded font
+    // produces a FontFamily that compares unequal to the previous one. That invalidates the derived state
+    // holding it, recomposes every text on the paywall, and misses Compose's typeface caches, which forces
+    // a blocking font file parse per text.
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is LocalFileFont) return false
+        return file == other.file &&
+            weight == other.weight &&
+            style == other.style &&
+            fileTypefaceLoader == other.fileTypefaceLoader
+    }
+
+    override fun hashCode(): Int {
+        var result = file.hashCode()
+        result = 31 * result + weight.hashCode()
+        result = 31 * result + style.hashCode()
+        result = 31 * result + fileTypefaceLoader.hashCode()
+        return result
+    }
+
     override fun toString(): String = "LocalFileFont(file=$file, weight=$weight, style=$style)"
 }
 
