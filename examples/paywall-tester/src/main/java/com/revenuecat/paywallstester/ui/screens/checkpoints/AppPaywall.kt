@@ -61,7 +61,7 @@ internal fun AppPaywall(
         message = null
         scope.launch {
             when (val outcome = action()) {
-                CheckoutOutcome.Completed -> request.finish(PaywallPresenter.Completion.Result.Purchased)
+                CheckoutOutcome.Completed -> request.finish(PaywallPresenter.Completion.Result.Continued)
                 CheckoutOutcome.Cancelled -> busy = false
                 is CheckoutOutcome.Failed -> {
                     busy = false
@@ -113,7 +113,7 @@ internal fun AppPaywall(
                     },
                     onRestore = { checkout { PaywallCheckout.restore() } },
                     onContinueWithoutBuying = {
-                        request.finish(PaywallPresenter.Completion.Result.ContinuedWithoutPurchasing)
+                        request.finish(PaywallPresenter.Completion.Result.Continued)
                     },
                 )
             }
