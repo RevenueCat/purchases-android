@@ -255,7 +255,7 @@ internal class RemoteConfigManager(
             lastRefreshTime = persisted?.lastRefreshTime?.let(::Date),
             // Report only the prefetch blobs we actually hold, so the server stops re-inlining them.
             prefetchedBlobs = persisted?.prefetchBlobs?.filter { storedBlobs.contains(it) } ?: emptyList(),
-            onSuccess = { container, requestDate ->
+            onSuccess = { container, requestDate, _ ->
                 handleMainRefreshSuccess(requestEpoch, persisted, container, requestDate)
             },
             onError = { error, behavior ->
@@ -381,7 +381,7 @@ internal class RemoteConfigManager(
         backend.getRemoteConfigFallback(
             appInBackground = appInBackground,
             domain = domain,
-            onSuccess = { response ->
+            onSuccess = { response, _ ->
                 if (epoch.get() != requestEpoch) {
                     // Identity changed after the fallback started; clearCache() reset the guard. Drop the result.
                     return@getRemoteConfigFallback

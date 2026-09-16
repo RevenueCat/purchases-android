@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.VerificationResult
-import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -33,7 +32,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
     @Before
     fun setupClient() {
         mockSigningManager = mockk()
-        every { mockSigningManager.signatureVerificationMode } returns SignatureVerificationMode.Informational
+        every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Informational>()
         every { mockSigningManager.shouldVerifyEndpoint(any()) } returns true
         every { mockSigningManager.createRandomNonce() } returns "test-nonce"
         client = createClient()
@@ -327,7 +326,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
     @Test
     fun `performRequest on enforced client throws verification error`() {
-        every { mockSigningManager.signatureVerificationMode } returns SignatureVerificationMode.Enforced
+        every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
         val endpoint = Endpoint.GetCustomerInfo("test-user-id")
         enqueue(
             urlPath = endpoint.getPath(),
@@ -351,16 +350,14 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         }
 
         assertThat(thrownCorrectException).isTrue
-        // The result still flows through the ETag manager (which never stores a FAILED result) so the attempt is
-        // recorded in diagnostics; the rejection happens right after.
-        verify(exactly = 1) {
+        verify(exactly = 0) {
             mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any(), any(), any())
         }
     }
 
     @Test
     fun `performRequest on enforced client in request without nonce throws verification error`() {
-        every { mockSigningManager.signatureVerificationMode } returns SignatureVerificationMode.Enforced
+        every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
         val endpoint = Endpoint.GetOfferings("test-user-id")
         enqueue(
             urlPath = endpoint.getPath(),
@@ -380,8 +377,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
             )
         }
 
-        // See `performRequest on enforced client throws verification error`: the ETag manager is consulted first.
-        verify(exactly = 1) {
+        verify(exactly = 0) {
             mockETagManager.getHTTPResultFromCacheOrBackend(any(), any(), any(), any(), any(), any(), any(), any(), any())
         }
     }
@@ -459,19 +455,17 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         mockSigningResult(VerificationResult.VERIFIED)
         enqueueRCFormat(container)
 
-        // The remote config endpoint requires verification, so the failed result is rejected outright.
-        assertThatExceptionOfType(SignatureVerificationException::class.java).isThrownBy {
-            client.performRequest(
-                baseURL,
-                endpoint,
-                body = null,
-                postFieldsToSign = null,
-                requestHeaders = emptyMap()
-            )
-        }
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            requestHeaders = emptyMap()
+        )
 
         server.takeRequest()
 
+        assertThat(result.verificationResult).isEqualTo(VerificationResult.FAILED)
         assertSigningNotPerformed()
     }
 
@@ -517,25 +511,23 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
         mockSigningResult(VerificationResult.VERIFIED)
         enqueueRCFormat(byteArrayOf(1, 2, 3, 4))
 
-        // The remote config endpoint requires verification, so the failed result is rejected outright.
-        assertThatExceptionOfType(SignatureVerificationException::class.java).isThrownBy {
-            client.performRequest(
-                baseURL,
-                endpoint,
-                body = null,
-                postFieldsToSign = null,
-                requestHeaders = emptyMap()
-            )
-        }
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            requestHeaders = emptyMap()
+        )
 
         server.takeRequest()
 
+        assertThat(result.verificationResult).isEqualTo(VerificationResult.FAILED)
         assertSigningNotPerformed()
     }
 
     @Test
     fun `performRequest on enforced client throws when RC Format verification fails`() {
-        every { mockSigningManager.signatureVerificationMode } returns SignatureVerificationMode.Enforced
+        every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
         val endpoint = Endpoint.GetRemoteConfig("app")
         val container = buildContainer("{\"config\":true}".toByteArray())
 
@@ -588,7 +580,7 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
 
     @Test
     fun `performRequest on enforced client throws when a 204 fails verification`() {
-        every { mockSigningManager.signatureVerificationMode } returns SignatureVerificationMode.Enforced
+        every { mockSigningManager.signatureVerificationMode } returns mockk<SignatureVerificationMode.Enforced>()
         val endpoint = Endpoint.GetRemoteConfig("app")
 
         mockSigningResult(VerificationResult.FAILED)
@@ -601,101 +593,6 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 body = null,
                 postFieldsToSign = null,
                 requestHeaders = emptyMap()
-            )
-        }
-    }
-
-    @Test
-    fun `performRequest throws when a remote config response fails verification with verification disabled`() {
-        every { mockSigningManager.signatureVerificationMode } returns SignatureVerificationMode.Disabled
-        val endpoint = Endpoint.GetRemoteConfig("app")
-
-        mockSigningResult(VerificationResult.FAILED)
-        enqueueRCFormat(buildContainer("{\"config\":true}".toByteArray()))
-
-        assertThatExceptionOfType(SignatureVerificationException::class.java).isThrownBy {
-            client.performRequest(
-                baseURL,
-                endpoint,
-                body = null,
-                postFieldsToSign = null,
-                requestHeaders = emptyMap()
-            )
-        }
-    }
-
-    @Test
-    fun `performRequest throws when a remote config 204 fails verification with verification informational`() {
-        val endpoint = Endpoint.GetRemoteConfig("app")
-
-        mockSigningResult(VerificationResult.FAILED)
-        enqueueRCFormat(ByteArray(0), responseCode = RCHTTPStatusCodes.NO_CONTENT)
-
-        assertThatExceptionOfType(SignatureVerificationException::class.java).isThrownBy {
-            client.performRequest(
-                baseURL,
-                endpoint,
-                body = null,
-                postFieldsToSign = null,
-                requestHeaders = emptyMap()
-            )
-        }
-    }
-
-    @Test
-    fun `performRequest throws when a remote config fallback response fails verification with verification disabled`() {
-        every { mockSigningManager.signatureVerificationMode } returns SignatureVerificationMode.Disabled
-        val endpoint = Endpoint.GetRemoteConfigFallback("app")
-        enqueue(
-            urlPath = endpoint.getPath(),
-            expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.FAILED),
-            verificationResult = VerificationResult.FAILED
-        )
-
-        mockSigningResult(VerificationResult.FAILED)
-
-        assertThatExceptionOfType(SignatureVerificationException::class.java).isThrownBy {
-            client.performRequest(
-                baseURL,
-                endpoint,
-                body = null,
-                postFieldsToSign = null,
-                requestHeaders = emptyMap()
-            )
-        }
-    }
-
-    @Test
-    fun `performRequest records a rejected remote config response in diagnostics before throwing`() {
-        val diagnosticsTracker = mockk<DiagnosticsTracker>(relaxed = true)
-        client = createClient(diagnosticsTracker = diagnosticsTracker)
-        val endpoint = Endpoint.GetRemoteConfig("app")
-
-        mockSigningResult(VerificationResult.FAILED)
-        enqueueRCFormat(buildContainer("{\"config\":true}".toByteArray()))
-
-        assertThatExceptionOfType(SignatureVerificationException::class.java).isThrownBy {
-            client.performRequest(
-                baseURL,
-                endpoint,
-                body = null,
-                postFieldsToSign = null,
-                requestHeaders = emptyMap()
-            )
-        }
-
-        verify(exactly = 1) {
-            diagnosticsTracker.trackHttpRequestPerformed(
-                any(),
-                endpoint,
-                any(),
-                any(),
-                RCHTTPStatusCodes.SUCCESS,
-                any(),
-                any(),
-                VerificationResult.FAILED,
-                any(),
-                any(),
             )
         }
     }

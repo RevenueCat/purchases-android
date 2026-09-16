@@ -592,7 +592,7 @@ class IdentityManagerTests {
         setupCustomerInfoCacheInvalidationTest(
             userId,
             VerificationResult.NOT_REQUESTED,
-            SignatureVerificationMode.Informational,
+            SignatureVerificationMode.Informational(mockk()),
             true
         )
         identityManager.configure(userId)
@@ -610,7 +610,7 @@ class IdentityManagerTests {
         setupCustomerInfoCacheInvalidationTest(
             userId,
             VerificationResult.NOT_REQUESTED,
-            SignatureVerificationMode.Enforced,
+            SignatureVerificationMode.Enforced(mockk()),
             true
         )
         identityManager.configure(userId)
@@ -628,7 +628,7 @@ class IdentityManagerTests {
         setupCustomerInfoCacheInvalidationTest(
             userId,
             VerificationResult.VERIFIED,
-            SignatureVerificationMode.Informational,
+            SignatureVerificationMode.Informational(mockk()),
             shouldClearCustomerInfoAndETagCaches = false
         )
         identityManager.configure(userId)
@@ -663,7 +663,7 @@ class IdentityManagerTests {
         val userId = "test-app-user-id"
         mockNoCachedAppUserID()
         every { mockDeviceCache.getCachedCustomerInfo(userId) } returns null
-        every { mockBackend.verificationMode } returns SignatureVerificationMode.Informational
+        every { mockBackend.verificationMode } returns SignatureVerificationMode.Informational(mockk())
         identityManager = createIdentityManager()
         identityManager.configure(userId)
         verify(exactly = 0) {

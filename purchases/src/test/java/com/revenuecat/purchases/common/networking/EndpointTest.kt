@@ -293,27 +293,6 @@ class EndpointTest {
     }
 
     @Test
-    fun `requiresSignatureVerification is true only for the remote config endpoints`() {
-        for (endpoint in allEndpoints) {
-            val expected = endpoint is Endpoint.GetRemoteConfig || endpoint is Endpoint.GetRemoteConfigFallback
-            assertThat(endpoint.requiresSignatureVerification)
-                .withFailMessage { "Endpoint $endpoint expected requiresSignatureVerification == $expected" }
-                .isEqualTo(expected)
-        }
-    }
-
-    @Test
-    fun `verify requiresSignatureVerification is true only if supportsSignatureVerification is true`() {
-        for (endpoint in allEndpoints) {
-            if (endpoint.requiresSignatureVerification) {
-                assertThat(endpoint.supportsSignatureVerification)
-                    .withFailMessage { "Endpoint $endpoint requires signature verification but does not support it" }
-                    .isTrue
-            }
-        }
-    }
-
-    @Test
     fun `usesAPISources is true for main API endpoints`() {
         val mainApiEndpoints = listOf(
             Endpoint.GetCustomerInfo("test-user-id"),

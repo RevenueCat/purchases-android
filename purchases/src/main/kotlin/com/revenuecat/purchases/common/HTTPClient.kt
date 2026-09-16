@@ -319,7 +319,6 @@ internal class HTTPClient(
                 onResponseReceived = { responseCode = it },
             )
             callSuccessful = true
-            callResult?.let { throwIfVerificationRejected(endpoint, it, isFallbackURL) }
         } catch (e: IOException) {
             exceptionHit = e
             // With remote-config API sources enabled, record a timeout for any main-source attempt that timed
@@ -349,23 +348,6 @@ internal class HTTPClient(
             )
         }
         return exceptionHit?.let { AttemptOutcome.Failed(it) } ?: AttemptOutcome.Completed(callResult)
-    }
-
-    /**
-     * Rejects a response whose signature failed verification when the [endpoint] requires verification or the SDK
-     * runs in [SignatureVerificationMode.Enforced]. Thrown from inside the attempt so its `finally` block still
-     * records the real status code and verification result in diagnostics. Nothing unverified has been cached at
-     * this point: [ETagManager] never stores a `FAILED` result.
-     */
-    private fun throwIfVerificationRejected(endpoint: Endpoint, result: HTTPResult, isFallbackURL: Boolean) {
-        if (result.verificationResult == VerificationResult.FAILED &&
-            (
-                endpoint.requiresSignatureVerification ||
-                    signingManager.signatureVerificationMode is SignatureVerificationMode.Enforced
-                )
-        ) {
-            throw SignatureVerificationException(endpoint.getPath(useFallback = isFallbackURL))
-        }
     }
 
     /**
@@ -564,6 +546,12 @@ internal class HTTPClient(
             }
         } else {
             VerificationResult.NOT_REQUESTED
+        }
+
+        if (verificationResult == VerificationResult.FAILED &&
+            signingManager.signatureVerificationMode is SignatureVerificationMode.Enforced
+        ) {
+            throw SignatureVerificationException(path)
         }
 
         val isLoadShedderResponse = getLoadShedderHeader(connection)

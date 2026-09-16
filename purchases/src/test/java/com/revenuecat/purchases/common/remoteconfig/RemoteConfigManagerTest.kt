@@ -4,6 +4,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.assertDebugLog
 import com.revenuecat.purchases.assertErrorLog
 import com.revenuecat.purchases.assertWarnLog
@@ -79,10 +80,10 @@ class RemoteConfigManagerTest {
     private var capturedLastRefreshTime: Date? = null
     private var capturedFetchContext: RemoteConfigFetchContext? = null
     private var capturedPrefetchedBlobs: List<String>? = null
-    private lateinit var onSuccess: (RCContainer?, Date?) -> Unit
+    private lateinit var onSuccess: (RCContainer?, Date?, VerificationResult) -> Unit
     private lateinit var onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit
 
-    private lateinit var onFallbackSuccess: (RemoteConfiguration) -> Unit
+    private lateinit var onFallbackSuccess: (RemoteConfiguration, VerificationResult) -> Unit
     private lateinit var onFallbackError: (PurchasesError) -> Unit
 
     @Before
@@ -302,6 +303,7 @@ class RemoteConfigManagerTest {
                 }
                 """.trimIndent(),
             ),
+            VerificationResult.VERIFIED,
         )
 
         // The fallback commit counts as the initial config, so later requests report their own context.
@@ -1254,6 +1256,7 @@ class RemoteConfigManagerTest {
                 }
                 """.trimIndent(),
             ),
+            VerificationResult.VERIFIED,
         )
 
         val written = slot<PersistedRemoteConfigurationState>()
@@ -1278,6 +1281,7 @@ class RemoteConfigManagerTest {
         every { diskCache.write(capture(committed)) } returns true
         onFallbackSuccess.invoke(
             remoteConfiguration("""{"domain":"app","manifest":"v1.fallback."}"""),
+            VerificationResult.VERIFIED,
         )
 
         // The committed state has no refresh time, so the following request has nothing to replay.
@@ -1310,6 +1314,7 @@ class RemoteConfigManagerTest {
                 }
                 """.trimIndent(),
             ),
+            VerificationResult.VERIFIED,
         )
 
         // The fallback body carries no inlined elements, so no inline blob is written; the wanted blob is
@@ -1347,25 +1352,6 @@ class RemoteConfigManagerTest {
         assertThat(manager.isDisabled).isFalse()
 
         // The endpoint is still usable, so a subsequent refresh fires.
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
-    }
-
-    @Test
-    fun `a rejected signature does not attempt the fallback and persists nothing`() {
-        every { diskCache.read() } returns null
-        val error = PurchasesError(PurchasesErrorCode.SignatureVerificationError, "bad signature")
-
-        assertErrorLog("😿‼️ $error") {
-            manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-            onError.invoke(error, GetRemoteConfigErrorHandlingBehavior.SHOULD_NOT_TRY_FALLBACK)
-        }
-
-        // The response was received and rejected by this client, so the fallback host is not tried either.
-        verify(exactly = 0) { backend.getRemoteConfigFallback(any(), any(), any(), any()) }
-        verify(exactly = 0) { diskCache.write(any()) }
-
-        // The guard is released, so the next refresh retries the main endpoint.
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
         verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
@@ -2509,8 +2495,8 @@ class RemoteConfigManagerTest {
         every {
             backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any())
         } answers {
-            arg<(RCContainer?, Date?) -> Unit>(7)
-                .invoke(containerWithConfig(stressResponse), Date(SERVER_MILLIS))
+            arg<(RCContainer?, Date?, VerificationResult) -> Unit>(7)
+                .invoke(containerWithConfig(stressResponse), Date(SERVER_MILLIS), VerificationResult.VERIFIED)
         }
         val manager = RemoteConfigManager(
             backend,
@@ -2599,7 +2585,7 @@ class RemoteConfigManagerTest {
      * different instant from the [dateProvider] clock so an assertion on the persisted value proves which one won.
      */
     private fun deliverSuccess(container: RCContainer?, requestDate: Date? = Date(SERVER_MILLIS)) {
-        onSuccess.invoke(container, requestDate)
+        onSuccess.invoke(container, requestDate, VerificationResult.VERIFIED)
     }
 
     private fun persisted(

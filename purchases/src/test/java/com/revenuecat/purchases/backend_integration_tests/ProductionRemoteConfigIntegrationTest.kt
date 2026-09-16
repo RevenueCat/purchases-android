@@ -2,7 +2,7 @@ package com.revenuecat.purchases.backend_integration_tests
 
 import android.content.Context
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.JsonProvider
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.remoteconfig.DefaultRemoteConfigSourceProvider
@@ -18,7 +18,6 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -46,12 +45,12 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
 
     @Test
     fun `can fetch remote config`() {
-        setupTest(SignatureVerificationMode.Informational)
+        setupTest(SignatureVerificationMode.Informational())
 
-        val (error, container) = fetchRemoteConfig(manifest = null)
+        val (error, container, verification) = fetchRemoteConfig(manifest = null)
 
         assertThat(error).isNull()
-        assertSigningPerformed()
+        assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
         val rcContainer = requireNotNull(container) { "Expected a 200 container, got 204 (no content)." }
 
         val config = RemoteConfiguration.parse(rcContainer.config)
@@ -81,11 +80,12 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
 
     @Test
     fun `decodes an inline workflows content blob`() {
-        setupTest(SignatureVerificationMode.Informational)
+        setupTest(SignatureVerificationMode.Informational())
 
-        val (error, container) = fetchRemoteConfig(manifest = null)
+        val (error, container, verification) = fetchRemoteConfig(manifest = null)
 
         assertThat(error).isNull()
+        assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
         val rcContainer = requireNotNull(container) { "Expected a 200 container, got 204 (no content)." }
 
         val config = RemoteConfiguration.parse(rcContainer.config)
@@ -129,7 +129,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
 
     @Test
     fun `fetches, persists and reads an inlined workflows blob back through the manager facade`() {
-        setupTest(SignatureVerificationMode.Informational)
+        setupTest(SignatureVerificationMode.Informational())
         every { appConfig.isDebugBuild } returns false
         val manager = buildRemoteConfigManager()
 
@@ -155,7 +155,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
 
     @Test
     fun `reads and deserializes a workflows blob into a typed value through the facade`() {
-        setupTest(SignatureVerificationMode.Informational)
+        setupTest(SignatureVerificationMode.Informational())
         every { appConfig.isDebugBuild } returns false
         val manager = buildRemoteConfigManager()
 
@@ -193,21 +193,23 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
 
     @Test
     fun `replaying the manifest returns no content`() {
-        setupTest(SignatureVerificationMode.Informational)
+        setupTest(SignatureVerificationMode.Informational())
 
         // First run: full resolve -> 200 with a fresh opaque manifest.
-        val (firstError, firstContainer) = fetchRemoteConfig(manifest = null)
+        val (firstError, firstContainer, firstVerification) = fetchRemoteConfig(manifest = null)
         assertThat(firstError).isNull()
+        assertThat(firstVerification).isEqualTo(VerificationResult.VERIFIED)
         val rcContainer = requireNotNull(firstContainer) { "Expected a 200 container on the first run." }
         val manifest = RemoteConfiguration.parse(rcContainer.config).manifest
 
         // Replaying that manifest with nothing changed server-side -> 204 (success, but no container to parse).
         // A non-`app_start` context is required: the backend always fully resolves an `app_start` request, so it
         // never returns 204 for one.
-        val (secondError, secondContainer) =
+        val (secondError, secondContainer, secondVerification) =
             fetchRemoteConfig(manifest = manifest, fetchContext = RemoteConfigFetchContext.Foreground)
         assertThat(secondError).isNull()
         assertThat(secondContainer).isNull()
+        assertThat(secondVerification).isEqualTo(VerificationResult.VERIFIED)
     }
 
     /**
@@ -221,7 +223,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
      */
     @Test
     fun `the backend returns its request time on both a 200 and a 204`() {
-        setupTest(SignatureVerificationMode.Informational)
+        setupTest(SignatureVerificationMode.Informational())
 
         val first = fetchRemoteConfig(manifest = null)
         assertThat(first.error).isNull()
@@ -258,60 +260,54 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
     }
 
     @Test
-    fun `verifies the signed response with verification disabled`() {
-        setupTest(SignatureVerificationMode.Disabled)
+    fun `verifies the signed response when verification is enforced`() {
+        setupTest(SignatureVerificationMode.Enforced())
 
-        val (error, container) = fetchRemoteConfig(manifest = null)
+        val (error, container, verification) = fetchRemoteConfig(manifest = null)
 
-        // Remote config is verified regardless of the configured mode, and a failed verification surfaces as an
-        // error, so a null error already implies the signature verified.
+        // With enforcement on, a failed verification surfaces as an error, so a null error already implies the
+        // signature verified; assert the result explicitly too.
         assertThat(error).isNull()
         assertThat(container).isNotNull
+        assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
         assertSigningPerformed()
     }
 
     @Test
-    fun `verifies the no content response with verification disabled`() {
-        setupTest(SignatureVerificationMode.Disabled)
+    fun `verifies the no content response when verification is enforced`() {
+        setupTest(SignatureVerificationMode.Enforced())
 
         // Get a fresh manifest from a full resolve, then replay it to force a signed 204.
-        val (firstError, firstContainer) = fetchRemoteConfig(manifest = null)
+        val (firstError, firstContainer, _) = fetchRemoteConfig(manifest = null)
         assertThat(firstError).isNull()
         val rcContainer = requireNotNull(firstContainer) { "Expected a 200 container on the first run." }
         val manifest = RemoteConfiguration.parse(rcContainer.config).manifest
 
-        // The 204 carries no body, but its signature covers the request context. A verification failure would
-        // surface as an error, so a null error confirms the 204 was verified.
+        // The 204 carries no body, but its signature covers the request context. Under enforcement a verification
+        // failure would surface as an error, so a null error with a VERIFIED result confirms the 204 was verified.
         // A non-`app_start` context is required: an `app_start` request is always fully resolved (never 204).
-        val (secondError, secondContainer) =
+        val (secondError, secondContainer, secondVerification) =
             fetchRemoteConfig(manifest = manifest, fetchContext = RemoteConfigFetchContext.Foreground)
         assertThat(secondError).isNull()
         assertThat(secondContainer).isNull()
-        verify(exactly = 2) { signingManager.verifyResponse(any(), any(), any(), any(), any(), any(), any()) }
+        assertThat(secondVerification).isEqualTo(VerificationResult.VERIFIED)
     }
 
-    @Test
-    fun `rejects the response when its signature fails verification`() {
-        setupTest(SignatureVerificationMode.Disabled)
-        every { appConfig.forceSigningErrors } returns true
-
-        val (error, container) = fetchRemoteConfig(manifest = null)
-
-        assertThat(container).isNull()
-        assertThat(error?.code).isEqualTo(PurchasesErrorCode.SignatureVerificationError)
-    }
-
-    /** The outcome of one `/v1/config` request. */
+    /**
+     * The outcome of one `/v1/config` request. [requestDate] is last so the existing three-component destructuring
+     * call sites keep working.
+     */
     private data class RemoteConfigFetchResult(
         val error: PurchasesError?,
         val container: RCContainer?,
+        val verification: VerificationResult?,
         val requestDate: Date?,
     )
 
     /**
      * Performs a single `/v1/config` request and blocks until it completes, returning the error (or `null`), the
-     * container (`null` on a `204`), and the server's own request time (`null` when the response carried no
-     * `X-RevenueCat-Request-Time` header). Only a verified response succeeds.
+     * container (`null` on a `204`), the verification result (`null` on error), and the server's own request time
+     * (`null` when the response carried no `X-RevenueCat-Request-Time` header).
      */
     private fun fetchRemoteConfig(
         manifest: String?,
@@ -323,6 +319,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
 
         var error: PurchasesError? = null
         var container: RCContainer? = null
+        var verification: VerificationResult? = null
         var requestDate: Date? = null
         ensureBlockFinishes { latch ->
             backend.getRemoteConfig(
@@ -333,8 +330,9 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
                 manifest = manifest,
                 lastRefreshTime = lastRefreshTime,
                 prefetchedBlobs = prefetchedBlobs,
-                onSuccess = { rcContainer, serverRequestDate ->
+                onSuccess = { rcContainer, serverRequestDate, verificationResult ->
                     container = rcContainer
+                    verification = verificationResult
                     requestDate = serverRequestDate
                     latch.countDown()
                 },
@@ -344,7 +342,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
                 },
             )
         }
-        return RemoteConfigFetchResult(error, container, requestDate)
+        return RemoteConfigFetchResult(error, container, verification, requestDate)
     }
 
     /**

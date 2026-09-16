@@ -16,8 +16,6 @@ internal class SigningManager(
     val signatureVerificationMode: SignatureVerificationMode,
     private val appConfig: AppConfig,
     private val apiKey: String,
-    private val intermediateSignatureHelper: IntermediateSignatureHelper =
-        IntermediateSignatureHelper(rootSignatureVerifierProvider = { DefaultSignatureVerifier() }),
 ) {
     private companion object {
         const val NONCE_BYTES_SIZE = 12
@@ -83,8 +81,7 @@ internal class SigningManager(
     }
 
     fun shouldVerifyEndpoint(endpoint: Endpoint): Boolean {
-        return endpoint.supportsSignatureVerification &&
-            (signatureVerificationMode.shouldVerify || endpoint.requiresSignatureVerification)
+        return endpoint.supportsSignatureVerification && signatureVerificationMode.shouldVerify
     }
 
     fun createRandomNonce(): String {
@@ -122,9 +119,6 @@ internal class SigningManager(
     /**
      * Verifies a response signature. [bodyBytes] is the signed payload: the UTF-8 bytes of a textual
      * (JSON) body, or the config element's checksum for RC Container Format responses.
-     *
-     * Only meaningful for endpoints where [shouldVerifyEndpoint] is true: with verification disabled those are the
-     * endpoints that require it.
      */
     @Suppress("LongParameterList", "ReturnCount", "CyclomaticComplexMethod", "LongMethod")
     fun verifyResponse(
@@ -140,6 +134,8 @@ internal class SigningManager(
             warnLog { "Forcing signing error for request with path: $urlPath" }
             return VerificationResult.FAILED
         }
+        val intermediateSignatureHelper = signatureVerificationMode.intermediateSignatureHelper
+            ?: return VerificationResult.NOT_REQUESTED
         if (!intermediateSignatureHelper.canVerify()) return VerificationResult.NOT_REQUESTED
 
         if (signatureString == null) {
