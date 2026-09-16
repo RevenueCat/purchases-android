@@ -63,13 +63,15 @@ class CheckpointWorkflowPresenterTest {
             coEvery { internalResolveCp(any(), any()) } returns
                 CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null)
         }
-        manager = CheckpointsManager { callId, manager ->
-            presentedCallIds += callId
-            CheckpointWorkflowPresenter(callId, manager) { activity, options ->
-                lastOptions = options
-                contentFactory(activity).also { contentViews += it }
-            }
-        }
+        manager = CheckpointsManager(
+            presenterFactory = { callId, manager ->
+                presentedCallIds += callId
+                CheckpointWorkflowPresenter(callId, manager) { activity, options ->
+                    lastOptions = options
+                    contentFactory(activity).also { contentViews += it }
+                }
+            },
+        )
     }
 
     @After

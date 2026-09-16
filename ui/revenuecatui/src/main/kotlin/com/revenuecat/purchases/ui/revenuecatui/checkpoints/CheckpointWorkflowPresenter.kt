@@ -26,11 +26,20 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.EDGE_TO_EDGE_WINDOW_THEM
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.applyEdgeToEdge
 
+/** What a [CheckpointWorkflowPresenter] reports to, keyed by the call it was shown for. */
+internal interface CheckpointPresentationHost {
+    fun presentation(callId: String): CheckpointPresentation?
+    fun recordOutcome(callId: String, outcome: CheckpointFlowOutcome)
+    fun onPresentationFinished(callId: String, navigatedBack: Boolean = false, finishPresentation: () -> Unit = {})
+    fun onPresentationFailed(callId: String, error: PurchasesError)
+}
+
 /**
- * Presents the workflow resolved for a checkpoint in a dialog-owned [Window] over the current activity, so the
- * host activity stays started underneath, and reports the terminal [CheckpointFlowOutcome] back to the
- * [CheckpointsManager] that asked for it, exactly once. Terminal purchase/restore events are recorded as they
- * happen and delivered when the workflow window goes away for good.
+ * Presents the flow resolved for a checkpoint, a workflow or an offering's paywall, in a dialog-owned [Window] over
+ * the current activity, so the host activity stays started underneath, and reports the terminal
+ * [CheckpointFlowOutcome] back to the [CheckpointPresentationHost] that asked for it, exactly once: the
+ * [CheckpointsManager] for workflows, the [DefaultPaywallPresenter] for offerings. Terminal purchase/restore events
+ * are recorded as they happen and delivered when the window goes away for good.
  *
  * The window dies with its host activity, so this presenter outlives any single window: on a configuration
  * change it dismisses the window (before the host tears its own down) and re-presents over the next started
@@ -41,7 +50,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.applyEdgeToEdge
  */
 internal class CheckpointWorkflowPresenter(
     private val callId: String,
-    private val manager: CheckpointsManager,
+    private val presentationHost: CheckpointPresentationHost,
     private val createContent: (Activity, PaywallOptions) -> View = { activity, options ->
         ComposeView(activity).apply { setContent { Paywall(options) } }
     },
@@ -71,7 +80,7 @@ internal class CheckpointWorkflowPresenter(
      */
     fun show(activity: Activity) {
         dismissWindowOnly()
-        val presentation = manager.presentation(callId)
+        val presentation = presentationHost.presentation(callId)
         if (presentation == null) {
             Logger.w("Checkpoint call '$callId' no longer exists. Closing the checkpoint workflow.")
             teardown()
@@ -169,7 +178,10 @@ internal class CheckpointWorkflowPresenter(
                 val message = "Failed to re-present checkpoint workflow after a configuration change: $e"
                 Logger.e(message)
                 teardown()
-                manager.onPresentationFailed(callId, PurchasesError(PurchasesErrorCode.ConfigurationError, message))
+                presentationHost.onPresentationFailed(
+                    callId,
+                    PurchasesError(PurchasesErrorCode.ConfigurationError, message),
+                )
             }
         }
 
@@ -183,7 +195,7 @@ internal class CheckpointWorkflowPresenter(
     // The window stays up until the app has been told, so whatever the callback puts on screen is already there
     // when the flow goes away.
     private fun requestDismiss(reason: PaywallDismissReason) {
-        manager.onPresentationFinished(callId, navigatedBack = reason == PaywallDismissReason.NAVIGATED_BACK) {
+        presentationHost.onPresentationFinished(callId, navigatedBack = reason == PaywallDismissReason.NAVIGATED_BACK) {
             dismissWindowOnly()
             teardown()
         }
@@ -215,7 +227,7 @@ internal class CheckpointWorkflowPresenter(
 
     private fun finish() {
         teardown()
-        manager.onPresentationFinished(callId)
+        presentationHost.onPresentationFinished(callId)
     }
 
     private fun teardown() {
@@ -253,6 +265,6 @@ internal class CheckpointWorkflowPresenter(
     }
 
     private fun recordOutcome(outcome: CheckpointFlowOutcome) {
-        manager.recordOutcome(callId, outcome)
+        presentationHost.recordOutcome(callId, outcome)
     }
 }

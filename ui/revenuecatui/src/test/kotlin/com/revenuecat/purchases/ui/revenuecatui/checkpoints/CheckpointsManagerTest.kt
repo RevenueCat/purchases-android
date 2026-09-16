@@ -51,6 +51,7 @@ class CheckpointsManagerTest {
     private lateinit var mockPurchases: Purchases
     private lateinit var mockActivity: Activity
     private lateinit var mockPresenter: CheckpointWorkflowPresenter
+    private var defaultPresenter: DefaultPaywallPresenter? = null
     private val presentedCallIds = mutableListOf<String>()
     private val results = mutableListOf<FlowResult?>()
 
@@ -66,6 +67,7 @@ class CheckpointsManagerTest {
         results.clear()
         mockActivity = mockk(relaxed = true)
         mockPresenter = mockk(relaxed = true)
+        defaultPresenter = null
         mockPurchases = mockk {
             every { currentActivity } returns mockActivity
             every { getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
@@ -73,10 +75,15 @@ class CheckpointsManagerTest {
                     .onError(PurchasesError(PurchasesErrorCode.CustomerInfoError, "No cache."))
             }
         }
-        manager = CheckpointsManager { callId, _ ->
-            presentedCallIds += callId
-            mockPresenter
-        }
+        manager = CheckpointsManager(
+            presenterFactory = { callId, _ ->
+                presentedCallIds += callId
+                mockPresenter
+            },
+            defaultPresenterFactory = { purchases ->
+                DefaultPaywallPresenter(purchases) { _, _ -> mockPresenter }.also { defaultPresenter = it }
+            },
+        )
     }
 
     @After
@@ -118,22 +125,73 @@ class CheckpointsManagerTest {
         }
 
     @Test
-    fun `offering checkpoint presents the fallback paywall and resolves when it finishes`() = runTest(dispatcher) {
+    fun `offering checkpoint presents the fallback paywall through the SDK's own presenter`() = runTest(dispatcher) {
         val offering = mockk<Offering>()
+        val customerInfo = mockk<CustomerInfo>()
+        syncedCustomerInfoIs(customerInfo)
         resolvesTo(CheckpointResolution.MatchedOffering(offering, checkpointRuleId = null))
 
         var run: CheckpointRun? = null
         val call = launch { run = runCheckpoint() }
 
         assertThat(run).isNull()
-        val content = manager.presentation(currentCallId())!!.content
+        assertThat(presentedCallIds).isEmpty()
+        verify(exactly = 1) { mockPresenter.show(mockActivity) }
+        val content = defaultPresenter!!.presentation("")!!.content
         assertThat((content as CheckpointFlowContent.OfferingFlow).offering).isEqualTo(offering)
 
-        finishPaywall(CheckpointFlowOutcome.Dismissed)
+        finishDefaultPaywall()
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
+        assertThat(run!!.backedOut).isFalse
+    }
+
+    @Test
+    fun `backing out of the SDK's own paywall is backed out without syncing`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        finishDefaultPaywall(navigatedBack = true)
         call.join()
 
         assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(run!!.backedOut).isTrue
+        verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
     }
+
+    @Test
+    fun `the SDK's own paywall without a started activity fails and presents nothing`() = runTest(dispatcher) {
+        every { mockPurchases.currentActivity } returns null
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+
+        assertThat(runCheckpoint().flowOutcome).isNull()
+
+        verify(exactly = 0) { mockPresenter.show(any()) }
+        verify {
+            Logger.e(
+                match {
+                    it.contains("Paywall presenter failed") &&
+                        it.contains("Cannot present checkpoint paywall: no started Activity found.")
+                },
+            )
+        }
+    }
+
+    @Test
+    fun `cancelling the caller leaves the SDK's own paywall to the user and ignores its report`() =
+        runTest(dispatcher) {
+            resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+            val call = launch { runCheckpoint() }
+
+            call.cancel()
+            call.join()
+            finishDefaultPaywall()
+
+            verify(exactly = 0) { mockPresenter.abandon() }
+            verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+        }
 
     @Test
     fun `offering checkpoint cannot present while a UI checkpoint is being presented`() = runTest(dispatcher) {
@@ -583,6 +641,7 @@ class CheckpointsManagerTest {
             assertThat(presentedIdentifier).isEqualTo(checkpointId)
             assertThat(run).isNull()
             assertThat(presentedCallIds).isEmpty()
+            assertThat(defaultPresenter).isNull()
             verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
 
             completion!!.complete(PaywallPresenter.Completion.Result.Continued)
@@ -711,11 +770,13 @@ class CheckpointsManagerTest {
         )
 
         manager.paywallPresenter = null
+        val customerInfo = mockk<CustomerInfo>()
+        syncedCustomerInfoIs(customerInfo)
         var run: CheckpointRun? = null
         val call = launch { run = runCheckpoint() }
-        finishPaywall(CheckpointFlowOutcome.Dismissed)
+        finishDefaultPaywall()
         call.join()
-        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
     }
 
     @Test
@@ -730,11 +791,13 @@ class CheckpointsManagerTest {
         verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
 
         manager.paywallPresenter = null
+        val customerInfo = mockk<CustomerInfo>()
+        syncedCustomerInfoIs(customerInfo)
         var run: CheckpointRun? = null
         val secondCall = launch { run = runCheckpoint() }
-        finishPaywall(CheckpointFlowOutcome.Dismissed)
+        finishDefaultPaywall()
         secondCall.join()
-        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
     }
 
     @Test
@@ -757,6 +820,7 @@ class CheckpointsManagerTest {
 
         assertThat(presented).isEqualTo(offering)
         assertThat(presentedCallIds).isEmpty()
+        assertThat(defaultPresenter).isNull()
         completion!!.complete(PaywallPresenter.Completion.Result.Closed)
         call.join()
 
@@ -826,13 +890,18 @@ class CheckpointsManagerTest {
 
     private fun currentCallId(): String = presentedCallIds.last()
 
-    // Mirrors what CheckpointWorkflowPresenter does: read the pending call for the presented callId, record
-    // the outcome, then report the paywall as finished.
+    // Mirrors what CheckpointWorkflowPresenter does for a workflow: read the pending call for the presented callId,
+    // record the outcome, then report the paywall as finished.
     private fun finishPaywall(outcome: CheckpointFlowOutcome?, navigatedBack: Boolean = false) {
         val callId = currentCallId()
         assertThat(manager.presentation(callId)).isNotNull
         outcome?.let { manager.recordOutcome(callId, it) }
         manager.onPresentationFinished(callId, navigatedBack)
+    }
+
+    // Mirrors what CheckpointWorkflowPresenter does for the SDK's own presenter: report how the window went away.
+    private fun finishDefaultPaywall(navigatedBack: Boolean = false) {
+        defaultPresenter!!.onPresentationFinished("", navigatedBack)
     }
 
     // The callback API; completes synchronously here because the manager's scope runs on the unconfined main

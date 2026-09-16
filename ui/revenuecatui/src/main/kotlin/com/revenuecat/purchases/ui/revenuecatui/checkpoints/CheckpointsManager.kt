@@ -36,8 +36,8 @@ internal sealed class CheckpointFlowContent {
     class Workflow(val resolution: CheckpointResolution.MatchedWorkflow) : CheckpointFlowContent()
 
     /**
-     * A matched offering with no [PaywallPresenter], per call or registered: the offering's configured paywall
-     * is presented, falling back to the default paywall when it has none.
+     * A matched offering presented by [DefaultPaywallPresenter]: the offering's configured paywall, falling back
+     * to the default paywall when it has none.
      */
     class OfferingFlow(val offering: Offering) : CheckpointFlowContent()
 }
@@ -62,10 +62,11 @@ internal class CheckpointRun(
 
 /**
  * Runs a checkpoint hit end to end: asks the core module what the checkpoint resolves to, and presents the
- * resolved flow through [CheckpointWorkflowPresenter]. Owns the checkpoint policy: how outcomes supersede each
- * other and how a finished or failed presentation resolves the suspended [runCheckpoint] call. The pending call
- * itself, and the one-presentation-at-a-time rule, live in [PresentationSlot]; runs that present nothing never
- * claim that slot.
+ * resolved flow: a workflow through a [CheckpointWorkflowPresenter] this manager hosts, an offering through a
+ * [PaywallPresenter], the app's or the SDK's own [DefaultPaywallPresenter]. Owns the checkpoint policy: how
+ * outcomes supersede each other and how a finished or failed presentation resolves the suspended [runCheckpoint]
+ * call. The pending call itself, and the one-presentation-at-a-time rule, live in [PresentationSlot]; runs that
+ * present nothing never claim that slot.
  *
  * There is one instance per [Purchases] instance, held in its `internalCpManagerSlot` and reached through
  * [checkpointsManager], so a reconfigured SDK starts with a free presentation slot. A workflow that is already
@@ -79,7 +80,8 @@ internal class CheckpointsManager(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main),
     private val presenterFactory: (callId: String, manager: CheckpointsManager) -> CheckpointWorkflowPresenter =
         { callId, manager -> CheckpointWorkflowPresenter(callId, manager) },
-) {
+    private val defaultPresenterFactory: (Purchases) -> DefaultPaywallPresenter = { DefaultPaywallPresenter(it) },
+) : CheckpointPresentationHost {
 
     @get:Synchronized
     @set:Synchronized
@@ -160,12 +162,12 @@ internal class CheckpointsManager(
         }
     }
 
-    fun presentation(callId: String): CheckpointPresentation? =
+    override fun presentation(callId: String): CheckpointPresentation? =
         slot.with(callId) { CheckpointPresentation(it.content, it.customVariables) }
 
     // A purchase or restore is what the user went through for, so a later error, web checkout or dismissal must
     // not erase it. A later purchase or restore still replaces it with newer CustomerInfo.
-    fun recordOutcome(callId: String, outcome: CheckpointFlowOutcome) {
+    override fun recordOutcome(callId: String, outcome: CheckpointFlowOutcome) {
         slot.with(callId) {
             if (!it.outcome.isObtained || outcome.isObtained) {
                 it.outcome = outcome
@@ -176,10 +178,10 @@ internal class CheckpointsManager(
     // A recorded purchase or restore means the user went through, however the window went away: checkpoint
     // paywalls don't auto-dismiss on restore, so a user who restored and then backed out still went through. A
     // paywall that went away without reporting anything was dismissed.
-    fun onPresentationFinished(
+    override fun onPresentationFinished(
         callId: String,
-        navigatedBack: Boolean = false,
-        finishPresentation: () -> Unit = {},
+        navigatedBack: Boolean,
+        finishPresentation: () -> Unit,
     ) {
         val finished = slot.take(callId) ?: run {
             finishPresentation()
@@ -198,7 +200,7 @@ internal class CheckpointsManager(
     // Like onPresentationFinished, for a presentation that failed: an outcome the paywall already reported
     // (e.g. a purchase before the configuration change) still wins, but a workflow that failed before
     // reporting anything surfaces as an error rather than a phantom dismissal.
-    fun onPresentationFailed(callId: String, error: PurchasesError) {
+    override fun onPresentationFailed(callId: String, error: PurchasesError) {
         val failed = slot.take(callId) ?: return
         failed.flowFinished.complete(
             CheckpointRun(failed.outcome ?: CheckpointFlowOutcome.Error(error), backedOut = false),
@@ -207,9 +209,9 @@ internal class CheckpointsManager(
 
     /**
      * Presents a matched offering through [presenter] (the call's own, else the registered [paywallPresenter])
-     * when there is one; the offering's own (or the default fallback) paywall otherwise. The app-owned
-     * presentation claims the same one-presentation-at-a-time slot as SDK-presented workflows and resolves through
-     * its completion's first report, after the SDK has synced the store purchases made during it.
+     * when there is one, and through the SDK's own [DefaultPaywallPresenter] otherwise. Either way the
+     * presentation claims the same one-presentation-at-a-time slot as workflows and resolves through its
+     * completion's first report, after the SDK has synced the store purchases made during it.
      */
     private suspend fun presentOffering(
         purchases: Purchases,
@@ -219,11 +221,13 @@ internal class CheckpointsManager(
         presenter: PaywallPresenter?,
     ): CheckpointRun {
         val content = CheckpointFlowContent.OfferingFlow(offering)
-        return if (presenter == null) {
-            present(purchases, content, customVariables)
-        } else {
-            presentThroughPresenter(purchases, identifier, content, customVariables, presenter)
-        }
+        return presentThroughPresenter(
+            purchases,
+            identifier,
+            content,
+            customVariables,
+            presenter ?: defaultPresenterFactory(purchases),
+        )
     }
 
     private suspend fun presentThroughPresenter(
@@ -244,12 +248,12 @@ internal class CheckpointsManager(
         } catch (e: CancellationException) {
             abandon(call.callId)
             throw e
+        } catch (e: PurchasesException) {
+            abandon(call.callId)
+            presentationError(PurchasesErrorCode.ConfigurationError, "Paywall presenter failed: ${e.error}")
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             abandon(call.callId)
-            presentationError(
-                PurchasesErrorCode.ConfigurationError,
-                "Paywall presenter failed: $e",
-            )
+            presentationError(PurchasesErrorCode.ConfigurationError, "Paywall presenter failed: $e")
         }
     }
 
@@ -312,7 +316,7 @@ internal class CheckpointsManager(
 
     private suspend fun present(
         purchases: Purchases,
-        content: CheckpointFlowContent,
+        content: CheckpointFlowContent.Workflow,
         customVariables: Map<String, CustomVariableValue>,
     ): CheckpointRun {
         val activity = purchases.currentActivity ?: presentationError(
@@ -338,9 +342,10 @@ internal class CheckpointsManager(
         }
     }
 
-    // Counterpart of onPresentationFinished for calls that fail or get cancelled before the presented workflow
-    // reports: releases the slot and takes the orphaned paywall down with the caller that asked for it.
-    // Always runs on the main thread, inside the checkpoint() dispatch.
+    // Counterpart of onPresentationFinished for calls that fail or get cancelled before the presented flow
+    // reports: releases the slot and takes an orphaned workflow window down with the caller that asked for it. A
+    // paywall presenter's UI, the SDK's own included, is left to the user: its report will find no call and be
+    // ignored. Always runs on the main thread, inside the checkpoint() dispatch.
     private fun abandon(callId: String) {
         slot.take(callId)?.presenter?.abandon()
     }
