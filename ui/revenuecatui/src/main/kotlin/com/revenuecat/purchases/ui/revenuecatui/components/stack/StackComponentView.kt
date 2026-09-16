@@ -140,22 +140,24 @@ internal fun StackComponentView(
     contentAlpha: (() -> Float)? = null,
     componentInteractionTracker: PaywallComponentInteractionTracker = PaywallComponentInteractionTracker { _ -> },
 ) {
-    val localState = remember(style, state) {
-        state.localSelectionState(style)?.also {
+    val independentState = remember(style, state) {
+        state.independentSelectionState(style)?.also {
             it.paywallBoundsDp = state.paywallBoundsDp
             it.windowScreenCondition = state.windowScreenCondition
-            it.reconcileLocalSelection(initialize = true)
+            it.reconcileIndependentSelection(initialize = true)
         }
     }
-    if (localState != null) {
-        localState.paywallBoundsDp = state.paywallBoundsDp
-        localState.headerHeightPx = state.headerHeightPx
-        localState.windowScreenCondition = state.windowScreenCondition
-        localState.reconcileLocalSelection()
+    if (independentState != null) {
+        independentState.paywallBoundsDp = state.paywallBoundsDp
+        independentState.headerHeightPx = state.headerHeightPx
+        independentState.windowScreenCondition = state.windowScreenCondition
+        independentState.reconcileIndependentSelection()
         StackComponentView(
-            style = remember(style) { style.copy(localPackages = null) },
-            state = localState,
-            clickHandler = { action -> handleClick(action, localState, clickHandler, componentInteractionTracker) },
+            style = remember(style) { style.copy(independentPackages = null) },
+            state = independentState,
+            clickHandler = { action ->
+                handleClick(action, independentState, clickHandler, componentInteractionTracker)
+            },
             modifier = modifier,
             onStackClick = onStackClick,
             enabled = enabled,
