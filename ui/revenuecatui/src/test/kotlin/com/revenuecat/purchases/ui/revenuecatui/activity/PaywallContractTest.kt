@@ -14,7 +14,7 @@ class PaywallContractTest {
     private val contract = PaywallContract()
 
     @Test
-    @Config(sdk = [32, 33, 34])
+    @Config(sdk = [24, 33, 36])
     fun `parses result on every API level`() {
         val intent = Intent().putExtra(PaywallActivity.RESULT_EXTRA, PaywallResult.Cancelled)
 
@@ -24,7 +24,7 @@ class PaywallContractTest {
     }
 
     @Test
-    @Config(sdk = [32, 33, 34])
+    @Config(sdk = [24, 33, 36])
     fun `returns error when result extra is another Parcelable type`() {
         val intent = Intent().putExtra(
             PaywallActivity.RESULT_EXTRA,
