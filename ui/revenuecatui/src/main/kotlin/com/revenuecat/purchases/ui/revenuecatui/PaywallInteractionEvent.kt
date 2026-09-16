@@ -2,6 +2,8 @@ package com.revenuecat.purchases.ui.revenuecatui
 
 /**
  * A paywall control interaction, as passed to [PaywallListener.onInteraction].
+ *
+ * See https://rev.cat/paywall-interaction-events for what each component type sends.
  */
 public class PaywallInteractionEvent internal constructor(
     /** The interaction as snake_case keys ([Key.name]) for analytics SDKs; keys that do not apply are absent. */
