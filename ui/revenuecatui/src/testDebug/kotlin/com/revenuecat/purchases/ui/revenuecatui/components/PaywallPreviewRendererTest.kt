@@ -29,6 +29,7 @@ internal class PaywallPreviewRendererTest {
         val data = fixture.paywallComponents.data.getOrThrow()
         assertThat(data.templateName).isEqualTo("components")
         assertThat(data.defaultLocaleIdentifier).isEqualTo(LocaleId("en_US"))
+        assertThat(data.revision).isEqualTo(1)
         assertThat(
             data.componentsLocalizations[LocaleId("en_US")]?.get(LocalizationKey("title")),
         ).isEqualTo(LocalizationData.Text("JSON paywall preview"))
@@ -54,7 +55,9 @@ internal class PaywallPreviewRendererTest {
             {
               "template_name": "components",
               "asset_base_url": "https://assets.pawwalls.com",
-              "generated_by": "unit-test",
+              "revision": 1,
+              "generated_by": "dashboard",
+              "published_revision": 9,
               "components_config": {
                 "base": {
                   "background": {
@@ -69,7 +72,9 @@ internal class PaywallPreviewRendererTest {
                       "type": "vertical",
                       "alignment": "center",
                       "distribution": "center"
-                    }
+                    },
+                    "padding": { "leading": 0, "trailing": 0, "top": 0, "bottom": 0 },
+                    "margin": { "leading": 0, "trailing": 0, "top": 0, "bottom": 0 }
                   }
                 }
               },

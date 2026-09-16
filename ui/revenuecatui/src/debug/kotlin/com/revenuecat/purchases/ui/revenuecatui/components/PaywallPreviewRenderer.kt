@@ -47,11 +47,15 @@ internal object PaywallPreviewRenderer {
 
     /**
      * Dashboard-shaped `PaywallComponentsData` JSON for the sample preview and unit tests.
+     * Includes required fields (`revision`, `padding`, `margin`) so the iOS decoder does not
+     * record `errorInfo`. Extra dashboard keys such as `published_*` can be left in pasted JSON.
      */
     const val SAMPLE_JSON = """
     {
       "template_name": "components",
       "asset_base_url": "https://assets.pawwalls.com",
+      "revision": 1,
+      "default_locale": "en_US",
       "components_config": {
         "base": {
           "background": {
@@ -75,7 +79,9 @@ internal object PaywallPreviewRenderer {
                 "size": {
                   "width": { "type": "fit" },
                   "height": { "type": "fit" }
-                }
+                },
+                "padding": { "leading": 0, "trailing": 0, "top": 0, "bottom": 0 },
+                "margin": { "leading": 0, "trailing": 0, "top": 0, "bottom": 0 }
               }
             ],
             "size": {
@@ -86,14 +92,15 @@ internal object PaywallPreviewRenderer {
               "type": "vertical",
               "alignment": "center",
               "distribution": "center"
-            }
+            },
+            "padding": { "leading": 0, "trailing": 0, "top": 0, "bottom": 0 },
+            "margin": { "leading": 0, "trailing": 0, "top": 0, "bottom": 0 }
           }
         }
       },
       "components_localizations": {
         "en_US": { "title": "JSON paywall preview" }
-      },
-      "default_locale": "en_US"
+      }
     }
     """
 
