@@ -48,6 +48,34 @@ class CheckpointParamsTest {
     }
 
     @Test
+    fun `params default to no paywall presenter`() {
+        assertThat(CheckpointParams {}.paywallPresenter).isNull()
+        assertThat(CheckpointParams.Builder().build().paywallPresenter).isNull()
+    }
+
+    @Test
+    fun `the paywall presenter is set through the builder and the DSL alike`() {
+        val presenter = PaywallPresenter { _, _ -> }
+
+        assertThat(CheckpointParams { paywallPresenter(presenter) }.paywallPresenter).isSameAs(presenter)
+        assertThat(CheckpointParams.Builder().setPaywallPresenter(presenter).build().paywallPresenter)
+            .isSameAs(presenter)
+        val cleared = CheckpointParams.Builder().setPaywallPresenter(presenter).setPaywallPresenter(null).build()
+        assertThat(cleared.paywallPresenter).isNull()
+    }
+
+    @Test
+    fun `params are equal only when their paywall presenters are`() {
+        val presenter = PaywallPresenter { _, _ -> }
+        val params = CheckpointParams { paywallPresenter(presenter) }
+
+        assertThat(params).isEqualTo(CheckpointParams { paywallPresenter(presenter) })
+        assertThat(params.hashCode()).isEqualTo(CheckpointParams { paywallPresenter(presenter) }.hashCode())
+        assertThat(params).isNotEqualTo(CheckpointParams { paywallPresenter { _, _ -> } })
+        assertThat(params).isNotEqualTo(CheckpointParams {})
+    }
+
+    @Test
     fun `each infix overload maps to its custom variable variant`() {
         val params = CheckpointParams {
             customVariables {
