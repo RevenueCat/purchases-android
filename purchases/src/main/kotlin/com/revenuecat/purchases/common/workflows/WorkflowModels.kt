@@ -47,6 +47,24 @@ public sealed class WorkflowTriggerAction {
     @Serializable
     public data class Step(@SerialName("step_id") val stepId: String) : WorkflowTriggerAction()
 
+    /**
+     * Routes to the first branch whose audience matches, and to [fallbackStepId] otherwise. The audience
+     * rules arrive in the `audiences` topic, so only the id is carried here.
+     */
+    @InternalRevenueCatAPI
+    @Serializable
+    public data class Branch(
+        val branches: List<Route>,
+        @SerialName("fallback_step_id") val fallbackStepId: String,
+    ) : WorkflowTriggerAction() {
+        @InternalRevenueCatAPI
+        @Serializable
+        public data class Route(
+            @SerialName("audience_id") val audienceId: String,
+            @SerialName("step_id") val stepId: String,
+        )
+    }
+
     @InternalRevenueCatAPI
     @Serializable
     public object Unknown : WorkflowTriggerAction()
@@ -54,7 +72,10 @@ public sealed class WorkflowTriggerAction {
 
 internal object WorkflowTriggerActionSerializer : SealedDeserializerWithDefault<WorkflowTriggerAction>(
     serialName = "WorkflowTriggerAction",
-    serializerByType = mapOf("step" to { WorkflowTriggerAction.Step.serializer() }),
+    serializerByType = mapOf(
+        "step" to { WorkflowTriggerAction.Step.serializer() },
+        "branch" to { WorkflowTriggerAction.Branch.serializer() },
+    ),
     defaultValue = { WorkflowTriggerAction.Unknown },
 )
 
