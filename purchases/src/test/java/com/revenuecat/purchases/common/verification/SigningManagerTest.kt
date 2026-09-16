@@ -45,6 +45,7 @@ class SigningManagerTest {
     fun setUp() {
         appConfig = mockk<AppConfig>().apply {
             every { forceSigningErrors } returns false
+            every { disableRequiredSignatureVerifications } returns false
         }
         intermediateKeyVerifier = mockk()
         intermediateSignatureHelper = mockk<IntermediateSignatureHelper>().apply {
@@ -94,6 +95,25 @@ class SigningManagerTest {
     fun `shouldVerifyEndpoint returns true if endpoint requires verification and verification mode disabled`() {
         assertThat(disabledSigningManager.shouldVerifyEndpoint(Endpoint.GetRemoteConfig("app"))).isTrue
         assertThat(disabledSigningManager.shouldVerifyEndpoint(Endpoint.GetRemoteConfigFallback("app"))).isTrue
+    }
+
+    @Test
+    fun `shouldVerifyEndpoint returns false for required endpoints in every mode when required verifications are disabled`() {
+        every { appConfig.disableRequiredSignatureVerifications } returns true
+
+        listOf(disabledSigningManager, informationalSigningManager, enforcedSigningManager).forEach { signingManager ->
+            assertThat(signingManager.shouldVerifyEndpoint(Endpoint.GetRemoteConfig("app"))).isFalse
+            assertThat(signingManager.shouldVerifyEndpoint(Endpoint.GetRemoteConfigFallback("app"))).isFalse
+        }
+    }
+
+    @Test
+    fun `shouldVerifyEndpoint keeps following the mode for other endpoints when required verifications are disabled`() {
+        every { appConfig.disableRequiredSignatureVerifications } returns true
+
+        assertThat(disabledSigningManager.shouldVerifyEndpoint(Endpoint.PostReceipt)).isFalse
+        assertThat(informationalSigningManager.shouldVerifyEndpoint(Endpoint.PostReceipt)).isTrue
+        assertThat(enforcedSigningManager.shouldVerifyEndpoint(Endpoint.PostReceipt)).isTrue
     }
 
     @Test

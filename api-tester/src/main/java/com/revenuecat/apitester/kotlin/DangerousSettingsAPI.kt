@@ -6,6 +6,17 @@ import com.revenuecat.purchases.DangerousSettings
 private class DangerousSettingsAPI {
     fun check(dangerousSettings: DangerousSettings) {
         val autoSync: Boolean = dangerousSettings.autoSyncPurchases
+        val disableRequiredSignatureVerifications: Boolean =
+            dangerousSettings.disableRequiredSignatureVerifications
         dangerousSettings.forceAllowTestStoreInReleaseBuilds()
+    }
+
+    fun checkConstructors() {
+        val defaults = DangerousSettings()
+        val autoSync = DangerousSettings(autoSyncPurchases = false)
+        val skipping = DangerousSettings(
+            autoSyncPurchases = true,
+            disableRequiredSignatureVerifications = true,
+        )
     }
 }

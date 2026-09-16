@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.networking.RCContentEncoding
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.common.verification.SigningManager
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -663,6 +664,59 @@ internal class HTTPClientVerificationTest: BaseHTTPClientTest() {
                 requestHeaders = emptyMap()
             )
         }
+    }
+
+    @Test
+    fun `performRequest does not verify a remote config response when required verifications are disabled`() {
+        listOf(
+            SignatureVerificationMode.Disabled,
+            SignatureVerificationMode.Informational,
+            SignatureVerificationMode.Enforced,
+        ).forEach { mode ->
+            val appConfig = createAppConfig(disableRequiredSignatureVerifications = true)
+            client = createClient(
+                appConfig = appConfig,
+                signingManager = SigningManager(mode, appConfig, "test-api-key"),
+            )
+            val endpoint = Endpoint.GetRemoteConfig("app")
+            enqueueRCFormat(buildContainer("{\"config\":true}".toByteArray()))
+
+            val result = client.performRequest(
+                baseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                requestHeaders = emptyMap()
+            )
+
+            assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
+            assertThat(server.takeRequest().getHeader("X-Nonce")).isNull()
+        }
+    }
+
+    @Test
+    fun `performRequest does not verify a remote config fallback response when required verifications are disabled`() {
+        val appConfig = createAppConfig(disableRequiredSignatureVerifications = true)
+        client = createClient(
+            appConfig = appConfig,
+            signingManager = SigningManager(SignatureVerificationMode.Enforced, appConfig, "test-api-key"),
+        )
+        val endpoint = Endpoint.GetRemoteConfigFallback("app")
+        enqueue(
+            urlPath = endpoint.getPath(),
+            expectedResult = HTTPResult.createResult(verificationResult = VerificationResult.NOT_REQUESTED),
+            verificationResult = VerificationResult.NOT_REQUESTED
+        )
+
+        val result = client.performRequest(
+            baseURL,
+            endpoint,
+            body = null,
+            postFieldsToSign = null,
+            requestHeaders = emptyMap()
+        )
+
+        assertThat(result.verificationResult).isEqualTo(VerificationResult.NOT_REQUESTED)
     }
 
     @Test

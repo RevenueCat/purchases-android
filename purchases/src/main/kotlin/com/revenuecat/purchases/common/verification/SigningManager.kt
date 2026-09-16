@@ -83,8 +83,10 @@ internal class SigningManager(
     }
 
     fun shouldVerifyEndpoint(endpoint: Endpoint): Boolean {
-        return endpoint.supportsSignatureVerification &&
-            (signatureVerificationMode.shouldVerify || endpoint.requiresSignatureVerification)
+        if (endpoint.requiresSignatureVerification) {
+            return !appConfig.disableRequiredSignatureVerifications
+        }
+        return endpoint.supportsSignatureVerification && signatureVerificationMode.shouldVerify
     }
 
     fun createRandomNonce(): String {
@@ -124,7 +126,7 @@ internal class SigningManager(
      * (JSON) body, or the config element's checksum for RC Container Format responses.
      *
      * Only meaningful for endpoints where [shouldVerifyEndpoint] is true: with verification disabled those are the
-     * endpoints that require it.
+     * endpoints that require it, unless the `disableRequiredSignatureVerifications` dangerous setting is on.
      */
     @Suppress("LongParameterList", "ReturnCount", "CyclomaticComplexMethod", "LongMethod")
     fun verifyResponse(
