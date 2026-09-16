@@ -138,6 +138,7 @@ class SubscriberAttributesPurchasesTests {
             workflowsConfigProvider = mockk(relaxed = true),
             checkpointsConfigProvider = mockk(relaxed = true),
             audiencesConfigProvider = mockk(relaxed = true),
+            tokenManager = mockk(relaxed = true),
         )
 
         underTest = Purchases(purchasesOrchestrator)

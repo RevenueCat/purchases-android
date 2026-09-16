@@ -56,6 +56,7 @@ import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.localrules.LocalRulesEvaluator
 import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.networking.TokenManager
 import com.revenuecat.purchases.common.offerings.OfferingsManager
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
@@ -185,6 +186,8 @@ internal class PurchasesOrchestrator(
     private val checkpointsConfigProvider: CheckpointsConfigProvider,
     @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal val audiencesConfigProvider: AudiencesConfigProvider,
+    @get:VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal val tokenManager: TokenManager,
     val adTracker: AdTracker = AdTracker(adEventsManager),
     private val currentActivityTracker: CurrentActivityTracker = CurrentActivityTracker(),
     private val localRulesEvaluator: LocalRulesEvaluator = LocalRulesEvaluator(
@@ -962,6 +965,7 @@ internal class PurchasesOrchestrator(
         this.workflowManager.close()
         this.uiConfigProvider.close()
         this.workflowsConfigProvider.close()
+        this.tokenManager.close()
 
         billing.close()
         updatedCustomerInfoListener = null // Do not call on state since the setter does more stuff
