@@ -103,6 +103,7 @@ internal class AppInfoScreenViewModelImpl(
     }
 
     override fun switchApiKey(newApiKey: String) {
+        if (newApiKey == Purchases.sharedInstance.currentConfiguration.apiKey) return
         clearAllSubscriberAttributes()
         subscriberAttributesStore.clearAll()
         apiKeyStore.setLastUsedApiKey(newApiKey)
