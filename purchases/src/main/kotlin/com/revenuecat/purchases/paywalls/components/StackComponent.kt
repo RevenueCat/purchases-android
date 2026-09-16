@@ -125,5 +125,6 @@ internal object StackOverflowDeserializer : EnumDeserializerWithDefault<StackCom
 @Immutable
 public class PackageSelection(
     @get:JvmSynthetic
-    public val mode: String,
+    @SerialName("default_scope")
+    public val defaultScope: String,
 )

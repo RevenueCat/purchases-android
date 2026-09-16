@@ -40,12 +40,12 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
     private val localeId = LocaleId("en_US")
 
     @Test
-    fun `independent selection changes do not mutate the parent and reopen starts at default`() {
+    fun `sheet default and package taps update shared CTA selection and reopen applies default`() {
         val parent = paywallState(
             listOf(packageInfo(TestData.Packages.annual, true)), emptyMap(), null,
         )
         val style = previewStackComponentStyle(children = emptyList()).copy(
-            independentPackages = PaywallState.Loaded.Components.AvailablePackages(
+            defaultScopePackages = PaywallState.Loaded.Components.AvailablePackages(
                 packagesOutsideTabs = listOf(
                     packageInfo(TestData.Packages.monthly, true),
                     packageInfo(TestData.Packages.weekly, false),
@@ -54,41 +54,47 @@ internal class PaywallStateLoadedComponentsPackageSelectionTests {
                 hasDeclaredPackages = true,
             ),
         )
-        val child = requireNotNull(parent.independentSelectionState(style))
+        val child = requireNotNull(parent.defaultScopeState(style))
         assertThat(child.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+        assertThat(parent.selectedPackageInfo).isEqualTo(child.selectedPackageInfo)
         child.update(TestData.Packages.weekly.identifier)
-        assertThat(child.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.weekly)
-        assertThat(parent.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
-        assertThat(parent.independentSelectionState(style)?.selectedPackageInfo?.rcPackage)
-            .isEqualTo(TestData.Packages.monthly)
+        assertThat(parent.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.weekly)
+
+        // Dismissal does not reset a scoped sheet. The external CTA still sees weekly.
+        assertThat(parent.selectedPackageInfo).isEqualTo(child.selectedPackageInfo)
+        parent.update(TestData.Packages.annual.identifier)
+        assertThat(child.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+        val reopened = requireNotNull(parent.defaultScopeState(style))
+        assertThat(reopened.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.monthly)
+        assertThat(parent.selectedPackageInfo).isEqualTo(reopened.selectedPackageInfo)
     }
 
     @Test
-    fun `informational scope inherits but unavailable independent packages do not inherit`() {
+    fun `informational scope inherits but unavailable scoped packages do not inherit`() {
         val parent = paywallState(listOf(packageInfo(TestData.Packages.annual, true)), emptyMap(), null)
         val style = previewStackComponentStyle(children = emptyList()).copy(
-            independentPackages = PaywallState.Loaded.Components.AvailablePackages(emptyList(), emptyMap()),
+            defaultScopePackages = PaywallState.Loaded.Components.AvailablePackages(emptyList(), emptyMap()),
         )
-        assertThat(parent.independentSelectionState(style)).isNull()
-        val unavailable = style.copy(independentPackages = style.independentPackages!!.copy(hasDeclaredPackages = true))
-        assertThat(parent.independentSelectionState(unavailable)).isNotNull()
-        assertThat(parent.independentSelectionState(unavailable)?.selectedPackageInfo).isNull()
+        assertThat(parent.defaultScopeState(style)).isNull()
+        val unavailable = style.copy(defaultScopePackages = style.defaultScopePackages!!.copy(hasDeclaredPackages = true))
+        assertThat(parent.defaultScopeState(unavailable)).isNotNull()
+        assertThat(parent.defaultScopeState(unavailable)?.selectedPackageInfo).isNull()
     }
 
     @Test
-    fun `hidden independent packages never fall back to the parent selection`() {
+    fun `hidden scoped packages never fall back to the parent selection`() {
         val parent = paywallState(listOf(packageInfo(TestData.Packages.annual, true)), emptyMap(), null)
         val style = previewStackComponentStyle(children = emptyList()).copy(
-            independentPackages = PaywallState.Loaded.Components.AvailablePackages(
+            defaultScopePackages = PaywallState.Loaded.Components.AvailablePackages(
                 packagesOutsideTabs = listOf(packageInfo(TestData.Packages.monthly, true, visible = false)),
                 packagesByTab = emptyMap(),
                 hasDeclaredPackages = true,
             ),
         )
-        val independent = requireNotNull(parent.independentSelectionState(style))
-        independent.reconcileIndependentSelection(initialize = true)
-        assertThat(independent.selectedPackageInfo).isNull()
-        assertThat(parent.selectedPackageInfo?.rcPackage).isEqualTo(TestData.Packages.annual)
+        val scope = requireNotNull(parent.defaultScopeState(style))
+        scope.reconcileDefaultScopeSelection(initialize = true)
+        assertThat(scope.selectedPackageInfo).isNull()
+        assertThat(parent.selectedPackageInfo).isNull()
     }
 
     @Test

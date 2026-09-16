@@ -297,19 +297,19 @@ internal class StyleFactory(
                 hasDeclaredPackages = hasDeclaredPackages,
             )
 
-        data class IndependentPackageSelectionResult<T>(
+        data class PackageDefaultScopeResult<T>(
             val value: T,
             val packages: AvailablePackages,
             val defaultTabIndex: Int?,
         )
 
         /**
-         * Collects packages for a independent stack without adding them to the parent's selectable packages.
+         * Collects packages for a default-scoped stack without adding them to the parent's selectable packages.
          * Layout and interaction context stay shared; package and tab selection context is restored afterward.
          */
-        fun <T> withIndependentPackageSelection(
+        fun <T> withPackageDefaultScope(
             block: StyleFactoryScope.() -> T,
-        ): IndependentPackageSelectionResult<T> {
+        ): PackageDefaultScopeResult<T> {
             val previousOutside = packagesOutsideTabs
             val previousTabs = packagesByTab
             val previousNested = nestedPackages
@@ -330,9 +330,9 @@ internal class StyleFactory(
             tabControlIndex = null
             try {
                 val result = block()
-                val independentPackages = packages
-                previousNested.addAll(independentPackages.allPackages)
-                return IndependentPackageSelectionResult(result, independentPackages, defaultTabIndex)
+                val defaultScopePackages = packages
+                previousNested.addAll(defaultScopePackages.allPackages)
+                return PackageDefaultScopeResult(result, defaultScopePackages, defaultTabIndex)
             } finally {
                 packagesOutsideTabs = previousOutside
                 packagesByTab = previousTabs
@@ -970,14 +970,14 @@ internal class StyleFactory(
         component: StackComponent,
     ): Result<StackComponentStyle, NonEmptyList<PaywallValidationError>> {
         val selection = component.packageSelection
-        if (selection?.mode != "independent") return createStackContentsStyle(component)
-        val independentSelection = withIndependentPackageSelection {
+        if (selection?.defaultScope != "container") return createStackContentsStyle(component)
+        val scopedDefaults = withPackageDefaultScope {
             createStackContentsStyle(component)
         }
-        return independentSelection.value.map { style ->
+        return scopedDefaults.value.map { style ->
             style.copy(
-                independentPackages = independentSelection.packages,
-                independentDefaultTabIndex = independentSelection.defaultTabIndex,
+                defaultScopePackages = scopedDefaults.packages,
+                defaultScopeTabIndex = scopedDefaults.defaultTabIndex,
             )
         }
     }

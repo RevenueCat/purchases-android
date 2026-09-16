@@ -102,13 +102,13 @@ class StyleFactoryTests {
     }
 
     @Test
-    fun `Independent stack defaults use package flags and stay outside parent selection`() {
+    fun `Scoped defaults use package flags and do not become the parent default`() {
         val monthly = PackageComponent(
             packageId = "\$rc_monthly",
             isSelectedByDefault = true,
             stack = StackComponent(components = emptyList()),
         )
-        val independent = StackComponent(
+        val scope = StackComponent(
             components = listOf(
                 PackageComponent(
                     packageId = "\$rc_annual",
@@ -117,19 +117,19 @@ class StyleFactoryTests {
                 ),
                 monthly,
             ),
-            packageSelection = PackageSelection(mode = "independent"),
+            packageSelection = PackageSelection(defaultScope = "container"),
         )
         val annual = PackageComponent(
             packageId = "\$rc_annual",
             isSelectedByDefault = true,
             stack = StackComponent(components = emptyList()),
         )
-        val result = styleFactory.create(StackComponent(components = listOf(annual, independent))).getOrThrow()
+        val result = styleFactory.create(StackComponent(components = listOf(annual, scope))).getOrThrow()
         assertThat(result.availablePackages.packagesOutsideTabs.map { it.pkg.identifier }).containsExactly("\$rc_annual")
         assertThat(result.availablePackages.allPackages.map { it.pkg.identifier }).containsExactly("\$rc_annual", "\$rc_annual", "\$rc_monthly")
         val rootStyle = result.componentStyle as StackComponentStyle
-        val independentStyle = rootStyle.children[1] as StackComponentStyle
-        assertThat(independentStyle.independentPackages!!.packagesOutsideTabs.map { it.isSelectedByDefault })
+        val scopeStyle = rootStyle.children[1] as StackComponentStyle
+        assertThat(scopeStyle.defaultScopePackages!!.packagesOutsideTabs.map { it.isSelectedByDefault })
             .containsExactly(false, true)
     }
 
