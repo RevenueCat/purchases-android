@@ -2,8 +2,6 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.icons
 
-import androidx.compose.material.icons.materialIcon
-import androidx.compose.material.icons.materialPath
 import androidx.compose.ui.graphics.vector.ImageVector
 
 internal val Warning: ImageVector
