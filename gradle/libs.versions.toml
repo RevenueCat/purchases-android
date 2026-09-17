@@ -20,7 +20,7 @@ appcompat = "1.4.1"
 assertJ = "3.22.0"
 browser = "1.8.0"
 billingClient = "9.1.0"
-composeBom = "2024.09.00"
+composeBom = "2026.06.01"
 composeAnnotation = "1.9.0"
 coil = "2.4.0"
 coreTesting = "2.0.0"
@@ -127,6 +127,7 @@ compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeB
 compose-constraintlayout = { module = "androidx.constraintlayout:constraintlayout-compose", version.ref = "constraintlayout" }
 compose-foundation-layout = { module = "androidx.compose.foundation:foundation-layout" }
 compose-material = { module = "androidx.compose.material:material" }
+compose-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-material3Adaptive = { module = "androidx.compose.material3.adaptive:adaptive" }
 compose-ui = { module = "androidx.compose.ui:ui" }
