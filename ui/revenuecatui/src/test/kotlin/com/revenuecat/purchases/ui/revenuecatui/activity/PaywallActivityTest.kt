@@ -31,6 +31,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 class PaywallActivityTest {
@@ -74,6 +75,48 @@ class PaywallActivityTest {
 
         // Assert - activity should be destroyed (finished gracefully without crashing)
         assertThat(scenario.state).isEqualTo(Lifecycle.State.DESTROYED)
+    }
+
+    @Test
+    @Config(sdk = [24, 33, 34])
+    fun `activity finishes gracefully when args extra is another Parcelable type`() {
+        val intent = Intent(
+            ApplicationProvider.getApplicationContext<Context>(),
+            PaywallActivity::class.java,
+        ).putExtra(PaywallActivity.ARGS_EXTRA, PaywallResult.Cancelled)
+
+        val scenario = launchActivity<PaywallActivity>(intent)
+
+        assertThat(scenario.state).isEqualTo(Lifecycle.State.DESTROYED)
+    }
+
+    @Test
+    @Config(sdk = [24, 33, 34])
+    fun `activity reads args on every API level`() {
+        val offeringSelection = OfferingSelection.IdAndPresentedOfferingContext(
+            offeringId = TestData.template1Offering.identifier,
+            presentedOfferingContext = null,
+        )
+        val args = PaywallActivityArgs(offeringIdAndPresentedOfferingContext = offeringSelection)
+        val intent = Intent(
+            ApplicationProvider.getApplicationContext<Context>(),
+            PaywallActivity::class.java,
+        ).putExtra(PaywallActivity.ARGS_EXTRA, args)
+        val viewModelKey = PaywallOptions.Builder(dismissRequest = {})
+            .setOfferingSelection(offeringSelection)
+            .setShouldDisplayDismissButton(DEFAULT_DISPLAY_DISMISS_BUTTON)
+            .build()
+            .hashCode()
+            .toString()
+
+        val scenario = launchActivity<PaywallActivity>(intent)
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync()
+
+        scenario.onActivity { activity ->
+            assertThat(activity.isFinishing).isFalse()
+            val viewModel = ViewModelProvider(activity).get(viewModelKey, PaywallViewModelImpl::class.java)
+            assertThat(viewModel.state.value).isInstanceOf(PaywallState.Loaded::class.java)
+        }
     }
 
     @Test

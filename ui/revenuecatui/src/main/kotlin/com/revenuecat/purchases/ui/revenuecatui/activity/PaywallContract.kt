@@ -3,8 +3,8 @@ package com.revenuecat.purchases.ui.revenuecatui.activity
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import androidx.activity.result.contract.ActivityResultContract
+import androidx.core.content.IntentCompat
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 
@@ -23,11 +23,11 @@ internal class PaywallContract : ActivityResultContract<PaywallActivityArgs, Pay
         if (resultCode != Activity.RESULT_OK || intent == null) {
             return PaywallResult.Cancelled
         }
-        val result = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(PaywallActivity.RESULT_EXTRA, PaywallResult::class.java)
-        } else {
-            intent.getParcelableExtra(PaywallActivity.RESULT_EXTRA) as? PaywallResult
-        }
+        val result = IntentCompat.getParcelableExtra(
+            intent,
+            PaywallActivity.RESULT_EXTRA,
+            PaywallResult::class.java,
+        )
         return result ?: PaywallResult.Error(
             PurchasesError(PurchasesErrorCode.UnknownError, "PaywallActivity returned null result"),
         )
