@@ -162,6 +162,24 @@ class CheckpointsManagerTest {
     }
 
     @Test
+    fun `a granting restore in the SDK's own paywall followed by back is not backed out`() = runTest(dispatcher) {
+        val customerInfo = mockk<CustomerInfo>()
+        syncedCustomerInfoIs(customerInfo)
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        val restored = mockk<CustomerInfo> { every { entitlements.active } returns mapOf("pro" to mockk()) }
+
+        defaultPresenter!!.recordOutcome("", CheckpointFlowOutcome.Restored(restored))
+        finishDefaultPaywall(navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
+        assertThat(run!!.backedOut).isFalse
+        verify(exactly = 1) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+    }
+
+    @Test
     fun `the SDK's own paywall without a started activity fails and presents nothing`() = runTest(dispatcher) {
         every { mockPurchases.currentActivity } returns null
         resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))

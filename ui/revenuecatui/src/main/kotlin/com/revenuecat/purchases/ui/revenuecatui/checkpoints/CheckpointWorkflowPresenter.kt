@@ -150,6 +150,9 @@ internal class CheckpointWorkflowPresenter(
         teardown()
     }
 
+    /** Closes the window as if the paywall had requested it, reporting like any other close. */
+    fun dismiss() = requestDismiss(PaywallDismissReason.CLOSE)
+
     private val lifecycleCallbacks = object : Application.ActivityLifecycleCallbacks {
         override fun onActivityDestroyed(activity: Activity) {
             if (activity !== host) return

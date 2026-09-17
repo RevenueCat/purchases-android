@@ -14,20 +14,20 @@ import kotlin.coroutines.resume
  * entitlement active after the flow as obtained during it.
  */
 internal suspend fun cachedActiveEntitlementIds(purchases: Purchases): Set<String>? =
-    suspendCancellableCoroutine { continuation ->
-        purchases.getCustomerInfo(
-            CacheFetchPolicy.CACHE_ONLY,
-            object : ReceiveCustomerInfoCallback {
-                override fun onReceived(customerInfo: CustomerInfo) {
-                    continuation.resume(customerInfo.entitlements.active.keys)
-                }
+    suspendCancellableCoroutine { continuation -> purchases.cachedActiveEntitlementIds(continuation::resume) }
 
-                override fun onError(error: PurchasesError) {
-                    continuation.resume(null)
-                }
-            },
-        )
-    }
+// Callback form for main-thread callers that cannot suspend; the SDK delivers a cache-only read inline when called
+// on its handler's thread.
+internal fun Purchases.cachedActiveEntitlementIds(onResult: (Set<String>?) -> Unit) {
+    getCustomerInfo(
+        CacheFetchPolicy.CACHE_ONLY,
+        object : ReceiveCustomerInfoCallback {
+            override fun onReceived(customerInfo: CustomerInfo) = onResult(customerInfo.entitlements.active.keys)
+
+            override fun onError(error: PurchasesError) = onResult(null)
+        },
+    )
+}
 
 /**
  * The result to deliver for this run: null when nothing was presented (nothing to serve, a presentation that
@@ -37,19 +37,19 @@ internal fun CheckpointRun.toResult(activeEntitlementsBefore: Set<String>?): Flo
     when (val outcome = flowOutcome) {
         null, is CheckpointFlowOutcome.Error -> null
         is CheckpointFlowOutcome.Purchased ->
-            FlowResult(obtainedEntitlements(outcome.customerInfo, activeEntitlementsBefore))
+            FlowResult(outcome.customerInfo.obtainedEntitlements(activeEntitlementsBefore))
         is CheckpointFlowOutcome.Restored ->
-            FlowResult(obtainedEntitlements(outcome.customerInfo, activeEntitlementsBefore))
+            FlowResult(outcome.customerInfo.obtainedEntitlements(activeEntitlementsBefore))
         is CheckpointFlowOutcome.Finished ->
-            FlowResult(obtainedEntitlements(outcome.customerInfo, activeEntitlementsBefore))
+            FlowResult(outcome.customerInfo.obtainedEntitlements(activeEntitlementsBefore))
         // Dismissed, WebCheckoutOpened, and any future outcome without an in-app grant signal.
         else -> FlowResult(obtainedEntitlements = emptySet())
     }
 
-private fun obtainedEntitlements(
-    customerInfo: CustomerInfo,
+/** The entitlements active now that were not in [activeEntitlementsBefore]; all of them when that is unknown. */
+internal fun CustomerInfo.obtainedEntitlements(
     activeEntitlementsBefore: Set<String>?,
-): Set<ObtainedEntitlement> = customerInfo.entitlements.active.values
+): Set<ObtainedEntitlement> = entitlements.active.values
     .filter { activeEntitlementsBefore == null || it.identifier !in activeEntitlementsBefore }
     .map { ObtainedEntitlement(it) }
     .toSet()

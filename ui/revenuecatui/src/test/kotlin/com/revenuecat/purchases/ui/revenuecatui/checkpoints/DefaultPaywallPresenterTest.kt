@@ -2,11 +2,15 @@ package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.CacheFetchPolicy
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter.Completion.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
@@ -54,6 +58,7 @@ class DefaultPaywallPresenterTest {
         every { Logger.e(any()) } just runs
         mockActivity = mockk(relaxed = true)
         mockPurchases = mockk { every { currentActivity } returns mockActivity }
+        cachedActiveEntitlements()
         mockWindow = mockk(relaxed = true)
         presenter = DefaultPaywallPresenter(mockPurchases) { callId, host ->
             windowCallId = callId
@@ -93,7 +98,7 @@ class DefaultPaywallPresenterTest {
     fun `a closed window reports Closed once the window is down`() {
         present()
 
-        presenter.onPresentationFinished(windowCallId!!, navigatedBack = false) { events += "window down" }
+        finished(navigatedBack = false) { events += "window down" }
 
         assertThat(events).containsExactly("window down", "reported")
         assertThat(results).containsExactly(Result.Closed)
@@ -103,19 +108,79 @@ class DefaultPaywallPresenterTest {
     fun `a window left through back navigation reports NavigatedBack`() {
         present()
 
-        presenter.onPresentationFinished(windowCallId!!, navigatedBack = true)
+        finished(navigatedBack = true)
 
         assertThat(results).containsExactly(Result.NavigatedBack)
     }
 
     @Test
-    fun `outcomes recorded in the window do not change how leaving it is reported`() {
+    fun `a purchase reports Continued even when leaving through back navigation`() {
         present()
-        presenter.recordOutcome(windowCallId!!, CheckpointFlowOutcome.Restored(mockk()))
+        record(CheckpointFlowOutcome.Purchased(customerInfoWithActive("pro"), mockk()))
 
-        presenter.onPresentationFinished(windowCallId!!, navigatedBack = true)
+        finished(navigatedBack = true)
+
+        assertThat(results).containsExactly(Result.Continued)
+        verify(exactly = 0) { mockWindow.dismiss() }
+    }
+
+    @Test
+    fun `a restore that grants a new entitlement closes the paywall and reports Continued`() {
+        cachedActiveEntitlements("plus")
+        present()
+
+        record(CheckpointFlowOutcome.Restored(customerInfoWithActive("plus", "pro")))
+        verify(exactly = 1) { mockWindow.dismiss() }
+        finished(navigatedBack = false)
+
+        assertThat(results).containsExactly(Result.Continued)
+    }
+
+    @Test
+    fun `a restore that grants nothing new changes nothing`() {
+        cachedActiveEntitlements("plus")
+        present()
+
+        record(CheckpointFlowOutcome.Restored(customerInfoWithActive("plus")))
+        verify(exactly = 0) { mockWindow.dismiss() }
+        finished(navigatedBack = true)
 
         assertThat(results).containsExactly(Result.NavigatedBack)
+    }
+
+    @Test
+    fun `a restore counts every active entitlement as new when there is no cached customer info`() {
+        noCachedCustomerInfo()
+        present()
+
+        record(CheckpointFlowOutcome.Restored(customerInfoWithActive("plus")))
+
+        verify(exactly = 1) { mockWindow.dismiss() }
+        finished(navigatedBack = true)
+        assertThat(results).containsExactly(Result.Continued)
+    }
+
+    @Test
+    fun `an error or web checkout does not change how leaving is reported`() {
+        present()
+        record(CheckpointFlowOutcome.Error(PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")))
+        record(CheckpointFlowOutcome.WebCheckoutOpened)
+
+        finished(navigatedBack = true)
+
+        assertThat(results).containsExactly(Result.NavigatedBack)
+        verify(exactly = 0) { mockWindow.dismiss() }
+    }
+
+    @Test
+    fun `a later error does not erase a recorded grant`() {
+        present()
+        record(CheckpointFlowOutcome.Restored(customerInfoWithActive("pro")))
+        record(CheckpointFlowOutcome.Error(PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")))
+
+        finished(navigatedBack = true)
+
+        assertThat(results).containsExactly(Result.Continued)
     }
 
     @Test
@@ -130,11 +195,24 @@ class DefaultPaywallPresenterTest {
     }
 
     @Test
+    fun `a window that could not be kept on screen after a purchase reports Continued`() {
+        present()
+        record(CheckpointFlowOutcome.Purchased(customerInfoWithActive("pro"), mockk()))
+
+        presenter.onPresentationFailed(
+            windowCallId!!,
+            PurchasesError(PurchasesErrorCode.ConfigurationError, "Re-present failed."),
+        )
+
+        assertThat(results).containsExactly(Result.Continued)
+    }
+
+    @Test
     fun `only the first report reaches the completion`() {
         present()
 
-        presenter.onPresentationFinished(windowCallId!!, navigatedBack = true)
-        presenter.onPresentationFinished(windowCallId!!)
+        finished(navigatedBack = true)
+        finished(navigatedBack = false)
         presenter.onPresentationFailed(
             windowCallId!!,
             PurchasesError(PurchasesErrorCode.ConfigurationError, "Re-present failed."),
@@ -144,10 +222,21 @@ class DefaultPaywallPresenterTest {
     }
 
     @Test
+    fun `outcomes recorded after the report are ignored`() {
+        present()
+        finished(navigatedBack = false)
+
+        record(CheckpointFlowOutcome.Restored(customerInfoWithActive("pro")))
+
+        verify(exactly = 0) { mockWindow.dismiss() }
+        assertThat(results).containsExactly(Result.Closed)
+    }
+
+    @Test
     fun `the presentation is gone once the window has reported`() {
         present()
 
-        presenter.onPresentationFinished(windowCallId!!)
+        finished(navigatedBack = false)
 
         assertThat(presenter.presentation(windowCallId!!)).isNull()
     }
@@ -163,4 +252,27 @@ class DefaultPaywallPresenterTest {
     }
 
     private fun present() = presenter.present(params, completion)
+
+    private fun record(outcome: CheckpointFlowOutcome) = presenter.recordOutcome(windowCallId!!, outcome)
+
+    private fun finished(navigatedBack: Boolean, finishPresentation: () -> Unit = {}) =
+        presenter.onPresentationFinished(windowCallId!!, navigatedBack, finishPresentation)
+
+    private fun cachedActiveEntitlements(vararg identifiers: String) {
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfoWithActive(*identifiers))
+        }
+    }
+
+    private fun noCachedCustomerInfo() {
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>()
+                .onError(PurchasesError(PurchasesErrorCode.CustomerInfoError, "No cache."))
+        }
+    }
+
+    private fun customerInfoWithActive(vararg identifiers: String): CustomerInfo {
+        val active = identifiers.associateWith { id -> mockk<EntitlementInfo> { every { identifier } returns id } }
+        return mockk { every { entitlements.active } returns active }
+    }
 }
