@@ -65,12 +65,13 @@ class ProductionWorkflowsPaywallComponentsIntegrationTest : BasePurchasesIntegra
         override fun fakeResponseWithoutPerformingRequest(baseURL: URL, endpoint: Endpoint): HTTPResult? {
             if (endpoint !is Endpoint.GetRemoteConfig) return null
             // 204 => success no-op: keeps remote config committed-current without fabricating a real RC container.
+            // Faked results skip signature verification, so report the result remote config requires.
             return HTTPResult(
                 responseCode = RCHTTPStatusCodes.NO_CONTENT,
                 payload = "",
                 origin = HTTPResult.Origin.BACKEND,
                 requestDate = null,
-                verificationResult = VerificationResult.NOT_REQUESTED,
+                verificationResult = VerificationResult.VERIFIED,
                 isLoadShedderResponse = false,
                 isFallbackURL = false,
             )

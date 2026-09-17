@@ -73,6 +73,9 @@ internal class AppConfig(
     val usesRemoteConfigAPISources: Boolean
         get() = dangerousSettings.usesRemoteConfigAPISources
 
+    val disableRequiredSignatureVerifications: Boolean
+        get() = dangerousSettings.disableRequiredSignatureVerifications
+
     val playStoreVersionName = context.playStoreVersionName
     val playServicesVersionName = context.playServicesVersionName
 

@@ -56,6 +56,22 @@ class DangerousSettingsTest {
         assertThat(dangerousSettings.usesRemoteConfigAPISources).isTrue
     }
 
+    @Test
+    fun `default disableRequiredSignatureVerifications is false`() {
+        val dangerousSettings = DangerousSettings()
+        assertThat(dangerousSettings.disableRequiredSignatureVerifications).isFalse
+    }
+
+    @Test
+    fun `disableRequiredSignatureVerifications can be enabled through the public constructor`() {
+        val dangerousSettings = DangerousSettings(
+            autoSyncPurchases = true,
+            disableRequiredSignatureVerifications = true,
+        )
+        assertThat(dangerousSettings.disableRequiredSignatureVerifications).isTrue
+        assertThat(dangerousSettings.autoSyncPurchases).isTrue
+    }
+
     @OptIn(InternalRevenueCatAPI::class)
     @Test
     fun `forPreviewMode sets uiPreviewMode to true and autoSyncPurchases to false`() {

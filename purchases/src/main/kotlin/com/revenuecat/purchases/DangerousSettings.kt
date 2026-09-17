@@ -17,6 +17,14 @@ public class DangerousSettings internal constructor(
      */
     public val autoSyncPurchases: Boolean = true,
 
+    /**
+     * The SDK always verifies the signature of remote config responses and rejects the ones that fail, regardless
+     * of the configured [EntitlementVerificationMode]. When this is enabled, those responses follow the configured
+     * [EntitlementVerificationMode] like every other request instead. Off by default; only enable this if suggested
+     * by the RevenueCat support team.
+     */
+    public val disableRequiredSignatureVerifications: Boolean = false,
+
     internal val customEntitlementComputation: Boolean = false,
 
     internal val uiPreviewMode: Boolean = false,
@@ -32,8 +40,13 @@ public class DangerousSettings internal constructor(
 
     internal var allowTestStoreInReleaseBuild: Boolean = false,
 ) : Parcelable {
-    public constructor(autoSyncPurchases: Boolean = true) : this(
+    @JvmOverloads
+    public constructor(
+        autoSyncPurchases: Boolean = true,
+        disableRequiredSignatureVerifications: Boolean = false,
+    ) : this(
         autoSyncPurchases = autoSyncPurchases,
+        disableRequiredSignatureVerifications = disableRequiredSignatureVerifications,
         customEntitlementComputation = false,
         uiPreviewMode = false,
         applyObfuscatedAccountIdToSubscriptionChanges = false,
