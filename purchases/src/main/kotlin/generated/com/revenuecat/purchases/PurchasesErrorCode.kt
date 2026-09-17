@@ -30,7 +30,7 @@ public enum class PurchasesErrorCode(public val code: Int, public val descriptio
     ConfigurationError(23, "There is an issue with your configuration. Check the underlying error for more details."),
     UnsupportedError(24, "There was a problem with the operation. Looks like we don't support that yet. Check the underlying error for more details."),
     EmptySubscriberAttributesError(25, "A request for subscriber attributes returned none."),
-    CustomerInfoError(28, "There was a problem related to the customer info."),
-    SignatureVerificationError(36, "Request failed signature verification. Please see https://rev.cat/trusted-entitlements for more info."),
+    CustomerInfoError(29, "There was a problem related to the customer info."),
+    SignatureVerificationError(37, "Request failed signature verification. Please see https://rev.cat/trusted-entitlements for more info."),
     TestStoreSimulatedPurchaseError(42, "Purchase failure simulated successfully in Test Store."),
 }

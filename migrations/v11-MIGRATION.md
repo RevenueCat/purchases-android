@@ -1,6 +1,6 @@
 # V11 API Migration Guide
 
-This release updates the SDK to Google Play Billing Library 9.1.0 and to Android Gradle Plugin 9 with Kotlin 2.2.21. There are no changes to the RevenueCat public API. The minimum Android version stays at Android 6 (API 23).
+This release updates the SDK to Google Play Billing Library 9.1.0 and to Android Gradle Plugin 9 with Kotlin 2.2.21. The only RevenueCat API change is the numeric value of two error codes (see below). The minimum Android version stays at Android 6 (API 23).
 
 ## Build requirements
 
@@ -39,6 +39,17 @@ When the Play Store app is blocked by the system (for example in OEM kids modes)
 ### Using the SDK with your own IAP code
 
 Your own Play Billing Library dependency must be version 9.0.0 or later. Play Billing Library 9 removed `SkuDetails`, `SkuDetailsParams`, `SkuDetailsResponseListener`, `BillingClient.SkuType`, `QueryPurchaseHistoryParams` and `BillingFlowParams.Builder.setSkuDetails`. If your code still uses them, migrate to `ProductDetails`, `QueryProductDetailsParams` and `BillingClient.ProductType` before upgrading.
+
+## Error codes
+
+`PurchasesErrorCode.code` now uses the same number for the same error on every RevenueCat SDK. Two values change on Android:
+
+| Error | v10 | v11 |
+|---|---|---|
+| `PurchasesErrorCode.CustomerInfoError` | 28 | 29 |
+| `PurchasesErrorCode.SignatureVerificationError` | 36 | 37 |
+
+The enum constants are unchanged, so code comparing against `PurchasesErrorCode.CustomerInfoError` keeps working. Code that compares against, logs or persists the integer must be updated; the compiler does not flag this.
 
 ## Reporting undocumented issues:
 
