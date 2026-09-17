@@ -76,6 +76,7 @@ dependencies {
     implementation(project(":ui:revenuecatui"))
 
     implementation(platform(libs.compose.bom))
+    implementation(libs.compose.material.icons.core)
     implementation(libs.activity.compose)
     implementation(libs.androidx.core)
     implementation(libs.androidx.lifecycle.runtime.ktx)
