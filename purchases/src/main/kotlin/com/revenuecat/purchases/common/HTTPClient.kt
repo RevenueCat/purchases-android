@@ -702,8 +702,8 @@ internal class HTTPClient(
     private fun getConnection(request: HTTPRequest, timeoutMs: Long): HttpURLConnection {
         return (request.fullURL.openConnection() as HttpURLConnection).apply {
             connectTimeout = timeoutMs.toInt()
-            // Responses are cached by ETagManager. An HttpResponseCache installed by the app (Stripe's SDK does
-            // this) would otherwise splice stale cached bodies into our 304s and break signature verification.
+            // Responses are cached by ETagManager. An HttpResponseCache installed by the app
+            // would otherwise splice stale cached bodies into our 304s and break signature verification.
             useCaches = false
             // We leave the read timeout to the default (readTimeout = 0), which means infinite.
             request.headers.forEach { (key, value) ->
