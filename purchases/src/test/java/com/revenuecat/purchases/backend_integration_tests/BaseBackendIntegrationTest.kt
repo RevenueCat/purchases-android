@@ -160,8 +160,8 @@ internal abstract class BaseBackendIntegrationTest {
         assertThat(latch.count).isEqualTo(0)
     }
 
-    protected fun assertSigningPerformed() {
-        verify(exactly = 1) { signingManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())  }
+    protected fun assertSigningPerformed(times: Int = 1) {
+        verify(exactly = times) { signingManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())  }
     }
 
     protected fun assertSigningNotPerformed() {

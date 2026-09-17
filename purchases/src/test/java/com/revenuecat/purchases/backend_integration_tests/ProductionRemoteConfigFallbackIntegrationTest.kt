@@ -86,14 +86,7 @@ internal class ProductionRemoteConfigFallbackIntegrationTest : BaseBackendIntegr
     @Test
     fun `a second fallback request is served from the ETag cache`() {
         every { appConfig.isDebugBuild } returns false
-        // The base prefs mock does not persist, so back it with a real map: otherwise the stored ETag is never
-        // read back and the second request could not send `X-RevenueCat-ETag`.
-        val prefsBacking = mutableMapOf<String, String?>()
-        every { sharedPreferences.getString(any(), any()) } answers { prefsBacking[firstArg()] ?: secondArg() as String? }
-        every { sharedPreferencesEditor.putString(any(), any()) } answers {
-            prefsBacking[firstArg()] = secondArg()
-            sharedPreferencesEditor
-        }
+        backSharedPreferencesWithMap()
 
         val (firstError, firstConfig, _) = fetchRemoteConfigFallback()
         val (secondError, secondConfig, _) = fetchRemoteConfigFallback()
@@ -115,6 +108,33 @@ internal class ProductionRemoteConfigFallbackIntegrationTest : BaseBackendIntegr
     }
 
     @Test
+    fun `verifies the 304 fallback response when verification is enforced`() {
+        setupTest(SignatureVerificationMode.Enforced())
+        backSharedPreferencesWithMap()
+
+        val (firstError, firstConfig, firstVerification) = fetchRemoteConfigFallback()
+        val (secondError, secondConfig, secondVerification) = fetchRemoteConfigFallback()
+
+        assertThat(firstError).isNull()
+        assertThat(firstVerification).isEqualTo(VerificationResult.VERIFIED)
+        // The 304 has no body, but its signature covers the request context plus the ETag. Under enforcement a
+        // verification failure throws before the ETag cache is consulted, so a null error with a VERIFIED result
+        // confirms the body-less 304 was verified and only then served from cache.
+        assertThat(secondError).isNull()
+        assertThat(secondConfig).isEqualTo(firstConfig)
+        assertThat(secondVerification).isEqualTo(VerificationResult.VERIFIED)
+
+        // A single store proves the second response was a 304 (never re-stored), and signing ran on both responses.
+        verify(exactly = 1) {
+            sharedPreferencesEditor.putString(
+                "https://api-production.8-lives-cat.io/v1/config/app",
+                any(),
+            )
+        }
+        assertSigningPerformed(times = 2)
+    }
+
+    @Test
     fun `domain layer falls back to the fallback endpoint when the main request fails with no cached config`() {
         every { appConfig.isDebugBuild } returns false
         val manager = buildRemoteConfigManager()
@@ -127,6 +147,20 @@ internal class ProductionRemoteConfigFallbackIntegrationTest : BaseBackendIntegr
         assertThat(sources).withFailMessage { "Expected the sources topic to be committed from the fallback." }
             .isNotNull
         assertThat(sources).isNotEmpty
+    }
+
+    /**
+     * The base prefs mock does not persist, so back it with a real map: otherwise the stored ETag is never read
+     * back and a second request could not send `X-RevenueCat-ETag`. Must run after [setupTest], which recreates
+     * the mocks.
+     */
+    private fun backSharedPreferencesWithMap() {
+        val prefsBacking = mutableMapOf<String, String?>()
+        every { sharedPreferences.getString(any(), any()) } answers { prefsBacking[firstArg()] ?: secondArg() as String? }
+        every { sharedPreferencesEditor.putString(any(), any()) } answers {
+            prefsBacking[firstArg()] = secondArg()
+            sharedPreferencesEditor
+        }
     }
 
     /**
