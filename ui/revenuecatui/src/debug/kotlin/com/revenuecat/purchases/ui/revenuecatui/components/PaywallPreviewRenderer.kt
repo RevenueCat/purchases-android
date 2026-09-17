@@ -183,7 +183,6 @@ internal fun PaywallPreviewFromJSON(
     }
 }
 
-@EmergeSnapshotConfig(ignore = true)
 @Preview(showSystemUi = true)
 @Composable
 private fun PaywallPreviewFromJSON_Sample() {
