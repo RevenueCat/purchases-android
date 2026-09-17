@@ -78,7 +78,7 @@ class PaywallActivityTest {
     }
 
     @Test
-    @Config(sdk = [24, 33, 36])
+    @Config(sdk = [24, 33, 34])
     fun `activity finishes gracefully when args extra is another Parcelable type`() {
         val intent = Intent(
             ApplicationProvider.getApplicationContext<Context>(),
@@ -91,7 +91,7 @@ class PaywallActivityTest {
     }
 
     @Test
-    @Config(sdk = [24, 33, 36])
+    @Config(sdk = [24, 33, 34])
     fun `activity reads args on every API level`() {
         val offeringSelection = OfferingSelection.IdAndPresentedOfferingContext(
             offeringId = TestData.template1Offering.identifier,
