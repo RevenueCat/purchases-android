@@ -12,7 +12,7 @@ internal object RCHTTPStatusCodes {
     const val NOT_FOUND = 404
     const val ERROR = 500
 
-    fun isSuccessful(statusCode: Int) = statusCode < BAD_REQUEST
+    fun isSuccessful(statusCode: Int) = statusCode in SUCCESS until BAD_REQUEST
     fun isServerError(statusCode: Int) = statusCode >= ERROR
 
     // Note: this means that all 4xx (except 404) are considered as successfully synced.
