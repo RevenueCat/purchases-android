@@ -11,6 +11,7 @@ import com.revenuecat.purchases.common.DefaultLocaleProvider
 import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.PlatformInfo
+import com.revenuecat.purchases.common.RequestResponseListener
 import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.networking.ETagManager
 import com.revenuecat.purchases.common.networking.ETagPayloadStore
@@ -78,6 +79,9 @@ internal abstract class BaseBackendIntegrationTest {
     lateinit var deviceCache: DeviceCache
     lateinit var goldenFileRecorder: GoldenFileRecorder
 
+    /** Wire status codes of every response received, in order, before any ETag cache substitution. */
+    val recordedResponseCodes = mutableListOf<Int>()
+
     lateinit var backend: Backend
 
     @Before
@@ -96,6 +100,7 @@ internal abstract class BaseBackendIntegrationTest {
     protected fun setupTest(
         signatureVerificationMode: SignatureVerificationMode = SignatureVerificationMode.Disabled
     ) {
+        recordedResponseCodes.clear()
         appConfig = mockk<AppConfig>().apply {
             every { baseURL } returns URL("https://api.revenuecat.com")
             every { store } returns Store.PLAY_STORE
@@ -141,7 +146,7 @@ internal abstract class BaseBackendIntegrationTest {
             apiSourceFailover = null,
             localeProvider = DefaultLocaleProvider(),
             forceServerErrorStrategy = forceServerErrorStrategy,
-            requestResponseListener = goldenFileRecorder
+            requestResponseListener = ResponseCodeRecordingListener(goldenFileRecorder, recordedResponseCodes),
         )
         backendHelper = BackendHelper(apiKey(), dispatcher, appConfig, httpClient)
         backend = Backend(
@@ -158,6 +163,33 @@ internal abstract class BaseBackendIntegrationTest {
         block(latch)
         latch.await(TIMEOUT.inWholeSeconds, TimeUnit.SECONDS)
         assertThat(latch.count).isEqualTo(0)
+    }
+
+    private class ResponseCodeRecordingListener(
+        private val delegate: RequestResponseListener,
+        private val responseCodes: MutableList<Int>,
+    ) : RequestResponseListener {
+        @Suppress("LongParameterList")
+        override fun onRequestResponse(
+            url: String,
+            method: String,
+            requestHeaders: Map<String, String>,
+            requestBody: String?,
+            responseCode: Int,
+            responseHeaders: Map<String, String>,
+            responseBody: String,
+        ) {
+            responseCodes += responseCode
+            delegate.onRequestResponse(
+                url,
+                method,
+                requestHeaders,
+                requestBody,
+                responseCode,
+                responseHeaders,
+                responseBody,
+            )
+        }
     }
 
     protected fun assertSigningPerformed(times: Int = 1) {

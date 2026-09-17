@@ -96,9 +96,10 @@ internal class ProductionRemoteConfigFallbackIntegrationTest : BaseBackendIntegr
         // The cached response is returned verbatim, so the second config equals the first.
         assertThat(secondConfig).isEqualTo(firstConfig)
 
-        // The first `200` is stored under the fallback URL; the second request sends the stored ETag, the server
-        // replies `304 Not Modified`, and the SDK serves the cached result. A `304` is not re-stored, so exactly
-        // one write to the fallback URL key proves the ETag round-trip happened (a plain re-fetch would store twice).
+        // The first `200` is stored under the fallback URL; the second request sends the stored ETag and the server
+        // replies `304 Not Modified` (a cache miss on the 304 would trigger a refresh retry and a third response).
+        assertThat(recordedResponseCodes).containsExactly(200, 304)
+        // The SDK serves the cached result and never re-stores a `304`, so the fallback URL key is written once.
         verify(exactly = 1) {
             sharedPreferencesEditor.putString(
                 "https://api-production.8-lives-cat.io/v1/config/app",
@@ -124,7 +125,8 @@ internal class ProductionRemoteConfigFallbackIntegrationTest : BaseBackendIntegr
         assertThat(secondConfig).isEqualTo(firstConfig)
         assertThat(secondVerification).isEqualTo(VerificationResult.VERIFIED)
 
-        // A single store proves the second response was a 304 (never re-stored), and signing ran on both responses.
+        assertThat(recordedResponseCodes).containsExactly(200, 304)
+        // A `304` is never re-stored, so the fallback URL key is written once, and signing ran on both responses.
         verify(exactly = 1) {
             sharedPreferencesEditor.putString(
                 "https://api-production.8-lives-cat.io/v1/config/app",
