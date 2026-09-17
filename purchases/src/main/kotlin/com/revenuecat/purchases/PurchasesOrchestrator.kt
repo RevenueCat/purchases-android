@@ -906,7 +906,7 @@ internal class PurchasesOrchestrator(
                     onSuccess = { customerInfo, created ->
                         dispatch {
                             callback?.onReceived(customerInfo, created)
-                            customerInfoUpdateHandler.notifyListeners(customerInfo)
+                            customerInfoUpdateHandler.notifyListeners(customerInfo, newAppUserID)
                         }
                         remoteConfigManager.refreshRemoteConfig(
                             state.appInBackground,

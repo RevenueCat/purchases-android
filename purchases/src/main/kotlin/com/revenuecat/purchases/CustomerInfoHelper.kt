@@ -194,7 +194,7 @@ internal class CustomerInfoHelper(
             { info ->
                 log(LogIntent.RC_SUCCESS) { CustomerInfoStrings.CUSTOMERINFO_UPDATED_FROM_NETWORK }
                 offlineEntitlementsManager.resetOfflineCustomerInfoCache()
-                customerInfoUpdateHandler.cacheAndNotifyListeners(info)
+                customerInfoUpdateHandler.cacheAndNotifyListeners(info, appUserID)
                 dispatch { callback?.invoke(Result.Success(info)) }
             },
             { backendError, isServerError ->
@@ -208,7 +208,7 @@ internal class CustomerInfoHelper(
                     offlineEntitlementsManager.calculateAndCacheOfflineCustomerInfo(
                         appUserID,
                         onSuccess = { offlineComputedCustomerInfo ->
-                            customerInfoUpdateHandler.notifyListeners(offlineComputedCustomerInfo)
+                            customerInfoUpdateHandler.notifyListeners(offlineComputedCustomerInfo, appUserID)
                             dispatch { callback?.invoke(Result.Success(offlineComputedCustomerInfo)) }
                         },
                         onError = {

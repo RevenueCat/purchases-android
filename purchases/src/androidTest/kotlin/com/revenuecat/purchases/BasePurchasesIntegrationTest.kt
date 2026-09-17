@@ -233,7 +233,7 @@ abstract class BasePurchasesIntegrationTest {
         }
     }
 
-    private fun clearAllSharedPreferences(context: Context) {
+    protected fun clearAllSharedPreferences(context: Context) {
         context.getSharedPreferences(
             RevenueCatBackupAgent.REVENUECAT_PREFS_FILE_NAME,
             Context.MODE_PRIVATE,

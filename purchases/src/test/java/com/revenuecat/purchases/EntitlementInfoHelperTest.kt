@@ -135,8 +135,8 @@ class EntitlementInfoHelperTest {
             callback = callbackMock,
         )
         verify(exactly = 1) { callbackMock.onReceived(mockInfo) }
-        verify(exactly = 0) { mockCustomerInfoUpdateHandler.notifyListeners(any()) }
-        verify(exactly = 0) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(any()) }
+        verify(exactly = 0) { mockCustomerInfoUpdateHandler.notifyListeners(any(), any()) }
+        verify(exactly = 0) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(any(), any()) }
     }
 
     // offline entitlements customer info
@@ -188,7 +188,7 @@ class EntitlementInfoHelperTest {
             appInBackground,
             allowSharingPlayStoreAccount,
         )
-        verify(exactly = 1) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(mockInfo) }
+        verify(exactly = 1) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(mockInfo, appUserId) }
     }
 
     @Test
@@ -237,7 +237,7 @@ class EntitlementInfoHelperTest {
             callback = callbackMock
         )
         verify(exactly = 1) { callbackMock.onError(error) }
-        verify(exactly = 0) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(any()) }
+        verify(exactly = 0) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(any(), any()) }
     }
 
     @Test
@@ -370,7 +370,7 @@ class EntitlementInfoHelperTest {
             allowSharingPlayStoreAccount,
         )
         verify(exactly = 1) {
-            mockCustomerInfoUpdateHandler.notifyListeners(mockInfo)
+            mockCustomerInfoUpdateHandler.notifyListeners(mockInfo, appUserId)
         }
     }
 
@@ -530,7 +530,7 @@ class EntitlementInfoHelperTest {
         every { mockCache.isCustomerInfoCacheStale(appUserId, false) } returns true
         val newCustomerInfo = mockk<CustomerInfo>()
         setupBackendMock(customerInfo = newCustomerInfo)
-        every { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(newCustomerInfo) } just runs
+        every { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(newCustomerInfo, appUserId) } just runs
         val callbackMock = mockk<ReceiveCustomerInfoCallback>(relaxed = true)
         customerInfoHelper.retrieveCustomerInfo(
             appUserId,
@@ -542,7 +542,7 @@ class EntitlementInfoHelperTest {
         verify(exactly = 1) { mockBackend.getCustomerInfo(appUserId, false, any(), any()) }
         verify(exactly = 1) { callbackMock.onReceived(mockInfo) }
         verify(exactly = 1) { mockCache.setCustomerInfoCacheTimestampToNow(appUserId) }
-        verify(exactly = 1) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(newCustomerInfo) }
+        verify(exactly = 1) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(newCustomerInfo, appUserId) }
     }
 
     @Test
@@ -558,7 +558,7 @@ class EntitlementInfoHelperTest {
             appInBackground,
             allowSharingPlayStoreAccount,
         )
-        verify(exactly = 1) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(newCustomerInfo)  }
+        verify(exactly = 1) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(newCustomerInfo, appUserId)  }
     }
 
     @Test
@@ -716,7 +716,7 @@ class EntitlementInfoHelperTest {
             appInBackground,
             allowSharingPlayStoreAccount,
         )
-        verify(exactly = 1) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(newCustomerInfo)  }
+        verify(exactly = 1) { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(newCustomerInfo, appUserId)  }
     }
 
     // endregion
@@ -1027,7 +1027,7 @@ class EntitlementInfoHelperTest {
             lambda<(CustomerInfo) -> Unit>().captured.invoke(mockInfo)
         }
         every {
-            mockCustomerInfoUpdateHandler.notifyListeners(mockInfo)
+            mockCustomerInfoUpdateHandler.notifyListeners(mockInfo, appUserId)
         } just Runs
     }
 
@@ -1042,7 +1042,7 @@ class EntitlementInfoHelperTest {
     }
 
     private fun setupCustomerInfoUpdateHandlerMock() {
-        every { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(any()) } just runs
+        every { mockCustomerInfoUpdateHandler.cacheAndNotifyListeners(any(), any()) } just runs
     }
 
     private fun setupPostPendingTransactionsHelperNoPendingPurchases() {

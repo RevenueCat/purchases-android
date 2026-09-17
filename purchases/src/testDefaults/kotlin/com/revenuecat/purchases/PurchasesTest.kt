@@ -672,7 +672,7 @@ internal class PurchasesTest : BasePurchasesTest() {
         purchases.logIn(newAppUserID, mockCompletion)
 
         verify(exactly = 1) {
-            mockCustomerInfoUpdateHandler.notifyListeners(mockInfo)
+            mockCustomerInfoUpdateHandler.notifyListeners(mockInfo, newAppUserID)
         }
     }
 

@@ -12,6 +12,8 @@ internal object CustomerInfoStrings {
         "pending purchases."
     const val CUSTOMERINFO_UPDATED_NOTIFYING_LISTENER = "CustomerInfo updated, sending to listener."
     const val SENDING_LATEST_CUSTOMERINFO_TO_LISTENER = "Sending latest CustomerInfo to listener."
+    const val NOT_NOTIFYING_LISTENER_CUSTOMERINFO_FOR_PREVIOUS_USER = "Not sending CustomerInfo to listener: " +
+        "it belongs to a previous user (%s), current user is %s."
     const val VENDING_CACHE = "Vending CustomerInfo from cache."
     const val RETRIEVING_CUSTOMER_INFO = "Retrieving customer info with policy: %s"
     const val MISSING_CACHED_CUSTOMER_INFO = "Requested a cached CustomerInfo but it's not available."

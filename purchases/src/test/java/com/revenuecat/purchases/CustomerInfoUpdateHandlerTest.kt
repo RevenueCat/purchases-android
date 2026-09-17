@@ -107,7 +107,7 @@ class CustomerInfoUpdateHandlerTest {
 
     @Test
     fun `caching and notifying listeners caches customer info with correct parameters`() {
-        customerInfoUpdateHandler.cacheAndNotifyListeners(mockInfo)
+        customerInfoUpdateHandler.cacheAndNotifyListeners(mockInfo, appUserId)
 
         verify(exactly = 1) { deviceCache.cacheCustomerInfo(appUserId, mockInfo) }
     }
@@ -117,7 +117,7 @@ class CustomerInfoUpdateHandlerTest {
         val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
         customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
 
-        customerInfoUpdateHandler.cacheAndNotifyListeners(mockInfo)
+        customerInfoUpdateHandler.cacheAndNotifyListeners(mockInfo, appUserId)
 
         verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
     }
@@ -129,10 +129,27 @@ class CustomerInfoUpdateHandlerTest {
 
         val newCustomerInfo = mockk<CustomerInfo>()
         every { deviceCache.cacheCustomerInfo(appUserId, newCustomerInfo) } just Runs
-        customerInfoUpdateHandler.cacheAndNotifyListeners(newCustomerInfo)
+        customerInfoUpdateHandler.cacheAndNotifyListeners(newCustomerInfo, appUserId)
 
         verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
         verify(exactly = 1) { listenerMock.onReceived(newCustomerInfo) }
+    }
+
+    @Test
+    fun `caching and notifying listeners for a previous user caches under that user but does not notify`() {
+        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
+
+        val previousUserId = "previous-app-user-id"
+        val previousUserInfo = mockk<CustomerInfo>()
+        every { deviceCache.cacheCustomerInfo(previousUserId, previousUserInfo) } just Runs
+        customerInfoUpdateHandler.cacheAndNotifyListeners(previousUserInfo, previousUserId)
+
+        verify(exactly = 1) { deviceCache.cacheCustomerInfo(previousUserId, previousUserInfo) }
+        verify(exactly = 0) { deviceCache.cacheCustomerInfo(appUserId, previousUserInfo) }
+        verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
+        verify(exactly = 0) { listenerMock.onReceived(previousUserInfo) }
+        verify(exactly = 0) { diagnosticsTracker.trackCustomerInfoVerificationResultIfNeeded(previousUserInfo) }
     }
 
     // endregion
@@ -140,11 +157,36 @@ class CustomerInfoUpdateHandlerTest {
     // region notifyListeners
 
     @Test
+    fun `does not update listener if customer info belongs to a previous user`() {
+        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
+
+        val previousUserInfo = mockk<CustomerInfo>()
+        customerInfoUpdateHandler.notifyListeners(previousUserInfo, "previous-app-user-id")
+
+        verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
+        verify(exactly = 0) { listenerMock.onReceived(previousUserInfo) }
+    }
+
+    @Test
+    fun `ignoring a previous user's customer info keeps the last sent one for deduplication`() {
+        val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
+        customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
+
+        val previousUserInfo = mockk<CustomerInfo>()
+        customerInfoUpdateHandler.notifyListeners(previousUserInfo, "previous-app-user-id")
+        customerInfoUpdateHandler.notifyListeners(mockInfo, appUserId)
+
+        verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener, not sent again
+        verify(exactly = 0) { listenerMock.onReceived(previousUserInfo) }
+    }
+
+    @Test
     fun `does not update listener if customer info same as previous one`() {
         val listenerMock = mockk<UpdatedCustomerInfoListener>(relaxed = true)
         customerInfoUpdateHandler.updatedCustomerInfoListener = listenerMock
 
-        customerInfoUpdateHandler.notifyListeners(mockInfo)
+        customerInfoUpdateHandler.notifyListeners(mockInfo, appUserId)
 
         verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
     }
@@ -157,7 +199,7 @@ class CustomerInfoUpdateHandlerTest {
         val newCustomerInfo = mockk<CustomerInfo>()
         every { deviceCache.cacheCustomerInfo(appUserId, newCustomerInfo) } just Runs
 
-        customerInfoUpdateHandler.notifyListeners(newCustomerInfo)
+        customerInfoUpdateHandler.notifyListeners(newCustomerInfo, appUserId)
 
         verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
         verify(exactly = 1) { listenerMock.onReceived(newCustomerInfo) }
@@ -171,9 +213,9 @@ class CustomerInfoUpdateHandlerTest {
         val newCustomerInfo = mockk<CustomerInfo>()
         every { deviceCache.cacheCustomerInfo(appUserId, newCustomerInfo) } just Runs
 
-        customerInfoUpdateHandler.notifyListeners(newCustomerInfo)
-        customerInfoUpdateHandler.notifyListeners(newCustomerInfo)
-        customerInfoUpdateHandler.notifyListeners(newCustomerInfo)
+        customerInfoUpdateHandler.notifyListeners(newCustomerInfo, appUserId)
+        customerInfoUpdateHandler.notifyListeners(newCustomerInfo, appUserId)
+        customerInfoUpdateHandler.notifyListeners(newCustomerInfo, appUserId)
 
         verify(exactly = 1) { listenerMock.onReceived(mockInfo) } // From setting the listener
         verify(exactly = 1) { listenerMock.onReceived(newCustomerInfo) }
@@ -188,7 +230,7 @@ class CustomerInfoUpdateHandlerTest {
         val newCustomerInfo = mockk<CustomerInfo>()
         every { deviceCache.cacheCustomerInfo(appUserId, newCustomerInfo) } just Runs
 
-        customerInfoUpdateHandler.notifyListeners(newCustomerInfo)
+        customerInfoUpdateHandler.notifyListeners(newCustomerInfo, appUserId)
 
         verify(exactly = 1) { diagnosticsTracker.trackCustomerInfoVerificationResultIfNeeded(newCustomerInfo) }
     }
