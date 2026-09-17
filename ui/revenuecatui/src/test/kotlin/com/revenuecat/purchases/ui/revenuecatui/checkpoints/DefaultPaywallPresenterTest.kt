@@ -12,6 +12,8 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PaywallPresenter.Completion.Result
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import io.mockk.every
@@ -46,6 +48,9 @@ class DefaultPaywallPresenterTest {
         events += "reported"
     }
 
+    // What the window would do with the dismissal the paywall requests: navigatedBack per request.
+    private val dismissals = mutableListOf<Boolean>()
+
     private lateinit var mockActivity: Activity
     private lateinit var mockPurchases: Purchases
     private lateinit var mockWindow: CheckpointWorkflowPresenter
@@ -77,10 +82,22 @@ class DefaultPaywallPresenterTest {
         present()
 
         verify(exactly = 1) { mockWindow.show(mockActivity) }
-        val presentation = presenter.presentation(windowCallId!!)!!
-        assertThat((presentation.content as CheckpointFlowContent.OfferingFlow).offering).isEqualTo(offering)
-        assertThat(presentation.customVariables).isEqualTo(params.customVariables)
+        assertThat(options().offeringSelection.offering).isEqualTo(offering)
         assertThat(results).isEmpty()
+    }
+
+    @Test
+    fun `the paywall is configured through the options an app would use`() {
+        present()
+
+        val options = options()
+
+        assertThat(options.offeringSelection.offering).isEqualTo(offering)
+        assertThat(options.customVariables).isEqualTo(params.customVariables)
+        assertThat(options.shouldDisplayDismissButton).isTrue
+        assertThat(options.listener).isNotNull
+        assertThat(options.injectedWorkflow).isNull()
+        assertThat(options.injectedWorkflowOfferings).isNull()
     }
 
     @Test
@@ -92,6 +109,25 @@ class DefaultPaywallPresenterTest {
             .matches { (it as PurchasesException).error.code == PurchasesErrorCode.ConfigurationError }
         verify(exactly = 0) { mockWindow.show(any()) }
         assertThat(results).isEmpty()
+    }
+
+    @Test
+    fun `a close request is wired as a plain dismissal`() {
+        present()
+
+        options().dismissRequest()
+        options().dismissRequestWithExitOffering!!(null, null, PaywallDismissReason.CLOSE)
+
+        assertThat(dismissals).containsExactly(false, false)
+    }
+
+    @Test
+    fun `a back navigation is wired as a backed-out dismissal`() {
+        present()
+
+        options().dismissRequestWithExitOffering!!(null, null, PaywallDismissReason.NAVIGATED_BACK)
+
+        assertThat(dismissals).containsExactly(true)
     }
 
     @Test
@@ -116,12 +152,12 @@ class DefaultPaywallPresenterTest {
     @Test
     fun `a purchase reports Continued even when leaving through back navigation`() {
         present()
-        record(CheckpointFlowOutcome.Purchased(customerInfoWithActive("pro"), mockk()))
+        options().listener!!.onPurchaseCompleted(customerInfoWithActive("pro"), mockk())
 
         finished(navigatedBack = true)
 
         assertThat(results).containsExactly(Result.Continued)
-        verify(exactly = 0) { mockWindow.dismiss() }
+        assertThat(dismissals).isEmpty()
     }
 
     @Test
@@ -129,8 +165,8 @@ class DefaultPaywallPresenterTest {
         cachedActiveEntitlements("plus")
         present()
 
-        record(CheckpointFlowOutcome.Restored(customerInfoWithActive("plus", "pro")))
-        verify(exactly = 1) { mockWindow.dismiss() }
+        options().listener!!.onRestoreCompleted(customerInfoWithActive("plus", "pro"))
+        assertThat(dismissals).containsExactly(false)
         finished(navigatedBack = false)
 
         assertThat(results).containsExactly(Result.Continued)
@@ -141,8 +177,8 @@ class DefaultPaywallPresenterTest {
         cachedActiveEntitlements("plus")
         present()
 
-        record(CheckpointFlowOutcome.Restored(customerInfoWithActive("plus")))
-        verify(exactly = 0) { mockWindow.dismiss() }
+        options().listener!!.onRestoreCompleted(customerInfoWithActive("plus"))
+        assertThat(dismissals).isEmpty()
         finished(navigatedBack = true)
 
         assertThat(results).containsExactly(Result.NavigatedBack)
@@ -153,30 +189,31 @@ class DefaultPaywallPresenterTest {
         noCachedCustomerInfo()
         present()
 
-        record(CheckpointFlowOutcome.Restored(customerInfoWithActive("plus")))
+        options().listener!!.onRestoreCompleted(customerInfoWithActive("plus"))
 
-        verify(exactly = 1) { mockWindow.dismiss() }
+        assertThat(dismissals).containsExactly(false)
         finished(navigatedBack = true)
         assertThat(results).containsExactly(Result.Continued)
     }
 
     @Test
-    fun `an error or web checkout does not change how leaving is reported`() {
+    fun `a granting restore closes the window that is currently on screen`() {
         present()
-        record(CheckpointFlowOutcome.Error(PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")))
-        record(CheckpointFlowOutcome.WebCheckoutOpened)
+        val firstDismissals = mutableListOf<Boolean>()
+        presenter.paywallOptions(windowCallId!!) { firstDismissals += it }
 
-        finished(navigatedBack = true)
+        // A re-present after a configuration change asks for options again with the new window's wiring.
+        options().listener!!.onRestoreCompleted(customerInfoWithActive("pro"))
 
-        assertThat(results).containsExactly(Result.NavigatedBack)
-        verify(exactly = 0) { mockWindow.dismiss() }
+        assertThat(firstDismissals).isEmpty()
+        assertThat(dismissals).containsExactly(false)
     }
 
     @Test
     fun `a later error does not erase a recorded grant`() {
         present()
-        record(CheckpointFlowOutcome.Restored(customerInfoWithActive("pro")))
-        record(CheckpointFlowOutcome.Error(PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")))
+        options().listener!!.onRestoreCompleted(customerInfoWithActive("pro"))
+        options().listener!!.onPurchaseError(PurchasesError(PurchasesErrorCode.StoreProblemError, "boom"))
 
         finished(navigatedBack = true)
 
@@ -197,7 +234,7 @@ class DefaultPaywallPresenterTest {
     @Test
     fun `a window that could not be kept on screen after a purchase reports Continued`() {
         present()
-        record(CheckpointFlowOutcome.Purchased(customerInfoWithActive("pro"), mockk()))
+        options().listener!!.onPurchaseCompleted(customerInfoWithActive("pro"), mockk())
 
         presenter.onPresentationFailed(
             windowCallId!!,
@@ -222,13 +259,14 @@ class DefaultPaywallPresenterTest {
     }
 
     @Test
-    fun `outcomes recorded after the report are ignored`() {
+    fun `paywall events after the report are ignored`() {
         present()
+        val listener = options().listener!!
         finished(navigatedBack = false)
 
-        record(CheckpointFlowOutcome.Restored(customerInfoWithActive("pro")))
+        listener.onRestoreCompleted(customerInfoWithActive("pro"))
 
-        verify(exactly = 0) { mockWindow.dismiss() }
+        assertThat(dismissals).isEmpty()
         assertThat(results).containsExactly(Result.Closed)
     }
 
@@ -238,7 +276,7 @@ class DefaultPaywallPresenterTest {
 
         finished(navigatedBack = false)
 
-        assertThat(presenter.presentation(windowCallId!!)).isNull()
+        assertThat(presenter.paywallOptions(windowCallId!!) {}).isNull()
     }
 
     @Test
@@ -253,7 +291,8 @@ class DefaultPaywallPresenterTest {
 
     private fun present() = presenter.present(params, completion)
 
-    private fun record(outcome: CheckpointFlowOutcome) = presenter.recordOutcome(windowCallId!!, outcome)
+    // What the window asks its host for on each show.
+    private fun options(): PaywallOptions = presenter.paywallOptions(windowCallId!!) { dismissals += it }!!
 
     private fun finished(navigatedBack: Boolean, finishPresentation: () -> Unit = {}) =
         presenter.onPresentationFinished(windowCallId!!, navigatedBack, finishPresentation)

@@ -9,7 +9,12 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
+import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
+import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.checkpoints.PresentationSlot.PendingCall
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import kotlinx.coroutines.CancellationException
@@ -162,12 +167,66 @@ internal class CheckpointsManager(
         }
     }
 
-    override fun presentation(callId: String): CheckpointPresentation? =
+    fun presentation(callId: String): CheckpointPresentation? =
         slot.with(callId) { CheckpointPresentation(it.content, it.customVariables) }
+
+    // Direct dismissals (a completed purchase or restore) carry no reason and count as a close; everything else
+    // reports one, and an error dialog being dismissed also carries the error as its result. The exit offering,
+    // if any, is not presented for checkpoints.
+    override fun paywallOptions(callId: String, dismiss: (navigatedBack: Boolean) -> Unit): PaywallOptions? =
+        presentation(callId)?.let { presentation ->
+            PaywallOptions.Builder(dismissRequest = { dismiss(false) })
+                .setDismissRequestWithExitOffering { _, result, reason ->
+                    (result as? PaywallResult.Error)?.let {
+                        recordOutcome(callId, CheckpointFlowOutcome.Error(it.error))
+                    }
+                    dismiss(reason == PaywallDismissReason.NAVIGATED_BACK)
+                }
+                .setCustomVariables(presentation.customVariables)
+                .setListener(OutcomeListener(callId))
+                .apply {
+                    when (val content = presentation.content) {
+                        is CheckpointFlowContent.Workflow -> injectedWorkflow(
+                            content.resolution.workflow,
+                            content.resolution.offerings,
+                            content.resolution.uiConfig,
+                        )
+                        // Offering paywalls, unlike workflows, don't necessarily carry their own close action, so
+                        // the dismiss button keeps the fallback paywall dismissable.
+                        is CheckpointFlowContent.OfferingFlow ->
+                            setOffering(content.offering).setShouldDisplayDismissButton(true)
+                    }
+                }
+                .build()
+        }
+
+    private inner class OutcomeListener(private val callId: String) : PaywallListener {
+        override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
+            recordOutcome(callId, CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+        }
+
+        override fun onRestoreCompleted(customerInfo: CustomerInfo) {
+            recordOutcome(callId, CheckpointFlowOutcome.Restored(customerInfo))
+        }
+
+        override fun onPurchaseError(error: PurchasesError) {
+            if (error.code != PurchasesErrorCode.PurchaseCancelledError) {
+                recordOutcome(callId, CheckpointFlowOutcome.Error(error))
+            }
+        }
+
+        override fun onRestoreError(error: PurchasesError) {
+            recordOutcome(callId, CheckpointFlowOutcome.Error(error))
+        }
+
+        override fun onWebCheckoutOpened() {
+            recordOutcome(callId, CheckpointFlowOutcome.WebCheckoutOpened)
+        }
+    }
 
     // A purchase or restore is what the user went through for, so a later error, web checkout or dismissal must
     // not erase it. A later purchase or restore still replaces it with newer CustomerInfo.
-    override fun recordOutcome(callId: String, outcome: CheckpointFlowOutcome) {
+    fun recordOutcome(callId: String, outcome: CheckpointFlowOutcome) {
         slot.with(callId) {
             if (!it.outcome.isObtained || outcome.isObtained) {
                 it.outcome = outcome

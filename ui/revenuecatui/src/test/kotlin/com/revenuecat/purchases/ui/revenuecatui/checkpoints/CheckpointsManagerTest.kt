@@ -16,6 +16,8 @@ import com.revenuecat.purchases.common.localrules.RulesDimensionValue
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -137,8 +139,7 @@ class CheckpointsManagerTest {
         assertThat(run).isNull()
         assertThat(presentedCallIds).isEmpty()
         verify(exactly = 1) { mockPresenter.show(mockActivity) }
-        val content = defaultPresenter!!.presentation("")!!.content
-        assertThat((content as CheckpointFlowContent.OfferingFlow).offering).isEqualTo(offering)
+        assertThat(defaultPresenter!!.paywallOptions("") {}!!.offeringSelection.offering).isEqualTo(offering)
 
         finishDefaultPaywall()
         call.join()
@@ -170,13 +171,39 @@ class CheckpointsManagerTest {
         val call = launch { run = runCheckpoint() }
         val restored = mockk<CustomerInfo> { every { entitlements.active } returns mapOf("pro" to mockk()) }
 
-        defaultPresenter!!.recordOutcome("", CheckpointFlowOutcome.Restored(restored))
+        defaultPresenter!!.paywallOptions("") {}!!.listener!!.onRestoreCompleted(restored)
         finishDefaultPaywall(navigatedBack = true)
         call.join()
 
         assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
         assertThat(run!!.backedOut).isFalse
         verify(exactly = 1) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+    }
+
+    @Test
+    fun `the workflow window's options carry the workflow and report its outcomes`() = runTest(dispatcher) {
+        val resolution = CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null)
+        resolvesTo(resolution)
+        val customerInfo = mockk<CustomerInfo>()
+        val storeTransaction = mockk<StoreTransaction>()
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Step misconfigured")
+        val dismissals = mutableListOf<Boolean>()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        val options = manager.paywallOptions(currentCallId()) { dismissals += it }!!
+        assertThat(options.injectedWorkflow).isSameAs(resolution.workflow)
+        options.listener!!.onPurchaseCompleted(customerInfo, storeTransaction)
+        options.dismissRequestWithExitOffering!!(null, PaywallResult.Error(error), PaywallDismissReason.NAVIGATED_BACK)
+        assertThat(dismissals).containsExactly(true)
+        assertThat(manager.paywallOptions("unknown-call-id") {}).isNull()
+
+        finishPaywall(outcome = null, navigatedBack = true)
+        call.join()
+
+        // The purchase wins over the later error, and a purchase is never backed out.
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+        assertThat(run!!.backedOut).isFalse
     }
 
     @Test

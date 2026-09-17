@@ -12,34 +12,31 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
-import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
-import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
-import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
-import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
 import com.revenuecat.purchases.ui.revenuecatui.helpers.EDGE_TO_EDGE_WINDOW_THEME
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.applyEdgeToEdge
 
-/** What a [CheckpointWorkflowPresenter] reports to, keyed by the call it was shown for. */
+/**
+ * What a [CheckpointWorkflowPresenter] shows and reports to, keyed by the call it was shown for: the
+ * [CheckpointsManager] for workflows, the [DefaultPaywallPresenter] for offerings. The host builds the paywall's
+ * options, so it alone observes what happens inside the paywall; the window only reports when it went away.
+ */
 internal interface CheckpointPresentationHost {
-    fun presentation(callId: String): CheckpointPresentation?
-    fun recordOutcome(callId: String, outcome: CheckpointFlowOutcome)
+    /** What the window renders, its dismissal wired to [dismiss]; null once the presentation no longer exists. */
+    fun paywallOptions(callId: String, dismiss: (navigatedBack: Boolean) -> Unit): PaywallOptions?
     fun onPresentationFinished(callId: String, navigatedBack: Boolean = false, finishPresentation: () -> Unit = {})
     fun onPresentationFailed(callId: String, error: PurchasesError)
 }
 
 /**
- * Presents the flow resolved for a checkpoint, a workflow or an offering's paywall, in a dialog-owned [Window] over
- * the current activity, so the host activity stays started underneath, and reports the terminal
- * [CheckpointFlowOutcome] back to the [CheckpointPresentationHost] that asked for it, exactly once: the
- * [CheckpointsManager] for workflows, the [DefaultPaywallPresenter] for offerings. Terminal purchase/restore events
- * are recorded as they happen and delivered when the window goes away for good.
+ * Presents the paywall its [CheckpointPresentationHost] builds, a workflow or an offering's paywall, in a
+ * dialog-owned [Window] over the current activity, so the host activity stays started underneath, and tells the
+ * host exactly once when the window went away for good.
  *
  * The window dies with its host activity, so this presenter outlives any single window: on a configuration
  * change it dismisses the window (before the host tears its own down) and re-presents over the next started
@@ -80,8 +77,8 @@ internal class CheckpointWorkflowPresenter(
      */
     fun show(activity: Activity) {
         dismissWindowOnly()
-        val presentation = presentationHost.presentation(callId)
-        if (presentation == null) {
+        val options = presentationHost.paywallOptions(callId) { navigatedBack -> requestDismiss(navigatedBack) }
+        if (options == null) {
             Logger.w("Checkpoint call '$callId' no longer exists. Closing the checkpoint workflow.")
             teardown()
             return
@@ -90,30 +87,6 @@ internal class CheckpointWorkflowPresenter(
             application = activity.application.also { it.registerActivityLifecycleCallbacks(lifecycleCallbacks) }
         }
         host = activity
-        // Direct dismissals (a completed purchase or restore) carry no reason and count as a close; everything else
-        // reports one, and an error dialog being dismissed also carries the error as its result. The exit offering,
-        // if any, is not presented for checkpoints.
-        val options = PaywallOptions.Builder(dismissRequest = { requestDismiss(PaywallDismissReason.CLOSE) })
-            .setDismissRequestWithExitOffering { _, result, reason ->
-                (result as? PaywallResult.Error)?.let { recordOutcome(CheckpointFlowOutcome.Error(it.error)) }
-                requestDismiss(reason)
-            }
-            .setCustomVariables(presentation.customVariables)
-            .setListener(outcomeListener)
-            .apply {
-                when (val content = presentation.content) {
-                    is CheckpointFlowContent.Workflow -> injectedWorkflow(
-                        content.resolution.workflow,
-                        content.resolution.offerings,
-                        content.resolution.uiConfig,
-                    )
-                    // Offering paywalls, unlike workflows, don't necessarily carry their own close action, so
-                    // the dismiss button keeps the fallback paywall dismissable.
-                    is CheckpointFlowContent.OfferingFlow ->
-                        setOffering(content.offering).setShouldDisplayDismissButton(true)
-                }
-            }
-            .build()
         val dialog = ComponentDialog(activity, EDGE_TO_EDGE_WINDOW_THEME)
         dialog.window?.applyEdgeToEdge()
         // A re-present after a configuration change replaces a window that was already there, so it only fades out.
@@ -149,9 +122,6 @@ internal class CheckpointWorkflowPresenter(
         dismissWindowOnly()
         teardown()
     }
-
-    /** Closes the window as if the paywall had requested it, reporting like any other close. */
-    fun dismiss() = requestDismiss(PaywallDismissReason.CLOSE)
 
     private val lifecycleCallbacks = object : Application.ActivityLifecycleCallbacks {
         override fun onActivityDestroyed(activity: Activity) {
@@ -197,8 +167,8 @@ internal class CheckpointWorkflowPresenter(
 
     // The window stays up until the app has been told, so whatever the callback puts on screen is already there
     // when the flow goes away.
-    private fun requestDismiss(reason: PaywallDismissReason) {
-        presentationHost.onPresentationFinished(callId, navigatedBack = reason == PaywallDismissReason.NAVIGATED_BACK) {
+    private fun requestDismiss(navigatedBack: Boolean) {
+        presentationHost.onPresentationFinished(callId, navigatedBack) {
             dismissWindowOnly()
             teardown()
         }
@@ -230,7 +200,7 @@ internal class CheckpointWorkflowPresenter(
 
     private fun finish() {
         teardown()
-        presentationHost.onPresentationFinished(callId)
+        presentationHost.onPresentationFinished(callId, navigatedBack = false)
     }
 
     private fun teardown() {
@@ -241,33 +211,5 @@ internal class CheckpointWorkflowPresenter(
         awaitingRepresent = false
         pendingSavedState = null
         viewModelStore.clear()
-    }
-
-    private val outcomeListener = object : PaywallListener {
-        override fun onPurchaseCompleted(customerInfo: CustomerInfo, storeTransaction: StoreTransaction) {
-            recordOutcome(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
-        }
-
-        override fun onRestoreCompleted(customerInfo: CustomerInfo) {
-            recordOutcome(CheckpointFlowOutcome.Restored(customerInfo))
-        }
-
-        override fun onPurchaseError(error: PurchasesError) {
-            if (error.code != PurchasesErrorCode.PurchaseCancelledError) {
-                recordOutcome(CheckpointFlowOutcome.Error(error))
-            }
-        }
-
-        override fun onRestoreError(error: PurchasesError) {
-            recordOutcome(CheckpointFlowOutcome.Error(error))
-        }
-
-        override fun onWebCheckoutOpened() {
-            recordOutcome(CheckpointFlowOutcome.WebCheckoutOpened)
-        }
-    }
-
-    private fun recordOutcome(outcome: CheckpointFlowOutcome) {
-        presentationHost.recordOutcome(callId, outcome)
     }
 }

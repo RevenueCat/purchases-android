@@ -49,7 +49,6 @@ class CheckpointWorkflowPresenterTest {
     private lateinit var manager: CheckpointsManager
 
     private val presentedCallIds = mutableListOf<String>()
-    private var lastPresenter: CheckpointWorkflowPresenter? = null
     private var lastOptions: PaywallOptions? = null
     private var result: CheckpointRun? = null
     private var contentFactory: (Activity) -> View = { activity -> View(activity) }
@@ -70,7 +69,7 @@ class CheckpointWorkflowPresenterTest {
                 CheckpointWorkflowPresenter(callId, manager) { activity, options ->
                     lastOptions = options
                     contentFactory(activity).also { contentViews += it }
-                }.also { lastPresenter = it }
+                }
             },
         )
     }
@@ -121,18 +120,6 @@ class CheckpointWorkflowPresenterTest {
         launchCheckpoint()
 
         lastOptions!!.dismissRequest()
-        finishPresentation()
-
-        assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
-        assertThat(paywallOutcome()).isEqualTo(CheckpointFlowOutcome.Dismissed)
-        assertThat(backedOut()).isFalse
-    }
-
-    @Test
-    fun `a dismiss from the host completes the call as Dismissed`() {
-        launchCheckpoint()
-
-        lastPresenter!!.dismiss()
         finishPresentation()
 
         assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
