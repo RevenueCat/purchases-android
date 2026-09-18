@@ -186,6 +186,18 @@ internal sealed class Endpoint(
                 .format(Uri.encode(userId), productIds.joinToString("&id=") { Uri.encode(it) })
         }
     }
+    object TokenLogin : Endpoint("/auth/login", "token_login") {
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) = pathTemplate
+        override val isIAMEndpoint: Boolean = true
+    }
+    object TokenRefresh : Endpoint("/auth/token", "token_refresh") {
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) = pathTemplate
+        override val isIAMEndpoint: Boolean = true
+    }
+    object TokenLogout : Endpoint("/auth/revoke", "token_logout") {
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) = pathTemplate
+        override val isIAMEndpoint: Boolean = true
+    }
 
     val supportsSignatureVerification: Boolean
         get() = when (this) {
@@ -209,6 +221,9 @@ internal sealed class Endpoint(
             PostCreateSupportTicket,
             is WebBillingGetProducts,
             is AliasUsers,
+            TokenLogin,
+            TokenRefresh,
+            TokenLogout,
             ->
                 false
         }
@@ -235,6 +250,9 @@ internal sealed class Endpoint(
             is WebBillingGetProducts,
             is AliasUsers,
             is GetRemoteConfigFallback,
+            TokenLogin,
+            TokenRefresh,
+            TokenLogout,
             ->
                 false
         }
@@ -272,6 +290,9 @@ internal sealed class Endpoint(
             is GetVirtualCurrencies,
             is GetRewardVerification,
             is WebBillingGetProducts,
+            TokenLogin,
+            TokenRefresh,
+            TokenLogout,
             ->
                 true
             PostDiagnostics,

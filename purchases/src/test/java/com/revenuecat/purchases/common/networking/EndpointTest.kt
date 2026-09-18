@@ -27,6 +27,9 @@ class EndpointTest {
         Endpoint.AliasUsers("test-user-id"),
         Endpoint.GetRemoteConfig("app"),
         Endpoint.GetRemoteConfigFallback("app"),
+        Endpoint.TokenLogin,
+        Endpoint.TokenRefresh,
+        Endpoint.TokenLogout,
     )
 
     @Test
@@ -236,6 +239,9 @@ class EndpointTest {
             Endpoint.PostEvents,
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
             Endpoint.AliasUsers("test-user-id"),
+            Endpoint.TokenLogin,
+            Endpoint.TokenRefresh,
+            Endpoint.TokenLogout,
         )
         for (endpoint in expectedNotSupportsValidationEndpoints) {
             assertThat(endpoint.supportsSignatureVerification)
@@ -285,6 +291,9 @@ class EndpointTest {
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
             Endpoint.AliasUsers("test-user-id"),
             Endpoint.GetRemoteConfigFallback("app"),
+            Endpoint.TokenLogin,
+            Endpoint.TokenRefresh,
+            Endpoint.TokenLogout,
         )
         for (endpoint in expectedEndpoints) {
             assertThat(endpoint.needsNonceToPerformSigning)
@@ -311,6 +320,9 @@ class EndpointTest {
             Endpoint.GetVirtualCurrencies("test-user-id"),
             Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
             Endpoint.WebBillingGetProducts("test-user-id", setOf("product1", "product2")),
+            Endpoint.TokenLogin,
+            Endpoint.TokenRefresh,
+            Endpoint.TokenLogout,
         )
         for (endpoint in mainApiEndpoints) {
             assertThat(endpoint.usesAPISources)
@@ -428,6 +440,32 @@ class EndpointTest {
             assertThat(endpoint.getPath(useIAMPath = true))
                 .withFailMessage { "Endpoint $endpoint expected useIAMPath to be a no-op" }
                 .isEqualTo(endpoint.getPath())
+        }
+    }
+
+    @Test
+    fun `TokenLogin, TokenRefresh and TokenLogout have the expected auth paths`() {
+        assertThat(Endpoint.TokenLogin.getPath()).isEqualTo("/auth/login")
+        assertThat(Endpoint.TokenRefresh.getPath()).isEqualTo("/auth/token")
+        assertThat(Endpoint.TokenLogout.getPath()).isEqualTo("/auth/revoke")
+    }
+
+    @Test
+    fun `TokenLogin, TokenRefresh and TokenLogout are IAM endpoints`() {
+        assertThat(Endpoint.TokenLogin.isIAMEndpoint).isTrue
+        assertThat(Endpoint.TokenRefresh.isIAMEndpoint).isTrue
+        assertThat(Endpoint.TokenLogout.isIAMEndpoint).isTrue
+    }
+
+    @Test
+    fun `no other endpoint is an IAM endpoint`() {
+        val authEndpoints = setOf(Endpoint.TokenLogin, Endpoint.TokenRefresh, Endpoint.TokenLogout)
+        for (endpoint in allEndpoints) {
+            if (endpoint !in authEndpoints) {
+                assertThat(endpoint.isIAMEndpoint)
+                    .withFailMessage { "Endpoint $endpoint expected to not be an IAM endpoint" }
+                    .isFalse
+            }
         }
     }
 }
