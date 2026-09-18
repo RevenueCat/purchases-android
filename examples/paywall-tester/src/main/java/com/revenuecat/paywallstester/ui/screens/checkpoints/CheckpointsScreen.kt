@@ -55,15 +55,18 @@ fun CheckpointsScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val paywallRequest by viewModel.paywallRequest.collectAsStateWithLifecycle()
+    val errorRequest by viewModel.errorRequest.collectAsStateWithLifecycle()
 
     Box(modifier = modifier) {
         CheckpointsScaffold(
             state = state,
             onHit = viewModel::hit,
             onTogglePresentWithAppPaywall = viewModel::setPresentWithAppPaywall,
+            onTogglePresentErrorsWithApp = viewModel::setPresentErrorsWithApp,
             dismissRequest = dismissRequest,
         )
         paywallRequest?.let { AppPaywall(request = it) }
+        errorRequest?.let { AppErrorDialog(request = it) }
     }
 }
 
@@ -73,6 +76,7 @@ private fun CheckpointsScaffold(
     state: UiState,
     onHit: (String) -> Unit,
     onTogglePresentWithAppPaywall: (Boolean) -> Unit,
+    onTogglePresentErrorsWithApp: (Boolean) -> Unit,
     dismissRequest: () -> Unit,
 ) {
     Scaffold(
@@ -96,8 +100,18 @@ private fun CheckpointsScaffold(
         ) {
             HitCheckpointSection(onHit = onHit)
             PresenterSection(
-                presentWithAppPaywall = state.presentWithAppPaywall,
+                title = "Present offerings with the app's own paywall",
+                description = "Off: RevenueCat shows the offering's paywall. " +
+                    "On: this app shows its own paywall through PaywallPresenter.",
+                checked = state.presentWithAppPaywall,
                 onToggle = onTogglePresentWithAppPaywall,
+            )
+            PresenterSection(
+                title = "Present errors with the app's own dialog",
+                description = "Off: RevenueCat shows its error dialog. " +
+                    "On: this app shows its own dialog through ErrorPresenter, for SDK-presented flows.",
+                checked = state.presentErrorsWithApp,
+                onToggle = onTogglePresentErrorsWithApp,
             )
             ResultCard(
                 waitingFor = state.waitingFor,
@@ -134,16 +148,16 @@ private fun HitCheckpointSection(onHit: (String) -> Unit) {
 }
 
 @Composable
-private fun PresenterSection(presentWithAppPaywall: Boolean, onToggle: (Boolean) -> Unit) {
+private fun PresenterSection(
+    title: String,
+    description: String,
+    checked: Boolean,
+    onToggle: (Boolean) -> Unit,
+) {
     ListItem(
-        headlineContent = { Text(text = "Present offerings with the app's own paywall") },
-        supportingContent = {
-            Text(
-                text = "Off: RevenueCat shows the offering's paywall. " +
-                    "On: this app shows its own paywall through PaywallPresenter.",
-            )
-        },
-        trailingContent = { Switch(checked = presentWithAppPaywall, onCheckedChange = onToggle) },
+        headlineContent = { Text(text = title) },
+        supportingContent = { Text(text = description) },
+        trailingContent = { Switch(checked = checked, onCheckedChange = onToggle) },
     )
 }
 
@@ -253,8 +267,12 @@ private fun CheckpointsScreenPreview() {
             override val paywallRequest: StateFlow<AppPaywallPresenter.Request?>
                 get() = MutableStateFlow(null)
 
+            override val errorRequest: StateFlow<AppErrorPresenter.Request?>
+                get() = MutableStateFlow(null)
+
             override fun hit(identifier: String) {}
             override fun setPresentWithAppPaywall(enabled: Boolean) {}
+            override fun setPresentErrorsWithApp(enabled: Boolean) {}
         },
     )
 }

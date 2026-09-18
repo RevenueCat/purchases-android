@@ -64,6 +64,18 @@ public var Purchases.paywallPresenter: PaywallPresenter?
     }
 
 /**
+ * Presents the errors of the flows the SDK presents for checkpoints with app-owned UI, unless the call supplies
+ * its own through [CheckpointParams.errorPresenter]. When neither is set, the SDK presents its own error dialog
+ * through a presenter of its own. Held by this [Purchases] instance, so it is cleared when the SDK is reconfigured.
+ */
+@InternalRevenueCatAPI
+public var Purchases.errorPresenter: ErrorPresenter?
+    get() = checkpointsManager.errorPresenter
+    set(value) {
+        checkpointsManager.errorPresenter = value
+    }
+
+/**
  * The [CheckpointsManager] owned by this [Purchases] instance, created on first use and kept in the
  * instance's opaque `internalCpManagerSlot`. Storing it there rather than in a singleton ties any in-flight
  * presentation to the lifetime of the SDK instance, so reconfiguring the SDK cannot inherit a presentation that
