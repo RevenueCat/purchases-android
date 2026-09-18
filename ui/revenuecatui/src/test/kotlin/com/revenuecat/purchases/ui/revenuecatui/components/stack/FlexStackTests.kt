@@ -33,7 +33,7 @@ class FlexStackTests {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun `horizontal flex stack excludes hidden children from distribution`() = with(composeTestRule) {
+    fun `horizontal flex stack excludes hidden children from distribution`(): Unit = with(composeTestRule) {
         val children = children(
             size = Size(width = Fixed(10u), height = Fixed(10u)),
         )
@@ -64,7 +64,7 @@ class FlexStackTests {
     }
 
     @Test
-    fun `vertical flex stack excludes hidden children from distribution`() = with(composeTestRule) {
+    fun `vertical flex stack excludes hidden children from distribution`(): Unit = with(composeTestRule) {
         val children = children(
             size = Size(width = Fixed(10u), height = Fixed(10u)),
         )
@@ -95,7 +95,7 @@ class FlexStackTests {
     }
 
     @Test
-    fun `space around excludes a hidden middle child`() = with(composeTestRule) {
+    fun `space around excludes a hidden middle child`(): Unit = with(composeTestRule) {
         val children = children(
             size = Size(width = Fixed(10u), height = Fixed(10u)),
             hiddenIndex = 1,
@@ -127,7 +127,7 @@ class FlexStackTests {
     }
 
     @Test
-    fun `space evenly excludes a hidden first child`() = with(composeTestRule) {
+    fun `space evenly excludes a hidden first child`(): Unit = with(composeTestRule) {
         val children = children(
             size = Size(width = Fixed(10u), height = Fixed(10u)),
             hiddenIndex = 0,
@@ -159,7 +159,7 @@ class FlexStackTests {
     }
 
     @Test
-    fun `fill child receives remaining space before flex distribution`() = with(composeTestRule) {
+    fun `fill child receives remaining space before flex distribution`(): Unit = with(composeTestRule) {
         val children = listOf(
             previewStackComponentStyle(
                 children = emptyList(),
