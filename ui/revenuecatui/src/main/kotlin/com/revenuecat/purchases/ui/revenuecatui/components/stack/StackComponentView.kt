@@ -624,7 +624,6 @@ private fun MainStackComponent(
                     val hasFillWidthChild = stackState.children.any { it.size.width is Fill }
                     val mainAxisUnbounded = remember { mutableStateOf(false) }
                     HorizontalStack(
-                        size = stackState.size,
                         dimension = dimension,
                         spacing = stackState.spacing,
                         modifier = outerModifier
@@ -663,7 +662,6 @@ private fun MainStackComponent(
                     val hasFillHeightChild = stackState.children.any { it.size.height is Fill }
                     val mainAxisUnbounded = remember { mutableStateOf(false) }
                     VerticalStack(
-                        size = stackState.size,
                         dimension = dimension,
                         spacing = stackState.spacing,
                         modifier = outerModifier
