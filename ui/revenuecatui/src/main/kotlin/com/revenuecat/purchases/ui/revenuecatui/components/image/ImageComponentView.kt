@@ -58,6 +58,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.urlsForCurrentThe
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.aspectRatio
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.border
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.overlay
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.resolveComponentSizeParentData
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.shadow
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.size
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
@@ -101,6 +102,7 @@ internal fun ImageComponentView(
         // in order to have the border applied on top of the overlay, which uses onDrawWithContent
         Box(
             modifier = modifier
+                .resolveComponentSizeParentData(imageState.sizePlusMargin)
                 .size(imageState.sizePlusMargin)
                 .applyIfNotNull(imageState.marginAdjustedAspectRatio) { aspectRatio(it) }
                 .padding(imageState.margin)

@@ -41,6 +41,7 @@ import com.revenuecat.purchases.paywalls.events.PaywallComponentInteractionData
 import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.components.TransitionView
+import com.revenuecat.purchases.ui.revenuecatui.components.modifier.resolveComponentSizeParentData
 import com.revenuecat.purchases.ui.revenuecatui.components.previewEmptyState
 import com.revenuecat.purchases.ui.revenuecatui.components.previewStackComponentStyle
 import com.revenuecat.purchases.ui.revenuecatui.components.previewTextComponentStyle
@@ -211,7 +212,7 @@ internal fun ButtonComponentView(
                     color = progressColorFor(style.stackComponentStyle.background),
                 )
             },
-            modifier = modifier,
+            modifier = modifier.resolveComponentSizeParentData(stackState.size),
             measurePolicy = { measurables, constraints ->
                 val stack = measurables[0].measure(constraints)
                 // Ensure that the progress indicator is not bigger than the stack.

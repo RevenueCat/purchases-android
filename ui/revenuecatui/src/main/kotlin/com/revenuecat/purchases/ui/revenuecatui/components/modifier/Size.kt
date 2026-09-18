@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.revenuecat.purchases.paywalls.components.properties.Size
 import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint.Fill
@@ -43,18 +44,25 @@ internal fun Modifier.size(
 ): Modifier {
     val widthModifier = when (val width = size.width) {
         is Fit -> Modifier.wrapContentWidth(align = horizontalAlignment ?: Alignment.CenterHorizontally)
-        is Fill -> Modifier.fillMaxWidth()
+        is Fill -> Modifier.widthIn(min = width.minDp, max = width.maxDp).fillMaxWidth()
         is Fixed -> Modifier.width(width.value.toInt().dp)
     }
 
     val heightModifier = when (val height = size.height) {
         is Fit -> Modifier.wrapContentHeight(align = verticalAlignment ?: Alignment.CenterVertically)
-        is Fill -> Modifier.fillMaxHeight()
+        is Fill -> Modifier.heightIn(min = height.minDp, max = height.maxDp).fillMaxHeight()
         is Fixed -> Modifier.height(height.value.toInt().dp)
     }
 
     return this then widthModifier then heightModifier
 }
+
+private val Fill.minDp: Dp
+    get() = min?.toInt()?.dp ?: Dp.Unspecified
+
+/** Consistent with the stack allocation: a minimum wins over a smaller maximum. */
+private val Fill.maxDp: Dp
+    get() = max?.let { maxOf(it, min ?: 0u) }?.toInt()?.dp ?: Dp.Unspecified
 
 @Composable
 private fun Size_Preview(size: Size) {
