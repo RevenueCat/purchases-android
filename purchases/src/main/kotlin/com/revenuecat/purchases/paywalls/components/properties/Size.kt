@@ -6,12 +6,9 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import dev.drewhamilton.poko.Poko
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 
 @InternalRevenueCatAPI
 @Poko
@@ -61,19 +58,17 @@ public sealed interface SizeConstraint {
 }
 
 @OptIn(InternalRevenueCatAPI::class)
-internal object SizeConstraintDeserializer : KSerializer<SizeConstraint> {
-    private val delegate = object : SealedDeserializerWithDefault<SizeConstraint>(
-        serialName = "SizeConstraint",
-        serializerByType = mapOf(
-            "fit" to { SizeConstraint.Fit.serializer() },
-            "fill" to { SizeConstraint.Fill.serializer() },
-            "fixed" to { SizeConstraint.Fixed.serializer() },
-        ),
-        defaultValue = { SizeConstraint.Fit() },
-    ) {}
-    override val descriptor: SerialDescriptor = delegate.descriptor
+internal object SizeConstraintDeserializer : SealedDeserializerWithDefault<SizeConstraint>(
+    serialName = "SizeConstraint",
+    serializerByType = mapOf(
+        "fit" to { SizeConstraint.Fit.serializer() },
+        "fill" to { SizeConstraint.Fill.serializer() },
+        "fixed" to { SizeConstraint.Fixed.serializer() },
+    ),
+    defaultValue = { SizeConstraint.Fit() },
+) {
     override fun deserialize(decoder: Decoder): SizeConstraint {
-        val constraint = delegate.deserialize(decoder)
+        val constraint = super.deserialize(decoder)
         if (BuildConfig.ENABLE_PAYWALL_MIN_MAX_SIZING) return constraint
         return when (constraint) {
             is SizeConstraint.Fit -> SizeConstraint.Fit(default = constraint.default)
@@ -81,5 +76,4 @@ internal object SizeConstraintDeserializer : KSerializer<SizeConstraint> {
             is SizeConstraint.Fixed -> constraint
         }
     }
-    override fun serialize(encoder: Encoder, value: SizeConstraint) = delegate.serialize(encoder, value)
 }
