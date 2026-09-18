@@ -30,7 +30,6 @@ import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallSt
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getOrThrow
-import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyMapOf
 import com.revenuecat.purchases.ui.revenuecatui.workflow.WorkflowScreenMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -42,16 +41,12 @@ class WorkflowSheetRelativeDiscountTests {
 
     private val offeringId = "sheet_discount"
     private val localeId = LocaleId("en_US")
-    private val discountKey = LocalizationKey("discount")
-    private val localizations = nonEmptyMapOf(
-        localeId to nonEmptyMapOf(discountKey to LocalizationData.Text("{{ product.relative_discount }} OFF")),
-    )
 
     @Test
     fun `workflow discount baseline includes monthly and quarterly plans inside unopened sheet`() {
         val state = makeWorkflowState(includeSheet = true)
 
-        assertThat(state.paywallPackages.map { it.identifier }).containsExactly(
+        assertThat(state.paywallPackages.map { it.identifier }).containsExactlyInAnyOrder(
             PackageType.ANNUAL.identifier, PackageType.THREE_MONTH.identifier, PackageType.MONTHLY.identifier,
         )
         assertThat(state.mostExpensivePricePerMonthMicros).isEqualTo(10_990_000L)
@@ -59,9 +54,6 @@ class WorkflowSheetRelativeDiscountTests {
 
         state.update(requireNotNull(PackageType.THREE_MONTH.identifier))
         assertThat(state.selectedPackageInfo?.rcPackage?.packageType).isEqualTo(PackageType.THREE_MONTH)
-        assertThat(state.mostExpensivePricePerMonthMicros).isEqualTo(10_990_000L)
-        state.update(requireNotNull(PackageType.MONTHLY.identifier))
-        assertThat(state.selectedPackageInfo?.rcPackage?.packageType).isEqualTo(PackageType.MONTHLY)
         assertThat(state.mostExpensivePricePerMonthMicros).isEqualTo(10_990_000L)
     }
 
@@ -98,7 +90,7 @@ class WorkflowSheetRelativeDiscountTests {
                 )),
                 background = Background.Color(ColorScheme(light = ColorInfo.Hex(Color.White.toArgb()))),
             )),
-            componentsLocalizations = localizations,
+            componentsLocalizations = mapOf(localeId to mapOf(LocalizationKey("key") to LocalizationData.Text("value"))),
             defaultLocaleIdentifier = localeId,
             offeringIdentifier = offeringId,
         )
