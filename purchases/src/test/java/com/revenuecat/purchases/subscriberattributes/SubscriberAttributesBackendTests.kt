@@ -308,6 +308,23 @@ class SubscriberAttributesPosterTests {
         assertThat(receivedAttributeErrors!!.size).isEqualTo(0)
     }
 
+    @Test
+    fun `no status code when posting attributes is not considered synced`() {
+        mockResponse(HTTPClient.NO_STATUS_CODE)
+
+        subscriberAttributesPoster.postSubscriberAttributes(
+            mapOf("email" to SubscriberAttribute("email", null)).toBackendMap(),
+            appUserID,
+            Delay.NONE,
+            unexpectedOnSuccess,
+            expectedOnError
+        )
+
+        assertThat(receivedError).isNotNull
+        assertThat(receivedSyncedSuccessfully).isFalse()
+        assertThat(receivedAttributeErrors).isEmpty()
+    }
+
     // endregion
 
     // region posting attributes when posting receipt
