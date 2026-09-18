@@ -35,6 +35,9 @@ internal class PaywallErrorReporter(
         /** Ends the flow; [result] carries the error of a paywall that could not be shown. */
         fun closePaywall(result: PaywallResult?, reason: PaywallDismissReason)
 
+        /** Goes to the flow's previous step, like system back; false when there is none. */
+        fun navigateBack(): Boolean
+
         /** True once the flow has ended some other way (e.g. the user closed the paywall meanwhile). */
         val flowEnded: Boolean
     }
@@ -51,7 +54,12 @@ internal class PaywallErrorReporter(
             return
         }
         present(presenter, error, source, flowCanContinue = true, onFailure = { host.showErrorDialog(error) }) {
-            if (it != ErrorPresenter.Completion.Result.Retry) leaveFlow(it, paywallResult = null)
+            when {
+                it == ErrorPresenter.Completion.Result.Retry -> Unit
+                // System back: a previous step when the flow has one, leaving the flow otherwise.
+                it == ErrorPresenter.Completion.Result.NavigatedBack && !host.flowEnded && host.navigateBack() -> Unit
+                else -> leaveFlow(it, paywallResult = null)
+            }
         }
     }
 

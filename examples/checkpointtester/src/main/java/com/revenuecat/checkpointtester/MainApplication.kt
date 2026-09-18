@@ -1,6 +1,7 @@
 package com.revenuecat.checkpointtester
 
 import android.app.Application
+import com.revenuecat.checkpointtester.checkpoints.ErrorPresenters
 import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogLevel
@@ -20,5 +21,6 @@ class MainApplication : Application() {
                 .build(),
         )
         PaywallPresenters.select(PaywallPresenters.mode.value)
+        ErrorPresenters.select(ErrorPresenters.mode.value)
     }
 }

@@ -23,8 +23,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.revenuecat.checkpointtester.checkpoints.ErrorPresenters
 import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
 import com.revenuecat.checkpointtester.ui.Screen
+import com.revenuecat.checkpointtester.ui.dialogs.AppErrorDialog
 import com.revenuecat.checkpointtester.ui.dialogs.SetAttributeDialog
 import com.revenuecat.checkpointtester.ui.paywalls.GlobalPaywall
 import com.revenuecat.checkpointtester.ui.paywalls.LocalPaywall
@@ -106,11 +108,15 @@ fun CheckpointTesterApp(
 }
 
 // Renders the app-owned paywall over the whole app, top bar included, whenever one of the tester's presenters has
-// an offering to present.
+// an offering to present, and the app-owned error dialog whenever one of its error presenters has an error.
 @Composable
 private fun AppPaywallHost() {
     val globalRequest by PaywallPresenters.global.request.collectAsState()
     val localRequest by PaywallPresenters.local.request.collectAsState()
+    val globalError by ErrorPresenters.global.request.collectAsState()
+    val localError by ErrorPresenters.local.request.collectAsState()
     globalRequest?.let { GlobalPaywall(request = it) }
     localRequest?.let { LocalPaywall(request = it) }
+    globalError?.let { AppErrorDialog(request = it, presenterName = "global") }
+    localError?.let { AppErrorDialog(request = it, presenterName = "call's own") }
 }
