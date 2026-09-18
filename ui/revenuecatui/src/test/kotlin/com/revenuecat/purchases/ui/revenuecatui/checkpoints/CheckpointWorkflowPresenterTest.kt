@@ -8,11 +8,13 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.EditText
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
@@ -62,14 +64,20 @@ class CheckpointWorkflowPresenterTest {
             every { currentActivity } answers { controller.get() }
             coEvery { internalResolveCp(any(), any()) } returns
                 CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null)
-        }
-        manager = CheckpointsManager { callId, manager ->
-            presentedCallIds += callId
-            CheckpointWorkflowPresenter(callId, manager) { activity, options ->
-                lastOptions = options
-                contentFactory(activity).also { contentViews += it }
+            every { getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
+                secondArg<ReceiveCustomerInfoCallback>()
+                    .onError(PurchasesError(PurchasesErrorCode.CustomerInfoError, "No cache."))
             }
         }
+        manager = CheckpointsManager(
+            presenterFactory = { callId, manager ->
+                presentedCallIds += callId
+                CheckpointWorkflowPresenter(callId, manager) { activity, options ->
+                    lastOptions = options
+                    contentFactory(activity).also { contentViews += it }
+                }
+            },
+        )
     }
 
     @After
