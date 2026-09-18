@@ -2,7 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui.workflow
 
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowStep
-import com.revenuecat.purchases.common.workflows.WorkflowTriggerAction
 import com.revenuecat.purchases.common.workflows.WorkflowTriggerType
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
@@ -19,9 +18,8 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
         val step = currentStep ?: return null
         val trigger = step.triggers.firstOrNull { it.componentId == componentId && it.type == triggerType }
             ?: return null
-        val action = step.triggerActions[trigger.actionId] ?: return null
-        if (action !is WorkflowTriggerAction.Step) return null
-        return workflow.steps[action.stepId]
+        val stepId = step.triggerActions[trigger.actionId]?.destinationStepId ?: return null
+        return workflow.steps[stepId]
     }
 
     val peekBackStep: WorkflowStep?
@@ -38,11 +36,10 @@ internal class WorkflowNavigator(private val workflow: PublishedWorkflow) {
             Logger.w("No trigger action found for actionId '${trigger.actionId}' in step '${step.id}'")
             return null
         }
-        if (action !is WorkflowTriggerAction.Step) {
-            Logger.w("Unknown workflow trigger action type for actionId '${trigger.actionId}' — ignoring")
+        val stepId = action.destinationStepId ?: run {
+            Logger.w("Workflow trigger action '${trigger.actionId}' leads nowhere — ignoring")
             return null
         }
-        val stepId = action.stepId
         val nextStep = workflow.steps[stepId] ?: run {
             Logger.w("Step '$stepId' not found in workflow '${workflow.id}'")
             return null

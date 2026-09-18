@@ -68,6 +68,17 @@ public sealed class WorkflowTriggerAction {
     @InternalRevenueCatAPI
     @Serializable
     public object Unknown : WorkflowTriggerAction()
+
+    /**
+     * A branch takes its fallback until the audiences that pick a different route can be evaluated.
+     */
+    @InternalRevenueCatAPI
+    public val destinationStepId: String?
+        get() = when (this) {
+            is Step -> stepId
+            is Branch -> fallbackStepId
+            Unknown -> null
+        }
 }
 
 internal object WorkflowTriggerActionSerializer : SealedDeserializerWithDefault<WorkflowTriggerAction>(

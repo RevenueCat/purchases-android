@@ -125,6 +125,38 @@ class WorkflowNavigatorTest {
     }
 
     @Test
+    fun `triggerAction on a branch exit navigates to the route it picks`() {
+        val branchStep = WorkflowStep(
+            id = "step-1",
+            type = "screen",
+            screenId = "screen-1",
+            triggers = listOf(
+                WorkflowTrigger(
+                    name = "Next",
+                    type = WorkflowTriggerType.ON_PRESS,
+                    actionId = "action-next",
+                    componentId = "btn-next",
+                ),
+            ),
+            triggerActions = mapOf(
+                "action-next" to WorkflowTriggerAction.Branch(
+                    branches = listOf(
+                        WorkflowTriggerAction.Branch.Route(audienceId = "aud-a", stepId = "step-3"),
+                    ),
+                    fallbackStepId = "step-2",
+                ),
+            ),
+        )
+        val branchWorkflow = workflow.copy(steps = mapOf("step-1" to branchStep, "step-2" to step2))
+
+        val navigator = WorkflowNavigator(branchWorkflow)
+        val result = navigator.triggerAction("btn-next", WorkflowTriggerType.ON_PRESS)
+
+        assertThat(result).isEqualTo(step2)
+        assertThat(navigator.currentStep?.id).isEqualTo("step-2")
+    }
+
+    @Test
     fun `triggerAction with unknown componentId returns null and does not navigate`() {
         val navigator = WorkflowNavigator(workflow)
         val result = navigator.triggerAction("btn-unknown", WorkflowTriggerType.ON_PRESS)
