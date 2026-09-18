@@ -55,6 +55,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
+import com.revenuecat.purchases.ui.revenuecatui.PaywallErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
@@ -63,6 +64,7 @@ import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogic
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicWithCallback
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockResourceProvider
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -3604,6 +3606,227 @@ class PaywallViewModelTest {
         assertThat(model.workflowState.value).isNull()
     }
 
+    // Error presenter
+
+    @Test
+    fun `a purchase error is handed to the error presenter instead of the dialog`() {
+        val presenter = RecordingErrorPresenter()
+        val model = create(errorPresenter = presenter)
+        val expectedError = PurchasesError(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
+
+        failPurchase(model, expectedError)
+
+        assertThat(presenter.errors).containsExactly(expectedError)
+        assertThat(presenter.sources).containsExactly(ErrorPresenter.Source.PURCHASE)
+        assertThat(presenter.flowCanContinue).containsExactly(true)
+        assertThat(model.actionError.value).isNull()
+        assertThat(dismissInvoked).isFalse
+        verify(exactly = 1) { listener.onPurchaseError(expectedError) }
+    }
+
+    @Test
+    fun `a restore error is handed to the error presenter as a restore`() {
+        val presenter = RecordingErrorPresenter()
+        val model = create(errorPresenter = presenter)
+        val expectedError = PurchasesError(PurchasesErrorCode.NetworkError)
+        coEvery { purchases.awaitRestore() } throws PurchasesException(expectedError)
+
+        model.restorePurchases()
+
+        assertThat(presenter.errors).containsExactly(expectedError)
+        assertThat(presenter.sources).containsExactly(ErrorPresenter.Source.RESTORE)
+        assertThat(presenter.flowCanContinue).containsExactly(true)
+        assertThat(model.actionError.value).isNull()
+    }
+
+    @Test
+    fun `Retry after a purchase error keeps the paywall where it was`() {
+        val presenter = RecordingErrorPresenter()
+        val model = create(errorPresenter = presenter)
+        failPurchase(model)
+
+        presenter.complete(ErrorPresenter.Completion.Result.Retry)
+
+        assertThat(dismissInvoked).isFalse
+        assertThat(model.actionError.value).isNull()
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Legacy::class.java)
+    }
+
+    @Test
+    fun `Continued after a purchase error closes the paywall`() {
+        val presenter = RecordingErrorPresenter()
+        val dismissals = mutableListOf<Pair<PaywallResult?, PaywallDismissReason>>()
+        val model = create(
+            errorPresenter = presenter,
+            dismissRequestWithExitOffering = { _, result, reason -> dismissals += result to reason },
+        )
+        failPurchase(model)
+
+        presenter.complete(ErrorPresenter.Completion.Result.Continued)
+
+        assertThat(dismissals).containsExactly(null to PaywallDismissReason.CLOSE)
+    }
+
+    @Test
+    fun `NavigatedBack after a purchase error closes the paywall as a back navigation`() {
+        val presenter = RecordingErrorPresenter()
+        val dismissals = mutableListOf<Pair<PaywallResult?, PaywallDismissReason>>()
+        val model = create(
+            errorPresenter = presenter,
+            dismissRequestWithExitOffering = { _, result, reason -> dismissals += result to reason },
+        )
+        failPurchase(model)
+
+        presenter.complete(ErrorPresenter.Completion.Result.NavigatedBack)
+
+        assertThat(dismissals).containsExactly(null to PaywallDismissReason.NAVIGATED_BACK)
+    }
+
+    @Test
+    fun `an unknown error presenter result closes the paywall`() {
+        val presenter = RecordingErrorPresenter()
+        val dismissals = mutableListOf<Pair<PaywallResult?, PaywallDismissReason>>()
+        val model = create(
+            errorPresenter = presenter,
+            dismissRequestWithExitOffering = { _, result, reason -> dismissals += result to reason },
+        )
+        failPurchase(model)
+
+        presenter.complete(object : ErrorPresenter.Completion.Result() {})
+
+        assertThat(dismissals).containsExactly(null to PaywallDismissReason.CLOSE)
+    }
+
+    @Test
+    fun `only the error presenter's first report counts`() {
+        val presenter = RecordingErrorPresenter()
+        val model = create(errorPresenter = presenter)
+        failPurchase(model)
+
+        presenter.complete(ErrorPresenter.Completion.Result.Retry)
+        presenter.complete(ErrorPresenter.Completion.Result.Continued)
+
+        assertThat(dismissInvoked).isFalse
+    }
+
+    @Test
+    fun `an error presenter report after the paywall closed some other way is ignored`() {
+        val presenter = RecordingErrorPresenter()
+        var dismissals = 0
+        val model = create(errorPresenter = presenter, dismissRequest = { dismissals++ })
+        failPurchase(model)
+        model.closePaywall()
+        assertThat(dismissals).isEqualTo(1)
+
+        presenter.complete(ErrorPresenter.Completion.Result.Continued)
+
+        assertThat(dismissals).isEqualTo(1)
+    }
+
+    @Test
+    fun `a throwing error presenter falls back to the dialog`() {
+        val model = create(errorPresenter = { _, _, _, _ -> error("Simulated.") })
+        val expectedError = PurchasesError(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
+
+        failPurchase(model, expectedError)
+
+        assertThat(model.actionError.value).isEqualTo(expectedError)
+        assertThat(dismissInvoked).isFalse
+    }
+
+    @Test
+    fun `a loading error is handed to the error presenter as a presentation error the flow cannot recover from`() {
+        coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
+        val presenter = RecordingErrorPresenter()
+
+        val model = create(errorPresenter = presenter)
+
+        val state = model.state.value as PaywallState.Error
+        assertThat(presenter.errors.single().underlyingErrorMessage).isEqualTo(state.errorMessage)
+        assertThat(presenter.sources).containsExactly(ErrorPresenter.Source.PRESENTATION)
+        assertThat(presenter.flowCanContinue).containsExactly(false)
+        assertThat(dismissInvoked).isFalse
+    }
+
+    @Test
+    fun `Retry after a loading error closes the paywall with the error like Continued`() {
+        coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
+        val presenter = RecordingErrorPresenter()
+        val dismissals = mutableListOf<Pair<PaywallResult?, PaywallDismissReason>>()
+        val model = create(
+            errorPresenter = presenter,
+            dismissRequestWithExitOffering = { _, result, reason -> dismissals += result to reason },
+        )
+        val state = model.state.value as PaywallState.Error
+
+        presenter.complete(ErrorPresenter.Completion.Result.Retry)
+
+        val (result, reason) = dismissals.single()
+        assertThat((result as PaywallResult.Error).error.underlyingErrorMessage).isEqualTo(state.errorMessage)
+        assertThat(reason).isEqualTo(PaywallDismissReason.CLOSE)
+    }
+
+    @Test
+    fun `NavigatedBack after a loading error closes the paywall with the error as a back navigation`() {
+        coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
+        val presenter = RecordingErrorPresenter()
+        val dismissals = mutableListOf<Pair<PaywallResult?, PaywallDismissReason>>()
+        create(
+            errorPresenter = presenter,
+            dismissRequestWithExitOffering = { _, result, reason -> dismissals += result to reason },
+        )
+
+        presenter.complete(ErrorPresenter.Completion.Result.NavigatedBack)
+
+        val (result, reason) = dismissals.single()
+        assertThat(result).isInstanceOf(PaywallResult.Error::class.java)
+        assertThat(reason).isEqualTo(PaywallDismissReason.NAVIGATED_BACK)
+    }
+
+    @Test
+    fun `a throwing error presenter closes a paywall that failed to load`() {
+        coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
+        val dismissals = mutableListOf<Pair<PaywallResult?, PaywallDismissReason>>()
+
+        create(
+            errorPresenter = { _, _, _, _ -> error("Simulated.") },
+            dismissRequestWithExitOffering = { _, result, reason -> dismissals += result to reason },
+        )
+
+        val (result, reason) = dismissals.single()
+        assertThat(result).isInstanceOf(PaywallResult.Error::class.java)
+        assertThat(reason).isEqualTo(PaywallDismissReason.CLOSE)
+    }
+
+    private class RecordingErrorPresenter : PaywallErrorPresenter {
+        val errors = mutableListOf<PurchasesError>()
+        val sources = mutableListOf<ErrorPresenter.Source>()
+        val flowCanContinue = mutableListOf<Boolean>()
+        private val completions = mutableListOf<ErrorPresenter.Completion>()
+
+        override fun present(
+            error: PurchasesError,
+            source: ErrorPresenter.Source,
+            flowCanContinue: Boolean,
+            completion: ErrorPresenter.Completion,
+        ) {
+            errors += error
+            sources += source
+            this.flowCanContinue += flowCanContinue
+            completions += completion
+        }
+
+        fun complete(result: ErrorPresenter.Completion.Result) = completions.single().complete(result)
+    }
+
+    private fun failPurchase(
+        model: PaywallViewModelImpl,
+        error: PurchasesError = PurchasesError(PurchasesErrorCode.ProductNotAvailableForPurchaseError),
+    ) {
+        coEvery { purchases.awaitPurchase(any()) } throws PurchasesException(error)
+        model.purchaseSelectedPackage(activity)
+    }
+
     /** A loaded components paywall with the monthly package selected. */
     private fun createComponentsModel(): PaywallViewModelImpl {
         val offeringId = "offering-id"
@@ -3629,6 +3852,7 @@ class PaywallViewModelTest {
         mode: PaywallMode = PaywallMode.default,
         dismissRequestWithExitOffering: ((Offering?, PaywallResult?, PaywallDismissReason) -> Unit)? = null,
         dismissRequest: () -> Unit = { dismissInvoked = true },
+        errorPresenter: PaywallErrorPresenter? = null,
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {
         val builder = PaywallOptions.Builder(dismissRequest = dismissRequest)
@@ -3636,6 +3860,7 @@ class PaywallViewModelTest {
             .setOffering(offering)
             .setPurchaseLogic(customPurchaseLogic)
             .setMode(mode)
+            .setErrorPresenter(errorPresenter)
         dismissRequestWithExitOffering?.let {
             builder.setDismissRequestWithExitOffering(it)
         }
