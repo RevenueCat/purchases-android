@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.networking
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.assertErrorLog
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -354,8 +355,43 @@ class EndpointTest {
 
     @Test
     fun `iamPathTemplate and isIAMEndpoint default to unmigrated values`() {
-        val endpoint = Endpoint.GetCustomerInfo("test-user-id")
+        val endpoint = Endpoint.PostReceipt
         assertThat(endpoint.iamPathTemplate).isNull()
         assertThat(endpoint.isIAMEndpoint).isFalse
+    }
+
+    @Test
+    fun `GetCustomerInfo has an IAM path`() {
+        val endpoint = Endpoint.GetCustomerInfo("test-user-id")
+        assertThat(endpoint.getPath()).isEqualTo("/v1/subscribers/test-user-id")
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo("/v1/customer")
+    }
+
+    @Test
+    fun `GetOfferings has an IAM path`() {
+        val endpoint = Endpoint.GetOfferings("test-user-id")
+        assertThat(endpoint.getPath()).isEqualTo("/v1/subscribers/test-user-id/offerings")
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo("/v1/customer/offerings")
+    }
+
+    @Test
+    fun `GetVirtualCurrencies has an IAM path`() {
+        val endpoint = Endpoint.GetVirtualCurrencies("test-user-id")
+        assertThat(endpoint.getPath()).isEqualTo("/v1/subscribers/test-user-id/virtual_currencies")
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo("/v1/customer/virtual_currencies")
+    }
+
+    @Test
+    fun `PostAttributes has an IAM path`() {
+        val endpoint = Endpoint.PostAttributes("test-user-id")
+        assertThat(endpoint.getPath()).isEqualTo("/v1/subscribers/test-user-id/attributes")
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo("/v1/customer/attributes")
+    }
+
+    @Test
+    fun `LogIn has no IAM path, logs an error, and falls back when useIAMPath is requested`() {
+        assertErrorLog("LogIn has no IAM-path equivalent; falling back to the API-key path.") {
+            assertThat(Endpoint.LogIn.getPath(useIAMPath = true)).isEqualTo("/v1/subscribers/identify")
+        }
     }
 }

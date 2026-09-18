@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.networking
 
 import android.net.Uri
+import com.revenuecat.purchases.common.errorLog
 
 internal sealed class Endpoint(
     val pathTemplate: String,
@@ -29,6 +30,7 @@ internal sealed class Endpoint(
     data class GetCustomerInfo(val userId: String) : Endpoint("/v1/subscribers/%s", "get_customer") {
         override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
             templateFor(useIAMPath).format(Uri.encode(userId))
+        override val iamPathTemplate: String? = "/v1/customer"
     }
     object PostReceipt : Endpoint("/v1/receipts", "post_receipt") {
         override fun getPath(useFallback: Boolean, useIAMPath: Boolean) = templateFor(useIAMPath)
@@ -45,10 +47,16 @@ internal sealed class Endpoint(
                 templateFor(useIAMPath).format(Uri.encode(userId))
             }
         }
+        override val iamPathTemplate: String? = "/v1/customer/offerings"
     }
 
     object LogIn : Endpoint("/v1/subscribers/identify", "log_in") {
-        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) = templateFor(useIAMPath)
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean): String {
+            if (useIAMPath) {
+                errorLog { "LogIn has no IAM-path equivalent; falling back to the API-key path." }
+            }
+            return pathTemplate
+        }
     }
     data class AliasUsers(val userId: String) : Endpoint("/v1/subscribers/%s/alias", "alias_users") {
         override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
@@ -65,6 +73,7 @@ internal sealed class Endpoint(
     ) : Endpoint("/v1/subscribers/%s/attributes", "post_attributes") {
         override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
             templateFor(useIAMPath).format(Uri.encode(userId))
+        override val iamPathTemplate: String? = "/v1/customer/attributes"
     }
     data class GetAmazonReceipt(
         val userId: String,
@@ -134,6 +143,7 @@ internal sealed class Endpoint(
     ) {
         override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
             templateFor(useIAMPath).format(Uri.encode(userId))
+        override val iamPathTemplate: String? = "/v1/customer/virtual_currencies"
     }
     data class GetRewardVerification(
         val userId: String,
