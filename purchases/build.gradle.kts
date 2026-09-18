@@ -51,6 +51,12 @@ android {
             value = (localProperties["ENABLE_EXTRA_REQUEST_LOGGING"] as? String ?: "false"),
         )
 
+        buildConfigField(
+            type = "boolean",
+            name = "ENABLE_PAYWALL_MIN_MAX_SIZING",
+            value = resolveProperty("ENABLE_PAYWALL_MIN_MAX_SIZING", "false"),
+        )
+
         packagingOptions.resources.excludes.addAll(
             listOf("META-INF/LICENSE.md", "META-INF/LICENSE-notice.md"),
         )
