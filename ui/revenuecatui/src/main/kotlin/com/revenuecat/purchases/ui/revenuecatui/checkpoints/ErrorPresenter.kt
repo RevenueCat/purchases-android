@@ -101,8 +101,10 @@ public fun interface ErrorPresenter {
             }
 
             /**
-             * The user backs out: the flow ends as if the user had navigated back, the checkpoint resolves as
-             * dismissed, its callback is not invoked, and the app keeps the user where they were.
+             * The user backs out, as with system back: a flow with a previous step goes back to it and stays on
+             * screen. Otherwise, or when [Params.flowCanContinue] is false, the flow ends as if the user had
+             * navigated back: the checkpoint resolves as dismissed, its callback is not invoked, and the app keeps
+             * the user where they were.
              */
             public object NavigatedBack : Result() {
                 override fun toString(): String = "NavigatedBack"

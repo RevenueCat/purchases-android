@@ -302,6 +302,8 @@ internal class PaywallViewModelImpl(
             override fun closePaywall(result: PaywallResult?, reason: PaywallDismissReason) =
                 this@PaywallViewModelImpl.closePaywall(result, reason)
 
+            override fun navigateBack(): Boolean = handleBackNavigation()
+
             override val flowEnded: Boolean
                 get() = shouldReloadStateOnNextPresentation
         },
