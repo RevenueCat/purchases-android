@@ -435,7 +435,7 @@ class EndpointTest {
         assertThat(endpoint.getPath())
             .isEqualTo("/v1/subscribers/test-user-id/ads/reward_verifications/client-transaction-id")
         assertThat(endpoint.getPath(useIAMPath = true))
-            .isEqualTo("/v1/customer/ads/reward_verification/client-transaction-id")
+            .isEqualTo("/v1/customer/ads/reward_verifications/client-transaction-id")
     }
 
     @Test

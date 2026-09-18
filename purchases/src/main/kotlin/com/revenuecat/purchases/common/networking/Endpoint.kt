@@ -170,7 +170,7 @@ internal sealed class Endpoint(
             } else {
                 templateFor(useIAMPath).format(Uri.encode(userId), Uri.encode(clientTransactionId))
             }
-        override val iamPathTemplate: String? = "/v1/customer/ads/reward_verification/%s"
+        override val iamPathTemplate: String? = "/v1/customer/ads/reward_verifications/%s"
     }
 
     data class WebBillingGetProducts(val userId: String, val productIds: Set<String>) : Endpoint(
