@@ -16,6 +16,7 @@ import com.revenuecat.purchases.common.networking.ConnectionErrorReason
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import com.revenuecat.purchases.utils.filterNotNullValues
 import java.io.IOException
@@ -93,7 +94,7 @@ internal class DiagnosticsTracker(
         responseCode: Int,
         backendErrorCode: Int?,
         resultOrigin: HTTPResult.Origin?,
-        verificationResult: VerificationResult,
+        verificationResult: SignatureVerificationResult,
         isRetry: Boolean,
         connectionErrorReason: ConnectionErrorReason?,
     ) {
@@ -108,7 +109,7 @@ internal class DiagnosticsTracker(
                 RESPONSE_CODE_KEY to responseCode,
                 BACKEND_ERROR_CODE_KEY to backendErrorCode,
                 ETAG_HIT_KEY to eTagHit,
-                VERIFICATION_RESULT_KEY to verificationResult.name,
+                VERIFICATION_RESULT_KEY to verificationResult.result.name,
                 IS_RETRY to isRetry,
                 CONNECTION_ERROR_REASON_KEY to connectionErrorReason?.name,
             ).filterNotNullValues(),

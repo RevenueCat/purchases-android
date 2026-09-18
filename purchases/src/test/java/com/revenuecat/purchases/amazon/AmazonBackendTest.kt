@@ -3,13 +3,13 @@ package com.revenuecat.purchases.amazon
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.amazon.helpers.successfulRVSResponse
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.BackendHelper
 import com.revenuecat.purchases.common.HTTPClient
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.utils.SyncDispatcher
 import io.mockk.clearAllMocks
 import io.mockk.every
@@ -83,7 +83,7 @@ class AmazonBackendTest {
         payload = successfulRVSResponse(),
         origin = HTTPResult.Origin.BACKEND,
         requestDate = null,
-        verificationResult = VerificationResult.NOT_REQUESTED,
+        verificationResult = SignatureVerificationResult.NotRequested,
         isLoadShedderResponse = false,
         isFallbackURL = false,
     )
@@ -97,7 +97,7 @@ class AmazonBackendTest {
             """.trimIndent(),
         origin = HTTPResult.Origin.BACKEND,
         requestDate = null,
-        verificationResult = VerificationResult.NOT_REQUESTED,
+        verificationResult = SignatureVerificationResult.NotRequested,
         isLoadShedderResponse = false,
         isFallbackURL = false,
     )

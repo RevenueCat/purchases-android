@@ -10,6 +10,7 @@ import com.revenuecat.purchases.common.DefaultDateProvider
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.log
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.isAndroidNOrNewer
 import org.json.JSONException
@@ -66,7 +67,7 @@ internal data class ETagCacheMetadata(
             payload,
             HTTPResult.Origin.CACHE,
             requestDate,
-            verificationResult,
+            verificationResult.toSignatureVerificationResult(),
             isLoadShedderResponse,
             isFallbackURL,
         )
@@ -87,7 +88,7 @@ internal data class ETagCacheMetadata(
                 eTagData = eTagData,
                 responseCode = result.responseCode,
                 requestDate = result.requestDate,
-                verificationResult = result.verificationResult,
+                verificationResult = result.verificationResult.result,
                 isLoadShedderResponse = result.isLoadShedderResponse,
                 isFallbackURL = result.isFallbackURL,
                 payloadChecksum = payloadChecksum,
@@ -166,7 +167,7 @@ internal class ETagManager(
         urlString: String,
         refreshETag: Boolean,
         requestDate: Date?,
-        verificationResult: VerificationResult,
+        verificationResult: SignatureVerificationResult,
         isLoadShedderResponse: Boolean,
         isFallbackURL: Boolean,
     ): HTTPResult? {
@@ -259,7 +260,7 @@ internal class ETagManager(
         val responseCode = resultFromBackend.responseCode
         return responseCode != RCHTTPStatusCodes.NOT_MODIFIED &&
             responseCode < RCHTTPStatusCodes.ERROR &&
-            resultFromBackend.verificationResult != VerificationResult.FAILED
+            !resultFromBackend.verificationResult.isFailed
     }
 
     private fun shouldUseETag(verificationResult: VerificationResult, verificationRequested: Boolean): Boolean {
@@ -297,5 +298,15 @@ internal class ETagManager(
                 "${context.packageName}$PREFERENCES_FILE_SUFFIX",
                 Context.MODE_PRIVATE,
             )
+    }
+}
+
+private fun VerificationResult.toSignatureVerificationResult(): SignatureVerificationResult {
+    return when (this) {
+        VerificationResult.NOT_REQUESTED -> SignatureVerificationResult.NotRequested
+        VerificationResult.VERIFIED -> SignatureVerificationResult.Verified
+        // Never stored: failures are not cached and on-device verification never reaches the HTTP layer.
+        VerificationResult.FAILED, VerificationResult.VERIFIED_ON_DEVICE ->
+            SignatureVerificationResult.Failed(SignatureVerificationResult.FailureReason.UNKNOWN)
     }
 }
