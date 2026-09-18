@@ -20,5 +20,6 @@ internal object RCHTTPStatusCodes {
     // won't yield any different results and instead kill pandas.
     fun isSynced(
         statusCode: Int,
-    ) = isSuccessful(statusCode) || !(isServerError(statusCode) || statusCode == NOT_FOUND)
+    ) = isSuccessful(statusCode) ||
+        (statusCode >= SUCCESS && !(isServerError(statusCode) || statusCode == NOT_FOUND))
 }

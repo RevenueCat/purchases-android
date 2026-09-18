@@ -72,4 +72,11 @@ class RCHTTPStatusCodesTest {
             assertThat(RCHTTPStatusCodes.isSynced(code)).describedAs("code $code").isFalse
         }
     }
+
+    @Test
+    fun `isSynced is false below 200`() {
+        listOf(HTTPClient.NO_STATUS_CODE, 0, 100, 199).forEach { code ->
+            assertThat(RCHTTPStatusCodes.isSynced(code)).describedAs("code $code").isFalse
+        }
+    }
 }
