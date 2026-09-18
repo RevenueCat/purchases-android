@@ -55,6 +55,7 @@ class CheckpointsManagerTest {
     private lateinit var mockActivity: Activity
     private lateinit var mockPresenter: CheckpointWorkflowPresenter
     private var defaultPresenter: DefaultPaywallPresenter? = null
+    private val defaultErrorPresenters = mutableListOf<DefaultErrorPresenter>()
     private val presentedCallIds = mutableListOf<String>()
     private val results = mutableListOf<FlowResult?>()
 
@@ -71,6 +72,7 @@ class CheckpointsManagerTest {
         mockActivity = mockk(relaxed = true)
         mockPresenter = mockk(relaxed = true)
         defaultPresenter = null
+        defaultErrorPresenters.clear()
         mockPurchases = mockk {
             every { currentActivity } returns mockActivity
             every { getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
@@ -83,8 +85,12 @@ class CheckpointsManagerTest {
                 presentedCallIds += callId
                 mockPresenter
             },
-            defaultPresenterFactory = { purchases ->
-                DefaultPaywallPresenter(purchases) { _, _ -> mockPresenter }.also { defaultPresenter = it }
+            defaultPresenterFactory = { purchases, errorPresenter ->
+                DefaultPaywallPresenter(purchases, errorPresenter) { _, _ -> mockPresenter }
+                    .also { defaultPresenter = it }
+            },
+            defaultErrorPresenterFactory = { purchases ->
+                DefaultErrorPresenter(purchases).also { defaultErrorPresenters += it }
             },
         )
     }
@@ -952,6 +958,118 @@ class CheckpointsManagerTest {
         call.join()
 
         assertThat(run!!.backedOut).isTrue
+    }
+
+    @Test
+    fun `the workflow window's options hand errors to the registered error presenter with the checkpoint's context`() =
+        runTest(dispatcher) {
+            resolvesToWorkflow()
+            val presented = mutableListOf<ErrorPresenter.Params>()
+            manager.errorPresenter = ErrorPresenter { params, _ -> presented += params }
+            val params = CheckpointParams { customVariables { "source" to "test" } }
+            val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")
+            val call = launch { runCheckpoint(params) }
+
+            val options = manager.paywallOptions(currentCallId()) {}!!
+            options.errorPresenter!!.present(error, ErrorPresenter.Source.PURCHASE, flowCanContinue = true) {}
+
+            assertThat(presented).containsExactly(
+                ErrorPresenter.Params(
+                    error,
+                    checkpointId,
+                    params.customVariables,
+                    ErrorPresenter.Source.PURCHASE,
+                    flowCanContinue = true,
+                ),
+            )
+            finishPaywall(outcome = null)
+            call.join()
+        }
+
+    @Test
+    fun `without an error presenter the workflow window's errors go to the SDK's own`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val call = launch { runCheckpoint() }
+
+        assertThat(manager.paywallOptions(currentCallId()) {}!!.errorPresenter).isNotNull
+        assertThat(defaultErrorPresenters).hasSize(1)
+
+        finishPaywall(outcome = null)
+        call.join()
+    }
+
+    @Test
+    fun `without an error presenter the SDK's own paywall's errors go to the SDK's own`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+        val call = launch { runCheckpoint() }
+
+        assertThat(defaultPresenter!!.paywallOptions("") {}!!.errorPresenter).isNotNull
+        assertThat(defaultErrorPresenters).hasSize(1)
+
+        finishDefaultPaywall(navigatedBack = true)
+        call.join()
+    }
+
+    @Test
+    fun `a registered error presenter leaves the SDK's own out`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        manager.errorPresenter = ErrorPresenter { _, _ -> }
+        val call = launch { runCheckpoint() }
+
+        assertThat(defaultErrorPresenters).isEmpty()
+
+        finishPaywall(outcome = null)
+        call.join()
+    }
+
+    @Test
+    fun `an app paywall presenter's call creates no error presenter`() = runTest(dispatcher) {
+        val completion = presentThroughRegisteredPresenter()
+        val call = launch { runCheckpoint() }
+
+        assertThat(defaultErrorPresenters).isEmpty()
+
+        completion()!!.complete(PaywallPresenter.Completion.Result.NavigatedBack)
+        call.join()
+    }
+
+    @Test
+    fun `a per-call error presenter takes precedence over the registered one`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        var registeredAsked = false
+        var perCallAsked = false
+        manager.errorPresenter = ErrorPresenter { _, _ -> registeredAsked = true }
+        val params = CheckpointParams { errorPresenter { _, _ -> perCallAsked = true } }
+        val call = launch { runCheckpoint(params) }
+
+        manager.paywallOptions(currentCallId()) {}!!.errorPresenter!!.present(
+            PurchasesError(PurchasesErrorCode.StoreProblemError),
+            ErrorPresenter.Source.RESTORE,
+            flowCanContinue = true,
+        ) {}
+
+        assertThat(perCallAsked).isTrue
+        assertThat(registeredAsked).isFalse
+        finishPaywall(outcome = null)
+        call.join()
+    }
+
+    @Test
+    fun `the SDK's own paywall hands its errors to the error presenter`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+        val presented = mutableListOf<ErrorPresenter.Params>()
+        manager.errorPresenter = ErrorPresenter { params, _ -> presented += params }
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")
+        val call = launch { runCheckpoint() }
+
+        defaultPresenter!!.paywallOptions("") {}!!.errorPresenter!!
+            .present(error, ErrorPresenter.Source.PRESENTATION, flowCanContinue = false) {}
+
+        assertThat(presented).containsExactly(
+            ErrorPresenter.Params(error, checkpointId, emptyMap(), ErrorPresenter.Source.PRESENTATION, false),
+        )
+        finishDefaultPaywall(navigatedBack = true)
+        call.join()
     }
 
     // Registers a presenter for a matched offering and returns an accessor for the completion it was handed.

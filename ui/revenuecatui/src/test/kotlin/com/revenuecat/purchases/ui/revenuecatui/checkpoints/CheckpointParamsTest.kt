@@ -76,6 +76,34 @@ class CheckpointParamsTest {
     }
 
     @Test
+    fun `params default to no error presenter`() {
+        assertThat(CheckpointParams {}.errorPresenter).isNull()
+        assertThat(CheckpointParams.Builder().build().errorPresenter).isNull()
+    }
+
+    @Test
+    fun `the error presenter is set through the builder and the DSL alike`() {
+        val presenter = ErrorPresenter { _, _ -> }
+
+        assertThat(CheckpointParams { errorPresenter(presenter) }.errorPresenter).isSameAs(presenter)
+        assertThat(CheckpointParams.Builder().setErrorPresenter(presenter).build().errorPresenter)
+            .isSameAs(presenter)
+        val cleared = CheckpointParams.Builder().setErrorPresenter(presenter).setErrorPresenter(null).build()
+        assertThat(cleared.errorPresenter).isNull()
+    }
+
+    @Test
+    fun `params are equal only when their error presenters are`() {
+        val presenter = ErrorPresenter { _, _ -> }
+        val params = CheckpointParams { errorPresenter(presenter) }
+
+        assertThat(params).isEqualTo(CheckpointParams { errorPresenter(presenter) })
+        assertThat(params.hashCode()).isEqualTo(CheckpointParams { errorPresenter(presenter) }.hashCode())
+        assertThat(params).isNotEqualTo(CheckpointParams { errorPresenter { _, _ -> } })
+        assertThat(params).isNotEqualTo(CheckpointParams {})
+    }
+
+    @Test
     fun `each infix overload maps to its custom variable variant`() {
         val params = CheckpointParams {
             customVariables {

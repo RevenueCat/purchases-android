@@ -65,7 +65,7 @@ class DefaultPaywallPresenterTest {
         mockPurchases = mockk { every { currentActivity } returns mockActivity }
         cachedActiveEntitlements()
         mockWindow = mockk(relaxed = true)
-        presenter = DefaultPaywallPresenter(mockPurchases) { callId, host ->
+        presenter = DefaultPaywallPresenter(mockPurchases, errorPresenter = { _, _ -> }) { callId, host ->
             windowCallId = callId
             assertThat(host).isSameAs(presenter)
             mockWindow
@@ -98,6 +98,38 @@ class DefaultPaywallPresenterTest {
         assertThat(options.listener).isNotNull
         assertThat(options.injectedWorkflow).isNull()
         assertThat(options.injectedWorkflowOfferings).isNull()
+    }
+
+    @Test
+    fun `the paywall hands its errors to the checkpoint's error presenter with the checkpoint's context`() {
+        val presented = mutableListOf<ErrorPresenter.Params>()
+        val completions = mutableListOf<ErrorPresenter.Completion>()
+        presenter = DefaultPaywallPresenter(
+            mockPurchases,
+            errorPresenter = { errorParams, completion ->
+                presented += errorParams
+                completions += completion
+            },
+        ) { callId, _ ->
+            windowCallId = callId
+            mockWindow
+        }
+        present()
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")
+        val completion = ErrorPresenter.Completion {}
+
+        options().errorPresenter!!.present(error, ErrorPresenter.Source.RESTORE, flowCanContinue = true, completion)
+
+        assertThat(presented).containsExactly(
+            ErrorPresenter.Params(
+                error,
+                params.checkpointIdentifier,
+                params.customVariables,
+                ErrorPresenter.Source.RESTORE,
+                flowCanContinue = true,
+            ),
+        )
+        assertThat(completions).containsExactly(completion)
     }
 
     @Test
