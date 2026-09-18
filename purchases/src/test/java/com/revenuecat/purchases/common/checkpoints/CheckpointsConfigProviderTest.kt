@@ -250,12 +250,88 @@ internal class CheckpointsConfigProviderTest {
         coVerify(exactly = 2) { blobRead("app_open") }
     }
 
+    @Test
+    fun `warm is a no-op and never reads blobs when the topic is not committed`() = runTest {
+        provider.warm(generation = 0)
+
+        coVerify(exactly = 0) { blobRead(any()) }
+    }
+
+    @Test
+    fun `resolveCheckpoint serves every warmed checkpoint from memory without re-reading its blob`() = runTest {
+        commitTopicWith("app_open", "onboarding")
+        returnBlob("app_open", """{ "rules": [{ "id": "open", "audience_id": "aud-1", "workflow_id": "wf-1" }] }""")
+        returnBlob("onboarding", """{ "rules": [{ "id": "board", "audience_id": "aud-2", "workflow_id": "wf-2" }] }""")
+
+        provider.warm(generation = 0)
+        val appOpen = provider.resolveCheckpoint("app_open")
+        val onboarding = provider.resolveCheckpoint("onboarding")
+
+        assertThat((appOpen as CheckpointRulesResolution.Found).checkpoint.rules.single().id).isEqualTo("open")
+        assertThat(appOpen.configGeneration).isEqualTo(0)
+        assertThat((onboarding as CheckpointRulesResolution.Found).checkpoint.rules.single().id).isEqualTo("board")
+        coVerify(exactly = 1) { blobRead("app_open") }
+        coVerify(exactly = 1) { blobRead("onboarding") }
+    }
+
+    @Test
+    fun `a checkpoint whose blob could not be read at warm time is not cached and falls through`() = runTest {
+        commitTopicWith("app_open", "broken")
+        returnBlob("app_open", """{ "rules": [] }""")
+        returnNoBlob("broken")
+
+        provider.warm(generation = 0)
+
+        assertThat(provider.resolveCheckpoint("broken")).isEqualTo(CheckpointRulesResolution.Unavailable)
+        coVerify(exactly = 2) { blobRead("broken") }
+    }
+
+    @Test
+    fun `a checkpoint warmed at an older generation is not served once the config generation advances`() = runTest {
+        commitTopicWith("app_open")
+        returnBlob("app_open", """{ "rules": [] }""")
+        provider.warm(generation = 0)
+        every { manager.configGeneration } returns 1
+
+        val resolution = provider.resolveCheckpoint("app_open")
+
+        assertThat((resolution as CheckpointRulesResolution.Found).configGeneration).isEqualTo(1)
+        coVerify(exactly = 2) { blobRead("app_open") }
+    }
+
+    @Test
+    fun `onConfigInvalidated drops the warmed checkpoints`() = runTest {
+        commitTopicWith("app_open")
+        returnBlob("app_open", """{ "rules": [] }""")
+        provider.warm(generation = 0)
+
+        provider.onConfigInvalidated(generation = 1)
+        every { manager.configGeneration } returns 1
+        provider.resolveCheckpoint("app_open")
+
+        coVerify(exactly = 2) { blobRead("app_open") }
+    }
+
+    @Test
+    fun `a lower-generation warm neither re-reads nor clobbers a higher-generation value`() = runTest {
+        commitTopicWith("app_open")
+        returnBlob("app_open", """{ "rules": [{ "id": "newer", "audience_id": "aud-1", "workflow_id": "wf-1" }] }""")
+        every { manager.configGeneration } returns 5
+        provider.warm(generation = 5)
+        returnBlob("app_open", """{ "rules": [{ "id": "older", "audience_id": "aud-1", "workflow_id": "wf-1" }] }""")
+
+        provider.warm(generation = 2)
+
+        assertThat(checkpoint("app_open").rules.single().id).isEqualTo("newer")
+        coVerify(exactly = 1) { blobRead("app_open") }
+    }
+
     private suspend fun checkpoint(identifier: String): CheckpointResponse =
         (provider.resolveCheckpoint(identifier) as CheckpointRulesResolution.Found).checkpoint
 
-    private fun commitTopicWith(identifier: String) {
+    private fun commitTopicWith(vararg identifiers: String) {
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.CheckpointRules) } returns ConfigTopic(
-            mapOf(identifier to RemoteConfiguration.ConfigItem(blobRef = "blob_$identifier")),
+            identifiers.associateWith { RemoteConfiguration.ConfigItem(blobRef = "blob_$it") },
         )
     }
 
