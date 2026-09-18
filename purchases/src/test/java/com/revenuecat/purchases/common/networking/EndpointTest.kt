@@ -422,6 +422,30 @@ class EndpointTest {
     }
 
     @Test
+    fun `PostCreateSupportTicket has an IAM path`() {
+        val endpoint = Endpoint.PostCreateSupportTicket
+        assertThat(endpoint.getPath()).isEqualTo("/v1/customercenter/support/create-ticket")
+        assertThat(endpoint.getPath(useIAMPath = true))
+            .isEqualTo("/v1/customer/customercenter/support/create-ticket")
+    }
+
+    @Test
+    fun `GetRewardVerification has an IAM path that drops the app user id`() {
+        val endpoint = Endpoint.GetRewardVerification("test-user-id", "client-transaction-id")
+        assertThat(endpoint.getPath())
+            .isEqualTo("/v1/subscribers/test-user-id/ads/reward_verifications/client-transaction-id")
+        assertThat(endpoint.getPath(useIAMPath = true))
+            .isEqualTo("/v1/customer/ads/reward_verification/client-transaction-id")
+    }
+
+    @Test
+    fun `WebBillingGetProducts has an IAM path that drops the app user id`() {
+        val endpoint = Endpoint.WebBillingGetProducts("test-user-id", setOf("product1"))
+        assertThat(endpoint.getPath()).isEqualTo("/rcbilling/v1/subscribers/test-user-id/products?id=product1")
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo("/rcbilling/v1/customer/products?id=product1")
+    }
+
+    @Test
     fun `endpoints not yet migrated to IAM paths are unaffected by useIAMPath`() {
         val unmigratedEndpoints = listOf(
             Endpoint.PostReceipt,
@@ -431,10 +455,7 @@ class EndpointTest {
             Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
             Endpoint.GetRemoteConfig("app"),
             Endpoint.GetRemoteConfigFallback("app"),
-            Endpoint.PostCreateSupportTicket,
             Endpoint.PostRedeemWebPurchase,
-            Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
-            Endpoint.WebBillingGetProducts("test-user-id", setOf("product1")),
         )
         for (endpoint in unmigratedEndpoints) {
             assertThat(endpoint.getPath(useIAMPath = true))

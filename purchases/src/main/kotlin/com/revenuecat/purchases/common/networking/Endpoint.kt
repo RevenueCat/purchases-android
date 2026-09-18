@@ -165,7 +165,11 @@ internal sealed class Endpoint(
         name = "get_reward_verification",
     ) {
         override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
-            templateFor(useIAMPath).format(Uri.encode(userId), Uri.encode(clientTransactionId))
+            if (useIAMPath && iamPathTemplate != null) {
+                templateFor(useIAMPath).format(Uri.encode(clientTransactionId))
+            } else {
+                templateFor(useIAMPath).format(Uri.encode(userId), Uri.encode(clientTransactionId))
+            }
         override val iamPathTemplate: String? = "/v1/customer/ads/reward_verification/%s"
     }
 
@@ -174,8 +178,12 @@ internal sealed class Endpoint(
         name = "web_billing_get_products",
     ) {
         override fun getPath(useFallback: Boolean, useIAMPath: Boolean): String {
-            return templateFor(useIAMPath)
-                .format(Uri.encode(userId), productIds.joinToString("&id=") { Uri.encode(it) })
+            val encodedProductIds = productIds.joinToString("&id=") { Uri.encode(it) }
+            return if (useIAMPath && iamPathTemplate != null) {
+                templateFor(useIAMPath).format(encodedProductIds)
+            } else {
+                templateFor(useIAMPath).format(Uri.encode(userId), encodedProductIds)
+            }
         }
         override val iamPathTemplate: String? = "/rcbilling/v1/customer/products?id=%s"
     }
