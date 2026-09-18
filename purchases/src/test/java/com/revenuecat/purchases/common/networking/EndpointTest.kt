@@ -331,4 +331,31 @@ class EndpointTest {
                 .isFalse
         }
     }
+
+    @Test
+    fun `getPath falls back to the non-IAM path when useIAMPath is requested but unmigrated`() {
+        val endpoint = Endpoint.PostReceipt
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo(endpoint.getPath())
+    }
+
+    @Test
+    fun `useFallback behavior is unaffected by useIAMPath`() {
+        val endpoint = Endpoint.GetOfferings("test-user-id")
+        val plainFallback = endpoint.getPath(useFallback = true)
+        val fallbackWithIAM = endpoint.getPath(useFallback = true, useIAMPath = true)
+        assertThat(fallbackWithIAM).isEqualTo(plainFallback)
+    }
+
+    @Test
+    fun `useFallback takes priority over useIAMPath when both are requested`() {
+        val endpoint = Endpoint.GetOfferings("test-user-id")
+        assertThat(endpoint.getPath(useFallback = true, useIAMPath = true)).isEqualTo("/v1/offerings")
+    }
+
+    @Test
+    fun `iamPathTemplate and isIAMEndpoint default to unmigrated values`() {
+        val endpoint = Endpoint.GetCustomerInfo("test-user-id")
+        assertThat(endpoint.iamPathTemplate).isNull()
+        assertThat(endpoint.isIAMEndpoint).isFalse
+    }
 }

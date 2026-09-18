@@ -7,7 +7,7 @@ internal sealed class Endpoint(
     val name: String,
     val fallbackPath: String? = null,
 ) {
-    abstract fun getPath(useFallback: Boolean = false): String
+    abstract fun getPath(useFallback: Boolean = false, useIAMPath: Boolean = false): String
 
     /**
      * Whether this endpoint returns an RC Container Format response rather than JSON. When
@@ -15,59 +15,74 @@ internal sealed class Endpoint(
      * as [HTTPResult.Payload.RCFormat] instead of being decoded as text.
      */
     open val expectsRCFormatResponse: Boolean = false
+
+    /** IAM-namespace relative path, if this endpoint has been migrated. Falls back to [pathTemplate]. */
+    open val iamPathTemplate: String? = null
+
+    /** Whether this endpoint is part of the auth flow itself (paths under `/auth`), never reached via API key. */
+    open val isIAMEndpoint: Boolean = false
+
+    /** [iamPathTemplate] when [useIAMPath] is set and one exists, else [pathTemplate]. */
+    protected fun templateFor(useIAMPath: Boolean): String =
+        if (useIAMPath) iamPathTemplate ?: pathTemplate else pathTemplate
+
     data class GetCustomerInfo(val userId: String) : Endpoint("/v1/subscribers/%s", "get_customer") {
-        override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
+            templateFor(useIAMPath).format(Uri.encode(userId))
     }
     object PostReceipt : Endpoint("/v1/receipts", "post_receipt") {
-        override fun getPath(useFallback: Boolean) = pathTemplate
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) = templateFor(useIAMPath)
     }
     data class GetOfferings(val userId: String) : Endpoint(
         "/v1/subscribers/%s/offerings",
         "get_offerings",
         fallbackPath = "/v1/offerings",
     ) {
-        override fun getPath(useFallback: Boolean): String {
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean): String {
             return if (useFallback && fallbackPath != null) {
                 fallbackPath
             } else {
-                pathTemplate.format(Uri.encode(userId))
+                templateFor(useIAMPath).format(Uri.encode(userId))
             }
         }
     }
 
     object LogIn : Endpoint("/v1/subscribers/identify", "log_in") {
-        override fun getPath(useFallback: Boolean) = pathTemplate
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) = templateFor(useIAMPath)
     }
     data class AliasUsers(val userId: String) : Endpoint("/v1/subscribers/%s/alias", "alias_users") {
-        override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
+            templateFor(useIAMPath).format(Uri.encode(userId))
     }
     object PostDiagnostics : Endpoint("/v1/diagnostics", "post_diagnostics") {
-        override fun getPath(useFallback: Boolean) = pathTemplate
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) = templateFor(useIAMPath)
     }
     object PostEvents : Endpoint("/v1/events", "post_paywall_events") {
-        override fun getPath(useFallback: Boolean) = pathTemplate
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) = templateFor(useIAMPath)
     }
     data class PostAttributes(
         val userId: String,
     ) : Endpoint("/v1/subscribers/%s/attributes", "post_attributes") {
-        override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
+            templateFor(useIAMPath).format(Uri.encode(userId))
     }
     data class GetAmazonReceipt(
         val userId: String,
         val receiptId: String,
     ) : Endpoint("/v1/receipts/amazon/%s/%s", "get_amazon_receipt") {
-        override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId), receiptId)
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
+            templateFor(useIAMPath).format(Uri.encode(userId), receiptId)
     }
     object GetProductEntitlementMapping : Endpoint(
         "/v1/product_entitlement_mapping",
         "get_product_entitlement_mapping",
         fallbackPath = "/v1/product_entitlement_mapping",
     ) {
-        override fun getPath(useFallback: Boolean): String {
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean): String {
             return if (useFallback && fallbackPath != null) {
                 fallbackPath
             } else {
-                pathTemplate
+                templateFor(useIAMPath)
             }
         }
     }
@@ -75,14 +90,16 @@ internal sealed class Endpoint(
         "/v1/customercenter/%s",
         "get_customer_center_config",
     ) {
-        override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
+            templateFor(useIAMPath).format(Uri.encode(userId))
     }
 
     data class GetRemoteConfig(val domain: String) : Endpoint(
         pathTemplate = "/v1/config/%s",
         name = "remote_config",
     ) {
-        override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(domain))
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
+            templateFor(useIAMPath).format(Uri.encode(domain))
         override val expectsRCFormatResponse: Boolean = true
     }
 
@@ -96,25 +113,27 @@ internal sealed class Endpoint(
         pathTemplate = "/v1/config/%s",
         name = "remote_config_fallback",
     ) {
-        override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(domain))
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
+            templateFor(useIAMPath).format(Uri.encode(domain))
     }
     object PostCreateSupportTicket : Endpoint(
         "/v1/customercenter/support/create-ticket",
         "post_create_support_ticket",
     ) {
-        override fun getPath(useFallback: Boolean) = pathTemplate
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) = templateFor(useIAMPath)
     }
     object PostRedeemWebPurchase : Endpoint(
         "/v1/subscribers/redeem_purchase",
         "post_redeem_web_purchase",
     ) {
-        override fun getPath(useFallback: Boolean) = pathTemplate
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) = templateFor(useIAMPath)
     }
     data class GetVirtualCurrencies(val userId: String) : Endpoint(
         pathTemplate = "/v1/subscribers/%s/virtual_currencies",
         name = "get_virtual_currencies",
     ) {
-        override fun getPath(useFallback: Boolean) = pathTemplate.format(Uri.encode(userId))
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
+            templateFor(useIAMPath).format(Uri.encode(userId))
     }
     data class GetRewardVerification(
         val userId: String,
@@ -123,15 +142,16 @@ internal sealed class Endpoint(
         pathTemplate = "/v1/subscribers/%s/ads/reward_verifications/%s",
         name = "get_reward_verification",
     ) {
-        override fun getPath(useFallback: Boolean) =
-            pathTemplate.format(Uri.encode(userId), Uri.encode(clientTransactionId))
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
+            templateFor(useIAMPath).format(Uri.encode(userId), Uri.encode(clientTransactionId))
     }
     data class WebBillingGetProducts(val userId: String, val productIds: Set<String>) : Endpoint(
         pathTemplate = "/rcbilling/v1/subscribers/%s/products?id=%s",
         name = "web_billing_get_products",
     ) {
-        override fun getPath(useFallback: Boolean): String {
-            return pathTemplate.format(Uri.encode(userId), productIds.joinToString("&id=") { Uri.encode(it) })
+        override fun getPath(useFallback: Boolean, useIAMPath: Boolean): String {
+            return templateFor(useIAMPath)
+                .format(Uri.encode(userId), productIds.joinToString("&id=") { Uri.encode(it) })
         }
     }
 
