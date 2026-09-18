@@ -260,6 +260,20 @@ internal class CheckpointsConfigProviderTest {
     }
 
     @Test
+    fun `warm skips checkpoints the server did not flag for prefetch`() = runTest {
+        commitTopicWith(mapOf("app_open" to true, "lazy" to false))
+        returnBlob("app_open", """{ "rules": [] }""")
+        returnBlob("lazy", """{ "rules": [{ "id": "lazy", "audience_id": "aud-1", "workflow_id": "wf-1" }] }""")
+
+        provider.warm(generation = 0)
+
+        coVerify(exactly = 0) { blobRead("lazy") }
+        assertThat(checkpoint("lazy").rules.single().id).isEqualTo("lazy")
+        coVerify(exactly = 1) { blobRead("lazy") }
+        coVerify(exactly = 1) { blobRead("app_open") }
+    }
+
+    @Test
     fun `resolveCheckpoint serves every warmed checkpoint from memory without re-reading its blob`() = runTest {
         commitTopicWith("app_open", "onboarding")
         returnBlob("app_open", """{ "rules": [{ "id": "open", "audience_id": "aud-1", "workflow_id": "wf-1" }] }""")
@@ -354,9 +368,17 @@ internal class CheckpointsConfigProviderTest {
     private suspend fun checkpoint(identifier: String): CheckpointResponse =
         (provider.resolveCheckpoint(identifier) as CheckpointRulesResolution.Found).checkpoint
 
-    private fun commitTopicWith(vararg identifiers: String) {
+    private fun commitTopicWith(vararg identifiers: String, prefetch: Boolean = true) {
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.CheckpointRules) } returns ConfigTopic(
-            identifiers.associateWith { RemoteConfiguration.ConfigItem(blobRef = "blob_$it") },
+            identifiers.associateWith { RemoteConfiguration.ConfigItem(blobRef = "blob_$it", prefetch = prefetch) },
+        )
+    }
+
+    private fun commitTopicWith(items: Map<String, Boolean>) {
+        coEvery { manager.committedTopicOrNull(RemoteConfigTopic.CheckpointRules) } returns ConfigTopic(
+            items.mapValues { (identifier, prefetch) ->
+                RemoteConfiguration.ConfigItem(blobRef = "blob_$identifier", prefetch = prefetch)
+            },
         )
     }
 

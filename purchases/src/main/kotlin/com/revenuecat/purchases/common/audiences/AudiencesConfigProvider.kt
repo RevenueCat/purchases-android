@@ -21,10 +21,12 @@ import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.jsonObject
 
 /**
- * Memory-first: the audience dictionary is warmed into memory at configure (from disk, never syncing) and
- * re-warmed on every config commit. It is served only while warm at the manager's *current*
- * [RemoteConfigManager.configGeneration], so rules and audiences read in one checkpoint resolution always come
- * from the same committed config; otherwise the read falls through to the config layer.
+ * Memory-first: the audience dictionary is warmed into memory at configure (never syncing `/v1/config`) and
+ * re-warmed on every config commit. The warm honours the `default` item's `prefetch` flag, so it only joins a
+ * blob the manager already prefetches at commit and never downloads one the server left lazy. The dictionary is
+ * served only while warm at the manager's *current* [RemoteConfigManager.configGeneration], so rules and
+ * audiences read in one checkpoint resolution always come from the same committed config; otherwise the read
+ * falls through to the config layer.
  */
 internal class AudiencesConfigProvider(
     private val manager: RemoteConfigManager,
@@ -48,11 +50,15 @@ internal class AudiencesConfigProvider(
     /**
      * Best-effort populate of the in-memory cache from already-committed config, tagged with [generation]. No-op
      * (no `/v1/config` sync) when the topic isn't committed yet, so a cold-disk init warm never triggers a
-     * network config fetch.
+     * network config fetch, and when the `default` item is not flagged `prefetch`.
      */
     suspend fun warm(generation: Int) {
         if (cache.isWarmAtOrAbove(generation)) return
-        val audiences = manager.committedTopicOrNull(RemoteConfigTopic.Audiences)?.let { readAudiences() } ?: return
+        val audiences = manager.committedTopicOrNull(RemoteConfigTopic.Audiences)
+            ?.get(ITEM_DEFAULT)
+            ?.takeIf { it.prefetch }
+            ?.let { readAudiences() }
+            ?: return
         verboseLog { "Warmed audiences cache: ${audiences.size} audience(s)." }
         cache.store(generation, audiences)
     }

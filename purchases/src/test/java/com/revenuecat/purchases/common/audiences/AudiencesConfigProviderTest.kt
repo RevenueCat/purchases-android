@@ -145,6 +145,18 @@ internal class AudiencesConfigProviderTest {
     }
 
     @Test
+    fun `warm is a no-op when the default item is not flagged for prefetch`() = runTest {
+        commitTopic(prefetch = false)
+        returnDefaultBlob("""{"aud_123":{"id":"aud_123","rules":{"==":[1,1]}}}""")
+
+        provider.warm(generation = 0)
+
+        coVerify(exactly = 0) { blobRead() }
+        assertThat(provider.getAudiences()).containsOnlyKeys("aud_123")
+        coVerify(exactly = 1) { blobRead() }
+    }
+
+    @Test
     fun `getAudiences serves the warmed audiences from memory without re-reading the blob`() = runTest {
         commitTopic()
         returnDefaultBlob("""{"aud_123":{"id":"aud_123","rules":{"==":[1,1]}}}""")
@@ -228,9 +240,9 @@ internal class AudiencesConfigProviderTest {
         coVerify(exactly = 1) { blobRead() }
     }
 
-    private fun commitTopic() {
+    private fun commitTopic(prefetch: Boolean = true) {
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.Audiences) } returns ConfigTopic(
-            mapOf("default" to RemoteConfiguration.ConfigItem(blobRef = "blob_default")),
+            mapOf("default" to RemoteConfiguration.ConfigItem(blobRef = "blob_default", prefetch = prefetch)),
         )
     }
 
