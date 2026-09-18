@@ -44,7 +44,12 @@ import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
 import java.io.ByteArrayInputStream
 import java.io.IOException
+import java.net.CacheRequest
+import java.net.CacheResponse
+import java.net.ResponseCache
 import java.net.SocketTimeoutException
+import java.net.URI
+import java.net.URLConnection
 import java.net.URL
 import java.util.Date
 import kotlin.time.Duration.Companion.milliseconds
@@ -73,6 +78,46 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         val request = server.takeRequest()
         assertThat(request.method).isEqualTo("GET")
         assertThat(request.path).isEqualTo("/v1/subscribers/identify")
+    }
+
+    @Test
+    fun `performRequest bypasses an installed response cache`() {
+        val previousCache = ResponseCache.getDefault()
+        val recordingCache = RecordingResponseCache()
+        ResponseCache.setDefault(recordingCache)
+        try {
+            enqueue(
+                Endpoint.LogIn.getPath(),
+                expectedResult = HTTPResult.createResult()
+            )
+
+            client.performRequest(baseURL, Endpoint.LogIn, body = null, postFieldsToSign = null, mapOf("" to ""))
+
+            assertThat(server.requestCount).isEqualTo(1)
+            assertThat(recordingCache.getCallCount).isZero()
+            assertThat(recordingCache.putCallCount).isZero()
+        } finally {
+            ResponseCache.setDefault(previousCache)
+        }
+    }
+
+    private class RecordingResponseCache : ResponseCache() {
+        var getCallCount = 0
+        var putCallCount = 0
+
+        override fun get(
+            uri: URI,
+            rqstMethod: String,
+            rqstHeaders: MutableMap<String, MutableList<String>>,
+        ): CacheResponse? {
+            getCallCount++
+            return null
+        }
+
+        override fun put(uri: URI, conn: URLConnection): CacheRequest? {
+            putCallCount++
+            return null
+        }
     }
 
     // region API source base host
