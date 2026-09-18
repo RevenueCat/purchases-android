@@ -1,11 +1,11 @@
 package com.revenuecat.purchases.common.verification
 
 import android.util.Base64
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.verboseLog
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult.FailureReason
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.Result
@@ -129,26 +129,26 @@ internal class SigningManager(
         requestTime: String?,
         eTag: String?,
         postFieldsToSignHeader: String?,
-    ): VerificationResult {
+    ): SignatureVerificationResult {
         if (appConfig.forceSigningErrors) {
             warnLog { "Forcing signing error for request with path: $urlPath" }
-            return VerificationResult.FAILED
+            return SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH)
         }
         val intermediateSignatureHelper = signatureVerificationMode.intermediateSignatureHelper
-            ?: return VerificationResult.NOT_REQUESTED
-        if (!intermediateSignatureHelper.canVerify()) return VerificationResult.NOT_REQUESTED
+            ?: return SignatureVerificationResult.NotRequested
+        if (!intermediateSignatureHelper.canVerify()) return SignatureVerificationResult.NotRequested
 
         if (signatureString == null) {
             errorLog { NetworkStrings.VERIFICATION_MISSING_SIGNATURE.format(urlPath) }
-            return VerificationResult.FAILED
+            return SignatureVerificationResult.Failed(FailureReason.MISSING_SIGNATURE)
         }
         if (requestTime == null) {
             errorLog { NetworkStrings.VERIFICATION_MISSING_REQUEST_TIME.format(urlPath) }
-            return VerificationResult.FAILED
+            return SignatureVerificationResult.Failed(FailureReason.MISSING_REQUEST_TIME)
         }
         if (bodyBytes == null && eTag == null) {
             errorLog { NetworkStrings.VERIFICATION_MISSING_BODY_OR_ETAG.format(urlPath) }
-            return VerificationResult.FAILED
+            return SignatureVerificationResult.Failed(FailureReason.MISSING_SIGNED_PAYLOAD)
         }
 
         val signature: Signature
@@ -156,18 +156,16 @@ internal class SigningManager(
             signature = Signature.fromString(signatureString)
         } catch (e: InvalidSignatureSizeException) {
             errorLog { NetworkStrings.VERIFICATION_INVALID_SIZE.format(urlPath, e.message) }
-            return VerificationResult.FAILED
+            return SignatureVerificationResult.Failed(FailureReason.INVALID_SIGNATURE_FORMAT)
+        } catch (e: IllegalArgumentException) {
+            errorLog { NetworkStrings.VERIFICATION_INVALID_SIGNATURE_FORMAT.format(urlPath, e.message) }
+            return SignatureVerificationResult.Failed(FailureReason.INVALID_SIGNATURE_FORMAT)
         }
 
         when (val result = intermediateSignatureHelper.createIntermediateKeyVerifierIfVerified(signature)) {
             is Result.Error -> {
-                errorLog {
-                    NetworkStrings.VERIFICATION_INTERMEDIATE_KEY_FAILED.format(
-                        urlPath,
-                        result.value.underlyingErrorMessage,
-                    )
-                }
-                return VerificationResult.FAILED
+                errorLog { NetworkStrings.VERIFICATION_INTERMEDIATE_KEY_FAILED.format(urlPath, result.value.name) }
+                return SignatureVerificationResult.Failed(result.value)
             }
             is Result.Success -> {
                 val intermediateKeyVerifier = result.value
@@ -188,10 +186,10 @@ internal class SigningManager(
 
                 return if (verificationResult) {
                     verboseLog { NetworkStrings.VERIFICATION_SUCCESS.format(urlPath) }
-                    VerificationResult.VERIFIED
+                    SignatureVerificationResult.Verified
                 } else {
                     errorLog { NetworkStrings.VERIFICATION_ERROR.format(urlPath) }
-                    VerificationResult.FAILED
+                    SignatureVerificationResult.Failed(FailureReason.PAYLOAD_SIGNATURE_MISMATCH)
                 }
             }
         }

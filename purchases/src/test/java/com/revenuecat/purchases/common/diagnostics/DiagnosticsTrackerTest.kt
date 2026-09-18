@@ -22,6 +22,8 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.playServicesVersionName
 import com.revenuecat.purchases.common.playStoreVersionName
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult.FailureReason
 import com.revenuecat.purchases.strings.OfflineEntitlementsStrings
 import io.mockk.Runs
 import io.mockk.every
@@ -165,7 +167,7 @@ class DiagnosticsTrackerTest {
             200,
             null,
             HTTPResult.Origin.CACHE,
-            VerificationResult.NOT_REQUESTED,
+            SignatureVerificationResult.NotRequested,
             isRetry = false,
             connectionErrorReason = ConnectionErrorReason.NO_NETWORK,
         )
@@ -201,7 +203,7 @@ class DiagnosticsTrackerTest {
             200,
             1234,
             HTTPResult.Origin.BACKEND,
-            VerificationResult.NOT_REQUESTED,
+            SignatureVerificationResult.NotRequested,
             isRetry = false,
             connectionErrorReason = ConnectionErrorReason.NO_NETWORK,
         )
@@ -237,9 +239,77 @@ class DiagnosticsTrackerTest {
             200,
             1234,
             HTTPResult.Origin.BACKEND,
-            VerificationResult.NOT_REQUESTED,
+            SignatureVerificationResult.NotRequested,
             isRetry = true,
             connectionErrorReason = ConnectionErrorReason.NO_NETWORK,
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.HTTP_REQUEST_PERFORMED && event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed tracks the public name of a verified result`() {
+        val expectedProperties = mapOf(
+            "host" to "test.host.com",
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "endpoint_name" to "get_offerings",
+            "response_time_millis" to 1234L,
+            "successful" to true,
+            "response_code" to 200,
+            "etag_hit" to false,
+            "verification_result" to "VERIFIED",
+            "is_retry" to false,
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackHttpRequestPerformed(
+            "test.host.com",
+            Endpoint.GetOfferings("test id"),
+            1234L.milliseconds,
+            true,
+            200,
+            null,
+            HTTPResult.Origin.BACKEND,
+            SignatureVerificationResult.Verified,
+            isRetry = false,
+            connectionErrorReason = null,
+        )
+        verify(exactly = 1) {
+            diagnosticsFileHelper.appendEvent(match { event ->
+                event.name == DiagnosticsEntryName.HTTP_REQUEST_PERFORMED && event.properties == expectedProperties
+            })
+        }
+    }
+
+    @Test
+    fun `trackHttpRequestPerformed tracks the public name of a failed result`() {
+        val expectedProperties = mapOf(
+            "host" to "test.host.com",
+            "play_store_version" to "123",
+            "play_services_version" to "456",
+            "endpoint_name" to "get_offerings",
+            "response_time_millis" to 1234L,
+            "successful" to true,
+            "response_code" to 200,
+            "etag_hit" to false,
+            "verification_result" to "FAILED",
+            "is_retry" to false,
+        )
+        every { diagnosticsFileHelper.appendEvent(any()) } just Runs
+        diagnosticsTracker.trackHttpRequestPerformed(
+            "test.host.com",
+            Endpoint.GetOfferings("test id"),
+            1234L.milliseconds,
+            true,
+            200,
+            null,
+            HTTPResult.Origin.BACKEND,
+            SignatureVerificationResult.Failed(FailureReason.MISSING_SIGNATURE),
+            isRetry = false,
+            connectionErrorReason = null,
         )
         verify(exactly = 1) {
             diagnosticsFileHelper.appendEvent(match { event ->

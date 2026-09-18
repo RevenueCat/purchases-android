@@ -10,7 +10,6 @@ import androidx.annotation.VisibleForTesting
 import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.api.BuildConfig
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.APISourceFailover
@@ -27,6 +26,8 @@ import com.revenuecat.purchases.common.networking.RCContainerFormatException
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.verification.SignatureVerificationException
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult.FailureReason
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.interfaces.StorefrontProvider
 import com.revenuecat.purchases.strings.NetworkStrings
@@ -551,10 +552,10 @@ internal class HTTPClient(
                 verifyResponse(path, connection, payloadText, nonce, postFieldsToSignHeader)
             }
         } else {
-            VerificationResult.NOT_REQUESTED
+            SignatureVerificationResult.NotRequested
         }
 
-        if (verificationResult == VerificationResult.FAILED &&
+        if (verificationResult.isFailed &&
             signingManager.signatureVerificationMode is SignatureVerificationMode.Enforced
         ) {
             throw SignatureVerificationException(path)
@@ -630,7 +631,7 @@ internal class HTTPClient(
                 NO_STATUS_CODE
             }
             val origin = callResult?.origin
-            val verificationResult = callResult?.verificationResult ?: VerificationResult.NOT_REQUESTED
+            val verificationResult = callResult?.verificationResult ?: SignatureVerificationResult.NotRequested
             val requestWasError = callSuccessful && RCHTTPStatusCodes.isSuccessful(responseCode)
             val connectionErrorReason = connectionException?.let { ConnectionErrorReason.fromIOException(it) }
             tracker.trackHttpRequestPerformed(
@@ -730,7 +731,7 @@ internal class HTTPClient(
         payload: String?,
         nonce: String?,
         postFieldsToSignHeader: String?,
-    ): VerificationResult {
+    ): SignatureVerificationResult {
         return signingManager.verifyResponse(
             urlPath = urlPath,
             signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),
@@ -757,12 +758,12 @@ internal class HTTPClient(
         connection: URLConnection,
         payloadBytes: ByteArray,
         nonce: String?,
-    ): VerificationResult {
+    ): SignatureVerificationResult {
         val bodyBytes = try {
             RCContainer.parse(payloadBytes).config
         } catch (e: RCContainerFormatException) {
             errorLog(e) { NetworkStrings.VERIFICATION_ERROR.format(urlPath) }
-            return VerificationResult.FAILED
+            return SignatureVerificationResult.Failed(FailureReason.INVALID_RESPONSE_PAYLOAD)
         }
         return signingManager.verifyResponse(
             urlPath = urlPath,
@@ -784,7 +785,7 @@ internal class HTTPClient(
         urlPath: String,
         connection: URLConnection,
         nonce: String?,
-    ): VerificationResult {
+    ): SignatureVerificationResult {
         return signingManager.verifyResponse(
             urlPath = urlPath,
             signatureString = connection.getHeaderField(HTTPResult.SIGNATURE_HEADER_NAME),

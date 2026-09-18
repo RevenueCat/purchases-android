@@ -2,7 +2,6 @@ package com.revenuecat.purchases.backend_integration_tests
 
 import android.content.Context
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.JsonProvider
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.remoteconfig.DefaultRemoteConfigSourceProvider
@@ -15,6 +14,7 @@ import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopicStore
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -50,7 +50,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         val (error, container, verification) = fetchRemoteConfig(manifest = null)
 
         assertThat(error).isNull()
-        assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(verification).isEqualTo(SignatureVerificationResult.Verified)
         val rcContainer = requireNotNull(container) { "Expected a 200 container, got 204 (no content)." }
 
         val config = RemoteConfiguration.parse(rcContainer.config)
@@ -85,7 +85,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         val (error, container, verification) = fetchRemoteConfig(manifest = null)
 
         assertThat(error).isNull()
-        assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(verification).isEqualTo(SignatureVerificationResult.Verified)
         val rcContainer = requireNotNull(container) { "Expected a 200 container, got 204 (no content)." }
 
         val config = RemoteConfiguration.parse(rcContainer.config)
@@ -198,7 +198,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         // First run: full resolve -> 200 with a fresh opaque manifest.
         val (firstError, firstContainer, firstVerification) = fetchRemoteConfig(manifest = null)
         assertThat(firstError).isNull()
-        assertThat(firstVerification).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(firstVerification).isEqualTo(SignatureVerificationResult.Verified)
         val rcContainer = requireNotNull(firstContainer) { "Expected a 200 container on the first run." }
         val manifest = RemoteConfiguration.parse(rcContainer.config).manifest
 
@@ -209,7 +209,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
             fetchRemoteConfig(manifest = manifest, fetchContext = RemoteConfigFetchContext.Foreground)
         assertThat(secondError).isNull()
         assertThat(secondContainer).isNull()
-        assertThat(secondVerification).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(secondVerification).isEqualTo(SignatureVerificationResult.Verified)
     }
 
     /**
@@ -269,7 +269,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
         // signature verified; assert the result explicitly too.
         assertThat(error).isNull()
         assertThat(container).isNotNull
-        assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(verification).isEqualTo(SignatureVerificationResult.Verified)
         assertSigningPerformed()
     }
 
@@ -290,7 +290,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
             fetchRemoteConfig(manifest = manifest, fetchContext = RemoteConfigFetchContext.Foreground)
         assertThat(secondError).isNull()
         assertThat(secondContainer).isNull()
-        assertThat(secondVerification).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(secondVerification).isEqualTo(SignatureVerificationResult.Verified)
     }
 
     /**
@@ -300,7 +300,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
     private data class RemoteConfigFetchResult(
         val error: PurchasesError?,
         val container: RCContainer?,
-        val verification: VerificationResult?,
+        val verification: SignatureVerificationResult?,
         val requestDate: Date?,
     )
 
@@ -319,7 +319,7 @@ internal class ProductionRemoteConfigIntegrationTest : BaseBackendIntegrationTes
 
         var error: PurchasesError? = null
         var container: RCContainer? = null
-        var verification: VerificationResult? = null
+        var verification: SignatureVerificationResult? = null
         var requestDate: Date? = null
         ensureBlockFinishes { latch ->
             backend.getRemoteConfig(

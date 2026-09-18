@@ -7,7 +7,6 @@ import com.revenuecat.purchases.ForceServerErrorStrategy
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesAreCompletedBy.REVENUECAT
 import com.revenuecat.purchases.Store
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.networking.APISourceFailover
 import com.revenuecat.purchases.common.networking.ETagManager
@@ -16,6 +15,7 @@ import com.revenuecat.purchases.common.networking.HTTPResult
 import com.revenuecat.purchases.common.networking.HTTPTimeoutManager
 import com.revenuecat.purchases.common.networking.SourceHealthChecker
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import com.revenuecat.purchases.common.verification.SigningManager
 import com.revenuecat.purchases.interfaces.StorefrontProvider
 import io.mockk.clearAllMocks
@@ -137,7 +137,7 @@ internal abstract class BaseHTTPClientTest {
     protected fun enqueue(
         urlPath: String,
         expectedResult: HTTPResult,
-        verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED,
+        verificationResult: SignatureVerificationResult = SignatureVerificationResult.NotRequested,
         requestDateHeader: Date? = null,
         server: MockWebServer = this.server,
         isFallbackURL: Boolean = false,

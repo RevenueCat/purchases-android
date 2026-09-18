@@ -2,7 +2,6 @@ package com.revenuecat.purchases.common.backend
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.BackendHelper
@@ -18,6 +17,7 @@ import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCHTTPStatusCodes
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigFetchContext
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfiguration
+import com.revenuecat.purchases.common.verification.SignatureVerificationResult
 import io.mockk.CapturingSlot
 import io.mockk.every
 import io.mockk.mockk
@@ -93,11 +93,11 @@ class BackendGetRemoteConfigTest {
         val element = "blob-bytes".toByteArray()
         mockHttpResult(
             payload = HTTPResult.Payload.RCFormat(buildContainer(config = config, elements = listOf(element))),
-            verificationResult = VerificationResult.VERIFIED,
+            verificationResult = SignatureVerificationResult.Verified,
         )
 
         var container: RCContainer? = null
-        var verification: VerificationResult? = null
+        var verification: SignatureVerificationResult? = null
         backend.getRemoteConfig(
             appInBackground = false,
             appUserID = testAppUserID,
@@ -117,7 +117,7 @@ class BackendGetRemoteConfigTest {
         assertThat(parsed.version).isEqualTo(1)
         assertThat(parsed.config).isEqualTo(config)
         assertThat(parsed.contentElements).hasSize(1)
-        assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(verification).isEqualTo(SignatureVerificationResult.Verified)
     }
 
     @Test
@@ -144,7 +144,7 @@ class BackendGetRemoteConfigTest {
         val element = "blob-bytes".toByteArray()
         mockHttpResult(
             payload = HTTPResult.Payload.RCFormat(buildContainer(config = config, elements = listOf(element))),
-            verificationResult = VerificationResult.VERIFIED,
+            verificationResult = SignatureVerificationResult.Verified,
         )
 
         var container: RCContainer? = null
@@ -217,10 +217,10 @@ class BackendGetRemoteConfigTest {
         mockHttpResult(
             responseCode = RCHTTPStatusCodes.NO_CONTENT,
             payload = HTTPResult.Payload.RCFormat(ByteArray(0)),
-            verificationResult = VerificationResult.VERIFIED,
+            verificationResult = SignatureVerificationResult.Verified,
         )
 
-        var verification: VerificationResult? = null
+        var verification: SignatureVerificationResult? = null
         backend.getRemoteConfig(
             appInBackground = false,
             appUserID = testAppUserID,
@@ -239,7 +239,7 @@ class BackendGetRemoteConfigTest {
 
         assertThat(callbackCount).isEqualTo(1)
         assertThat(container).isNull()
-        assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(verification).isEqualTo(SignatureVerificationResult.Verified)
     }
 
     @Test
@@ -364,7 +364,7 @@ class BackendGetRemoteConfigTest {
             HTTPResult.Payload.RCFormat(ByteArray(0)),
             HTTPResult.Origin.BACKEND,
             requestDate = null,
-            VerificationResult.NOT_REQUESTED,
+            SignatureVerificationResult.NotRequested,
             isLoadShedderResponse = false,
             isFallbackURL = false,
         )
@@ -468,7 +468,7 @@ class BackendGetRemoteConfigTest {
             HTTPResult.Payload.Text("""{"domain":"app","manifest":"m1"}"""),
             HTTPResult.Origin.BACKEND,
             requestDate = null,
-            VerificationResult.NOT_REQUESTED,
+            SignatureVerificationResult.NotRequested,
             isLoadShedderResponse = false,
             isFallbackURL = true,
         )
@@ -672,11 +672,11 @@ class BackendGetRemoteConfigTest {
                 }
                 """.trimIndent(),
             ),
-            verificationResult = VerificationResult.VERIFIED,
+            verificationResult = SignatureVerificationResult.Verified,
         )
 
         var config: RemoteConfiguration? = null
-        var verification: VerificationResult? = null
+        var verification: SignatureVerificationResult? = null
         backend.getRemoteConfigFallback(
             appInBackground = false,
             domain = testDomain,
@@ -693,7 +693,7 @@ class BackendGetRemoteConfigTest {
         assertThat(config!!.activeTopics).containsExactly("sources")
         assertThat(config!!.topics["sources"]!!["default"]!!.blobRef).isEqualTo("someBlob")
         // The verification result is exposed the same way as the main endpoint.
-        assertThat(verification).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(verification).isEqualTo(SignatureVerificationResult.Verified)
     }
 
     @Test
@@ -805,7 +805,7 @@ class BackendGetRemoteConfigTest {
             HTTPResult.Payload.RCFormat(ByteArray(0)),
             HTTPResult.Origin.BACKEND,
             requestDate = null,
-            VerificationResult.NOT_REQUESTED,
+            SignatureVerificationResult.NotRequested,
             isLoadShedderResponse = false,
             isFallbackURL = false,
         )
@@ -815,7 +815,7 @@ class BackendGetRemoteConfigTest {
         responseCode: Int = RCHTTPStatusCodes.SUCCESS,
         payload: HTTPResult.Payload,
         delayMs: Long? = null,
-        verificationResult: VerificationResult = VerificationResult.NOT_REQUESTED,
+        verificationResult: SignatureVerificationResult = SignatureVerificationResult.NotRequested,
         requestDate: Date? = null,
     ) {
         every {
