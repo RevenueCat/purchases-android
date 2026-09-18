@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
+import com.revenuecat.purchases.checkpoints.CheckpointResolution
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import kotlinx.coroutines.CompletableDeferred
 
@@ -13,7 +14,10 @@ internal class PresentationSlot {
 
     class PendingCall(
         val callId: String,
-        val content: CheckpointFlowContent,
+        // Both null for a call whose flow a PaywallPresenter shows: that UI, and what happens in it, is the
+        // presenter's, and the manager only learns how it ended.
+        val workflow: CheckpointResolution.MatchedWorkflow?,
+        val activeEntitlementsBefore: Set<String>?,
         val customVariables: Map<String, CustomVariableValue>,
         val flowFinished: CompletableDeferred<CheckpointRun>,
     ) {

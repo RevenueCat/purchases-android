@@ -46,6 +46,10 @@ internal fun CheckpointRun.toResult(activeEntitlementsBefore: Set<String>?): Flo
         else -> FlowResult(obtainedEntitlements = emptySet())
     }
 
+/** Whether the user now holds an entitlement they did not in [activeEntitlementsBefore]. */
+internal fun CustomerInfo.grantsNewEntitlements(activeEntitlementsBefore: Set<String>?): Boolean =
+    obtainedEntitlements(activeEntitlementsBefore).isNotEmpty()
+
 /** The entitlements active now that were not in [activeEntitlementsBefore]; all of them when that is unknown. */
 internal fun CustomerInfo.obtainedEntitlements(
     activeEntitlementsBefore: Set<String>?,

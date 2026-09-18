@@ -90,7 +90,7 @@ internal class DefaultPaywallPresenter(
 
         override fun onRestoreCompleted(customerInfo: CustomerInfo) {
             if (completion == null) return
-            if (customerInfo.obtainedEntitlements(activeEntitlementsBefore).isNotEmpty()) {
+            if (customerInfo.grantsNewEntitlements(activeEntitlementsBefore)) {
                 obtained = true
                 dismiss?.invoke(false)
             }

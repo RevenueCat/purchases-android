@@ -27,25 +27,13 @@ import kotlinx.coroutines.withContext
 import java.util.UUID
 
 /**
- * Everything [CheckpointWorkflowPresenter] needs to build its paywall, read in a single pass so it can't
- * observe a call that was taken between two accessors.
+ * Everything the manager's [CheckpointWorkflowPresenter] needs to build a workflow paywall, read in a single pass
+ * so it can't observe a call that was taken between two accessors.
  */
 internal class CheckpointPresentation(
-    val content: CheckpointFlowContent,
+    val workflow: CheckpointResolution.MatchedWorkflow,
     val customVariables: Map<String, CustomVariableValue>,
 )
-
-/** What [CheckpointWorkflowPresenter] renders for a presented checkpoint. */
-internal sealed class CheckpointFlowContent {
-
-    class Workflow(val resolution: CheckpointResolution.MatchedWorkflow) : CheckpointFlowContent()
-
-    /**
-     * A matched offering presented by [DefaultPaywallPresenter]: the offering's configured paywall, falling back
-     * to the default paywall when it has none.
-     */
-    class OfferingFlow(val offering: Offering) : CheckpointFlowContent()
-}
 
 /**
  * What a checkpoint run produced: the terminal [flowOutcome] of whatever it presented (null when nothing was,
@@ -127,8 +115,7 @@ internal class CheckpointsManager(
             when (resolution) {
                 is CheckpointResolution.MatchedOffering ->
                     presentOffering(purchases, identifier, resolution.offering, customVariables, presenter)
-                is CheckpointResolution.MatchedWorkflow ->
-                    present(purchases, CheckpointFlowContent.Workflow(resolution), customVariables)
+                is CheckpointResolution.MatchedWorkflow -> present(purchases, resolution, customVariables)
                 is CheckpointResolution.NoAction -> nothingPresented
             }
         } catch (_: PurchasesException) {
@@ -167,8 +154,9 @@ internal class CheckpointsManager(
         }
     }
 
+    // Null for a call whose flow a PaywallPresenter shows: that UI is not the manager's.
     fun presentation(callId: String): CheckpointPresentation? =
-        slot.with(callId) { CheckpointPresentation(it.content, it.customVariables) }
+        slot.with(callId) { call -> call.workflow?.let { CheckpointPresentation(it, call.customVariables) } }
 
     // Direct dismissals (a completed purchase or restore) carry no reason and count as a close; everything else
     // reports one, and an error dialog being dismissed also carries the error as its result. The exit offering,
@@ -184,19 +172,11 @@ internal class CheckpointsManager(
                 }
                 .setCustomVariables(presentation.customVariables)
                 .setListener(OutcomeListener(callId))
-                .apply {
-                    when (val content = presentation.content) {
-                        is CheckpointFlowContent.Workflow -> injectedWorkflow(
-                            content.resolution.workflow,
-                            content.resolution.offerings,
-                            content.resolution.uiConfig,
-                        )
-                        // Offering paywalls, unlike workflows, don't necessarily carry their own close action, so
-                        // the dismiss button keeps the fallback paywall dismissable.
-                        is CheckpointFlowContent.OfferingFlow ->
-                            setOffering(content.offering).setShouldDisplayDismissButton(true)
-                    }
-                }
+                .injectedWorkflow(
+                    presentation.workflow.workflow,
+                    presentation.workflow.offerings,
+                    presentation.workflow.uiConfig,
+                )
                 .build()
         }
 
@@ -205,8 +185,12 @@ internal class CheckpointsManager(
             recordOutcome(callId, CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
         }
 
+        // A restore that granted nothing the user didn't already hold is not an outcome: how the user then
+        // leaves decides. A gone call reads as "unknown before", and recording into it is a no-op anyway.
         override fun onRestoreCompleted(customerInfo: CustomerInfo) {
-            recordOutcome(callId, CheckpointFlowOutcome.Restored(customerInfo))
+            if (customerInfo.grantsNewEntitlements(slot.with(callId) { it.activeEntitlementsBefore })) {
+                recordOutcome(callId, CheckpointFlowOutcome.Restored(customerInfo))
+            }
         }
 
         override fun onPurchaseError(error: PurchasesError) {
@@ -224,8 +208,8 @@ internal class CheckpointsManager(
         }
     }
 
-    // A purchase or restore is what the user went through for, so a later error, web checkout or dismissal must
-    // not erase it. A later purchase or restore still replaces it with newer CustomerInfo.
+    // A purchase or granting restore is what the user went through for, so a later error, web checkout or
+    // dismissal must not erase it. A later purchase or restore still replaces it with newer CustomerInfo.
     fun recordOutcome(callId: String, outcome: CheckpointFlowOutcome) {
         slot.with(callId) {
             if (!it.outcome.isObtained || outcome.isObtained) {
@@ -279,11 +263,10 @@ internal class CheckpointsManager(
         customVariables: Map<String, CustomVariableValue>,
         presenter: PaywallPresenter?,
     ): CheckpointRun {
-        val content = CheckpointFlowContent.OfferingFlow(offering)
         return presentThroughPresenter(
             purchases,
             identifier,
-            content,
+            offering,
             customVariables,
             presenter ?: defaultPresenterFactory(purchases),
         )
@@ -292,15 +275,21 @@ internal class CheckpointsManager(
     private suspend fun presentThroughPresenter(
         purchases: Purchases,
         identifier: String,
-        content: CheckpointFlowContent.OfferingFlow,
+        offering: Offering,
         customVariables: Map<String, CustomVariableValue>,
         presenter: PaywallPresenter,
     ): CheckpointRun {
-        val call = PendingCall(UUID.randomUUID().toString(), content, customVariables, CompletableDeferred())
+        val call = PendingCall(
+            UUID.randomUUID().toString(),
+            workflow = null,
+            activeEntitlementsBefore = null,
+            customVariables,
+            CompletableDeferred(),
+        )
         if (!slot.claim(call)) return blockedByPresentedFlow
         try {
             presenter.present(
-                PaywallPresenter.Params(content.offering, identifier, customVariables),
+                PaywallPresenter.Params(offering, identifier, customVariables),
                 PresenterCompletion(call.callId, purchases),
             )
             return call.flowFinished.await()
@@ -375,14 +364,20 @@ internal class CheckpointsManager(
 
     private suspend fun present(
         purchases: Purchases,
-        content: CheckpointFlowContent.Workflow,
+        resolution: CheckpointResolution.MatchedWorkflow,
         customVariables: Map<String, CustomVariableValue>,
     ): CheckpointRun {
         val activity = purchases.currentActivity ?: presentationError(
             PurchasesErrorCode.ConfigurationError,
             "Cannot present checkpoint workflow: no started Activity found.",
         )
-        val call = PendingCall(UUID.randomUUID().toString(), content, customVariables, CompletableDeferred())
+        val call = PendingCall(
+            UUID.randomUUID().toString(),
+            resolution,
+            cachedActiveEntitlementIds(purchases),
+            customVariables,
+            CompletableDeferred(),
+        )
         if (!slot.claim(call)) return blockedByPresentedFlow
         try {
             val presenter = presenterFactory(call.callId, this)

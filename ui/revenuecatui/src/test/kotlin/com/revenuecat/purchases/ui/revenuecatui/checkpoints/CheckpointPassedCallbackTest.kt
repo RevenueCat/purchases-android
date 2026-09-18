@@ -128,6 +128,30 @@ class CheckpointPassedCallbackTest {
         }
 
     @Test
+    fun `a workflow restore that unlocks nothing does not pass the checkpoint on back`() = runTest(dispatcher) {
+        cachedCustomerInfoHasActive("plus")
+        resolvesToWorkflow()
+
+        checkpoint()
+        workflowListener().onRestoreCompleted(customerInfoWithActive("plus"))
+        finishPaywall(outcome = null, navigatedBack = true)
+
+        assertThat(results).isEmpty()
+    }
+
+    @Test
+    fun `a workflow restore that unlocks an entitlement passes the checkpoint on back`() = runTest(dispatcher) {
+        cachedCustomerInfoHasActive("plus")
+        resolvesToWorkflow()
+
+        checkpoint()
+        workflowListener().onRestoreCompleted(customerInfoWithActive("plus", "pro"))
+        finishPaywall(outcome = null, navigatedBack = true)
+
+        assertThat(results.obtained).containsExactly(setOf("pro"))
+    }
+
+    @Test
     fun `a dismissed paywall delivers an empty result`() = runTest(dispatcher) {
         resolvesToWorkflow()
 
@@ -236,6 +260,9 @@ class CheckpointPassedCallbackTest {
         resolvesTo(CheckpointResolution.MatchedOffering(offering, checkpointRuleId = null))
         return { completion }
     }
+
+    // The paywall listener the workflow window would install, as the SDK's paywall reports through it.
+    private fun workflowListener() = manager.paywallOptions(presentedCallIds.last()) {}!!.listener!!
 
     private fun resolvesTo(resolution: CheckpointResolution) {
         coEvery { mockPurchases.internalResolveCp(any(), any()) } returns resolution

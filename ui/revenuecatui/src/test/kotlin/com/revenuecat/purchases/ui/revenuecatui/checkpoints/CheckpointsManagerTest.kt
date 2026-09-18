@@ -6,6 +6,7 @@ import android.app.Activity
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
@@ -203,6 +204,37 @@ class CheckpointsManagerTest {
 
         // The purchase wins over the later error, and a purchase is never backed out.
         assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+        assertThat(run!!.backedOut).isFalse
+    }
+
+    @Test
+    fun `a workflow restore that grants nothing new is not an outcome`() = runTest(dispatcher) {
+        cachedActiveEntitlements("plus")
+        resolvesToWorkflow()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        manager.paywallOptions(currentCallId()) {}!!.listener!!.onRestoreCompleted(customerInfoWithActive("plus"))
+        finishPaywall(outcome = null, navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(run!!.backedOut).isTrue
+    }
+
+    @Test
+    fun `a workflow restore that grants a new entitlement is recorded`() = runTest(dispatcher) {
+        cachedActiveEntitlements("plus")
+        resolvesToWorkflow()
+        val restored = customerInfoWithActive("plus", "pro")
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        manager.paywallOptions(currentCallId()) {}!!.listener!!.onRestoreCompleted(restored)
+        finishPaywall(outcome = null, navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Restored(restored))
         assertThat(run!!.backedOut).isFalse
     }
 
@@ -911,6 +943,17 @@ class CheckpointsManagerTest {
         }
         resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
         return { completion }
+    }
+
+    private fun cachedActiveEntitlements(vararg identifiers: String) {
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfoWithActive(*identifiers))
+        }
+    }
+
+    private fun customerInfoWithActive(vararg identifiers: String): CustomerInfo {
+        val active = identifiers.associateWith { id -> mockk<EntitlementInfo> { every { identifier } returns id } }
+        return mockk { every { entitlements.active } returns active }
     }
 
     private fun syncedCustomerInfoIs(customerInfo: CustomerInfo) {
