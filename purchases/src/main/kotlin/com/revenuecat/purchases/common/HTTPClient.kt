@@ -471,6 +471,12 @@ internal class HTTPClient(
             connection.disconnect()
         }
 
+        // HttpURLConnection reports -1 when the status line can't be parsed, so the response isn't valid HTTP.
+        // Treat it like any other connection failure instead of inspecting (or verifying) its contents.
+        if (responseCode == NO_STATUS_CODE) {
+            throw IOException(NetworkStrings.HTTP_RESPONSE_NO_STATUS_CODE)
+        }
+
         debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
         // The response arrived in full. Everything below only inspects it, so failures from here on say
         // nothing about how responsive the host is.

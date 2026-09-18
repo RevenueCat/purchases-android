@@ -14,6 +14,7 @@ import com.revenuecat.purchases.common.verification.SignatureVerificationExcepti
 import com.revenuecat.purchases.common.verification.SignatureVerificationMode
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.api.BuildConfig
+import com.revenuecat.purchases.common.networking.ConnectionErrorReason
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.common.networking.HTTPRequest
 import com.revenuecat.purchases.common.networking.HTTPResult
@@ -23,6 +24,7 @@ import com.revenuecat.purchases.common.networking.SourceHealthChecker
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSource
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceHandle
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigSourceProvider
+import com.revenuecat.purchases.strings.NetworkStrings
 import com.revenuecat.purchases.utils.Responses
 import com.revenuecat.purchases.utils.TestUrlConnection
 import com.revenuecat.purchases.utils.TestUrlConnectionFactory
@@ -44,13 +46,16 @@ import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
 import java.io.ByteArrayInputStream
 import java.io.IOException
+import java.io.InputStream
 import java.net.CacheRequest
 import java.net.CacheResponse
+import java.net.HttpURLConnection
 import java.net.ResponseCache
 import java.net.SocketTimeoutException
 import java.net.URI
-import java.net.URLConnection
 import java.net.URL
+import java.net.URLConnection
+import java.net.URLStreamHandler
 import java.util.Date
 import kotlin.time.Duration.Companion.milliseconds
 import org.robolectric.annotation.Config as AnnotationConfig
@@ -1513,6 +1518,51 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             return
         }
         error("Expected exception")
+    }
+
+    @Test
+    fun `performRequest tracks connection error if response has no status code`() {
+        val diagnosticsTracker = mockk<DiagnosticsTracker>()
+        every { diagnosticsTracker.trackHttpRequestPerformed(any(), any(), any(), any(), any(), any(), any(), any(), any(), any()) } just Runs
+        every { mockSigningManager.shouldVerifyEndpoint(any()) } returns true
+        every { mockSigningManager.createRandomNonce() } returns "test-nonce"
+        every {
+            mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any())
+        } returns VerificationResult.FAILED
+        client = createClient(diagnosticsTracker = diagnosticsTracker)
+
+        val endpoint = Endpoint.LogIn
+        // URL(context, spec) inherits the context's stream handler, so every request against this base URL
+        // gets a connection whose status line couldn't be parsed but whose body still streams.
+        val noStatusCodeBaseURL = URL(null, "http://no-status-code.test/v1", object : URLStreamHandler() {
+            override fun openConnection(url: URL): URLConnection = object : HttpURLConnection(url) {
+                override fun getResponseCode() = HTTPClient.NO_STATUS_CODE
+                override fun getInputStream(): InputStream = ByteArrayInputStream("{}".toByteArray())
+                override fun connect() = Unit
+                override fun disconnect() = Unit
+                override fun usingProxy() = false
+            }
+        })
+
+        assertThatThrownBy {
+            client.performRequest(noStatusCodeBaseURL, endpoint, body = null, postFieldsToSign = null, mapOf("" to ""))
+        }.isInstanceOf(IOException::class.java).hasMessage(NetworkStrings.HTTP_RESPONSE_NO_STATUS_CODE)
+
+        verify(exactly = 0) { mockSigningManager.verifyResponse(any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 1) {
+            diagnosticsTracker.trackHttpRequestPerformed(
+                noStatusCodeBaseURL.host,
+                endpoint,
+                responseTime = any(),
+                wasSuccessful = false,
+                HTTPClient.NO_STATUS_CODE,
+                backendErrorCode = null,
+                resultOrigin = null,
+                VerificationResult.NOT_REQUESTED,
+                isRetry = false,
+                connectionErrorReason = ConnectionErrorReason.OTHER,
+            )
+        }
     }
 
     @Test
