@@ -32,6 +32,8 @@ internal sealed class Endpoint(
             templateFor(useIAMPath).format(Uri.encode(userId))
         override val iamPathTemplate: String? = "/v1/customer"
     }
+
+    // TODO(IAM): not yet supported server-side
     object PostReceipt : Endpoint("/v1/receipts", "post_receipt") {
         override fun getPath(useFallback: Boolean, useIAMPath: Boolean) = templateFor(useIAMPath)
     }
@@ -58,13 +60,19 @@ internal sealed class Endpoint(
             return pathTemplate
         }
     }
+
+    // TODO(IAM): not yet supported server-side
     data class AliasUsers(val userId: String) : Endpoint("/v1/subscribers/%s/alias", "alias_users") {
         override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
             templateFor(useIAMPath).format(Uri.encode(userId))
     }
+
+    // TODO(IAM): not yet supported server-side
     object PostDiagnostics : Endpoint("/v1/diagnostics", "post_diagnostics") {
         override fun getPath(useFallback: Boolean, useIAMPath: Boolean) = templateFor(useIAMPath)
     }
+
+    // TODO(IAM): not yet supported server-side
     object PostEvents : Endpoint("/v1/events", "post_paywall_events") {
         override fun getPath(useFallback: Boolean, useIAMPath: Boolean) = templateFor(useIAMPath)
     }
@@ -75,6 +83,8 @@ internal sealed class Endpoint(
             templateFor(useIAMPath).format(Uri.encode(userId))
         override val iamPathTemplate: String? = "/v1/customer/attributes"
     }
+
+    // TODO(IAM): not yet supported server-side
     data class GetAmazonReceipt(
         val userId: String,
         val receiptId: String,
@@ -94,6 +104,7 @@ internal sealed class Endpoint(
                 templateFor(useIAMPath)
             }
         }
+        override val iamPathTemplate: String? = "/v1/product_entitlement_mapping"
     }
     data class GetCustomerCenterConfig(val userId: String) : Endpoint(
         "/v1/customercenter/%s",
@@ -101,8 +112,10 @@ internal sealed class Endpoint(
     ) {
         override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
             templateFor(useIAMPath).format(Uri.encode(userId))
+        override val iamPathTemplate: String? = "/v1/customer/customercenter"
     }
 
+    // TODO(IAM): not yet supported server-side
     data class GetRemoteConfig(val domain: String) : Endpoint(
         pathTemplate = "/v1/config/%s",
         name = "remote_config",
@@ -118,6 +131,7 @@ internal sealed class Endpoint(
      * is signature-verified **without** a nonce (mirroring [GetOfferings]). The domain layer chooses this
      * endpoint explicitly; it does not participate in the generic HTTPClient URL-fallback mechanism.
      */
+    // TODO(IAM): not yet supported server-side
     data class GetRemoteConfigFallback(val domain: String) : Endpoint(
         pathTemplate = "/v1/config/%s",
         name = "remote_config_fallback",
@@ -125,12 +139,16 @@ internal sealed class Endpoint(
         override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
             templateFor(useIAMPath).format(Uri.encode(domain))
     }
+
+    // TODO(IAM): not yet supported server-side
     object PostCreateSupportTicket : Endpoint(
         "/v1/customercenter/support/create-ticket",
         "post_create_support_ticket",
     ) {
         override fun getPath(useFallback: Boolean, useIAMPath: Boolean) = templateFor(useIAMPath)
     }
+
+    // TODO(IAM): not yet supported server-side
     object PostRedeemWebPurchase : Endpoint(
         "/v1/subscribers/redeem_purchase",
         "post_redeem_web_purchase",
@@ -145,6 +163,8 @@ internal sealed class Endpoint(
             templateFor(useIAMPath).format(Uri.encode(userId))
         override val iamPathTemplate: String? = "/v1/customer/virtual_currencies"
     }
+
+    // TODO(IAM): not yet supported server-side
     data class GetRewardVerification(
         val userId: String,
         val clientTransactionId: String,
@@ -155,6 +175,8 @@ internal sealed class Endpoint(
         override fun getPath(useFallback: Boolean, useIAMPath: Boolean) =
             templateFor(useIAMPath).format(Uri.encode(userId), Uri.encode(clientTransactionId))
     }
+
+    // TODO(IAM): not yet supported server-side
     data class WebBillingGetProducts(val userId: String, val productIds: Set<String>) : Endpoint(
         pathTemplate = "/rcbilling/v1/subscribers/%s/products?id=%s",
         name = "web_billing_get_products",

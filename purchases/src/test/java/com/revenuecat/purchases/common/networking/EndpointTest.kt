@@ -394,4 +394,40 @@ class EndpointTest {
             assertThat(Endpoint.LogIn.getPath(useIAMPath = true)).isEqualTo("/v1/subscribers/identify")
         }
     }
+
+    @Test
+    fun `GetProductEntitlementMapping has an unchanged IAM path`() {
+        val endpoint = Endpoint.GetProductEntitlementMapping
+        assertThat(endpoint.getPath()).isEqualTo("/v1/product_entitlement_mapping")
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo("/v1/product_entitlement_mapping")
+    }
+
+    @Test
+    fun `GetCustomerCenterConfig has an IAM path that drops the app user id`() {
+        val endpoint = Endpoint.GetCustomerCenterConfig("test-user-id")
+        assertThat(endpoint.getPath()).isEqualTo("/v1/customercenter/test-user-id")
+        assertThat(endpoint.getPath(useIAMPath = true)).isEqualTo("/v1/customer/customercenter")
+    }
+
+    @Test
+    fun `endpoints not yet migrated to IAM paths are unaffected by useIAMPath`() {
+        val unmigratedEndpoints = listOf(
+            Endpoint.PostReceipt,
+            Endpoint.AliasUsers("test-user-id"),
+            Endpoint.PostDiagnostics,
+            Endpoint.PostEvents,
+            Endpoint.GetAmazonReceipt("test-user-id", "test-receipt-id"),
+            Endpoint.GetRemoteConfig("app"),
+            Endpoint.GetRemoteConfigFallback("app"),
+            Endpoint.PostCreateSupportTicket,
+            Endpoint.PostRedeemWebPurchase,
+            Endpoint.GetRewardVerification("test-user-id", "client-transaction-id"),
+            Endpoint.WebBillingGetProducts("test-user-id", setOf("product1")),
+        )
+        for (endpoint in unmigratedEndpoints) {
+            assertThat(endpoint.getPath(useIAMPath = true))
+                .withFailMessage { "Endpoint $endpoint expected useIAMPath to be a no-op" }
+                .isEqualTo(endpoint.getPath())
+        }
+    }
 }
