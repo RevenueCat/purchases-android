@@ -39,8 +39,8 @@ internal class AudiencesConfigProvider(
      * commit races the read, and gives up with `null` if that read is superseded too.
      */
     suspend fun getAudiences(): Map<String, Audience>? {
-        cache.cached?.let { cached ->
-            if (cache.isWarmAtOrAbove(manager.configGeneration)) return cached
+        if (cache.isWarm()) {
+            cache.cachedAtOrAbove(manager.configGeneration)?.let { return it }
         }
         return manager.readConsistent(what = { "the audiences topic" }) { _ -> readAudiences() }
     }

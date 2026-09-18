@@ -11,6 +11,8 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -177,6 +179,26 @@ internal class AudiencesConfigProviderTest {
         provider.getAudiences()
 
         coVerify(exactly = 2) { blobRead() }
+    }
+
+    @Test
+    fun `a re-warm landing during a memory read is served with its own audiences, not the old snapshot`() = runTest {
+        val provider = AudiencesConfigProvider(manager, scope = CoroutineScope(Dispatchers.Unconfined))
+        commitTopic()
+        returnDefaultBlob("""{"old":{"id":"old","rules":{"==":[1,1]}}}""")
+        provider.warm(generation = 0)
+        returnDefaultBlob("""{"new":{"id":"new","rules":{"==":[1,1]}}}""")
+        // The commit re-warm lands between the generation read and the cache read.
+        var committed = false
+        every { manager.configGeneration } answers {
+            if (!committed) {
+                committed = true
+                provider.onConfigCommitted(generation = 1)
+            }
+            1
+        }
+
+        assertThat(provider.getAudiences()).containsOnlyKeys("new")
     }
 
     @Test

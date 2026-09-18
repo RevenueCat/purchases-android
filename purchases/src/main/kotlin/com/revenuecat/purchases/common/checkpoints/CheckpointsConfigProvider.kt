@@ -44,10 +44,10 @@ internal class CheckpointsConfigProvider(
      * value to fall back on, a read superseded twice is [CheckpointRulesResolution.Unavailable].
      */
     suspend fun resolveCheckpoint(identifier: String): CheckpointRulesResolution {
-        cache.cached?.let { cached ->
+        if (cache.isWarm()) {
             val generation = manager.configGeneration
-            if (cache.isWarmAtOrAbove(generation)) {
-                cached[identifier]?.let { return CheckpointRulesResolution.Found(it, generation) }
+            cache.cachedAtOrAbove(generation)?.get(identifier)?.let {
+                return CheckpointRulesResolution.Found(it, generation)
             }
         }
         return manager.readConsistent(what = { "checkpoint '$identifier'" }) { generation ->

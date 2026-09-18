@@ -14,6 +14,8 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.decodeFromString
 import org.assertj.core.api.Assertions.assertThat
@@ -297,6 +299,29 @@ internal class CheckpointsConfigProviderTest {
 
         assertThat((resolution as CheckpointRulesResolution.Found).configGeneration).isEqualTo(1)
         coVerify(exactly = 2) { blobRead("app_open") }
+    }
+
+    @Test
+    fun `a re-warm landing during a memory read is served with its own rules, not the previous snapshot`() = runTest {
+        val provider = CheckpointsConfigProvider(manager, scope = CoroutineScope(Dispatchers.Unconfined))
+        commitTopicWith("app_open")
+        returnBlob("app_open", """{ "rules": [{ "id": "old", "audience_id": "aud-1", "workflow_id": "wf-1" }] }""")
+        provider.warm(generation = 0)
+        returnBlob("app_open", """{ "rules": [{ "id": "new", "audience_id": "aud-1", "workflow_id": "wf-1" }] }""")
+        // The commit re-warm lands between the generation read and the cache read.
+        var committed = false
+        every { manager.configGeneration } answers {
+            if (!committed) {
+                committed = true
+                provider.onConfigCommitted(generation = 1)
+            }
+            1
+        }
+
+        val resolution = provider.resolveCheckpoint("app_open") as CheckpointRulesResolution.Found
+
+        assertThat(resolution.checkpoint.rules.single().id).isEqualTo("new")
+        assertThat(resolution.configGeneration).isEqualTo(1)
     }
 
     @Test
