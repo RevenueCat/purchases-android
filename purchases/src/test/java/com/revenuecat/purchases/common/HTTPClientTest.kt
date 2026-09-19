@@ -58,8 +58,14 @@ import java.net.URL
 import java.net.URLConnection
 import java.net.URLStreamHandler
 import java.util.Date
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.milliseconds
 import org.robolectric.annotation.Config as AnnotationConfig
+
+private const val SILENT_SOCKET_TEST_TIMEOUT_MS = 10_000L
+private const val SILENT_SOCKET_CLEANUP_TIMEOUT_MS = 2_000L
 
 @RunWith(AndroidJUnit4::class)
 @AnnotationConfig(manifest = AnnotationConfig.NONE)
@@ -2358,18 +2364,37 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         // The server accepts the connection but never sends a single response byte, so only the
         // read timeout can bound this request: the connection itself succeeds.
-        server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
-
-        assertThatThrownBy {
+        val silentServer = MockWebServer()
+        val silentBaseURL = silentServer.url("/v1").toUrl()
+        silentServer.enqueue(MockResponse().apply { socketPolicy = SocketPolicy.NO_RESPONSE })
+        val requestExecutor = Executors.newSingleThreadExecutor()
+        val request = requestExecutor.submit<HTTPResult> {
             client.performRequest(
-                baseURL,
+                silentBaseURL,
                 endpoint,
                 body = null,
                 postFieldsToSign = null,
                 mapOf("" to ""),
                 fallbackBaseURLs = emptyList(),
             )
-        }.isInstanceOf(SocketTimeoutException::class.java)
+        }
+
+        val failure = try {
+            runCatching {
+                request.get(SILENT_SOCKET_TEST_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            }.exceptionOrNull()
+        } finally {
+            silentServer.shutdown()
+            request.cancel(true)
+            requestExecutor.shutdownNow()
+            assertThat(
+                requestExecutor.awaitTermination(SILENT_SOCKET_CLEANUP_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            ).isTrue()
+        }
+
+        assertThat(failure)
+            .isInstanceOf(ExecutionException::class.java)
+            .hasCauseInstanceOf(SocketTimeoutException::class.java)
     }
 
     @Test
@@ -2379,11 +2404,13 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
 
         val appConfig = createAppConfig(proxyURL = null)
         val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
-        val host = baseURL.host
         client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
 
         // The main server accepts the connection but never responds; the fallback server works.
-        server.enqueue(MockResponse().setSocketPolicy(SocketPolicy.NO_RESPONSE))
+        val silentServer = MockWebServer()
+        val silentBaseURL = silentServer.url("/v1").toUrl()
+        val host = silentBaseURL.host
+        silentServer.enqueue(MockResponse().apply { socketPolicy = SocketPolicy.NO_RESPONSE })
 
         val fallbackServer = MockWebServer()
         val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
@@ -2408,23 +2435,33 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
             )
         } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
 
-        try {
-            val result = client.performRequest(
-                baseURL,
+        val requestExecutor = Executors.newSingleThreadExecutor()
+        val request = requestExecutor.submit<HTTPResult> {
+            client.performRequest(
+                silentBaseURL,
                 endpoint,
                 body = null,
                 postFieldsToSign = null,
                 mapOf("" to ""),
                 fallbackBaseURLs = listOf(fallbackBaseURL),
             )
+        }
 
-            assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
-            // The silent socket counts as a main-source timeout for the fail-fast memory.
-            verify(exactly = 1) {
-                timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
-            }
+        val result = try {
+            request.get(SILENT_SOCKET_TEST_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         } finally {
+            silentServer.shutdown()
             fallbackServer.shutdown()
+            request.cancel(true)
+            requestExecutor.shutdownNow()
+            assertThat(
+                requestExecutor.awaitTermination(SILENT_SOCKET_CLEANUP_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            ).isTrue()
+        }
+
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+        verify(exactly = 1) {
+            timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
         }
     }
 

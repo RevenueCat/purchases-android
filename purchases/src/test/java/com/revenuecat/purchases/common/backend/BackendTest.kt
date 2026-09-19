@@ -82,6 +82,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 private const val API_KEY = "TEST_API_KEY"
 
@@ -1702,7 +1703,10 @@ class BackendTest {
     }
 
     @Test
-    fun `given multiple get offerings calls for same user, all coalesced callers receive the error when the request times out`() {
+    fun `timed out offerings request releases coalesced callers and allows a later request`() {
+        val firstRequestStarted = CountDownLatch(1)
+        val releaseFirstRequest = CountDownLatch(1)
+        val requestCount = AtomicInteger(0)
         every {
             mockClient.performRequest(
                 mockBaseURL,
@@ -1712,23 +1716,42 @@ class BackendTest {
                 any(),
             )
         } answers {
-            Thread.sleep(200)
-            throw SocketTimeoutException("Read timed out")
+            if (requestCount.incrementAndGet() == 1) {
+                firstRequestStarted.countDown()
+                assertThat(releaseFirstRequest.await(defaultTimeout, TimeUnit.MILLISECONDS)).isTrue()
+                throw SocketTimeoutException("Read timed out")
+            }
+            HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, noOfferingsResponse)
         }
-        val lock = CountDownLatch(2)
+
+        val coalescedErrors = CountDownLatch(2)
         asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
             fail<Unit>("Should be error")
         }, onError = { _, _ ->
-            lock.countDown()
+            coalescedErrors.countDown()
         })
+        assertThat(firstRequestStarted.await(defaultTimeout, TimeUnit.MILLISECONDS)).isTrue()
         asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
             fail<Unit>("Should be error")
         }, onError = { _, _ ->
-            lock.countDown()
+            coalescedErrors.countDown()
         })
-        lock.await(defaultTimeout, TimeUnit.MILLISECONDS)
-        assertThat(lock.count).isEqualTo(0)
-        verify(exactly = 1) {
+
+        releaseFirstRequest.countDown()
+
+        assertThat(coalescedErrors.await(defaultTimeout, TimeUnit.MILLISECONDS)).isTrue()
+        assertThat(requestCount).hasValue(1)
+
+        val laterSuccess = CountDownLatch(1)
+        asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
+            laterSuccess.countDown()
+        }, onError = { _, _ ->
+            fail<Unit>("Should be success")
+        })
+
+        assertThat(laterSuccess.await(defaultTimeout, TimeUnit.MILLISECONDS)).isTrue()
+        assertThat(requestCount).hasValue(2)
+        verify(exactly = 2) {
             mockClient.performRequest(
                 mockBaseURL,
                 Endpoint.GetOfferings(appUserID),
