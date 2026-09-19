@@ -36,6 +36,7 @@ import io.mockk.spyk
 import io.mockk.verify
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.SocketPolicy
 import okio.Buffer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -57,8 +58,14 @@ import java.net.URL
 import java.net.URLConnection
 import java.net.URLStreamHandler
 import java.util.Date
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration.Companion.milliseconds
 import org.robolectric.annotation.Config as AnnotationConfig
+
+private const val SILENT_SOCKET_TEST_TIMEOUT_MS = 10_000L
+private const val SILENT_SOCKET_CLEANUP_TIMEOUT_MS = 2_000L
 
 @RunWith(AndroidJUnit4::class)
 @AnnotationConfig(manifest = AnnotationConfig.NONE)
@@ -2344,6 +2351,117 @@ internal class HTTPClientTest: BaseHTTPClientTest() {
         ).isEqualTo(HTTPTimeoutManager.REDUCED_TIMEOUT_MS / HTTPTimeoutManager.TEST_DIVIDER)
         verify(exactly = 1) {
             timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.OTHER_RESULT)
+        }
+    }
+
+    @Test
+    fun `a connection that goes silent after connecting fails within the configured timeout instead of hanging`() {
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+
+        val appConfig = createAppConfig(proxyURL = null)
+        val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
+        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
+
+        // The server accepts the connection but never sends a single response byte, so only the
+        // read timeout can bound this request: the connection itself succeeds.
+        val silentServer = MockWebServer()
+        val silentBaseURL = silentServer.url("/v1").toUrl()
+        silentServer.enqueue(MockResponse().apply { socketPolicy = SocketPolicy.NO_RESPONSE })
+        val requestExecutor = Executors.newSingleThreadExecutor()
+        val request = requestExecutor.submit<HTTPResult> {
+            client.performRequest(
+                silentBaseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+                fallbackBaseURLs = emptyList(),
+            )
+        }
+
+        val failure = try {
+            runCatching {
+                request.get(SILENT_SOCKET_TEST_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            }.exceptionOrNull()
+        } finally {
+            silentServer.shutdown()
+            request.cancel(true)
+            requestExecutor.shutdownNow()
+            assertThat(
+                requestExecutor.awaitTermination(SILENT_SOCKET_CLEANUP_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            ).isTrue()
+        }
+
+        assertThat(failure)
+            .isInstanceOf(ExecutionException::class.java)
+            .hasCauseInstanceOf(SocketTimeoutException::class.java)
+    }
+
+    @Test
+    fun `a connection that goes silent after connecting fails over to the fallback URL`() {
+        val endpoint = Endpoint.GetOfferings("test_user_id")
+        assert(endpoint.supportsFallbackBaseURLs)
+
+        val appConfig = createAppConfig(proxyURL = null)
+        val timeoutManager = spyk(HTTPTimeoutManager(appConfig))
+        client = createClient(appConfig = appConfig, timeoutManager = timeoutManager)
+
+        // The main server accepts the connection but never responds; the fallback server works.
+        val silentServer = MockWebServer()
+        val silentBaseURL = silentServer.url("/v1").toUrl()
+        val host = silentBaseURL.host
+        silentServer.enqueue(MockResponse().apply { socketPolicy = SocketPolicy.NO_RESPONSE })
+
+        val fallbackServer = MockWebServer()
+        val fallbackBaseURL = fallbackServer.url("/v1").toUrl()
+        val validJsonPayload = """{"offerings": [], "current_offering_id": null}"""
+        fallbackServer.enqueue(
+            MockResponse()
+                .setBody(validJsonPayload)
+                .setResponseCode(RCHTTPStatusCodes.SUCCESS)
+        )
+
+        every {
+            mockETagManager.getHTTPResultFromCacheOrBackend(
+                RCHTTPStatusCodes.SUCCESS,
+                validJsonPayload,
+                eTagHeader = any(),
+                urlString = any(),
+                refreshETag = false,
+                requestDate = any(),
+                verificationResult = VerificationResult.NOT_REQUESTED,
+                isLoadShedderResponse = false,
+                isFallbackURL = true,
+            )
+        } returns HTTPResult.createResult(RCHTTPStatusCodes.SUCCESS, validJsonPayload)
+
+        val requestExecutor = Executors.newSingleThreadExecutor()
+        val request = requestExecutor.submit<HTTPResult> {
+            client.performRequest(
+                silentBaseURL,
+                endpoint,
+                body = null,
+                postFieldsToSign = null,
+                mapOf("" to ""),
+                fallbackBaseURLs = listOf(fallbackBaseURL),
+            )
+        }
+
+        val result = try {
+            request.get(SILENT_SOCKET_TEST_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        } finally {
+            silentServer.shutdown()
+            fallbackServer.shutdown()
+            request.cancel(true)
+            requestExecutor.shutdownNow()
+            assertThat(
+                requestExecutor.awaitTermination(SILENT_SOCKET_CLEANUP_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+            ).isTrue()
+        }
+
+        assertThat(result.responseCode).isEqualTo(RCHTTPStatusCodes.SUCCESS)
+        verify(exactly = 1) {
+            timeoutManager.recordRequestResult(host, HTTPTimeoutManager.RequestResult.MAIN_SOURCE_TIMED_OUT)
         }
     }
 
