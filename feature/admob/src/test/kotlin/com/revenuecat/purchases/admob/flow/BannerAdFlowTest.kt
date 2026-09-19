@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-
 package com.revenuecat.purchases.admob
 
 import com.google.android.gms.ads.AdListener
@@ -7,7 +5,6 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdValue
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.OnPaidEventListener
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.admob.tracking.TrackingAdListener
 import com.revenuecat.purchases.admob.tracking.TrackingOnPaidEventListener
 import io.mockk.every

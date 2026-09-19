@@ -3,7 +3,6 @@ package com.revenuecat.purchases.admob.tracking
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.ResponseInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdFormat
@@ -24,7 +23,6 @@ import com.revenuecat.purchases.ads.events.types.AdOpenedData
  * Revenue is tracked separately via [com.google.android.gms.ads.OnPaidEventListener],
  * which must be wired on the ad view by the caller.
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingAdListener(
     internal val delegate: AdListener?,
     private val adFormat: AdFormat,

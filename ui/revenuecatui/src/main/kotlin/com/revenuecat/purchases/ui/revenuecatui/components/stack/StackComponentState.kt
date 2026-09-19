@@ -5,7 +5,6 @@ package com.revenuecat.purchases.ui.revenuecatui.components.stack
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -14,6 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
@@ -31,6 +31,7 @@ import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateStore
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toOrientation
+import com.revenuecat.purchases.ui.revenuecatui.helpers.currentWindowWidthSizeClass
 
 @Stable
 @JvmSynthetic
@@ -40,6 +41,7 @@ internal fun rememberUpdatedStackComponentState(
     paywallState: PaywallState.Loaded.Components,
 ): StackComponentState = rememberUpdatedStackComponentState(
     style = style,
+    windowDpSize = paywallState.paywallBoundsDp,
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
@@ -53,18 +55,20 @@ internal fun rememberUpdatedStackComponentState(
 @Suppress("LongParameterList")
 private fun rememberUpdatedStackComponentState(
     style: StackComponentStyle,
+    windowDpSize: DpSize?,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
     selectedOfferEligibilityProvider: () -> OfferEligibility,
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
     stateStoreProvider: () -> PaywallStateStore,
 ): StackComponentState {
-    val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val windowSize = currentWindowWidthSizeClass()
     val layoutDirection = LocalLayoutDirection.current
 
     return remember(style) {
         StackComponentState(
             initialWindowSize = windowSize,
+            initialWindowDpSize = windowDpSize,
             initialLayoutDirection = layoutDirection,
             style = style,
             selectedPackageInfoProvider = selectedPackageInfoProvider,
@@ -76,6 +80,7 @@ private fun rememberUpdatedStackComponentState(
     }.apply {
         update(
             windowSize = windowSize,
+            windowDpSize = windowDpSize,
             layoutDirection = layoutDirection,
         )
     }
@@ -85,6 +90,7 @@ private fun rememberUpdatedStackComponentState(
 @Stable
 internal class StackComponentState(
     initialWindowSize: WindowWidthSizeClass,
+    initialWindowDpSize: DpSize?,
     initialLayoutDirection: LayoutDirection,
     private val style: StackComponentStyle,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
@@ -94,6 +100,7 @@ internal class StackComponentState(
     private val stateStoreProvider: () -> PaywallStateStore = { PaywallStateStore(emptyMap()) },
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
+    private var windowDpSize by mutableStateOf(initialWindowDpSize)
     private var layoutDirection by mutableStateOf(initialLayoutDirection)
 
     private val packageAwareDelegate = PackageAwareDelegate(
@@ -116,6 +123,7 @@ internal class StackComponentState(
                 selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
                 customVariables = customVariablesProvider(),
                 stateReader = stateStoreProvider()::currentValueOrDefault,
+                windowDpSize = windowDpSize,
             ),
         )
     }
@@ -180,9 +188,11 @@ internal class StackComponentState(
     @JvmSynthetic
     fun update(
         windowSize: WindowWidthSizeClass? = null,
+        windowDpSize: DpSize? = null,
         layoutDirection: LayoutDirection? = null,
     ) {
         if (windowSize != null) this.windowSize = windowSize
+        if (windowDpSize != null) this.windowDpSize = windowDpSize
         if (layoutDirection != null) this.layoutDirection = layoutDirection
     }
 

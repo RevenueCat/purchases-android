@@ -39,6 +39,7 @@ import com.revenuecat.purchases.paywalls.components.properties.SizeConstraint
 import com.revenuecat.purchases.paywalls.components.properties.ThemeImageUrls
 import com.revenuecat.purchases.paywalls.components.properties.ThemeVideoUrls
 import com.revenuecat.purchases.ui.revenuecatui.components.LocalizedTextPartial
+import com.revenuecat.purchases.ui.revenuecatui.components.PresentedButtonPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedCarouselPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedIconPartial
 import com.revenuecat.purchases.ui.revenuecatui.components.PresentedImagePartial
@@ -640,7 +641,10 @@ internal class StyleFactory(
     ): Result<ButtonComponentStyle?, NonEmptyList<PaywallValidationError>> = zipOrAccumulate(
         first = createStackComponentStyle(component.stack),
         second = convertAction(component.action),
-    ) { stack, action ->
+        third = component.overrides.toPresentedOverrides(stripRules) { partial ->
+            PresentedButtonPartial(from = partial)
+        }.mapError { nonEmptyListOf(it) },
+    ) { stack, action, overrides ->
         action?.let {
             ButtonComponentStyle(
                 stackComponentStyle = stack,
@@ -648,6 +652,8 @@ internal class StyleFactory(
                 transition = component.transition,
                 componentName = component.name,
                 componentId = component.id,
+                buttonVisible = component.visible,
+                overrides = overrides,
             )
         }
     }.flatMap { style ->
@@ -679,24 +685,28 @@ internal class StyleFactory(
                     offerConfig = component.playStoreOffer,
                 )
 
+                // Resolved before the package is recorded, so that default-package selection can evaluate
+                // visibility the same way the renderer does.
+                val presentedOverridesResult = component.overrides
+                    .toPresentedOverrides(stripRules) { partial ->
+                        PresentedPackagePartial(from = partial)
+                    }
+                    .mapError { nonEmptyListOf(it) }
+                val packageOfferEligibility = calculateOfferEligibility(resolvedOffer, rcPackage)
+
                 withSelectedScope(
                     packageInfo = AvailablePackages.Info(
                         pkg = rcPackage,
                         isSelectedByDefault = component.isSelectedByDefault,
                         resolvedOffer = resolvedOffer,
+                        visible = component.visible ?: DEFAULT_VISIBILITY,
+                        visibilityOverrides = (presentedOverridesResult as? Result.Success)?.value.orEmpty(),
+                        offerEligibility = packageOfferEligibility,
                     ),
                     // If a tab control contains a package, which is already an edge case, the package should not
                     // visually become "selected" if its tab control parent is.
                     tabControlIndex = null,
                 ) {
-                    val packageOfferEligibility = offerEligibility
-
-                    val presentedOverridesResult = component.overrides
-                        .toPresentedOverrides(stripRules) { partial ->
-                            PresentedPackagePartial(from = partial)
-                        }
-                        .mapError { nonEmptyListOf(it) }
-
                     val (stackComponentStyleResult, purchaseButtons) = withCount(
                         predicate = { it is PurchaseButtonComponent },
                     ) {
@@ -806,6 +816,8 @@ internal class StyleFactory(
                     openMethod = method.openMethod ?: ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
                     rcPackage = rcPackage,
                     packageParam = method.customUrl.packageParam,
+                    appUserIdParam = method.customUrl.appUserIdParam,
+                    envParam = method.customUrl.envParam,
                 )
             }
 

@@ -2,7 +2,6 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -10,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.DpSize
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ComponentViewState
@@ -21,6 +21,7 @@ import com.revenuecat.purchases.ui.revenuecatui.components.style.WebViewComponen
 import com.revenuecat.purchases.ui.revenuecatui.composables.OfferEligibility
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallStateStore
+import com.revenuecat.purchases.ui.revenuecatui.helpers.currentWindowWidthSizeClass
 
 @Stable
 @JvmSynthetic
@@ -30,6 +31,7 @@ internal fun rememberUpdatedWebViewComponentState(
     paywallState: PaywallState.Loaded.Components,
 ): WebViewComponentState = rememberUpdatedWebViewComponentState(
     style = style,
+    windowDpSize = paywallState.paywallBoundsDp,
     selectedPackageInfoProvider = { paywallState.selectedPackageInfo },
     selectedTabIndexProvider = { paywallState.selectedTabIndex },
     selectedOfferEligibilityProvider = { paywallState.selectedOfferEligibility },
@@ -43,17 +45,19 @@ internal fun rememberUpdatedWebViewComponentState(
 @Composable
 private fun rememberUpdatedWebViewComponentState(
     style: WebViewComponentStyle,
+    windowDpSize: DpSize?,
     selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     selectedTabIndexProvider: () -> Int,
     selectedOfferEligibilityProvider: () -> OfferEligibility,
     customVariablesProvider: () -> Map<String, CustomVariableValue>,
     stateStoreProvider: () -> PaywallStateStore,
 ): WebViewComponentState {
-    val windowSize = currentWindowAdaptiveInfo().windowSizeClass.windowWidthSizeClass
+    val windowSize = currentWindowWidthSizeClass()
 
     return remember(style) {
         WebViewComponentState(
             initialWindowSize = windowSize,
+            initialWindowDpSize = windowDpSize,
             style = style,
             selectedPackageInfoProvider = selectedPackageInfoProvider,
             selectedTabIndexProvider = selectedTabIndexProvider,
@@ -62,7 +66,10 @@ private fun rememberUpdatedWebViewComponentState(
             stateStoreProvider = stateStoreProvider,
         )
     }.apply {
-        update(windowSize = windowSize)
+        update(
+            windowSize = windowSize,
+            windowDpSize = windowDpSize,
+        )
     }
 }
 
@@ -70,6 +77,7 @@ private fun rememberUpdatedWebViewComponentState(
 @Stable
 internal class WebViewComponentState(
     initialWindowSize: WindowWidthSizeClass,
+    initialWindowDpSize: DpSize?,
     private val style: WebViewComponentStyle,
     private val selectedPackageInfoProvider: () -> PaywallState.Loaded.Components.SelectedPackageInfo?,
     private val selectedTabIndexProvider: () -> Int,
@@ -78,6 +86,7 @@ internal class WebViewComponentState(
     private val stateStoreProvider: () -> PaywallStateStore = { PaywallStateStore(emptyMap()) },
 ) {
     private var windowSize by mutableStateOf(initialWindowSize)
+    private var windowDpSize by mutableStateOf(initialWindowDpSize)
 
     private val packageAwareDelegate = PackageAwareDelegate(
         style = style,
@@ -99,6 +108,7 @@ internal class WebViewComponentState(
                 selectedPackageId = selectedPackageInfoProvider()?.rcPackage?.identifier,
                 customVariables = customVariablesProvider(),
                 stateReader = stateStoreProvider()::currentValueOrDefault,
+                windowDpSize = windowDpSize,
             ),
         )
     }
@@ -108,7 +118,11 @@ internal class WebViewComponentState(
     val visible by derivedStateOf { presentedPartial?.partial?.visible ?: style.visible }
 
     @JvmSynthetic
-    fun update(windowSize: WindowWidthSizeClass? = null) {
+    fun update(
+        windowSize: WindowWidthSizeClass? = null,
+        windowDpSize: DpSize? = null,
+    ) {
         if (windowSize != null) this.windowSize = windowSize
+        if (windowDpSize != null) this.windowDpSize = windowDpSize
     }
 }

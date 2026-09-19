@@ -27,6 +27,7 @@ internal object CustomerCenterConstants {
         val BUTTONS_TOP_PADDING = 24.dp
         val BUTTONS_BOTTOM_PADDING = 24.dp
         val BUTTONS_SPACING = 12.dp
+        val DETAIL_ROW_VERTICAL_PADDING = 12.dp
     }
 
     object Management {

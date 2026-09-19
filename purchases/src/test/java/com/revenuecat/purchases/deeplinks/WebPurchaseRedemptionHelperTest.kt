@@ -7,7 +7,9 @@ import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.WebPurchaseRedemption
+import com.revenuecat.purchases.common.AppConfig
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.caching.DeviceCache
 import com.revenuecat.purchases.common.offlineentitlements.OfflineEntitlementsManager
 import com.revenuecat.purchases.identity.IdentityManager
 import com.revenuecat.purchases.interfaces.RedeemWebPurchaseListener
@@ -48,7 +50,7 @@ class WebPurchaseRedemptionHelperTest {
 
         every { identityManager.currentAppUserID } returns userId
         every { offlineEntitlementsManager.resetOfflineCustomerInfoCache() } just Runs
-        every { customerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo) } just Runs
+        every { customerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo, userId) } just Runs
 
         webPurchaseRedemptionHelper = WebPurchaseRedemptionHelper(
             backend = backend,
@@ -80,7 +82,38 @@ class WebPurchaseRedemptionHelperTest {
     fun `handleRedeemWebPurchase posts token and notifies listener on success`() {
         mockBackendResult()
         webPurchaseRedemptionHelper.handleRedeemWebPurchase(webPurchaseRedemption) {}
-        verify(exactly = 1) { customerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo) }
+        verify(exactly = 1) { customerInfoUpdateHandler.cacheAndNotifyListeners(customerInfo, userId) }
+    }
+
+    @Test
+    fun `handleRedeemWebPurchase caches customer info for user that started request`() {
+        val newUserId = "new-user-id"
+        val deviceCache = mockk<DeviceCache>()
+        val appConfig = mockk<AppConfig>()
+        val realCustomerInfoUpdateHandler = CustomerInfoUpdateHandler(
+            deviceCache,
+            identityManager,
+            offlineEntitlementsManager,
+            appConfig,
+            diagnosticsTracker = null,
+        )
+        val helper = WebPurchaseRedemptionHelper(
+            backend,
+            identityManager,
+            offlineEntitlementsManager,
+            realCustomerInfoUpdateHandler,
+        )
+        every { deviceCache.cacheCustomerInfo(any(), customerInfo) } just Runs
+        every { backend.postRedeemWebPurchase(userId, redemptionToken, captureLambda()) } answers {
+            every { identityManager.currentAppUserID } returns newUserId
+            lambda<(RedeemWebPurchaseListener.Result) -> Unit>().captured.invoke(
+                RedeemWebPurchaseListener.Result.Success(customerInfo),
+            )
+        }
+
+        helper.handleRedeemWebPurchase(webPurchaseRedemption) {}
+
+        verify(exactly = 1) { deviceCache.cacheCustomerInfo(userId, customerInfo) }
     }
 
     @Test
@@ -94,7 +127,7 @@ class WebPurchaseRedemptionHelperTest {
         assertTrue(result is RedeemWebPurchaseListener.Result.Error)
         assertThat((result as RedeemWebPurchaseListener.Result.Error).error).isEqualTo(expectedError)
         verify(exactly = 0) { offlineEntitlementsManager.resetOfflineCustomerInfoCache() }
-        verify(exactly = 0) { customerInfoUpdateHandler.cacheAndNotifyListeners(any()) }
+        verify(exactly = 0) { customerInfoUpdateHandler.cacheAndNotifyListeners(any(), any()) }
     }
 
     @Test
@@ -106,7 +139,7 @@ class WebPurchaseRedemptionHelperTest {
         }
         assertTrue(result is RedeemWebPurchaseListener.Result.PurchaseBelongsToOtherUser)
         verify(exactly = 0) { offlineEntitlementsManager.resetOfflineCustomerInfoCache() }
-        verify(exactly = 0) { customerInfoUpdateHandler.cacheAndNotifyListeners(any()) }
+        verify(exactly = 0) { customerInfoUpdateHandler.cacheAndNotifyListeners(any(), any()) }
     }
 
     @Test
@@ -119,7 +152,7 @@ class WebPurchaseRedemptionHelperTest {
         }
         assertThat(result).isEqualTo(expectedResult)
         verify(exactly = 0) { offlineEntitlementsManager.resetOfflineCustomerInfoCache() }
-        verify(exactly = 0) { customerInfoUpdateHandler.cacheAndNotifyListeners(any()) }
+        verify(exactly = 0) { customerInfoUpdateHandler.cacheAndNotifyListeners(any(), any()) }
     }
 
     @Test
@@ -132,7 +165,7 @@ class WebPurchaseRedemptionHelperTest {
         }
         assertThat(result).isEqualTo(expectedResult)
         verify(exactly = 0) { offlineEntitlementsManager.resetOfflineCustomerInfoCache() }
-        verify(exactly = 0) { customerInfoUpdateHandler.cacheAndNotifyListeners(any()) }
+        verify(exactly = 0) { customerInfoUpdateHandler.cacheAndNotifyListeners(any(), any()) }
     }
 
     private fun mockBackendResult(

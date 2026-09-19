@@ -1741,14 +1741,16 @@ class BackendTest {
 
     @Test
     fun `given multiple offerings get calls for different user, both are triggered`() {
-        mockResponse(
-            Endpoint.GetOfferings(appUserID),
-            null,
-            200,
-            null,
-            noOfferingsResponse,
-            true
-        )
+        listOf(appUserID, "anotherUser").forEach { userID ->
+            mockResponse(
+                Endpoint.GetOfferings(userID),
+                null,
+                200,
+                null,
+                noOfferingsResponse,
+                true
+            )
+        }
         val lock = CountDownLatch(2)
         asyncBackend.getOfferings(appUserID, appInBackground = false, onSuccess = { _, _, _ ->
             lock.countDown()

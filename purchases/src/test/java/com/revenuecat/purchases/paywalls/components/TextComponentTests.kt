@@ -101,7 +101,7 @@ internal class TextComponentTests {
                             fontWeightInt = 400,
                             fontSize = 17,
                             horizontalAlignment = HorizontalAlignment.LEADING,
-                            size = Size(height = SizeConstraint.Fill, width = SizeConstraint.Fill),
+                            size = Size(height = SizeConstraint.Fill(), width = SizeConstraint.Fill()),
                             padding = Padding(top = 12.0, bottom = 16.0, leading = 14.0, trailing = 10.0),
                             margin = Padding(top = 4.0, bottom = 8.0, leading = 6.0, trailing = 2.0),
                             name = "Text",
@@ -297,7 +297,7 @@ internal class TextComponentTests {
                             fontWeightInt = 400,
                             fontSize = 17,
                             horizontalAlignment = HorizontalAlignment.LEADING,
-                            size = Size(height = SizeConstraint.Fill, width = SizeConstraint.Fill),
+                            size = Size(height = SizeConstraint.Fill(), width = SizeConstraint.Fill()),
                             padding = Padding(top = 12.0, bottom = 16.0, leading = 14.0, trailing = 10.0),
                             margin = Padding(top = 4.0, bottom = 8.0, leading = 6.0, trailing = 2.0),
                         )

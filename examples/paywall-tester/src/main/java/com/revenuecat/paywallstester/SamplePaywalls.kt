@@ -827,7 +827,7 @@ object SamplePaywalls {
                                 StackComponent(
                                     components = emptyList(),
                                     dimension = ZLayer(alignment = TwoDimensionalAlignment.CENTER),
-                                    size = Size(width = Fill, height = Fill),
+                                    size = Size(width = Fill(), height = Fill()),
                                     backgroundColor = ColorScheme(
                                         light = ColorInfo.Gradient.Linear(
                                             degrees = 60f,
@@ -854,7 +854,7 @@ object SamplePaywalls {
                                             fontWeight = FontWeight.BOLD,
                                             fontSize = 28,
                                             horizontalAlignment = LEADING,
-                                            size = Size(width = Fill, height = Fit()),
+                                            size = Size(width = Fill(), height = Fit()),
                                             margin = Padding(top = 0.0, bottom = 40.0, leading = 0.0, trailing = 0.0),
                                         ),
                                         TextComponent(
@@ -862,7 +862,7 @@ object SamplePaywalls {
                                             color = textColor,
                                             fontName = font,
                                             horizontalAlignment = LEADING,
-                                            size = Size(width = Fill, height = Fit()),
+                                            size = Size(width = Fill(), height = Fit()),
                                             margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
                                         ),
                                         TextComponent(
@@ -870,7 +870,7 @@ object SamplePaywalls {
                                             color = textColor,
                                             fontName = font,
                                             horizontalAlignment = LEADING,
-                                            size = Size(width = Fill, height = Fit()),
+                                            size = Size(width = Fill(), height = Fit()),
                                             margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
                                         ),
                                         TextComponent(
@@ -878,7 +878,7 @@ object SamplePaywalls {
                                             color = textColor,
                                             fontName = font,
                                             horizontalAlignment = LEADING,
-                                            size = Size(width = Fill, height = Fit()),
+                                            size = Size(width = Fill(), height = Fit()),
                                             margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
                                         ),
                                         TextComponent(
@@ -886,7 +886,7 @@ object SamplePaywalls {
                                             color = textColor,
                                             fontName = font,
                                             horizontalAlignment = LEADING,
-                                            size = Size(width = Fill, height = Fit()),
+                                            size = Size(width = Fill(), height = Fit()),
                                             margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
                                         ),
                                         TextComponent(
@@ -894,7 +894,7 @@ object SamplePaywalls {
                                             color = textColor,
                                             fontName = font,
                                             horizontalAlignment = LEADING,
-                                            size = Size(width = Fill, height = Fit()),
+                                            size = Size(width = Fill(), height = Fit()),
                                             margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
                                         ),
                                         TextComponent(
@@ -902,7 +902,7 @@ object SamplePaywalls {
                                             color = textColor,
                                             fontName = font,
                                             horizontalAlignment = LEADING,
-                                            size = Size(width = Fill, height = Fit()),
+                                            size = Size(width = Fill(), height = Fit()),
                                             margin = Padding(top = 8.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
                                         ),
                                         TextComponent(
@@ -910,7 +910,7 @@ object SamplePaywalls {
                                             color = textColor,
                                             fontName = font,
                                             horizontalAlignment = LEADING,
-                                            size = Size(width = Fill, height = Fit()),
+                                            size = Size(width = Fill(), height = Fit()),
                                             margin = Padding(top = 48.0, bottom = 8.0, leading = 0.0, trailing = 0.0),
                                         ),
                                         ButtonComponent(
@@ -955,12 +955,12 @@ object SamplePaywalls {
                                         ),
                                     ),
                                     dimension = Vertical(alignment = LEADING, distribution = END),
-                                    size = Size(width = Fill, height = Fill),
+                                    size = Size(width = Fill(), height = Fill()),
                                     padding = Padding(top = 16.0, bottom = 16.0, leading = 32.0, trailing = 32.0),
                                 ),
                             ),
                             dimension = ZLayer(alignment = BOTTOM),
-                            size = Size(width = Fill, height = Fill),
+                            size = Size(width = Fill(), height = Fill()),
                             backgroundColor = backgroundColor,
                         ),
                         background = Background.Color(backgroundColor),

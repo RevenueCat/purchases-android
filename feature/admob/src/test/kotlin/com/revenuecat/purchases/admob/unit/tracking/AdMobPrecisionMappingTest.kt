@@ -1,9 +1,6 @@
-@file:OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
-
 package com.revenuecat.purchases.admob.tracking
 
 import com.google.android.gms.ads.AdValue
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
 import org.junit.Assert.assertEquals
 import org.junit.Test

@@ -114,7 +114,7 @@ class VideoComponentTests {
         )
 
         val size = Size(
-            width = SizeConstraint.Fill,
+            width = SizeConstraint.Fill(),
             height = SizeConstraint.Fit(),
         )
 

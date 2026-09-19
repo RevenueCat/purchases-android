@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.rules.operators
 
+import com.revenuecat.purchases.rules.Scope
 import com.revenuecat.purchases.rules.Value
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
@@ -19,7 +20,7 @@ class StringArrayOperatorsTest {
         // Only one level of flattening — inner arrays remain.
         val out = StringArrayOperators.opMerge(
             arr(arr(arr(Value.IntValue(1)), Value.IntValue(2))),
-            Value.Null,
+            Scope(root = Value.Null),
         )
         assertThat(out).isEqualTo(arr(arr(Value.IntValue(1)), Value.IntValue(2)))
     }

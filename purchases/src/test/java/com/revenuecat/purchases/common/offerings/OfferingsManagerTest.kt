@@ -6,13 +6,19 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.common.Backend
+import com.revenuecat.purchases.common.Delay
+import com.revenuecat.purchases.common.Dispatcher
 import com.revenuecat.purchases.common.GetOfferingsErrorHandlingBehavior
 import com.revenuecat.purchases.common.HTTPResponseOriginalSource
 import com.revenuecat.purchases.common.diagnostics.DiagnosticsTracker
 import com.revenuecat.purchases.common.workflows.WorkflowManager
 import com.revenuecat.purchases.paywalls.OfferingFontPreDownloader
 import com.revenuecat.purchases.utils.ONE_OFFERINGS_RESPONSE
+import com.revenuecat.purchases.utils.MockHandlerFactory
+import com.revenuecat.purchases.utils.SyncDispatcher
 import com.revenuecat.purchases.utils.OfferingImagePreDownloader
+import com.revenuecat.purchases.utils.OfferingWebViewPrewarmer
+import com.revenuecat.purchases.utils.prewarmTargetOfferings
 import com.revenuecat.purchases.utils.STUB_OFFERING_IDENTIFIER
 import com.revenuecat.purchases.utils.STUB_PRODUCT_IDENTIFIER
 import com.revenuecat.purchases.utils.stubOfferings
@@ -48,6 +54,7 @@ class OfferingsManagerTest {
     private lateinit var offeringImagePreDownloader: OfferingImagePreDownloader
     private lateinit var mockDiagnosticsTracker: DiagnosticsTracker
     private lateinit var mockOfferingFontPreDownloader: OfferingFontPreDownloader
+    private lateinit var mockOfferingWebViewPrewarmer: OfferingWebViewPrewarmer
     private lateinit var mockWorkflowManager: WorkflowManager
 
     private lateinit var offeringsManager: OfferingsManager
@@ -64,6 +71,9 @@ class OfferingsManagerTest {
         mockOfferingFontPreDownloader = mockk<OfferingFontPreDownloader>().apply {
             every { preDownloadOfferingFontsIfNeeded(any()) } just Runs
         }
+        mockOfferingWebViewPrewarmer = mockk<OfferingWebViewPrewarmer>().apply {
+            every { prewarmWebViews(any()) } just Runs
+        }
         mockWorkflowManager = mockk(relaxed = true)
         every { mockWorkflowManager.onPaywallConfigReady(onComplete = any()) } answers {
             firstArg<() -> Unit>().invoke()
@@ -79,6 +89,8 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             workflowManager = mockWorkflowManager,
         )
     }
@@ -94,71 +106,6 @@ class OfferingsManagerTest {
 
     // endregion clearInMemoryOfferingsCache
 
-    // region cache write invalidation guard
-
-    @Test
-    fun `in-flight fetch write is dropped after an invalidating clear (kill-switch)`() {
-        every { cache.clearInMemoryOfferingsCache() } just Runs
-        mockDeviceCache()
-        val onSuccessSlot = captureFactoryOnSuccess()
-
-        // The fetch reaches the factory but its parsed result is not delivered yet (still in flight).
-        offeringsManager.fetchAndCacheOfferings(appUserId, appInBackground = false)
-
-        // Kill switch trips: invalidate in-flight fetches, then the in-flight parse finally completes.
-        offeringsManager.clearInMemoryOfferingsCache(invalidateInFlightFetches = true)
-        onSuccessSlot.captured.invoke(OfferingsResultData(testOfferings, setOf(productId), emptySet()))
-
-        // The stale parse is dropped (a re-parse is issued instead, but its onSuccess is never fired here).
-        verify(exactly = 0) { cache.cacheOfferings(any(), any()) }
-    }
-
-    @Test
-    fun `stale in-flight parse is re-parsed and only the decoded result is delivered and cached`() {
-        every { cache.clearInMemoryOfferingsCache() } just Runs
-        mockDeviceCache()
-        val onSuccessSlot = captureFactoryOnSuccess()
-
-        // Two distinguishable results: the in-flight parse (pre-disable, paywall components skipped) and the
-        // re-parse (post-disable, components decoded). Distinct instances so we can assert which one is used.
-        val staleOfferings = testOfferings.copy(current = null)
-        val decodedOfferings = testOfferings
-
-        var delivered: OfferingsResultData? = null
-        offeringsManager.fetchAndCacheOfferings(
-            appUserId,
-            appInBackground = false,
-            onSuccess = { delivered = it },
-        )
-
-        // Kill switch trips: invalidate in-flight fetches.
-        offeringsManager.clearInMemoryOfferingsCache(invalidateInFlightFetches = true)
-
-        // The in-flight (pre-disable) parse completes -> guard is stale -> a re-parse is issued.
-        onSuccessSlot.captured.invoke(OfferingsResultData(staleOfferings, setOf(productId), emptySet()))
-        // The re-parse completes -> generation now matches -> cached and delivered.
-        onSuccessSlot.captured.invoke(OfferingsResultData(decodedOfferings, setOf(productId), emptySet()))
-
-        assertThat(delivered).isNotNull
-        assertThat(delivered!!.offerings).isEqualTo(decodedOfferings)
-        verify(exactly = 2) {
-            offeringsFactory.createOfferings(any(), any(), any(), onError = any(), onSuccess = any())
-        }
-        verify(exactly = 1) { cache.cacheOfferings(decodedOfferings, any()) }
-        verify(exactly = 0) { cache.cacheOfferings(staleOfferings, any()) }
-    }
-
-    @Test
-    fun `in-flight fetch write lands when no clear happens`() {
-        mockDeviceCache()
-        val onSuccessSlot = captureFactoryOnSuccess()
-
-        offeringsManager.fetchAndCacheOfferings(appUserId, appInBackground = false)
-        onSuccessSlot.captured.invoke(OfferingsResultData(testOfferings, setOf(productId), emptySet()))
-
-        verify(exactly = 1) { cache.cacheOfferings(any(), any()) }
-    }
-
     @Test
     fun `a network fetch caches the response body as received`() {
         mockDeviceCache()
@@ -172,20 +119,18 @@ class OfferingsManagerTest {
     }
 
     @Test
-    fun `in-flight fetch write lands after a non-invalidating clear (previous behavior preserved)`() {
+    fun `in-flight fetch write lands after a clear`() {
         every { cache.clearInMemoryOfferingsCache() } just Runs
         mockDeviceCache()
         val onSuccessSlot = captureFactoryOnSuccess()
 
         offeringsManager.fetchAndCacheOfferings(appUserId, appInBackground = false)
-        // A plain clear (locale override / remote config disabled path) must not drop the late write.
+        // A clear (e.g. the locale override path) must not drop the late write.
         offeringsManager.clearInMemoryOfferingsCache()
         onSuccessSlot.captured.invoke(OfferingsResultData(testOfferings, setOf(productId), emptySet()))
 
         verify(exactly = 1) { cache.cacheOfferings(any(), any()) }
     }
-
-    // endregion cache write invalidation guard
 
     // region onAppForeground
 
@@ -524,32 +469,6 @@ class OfferingsManagerTest {
         verify(exactly = 1) { cache.forceCacheStale() }
     }
 
-    @Test
-    fun `getOfferings succeeds without NPE when workflowManager is null`() {
-        val managerWithNoWorkflows = OfferingsManager(
-            offeringsCache = cache,
-            backend = backend,
-            offeringsFactory = offeringsFactory,
-            offeringImagePreDownloader = offeringImagePreDownloader,
-            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
-            offeringFontPreDownloader = mockOfferingFontPreDownloader,
-            workflowManager = null,
-        )
-        every { cache.cachedOfferings } returns null
-        mockOfferingsFactory()
-        mockDeviceCache()
-
-        var receivedOfferings: Offerings? = null
-        managerWithNoWorkflows.getOfferings(
-            appUserId,
-            appInBackground = false,
-            onError = { fail("Expected success but got error: $it") },
-            onSuccess = { receivedOfferings = it },
-        )
-
-        assertThat(receivedOfferings).isEqualTo(testOfferings)
-    }
-
     // This situation shouldn't happen normally since we only cache when we have loaded the offerings at least once,
     // but it's possible something changed in the store. So better to handle it.
     @Test
@@ -648,7 +567,107 @@ class OfferingsManagerTest {
         }
     }
 
+    // A SyncDispatcher runs the block inline, so this holds the command instead: without the enqueue the
+    // fan-out would decode on the backend response thread.
+    @Test
+    fun `getOfferings enqueues placement target warming rather than running it on the response thread`() {
+        val commands = mutableListOf<Runnable>()
+        val holdingDispatcher = object : Dispatcher(mockk(), MockHandlerFactory.createMockHandler()) {
+            override fun enqueue(command: Runnable, delay: Delay) {
+                commands += command
+            }
+        }
+        val other = mockk<Offering>(relaxed = true).apply { every { identifier } returns "onboarding" }
+        val offerings = testOfferings.copy(
+            all = testOfferings.all + ("onboarding" to other),
+            placements = Offerings.Placements(
+                fallbackOfferingId = null,
+                offeringIdsByPlacement = mapOf("onboarding" to "onboarding"),
+            ),
+        )
+        val manager = OfferingsManager(
+            offeringsCache = cache,
+            backend = backend,
+            offeringsFactory = offeringsFactory,
+            offeringImagePreDownloader = offeringImagePreDownloader,
+            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
+            offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = holdingDispatcher,
+            workflowManager = mockWorkflowManager,
+        )
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory(offerings)
+        mockDeviceCache()
+        val warmed = mutableListOf<String>()
+        every { offeringImagePreDownloader.preDownloadOfferingImages(any()) } answers {
+            warmed += firstArg<Offering>().identifier
+        }
+
+        manager.getOfferings(appUserId, appInBackground = false, onError = { fail("should be a success") })
+
+        assertThat(warmed).containsExactly(offerings.current!!.identifier)
+        assertThat(commands).hasSize(1)
+
+        commands.forEach { it.run() }
+
+        assertThat(warmed).containsExactly(offerings.current!!.identifier, "onboarding")
+    }
+
+    // Each placement target decodes its own component tree, so the fan-out must stay off this path.
+    @Test
+    fun `getOfferings pre downloads placement target images only after delivering offerings`() {
+        val other = mockk<Offering>(relaxed = true).apply { every { identifier } returns "onboarding" }
+        val offerings = testOfferings.copy(
+            all = testOfferings.all + ("onboarding" to other),
+            placements = Offerings.Placements(
+                fallbackOfferingId = null,
+                offeringIdsByPlacement = mapOf("onboarding" to "onboarding"),
+            ),
+        )
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory(offerings)
+        mockDeviceCache()
+        val warmed = mutableListOf<String>()
+        every { offeringImagePreDownloader.preDownloadOfferingImages(any()) } answers {
+            warmed += firstArg<Offering>().identifier
+        }
+        var warmedAtDelivery: List<String>? = null
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = { warmedAtDelivery = warmed.toList() },
+        )
+
+        assertThat(warmedAtDelivery).containsExactly(offerings.current!!.identifier)
+        assertThat(warmed).containsExactly(offerings.current!!.identifier, "onboarding")
+    }
+
     // endregion pre download offering images
+
+    // region prewarm web_view bundles
+
+    @Test
+    fun `getOfferings prewarms web_view bundles`() {
+        every { cache.cachedOfferings } returns null
+        mockOfferingsFactory()
+        mockDeviceCache()
+
+        offeringsManager.getOfferings(
+            appUserId,
+            appInBackground = false,
+            onError = { fail("should be a success") },
+            onSuccess = {},
+        )
+
+        verify(exactly = 1) {
+            mockOfferingWebViewPrewarmer.prewarmWebViews(testOfferings.prewarmTargetOfferings())
+        }
+    }
+
+    // endregion prewarm web_view bundles
 
     // region pre download font files
 
@@ -886,7 +905,10 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             uiPreviewMode = true,
+            workflowManager = mockWorkflowManager,
         )
 
         var receivedOfferings: Offerings? = null
@@ -915,7 +937,10 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             uiPreviewMode = true,
+            workflowManager = mockWorkflowManager,
         )
         mockCacheStale(offeringsStale = true)
         mockDeviceCache()
@@ -936,7 +961,10 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             uiPreviewMode = true,
+            workflowManager = mockWorkflowManager,
         )
 
         var receivedResult: OfferingsResultData? = null
@@ -1085,33 +1113,6 @@ class OfferingsManagerTest {
     // region workflowManager onComplete integration
 
     @Test
-    fun `getOfferings calls onSuccess immediately when workflowManager is null`() {
-        val managerWithoutWorkflow = OfferingsManager(
-            offeringsCache = cache,
-            backend = backend,
-            offeringsFactory = offeringsFactory,
-            offeringImagePreDownloader = offeringImagePreDownloader,
-            diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
-            offeringFontPreDownloader = mockOfferingFontPreDownloader,
-            workflowManager = null,
-        )
-
-        every { cache.cachedOfferings } returns null
-        mockOfferingsFactory()
-        mockDeviceCache()
-
-        var receivedOfferings: Offerings? = null
-        managerWithoutWorkflow.getOfferings(
-            appUserId,
-            appInBackground = false,
-            onError = { fail("should be success") },
-            onSuccess = { receivedOfferings = it },
-        )
-
-        assertThat(receivedOfferings).isNotNull()
-    }
-
-    @Test
     fun `getOfferings does not call onSuccess until onPaywallConfigReady completes`() {
         val mockWorkflowManager = mockk<WorkflowManager>()
         val onCompleteSlot = slot<() -> Unit>()
@@ -1126,6 +1127,8 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             workflowManager = mockWorkflowManager,
         )
 
@@ -1163,6 +1166,8 @@ class OfferingsManagerTest {
             offeringImagePreDownloader = offeringImagePreDownloader,
             diagnosticsTrackerIfEnabled = mockDiagnosticsTracker,
             offeringFontPreDownloader = mockOfferingFontPreDownloader,
+            offeringWebViewPrewarmer = mockOfferingWebViewPrewarmer,
+            dispatcher = SyncDispatcher(),
             workflowManager = mockWorkflowManager,
         )
 

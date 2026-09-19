@@ -477,7 +477,7 @@ class BackendGetRemoteConfigTest {
             appInBackground = false,
             domain = testDomain,
             onSuccess = { _, _ -> },
-            onError = { error, _ -> fail("Expected success. Got error: $error") },
+            onError = { error -> fail("Expected success. Got error: $error") },
         )
 
         assertThat(headersSlot.captured).doesNotContainKey(HTTPRequest.LAST_REFRESH_TIME_HEADER_NAME)
@@ -511,7 +511,7 @@ class BackendGetRemoteConfigTest {
     }
 
     @Test
-    fun `getRemoteConfig marks a 4xx as should-disable`() {
+    fun `getRemoteConfig marks a 4xx as should-not-try-fallback`() {
         mockHttpResult(
             responseCode = RCHTTPStatusCodes.BAD_REQUEST,
             payload = HTTPResult.Payload.Text("""{"code": 7000, "message": "bad request"}"""),
@@ -533,8 +533,8 @@ class BackendGetRemoteConfigTest {
             },
         )
         assertThat(obtainedError).isNotNull
-        // A 4xx means the endpoint intentionally refused: disable it for the session.
-        assertThat(obtainedBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE)
+        // A 4xx means the endpoint intentionally refused: the fallback endpoint would refuse it too.
+        assertThat(obtainedBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_NOT_TRY_FALLBACK)
     }
 
     @Test
@@ -684,7 +684,7 @@ class BackendGetRemoteConfigTest {
                 config = result
                 verification = verificationResult
             },
-            onError = { error, _ -> fail("Expected success. Got error: $error") },
+            onError = { error -> fail("Expected success. Got error: $error") },
         )
 
         assertThat(config).isNotNull
@@ -705,7 +705,7 @@ class BackendGetRemoteConfigTest {
             appInBackground = false,
             domain = testDomain,
             onSuccess = { _, _ -> },
-            onError = { error, _ -> fail("Expected success. Got error: $error") },
+            onError = { error -> fail("Expected success. Got error: $error") },
         )
 
         verify(exactly = 1) {
@@ -721,73 +721,68 @@ class BackendGetRemoteConfigTest {
     }
 
     @Test
-    fun `getRemoteConfigFallback errors as retryable when no fallback base URL is configured`() {
+    fun `getRemoteConfigFallback errors when no fallback base URL is configured`() {
         every { appConfig.fallbackBaseURLs } returns emptyList()
 
-        var obtainedBehavior: GetRemoteConfigErrorHandlingBehavior? = null
+        var obtainedError: PurchasesError? = null
         backend.getRemoteConfigFallback(
             appInBackground = false,
             domain = testDomain,
             onSuccess = { _, _ -> fail("Expected error. Got success") },
-            onError = { _, behavior -> obtainedBehavior = behavior },
+            onError = { error -> obtainedError = error },
         )
 
-        assertThat(obtainedBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
+        assertThat(obtainedError).isNotNull
         verify(exactly = 0) {
             httpClient.performRequest(any(), any(), any(), any(), any(), fallbackBaseURLs = any())
         }
     }
 
     @Test
-    fun `getRemoteConfigFallback surfaces malformed JSON as retryable`() {
+    fun `getRemoteConfigFallback surfaces malformed JSON as an error`() {
         every { appConfig.fallbackBaseURLs } returns listOf(mockFallbackURL)
         mockHttpResult(payload = HTTPResult.Payload.Text("{ not valid json"))
 
         var obtainedError: PurchasesError? = null
-        var obtainedBehavior: GetRemoteConfigErrorHandlingBehavior? = null
         backend.getRemoteConfigFallback(
             appInBackground = false,
             domain = testDomain,
             onSuccess = { _, _ -> fail("Expected error. Got success") },
-            onError = { error, behavior ->
-                obtainedError = error
-                obtainedBehavior = behavior
-            },
+            onError = { error -> obtainedError = error },
         )
 
         assertThat(obtainedError).isNotNull
-        assertThat(obtainedBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
     }
 
     @Test
-    fun `getRemoteConfigFallback marks a 5xx as retryable and a 4xx as should-disable`() {
+    fun `getRemoteConfigFallback propagates HTTP errors`() {
         every { appConfig.fallbackBaseURLs } returns listOf(mockFallbackURL)
 
         mockHttpResult(
             responseCode = RCHTTPStatusCodes.ERROR,
             payload = HTTPResult.Payload.Text("""{"code": 7000, "message": "internal error"}"""),
         )
-        var serverErrorBehavior: GetRemoteConfigErrorHandlingBehavior? = null
+        var serverError: PurchasesError? = null
         backend.getRemoteConfigFallback(
             appInBackground = false,
             domain = testDomain,
             onSuccess = { _, _ -> fail("Expected error. Got success") },
-            onError = { _, behavior -> serverErrorBehavior = behavior },
+            onError = { error -> serverError = error },
         )
-        assertThat(serverErrorBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY)
+        assertThat(serverError).isNotNull
 
         mockHttpResult(
             responseCode = RCHTTPStatusCodes.BAD_REQUEST,
             payload = HTTPResult.Payload.Text("""{"code": 7000, "message": "bad request"}"""),
         )
-        var clientErrorBehavior: GetRemoteConfigErrorHandlingBehavior? = null
+        var clientError: PurchasesError? = null
         backend.getRemoteConfigFallback(
             appInBackground = false,
             domain = testDomain,
             onSuccess = { _, _ -> fail("Expected error. Got success") },
-            onError = { _, behavior -> clientErrorBehavior = behavior },
+            onError = { error -> clientError = error },
         )
-        assertThat(clientErrorBehavior).isEqualTo(GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE)
+        assertThat(clientError).isNotNull
     }
 
     // endregion Fallback endpoint

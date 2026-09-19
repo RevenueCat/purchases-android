@@ -56,4 +56,13 @@ public interface PaywallListener {
      * @param url The URL that was opened.
      */
     public fun onUrlOpened(url: String) {}
+
+    /**
+     * Called when the user interacts with a paywall control.
+     *
+     * Exceptions thrown here are logged and do not affect the paywall.
+     *
+     * @param event The [PaywallInteractionEvent] containing the event data.
+     */
+    public fun onInteraction(event: PaywallInteractionEvent) {}
 }

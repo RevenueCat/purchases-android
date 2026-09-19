@@ -44,6 +44,7 @@ internal class WebViewFailurePathTest {
                                 expectedOrigin = "https://assets.example.com",
                                 onMainFrameNavigationStarted = {},
                                 onMainFrameLoadFailed = { loadFailed = true },
+                                onMainFrameLoadFinished = {},
                             )
                             setWebViewClient(client)
                             // Simulate renderer death immediately after creation.
@@ -87,6 +88,7 @@ internal class WebViewFailurePathTest {
                                         expectedOrigin = "https://assets.example.com",
                                         onMainFrameNavigationStarted = {},
                                         onMainFrameLoadFailed = { loadFailed = true },
+                                        onMainFrameLoadFinished = {},
                                     )
                                     setWebViewClient(client)
                                     client.onRenderProcessGone(this, mockk(relaxed = true))

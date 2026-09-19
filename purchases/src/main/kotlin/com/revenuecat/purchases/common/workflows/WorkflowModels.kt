@@ -8,9 +8,13 @@ import com.revenuecat.purchases.paywalls.components.common.ExitOffers
 import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.LocalizationData
 import com.revenuecat.purchases.paywalls.components.common.LocalizationKey
+import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfig
+import com.revenuecat.purchases.paywalls.components.common.ProductChangeConfigSerializer
 import com.revenuecat.purchases.paywalls.components.common.StateDeclaration
 import com.revenuecat.purchases.paywalls.components.common.StateDeclarationMapSerializer
+import com.revenuecat.purchases.utils.serializers.DefaultLocaleIdSerializer
 import com.revenuecat.purchases.utils.serializers.EnumDeserializerWithDefault
+import com.revenuecat.purchases.utils.serializers.GoogleListSerializer
 import com.revenuecat.purchases.utils.serializers.JsonObjectToMapSerializer
 import com.revenuecat.purchases.utils.serializers.SealedDeserializerWithDefault
 import com.revenuecat.purchases.utils.serializers.URLSerializer
@@ -32,6 +36,7 @@ public enum class WorkflowTriggerType {
 }
 
 internal object WorkflowTriggerTypeDeserializer : EnumDeserializerWithDefault<WorkflowTriggerType>(
+    serialName = "com.revenuecat.purchases.common.workflows.WorkflowTriggerType",
     defaultValue = WorkflowTriggerType.UNKNOWN,
 )
 
@@ -42,6 +47,24 @@ public sealed class WorkflowTriggerAction {
     @Serializable
     public data class Step(@SerialName("step_id") val stepId: String) : WorkflowTriggerAction()
 
+    /**
+     * Routes to the first branch whose audience matches, and to [fallbackStepId] otherwise. The audience
+     * rules arrive in the `audiences` topic, so only the id is carried here.
+     */
+    @InternalRevenueCatAPI
+    @Serializable
+    public data class Branch(
+        val branches: List<Route>,
+        @SerialName("fallback_step_id") val fallbackStepId: String,
+    ) : WorkflowTriggerAction() {
+        @InternalRevenueCatAPI
+        @Serializable
+        public data class Route(
+            @SerialName("audience_id") val audienceId: String,
+            @SerialName("step_id") val stepId: String,
+        )
+    }
+
     @InternalRevenueCatAPI
     @Serializable
     public object Unknown : WorkflowTriggerAction()
@@ -49,7 +72,10 @@ public sealed class WorkflowTriggerAction {
 
 internal object WorkflowTriggerActionSerializer : SealedDeserializerWithDefault<WorkflowTriggerAction>(
     serialName = "WorkflowTriggerAction",
-    serializerByType = mapOf("step" to { WorkflowTriggerAction.Step.serializer() }),
+    serializerByType = mapOf(
+        "step" to { WorkflowTriggerAction.Step.serializer() },
+        "branch" to { WorkflowTriggerAction.Branch.serializer() },
+    ),
     defaultValue = { WorkflowTriggerAction.Unknown },
 )
 
@@ -112,7 +138,43 @@ public data class WorkflowStep(
                 (element as? JsonPrimitive)?.takeIf { it.isString }?.content
             }
         }
+
+    public val experimentId: String?
+        get() = stringParam(EXPERIMENT_ID_PARAM)
+
+    public val experimentVariant: String?
+        get() = stringParam(EXPERIMENT_VARIANT_PARAM)
+
+    /** A terminal step that resolves to an offering instead of rendering a screen. */
+    @InternalRevenueCatAPI
+    public val isOfferingStep: Boolean
+        get() = type == OFFERING_STEP_TYPE
+
+    /**
+     * The offering this step presents, read from `param_values.offering.identifier`, or from
+     * `param_values.offering_identifier` when the step carries the identifier flat.
+     */
+    @InternalRevenueCatAPI
+    public val offeringIdentifier: String?
+        get() {
+            val nested = (paramValues[OFFERING_PARAM] as? JsonObject)?.get(OFFERING_IDENTIFIER_PARAM)
+            return (nested ?: paramValues[FLAT_OFFERING_IDENTIFIER_PARAM])
+                ?.let { it as? JsonPrimitive }
+                ?.takeIf { it.isString }
+                ?.content
+                ?.takeIf { it.isNotBlank() }
+        }
+
+    private fun stringParam(key: String): String? =
+        (paramValues[key] as? JsonPrimitive)?.takeIf { it.isString }?.content
 }
+
+private const val EXPERIMENT_ID_PARAM = "experiment_id"
+private const val EXPERIMENT_VARIANT_PARAM = "experiment_variant"
+private const val OFFERING_STEP_TYPE = "offering"
+private const val OFFERING_PARAM = "offering"
+private const val OFFERING_IDENTIFIER_PARAM = "identifier"
+private const val FLAT_OFFERING_IDENTIFIER_PARAM = "offering_identifier"
 
 @InternalRevenueCatAPI
 @Serializable
@@ -125,10 +187,16 @@ public data class WorkflowScreen(
     @SerialName("components_config") val componentsConfig: ComponentsConfig,
     @SerialName("components_localizations")
     val componentsLocalizations: Map<LocaleId, Map<LocalizationKey, LocalizationData>>,
-    @SerialName("default_locale") val defaultLocaleIdentifier: LocaleId,
+    @Serializable(with = DefaultLocaleIdSerializer::class)
+    @SerialName("default_locale") val defaultLocaleIdentifier: LocaleId = DefaultLocaleIdSerializer.FALLBACK,
     @SerialName("config") val config: JsonObject = JsonObject(emptyMap()),
     @SerialName("offering_identifier") val offeringIdentifier: String? = null,
+    @Serializable(with = GoogleListSerializer::class)
+    @SerialName("zero_decimal_place_countries") val zeroDecimalPlaceCountries: List<String> = emptyList(),
     @SerialName("exit_offers") val exitOffers: ExitOffers? = null,
+    @Serializable(with = ProductChangeConfigSerializer::class)
+    @SerialName("play_store_product_change_mode") val productChangeConfig: ProductChangeConfig? = null,
+    @SerialName("automatically_scale_font_size") val automaticallyScaleFontSize: Boolean = true,
     @Serializable(with = StateDeclarationMapSerializer::class)
     @SerialName("state_declarations") val stateDeclarations: Map<String, StateDeclaration>? = null,
 )

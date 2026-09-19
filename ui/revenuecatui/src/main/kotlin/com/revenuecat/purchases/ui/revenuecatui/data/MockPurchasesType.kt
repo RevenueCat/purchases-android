@@ -7,6 +7,7 @@ import com.revenuecat.purchases.Offerings
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.PurchasesAreCompletedBy
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
@@ -22,9 +23,11 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
  */
 @Suppress("TooManyFunctions")
 internal class MockPurchasesType(
+    override val appUserID: String = "",
     override val preferredUILocaleOverride: String? = null,
     override val purchasesAreCompletedBy: PurchasesAreCompletedBy = PurchasesAreCompletedBy.REVENUECAT,
     override val storefrontCountryCode: String? = null,
+    override val store: Store = Store.PLAY_STORE,
     override val customerCenterListener: CustomerCenterListener? = null,
 ) : PurchasesType {
     override suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult {
@@ -69,6 +72,8 @@ internal class MockPurchasesType(
     override suspend fun awaitGetUiConfig(): UiConfig {
         throw NotImplementedError("Mock implementation for previews only")
     }
+
+    override suspend fun awaitWorkflowBlobRef(workflowId: String): String? = null
 
     override suspend fun resolveWorkflow(offeringId: String): WorkflowResolution = WorkflowResolution.NoWorkflow
 }

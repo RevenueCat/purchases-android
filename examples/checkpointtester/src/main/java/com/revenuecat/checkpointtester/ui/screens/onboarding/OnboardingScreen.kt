@@ -43,14 +43,12 @@ fun OnboardingScreen(
 
         StepControls(
             step = state.step,
-            enabled = !state.running,
             onPrevious = viewModel::previous,
             onNext = viewModel::next,
             onRestart = viewModel::restart,
         )
 
-        val status = if (state.running) "Running the checkpoint…" else state.message
-        status?.let {
+        state.message?.let {
             Text(
                 text = it,
                 style = MaterialTheme.typography.bodyMedium,
@@ -63,25 +61,20 @@ fun OnboardingScreen(
 @Composable
 private fun StepControls(
     step: Step,
-    enabled: Boolean,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onRestart: () -> Unit,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         if (step != Step.Welcome) {
-            OutlinedButton(onClick = onPrevious, enabled = enabled && step != Step.Done) {
+            OutlinedButton(onClick = onPrevious, enabled = step != Step.Done) {
                 Text(text = "Back")
             }
         }
         when (step) {
-            Step.Welcome -> Button(onClick = onNext, enabled = enabled) { Text(text = "Continue") }
-            Step.Personalize -> Button(onClick = onNext, enabled = enabled) {
-                Text(text = "Finish onboarding")
-            }
-            Step.Done -> Button(onClick = onRestart, enabled = enabled) {
-                Text(text = "Restart onboarding")
-            }
+            Step.Welcome -> Button(onClick = onNext) { Text(text = "Continue") }
+            Step.Personalize -> Button(onClick = onNext) { Text(text = "Finish onboarding") }
+            Step.Done -> Button(onClick = onRestart) { Text(text = "Restart onboarding") }
         }
     }
 }

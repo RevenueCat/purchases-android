@@ -471,6 +471,12 @@ internal class HTTPClient(
             connection.disconnect()
         }
 
+        // HttpURLConnection reports -1 when the status line can't be parsed, so the response isn't valid HTTP.
+        // Treat it like any other connection failure instead of inspecting (or verifying) its contents.
+        if (responseCode == NO_STATUS_CODE) {
+            throw IOException(NetworkStrings.HTTP_RESPONSE_NO_STATUS_CODE)
+        }
+
         debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
         // The response arrived in full. Everything below only inspects it, so failures from here on say
         // nothing about how responsive the host is.
@@ -664,7 +670,7 @@ internal class HTTPClient(
             // compression and never the HTTP transport encoding.
             RC_FORMAT_ACCEPT_ENCODING_HEADER to
                 if (endpoint.expectsRCFormatResponse) RC_FORMAT_ACCEPT_ENCODING else null,
-            "X-Platform" to getXPlatformHeader(),
+            "X-Platform" to appConfig.store.platformName,
             "X-Platform-Flavor" to appConfig.platformInfo.flavor,
             "X-Platform-Flavor-Version" to appConfig.platformInfo.version,
             "X-Platform-Version" to Build.VERSION.SDK_INT.toString(),
@@ -680,6 +686,7 @@ internal class HTTPClient(
             HTTPRequest.POST_PARAMS_HASH to postFieldsToSignHeader,
             "X-Custom-Entitlements-Computation" to if (appConfig.customEntitlementComputation) "true" else null,
             "X-UI-Preview-Mode" to if (appConfig.uiPreviewMode) "true" else null,
+            "X-Is-Sandbox" to if (appConfig.store == Store.TEST_STORE) "true" else null,
             "X-Storefront" to storefrontProvider.getStorefront(),
             "X-Is-Debug-Build" to appConfig.isDebugBuild.toString(),
             "X-Kotlin-Version" to KotlinVersion.CURRENT.toString(),
@@ -701,11 +708,12 @@ internal class HTTPClient(
     private fun getConnection(request: HTTPRequest, timeoutMs: Long): HttpURLConnection {
         return (request.fullURL.openConnection() as HttpURLConnection).apply {
             connectTimeout = timeoutMs.toInt()
-            // Bound reads with the same budget: with the default (readTimeout = 0, infinite), an
-            // established connection that goes silent hangs the request forever, so the request
-            // never errors, coalesced callers waiting on it never release, and the retry/fallback
-            // machinery never runs.
-            readTimeout = timeoutMs.toInt()
+            // Responses are cached by ETagManager. An HttpResponseCache installed by the app
+            // would otherwise splice stale cached bodies into our 304s and break signature verification.
+            useCaches = false
+            // A connected socket can stop responding. Bound reads so the native request can
+            // deliver its terminal callback and release joined callers and queued identity work.
+            readTimeout = timeoutManager.getReadTimeout().toInt()
             request.headers.forEach { (key, value) ->
                 addRequestProperty(key, value)
             }
@@ -716,11 +724,6 @@ internal class HTTPClient(
                 writeFully(buffer(os), body.toString())
             }
         }
-    }
-
-    private fun getXPlatformHeader() = when (appConfig.store) {
-        Store.AMAZON -> "amazon"
-        else -> "android"
     }
 
     private fun verifyResponse(

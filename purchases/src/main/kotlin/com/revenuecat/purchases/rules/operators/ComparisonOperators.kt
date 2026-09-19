@@ -1,5 +1,6 @@
 package com.revenuecat.purchases.rules.operators
 
+import com.revenuecat.purchases.rules.Scope
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.rules.jsString
 
@@ -29,19 +30,19 @@ internal object ComparisonOperators {
     private const val RHS_OPERAND_INDEX = 2
 
     /** `{"<": [a, b]}` — `a < b`. `{"<": [a, b, c]}` — `a < b AND b < c`. */
-    fun opLt(args: Value, vars: Value): Value =
+    fun opLt(args: Value, vars: Scope): Value =
         evalChain(args, vars, Comparator.LESS)
 
     /** `{"<=": [a, b]}` — `a <= b`. `{"<=": [a, b, c]}` — `a <= b AND b <= c`. */
-    fun opLe(args: Value, vars: Value): Value =
+    fun opLe(args: Value, vars: Scope): Value =
         evalChain(args, vars, Comparator.LESS_OR_EQUAL)
 
     /** `{">": [a, b]}` — `a > b`. Strictly binary; matches the JS reference. */
-    fun opGt(args: Value, vars: Value): Value =
+    fun opGt(args: Value, vars: Scope): Value =
         evalBinary(args, vars, Comparator.GREATER)
 
     /** `{">=": [a, b]}` — `a >= b`. Strictly binary; matches the JS reference. */
-    fun opGe(args: Value, vars: Value): Value =
+    fun opGe(args: Value, vars: Scope): Value =
         evalBinary(args, vars, Comparator.GREATER_OR_EQUAL)
 
     /**
@@ -120,7 +121,7 @@ internal object ComparisonOperators {
      */
     private fun evalChain(
         args: Value,
-        vars: Value,
+        vars: Scope,
         cmp: Comparator,
     ): Value {
         val evaluated = Operators.evalArgs(args, vars)
@@ -145,7 +146,7 @@ internal object ComparisonOperators {
      */
     private fun evalBinary(
         args: Value,
-        vars: Value,
+        vars: Scope,
         cmp: Comparator,
     ): Value {
         val evaluated = Operators.evalArgs(args, vars)

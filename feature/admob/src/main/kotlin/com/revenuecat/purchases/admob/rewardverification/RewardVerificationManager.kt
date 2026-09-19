@@ -5,15 +5,16 @@ import android.os.Looper
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.ServerSideVerificationOptions
 import com.google.android.gms.ads.rewardedinterstitial.RewardedInterstitialAd
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.Logger
 import com.revenuecat.purchases.admob.threading.runOnMainIfPresent
+import com.revenuecat.purchases.admob.tracking.TrackingFullScreenContentCallback
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationToken
+import com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 internal object RewardVerificationManager {
     private val mainHandler = Handler(Looper.getMainLooper())
 
@@ -39,6 +40,7 @@ internal object RewardVerificationManager {
         rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
     ) = handleRewardEarnedInternal(
         ad.responseInfo?.responseId,
+        ad.rewardTrackingMetadata(),
         rewardVerificationStarted,
         rewardVerificationCompleted,
     )
@@ -49,9 +51,18 @@ internal object RewardVerificationManager {
         rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
     ) = handleRewardEarnedInternal(
         ad.responseInfo?.responseId,
+        ad.rewardTrackingMetadata(),
         rewardVerificationStarted,
         rewardVerificationCompleted,
     )
+
+    // Null when the ad wasn't loaded via loadAndTrackRewardedAd/loadAndTrackRewardedInterstitialAd (its
+    // fullScreenContentCallback was never wrapped, so there is nothing to track).
+    private fun RewardedAd.rewardTrackingMetadata(): RewardedAdTrackingMetadata? =
+        (fullScreenContentCallback as? TrackingFullScreenContentCallback)?.rewardTrackingMetadata()
+
+    private fun RewardedInterstitialAd.rewardTrackingMetadata(): RewardedAdTrackingMetadata? =
+        (fullScreenContentCallback as? TrackingFullScreenContentCallback)?.rewardTrackingMetadata()
 
     private fun installInternal(adResponseId: String?, attachOptions: (ServerSideVerificationOptions) -> Unit) {
         val runtime = runtime
@@ -89,6 +100,7 @@ internal object RewardVerificationManager {
 
     private fun handleRewardEarnedInternal(
         adResponseId: String?,
+        trackingMetadata: RewardedAdTrackingMetadata?,
         rewardVerificationStarted: (() -> Unit)?,
         rewardVerificationCompleted: (RewardVerificationResult) -> Unit,
     ) {
@@ -100,6 +112,7 @@ internal object RewardVerificationManager {
         }
         runtime.handleRewardEarned(
             adResponseId = adResponseId,
+            trackingMetadata = trackingMetadata,
             rewardVerificationStarted = rewardVerificationStarted,
             rewardVerificationCompleted = rewardVerificationCompleted,
         )

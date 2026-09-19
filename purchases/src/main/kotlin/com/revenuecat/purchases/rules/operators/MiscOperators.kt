@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.RulesEngine
+import com.revenuecat.purchases.rules.Scope
 import com.revenuecat.purchases.rules.Value
 import com.revenuecat.purchases.rules.jsString
 
@@ -18,7 +19,7 @@ internal object MiscOperators {
      * [Value.Undefined] (logged as `"undefined"`); operands beyond the
      * first are ignored.
      */
-    fun opLog(args: Value, vars: Value): Value {
+    fun opLog(args: Value, vars: Scope): Value {
         val value = Operators.evalArgs(args, vars).firstOrNull() ?: Value.Undefined
         RulesEngine.logger.log(jsString(value))
         return value

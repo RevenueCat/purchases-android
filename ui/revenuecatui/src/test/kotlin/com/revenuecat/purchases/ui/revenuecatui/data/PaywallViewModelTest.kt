@@ -39,6 +39,7 @@ import com.revenuecat.purchases.paywalls.components.common.StateUpdate
 import com.revenuecat.purchases.paywalls.components.common.StateUpdateValue
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
+import com.revenuecat.purchases.common.events.FeatureEvent
 import com.revenuecat.purchases.common.workflows.PublishedWorkflow
 import com.revenuecat.purchases.common.workflows.WorkflowResolution
 import com.revenuecat.purchases.common.workflows.WorkflowScreen
@@ -50,8 +51,10 @@ import com.revenuecat.purchases.paywalls.events.PaywallComponentType
 import com.revenuecat.purchases.paywalls.events.PaywallEvent
 import com.revenuecat.purchases.paywalls.events.PaywallEventType
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
+import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogic
@@ -67,6 +70,7 @@ import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData.copy
 import com.revenuecat.purchases.ui.revenuecatui.extensions.copy
 import com.revenuecat.purchases.ui.revenuecatui.helpers.PaywallLegacyComponentInteraction
 import com.revenuecat.purchases.ui.revenuecatui.helpers.paywallPurchaseButtonAction
+import com.revenuecat.purchases.ui.revenuecatui.helpers.toInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.helpers.resolvedWebCheckoutInteractionUrl
 import com.revenuecat.purchases.ui.revenuecatui.helpers.ResolvedOffer
 import com.revenuecat.purchases.ui.revenuecatui.helpers.UiConfig
@@ -84,10 +88,17 @@ import io.mockk.verify
 import io.mockk.verifyOrder
 import junit.framework.TestCase.fail
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
@@ -95,12 +106,17 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.shadows.ShadowLooper
 import java.net.URL
+
+private const val TEST_WAIT_MS = 5_000L
 
 @Suppress("LargeClass")
 @RunWith(AndroidJUnit4::class)
 class PaywallViewModelTest {
     private val defaultOffering = TestData.template2Offering
+    private val defaultOfferingParams =
+        mapOf("offering" to JsonObject(mapOf("identifier" to JsonPrimitive(defaultOffering.identifier))))
     private val defaultLocaleIdentifier = LocaleId("en_US")
     private val localizations = nonEmptyMapOf(
         defaultLocaleIdentifier to nonEmptyMapOf(
@@ -153,7 +169,7 @@ class PaywallViewModelTest {
         customUrl = "https://revenuecat.com",
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
             rcPackage = TestData.Packages.monthly,
             packageParam = "rc_package",
         ),
@@ -162,7 +178,7 @@ class PaywallViewModelTest {
         customUrl = "https://revenuecat.com",
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
             rcPackage = null,
             packageParam = "rc_package",
         ),
@@ -171,7 +187,7 @@ class PaywallViewModelTest {
         customUrl = "https://revenuecat.com",
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
             rcPackage = null,
             packageParam = null,
         ),
@@ -180,7 +196,7 @@ class PaywallViewModelTest {
         customUrl = null,
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
             rcPackage = TestData.Packages.monthly,
             packageParam = null,
         ),
@@ -189,7 +205,7 @@ class PaywallViewModelTest {
         customUrl = null,
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
             rcPackage = null,
             packageParam = null,
         ),
@@ -198,7 +214,7 @@ class PaywallViewModelTest {
         customUrl = null,
         autoDismiss = true,
         openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-        packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.DoNotAppend,
+        paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.DoNotAppend,
     )
 
     @get:Rule
@@ -226,6 +242,7 @@ class PaywallViewModelTest {
         dismissInvoked = false
 
         coEvery { purchases.awaitOfferings() } returns offerings
+        coEvery { purchases.awaitWorkflowBlobRef(any()) } returns null
         coEvery { purchases.awaitCustomerInfo(any()) } returns customerInfo
         every { purchases.purchasesAreCompletedBy } returns PurchasesAreCompletedBy.REVENUECAT
 
@@ -246,6 +263,7 @@ class PaywallViewModelTest {
         every { listener.onRestoreCompleted(any()) } just runs
         every { listener.onRestoreError(any()) } just runs
         every { listener.onPurchaseCancelled() } just runs
+        every { listener.onInteraction(any()) } just runs
     }
 
     @After
@@ -1420,8 +1438,10 @@ class PaywallViewModelTest {
                 ),
             ),
             triggerActions = mapOf("action-next" to WorkflowTriggerAction.Step(stepId = "step-2")),
+            paramValues = defaultOfferingParams,
         )
-        val stepTwo = WorkflowStep(id = "step-2", type = "screen", screenId = "screen-1")
+        val stepTwo =
+            WorkflowStep(id = "step-2", type = "screen", screenId = "screen-1", paramValues = defaultOfferingParams)
         val workflow = PublishedWorkflow(
             id = "wfl-test",
             displayName = "Test Workflow",
@@ -1478,7 +1498,8 @@ class PaywallViewModelTest {
             defaultLocaleIdentifier = defaultLocaleIdentifier,
             offeringIdentifier = defaultOffering.identifier,
         )
-        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
+        val stepOne =
+            WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1", paramValues = defaultOfferingParams)
         val workflow = PublishedWorkflow(
             id = "wfl-test",
             displayName = "Test Workflow",
@@ -1564,6 +1585,56 @@ class PaywallViewModelTest {
                 },
             )
         }
+    }
+
+    @Test
+    fun `trackComponentInteraction notifies listener with snake case map`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        val events = mutableListOf<PaywallInteractionEvent>()
+        every { listener.onInteraction(capture(events)) } just runs
+
+        model.trackComponentInteraction(
+            componentType = PaywallComponentType.BUTTON,
+            componentName = PaywallLegacyComponentInteraction.RESTORE_BUTTON_NAME,
+            componentValue = PaywallLegacyComponentInteraction.Value.RESTORE_PURCHASES,
+        )
+
+        val trackedEvents = mutableListOf<FeatureEvent>()
+        verify { purchases.track(capture(trackedEvents)) }
+        val trackedInteraction = trackedEvents.filterIsInstance<PaywallEvent>()
+            .single { it.type == PaywallEventType.COMPONENT_INTERACTION }
+        assertThat(events).containsExactly(trackedInteraction.toInteractionEvent())
+    }
+
+    @Test
+    fun `trackComponentInteraction still tracks when listener throws`() {
+        val model = create()
+        model.trackPaywallImpressionIfNeeded()
+        every { listener.onInteraction(any()) } throws IllegalStateException("developer bug")
+
+        model.trackComponentInteraction(
+            componentType = PaywallComponentType.BUTTON,
+            componentName = PaywallLegacyComponentInteraction.RESTORE_BUTTON_NAME,
+            componentValue = PaywallLegacyComponentInteraction.Value.RESTORE_PURCHASES,
+        )
+
+        verify(exactly = 1) { listener.onInteraction(any()) }
+        verifyEventTracked(PaywallEventType.COMPONENT_INTERACTION, 1)
+    }
+
+    @Test
+    fun `trackComponentInteraction does not notify listener before impression`() {
+        val model = create()
+
+        model.trackComponentInteraction(
+            componentType = PaywallComponentType.BUTTON,
+            componentName = PaywallLegacyComponentInteraction.RESTORE_BUTTON_NAME,
+            componentValue = PaywallLegacyComponentInteraction.Value.RESTORE_PURCHASES,
+        )
+
+        verify(exactly = 0) { listener.onInteraction(any()) }
+        verify(exactly = 0) { purchases.track(any()) }
     }
 
     @Test
@@ -1731,10 +1802,11 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `trackPaywallImpression after close tracks again`() {
+    fun `trackPaywallImpression after re-presentation tracks again`() {
         val model = create()
         model.trackPaywallImpressionIfNeeded()
         model.closePaywall()
+        model.onPaywallPresented()
         model.trackPaywallImpressionIfNeeded()
         verifyEventTracked(PaywallEventType.IMPRESSION, 2)
     }
@@ -1770,6 +1842,7 @@ class PaywallViewModelTest {
                 },
             )
         }
+        model.onPaywallPresented()
         model.trackPaywallImpressionIfNeeded()
         model.closePaywall()
         verifyEventTracked(PaywallEventType.CLOSE, 2)
@@ -1834,6 +1907,152 @@ class PaywallViewModelTest {
         assertThat(model.actionError.value).isNull()
         verify(exactly = 0) { listener.onPurchaseError(any()) }
         verify(exactly = 1) { listener.onPurchaseCancelled() }
+    }
+
+    @Test
+    fun `handlePackagePurchase cancelled mid-flight does not block later purchases`(): Unit = runBlocking {
+        // Arrange
+        val model = createComponentsModel()
+        // The store resolves as cancelled only after the caller is already gone.
+        val purchaseStarted = CompletableDeferred<Unit>()
+        val storeResolved = CompletableDeferred<Unit>()
+        coEvery { purchases.awaitPurchase(any()) } coAnswers {
+            purchaseStarted.complete(Unit)
+            storeResolved.await()
+            throw PurchasesException(PurchasesError(PurchasesErrorCode.PurchaseCancelledError))
+        }
+
+        // Act: the button's composition scope dies while the billing flow is in front.
+        val buttonScope = CoroutineScope(coroutineContext + Job())
+        val click = buttonScope.launch { model.handlePackagePurchase(activity, pkg = null) }
+        withTimeout(TEST_WAIT_MS) { purchaseStarted.await() }
+        click.cancelAndJoin()
+
+        // The abandoned flow resolves, so the action is genuinely over.
+        storeResolved.complete(Unit)
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+
+        // The user is back on the paywall and taps subscribe again.
+        coEvery {
+            purchases.awaitPurchase(any())
+        } throws PurchasesException(PurchasesError(PurchasesErrorCode.PurchaseCancelledError))
+        model.handlePackagePurchase(activity, pkg = null)
+
+        // Assert: the second tap must reach the billing flow.
+        assertThat(model.actionInProgress.value).isFalse
+        coVerify(exactly = 2) { purchases.awaitPurchase(any()) }
+    }
+
+    @Test
+    fun `purchase outliving a cancelled caller still completes and blocks a second attempt`(): Unit = runBlocking {
+        // Arrange
+        val model = createComponentsModel()
+        val purchaseStarted = CompletableDeferred<Unit>()
+        val storeResolved = CompletableDeferred<Unit>()
+        val purchaseResult = PurchaseResult(mockk<StoreTransaction>(relaxed = true), customerInfo)
+        coEvery { purchases.awaitPurchase(any()) } coAnswers {
+            purchaseStarted.complete(Unit)
+            storeResolved.await()
+            purchaseResult
+        }
+
+        // Act: the caller's composition scope dies while the store flow is still live.
+        val buttonScope = CoroutineScope(coroutineContext + Job())
+        val click = buttonScope.launch { model.handlePackagePurchase(activity, pkg = null) }
+        withTimeout(TEST_WAIT_MS) { purchaseStarted.await() }
+        click.cancelAndJoin()
+
+        // Must not start an overlapping purchase. Launched rather than called, so a regression fails
+        // this assertion instead of deadlocking on the unresolved flow.
+        val secondTap = launch { model.handlePackagePurchase(activity, pkg = null) }
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+        coVerify(exactly = 1) { purchases.awaitPurchase(any()) }
+        assertThat(model.actionInProgress.value).isTrue
+
+        // The abandoned flow succeeds: its completion must still be handled, not dropped.
+        storeResolved.complete(Unit)
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+
+        // Assert
+        verify(exactly = 1) { listener.onPurchaseCompleted(customerInfo, purchaseResult.storeTransaction) }
+        assertThat(model.actionInProgress.value).isFalse
+        secondTap.cancelAndJoin()
+    }
+
+    @Test
+    fun `the components state flag follows the action, not the caller`(): Unit = runBlocking {
+        // Arrange
+        val model = createComponentsModel()
+        val componentsState = model.state.value as PaywallState.Loaded.Components
+        val purchaseStarted = CompletableDeferred<Unit>()
+        val storeResolved = CompletableDeferred<Unit>()
+        coEvery { purchases.awaitPurchase(any()) } coAnswers {
+            purchaseStarted.complete(Unit)
+            storeResolved.await()
+            throw PurchasesException(PurchasesError(PurchasesErrorCode.PurchaseCancelledError))
+        }
+
+        // Act: the button's composition scope dies while the billing flow is in front.
+        val buttonScope = CoroutineScope(coroutineContext + Job())
+        val click = buttonScope.launch { model.handlePackagePurchase(activity, pkg = null) }
+        withTimeout(TEST_WAIT_MS) { purchaseStarted.await() }
+        click.cancelAndJoin()
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+
+        // Assert: the flag the button tree reads must still be up, otherwise the recreated paywall
+        // shows enabled buttons whose taps the gate silently refuses.
+        assertThat(componentsState.actionInProgress).isTrue
+
+        storeResolved.complete(Unit)
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+
+        assertThat(componentsState.actionInProgress).isFalse
+        assertThat(model.actionInProgress.value).isFalse
+    }
+
+    @Test
+    fun `purchase vetoed by the listener releases the action`(): Unit = runBlocking {
+        // Arrange
+        val model = create()
+        every { listener.onPurchasePackageInitiated(any(), any()) } answers {
+            secondArg<Resumable>()(false)
+        }
+
+        // Act
+        model.handlePackagePurchase(activity, pkg = null)
+
+        // Assert: the veto path must not strand the action either.
+        assertThat(model.actionInProgress.value).isFalse
+        coVerify(exactly = 0) { purchases.awaitPurchase(any()) }
+    }
+
+    @Test
+    fun `handleRestorePurchases cancelled mid-flight does not block later restores`(): Unit = runBlocking {
+        // Arrange
+        val model = create()
+        val restoreStarted = CompletableDeferred<Unit>()
+        val storeResolved = CompletableDeferred<Unit>()
+        coEvery { purchases.awaitRestore() } coAnswers {
+            restoreStarted.complete(Unit)
+            storeResolved.await()
+            customerInfo
+        }
+
+        // Act
+        val buttonScope = CoroutineScope(coroutineContext + Job())
+        val click = buttonScope.launch { model.handleRestorePurchases() }
+        withTimeout(TEST_WAIT_MS) { restoreStarted.await() }
+        click.cancelAndJoin()
+
+        storeResolved.complete(Unit)
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+
+        coEvery { purchases.awaitRestore() } returns customerInfo
+        model.handleRestorePurchases()
+
+        // Assert
+        assertThat(model.actionInProgress.value).isFalse
+        coVerify(exactly = 2) { purchases.awaitRestore() }
     }
 
     @Test
@@ -2245,15 +2464,15 @@ class PaywallViewModelTest {
         val model = create(offering = offeringWithWPL)
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=%24rc_monthly")
+        ).isEqualTo("https://revenuecat.com?rc_source=app&rc_package=%24rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage),
-        ).isEqualTo("https://revenuecat.com")
+        ).isEqualTo("https://revenuecat.com?rc_source=app")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackageParam),
-        ).isEqualTo("https://revenuecat.com")
+        ).isEqualTo("https://revenuecat.com?rc_source=app")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithPackage),
@@ -2279,16 +2498,16 @@ class PaywallViewModelTest {
         // Uses given package
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlAndPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=%24rc_monthly")
+        ).isEqualTo("https://revenuecat.com?rc_source=app&rc_package=%24rc_monthly")
 
         // Uses selected package when no package specified in action
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackage),
-        ).isEqualTo("https://revenuecat.com?rc_package=%24rc_monthly")
+        ).isEqualTo("https://revenuecat.com?rc_source=app&rc_package=%24rc_monthly")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithCustomUrlNoPackageParam),
-        ).isEqualTo("https://revenuecat.com")
+        ).isEqualTo("https://revenuecat.com?rc_source=app")
 
         assertThat(
             model.getWebCheckoutUrl(launchWebCheckoutWithPackage),
@@ -2315,7 +2534,7 @@ class PaywallViewModelTest {
             customUrl = "https://revenuecat.com",
             autoDismiss = true,
             openMethod = ButtonComponent.UrlMethod.EXTERNAL_BROWSER,
-            packageParamBehavior = PaywallAction.External.LaunchWebCheckout.PackageParamBehavior.Append(
+            paramBehavior = PaywallAction.External.LaunchWebCheckout.ParamBehavior.Append(
                 rcPackage = packageWithWhitespace,
                 packageParam = "rc_package",
             ),
@@ -2324,7 +2543,7 @@ class PaywallViewModelTest {
 
         assertThat(
             model.getWebCheckoutUrl(action),
-        ).isEqualTo("https://revenuecat.com?rc_package=Annual%20Trial")
+        ).isEqualTo("https://revenuecat.com?rc_source=app&rc_package=Annual%20Trial")
     }
 
     @Test
@@ -2911,12 +3130,14 @@ class PaywallViewModelTest {
         var dismissWithExitOfferingInvoked = false
         var receivedExitOffering: Offering? = mockk()
         var receivedResult: PaywallResult? = PaywallResult.Cancelled
+        var receivedReason: PaywallDismissReason? = null
 
         val model = create(
-            dismissRequestWithExitOffering = { exitOffering, result ->
+            dismissRequestWithExitOffering = { exitOffering, result, reason ->
                 dismissWithExitOfferingInvoked = true
                 receivedExitOffering = exitOffering
                 receivedResult = result
+                receivedReason = reason
             },
         )
 
@@ -2925,7 +3146,41 @@ class PaywallViewModelTest {
         assertThat(dismissWithExitOfferingInvoked).isTrue()
         assertThat(receivedExitOffering).isNull()
         assertThat(receivedResult).isNull()
+        assertThat(receivedReason).isEqualTo(PaywallDismissReason.CLOSE)
         assertThat(dismissInvoked).isFalse()
+    }
+
+    @Test
+    fun `closePaywall forwards a navigated-back reason to dismissRequestWithExitOffering`() {
+        var receivedReason: PaywallDismissReason? = null
+
+        val model = create(
+            dismissRequestWithExitOffering = { _, _, reason -> receivedReason = reason },
+        )
+
+        model.closePaywall(reason = PaywallDismissReason.NAVIGATED_BACK)
+
+        assertThat(receivedReason).isEqualTo(PaywallDismissReason.NAVIGATED_BACK)
+        assertThat(dismissInvoked).isFalse()
+    }
+
+    @Test
+    fun `closePaywall forwards an error result through dismissRequestWithExitOffering`() {
+        var receivedResult: PaywallResult? = null
+        val model = create(dismissRequestWithExitOffering = { _, result, _ -> receivedResult = result })
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Step misconfigured")
+
+        model.closePaywall(result = PaywallResult.Error(error))
+
+        assertThat((receivedResult as PaywallResult.Error).error).isEqualTo(error)
+    }
+
+    @Test
+    fun `an error state without a purchases error dismisses as an unknown error`() {
+        val result = PaywallState.Error("Something broke").toPaywallResult()
+
+        assertThat(result.error.code).isEqualTo(PurchasesErrorCode.UnknownError)
+        assertThat(result.error.underlyingErrorMessage).isEqualTo("Something broke")
     }
 
     @Test
@@ -2945,7 +3200,7 @@ class PaywallViewModelTest {
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
-            dismissRequestWithExitOffering = { exitOffering, result ->
+            dismissRequestWithExitOffering = { exitOffering, result, _ ->
                 dismissWithExitOfferingInvoked = true
                 receivedResult = result
                 assertThat(exitOffering).isNull()
@@ -2978,7 +3233,7 @@ class PaywallViewModelTest {
 
         val model = create(
             customPurchaseLogic = myAppPurchaseLogic,
-            dismissRequestWithExitOffering = { exitOffering, result ->
+            dismissRequestWithExitOffering = { exitOffering, result, _ ->
                 dismissWithExitOfferingInvoked = true
                 receivedResult = result
                 assertThat(exitOffering).isNull()
@@ -3012,7 +3267,7 @@ class PaywallViewModelTest {
 
             val model = create(
                 customPurchaseLogic = myAppPurchaseLogic,
-                dismissRequestWithExitOffering = { exitOffering, result ->
+                dismissRequestWithExitOffering = { exitOffering, result, _ ->
                     dismissWithExitOfferingInvoked = true
                     receivedResult = result
                     assertThat(exitOffering).isNull()
@@ -3047,7 +3302,7 @@ class PaywallViewModelTest {
 
             val model = create(
                 customPurchaseLogic = myAppPurchaseLogic,
-                dismissRequestWithExitOffering = { exitOffering, result ->
+                dismissRequestWithExitOffering = { exitOffering, result, _ ->
                     dismissWithExitOfferingInvoked = true
                     receivedResult = result
                     assertThat(exitOffering).isNull()
@@ -3083,7 +3338,8 @@ class PaywallViewModelTest {
             defaultLocaleIdentifier = defaultLocaleIdentifier,
             offeringIdentifier = defaultOffering.identifier,
         )
-        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
+        val stepOne =
+            WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1", paramValues = defaultOfferingParams)
         val workflow = PublishedWorkflow(
             id = "wfl-test",
             displayName = "Test Workflow",
@@ -3166,7 +3422,8 @@ class PaywallViewModelTest {
             defaultLocaleIdentifier = defaultLocaleIdentifier,
             offeringIdentifier = defaultOffering.identifier,
         )
-        val stepOne = WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")
+        val stepOne =
+            WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1", paramValues = defaultOfferingParams)
         val workflow = PublishedWorkflow(
             id = workflowId,
             displayName = "Real Workflow",
@@ -3244,101 +3501,6 @@ class PaywallViewModelTest {
     }
 
     @Test
-    fun `when the workflows topic is disabled by a 4xx, reloads its paywall from offerings`() {
-        // A 4xx disabled the config endpoint for the session. The initial offering was parsed while workflows
-        // were enabled, so it has no components. Reload it from /offerings after the disable to get its paywall.
-        val offeringWithoutComponents = offeringWithWPL.copy(paywallComponents = null)
-        val reloadedOfferings = Offerings(
-            current = offeringWithWPL,
-            all = mapOf(offeringWithWPL.identifier to offeringWithWPL),
-        )
-        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Disabled
-        coEvery { purchases.awaitOfferings() } returns reloadedOfferings
-
-        val model = PaywallViewModelImpl(
-            MockResourceProvider(),
-            purchases,
-            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
-                .setListener(listener)
-                .setOffering(offeringWithoutComponents)
-                .build(),
-            TestData.Constants.currentColorScheme,
-            isDarkMode = false,
-            shouldDisplayBlock = null,
-        )
-
-        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
-        val reloadedOffering = (model.state.value as PaywallState.Loaded.Components).offering
-        assertThat(reloadedOffering.identifier).isEqualTo(offeringWithWPL.identifier)
-        assertThat(reloadedOffering.paywallComponents).isNotNull()
-        coVerify(exactly = 1) { purchases.awaitOfferings() }
-        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
-    }
-
-    @Test
-    fun `when disabled by a 4xx and the offering already carries components, renders without reloading offerings`() {
-        // Once the kill switch has repopulated the offerings cache with decoded components, re-presenting the
-        // paywall renders the resolved offering directly instead of reloading offerings on every presentation.
-        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Disabled
-
-        val model = PaywallViewModelImpl(
-            MockResourceProvider(),
-            purchases,
-            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
-                .setListener(listener)
-                .setOffering(offeringWithWPL)
-                .build(),
-            TestData.Constants.currentColorScheme,
-            isDarkMode = false,
-            shouldDisplayBlock = null,
-        )
-
-        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
-        val offering = (model.state.value as PaywallState.Loaded.Components).offering
-        assertThat(offering.identifier).isEqualTo(offeringWithWPL.identifier)
-        assertThat(offering.paywallComponents).isNotNull()
-        coVerify(exactly = 0) { purchases.awaitOfferings() }
-        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
-    }
-
-    @Test
-    fun `when disabled by a 4xx and presented by offering id, renders without a redundant offerings reload`() {
-        // The launcher path resolves the offering via awaitOfferings() up front, which after the disable already
-        // carries components. The disabled fallback must not reload offerings a second time.
-        val presentedOfferingContext = PresentedOfferingContext(offeringIdentifier = offeringWithWPL.identifier)
-        val offerings = Offerings(
-            current = offeringWithWPL,
-            all = mapOf(offeringWithWPL.identifier to offeringWithWPL),
-        )
-        coEvery { purchases.awaitOfferings() } returns offerings
-        coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Disabled
-
-        val model = PaywallViewModelImpl(
-            MockResourceProvider(),
-            purchases,
-            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
-                .setListener(listener)
-                .setOfferingIdAndPresentedOfferingContext(
-                    OfferingSelection.IdAndPresentedOfferingContext(
-                        offeringId = offeringWithWPL.identifier,
-                        presentedOfferingContext = presentedOfferingContext,
-                    ),
-                )
-                .build(),
-            TestData.Constants.currentColorScheme,
-            isDarkMode = false,
-            shouldDisplayBlock = null,
-        )
-
-        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded.Components::class.java)
-        val offering = (model.state.value as PaywallState.Loaded.Components).offering
-        assertThat(offering.identifier).isEqualTo(offeringWithWPL.identifier)
-        assertThat(offering.paywallComponents).isNotNull()
-        coVerify(exactly = 1) { purchases.awaitOfferings() }
-        coVerify(exactly = 0) { purchases.awaitGetWorkflow(any()) }
-    }
-
-    @Test
     fun `when no workflow is mapped with no paywall data, renders the default paywall`() {
         val offeringWithoutPaywallData = Offering(
             identifier = "offering-no-paywall-data",
@@ -3391,7 +3553,14 @@ class PaywallViewModelTest {
             id = "wfl-test",
             displayName = "Test Workflow",
             initialStepId = "step-1",
-            steps = mapOf("step-1" to WorkflowStep(id = "step-1", type = "screen", screenId = "screen-1")),
+            steps = mapOf(
+                "step-1" to WorkflowStep(
+                    id = "step-1",
+                    type = "screen",
+                    screenId = "screen-1",
+                    paramValues = defaultOfferingParams,
+                ),
+            ),
             screens = mapOf("screen-1" to workflowScreen),
         )
         coEvery { purchases.resolveWorkflow(offeringWithWPL.identifier) } returns WorkflowResolution.Found("wfl-test")
@@ -3435,11 +3604,30 @@ class PaywallViewModelTest {
         assertThat(model.workflowState.value).isNull()
     }
 
+    /** A loaded components paywall with the monthly package selected. */
+    private fun createComponentsModel(): PaywallViewModelImpl {
+        val offeringId = "offering-id"
+        val offering = Offering(
+            identifier = offeringId,
+            serverDescription = "description",
+            metadata = emptyMap(),
+            availablePackages = listOf(
+                TestData.Packages.monthly.copy(offeringId),
+                TestData.Packages.annual.copy(offeringId),
+            ),
+            paywallComponents = Offering.PaywallComponents(UiConfig(), emptyPaywallComponentsData),
+        )
+        return create(offering = offering).apply {
+            (state.value as PaywallState.Loaded.Components).update(TestData.Packages.monthly.identifier)
+            trackPaywallImpressionIfNeeded()
+        }
+    }
+
     private fun create(
         offering: Offering? = null,
         customPurchaseLogic: PaywallPurchaseLogic? = null,
         mode: PaywallMode = PaywallMode.default,
-        dismissRequestWithExitOffering: ((Offering?, PaywallResult?) -> Unit)? = null,
+        dismissRequestWithExitOffering: ((Offering?, PaywallResult?, PaywallDismissReason) -> Unit)? = null,
         dismissRequest: () -> Unit = { dismissInvoked = true },
         shouldDisplayBlock: ((CustomerInfo) -> Boolean)? = null,
     ): PaywallViewModelImpl {

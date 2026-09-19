@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.SideEffect
@@ -120,9 +121,16 @@ internal fun InternalPaywall(
     options: PaywallOptions,
     viewModel: PaywallViewModel = getPaywallViewModel(options),
 ) {
+    DisposableEffect(viewModel) {
+        viewModel.onPaywallPresented()
+        onDispose {
+            viewModel.onPaywallDismissed()
+        }
+    }
+
     BackHandler {
         if (!viewModel.handleBackNavigation()) {
-            viewModel.closePaywall()
+            viewModel.closePaywall(reason = PaywallDismissReason.NAVIGATED_BACK)
         }
     }
 
@@ -227,7 +235,7 @@ internal fun InternalPaywall(
         is PaywallState.Error -> {
             PaywallTheme(fontProvider = options.fontProvider) {
                 ErrorDialog(
-                    dismissRequest = options.dismissRequest,
+                    dismissRequest = { viewModel.closePaywall(result = state.toPaywallResult()) },
                     error = state.errorMessage,
                 )
             }
@@ -420,7 +428,14 @@ private fun rememberPaywallActionHandler(viewModel: PaywallViewModel): suspend (
 
                 is PaywallAction.External.NavigateBack -> {
                     if (!viewModel.handleBackNavigation()) {
-                        viewModel.closePaywall()
+                        // On a workflow's first step this backs out like system back. A standalone paywall has
+                        // nowhere to go back to, so there navigate-back is its close action.
+                        val reason = if (viewModel.workflowState.value != null) {
+                            PaywallDismissReason.NAVIGATED_BACK
+                        } else {
+                            PaywallDismissReason.CLOSE
+                        }
+                        viewModel.closePaywall(reason = reason)
                     }
                 }
 

@@ -37,7 +37,7 @@ internal fun ViewWithVideoBackground(
                     autoplay = true,
                     loop = background.loop,
                     muteAudio = background.muteAudio,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fill),
+                    size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fill()),
                     shape = shape,
                     overlay = background.colorOverlay,
                     contentScale = background.contentScale,

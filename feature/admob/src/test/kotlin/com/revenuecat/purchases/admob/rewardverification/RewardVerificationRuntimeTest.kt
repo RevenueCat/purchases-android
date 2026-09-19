@@ -2,9 +2,11 @@ package com.revenuecat.purchases.admob.rewardverification
 
 import android.os.Handler
 import android.os.Looper
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.ads.events.types.AdFormat
+import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.rewardverification.RewardVerificationResult
+import com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata
 import com.revenuecat.purchases.ads.rewardverification.VerifiedReward
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -15,6 +17,7 @@ import java.util.concurrent.TimeUnit
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -23,7 +26,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.shadows.ShadowLog
 
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 @RunWith(RobolectricTestRunner::class)
 internal class RewardVerificationRuntimeTest {
 
@@ -35,7 +38,7 @@ internal class RewardVerificationRuntimeTest {
             createVerificationScope = {
                 CoroutineScope(SupervisorJob() + Dispatchers.Default)
             },
-            poll = {
+            poll = { _, _ ->
                 pollStarted.countDown()
                 awaitCancellation()
             },
@@ -49,6 +52,7 @@ internal class RewardVerificationRuntimeTest {
 
         runtime.handleRewardEarned(
             adResponseId = adResponseId,
+            trackingMetadata = null,
             rewardVerificationStarted = { started = true },
             rewardVerificationCompleted = {
                 completedResult = it
@@ -78,7 +82,7 @@ internal class RewardVerificationRuntimeTest {
             createVerificationScope = {
                 CoroutineScope(SupervisorJob() + Dispatchers.Default)
             },
-            poll = { RewardVerificationResult.verified(verifiedReward) },
+            poll = { _, _ -> RewardVerificationResult.verified(verifiedReward) },
         )
         val adResponseId = "ad-response-id"
         var startedThread: Thread? = null
@@ -90,6 +94,7 @@ internal class RewardVerificationRuntimeTest {
 
         runtime.handleRewardEarned(
             adResponseId = adResponseId,
+            trackingMetadata = null,
             rewardVerificationStarted = { startedThread = Thread.currentThread() },
             rewardVerificationCompleted = {
                 completedThread = Thread.currentThread()
@@ -117,7 +122,7 @@ internal class RewardVerificationRuntimeTest {
             createVerificationScope = {
                 CoroutineScope(SupervisorJob() + Dispatchers.Default)
             },
-            poll = { error("poll should not run when no client transaction id is registered") },
+            poll = { _, _ -> error("poll should not run when no client transaction id is registered") },
         )
         val adResponseId = "ad-response-id"
         var startedCount = 0
@@ -128,6 +133,7 @@ internal class RewardVerificationRuntimeTest {
 
         runtime.handleRewardEarned(
             adResponseId = adResponseId,
+            trackingMetadata = null,
             rewardVerificationStarted = { startedCount++ },
             rewardVerificationCompleted = {
                 completedResult = it
@@ -143,5 +149,86 @@ internal class RewardVerificationRuntimeTest {
         assertEquals(0, startedCount)
         assertNotNull(completedResult)
         assertTrue(completedResult!!.failed)
+    }
+
+    @Test
+    fun `handleRewardEarned forwards tracking metadata to poll`() {
+        val trackingMetadata = RewardedAdTrackingMetadata(
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            impressionId = "impression-789",
+        )
+        var receivedTrackingMetadata: RewardedAdTrackingMetadata? = null
+        val runtime = RewardVerificationRuntime(
+            mainHandler = Handler(Looper.getMainLooper()),
+            createVerificationScope = {
+                CoroutineScope(SupervisorJob() + Dispatchers.Default)
+            },
+            poll = { _, metadata ->
+                receivedTrackingMetadata = metadata
+                RewardVerificationResult.failed
+            },
+        )
+        val adResponseId = "ad-response-id"
+        val completed = CountDownLatch(1)
+
+        runtime.setClientTransactionId(adResponseId, "client-transaction-id")
+
+        runtime.handleRewardEarned(
+            adResponseId = adResponseId,
+            trackingMetadata = trackingMetadata,
+            rewardVerificationStarted = null,
+            rewardVerificationCompleted = { completed.countDown() },
+        )
+        val completionDelivered = (1..10).any {
+            shadowOf(Looper.getMainLooper()).idle()
+            completed.await(100, TimeUnit.MILLISECONDS)
+        }
+
+        assertTrue(completionDelivered)
+        assertSame(trackingMetadata, receivedTrackingMetadata)
+    }
+
+    @Test
+    fun `handleRewardEarned forwards null tracking metadata when the ad was not tracked`() {
+        var receivedTrackingMetadata: RewardedAdTrackingMetadata? = RewardedAdTrackingMetadata(
+            networkName = null,
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
+            placement = null,
+            adUnitId = "sentinel",
+            impressionId = "sentinel",
+        )
+        val runtime = RewardVerificationRuntime(
+            mainHandler = Handler(Looper.getMainLooper()),
+            createVerificationScope = {
+                CoroutineScope(SupervisorJob() + Dispatchers.Default)
+            },
+            poll = { _, metadata ->
+                receivedTrackingMetadata = metadata
+                RewardVerificationResult.failed
+            },
+        )
+        val adResponseId = "ad-response-id"
+        val completed = CountDownLatch(1)
+
+        runtime.setClientTransactionId(adResponseId, "client-transaction-id")
+
+        runtime.handleRewardEarned(
+            adResponseId = adResponseId,
+            trackingMetadata = null,
+            rewardVerificationStarted = null,
+            rewardVerificationCompleted = { completed.countDown() },
+        )
+        val completionDelivered = (1..10).any {
+            shadowOf(Looper.getMainLooper()).idle()
+            completed.await(100, TimeUnit.MILLISECONDS)
+        }
+
+        assertTrue(completionDelivered)
+        assertNull(receivedTrackingMetadata)
     }
 }

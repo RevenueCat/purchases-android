@@ -23,7 +23,6 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.appopen.AppOpenAd
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
@@ -35,7 +34,6 @@ import com.revenuecat.purchases.ads.events.types.AdRevenueData
 import com.revenuecat.sample.vanilla.data.Constants
 
 @Suppress("MultipleEmitters")
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun AppOpenAdContent(activity: Activity) {
     val context = LocalContext.current

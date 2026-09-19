@@ -2,7 +2,9 @@ package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.Evaluator
 import com.revenuecat.purchases.rules.RulesEngine.EvaluationException
+import com.revenuecat.purchases.rules.Scope
 import com.revenuecat.purchases.rules.Value
+import com.revenuecat.purchases.rules.customoperators.CustomOperators
 
 /**
  * JSON Logic operator dispatcher and shared helpers.
@@ -22,7 +24,7 @@ internal object Operators {
     fun dispatch(
         op: String,
         args: Value,
-        vars: Value,
+        vars: Scope,
     ): Value = when (op) {
         // Accessors
         "var" -> AccessorOperators.opVar(args, vars)
@@ -76,7 +78,7 @@ internal object Operators {
         // Miscellaneous
         "log" -> MiscOperators.opLog(args, vars)
 
-        else -> throw EvaluationException.UnsupportedOperator(op)
+        else -> CustomOperators.dispatch(op, args, vars)
     }
 
     /**
@@ -92,8 +94,27 @@ internal object Operators {
     /** Evaluate every element in an argument list. */
     fun evalArgs(
         args: Value,
-        vars: Value,
+        vars: Scope,
     ): List<Value> = argsAsList(args).map { Evaluator.evaluateValue(it, vars) }
+
+    /**
+     * Rejects an argument count no overload of [operatorName] accepts.
+     *
+     * Only for operators that are strict about arity. Several others take a
+     * fixed number of arguments and silently ignore extras — `substr`, `<`,
+     * `reduce`, and anything reading through [firstArgEvaluated] — matching
+     * `json-logic-js`, where a spread call simply drops what the function
+     * does not declare. Whether an operator is strict is a decision each one
+     * makes; this only spells the refusal the same way every time.
+     */
+    fun checkArity(count: Int, allowed: List<Int>, operatorName: String) {
+        if (count !in allowed) {
+            val expected = allowed.joinToString(" or ")
+            throw EvaluationException.TypeMismatch(
+                "operator '$operatorName' expects $expected arguments, got $count",
+            )
+        }
+    }
 
     /**
      * Evaluate args and return the first two operands. Missing operands
@@ -104,12 +125,27 @@ internal object Operators {
      */
     fun evalTwo(
         args: Value,
-        vars: Value,
+        vars: Scope,
     ): Pair<Value, Value> {
         val evaluated = evalArgs(args, vars)
         val lhs = evaluated.firstOrNull() ?: Value.Undefined
         val rhs = if (evaluated.size >= 2) evaluated[1] else Value.Undefined
         return lhs to rhs
+    }
+
+    /**
+     * Evaluate the first argument of a unary operator. Uses [argsAsList]
+     * then takes index zero, matching `json-logic-js`'s
+     * `operations[op].apply(context, values)` spread semantics: a
+     * multi-element top-level array is a multi-argument call, not a
+     * single array operand. An empty arg list yields [Value.Null].
+     */
+    fun firstArgEvaluated(
+        args: Value,
+        vars: Scope,
+    ): Value {
+        val first = argsAsList(args).firstOrNull() ?: Value.Null
+        return Evaluator.evaluateValue(first, vars)
     }
 
     /**

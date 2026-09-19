@@ -300,7 +300,7 @@ class PostReceiptHelperTest {
         )
 
         verify(exactly = 1) {
-            customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo)
+            customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo, appUserID)
         }
     }
 
@@ -615,7 +615,7 @@ class PostReceiptHelperTest {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
         every {
-            customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo)
+            customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo, appUserID)
         } just Runs
 
         var receivedCustomerInfo: CustomerInfo? = null
@@ -631,7 +631,7 @@ class PostReceiptHelperTest {
         )
 
         assertThat(receivedCustomerInfo).isEqualTo(defaultCustomerInfo)
-        verify(exactly = 1) { customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo) }
+        verify(exactly = 1) { customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo, appUserID) }
     }
 
     @Test
@@ -644,7 +644,7 @@ class PostReceiptHelperTest {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
         every {
-            customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo)
+            customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo, appUserID)
         } just Runs
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
@@ -658,8 +658,8 @@ class PostReceiptHelperTest {
             onError = { _, _ -> fail("Expected success") }
         )
 
-        verify(exactly = 0) { customerInfoUpdateHandler.cacheAndNotifyListeners(any()) }
-        verify(exactly = 1) { customerInfoUpdateHandler.notifyListeners(any()) }
+        verify(exactly = 0) { customerInfoUpdateHandler.cacheAndNotifyListeners(any(), any()) }
+        verify(exactly = 1) { customerInfoUpdateHandler.notifyListeners(any(), any()) }
     }
 
     @Test
@@ -672,7 +672,7 @@ class PostReceiptHelperTest {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
         every {
-            customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo)
+            customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo, appUserID)
         } just Runs
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
@@ -706,7 +706,7 @@ class PostReceiptHelperTest {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
         every {
-            customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo)
+            customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo, appUserID)
         } just Runs
 
         postReceiptHelper.postTransactionAndConsumeIfNeeded(
@@ -991,7 +991,7 @@ class PostReceiptHelperTest {
         )
 
         verify(exactly = 1) {
-            customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo)
+            customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo, appUserID)
         }
     }
 
@@ -1307,7 +1307,7 @@ class PostReceiptHelperTest {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
         every {
-            customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo)
+            customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo, appUserID)
         } just Runs
 
         var successCallCount = 0
@@ -1322,7 +1322,7 @@ class PostReceiptHelperTest {
         )
 
         assertThat(successCallCount).isEqualTo(1)
-        verify(exactly = 1) { customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo) }
+        verify(exactly = 1) { customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo, appUserID) }
     }
 
     @Test
@@ -1338,7 +1338,7 @@ class PostReceiptHelperTest {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
         every {
-            customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo)
+            customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo, appUserID)
         } just Runs
 
         postReceiptHelper.postTokenWithoutConsuming(
@@ -1351,8 +1351,8 @@ class PostReceiptHelperTest {
             onError = { fail("Should succeed") }
         )
 
-        verify(exactly = 0) { customerInfoUpdateHandler.cacheAndNotifyListeners(any()) }
-        verify(exactly = 1) { customerInfoUpdateHandler.notifyListeners(any()) }
+        verify(exactly = 0) { customerInfoUpdateHandler.cacheAndNotifyListeners(any(), any()) }
+        verify(exactly = 1) { customerInfoUpdateHandler.notifyListeners(any(), any()) }
     }
 
     @Test
@@ -1368,7 +1368,7 @@ class PostReceiptHelperTest {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
         every {
-            customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo)
+            customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo, appUserID)
         } just Runs
 
         postReceiptHelper.postTokenWithoutConsuming(
@@ -1408,7 +1408,7 @@ class PostReceiptHelperTest {
             lambda<(CustomerInfo) -> Unit>().captured(defaultCustomerInfo)
         }
         every {
-            customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo)
+            customerInfoUpdateHandler.notifyListeners(defaultCustomerInfo, appUserID)
         } just Runs
 
         postReceiptHelper.postTokenWithoutConsuming(
@@ -2511,7 +2511,7 @@ class PostReceiptHelperTest {
 
         every { offlineEntitlementsManager.resetOfflineCustomerInfoCache() } just Runs
         every { subscriberAttributesManager.markAsSynced(appUserID, any(), any()) } just Runs
-        every { customerInfoUpdateHandler.cacheAndNotifyListeners(any()) } just Runs
+        every { customerInfoUpdateHandler.cacheAndNotifyListeners(any(), any()) } just Runs
         if (postType == PostType.TRANSACTION_AND_CONSUME) {
             every { billing.consumeAndSave(
                 finishTransactions = any(),
@@ -2647,7 +2647,7 @@ class PostReceiptHelperTest {
         mockUnsyncedSubscriberAttributes()
         every { offlineEntitlementsManager.resetOfflineCustomerInfoCache() } just Runs
         every { subscriberAttributesManager.markAsSynced(appUserID, emptyMap(), emptyList()) } just Runs
-        every { customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo) } just Runs
+        every { customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo, appUserID) } just Runs
         every { deviceCache.addSuccessfullyPostedToken("cached-token") } just Runs
         every { localTransactionMetadataStore.clearLocalTransactionMetadata(setOf("cached-token")) } just Runs
 
@@ -2707,7 +2707,7 @@ class PostReceiptHelperTest {
         mockUnsyncedSubscriberAttributes()
         every { offlineEntitlementsManager.resetOfflineCustomerInfoCache() } just Runs
         every { subscriberAttributesManager.markAsSynced(appUserID, emptyMap(), emptyList()) } just Runs
-        every { customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo) } just Runs
+        every { customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo, appUserID) } just Runs
         every { deviceCache.addSuccessfullyPostedToken("cached-token") } just Runs
         every { localTransactionMetadataStore.clearLocalTransactionMetadata(setOf("cached-token")) } just Runs
 
@@ -2776,7 +2776,7 @@ class PostReceiptHelperTest {
         mockUnsyncedSubscriberAttributes()
         every { offlineEntitlementsManager.resetOfflineCustomerInfoCache() } just Runs
         every { subscriberAttributesManager.markAsSynced(appUserID, emptyMap(), emptyList()) } just Runs
-        every { customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo) } just Runs
+        every { customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo, appUserID) } just Runs
         every { deviceCache.addSuccessfullyPostedToken("cached-token") } just Runs
         every { localTransactionMetadataStore.clearLocalTransactionMetadata(setOf("cached-token")) } just Runs
 
@@ -2831,7 +2831,7 @@ class PostReceiptHelperTest {
         mockUnsyncedSubscriberAttributes()
         every { offlineEntitlementsManager.resetOfflineCustomerInfoCache() } just Runs
         every { subscriberAttributesManager.markAsSynced(appUserID, emptyMap(), emptyList()) } just Runs
-        every { customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo) } just Runs
+        every { customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo, appUserID) } just Runs
         every { deviceCache.addSuccessfullyPostedToken("cached-token") } just Runs
         every { localTransactionMetadataStore.clearLocalTransactionMetadata(setOf("cached-token")) } just Runs
 
@@ -2940,7 +2940,7 @@ class PostReceiptHelperTest {
         mockUnsyncedSubscriberAttributes()
         every { offlineEntitlementsManager.resetOfflineCustomerInfoCache() } just Runs
         every { subscriberAttributesManager.markAsSynced(appUserID, emptyMap(), emptyList()) } just Runs
-        every { customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo) } just Runs
+        every { customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo, appUserID) } just Runs
         every { deviceCache.addSuccessfullyPostedToken(any()) } just Runs
         every { localTransactionMetadataStore.clearLocalTransactionMetadata(any()) } just Runs
 
@@ -3065,7 +3065,7 @@ class PostReceiptHelperTest {
         mockUnsyncedSubscriberAttributes()
         every { offlineEntitlementsManager.resetOfflineCustomerInfoCache() } just Runs
         every { subscriberAttributesManager.markAsSynced(appUserID, emptyMap(), emptyList()) } just Runs
-        every { customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo) } just Runs
+        every { customerInfoUpdateHandler.cacheAndNotifyListeners(defaultCustomerInfo, appUserID) } just Runs
         every { deviceCache.addSuccessfullyPostedToken(any()) } just Runs
         every { localTransactionMetadataStore.clearLocalTransactionMetadata(any()) } just Runs
 

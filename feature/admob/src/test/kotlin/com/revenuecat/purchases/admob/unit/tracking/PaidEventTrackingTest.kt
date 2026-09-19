@@ -1,14 +1,10 @@
-@file:OptIn(
-    ExperimentalPreviewRevenueCatPurchasesAPI::class,
-    InternalRevenueCatAPI::class,
-)
+@file:OptIn(InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.admob.tracking
 
 import com.google.android.gms.ads.AdValue
 import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.ResponseInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ads.events.AdCaptureMethod

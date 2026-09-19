@@ -1,5 +1,6 @@
 package com.revenuecat.paywallstester.ui.screens.main.customvariables
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -49,6 +50,18 @@ private enum class VariableType(val displayName: String) {
     BOOLEAN("Boolean"),
 }
 
+private fun CustomVariableValue.variableType(): VariableType? = when (this) {
+    is CustomVariableValue.String -> VariableType.STRING
+    is CustomVariableValue.Number -> VariableType.NUMBER
+    is CustomVariableValue.Boolean -> VariableType.BOOLEAN
+    else -> null
+}
+
+private sealed interface VariableDialogTarget {
+    data object New : VariableDialogTarget
+    data class Existing(val name: String, val value: CustomVariableValue) : VariableDialogTarget
+}
+
 /**
  * Convenience overload that accepts a ViewModel directly.
  */
@@ -59,8 +72,8 @@ fun CustomVariablesEditorDialog(
 ) {
     CustomVariablesEditorDialog(
         customVariables = viewModel.customVariables,
-        onAddVariable = { name, value -> viewModel.addVariable(name, value) },
-        onRemoveVariable = { name -> viewModel.removeVariable(name) },
+        onSaveVariable = viewModel::saveVariable,
+        onRemoveVariable = viewModel::removeVariable,
         onDismiss = onDismiss,
     )
 }
@@ -69,11 +82,11 @@ fun CustomVariablesEditorDialog(
 @Composable
 fun CustomVariablesEditorDialog(
     customVariables: Map<String, CustomVariableValue>,
-    onAddVariable: (String, CustomVariableValue) -> Unit,
+    onSaveVariable: (previousName: String?, name: String, value: CustomVariableValue) -> Unit,
     onRemoveVariable: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var showAddDialog by remember { mutableStateOf(false) }
+    var dialogTarget by remember { mutableStateOf<VariableDialogTarget?>(null) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -97,7 +110,7 @@ fun CustomVariablesEditorDialog(
                         text = "Custom Variables",
                         style = MaterialTheme.typography.titleLarge,
                     )
-                    IconButton(onClick = { showAddDialog = true }) {
+                    IconButton(onClick = { dialogTarget = VariableDialogTarget.New }) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "Add variable",
@@ -121,12 +134,13 @@ fun CustomVariablesEditorDialog(
                             .fillMaxWidth(),
                     ) {
                         items(
-                            items = customVariables.entries.sortedBy { it.key }.toList(),
+                            items = customVariables.entries.sortedBy { it.key },
                             key = { it.key },
                         ) { (name, value) ->
                             VariableRow(
                                 name = name,
                                 value = value,
+                                onEdit = { dialogTarget = VariableDialogTarget.Existing(name, value) },
                                 onDelete = { onRemoveVariable(name) },
                             )
                             HorizontalDivider()
@@ -148,14 +162,15 @@ fun CustomVariablesEditorDialog(
         }
     }
 
-    if (showAddDialog) {
-        AddVariableDialog(
+    dialogTarget?.let { target ->
+        VariableDialog(
             existingKeys = customVariables.keys,
-            onAdd = { name, value ->
-                onAddVariable(name, value)
-                showAddDialog = false
+            target = target,
+            onSave = { name, value ->
+                onSaveVariable((target as? VariableDialogTarget.Existing)?.name, name, value)
+                dialogTarget = null
             },
-            onDismiss = { showAddDialog = false },
+            onDismiss = { dialogTarget = null },
         )
     }
 }
@@ -164,11 +179,13 @@ fun CustomVariablesEditorDialog(
 private fun VariableRow(
     name: String,
     value: CustomVariableValue,
+    onEdit: () -> Unit,
     onDelete: () -> Unit,
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onEdit)
             .padding(vertical = 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -202,19 +219,19 @@ private fun VariableRow(
 
 @Composable
 private fun TypeBadge(value: CustomVariableValue) {
-    val typeString = value.toString()
-    val (text, color) = when {
-        typeString.startsWith("CustomVariableValue.String") -> "String" to MaterialTheme.colorScheme.primary
-        typeString.startsWith("CustomVariableValue.Number") -> "Number" to MaterialTheme.colorScheme.tertiary
-        typeString.startsWith("CustomVariableValue.Boolean") -> "Bool" to MaterialTheme.colorScheme.secondary
-        else -> "Unknown" to MaterialTheme.colorScheme.outline
+    val type = value.variableType()
+    val color = when (type) {
+        VariableType.STRING -> MaterialTheme.colorScheme.primary
+        VariableType.NUMBER -> MaterialTheme.colorScheme.tertiary
+        VariableType.BOOLEAN -> MaterialTheme.colorScheme.secondary
+        null -> MaterialTheme.colorScheme.outline
     }
     Surface(
         color = color.copy(alpha = 0.1f),
         shape = MaterialTheme.shapes.small,
     ) {
         Text(
-            text = text,
+            text = type?.displayName ?: "Unknown",
             style = MaterialTheme.typography.labelSmall,
             color = color,
             modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
@@ -225,43 +242,51 @@ private fun TypeBadge(value: CustomVariableValue) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 @Composable
-private fun AddVariableDialog(
+private fun VariableDialog(
     existingKeys: Set<String>,
-    onAdd: (String, CustomVariableValue) -> Unit,
+    target: VariableDialogTarget,
+    onSave: (String, CustomVariableValue) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var name by remember { mutableStateOf("") }
-    var selectedType by remember { mutableStateOf(VariableType.STRING) }
-    var stringValue by remember { mutableStateOf("") }
-    var numberValue by remember { mutableStateOf("") }
-    var booleanValue by remember { mutableStateOf(false) }
+    val existing = target as? VariableDialogTarget.Existing
+    var name by remember { mutableStateOf(existing?.name ?: "") }
+    var selectedType by remember {
+        mutableStateOf(existing?.value?.variableType() ?: VariableType.STRING)
+    }
+    var stringValue by remember {
+        mutableStateOf((existing?.value as? CustomVariableValue.String)?.value ?: "")
+    }
+    var numberValue by remember {
+        mutableStateOf((existing?.value as? CustomVariableValue.Number)?.stringValue ?: "")
+    }
+    var booleanValue by remember {
+        mutableStateOf((existing?.value as? CustomVariableValue.Boolean)?.value ?: false)
+    }
     var typeDropdownExpanded by remember { mutableStateOf(false) }
 
     val nameError = when {
         name.isBlank() -> "Name is required"
-        name in existingKeys -> "Variable already exists"
+        name != existing?.name && name in existingKeys -> "Variable already exists"
         else -> null
     }
 
+    val invalidNumber = numberValue.isNotBlank() && numberValue.toDoubleOrNull() == null
+
     val valueError = when (selectedType) {
         VariableType.STRING -> if (stringValue.isBlank()) "Value is required" else null
-        VariableType.NUMBER -> {
-            if (numberValue.isBlank()) {
-                "Value is required"
-            } else if (numberValue.toDoubleOrNull() == null) {
-                "Invalid number"
-            } else {
-                null
-            }
+        VariableType.NUMBER -> when {
+            numberValue.isBlank() -> "Value is required"
+            invalidNumber -> "Invalid number"
+            else -> null
         }
         VariableType.BOOLEAN -> null
     }
 
-    val canAdd = nameError == null && valueError == null && name.isNotBlank()
+    val canSave = nameError == null && valueError == null
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Variable") },
+        title = { Text(if (existing == null) "Add Variable" else "Edit Variable") },
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -326,8 +351,8 @@ private fun AddVariableDialog(
                             onValueChange = { numberValue = it },
                             label = { Text("Value") },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            isError = numberValue.isNotBlank() && numberValue.toDoubleOrNull() == null,
-                            supportingText = if (numberValue.isNotBlank() && numberValue.toDoubleOrNull() == null) {
+                            isError = invalidNumber,
+                            supportingText = if (invalidNumber) {
                                 { Text("Invalid number") }
                             } else {
                                 null
@@ -360,11 +385,11 @@ private fun AddVariableDialog(
                         VariableType.NUMBER -> CustomVariableValue.Number(numberValue.toDouble())
                         VariableType.BOOLEAN -> CustomVariableValue.Boolean(booleanValue)
                     }
-                    onAdd(name, value)
+                    onSave(name, value)
                 },
-                enabled = canAdd,
+                enabled = canSave,
             ) {
-                Text("Add")
+                Text(if (existing == null) "Add" else "Save")
             }
         },
         dismissButton = {
@@ -382,10 +407,10 @@ private fun CustomVariablesEditorDialogPreview() {
     CustomVariablesEditorDialog(
         customVariables = mapOf(
             "user_name" to CustomVariableValue.String("John"),
-            "user_points" to CustomVariableValue.String("100"),
-            "is_premium" to CustomVariableValue.String("true"),
+            "user_points" to CustomVariableValue.Number(100),
+            "is_premium" to CustomVariableValue.Boolean(true),
         ),
-        onAddVariable = { _, _ -> },
+        onSaveVariable = { _, _, _ -> },
         onRemoveVariable = {},
         onDismiss = {},
     )
@@ -396,7 +421,7 @@ private fun CustomVariablesEditorDialogPreview() {
 private fun CustomVariablesEditorDialogEmptyPreview() {
     CustomVariablesEditorDialog(
         customVariables = emptyMap(),
-        onAddVariable = { _, _ -> },
+        onSaveVariable = { _, _, _ -> },
         onRemoveVariable = {},
         onDismiss = {},
     )

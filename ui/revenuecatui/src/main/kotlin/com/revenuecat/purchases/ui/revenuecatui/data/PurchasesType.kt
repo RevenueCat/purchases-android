@@ -10,6 +10,7 @@ import com.revenuecat.purchases.PurchaseResult
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesAreCompletedBy
 import com.revenuecat.purchases.PurchasesException
+import com.revenuecat.purchases.Store
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.awaitCreateSupportTicket
 import com.revenuecat.purchases.awaitCustomerCenterConfigData
@@ -34,6 +35,8 @@ import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
  */
 @Suppress("TooManyFunctions")
 internal interface PurchasesType {
+    val appUserID: String
+
     suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult
 
     suspend fun awaitRestore(): CustomerInfo
@@ -61,6 +64,8 @@ internal interface PurchasesType {
 
     val storefrontCountryCode: String?
 
+    val store: Store
+
     val customerCenterListener: CustomerCenterListener?
 
     val preferredUILocaleOverride: String?
@@ -75,10 +80,15 @@ internal interface PurchasesType {
     suspend fun awaitGetUiConfig(): UiConfig
 
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution
+
+    suspend fun awaitWorkflowBlobRef(workflowId: String): String?
 }
 
 @Suppress("TooManyFunctions")
 internal class PurchasesImpl(private val purchases: Purchases = Purchases.sharedInstance) : PurchasesType {
+    override val appUserID: String
+        get() = purchases.appUserID
+
     override suspend fun awaitPurchase(purchaseParams: PurchaseParams.Builder): PurchaseResult {
         return purchases.awaitPurchase(purchaseParams.build())
     }
@@ -133,6 +143,9 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     override val storefrontCountryCode: String?
         get() = purchases.storefrontCountryCode
 
+    override val store: Store
+        get() = purchases.store
+
     override val customerCenterListener: CustomerCenterListener?
         get() = purchases.customerCenterListener
 
@@ -155,4 +168,8 @@ internal class PurchasesImpl(private val purchases: Purchases = Purchases.shared
     @OptIn(InternalRevenueCatAPI::class)
     override suspend fun resolveWorkflow(offeringId: String): WorkflowResolution =
         purchases.resolveWorkflow(offeringId)
+
+    @OptIn(InternalRevenueCatAPI::class)
+    override suspend fun awaitWorkflowBlobRef(workflowId: String): String? =
+        purchases.awaitWorkflowBlobRef(workflowId)
 }

@@ -14,7 +14,7 @@ import kotlin.test.assertEquals
 
 class WebViewComponentTests {
 
-    private val fillFitSize = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit())
+    private val fillFitSize = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit())
 
     @Language("json")
     private val fullJson = """

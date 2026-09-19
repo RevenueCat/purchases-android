@@ -533,6 +533,127 @@ class OfferVariableProcessingTests {
 
     // endregion
 
+    // region per-unit wiring
+
+    /// Distinct value per unit, so a swapped unit in the shared per-period path is visible.
+    /// A free trial cannot catch this: the word is returned whichever price was computed.
+    private val paidYearlyOption = mockk<SubscriptionOption> {
+        every { freePhase } returns null
+        every { introPhase } returns mockk<PricingPhase> {
+            every { price } returns Price(
+                amountMicros = 12_000_000, currencyCode = "USD", formatted = "$12.00",
+            )
+            every { billingPeriod } returns Period(value = 1, unit = Period.Unit.YEAR, iso8601 = "P1Y")
+            every { billingCycleCount } returns 1
+            every { recurrenceMode } returns RecurrenceMode.FINITE_RECURRING
+            every { pricePerDay(any()) } returns Price(
+                amountMicros = 1_000_000, currencyCode = "USD", formatted = "$1.00",
+            )
+            every { pricePerWeek(any()) } returns Price(
+                amountMicros = 2_000_000, currencyCode = "USD", formatted = "$2.00",
+            )
+            every { pricePerMonth(any()) } returns Price(
+                amountMicros = 3_000_000, currencyCode = "USD", formatted = "$3.00",
+            )
+            every { pricePerYear(any()) } returns Price(
+                amountMicros = 4_000_000, currencyCode = "USD", formatted = "$4.00",
+            )
+        }
+    }
+
+    @Test
+    fun `each offer_price_per_unit reads its own per period price`() {
+        val result = processTemplate(
+            template = "{{ product.offer_price_per_day }}|{{ product.offer_price_per_week }}|" +
+                "{{ product.offer_price_per_month }}|{{ product.offer_price_per_year }}",
+            rcPackage = packageWithIntroOffer,
+            subscriptionOption = paidYearlyOption,
+        )
+        assertThat(result).isEqualTo("$1.00|$2.00|$3.00|$4.00")
+    }
+
+    @Test
+    fun `each offer_price_with_zero_per_unit reads its own per period price`() {
+        val result = processTemplate(
+            template = "{{ product.offer_price_with_zero_per_day }}|" +
+                "{{ product.offer_price_with_zero_per_week }}|" +
+                "{{ product.offer_price_with_zero_per_month }}|" +
+                "{{ product.offer_price_with_zero_per_year }}",
+            rcPackage = packageWithIntroOffer,
+            subscriptionOption = paidYearlyOption,
+        )
+        assertThat(result).isEqualTo("$1.00|$2.00|$3.00|$4.00")
+    }
+
+    // endregion
+
+    // region offer_price_with_zero
+
+    private val freeTrialOption = mockk<SubscriptionOption> {
+        every { freePhase } returns mockk<PricingPhase> {
+            every { price } returns Price(amountMicros = 0, currencyCode = "USD", formatted = "$0.00")
+            every { billingPeriod } returns Period(value = 1, unit = Period.Unit.MONTH, iso8601 = "P1M")
+            every { billingCycleCount } returns 1
+            every { recurrenceMode } returns RecurrenceMode.FINITE_RECURRING
+            every { pricePerDay(any()) } returns Price(
+                amountMicros = 0, currencyCode = "USD", formatted = "$0.00",
+            )
+            every { pricePerWeek(any()) } returns Price(
+                amountMicros = 0, currencyCode = "USD", formatted = "$0.00",
+            )
+            every { pricePerMonth(any()) } returns Price(
+                amountMicros = 0, currencyCode = "USD", formatted = "$0.00",
+            )
+        }
+        every { introPhase } returns null
+    }
+
+    @Test
+    fun `offer_price_with_zero renders the amount for a free trial`() {
+        val result = processTemplate(
+            template = "{{ product.offer_price_with_zero }}",
+            rcPackage = packageWithIntroOffer,
+            subscriptionOption = freeTrialOption,
+        )
+        assertThat(result).isEqualTo("$0.00")
+    }
+
+    @Test
+    fun `offer_price_with_zero per period variants render the amount for a free trial`() {
+        val result = processTemplate(
+            template = "{{ product.offer_price_with_zero_per_day }}|" +
+                "{{ product.offer_price_with_zero_per_week }}|" +
+                "{{ product.offer_price_with_zero_per_month }}",
+            rcPackage = packageWithIntroOffer,
+            subscriptionOption = freeTrialOption,
+        )
+        assertThat(result).isEqualTo("$0.00|$0.00|$0.00")
+    }
+
+    @Test
+    fun `offer_price still renders the localized word for a free trial`() {
+        val result = processTemplate(
+            template = "{{ product.offer_price }}|{{ product.offer_price_per_month }}",
+            rcPackage = packageWithIntroOffer,
+            subscriptionOption = freeTrialOption,
+        )
+        assertThat(result).isEqualTo("free|free")
+    }
+
+    @Test
+    fun `offer_price_with_zero matches offer_price for a paid offer`() {
+        val template = "{{ product.offer_price }}|{{ product.offer_price_with_zero }}"
+        val result = processTemplate(
+            template = template,
+            rcPackage = packageWithIntroOffer,
+            subscriptionOption = null,
+        )
+        val parts = result.split("|")
+        assertThat(parts[0]).isEqualTo(parts[1])
+    }
+
+    // endregion
+
     private fun processTemplate(
         template: String,
         rcPackage: Package,

@@ -5,6 +5,7 @@ import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.UiConfig.AppConfig.FontsConfig.FontInfo
 import com.revenuecat.purchases.common.debugLog
 import com.revenuecat.purchases.common.errorLog
+import com.revenuecat.purchases.common.md5Hex
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
 import com.revenuecat.purchases.paywalls.fonts.DownloadableFontInfo
@@ -18,7 +19,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
-import java.security.MessageDigest
 import java.util.concurrent.atomic.AtomicBoolean
 import com.revenuecat.purchases.utils.Result as RCResult
 
@@ -33,10 +33,6 @@ internal class FontLoader(
 
     private val cacheDirectory: File? by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         providedCacheDir ?: context.cacheDir?.let { File(it, "rc_paywall_fonts") }
-    }
-
-    private val md: MessageDigest by lazy {
-        MessageDigest.getInstance("MD5")
     }
 
     private val fontInfosForHash = mutableMapOf<String, MutableSet<DownloadableFontInfo>>()
@@ -92,7 +88,7 @@ internal class FontLoader(
                 return@launch
             }
 
-            val urlHash = md5Hex(url.toByteArray(Charsets.UTF_8))
+            val urlHash = url.toByteArray(Charsets.UTF_8).md5Hex()
             val extension = url.substringAfterLast('.', missingDelimiterValue = "")
             val cachedFile = File(cacheDir, "$urlHash.$extension")
 
@@ -208,7 +204,7 @@ internal class FontLoader(
         try {
             urlConnectionFactory.downloadToFile(url, tempFile, description = "paywall font")
 
-            val actualMd5 = md5Hex(tempFile.readBytes())
+            val actualMd5 = tempFile.readBytes().md5Hex()
             if (!actualMd5.equals(expectedMd5, ignoreCase = true)) {
                 tempFile.delete()
                 errorLog { "Downloaded font file is corrupt for $url. expected=$expectedMd5, actual=$actualMd5" }
@@ -226,10 +222,5 @@ internal class FontLoader(
             errorLog { "Error downloading font from $url: ${e.message}" }
             return Result.failure(e)
         }
-    }
-
-    private fun md5Hex(bytes: ByteArray): String {
-        val digest = md.digest(bytes)
-        return digest.joinToString("") { "%02x".format(it) }
     }
 }

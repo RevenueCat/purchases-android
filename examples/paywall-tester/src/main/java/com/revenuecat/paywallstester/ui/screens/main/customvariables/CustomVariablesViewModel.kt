@@ -45,18 +45,18 @@ class CustomVariablesViewModel : ViewModel() {
         _isEditorVisible.value = false
     }
 
-    fun addVariable(name: String, value: CustomVariableValue) {
-        _customVariables.value = _customVariables.value + (name to value)
+    fun saveVariable(previousName: String?, name: String, value: CustomVariableValue) {
+        val variables = if (previousName != null && previousName != name) {
+            _customVariables.value - previousName
+        } else {
+            _customVariables.value
+        }
+        _customVariables.value = variables + (name to value)
         syncToHolder()
     }
 
     fun removeVariable(name: String) {
         _customVariables.value = _customVariables.value - name
-        syncToHolder()
-    }
-
-    fun updateVariable(name: String, value: CustomVariableValue) {
-        _customVariables.value = _customVariables.value + (name to value)
         syncToHolder()
     }
 

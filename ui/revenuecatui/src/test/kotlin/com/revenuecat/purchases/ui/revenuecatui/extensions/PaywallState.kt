@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.extensions
 
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
@@ -24,6 +26,7 @@ internal fun Offering.toComponentsPaywallState(
     dateProvider: () -> Date = { Date() },
     purchases: PurchasesType = MockPurchasesType(),
     customVariables: Map<String, CustomVariableValue> = emptyMap(),
+    viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
 ): PaywallState.Loaded.Components =
     actualToComponentsPaywallState(
         validationResult = validationResult,
@@ -31,6 +34,7 @@ internal fun Offering.toComponentsPaywallState(
         dateProvider = dateProvider,
         purchases = purchases,
         customVariables = customVariables,
+        viewModelActionInProgress = viewModelActionInProgress,
     )
 
 /**

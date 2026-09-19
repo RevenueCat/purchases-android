@@ -38,6 +38,9 @@ import com.revenuecat.paywallstester.Constants
 import com.revenuecat.paywallstester.MainActivity
 import com.revenuecat.paywallstester.ui.screens.main.appinfo.AppInfoScreenViewModel.UiState
 import com.revenuecat.paywallstester.ui.screens.main.createCustomerCenterListener
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.interfaces.ManageSubscriptionsCallback
 import com.revenuecat.purchases.ui.debugview.DebugRevenueCatBottomSheet
 import com.revenuecat.purchases.ui.revenuecatui.views.CustomerCenterView
 import kotlinx.coroutines.Dispatchers
@@ -60,6 +63,7 @@ fun AppInfoScreen(
     var isDebugBottomSheetVisible by remember { mutableStateOf(false) }
     var showLogInDialog by remember { mutableStateOf(false) }
     var showApiKeyDialog by remember { mutableStateOf(false) }
+    var showSubscriberAttributesDialog by remember { mutableStateOf(false) }
     var showCustomerCenterView by remember { mutableStateOf(false) }
     var isClearingFileCache by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -81,12 +85,12 @@ fun AppInfoScreen(
         )
     }
 
+    val state by viewModel.state.collectAsState()
     Column(
         modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        val state by viewModel.state.collectAsState()
         val activity = LocalContext.current as MainActivity
         val currentUserID by remember { derivedStateOf { state.appUserID } }
         val currentApiKeyDescription by remember { derivedStateOf { state.apiKeyDescription } }
@@ -100,6 +104,9 @@ fun AppInfoScreen(
         }
         Button(onClick = { viewModel.logOut() }) {
             Text(text = "Log out")
+        }
+        Button(onClick = { showSubscriberAttributesDialog = true }) {
+            Text(text = "Subscriber attributes")
         }
         Button(onClick = { showApiKeyDialog = true }) {
             Text(text = "Switch API key")
@@ -150,6 +157,27 @@ fun AppInfoScreen(
         }) {
             Text(text = "Checkpoints")
         }
+        Button(onClick = {
+            Purchases.sharedInstance.showManageSubscriptions(
+                context,
+                object : ManageSubscriptionsCallback {
+                    override fun onSuccess() {
+                        Log.d("PaywallTester", "showManageSubscriptions opened the management page")
+                    }
+
+                    override fun onError(error: PurchasesError) {
+                        Log.e("PaywallTester", "showManageSubscriptions failed: $error")
+                        Toast.makeText(
+                            context,
+                            "Manage subscriptions failed: ${error.message}",
+                            Toast.LENGTH_LONG,
+                        ).show()
+                    }
+                },
+            )
+        }) {
+            Text(text = "Show manage subscriptions")
+        }
         Spacer(modifier = Modifier.weight(1f))
         Button(onClick = { viewModel.refresh() }) {
             Text(text = "Refresh")
@@ -158,6 +186,15 @@ fun AppInfoScreen(
 
     if (showLogInDialog) {
         LoginDialog(viewModel) { showLogInDialog = false }
+    }
+    if (showSubscriberAttributesDialog) {
+        SubscriberAttributesDialog(
+            attributes = state.subscriberAttributes,
+            onSet = viewModel::setSubscriberAttribute,
+            onClear = viewModel::clearSubscriberAttribute,
+            onClearAll = viewModel::clearAllSubscriberAttributes,
+            onDismiss = { showSubscriberAttributesDialog = false },
+        )
     }
     if (showApiKeyDialog) {
         ApiKeyDialog(
@@ -339,6 +376,9 @@ fun AppInfoScreenPreview() {
             override fun logOut() {}
             override fun switchApiKey(newApiKey: String) {}
             override fun refresh() {}
+            override fun setSubscriberAttribute(key: String, value: String) {}
+            override fun clearSubscriberAttribute(key: String) {}
+            override fun clearAllSubscriberAttributes() {}
         },
         tappedOnCustomerCenter = {},
         tappedOnCheckpoints = {},

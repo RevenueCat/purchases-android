@@ -619,7 +619,7 @@ private fun previewPage(
             distribution = FlexDistribution.CENTER,
         ),
         visible = true,
-        size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fixed(height)),
+        size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fixed(height)),
         spacing = 8.dp,
         background = BackgroundStyles.Color(
             color = ColorStyles(light = ColorStyle.Solid(backgroundColor)),

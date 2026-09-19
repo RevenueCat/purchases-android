@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.common.verification
 
 import android.util.Base64
+import com.google.crypto.tink.config.TinkFips
 import com.google.crypto.tink.subtle.Ed25519Verify
 import java.security.GeneralSecurityException
 
@@ -13,6 +14,9 @@ internal class DefaultSignatureVerifier(
 ) : SignatureVerifier {
     companion object {
         private const val DEFAULT_PUBLIC_KEY = "UC1upXWg5QVmyOSwozp755xLqquBKjjU+di6U8QhMlM="
+
+        // Ed25519 is not FIPS compatible, so Ed25519Verify cannot be created while Tink is restricted to FIPS mode.
+        fun isSupported(): Boolean = !TinkFips.useOnlyFips()
     }
 
     constructor(publicKey: String = DEFAULT_PUBLIC_KEY) : this(Base64.decode(publicKey, Base64.DEFAULT))

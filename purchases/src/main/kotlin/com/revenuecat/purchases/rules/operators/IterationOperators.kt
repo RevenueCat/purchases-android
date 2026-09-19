@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.rules.operators
 
 import com.revenuecat.purchases.rules.Evaluator
+import com.revenuecat.purchases.rules.Scope
 import com.revenuecat.purchases.rules.Value
 
 /**
@@ -13,13 +14,14 @@ import com.revenuecat.purchases.rules.Value
  *   evaluated in the outer scope and must resolve to an array; anything
  *   else is treated as an empty source. The second argument is a
  *   literal template that is evaluated per-item with `vars` rebound to
- *   the current item, with no parent-scope inheritance.
+ *   the current item, with no parent-scope inheritance for `var`; the
+ *   preserved root scope remains available (`rc.rootVar` reads it).
  * - **Shape** (`reduce`):
  *   `{"reduce": [arrayExpr, predicateExpr, initialAccumulator]}`. Both
  *   the first and third arguments are evaluated in the outer scope.
  *   The predicate is evaluated per-item with `vars` rebound to
- *   `{"current": <item>, "accumulator": <acc>}`, with no parent-scope
- *   inheritance.
+ *   `{"current": <item>, "accumulator": <acc>}`; `var` sees only that
+ *   object, but `rc.rootVar` still reaches the root.
  *
  * **Empty- and non-array sources** per the JSON Logic JS spec:
  * - `some` / `all` return `false`.
@@ -33,13 +35,13 @@ internal object IterationOperators {
      * `{"some": [arrayExpr, predicate]}` — `true` iff `predicate` is
      * truthy for at least one item. The array expression is evaluated in
      * the current scope; the predicate is re-evaluated per item with
-     * `vars` rebound to that item, with no parent-scope inheritance.
-     * Empty array or non-array source returns `false`. Short-circuits on
-     * the first truthy result.
+     * `vars` rebound to that item (`var` reads the item; `rc.rootVar`
+     * reads the root). Empty array or non-array source returns `false`.
+     * Short-circuits on the first truthy result.
      */
-    fun opSome(args: Value, vars: Value): Value {
+    fun opSome(args: Value, vars: Scope): Value {
         val (items, predicate) = parseIterationArgs(args, vars)
-        val result = items?.any { Evaluator.evaluateValue(predicate, it).isTruthy } ?: false
+        val result = items?.any { Evaluator.evaluateValue(predicate, vars.scoped(it)).isTruthy } ?: false
         return Value.BoolValue(result)
     }
 
@@ -47,14 +49,15 @@ internal object IterationOperators {
      * `{"all": [arrayExpr, predicate]}` — `true` iff `predicate` is
      * truthy for every item. The array expression is evaluated in the
      * current scope; the predicate is re-evaluated per item with `vars`
-     * rebound to that item, with no parent-scope inheritance. Empty array
-     * returns `false` per the JSON Logic JS spec. Non-array source
-     * returns `false`. Short-circuits on the first non-truthy result.
+     * rebound to that item (`var` reads the item; `rc.rootVar` reads the
+     * root). Empty array returns `false` per the JSON Logic JS spec.
+     * Non-array source returns `false`. Short-circuits on the first
+     * non-truthy result.
      */
-    fun opAll(args: Value, vars: Value): Value {
+    fun opAll(args: Value, vars: Scope): Value {
         val (items, predicate) = parseIterationArgs(args, vars)
         val result = !items.isNullOrEmpty() &&
-            items.all { Evaluator.evaluateValue(predicate, it).isTruthy }
+            items.all { Evaluator.evaluateValue(predicate, vars.scoped(it)).isTruthy }
         return Value.BoolValue(result)
     }
 
@@ -64,9 +67,9 @@ internal object IterationOperators {
      * first truthy item. Empty and non-array sources both return `true`,
      * matching the JS reference's `!Array.isArray(x) || !x.length` guard.
      */
-    fun opNone(args: Value, vars: Value): Value {
+    fun opNone(args: Value, vars: Scope): Value {
         val (items, predicate) = parseIterationArgs(args, vars)
-        val result = items?.none { Evaluator.evaluateValue(predicate, it).isTruthy } ?: true
+        val result = items?.none { Evaluator.evaluateValue(predicate, vars.scoped(it)).isTruthy } ?: true
         return Value.BoolValue(result)
     }
 
@@ -75,9 +78,9 @@ internal object IterationOperators {
      * item, return the new array of *raw* (non-truthy-coerced) results.
      * Empty or non-array source yields `[]`.
      */
-    fun opMap(args: Value, vars: Value): Value {
+    fun opMap(args: Value, vars: Scope): Value {
         val (items, predicate) = parseIterationArgs(args, vars)
-        val results = items?.map { Evaluator.evaluateValue(predicate, it) } ?: emptyList()
+        val results = items?.map { Evaluator.evaluateValue(predicate, vars.scoped(it)) } ?: emptyList()
         return Value.ArrayValue(results)
     }
 
@@ -87,9 +90,9 @@ internal object IterationOperators {
      * `[]`. The retained items are the *original* values, not the
      * predicate results.
      */
-    fun opFilter(args: Value, vars: Value): Value {
+    fun opFilter(args: Value, vars: Scope): Value {
         val (items, predicate) = parseIterationArgs(args, vars)
-        val results = items?.filter { Evaluator.evaluateValue(predicate, it).isTruthy } ?: emptyList()
+        val results = items?.filter { Evaluator.evaluateValue(predicate, vars.scoped(it)).isTruthy } ?: emptyList()
         return Value.ArrayValue(results)
     }
 
@@ -106,7 +109,7 @@ internal object IterationOperators {
      * seeds the fold with `typeof values[2] !== "undefined" ? values[2]
      * : null`. Arguments past the third are ignored.
      */
-    fun opReduce(args: Value, vars: Value): Value {
+    fun opReduce(args: Value, vars: Scope): Value {
         val raw = Operators.argsAsList(args)
         val sourceArg = raw.getOrNull(0) ?: Value.Null
         val predicate = raw.getOrNull(1) ?: Value.Undefined
@@ -114,8 +117,10 @@ internal object IterationOperators {
         var accumulator = raw.getOrNull(2)?.let { Evaluator.evaluateValue(it, vars) } ?: Value.Null
         val items = (source as? Value.ArrayValue)?.items ?: return accumulator
         for (item in items) {
-            val scope = Value.ObjectValue(mapOf("current" to item, "accumulator" to accumulator))
-            accumulator = Evaluator.evaluateValue(predicate, scope)
+            val itemScope = vars.scoped(
+                Value.ObjectValue(mapOf("current" to item, "accumulator" to accumulator)),
+            )
+            accumulator = Evaluator.evaluateValue(predicate, itemScope)
         }
         return accumulator
     }
@@ -136,7 +141,7 @@ internal object IterationOperators {
      */
     private fun parseIterationArgs(
         args: Value,
-        vars: Value,
+        vars: Scope,
     ): Pair<List<Value>?, Value> {
         val raw = Operators.argsAsList(args)
         val sourceArg = raw.getOrNull(0) ?: Value.Null

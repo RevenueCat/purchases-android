@@ -11,22 +11,23 @@ import kotlinx.serialization.encoding.Encoder
  * Deserializer for enums with a default value.
  */
 internal abstract class EnumDeserializerWithDefault<T : Enum<T>>(
+    private val serialName: String,
     private val valuesByType: Map<String, T>,
     private val defaultValue: T,
 ) : KSerializer<T> {
 
     constructor(
+        serialName: String,
         defaultValue: T,
         typeForValue: (T) -> String = { value -> value.name.lowercase() },
     ) : this(
+        serialName = serialName,
         valuesByType = defaultValue::class.java.enumConstants.associateBy(typeForValue),
         defaultValue = defaultValue,
     )
 
-    private val enumName = defaultValue.javaClass.simpleName
-
     override val descriptor: SerialDescriptor =
-        PrimitiveSerialDescriptor(enumName, PrimitiveKind.STRING)
+        PrimitiveSerialDescriptor(serialName, PrimitiveKind.STRING)
 
     override fun deserialize(decoder: Decoder): T {
         val key = decoder.decodeString()

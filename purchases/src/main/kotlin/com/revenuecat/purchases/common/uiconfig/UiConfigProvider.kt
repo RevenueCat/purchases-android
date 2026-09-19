@@ -2,10 +2,12 @@ package com.revenuecat.purchases.common.uiconfig
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.common.errorLog
 import com.revenuecat.purchases.common.remoteconfig.GenerationGuardedCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
+import com.revenuecat.purchases.common.remoteconfig.readConsistent
 import com.revenuecat.purchases.common.verboseLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -32,7 +34,9 @@ import kotlinx.coroutines.launch
  * synchronously (the suspend fn never suspends, so it resumes on the caller's thread with no dispatch) and only
  * a miss touches the config layer. The in-memory copy is re-warmed on every config commit and dropped on
  * identity change / disable (via [RemoteConfigCommitListener]); a [RemoteConfigManager.configGeneration] guard
- * makes sure a slower disk warm never clobbers a fresher network commit (store-if-newer).
+ * makes sure a slower disk warm never clobbers a fresher network commit (store-if-newer). Cold reads are
+ * guarded by [readConsistent], so a read superseded mid-resolve re-resolves against the new state instead of
+ * serving it.
  */
 @OptIn(InternalRevenueCatAPI::class)
 @Suppress("TooManyFunctions")
@@ -60,21 +64,21 @@ internal class UiConfigProvider(
      */
     suspend fun resolveUiConfig(): UiConfigResolution {
         cache.cached?.let { return UiConfigResolution.Found(it) }
-
-        val generation = manager.configGeneration
-        val resolved = resolve()
-        if (resolved != null) cache.store(generation, resolved)
-
-        // What the cache accepted is what can be served, never `resolved` itself: store-if-newer drops a value
-        // whose generation was overtaken mid-resolve, and that value may belong to the previous user.
-        val served = cache.cached
-        return when {
-            served != null -> UiConfigResolution.Found(served)
-            // Resolved fine, but the generation guard dropped it — not a failure, and it must not be classified
-            // from the committed state (an identity change has already wiped it). The next read re-resolves.
-            resolved != null -> UiConfigResolution.Superseded
-            else -> classifyUnresolved()
+        val resolution = manager.readConsistent(what = { "ui_config" }) { generation ->
+            when (val resolved = resolve()) {
+                null -> classifyUnresolved()
+                else -> {
+                    // Publish only while the read still looks consistent: a superseded value may belong to the
+                    // previous user and must not land in the memory-first cache (the retry re-resolves, and the
+                    // commit that superseded it re-warms the cache on its own).
+                    if (manager.configGeneration == generation) cache.store(generation, resolved)
+                    UiConfigResolution.Found(resolved)
+                }
+            }
         }
+        // Superseded on both attempts: nothing trustworthy to serve or classify (an identity change has
+        // already wiped the committed state the read saw). The next read re-resolves.
+        return resolution ?: UiConfigResolution.Superseded
     }
 
     /**
@@ -117,8 +121,21 @@ internal class UiConfigProvider(
         scope.cancel()
     }
 
-    private suspend fun resolve(): UiConfig? =
-        manager.mergeItemsBlobData<UiConfig>(RemoteConfigTopic.UiConfig, ITEM_KEYS)
+    private suspend fun resolve(): UiConfig? {
+        if (manager.isDisabled) return null
+        // topic() waits for or primes the initial config sync on a cold cache. Once that authoritative topic is
+        // available, an absent topic or one with none of the ui_config parts means the project has no ui_config;
+        // avoid asking the generic all-or-nothing merger to resolve four known-missing blobs and warning about it.
+        var topic = manager.topic(RemoteConfigTopic.UiConfig)
+        if (topic != null && ITEM_KEYS.none(topic::containsKey)) {
+            topic = manager.committedTopicAfterInFlightRefresh(RemoteConfigTopic.UiConfig)
+        }
+        return if (topic == null || ITEM_KEYS.none(topic::containsKey)) {
+            null
+        } else {
+            manager.mergeItemsBlobData<UiConfig>(RemoteConfigTopic.UiConfig, ITEM_KEYS)
+        }
+    }
 
     /**
      * Tells "there is nothing to resolve" apart from "resolving what is published failed". Only ever called
@@ -128,10 +145,11 @@ internal class UiConfigProvider(
      */
     private suspend fun classifyUnresolved(): UiConfigResolution {
         // First: committedTopicOrNull also returns null when the endpoint is disabled, which would otherwise be
-        // indistinguishable from an absent topic.
+        // indistinguishable from an absent topic. ui_config is never resolved with remote config off
+        // (customEntitlementComputation), so a call here is a wiring bug worth surfacing.
         if (manager.isDisabled) {
-            verboseLog { "Remote config is disabled (4xx); there is no ui_config to resolve." }
-            return UiConfigResolution.Disabled
+            errorLog { "ui_config is unavailable: remote config is disabled for this SDK configuration." }
+            return UiConfigResolution.Unavailable
         }
         val topic = manager.committedTopicOrNull(RemoteConfigTopic.UiConfig)
         val presentKeys = ITEM_KEYS.filter { topic?.containsKey(it) == true }

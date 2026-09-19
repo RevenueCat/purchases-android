@@ -2,7 +2,6 @@ package com.revenuecat.purchases.ui.revenuecatui.activity
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.view.Window
 import androidx.activity.ComponentActivity
@@ -23,6 +22,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.googlefonts.Font
 import androidx.compose.ui.text.googlefonts.GoogleFont
+import androidx.core.content.IntentCompat
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Package
@@ -32,6 +32,7 @@ import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.Paywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.fonts.FontProvider
@@ -63,12 +64,7 @@ internal class PaywallActivity : ComponentActivity() {
         }
 
     private fun getArgs(): PaywallActivityArgs? {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra(ARGS_EXTRA, PaywallActivityArgs::class.java)
-        } else {
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra(ARGS_EXTRA)
-        }
+        return IntentCompat.getParcelableExtra(intent, ARGS_EXTRA, PaywallActivityArgs::class.java)
     }
 
     private fun getFontProvider(): FontProvider? {
@@ -194,6 +190,10 @@ internal class PaywallActivity : ComponentActivity() {
             override fun onUrlOpened(url: String) {
                 userListener?.onUrlOpened(url)
             }
+
+            override fun onInteraction(event: PaywallInteractionEvent) {
+                userListener?.onInteraction(event)
+            }
         }
 
         val edgeToEdge = args?.edgeToEdge == true
@@ -225,7 +225,9 @@ internal class PaywallActivity : ComponentActivity() {
                             )
                             .setListener(compositeListener)
                             .setPurchaseLogic(purchaseLogic)
-                            .setDismissRequestWithExitOffering(::onDismissRequest)
+                            .setDismissRequestWithExitOffering { exitOffering, result, _ ->
+                                onDismissRequest(exitOffering, result)
+                            }
                             .setCustomVariables(args?.customVariables ?: emptyMap())
                             .build()
                         val viewModel = getPaywallViewModel(

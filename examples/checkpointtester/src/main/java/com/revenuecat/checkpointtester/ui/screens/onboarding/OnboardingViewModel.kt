@@ -1,23 +1,20 @@
 package com.revenuecat.checkpointtester.ui.screens.onboarding
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import com.revenuecat.checkpointtester.checkpoints.PaywallPresenters
+import com.revenuecat.checkpointtester.checkpoints.summary
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
-import com.revenuecat.purchases.PurchasesException
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointParams
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointPaywallOutcome
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.CheckpointResult
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.awaitCheckpoint
+import com.revenuecat.purchases.ui.revenuecatui.checkpoints.checkpoint
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 /**
- * Onboarding semantics: the checkpoint runs between the last input step and the final step, and the flow always
- * advances afterwards regardless of the outcome. The result is surfaced on the final step for inspection.
+ * Onboarding semantics: the checkpoint runs between the last input step and the final step, and the flow advances
+ * whenever the checkpoint reports back, regardless of the outcome. Backing out of the flow never reports, so the user
+ * stays on the last input step and can continue again. The result is surfaced on the final step for inspection.
  */
 class OnboardingViewModel : ViewModel() {
 
@@ -38,7 +35,6 @@ class OnboardingViewModel : ViewModel() {
 
     data class UiState(
         val step: Step = Step.Welcome,
-        val running: Boolean = false,
         val message: String? = null,
     ) {
         val progress: Float
@@ -49,7 +45,6 @@ class OnboardingViewModel : ViewModel() {
     val state: StateFlow<UiState> = _state.asStateFlow()
 
     fun next() {
-        if (_state.value.running) return
         when (_state.value.step) {
             Step.Welcome -> _state.update { it.copy(step = Step.Personalize) }
             Step.Personalize -> runCheckpointThenFinish()
@@ -58,41 +53,23 @@ class OnboardingViewModel : ViewModel() {
     }
 
     fun previous() {
-        if (_state.value.running) return
         val previousStep = Step.entries.getOrNull(_state.value.step.ordinal - 1) ?: return
         _state.update { it.copy(step = previousStep) }
     }
 
     fun restart() {
-        if (_state.value.running) return
         _state.update { UiState() }
     }
 
     @OptIn(InternalRevenueCatAPI::class)
     private fun runCheckpointThenFinish() {
-        _state.update { it.copy(running = true, message = null) }
-        viewModelScope.launch {
-            val message = try {
-                val result = Purchases.sharedInstance.awaitCheckpoint(
-                    "onboarding_complete",
-                    CheckpointParams("step" to Step.Personalize.name),
-                )
-                when (result) {
-                    is CheckpointResult.PaywallPresented -> when (val outcome = result.paywallOutcome) {
-                        is CheckpointPaywallOutcome.Purchased -> "Purchased during onboarding."
-                        is CheckpointPaywallOutcome.Restored -> "Restored during onboarding."
-                        CheckpointPaywallOutcome.Dismissed -> "Paywall dismissed."
-                        is CheckpointPaywallOutcome.Error -> "Paywall error: ${outcome.error.message}"
-                        else -> "Unknown paywall outcome."
-                    }
-                    is CheckpointResult.NoAction -> "No paywall shown (${result.reason.value})."
-                    else -> "Unknown checkpoint result."
-                }
-            } catch (e: PurchasesException) {
-                "Checkpoint failed: ${e.message}"
-            }
-            // Whatever happened, onboarding completes: a paywall outcome must not strand the user mid-flow.
-            _state.update { it.copy(running = false, message = message, step = Step.Done) }
+        _state.update { it.copy(message = null) }
+        Purchases.sharedInstance.checkpoint(
+            "onboarding_complete",
+            PaywallPresenters.params { customVariables { "step" to Step.Personalize.name } },
+        ) { result ->
+            // Whatever happened, onboarding completes: a flow outcome must not strand the user mid-flow.
+            _state.update { it.copy(message = result.summary(), step = Step.Done) }
         }
     }
 }

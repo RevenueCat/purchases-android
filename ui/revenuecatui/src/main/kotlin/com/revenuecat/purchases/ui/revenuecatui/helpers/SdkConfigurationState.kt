@@ -1,9 +1,9 @@
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
 import android.content.Context
-import android.os.Build
 import android.os.Bundle
 import android.os.Parcelable
+import androidx.core.os.BundleCompat
 import com.revenuecat.purchases.DangerousSettings
 import com.revenuecat.purchases.EntitlementVerificationMode
 import com.revenuecat.purchases.Purchases
@@ -56,12 +56,7 @@ internal data class SdkConfigurationState(
 }
 
 private fun Bundle.getSdkConfigurationState(): SdkConfigurationState? {
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        getParcelable(SDK_CONFIG_EXTRA, SdkConfigurationState::class.java)
-    } else {
-        @Suppress("DEPRECATION")
-        getParcelable(SDK_CONFIG_EXTRA)
-    }
+    return BundleCompat.getParcelable(this, SDK_CONFIG_EXTRA, SdkConfigurationState::class.java)
 }
 
 internal fun saveSdkConfiguration(outState: Bundle) {

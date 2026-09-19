@@ -84,7 +84,7 @@ class RemoteConfigManagerTest {
     private lateinit var onError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit
 
     private lateinit var onFallbackSuccess: (RemoteConfiguration, VerificationResult) -> Unit
-    private lateinit var onFallbackError: (PurchasesError, GetRemoteConfigErrorHandlingBehavior) -> Unit
+    private lateinit var onFallbackError: (PurchasesError) -> Unit
 
     @Before
     fun setup() {
@@ -207,10 +207,7 @@ class RemoteConfigManagerTest {
             PurchasesError(PurchasesErrorCode.NetworkError),
             GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
         )
-        onFallbackError.invoke(
-            PurchasesError(PurchasesErrorCode.NetworkError),
-            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
-        )
+        onFallbackError.invoke(PurchasesError(PurchasesErrorCode.NetworkError))
 
         manager.refreshRemoteConfig(
             appInBackground = false,
@@ -969,32 +966,21 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `a 4xx logs when remote config is disabled and when a later refresh is skipped`() {
-        every { diskCache.read() } returns null
-        val error = PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request")
+    fun `a disabled manager logs and skips refresh`() {
+        val manager = disabledManager()
 
-        assertErrorLog(
-            "😿‼️ Disabling remote config for this session after receiving a 4xx response. Error: $error",
-        ) {
-            manager.refreshRemoteConfig(
-                appInBackground = false,
-                appUserID = TEST_APP_USER_ID,
-                fetchContext = DEFAULT_FETCH_CONTEXT,
-            )
-            onError.invoke(error, GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE)
-        }
-
-        assertDebugLog("Remote config is disabled for this session (4xx). Skipping refresh.") {
+        assertDebugLog("Remote config is disabled for this SDK configuration. Skipping refresh.") {
             manager.refreshRemoteConfig(
                 appInBackground = false,
                 appUserID = TEST_APP_USER_ID,
                 fetchContext = DEFAULT_FETCH_CONTEXT,
             )
         }
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
-    fun `a non-4xx refresh error keeps the generic error log`() {
+    fun `a refresh error logs the error`() {
         every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
         val error = PurchasesError(PurchasesErrorCode.UnknownError, "boom")
 
@@ -1009,21 +995,15 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `a 4xx disables the endpoint for the session and blocks further refreshes and blob work`() {
+    fun `a disabled manager never issues config requests or blob work`() {
         every { diskCache.read() } returns null
-
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onError.invoke(
-            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
-            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
-        )
+        val manager = disabledManager()
 
         assertThat(manager.isDisabled).isTrue()
 
-        // No further config request and no blob fetch happen for the rest of the session.
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
         verify(exactly = 0) { blobFetcher.prefetch(any()) }
     }
 
@@ -1066,74 +1046,6 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `a 4xx disable invalidates listeners once`() {
-        every { diskCache.read() } returns null
-        val recorder = RecordingCommitListener()
-        manager.registerListener(recorder)
-
-        manager.refreshRemoteConfig(
-            appInBackground = false,
-            appUserID = TEST_APP_USER_ID,
-            fetchContext = DEFAULT_FETCH_CONTEXT,
-        )
-        onError.invoke(
-            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
-            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
-        )
-
-        assertThat(manager.isDisabled).isTrue()
-        assertThat(recorder.invalidated).containsExactly(1)
-    }
-
-    @Test
-    fun `a 4xx disable signals onRemoteConfigDisabled exactly once`() {
-        every { diskCache.read() } returns null
-        val recorder = RecordingCommitListener()
-        manager.registerListener(recorder)
-
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onError.invoke(
-            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
-            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
-        )
-
-        // Further refreshes are no-ops (already disabled), so the disable signal must not fire again.
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-
-        assertThat(recorder.disabled).containsExactly(1)
-    }
-
-    @Test
-    fun `clearCache does not signal onRemoteConfigDisabled`() {
-        val recorder = RecordingCommitListener()
-        manager.registerListener(recorder)
-
-        manager.clearCache(TEST_APP_USER_ID)
-
-        assertThat(recorder.disabled).isEmpty()
-    }
-
-    @Test
-    fun `a normal commit does not signal onRemoteConfigDisabled`() {
-        every { diskCache.read() } returns null
-        val recorder = RecordingCommitListener()
-        manager.registerListener(recorder)
-        val response = """
-            {
-              "domain": "app",
-              "manifest": "v1",
-              "active_topics": ["sources"],
-              "topics": { "sources": { "default": { "blob_ref": "b" } } }
-            }
-        """.trimIndent()
-
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        deliverSuccess(containerWithConfig(response))
-
-        assertThat(recorder.disabled).isEmpty()
-    }
-
-    @Test
     fun `committedTopicOrNull returns committed data without triggering a sync`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",
@@ -1163,7 +1075,7 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `topic returns null once the endpoint is disabled even when data is cached`() = runTest {
+    fun `topic returns null on a disabled manager even when data is cached`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",
             activeTopics = listOf("workflows"),
@@ -1171,15 +1083,9 @@ class RemoteConfigManagerTest {
                 "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
             ),
         )
-        val manager = readManager()
-        // A 4xx disables the endpoint for the session.
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onError.invoke(
-            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
-            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
-        )
+        val manager = readManager(enabled = false)
 
-        // Even though the topic is cached, a disabled endpoint yields no reads.
+        // Even though the topic is cached, a disabled manager yields no reads.
         assertThat(manager.topic(RemoteConfigTopic.Workflows)).isNull()
     }
 
@@ -1228,7 +1134,7 @@ class RemoteConfigManagerTest {
         }
 
     @Test
-    fun `awaitTopicAndPrefetchBlobsReady returns null and skips the fetcher once the endpoint is disabled`() =
+    fun `awaitTopicAndPrefetchBlobsReady returns null and skips the fetcher on a disabled manager`() =
         runTest {
             every { diskCache.read() } returns persisted(
                 manifest = "m",
@@ -1239,12 +1145,7 @@ class RemoteConfigManagerTest {
                     ),
                 ),
             )
-            val manager = readManager()
-            manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-            onError.invoke(
-                PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
-                GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
-            )
+            val manager = readManager(enabled = false)
 
             assertThat(manager.awaitTopicAndPrefetchBlobsReady(RemoteConfigTopic.Workflows)).isNull()
             coVerify(exactly = 0) { blobFetcher.ensureDownloaded(any<List<String>>()) }
@@ -1310,7 +1211,7 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `a retryable error does not disable the endpoint`() {
+    fun `a retryable error keeps the endpoint usable`() {
         // Warm cache: a retryable error settles directly (no cold-start fallback), so a subsequent refresh fires.
         every { diskCache.read() } returns persisted(manifest = "v1.1.sources:etag1")
 
@@ -1438,17 +1339,21 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `a 4xx does not attempt the fallback`() {
+    fun `a 4xx does not attempt the fallback but keeps the endpoint usable`() {
         every { diskCache.read() } returns null
 
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
         onError.invoke(
             PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
-            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
+            GetRemoteConfigErrorHandlingBehavior.SHOULD_NOT_TRY_FALLBACK,
         )
 
         verify(exactly = 0) { backend.getRemoteConfigFallback(any(), any(), any(), any()) }
-        assertThat(manager.isDisabled).isTrue()
+        assertThat(manager.isDisabled).isFalse()
+
+        // The endpoint is still usable, so a subsequent refresh fires.
+        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
+        verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -1460,10 +1365,7 @@ class RemoteConfigManagerTest {
             PurchasesError(PurchasesErrorCode.UnknownBackendError, "server error"),
             GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
         )
-        onFallbackError.invoke(
-            PurchasesError(PurchasesErrorCode.UnknownBackendError, "still down"),
-            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
-        )
+        onFallbackError.invoke(PurchasesError(PurchasesErrorCode.UnknownBackendError, "still down"))
 
         // The fallback settled the sync, so a later refresh is allowed to fire again.
         manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
@@ -1479,10 +1381,7 @@ class RemoteConfigManagerTest {
             PurchasesError(PurchasesErrorCode.UnknownBackendError, "server error"),
             GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
         )
-        onFallbackError.invoke(
-            PurchasesError(PurchasesErrorCode.UnknownBackendError, "still down"),
-            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
-        )
+        onFallbackError.invoke(PurchasesError(PurchasesErrorCode.UnknownBackendError, "still down"))
 
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
         verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
@@ -1492,41 +1391,18 @@ class RemoteConfigManagerTest {
         verify(exactly = 2) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
-    @Test
-    fun `a 4xx from the fallback disables the endpoint`() {
-        every { diskCache.read() } returns null
-
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onError.invoke(
-            PurchasesError(PurchasesErrorCode.UnknownBackendError, "server error"),
-            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
-        )
-        onFallbackError.invoke(
-            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
-            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
-        )
-
-        assertThat(manager.isDisabled).isTrue()
-    }
-
     // endregion Fallback endpoint
 
     @Test
-    fun `clearCache does not re-enable an endpoint disabled by a 4xx`() {
+    fun `clearCache does not re-enable a disabled manager`() {
         every { diskCache.read() } returns null
+        val manager = disabledManager()
 
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onError.invoke(
-            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
-            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
-        )
-
-        // Identity change: the disable survives (it is an endpoint/app-level fact, not per-user).
         manager.clearCache(TEST_APP_USER_ID)
 
         assertThat(manager.isDisabled).isTrue()
         manager.refreshRemoteConfigIfStale(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -2178,7 +2054,7 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `blobData skips the network for a blob-backed item once the endpoint is disabled`() = runTest {
+    fun `blobData skips the network for a blob-backed item on a disabled manager`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",
             activeTopics = listOf("workflows"),
@@ -2186,13 +2062,7 @@ class RemoteConfigManagerTest {
                 "workflows" to ConfigTopic(mapOf("wf1" to RemoteConfiguration.ConfigItem(blobRef = REF_VALID))),
             ),
         )
-        val manager = readManager()
-        // A 4xx disables the endpoint for the session.
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onError.invoke(
-            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
-            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
-        )
+        val manager = readManager(enabled = false)
 
         assertThat(manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }).isNull()
         coVerify(exactly = 0) { blobFetcher.ensureDownloaded(any<String>()) }
@@ -2240,18 +2110,12 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `blobData does not trigger a sync for an uncached item once the endpoint is disabled`() = runTest {
+    fun `blobData does not trigger a sync for an uncached item on a disabled manager`() = runTest {
         every { diskCache.read() } returns null
-        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID })
-        // A 4xx disables the endpoint for the session (this is the only config request that should ever fire).
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onError.invoke(
-            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
-            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
-        )
+        val manager = readManager(appUserIDProvider = { TEST_APP_USER_ID }, enabled = false)
 
         assertThat(manager.blobData(RemoteConfigTopic.Workflows, "wf1") { it }).isNull()
-        verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+        verify(exactly = 0) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 
     @Test
@@ -2458,7 +2322,7 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `mergeItemsBlobData returns null once the endpoint is disabled without touching the network`() = runTest {
+    fun `mergeItemsBlobData returns null on a disabled manager without touching the network`() = runTest {
         every { diskCache.read() } returns persisted(
             manifest = "m",
             activeTopics = listOf("workflows"),
@@ -2471,13 +2335,7 @@ class RemoteConfigManagerTest {
                 ),
             ),
         )
-        val manager = readManager()
-        // A 4xx disables the endpoint for the session.
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onError.invoke(
-            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
-            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
-        )
+        val manager = readManager(enabled = false)
 
         val result = manager.mergeItemsBlobData<MergedBlob>(RemoteConfigTopic.Workflows, listOf("wf1", "wf2"))
 
@@ -2486,18 +2344,12 @@ class RemoteConfigManagerTest {
     }
 
     @Test
-    fun `mergeItemsBlobData returns null for an empty key list once the endpoint is disabled`() = runTest {
+    fun `mergeItemsBlobData returns null for an empty key list on a disabled manager`() = runTest {
         every { diskCache.read() } returns null
-        val manager = readManager()
-        // A 4xx disables the endpoint for the session.
-        manager.refreshRemoteConfig(appInBackground = false, appUserID = TEST_APP_USER_ID, fetchContext = DEFAULT_FETCH_CONTEXT)
-        onError.invoke(
-            PurchasesError(PurchasesErrorCode.InvalidCredentialsError, "bad request"),
-            GetRemoteConfigErrorHandlingBehavior.SHOULD_DISABLE,
-        )
+        val manager = readManager(enabled = false)
 
         // Without the disabled short-circuit an empty key list would build an empty object and decode to a
-        // non-null OptionalBlob (all fields optional); the kill-switch must take precedence and return null.
+        // non-null OptionalBlob (all fields optional); the disabled gate must take precedence and return null.
         val result = manager.mergeItemsBlobData<OptionalBlob>(RemoteConfigTopic.Workflows, emptyList())
 
         assertThat(result).isNull()
@@ -2617,10 +2469,7 @@ class RemoteConfigManagerTest {
             GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
         )
         assertThat(read.isActive).isTrue()
-        onFallbackError.invoke(
-            PurchasesError(PurchasesErrorCode.UnknownError, "boom"),
-            GetRemoteConfigErrorHandlingBehavior.SHOULD_RETRY,
-        )
+        onFallbackError.invoke(PurchasesError(PurchasesErrorCode.UnknownError, "boom"))
 
         assertThat(read.isCompleted).isTrue()
         assertThat(result).isNull()
@@ -2694,7 +2543,10 @@ class RemoteConfigManagerTest {
     }
 
     // A manager whose read methods run on this test's scheduler, so suspend reads are deterministic.
-    private fun TestScope.readManager(appUserIDProvider: () -> String? = { null }): RemoteConfigManager {
+    private fun TestScope.readManager(
+        appUserIDProvider: () -> String? = { null },
+        enabled: Boolean = true,
+    ): RemoteConfigManager {
         val dispatcher = UnconfinedTestDispatcher(testScheduler)
         return RemoteConfigManager(
             backend,
@@ -2708,8 +2560,23 @@ class RemoteConfigManagerTest {
             blobFetcher = blobFetcher,
             appUserIDProvider = appUserIDProvider,
             cacheDurationProvider = { appInBackground -> cacheDurationProvider(appInBackground) },
+            enabled = enabled,
         )
     }
+
+    // A manager constructed disabled, the way the customEntitlementComputation flavor wires it.
+    private fun disabledManager(): RemoteConfigManager = RemoteConfigManager(
+        backend,
+        diskCache,
+        blobStore,
+        dateProvider = dateProvider,
+        scope = testScope,
+        topicStore = topicStore,
+        sourceProvider = sourceProvider,
+        blobFetcher = blobFetcher,
+        cacheDurationProvider = { appInBackground -> cacheDurationProvider(appInBackground) },
+        enabled = false,
+    )
 
     // endregion
 
@@ -2772,7 +2639,6 @@ class RemoteConfigManagerTest {
     private class RecordingCommitListener : RemoteConfigCommitListener {
         val committed = mutableListOf<Int>()
         val invalidated = mutableListOf<Int>()
-        val disabled = mutableListOf<Int>()
 
         override fun onConfigCommitted(generation: Int) {
             committed += generation
@@ -2780,10 +2646,6 @@ class RemoteConfigManagerTest {
 
         override fun onConfigInvalidated(generation: Int) {
             invalidated += generation
-        }
-
-        override fun onRemoteConfigDisabled(generation: Int) {
-            disabled += generation
         }
     }
 
@@ -2799,7 +2661,7 @@ class RemoteConfigManagerTest {
     private data class MergedBlob(val wf1: Section, val wf2: Section)
 
     // All fields optional, so it decodes from an empty JSON object to a non-null instance — used to prove the
-    // disabled kill-switch short-circuits before an empty key list would build and decode an empty object.
+    // disabled gate short-circuits before an empty key list would build and decode an empty object.
     @Serializable
     private data class OptionalBlob(val a: String? = null)
 

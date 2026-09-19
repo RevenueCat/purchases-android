@@ -29,16 +29,23 @@ internal fun Project.configureAndroidLibrary() {
 
         defaultConfig {
             minSdk = obtainMinSdkVersion()
-            targetSdk = targetSdkVersion
             testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
             consumerProguardFiles("consumer-rules.pro")
+            // AGP 9 defaults this to compileSdk, tightening the published floor from 1 to 36.
+            aarMetadata.minCompileSdk = 1
         }
 
+        // AGP 9 removes targetSdk from a library's defaultConfig.
         testOptions {
+            targetSdk = targetSdkVersion
             unitTests.isIncludeAndroidResources = true
             unitTests.all {
                 it.maxHeapSize = "1024m"
             }
+        }
+
+        lint {
+            targetSdk = targetSdkVersion
         }
 
         compileOptions {

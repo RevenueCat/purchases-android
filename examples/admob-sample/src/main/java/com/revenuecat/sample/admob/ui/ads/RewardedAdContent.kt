@@ -24,7 +24,6 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.OnUserEarnedRewardListener
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.admob.enableRewardVerification
 import com.revenuecat.purchases.admob.loadAndTrackRewardedAd
@@ -34,7 +33,6 @@ import com.revenuecat.sample.admob.ui.ads.verification.RewardedResultCard
 import com.revenuecat.sample.admob.ui.ads.verification.RewardedVerificationMessage
 
 @Suppress("MultipleEmitters", "LongMethod")
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 @Composable
 internal fun RewardedAdContent(activity: Activity) {
     val context = LocalContext.current

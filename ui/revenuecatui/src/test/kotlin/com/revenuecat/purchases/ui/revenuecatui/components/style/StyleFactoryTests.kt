@@ -13,6 +13,7 @@ import com.revenuecat.purchases.paywalls.components.HeaderComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
+import com.revenuecat.purchases.paywalls.components.PartialButtonComponent
 import com.revenuecat.purchases.paywalls.components.PartialPackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialTextComponent
 import com.revenuecat.purchases.paywalls.components.PartialWebViewComponent
@@ -122,7 +123,7 @@ class StyleFactoryTests {
 
     @Test
     fun `Should create a WebViewComponentStyle for a WebViewComponent`() {
-        val size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit())
+        val size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit())
         val component = WebViewComponent(
             url = "https://paywalls.revenuecat.com/{{ custom.animal }}.html",
             id = "promo_web_view",
@@ -149,7 +150,7 @@ class StyleFactoryTests {
             url = "https://paywalls.revenuecat.com/index.html",
             id = "promo_web_view",
             protocolVersion = 1,
-            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+            size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
             overrides = listOf(
                 ComponentOverride(
                     conditions = listOf(ComponentOverride.Condition.Selected),
@@ -1180,6 +1181,38 @@ class StyleFactoryTests {
     }
 
     @Test
+    fun `Custom web checkout purchase button should carry configured query parameter names into the style action`() {
+        // Arrange
+        val stackComponent = StackComponent(
+            components = listOf(
+                PurchaseButtonComponent(
+                    stack = StackComponent(components = emptyList()),
+                    method = PurchaseButtonComponent.Method.CustomWebCheckout(
+                        customUrl = PurchaseButtonComponent.CustomUrl(
+                            urlLid = LOCALIZATION_KEY_TEXT_1,
+                            packageParam = "rc_package",
+                            appUserIdParam = "rc_app_user_id",
+                            envParam = "rc_environment",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(stackComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val stackComponentStyle = (result as Result.Success).value.componentStyle as StackComponentStyle
+        val purchaseButtonStyle = stackComponentStyle.children.single() as ButtonComponentStyle
+        val purchaseAction = purchaseButtonStyle.action as ButtonComponentStyle.Action.CustomWebCheckout
+        assertThat(purchaseAction.packageParam).isEqualTo("rc_package")
+        assertThat(purchaseAction.appUserIdParam).isEqualTo("rc_app_user_id")
+        assertThat(purchaseAction.envParam).isEqualTo("rc_environment")
+    }
+
+    @Test
     fun `Should ignore top window insets for the first full-width image in the first z-stack`() {
         // Arrange
         val imageUrls = ThemeImageUrls(
@@ -1197,7 +1230,7 @@ class StyleFactoryTests {
                     components = listOf(
                         ImageComponent(
                             source = imageUrls,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+                            size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
                         ),
                     ),
                     dimension = Dimension.ZLayer(
@@ -1207,7 +1240,7 @@ class StyleFactoryTests {
 
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+                    size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1262,7 +1295,7 @@ class StyleFactoryTests {
 
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+                    size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1304,11 +1337,11 @@ class StyleFactoryTests {
             components = listOf(
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+                    size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
                 ),
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+                    size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1352,7 +1385,7 @@ class StyleFactoryTests {
                 ),
                 ImageComponent(
                     source = imageUrls,
-                    size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+                    size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
                 ),
             ),
             dimension = Dimension.Vertical(
@@ -1375,7 +1408,7 @@ class StyleFactoryTests {
         assertThat(secondImage.ignoreTopWindowInsets).isFalse()
     }
 
-    private fun heroWebViewComponent(width: SizeConstraint = SizeConstraint.Fill) = WebViewComponent(
+    private fun heroWebViewComponent(width: SizeConstraint = SizeConstraint.Fill()) = WebViewComponent(
         url = "https://bundle-hash.components.revenuecat-static.com/index.html",
         id = "hero_web_view",
         protocolVersion = 1,
@@ -1601,6 +1634,85 @@ class StyleFactoryTests {
     }
 
     @Test
+    fun `ButtonComponentStyle visible defaults to true when component visible is null`() {
+        // Arrange
+        val buttonComponent = ButtonComponent(
+            action = ButtonComponent.Action.NavigateBack,
+            visible = null,
+            stack = StackComponent(components = emptyList()),
+        )
+
+        // Act
+        val result = styleFactory.create(buttonComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val buttonStyle = (result as Result.Success).value.componentStyle as ButtonComponentStyle
+        assertThat(buttonStyle.visible).isTrue()
+    }
+
+    @Test
+    fun `ButtonComponentStyle visible is false when component visible is false`() {
+        // Arrange
+        val buttonComponent = ButtonComponent(
+            action = ButtonComponent.Action.NavigateBack,
+            visible = false,
+            stack = StackComponent(components = emptyList()),
+        )
+
+        // Act
+        val result = styleFactory.create(buttonComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val buttonStyle = (result as Result.Success).value.componentStyle as ButtonComponentStyle
+        assertThat(buttonStyle.visible).isFalse()
+    }
+
+    @Test
+    fun `ButtonComponentStyle overrides are populated from component overrides`() {
+        // Arrange
+        val buttonComponent = ButtonComponent(
+            action = ButtonComponent.Action.NavigateBack,
+            stack = StackComponent(components = emptyList()),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.IntroOffer),
+                    properties = PartialButtonComponent(visible = false),
+                ),
+            ),
+        )
+
+        // Act
+        val result = styleFactory.create(buttonComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val buttonStyle = (result as Result.Success).value.componentStyle as ButtonComponentStyle
+        assertThat(buttonStyle.overrides).hasSize(1)
+        assertThat(buttonStyle.overrides[0].properties.partial.visible).isFalse()
+    }
+
+    @Test
+    fun `ButtonComponentStyle visible falls back to its stack when the button has no visible`() {
+        // Arrange: a hidden stack inside a button with no visibility of its own. This is the
+        // pre-existing behavior and must survive the button growing its own visible property.
+        val buttonComponent = ButtonComponent(
+            action = ButtonComponent.Action.NavigateBack,
+            visible = null,
+            stack = StackComponent(components = emptyList(), visible = false),
+        )
+
+        // Act
+        val result = styleFactory.create(buttonComponent)
+
+        // Assert
+        assertThat(result).isInstanceOf(Result.Success::class.java)
+        val buttonStyle = (result as Result.Success).value.componentStyle as ButtonComponentStyle
+        assertThat(buttonStyle.visible).isFalse()
+    }
+
+    @Test
     fun `Should apply top window insets to HeaderComponent when applyTopWindowInsets is true`() {
         // Arrange
         val headerComponent = HeaderComponent(
@@ -1690,7 +1802,7 @@ class StyleFactoryTests {
                     components = listOf(
                         ImageComponent(
                             source = imageUrls,
-                            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+                            size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
                         ),
                     ),
                     dimension = Dimension.ZLayer(

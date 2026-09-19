@@ -2,6 +2,8 @@ package com.revenuecat.purchases.subscriberattributes
 
 import android.app.Application
 import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.LogIntent
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.infoLog
@@ -59,7 +61,17 @@ internal class SubscriberAttributesManager(
 
     fun synchronizeSubscriberAttributesForAllUsers(
         currentAppUserID: AppUserID,
+        delay: Delay,
         completion: (() -> Unit)? = null,
+    ) {
+        synchronizeSubscriberAttributesForAllUsers(currentAppUserID, delay, null, completion)
+    }
+
+    fun synchronizeSubscriberAttributesForAllUsers(
+        currentAppUserID: AppUserID,
+        delay: Delay,
+        syncedAttribute: ((PurchasesError?, List<SubscriberAttributeError>) -> Unit)?,
+        completion: (() -> Unit)?,
     ) {
         obtainingDeviceIdentifiersObservable.waitUntilIdle {
             // We are filtering out blank user IDs to skip requests for attributes that might have been stored
@@ -82,8 +94,10 @@ internal class SubscriberAttributesManager(
                 backend.postSubscriberAttributes(
                     unsyncedAttributesForUser.toBackendMap(),
                     syncingAppUserID,
+                    delay,
                     {
                         markAsSynced(syncingAppUserID, unsyncedAttributesForUser, emptyList())
+                        syncedAttribute?.invoke(null, emptyList())
                         log(LogIntent.RC_SUCCESS) {
                             AttributionStrings.ATTRIBUTES_SYNC_SUCCESS.format(syncingAppUserID)
                         }
@@ -99,6 +113,7 @@ internal class SubscriberAttributesManager(
                         if (didBackendGetAttributes) {
                             markAsSynced(syncingAppUserID, unsyncedAttributesForUser, attributeErrors)
                         }
+                        syncedAttribute?.invoke(error, attributeErrors)
                         log(LogIntent.RC_ERROR) {
                             AttributionStrings.ATTRIBUTES_SYNC_ERROR.format(syncingAppUserID, error)
                         }

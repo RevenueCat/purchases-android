@@ -18,8 +18,13 @@ internal fun Map<String, SubscriberAttribute>.toBackendMap(): Map<String, Map<St
 internal fun JSONObject?.getAttributeErrors(): List<SubscriberAttributeError> {
     if (this == null) return emptyList()
 
-    val attributeErrorsJSONObject =
-        this.optJSONObject(ATTRIBUTES_ERROR_RESPONSE_KEY) ?: this
+    val attributeErrorsResponse = this.optJSONObject(ATTRIBUTES_ERROR_RESPONSE_KEY)
+    val attributeErrorsJSONObject = attributeErrorsResponse ?: this
+    val backendErrorCode = if (attributeErrorsResponse == null) {
+        attributeErrorsJSONObject.optInt("code").takeIf { it > 0 }
+    } else {
+        null
+    }
 
     return attributeErrorsJSONObject.optJSONArray(ATTRIBUTE_ERRORS_KEY)
         ?.let { jsonArray ->
@@ -30,6 +35,7 @@ internal fun JSONObject?.getAttributeErrors(): List<SubscriberAttributeError> {
                     SubscriberAttributeError(
                         it.getString("key_name"),
                         it.getString("message"),
+                        backendErrorCode,
                     )
                 }
                 .toList()

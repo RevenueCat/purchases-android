@@ -71,5 +71,5 @@ internal class BackendHelper(
 
 @OptIn(InternalRevenueCatAPI::class)
 internal fun HTTPResult.isSuccessful(): Boolean {
-    return responseCode < RCHTTPStatusCodes.UNSUCCESSFUL
+    return responseCode in RCHTTPStatusCodes.SUCCESS until RCHTTPStatusCodes.UNSUCCESSFUL
 }

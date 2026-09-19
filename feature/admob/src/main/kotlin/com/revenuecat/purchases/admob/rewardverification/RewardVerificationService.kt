@@ -1,6 +1,5 @@
 package com.revenuecat.purchases.admob.rewardverification
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesService
@@ -13,7 +12,7 @@ import com.revenuecat.purchases.PurchasesService
  * on [initialize] and, on [close], cancels the runtime and deregisters. All verification state lives on
  * this instance, so it is discarded when the service is closed.
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class, InternalRevenueCatAPI::class)
+@OptIn(InternalRevenueCatAPI::class)
 internal class RewardVerificationService : PurchasesService {
     var runtime: RewardVerificationRuntime? = null
         private set

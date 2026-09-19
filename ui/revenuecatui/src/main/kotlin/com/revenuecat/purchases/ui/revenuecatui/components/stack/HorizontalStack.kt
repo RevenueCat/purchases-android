@@ -92,7 +92,7 @@ private class HorizontalStackScopeImpl(
         items: List<ComponentStyle>,
         itemContent: @Composable RowScope.(index: Int, item: ComponentStyle) -> Unit,
     ) {
-        hasAnyItemsWithFillWidth = items.any { it.size.width == Fill }
+        hasAnyItemsWithFillWidth = items.any { it.size.width is Fill }
         rowContent = {
             items.forEachIndexed { index, item ->
                 val isLast = index == items.size - 1

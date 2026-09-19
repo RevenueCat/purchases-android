@@ -16,6 +16,7 @@ import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.models.StoreTransaction
 import com.revenuecat.purchases.ui.revenuecatui.OfferingSelection
 import com.revenuecat.purchases.ui.revenuecatui.OriginalTemplatePaywallFooter
+import com.revenuecat.purchases.ui.revenuecatui.PaywallInteractionEvent
 import com.revenuecat.purchases.ui.revenuecatui.PaywallListener
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
 import com.revenuecat.purchases.ui.revenuecatui.R
@@ -54,6 +55,7 @@ public open class PaywallFooterView(
  * View that wraps the [OriginalTemplatePaywallFooter] Composable to display the Paywall Footer
  * through XML layouts and the View system.
  */
+@Suppress("TooManyFunctions")
 public open class OriginalTemplatePaywallFooterView : FrameLayout {
 
     public constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
@@ -113,6 +115,7 @@ public open class OriginalTemplatePaywallFooterView : FrameLayout {
         override fun onRestoreError(error: PurchasesError) { listener?.onRestoreError(error) }
         override fun onWebCheckoutOpened() { listener?.onWebCheckoutOpened() }
         override fun onUrlOpened(url: String) { listener?.onUrlOpened(url) }
+        override fun onInteraction(event: PaywallInteractionEvent) { listener?.onInteraction(event) }
     }
 
     private var paywallOptions: PaywallOptions

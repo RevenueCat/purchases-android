@@ -11,6 +11,8 @@ import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.utils.Result
 import io.mockk.every
 import io.mockk.mockk
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
@@ -46,6 +48,7 @@ class SigningManagerTest {
         }
         intermediateKeyVerifier = mockk()
         intermediateSignatureHelper = mockk<IntermediateSignatureHelper>().apply {
+            every { canVerify() } returns true
             every { createIntermediateKeyVerifierIfVerified(any()) } returns Result.Success(intermediateKeyVerifier)
         }
 
@@ -373,9 +376,41 @@ class SigningManagerTest {
         assertThat(tampered).isEqualTo(VerificationResult.FAILED)
     }
 
+    @Test
+    fun `verifyResponse reuses the lazily created root verifier across verifications`() {
+        var createdRootVerifiers = 0
+        val signingManager = SigningManager(
+            informationalModeWithRootVerifier { createdRootVerifiers++; realTestRootVerifier() },
+            appConfig,
+            apiKey,
+        )
+
+        assertThat(callVerifyResponse(signingManager)).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(callVerifyResponse(signingManager)).isEqualTo(VerificationResult.VERIFIED)
+        assertThat(createdRootVerifiers).isEqualTo(1)
+    }
+
+    @Test
+    fun `verifyResponse returns not requested if the root verifier cannot be created`() {
+        val signingManager = SigningManager(
+            informationalModeWithRootVerifier { throw IllegalStateException("Can not use Ed25519 in FIPS-mode.") },
+            appConfig,
+            apiKey,
+        )
+        assertThat(callVerifyResponse(signingManager)).isEqualTo(VerificationResult.NOT_REQUESTED)
+    }
+
     // endregion
 
     // region Helpers
+
+    private fun informationalModeWithRootVerifier(
+        rootVerifierProvider: () -> SignatureVerifier,
+    ) = SignatureVerificationMode.Informational(
+        IntermediateSignatureHelper(rootVerifierProvider, CoroutineScope(Dispatchers.Unconfined)),
+    )
+
+    private fun realTestRootVerifier() = DefaultSignatureVerifier("yg2wZGAr8Af+Unt9RImQDbL7qA81txk+ga0I+ylmcyo=")
 
     private fun callVerifyResponse(
         signingManager: SigningManager,

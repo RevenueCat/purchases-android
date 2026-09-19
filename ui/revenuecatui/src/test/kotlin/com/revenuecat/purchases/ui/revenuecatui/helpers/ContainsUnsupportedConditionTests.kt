@@ -7,6 +7,7 @@ import com.revenuecat.purchases.paywalls.components.FallbackHeaderComponent
 import com.revenuecat.purchases.paywalls.components.IconComponent
 import com.revenuecat.purchases.paywalls.components.ImageComponent
 import com.revenuecat.purchases.paywalls.components.PackageComponent
+import com.revenuecat.purchases.paywalls.components.PartialButtonComponent
 import com.revenuecat.purchases.paywalls.components.PartialImageComponent
 import com.revenuecat.purchases.paywalls.components.PartialPackageComponent
 import com.revenuecat.purchases.paywalls.components.PartialStackComponent
@@ -182,7 +183,7 @@ internal class ContainsUnsupportedConditionTests {
             autoplay = true,
             loop = true,
             muteAudio = true,
-            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+            size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
             fitMode = FitMode.FIT,
             maskShape = null,
             colorOverlay = null,
@@ -281,6 +282,38 @@ internal class ContainsUnsupportedConditionTests {
         val button = ButtonComponent(
             action = ButtonComponent.Action.NavigateBack,
             stack = emptyStack(components = listOf(textComponent())),
+        )
+        val stack = emptyStack(components = listOf(button))
+        assertFalse(stack.containsUnsupportedCondition())
+    }
+
+    @Test
+    fun `ButtonComponent detects unsupported in its own overrides`() {
+        val button = ButtonComponent(
+            action = ButtonComponent.Action.NavigateBack,
+            stack = emptyStack(components = listOf(textComponent())),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Unsupported),
+                    properties = PartialButtonComponent(visible = false),
+                ),
+            ),
+        )
+        val stack = emptyStack(components = listOf(button))
+        assertTrue(stack.containsUnsupportedCondition())
+    }
+
+    @Test
+    fun `ButtonComponent with only supported overrides returns false`() {
+        val button = ButtonComponent(
+            action = ButtonComponent.Action.NavigateBack,
+            stack = emptyStack(components = listOf(textComponent())),
+            overrides = listOf(
+                ComponentOverride(
+                    conditions = listOf(ComponentOverride.Condition.Compact),
+                    properties = PartialButtonComponent(visible = false),
+                ),
+            ),
         )
         val stack = emptyStack(components = listOf(button))
         assertFalse(stack.containsUnsupportedCondition())
@@ -714,7 +747,7 @@ internal class ContainsUnsupportedConditionTests {
             autoplay = true,
             loop = true,
             muteAudio = true,
-            size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+            size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
             fitMode = FitMode.FIT,
             maskShape = null,
             colorOverlay = null,

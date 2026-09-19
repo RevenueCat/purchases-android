@@ -1,13 +1,16 @@
-@file:OptIn(com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI::class, com.revenuecat.purchases.InternalRevenueCatAPI::class)
+@file:OptIn(com.revenuecat.purchases.InternalRevenueCatAPI::class)
 
 package com.revenuecat.purchases.ads.events
 
+import com.revenuecat.purchases.VerifiedReward
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdRevenuePrecision
+import com.revenuecat.purchases.ads.events.types.AdRewardFailureReason
 import com.revenuecat.purchases.common.events.BackendEvent
 import com.revenuecat.purchases.common.events.BackendStoredEvent
 import com.revenuecat.purchases.common.events.toBackendStoredEvent
+import java.util.Date
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Test
 
@@ -297,5 +300,156 @@ class BackendStoredEventAdTest {
         assertThat(adStoredEvent.event.appUserID).isEqualTo(appUserID)
         assertThat(adStoredEvent.event.appSessionID).isEqualTo(appSessionID)
         assertThat(adStoredEvent.event.captureMethod).isEqualTo("adapter")
+    }
+
+    @Test
+    fun `AdEvent RewardEarnedUnverified converts to BackendStoredEvent Ad correctly`() {
+        val earnedEvent = AdEvent.RewardEarnedUnverified(
+            id = "event-id-reward-earned",
+            timestamp = 1111111111L,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            impressionId = "impression-789",
+            captureMethod = AdCaptureMethod.MANUAL,
+            rewardVerificationEnabled = true,
+        )
+
+        val storedEvent = earnedEvent.toBackendStoredEvent(appUserID, appSessionID)
+
+        assertThat(storedEvent).isInstanceOf(BackendStoredEvent.Ad::class.java)
+        val adStoredEvent = storedEvent as BackendStoredEvent.Ad
+        assertThat(adStoredEvent.event.type).isEqualTo("rc_ads_ad_reward_sdk_earned")
+        assertThat(adStoredEvent.event.impressionId).isEqualTo("impression-789")
+        assertThat(adStoredEvent.event.rewardVerificationEnabled).isTrue()
+        assertThat(adStoredEvent.event.rewardType).isNull()
+        assertThat(adStoredEvent.event.rewardFailureReason).isNull()
+    }
+
+    @Test
+    fun `AdEvent RewardVerified converts to BackendStoredEvent Ad correctly`() {
+        val verifiedEvent = AdEvent.RewardVerified(
+            id = "event-id-reward-verified",
+            timestamp = 1111111111L,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            impressionId = "impression-789",
+            captureMethod = AdCaptureMethod.MANUAL,
+        )
+
+        val storedEvent = verifiedEvent.toBackendStoredEvent(appUserID, appSessionID)
+
+        assertThat(storedEvent).isInstanceOf(BackendStoredEvent.Ad::class.java)
+        val adStoredEvent = storedEvent as BackendStoredEvent.Ad
+        assertThat(adStoredEvent.event.type).isEqualTo("rc_ads_ad_reward_sdk_verified")
+        assertThat(adStoredEvent.event.impressionId).isEqualTo("impression-789")
+        assertThat(adStoredEvent.event.rewardVerificationEnabled).isNull()
+        assertThat(adStoredEvent.event.rewardType).isNull()
+        assertThat(adStoredEvent.event.rewardFailureReason).isNull()
+    }
+
+    @Test
+    fun `AdEvent RewardGranted with virtual currency converts to BackendStoredEvent Ad correctly`() {
+        val grantedEvent = AdEvent.RewardGranted(
+            id = "event-id-reward-granted",
+            timestamp = 1111111111L,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            impressionId = "impression-789",
+            captureMethod = AdCaptureMethod.MANUAL,
+            reward = VerifiedReward.VirtualCurrency(code = "GLD", amount = 100),
+        )
+
+        val storedEvent = grantedEvent.toBackendStoredEvent(appUserID, appSessionID)
+
+        assertThat(storedEvent).isInstanceOf(BackendStoredEvent.Ad::class.java)
+        val adStoredEvent = storedEvent as BackendStoredEvent.Ad
+        assertThat(adStoredEvent.event.type).isEqualTo("rc_ads_ad_reward_sdk_granted")
+        assertThat(adStoredEvent.event.rewardType).isEqualTo("virtual_currency")
+        assertThat(adStoredEvent.event.rewardVirtualCurrencyCode).isEqualTo("GLD")
+        assertThat(adStoredEvent.event.rewardVirtualCurrencyAmount).isEqualTo(100)
+        assertThat(adStoredEvent.event.rewardEntitlementId).isNull()
+    }
+
+    @Test
+    fun `AdEvent RewardGranted with entitlement converts to BackendStoredEvent Ad correctly`() {
+        val grantedEvent = AdEvent.RewardGranted(
+            id = "event-id-reward-granted-entitlement",
+            timestamp = 1111111111L,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            impressionId = "impression-789",
+            captureMethod = AdCaptureMethod.MANUAL,
+            reward = VerifiedReward.Entitlement(identifier = "premium", expiresAt = Date(0)),
+        )
+
+        val storedEvent = grantedEvent.toBackendStoredEvent(appUserID, appSessionID)
+
+        assertThat(storedEvent).isInstanceOf(BackendStoredEvent.Ad::class.java)
+        val adStoredEvent = storedEvent as BackendStoredEvent.Ad
+        assertThat(adStoredEvent.event.rewardType).isEqualTo("entitlement")
+        assertThat(adStoredEvent.event.rewardEntitlementId).isEqualTo("premium")
+        assertThat(adStoredEvent.event.rewardVirtualCurrencyCode).isNull()
+        assertThat(adStoredEvent.event.rewardVirtualCurrencyAmount).isNull()
+    }
+
+    @Test
+    fun `AdEvent RewardGranted with unsupported reward converts to BackendStoredEvent Ad correctly`() {
+        val grantedEvent = AdEvent.RewardGranted(
+            id = "event-id-reward-granted-unsupported",
+            timestamp = 1111111111L,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            impressionId = "impression-789",
+            captureMethod = AdCaptureMethod.MANUAL,
+            reward = VerifiedReward.UnsupportedReward,
+        )
+
+        val storedEvent = grantedEvent.toBackendStoredEvent(appUserID, appSessionID)
+
+        assertThat(storedEvent).isInstanceOf(BackendStoredEvent.Ad::class.java)
+        val adStoredEvent = storedEvent as BackendStoredEvent.Ad
+        assertThat(adStoredEvent.event.rewardType).isEqualTo("unsupported_reward")
+        assertThat(adStoredEvent.event.rewardEntitlementId).isNull()
+        assertThat(adStoredEvent.event.rewardVirtualCurrencyCode).isNull()
+        assertThat(adStoredEvent.event.rewardVirtualCurrencyAmount).isNull()
+    }
+
+    @Test
+    fun `AdEvent RewardFailedToVerify converts to BackendStoredEvent Ad correctly`() {
+        val failedEvent = AdEvent.RewardFailedToVerify(
+            id = "event-id-reward-failed",
+            timestamp = 1111111111L,
+            networkName = "Google AdMob",
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = AdFormat.REWARDED,
+            placement = "rewarded_video",
+            adUnitId = "ad-unit-999",
+            impressionId = "impression-789",
+            captureMethod = AdCaptureMethod.MANUAL,
+            failureReason = AdRewardFailureReason.BackendError("no_reward_rule"),
+        )
+
+        val storedEvent = failedEvent.toBackendStoredEvent(appUserID, appSessionID)
+
+        assertThat(storedEvent).isInstanceOf(BackendStoredEvent.Ad::class.java)
+        val adStoredEvent = storedEvent as BackendStoredEvent.Ad
+        assertThat(adStoredEvent.event.type).isEqualTo("rc_ads_ad_reward_sdk_failed_to_verify")
+        assertThat(adStoredEvent.event.rewardFailureReason).isEqualTo("no_reward_rule")
+        assertThat(adStoredEvent.event.rewardType).isNull()
     }
 }

@@ -1,5 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.components.webview
 
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.revenuecat.purchases.Package
@@ -25,7 +27,7 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class WebViewComponentStateTest {
 
-    private val size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit())
+    private val size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit())
 
     private fun styleWithOverrides(
         visible: Boolean,
@@ -47,6 +49,7 @@ class WebViewComponentStateTest {
         selectedPackageInfo: PaywallState.Loaded.Components.SelectedPackageInfo? = null,
     ) = WebViewComponentState(
         initialWindowSize = windowSize,
+        initialWindowDpSize = DpSize(400.dp, 800.dp),
         style = style,
         selectedPackageInfoProvider = { selectedPackageInfo },
         selectedTabIndexProvider = { 0 },

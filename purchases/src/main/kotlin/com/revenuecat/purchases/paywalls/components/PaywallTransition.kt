@@ -53,6 +53,7 @@ public class PaywallTransition(
 
 @OptIn(InternalRevenueCatAPI::class)
 internal object DisplacementStrategyDeserializer : EnumDeserializerWithDefault<PaywallTransition.DisplacementStrategy>(
+    serialName = "com.revenuecat.purchases.paywalls.components.PaywallTransition.DisplacementStrategy",
     defaultValue = PaywallTransition.DisplacementStrategy.GREEDY,
     typeForValue = { value ->
         when (value) {
@@ -64,6 +65,7 @@ internal object DisplacementStrategyDeserializer : EnumDeserializerWithDefault<P
 
 @OptIn(InternalRevenueCatAPI::class)
 internal object TransitionTypeSerializer : EnumDeserializerWithDefault<PaywallTransition.TransitionType>(
+    serialName = "com.revenuecat.purchases.paywalls.components.PaywallTransition.TransitionType",
     defaultValue = PaywallTransition.TransitionType.FADE,
     typeForValue = { value ->
         when (value) {

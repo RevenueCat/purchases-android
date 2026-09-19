@@ -461,6 +461,8 @@ class DeviceCacheTest {
         verify { mockEditor.remove(cache.virtualCurrenciesCacheKey("legacyAppUserID")) }
         verify { mockEditor.remove(cache.virtualCurrenciesLastUpdatedCacheKey("appUserID")) }
         verify { mockEditor.remove(cache.virtualCurrenciesLastUpdatedCacheKey("legacyAppUserID")) }
+        verify { mockEditor.remove(cache.subscriberDimensionsCacheKey("appUserID")) }
+        verify { mockEditor.remove(cache.subscriberDimensionsCacheKey("legacyAppUserID")) }
     }
 
     @Test
@@ -902,6 +904,89 @@ class DeviceCacheTest {
         assertThat(vcs).`as`("cached VirtualCurrencies is null when JSONException is thrown").isNull()
     }
     // endregion virtualCurrencies
+
+    // region subscriber dimensions
+
+    @Test
+    fun `given no cached subscriber dimensions, null is returned`() {
+        mockString(cache.subscriberDimensionsCacheKey(appUserID), null)
+        assertThat(cache.getCachedSubscriberDimensionsJson(appUserID)).isNull()
+        verify {
+            mockPrefs.getString(cache.subscriberDimensionsCacheKey(appUserID), isNull())
+        }
+    }
+
+    @Test
+    fun `cached subscriber dimensions are returned as stored`() {
+        mockString(cache.subscriberDimensionsCacheKey(appUserID), """{"plan":"annual"}""")
+        assertThat(cache.getCachedSubscriberDimensionsJson(appUserID)).isEqualTo("""{"plan":"annual"}""")
+    }
+
+    @Test
+    fun `subscriber dimensions are cached under the user's key`() {
+        cache.cacheSubscriberDimensions(appUserID, """{"plan":"annual"}""")
+        verifyAll {
+            mockEditor.putString(cache.subscriberDimensionsCacheKey(appUserID), """{"plan":"annual"}""")
+            mockEditor.apply()
+        }
+    }
+
+    @Test
+    fun `caching a customer info with dimensions caches them separately`() {
+        val response = JSONObject(Responses.validFullPurchaserResponse)
+            .put("dimensions", JSONObject("""{"plan":"annual"}"""))
+        val dimensionsSlot = slot<String>()
+        every {
+            mockEditor.putString(cache.subscriberDimensionsCacheKey(appUserID), capture(dimensionsSlot))
+        } returns mockEditor
+
+        cache.cacheCustomerInfo(appUserID, createCustomerInfo(response))
+
+        assertThat(JSONObject(dimensionsSlot.captured).getString("plan")).isEqualTo("annual")
+    }
+
+    @Test
+    fun `caching a customer info without dimensions keeps the previous value`() {
+        cache.cacheCustomerInfo(appUserID, createCustomerInfo(Responses.validFullPurchaserResponse))
+
+        verify(exactly = 0) {
+            mockEditor.putString(cache.subscriberDimensionsCacheKey(appUserID), any())
+        }
+    }
+
+    @Test
+    fun `caching a customer info with empty dimensions keeps the previous value`() {
+        val response = JSONObject(Responses.validFullPurchaserResponse)
+            .put("dimensions", JSONObject())
+
+        cache.cacheCustomerInfo(appUserID, createCustomerInfo(response))
+
+        verify(exactly = 0) {
+            mockEditor.putString(cache.subscriberDimensionsCacheKey(appUserID), any())
+        }
+    }
+
+    @Test
+    fun `caching a cache-loaded customer info never writes the subscriber dimensions`() {
+        // A cache-loaded blob can still hold the dimensions of the response that produced it; re-caching it
+        // must not resurrect them over a value received since.
+        val response = JSONObject(Responses.validFullPurchaserResponse)
+            .put("dimensions", JSONObject("""{"plan":"annual"}"""))
+        val info = CustomerInfoFactory.buildCustomerInfo(
+            response,
+            null,
+            VerificationResult.NOT_REQUESTED,
+            loadedFromCache = true,
+        )
+
+        cache.cacheCustomerInfo(appUserID, info)
+
+        verify(exactly = 0) {
+            mockEditor.putString(cache.subscriberDimensionsCacheKey(appUserID), any())
+        }
+    }
+
+    // endregion subscriber dimensions
 
     // region auto-renewing status
 

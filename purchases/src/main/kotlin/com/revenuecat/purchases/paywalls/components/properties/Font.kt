@@ -70,6 +70,7 @@ public enum class FontSize {
 
 @OptIn(InternalRevenueCatAPI::class)
 internal object FontWeightDeserializer : EnumDeserializerWithDefault<FontWeight>(
+    serialName = "com.revenuecat.purchases.paywalls.components.properties.FontWeight",
     defaultValue = FontWeight.REGULAR,
     typeForValue = { value ->
         when (value) {
@@ -88,6 +89,7 @@ internal object FontWeightDeserializer : EnumDeserializerWithDefault<FontWeight>
 
 @OptIn(InternalRevenueCatAPI::class)
 internal object FontStyleDeserializer : EnumDeserializerWithDefault<FontStyle>(
+    serialName = "com.revenuecat.purchases.paywalls.components.properties.FontStyle",
     defaultValue = FontStyle.NORMAL,
     typeForValue = { value ->
         when (value) {

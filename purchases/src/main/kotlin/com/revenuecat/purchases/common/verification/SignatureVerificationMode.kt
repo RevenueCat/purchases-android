@@ -1,25 +1,44 @@
 package com.revenuecat.purchases.common.verification
 
 import com.revenuecat.purchases.EntitlementVerificationMode
+import com.revenuecat.purchases.common.errorLog
 
 internal sealed class SignatureVerificationMode {
     companion object {
         fun fromEntitlementVerificationMode(
             verificationMode: EntitlementVerificationMode,
-            rootVerifier: SignatureVerifier? = null,
+            rootVerifierProvider: () -> SignatureVerifier = { DefaultSignatureVerifier() },
         ): SignatureVerificationMode {
             return when (verificationMode) {
                 EntitlementVerificationMode.DISABLED -> Disabled
                 EntitlementVerificationMode.INFORMATIONAL ->
-                    Informational(IntermediateSignatureHelper(rootVerifier ?: DefaultSignatureVerifier()))
+                    if (DefaultSignatureVerifier.isSupported()) {
+                        Informational(IntermediateSignatureHelper(rootVerifierProvider))
+                    } else {
+                        disabledBecauseVerifierUnsupported()
+                    }
                 // Hidden ENFORCED mode temporarily. Will be added back in the future.
                 // EntitlementVerificationMode.ENFORCED ->
-                //     Enforced(signatureVerifier ?: DefaultSignatureVerifier())
+                //     if (DefaultSignatureVerifier.isSupported()) {
+                //         Enforced(IntermediateSignatureHelper(rootVerifierProvider))
+                //     } else {
+                //         disabledBecauseVerifierUnsupported()
+                //     }
             }
         }
 
+        private fun disabledBecauseVerifierUnsupported(): SignatureVerificationMode {
+            errorLog {
+                "Tink is restricted to FIPS mode, so the signature verifier cannot be created. " +
+                    "Disabling signature verification."
+            }
+            return Disabled
+        }
+
+        // Passes a provider rather than a verifier so that creating it stays off the thread that builds the
+        // mode. See IntermediateSignatureHelper.rootSignatureVerifier.
         private fun createIntermediateSignatureHelper(): IntermediateSignatureHelper {
-            return IntermediateSignatureHelper(DefaultSignatureVerifier())
+            return IntermediateSignatureHelper(rootSignatureVerifierProvider = { DefaultSignatureVerifier() })
         }
     }
     object Disabled : SignatureVerificationMode()

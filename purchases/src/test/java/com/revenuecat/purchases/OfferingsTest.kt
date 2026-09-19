@@ -15,6 +15,7 @@ import com.revenuecat.purchases.paywalls.components.common.LocaleId
 import com.revenuecat.purchases.paywalls.components.common.VariableLocalizationKey
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.parseRGBAColor
+import com.revenuecat.purchases.utils.PreviewOfferingParser
 import com.revenuecat.purchases.utils.getLifetimePackageJSON
 import com.revenuecat.purchases.utils.stubINAPPStoreProduct
 import com.revenuecat.purchases.utils.stubPricingPhase
@@ -46,10 +47,9 @@ class OfferingsTest {
         Store.PLAY_STORE,
     )
 
-    // Parser that skips capturing paywall_components (as under workflows with remote config still enabled).
-    private val skippingPaywallComponentsParser = OfferingParserFactory.createOfferingParser(
-        Store.PLAY_STORE,
-    ) { false }
+    // The only parser that still builds paywall_components (the Emerge template previews render from local
+    // JSON fixtures through it); the SDK's parsers never capture them (components are served from /v1/config).
+    private val previewOfferingParser = PreviewOfferingParser()
 
     @Test
     fun `createPackage returns null if packageJson planIdentifier doesnt match any sub StoreProduct base plan ids`() {
@@ -616,7 +616,7 @@ class OfferingsTest {
     }
 
     @Test
-    fun `createOfferings creates UiConfig object`() {
+    fun `preview parser captures the UiConfig object on parsed paywallComponents`() {
         // Arrange
         val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
         val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
@@ -632,7 +632,7 @@ class OfferingsTest {
         val offeringsJson = getOfferingsJSON(offerings = JSONArray(listOf(offeringJson)), uiConfig = uiConfigJson)
 
         // Act
-        val offerings = offeringsParser.createOfferings(offeringsJson, products)
+        val offerings = previewOfferingParser.createOfferings(offeringsJson, products)
 
         // Assert
         assertThat(offerings).isNotNull
@@ -652,7 +652,7 @@ class OfferingsTest {
     }
 
     @Test
-    fun `createOfferings yields null paywallComponents when paywall_components has an unexpected shape`() {
+    fun `preview parser yields null paywallComponents when paywall_components has an unexpected shape`() {
         // Arrange
         val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
         val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
@@ -682,15 +682,18 @@ class OfferingsTest {
         val offeringsJson = getOfferingsJSON(offerings = JSONArray(listOf(offeringJson)), uiConfig = uiConfigJson)
 
         // Act
-        val offerings = offeringsParser.createOfferings(offeringsJson, products)
+        val offerings = previewOfferingParser.createOfferings(offeringsJson, products)
 
         // Assert
         assertThat(offerings.all.size).isEqualTo(1)
-        assertThat(offerings.all.values.first().paywallComponents).isNull()
+        val offering = offerings.all.values.first()
+        assertThat(offering.paywallComponents).isNull()
+        // The cheap presence flag also stays false: a malformed shape is "no paywall", not "paywall elsewhere".
+        assertThat(offering.hasPaywall).isFalse()
     }
 
     @Test
-    fun `parsed paywallComponents data is lazily decodable`() {
+    fun `preview-parsed paywallComponents data is lazily decodable`() {
         // Arrange
         val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
         val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
@@ -706,7 +709,7 @@ class OfferingsTest {
         val offeringsJson = getOfferingsJSON(offerings = JSONArray(listOf(offeringJson)), uiConfig = uiConfigJson)
 
         // Act
-        val offerings = offeringsParser.createOfferings(offeringsJson, products)
+        val offerings = previewOfferingParser.createOfferings(offeringsJson, products)
 
         // Assert
         val paywallComponents = offerings.all.values.first().paywallComponents ?: fail("paywallComponents is null")
@@ -715,7 +718,7 @@ class OfferingsTest {
     }
 
     @Test
-    fun `createOfferings skips paywallComponents when shouldParsePaywallComponents is false but keeps hasPaywall`() {
+    fun `createOfferings never captures paywallComponents but keeps hasPaywall`() {
         // Arrange
         val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
         val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
@@ -731,7 +734,7 @@ class OfferingsTest {
         val offeringsJson = getOfferingsJSON(offerings = JSONArray(listOf(offeringJson)), uiConfig = uiConfigJson)
 
         // Act
-        val offerings = skippingPaywallComponentsParser.createOfferings(offeringsJson, products)
+        val offerings = offeringsParser.createOfferings(offeringsJson, products)
 
         // Assert
         assertThat(offerings.all.size).isEqualTo(1)
@@ -779,7 +782,7 @@ class OfferingsTest {
     }
 
     @Test
-    fun `hasPaywall returns true when paywallComponents is not null`() {
+    fun `hasPaywall returns true when preview-parsed paywallComponents is not null`() {
         // Arrange
         val storeProductMonthly = getStoreProduct(productIdentifier, monthlyPeriod, monthlyBasePlanId)
         val storeProductAnnual = getStoreProduct(productIdentifier, annualPeriod, annualBasePlanId)
@@ -795,7 +798,7 @@ class OfferingsTest {
         val offeringsJson = getOfferingsJSON(offerings = JSONArray(listOf(offeringJson)), uiConfig = uiConfigJson)
 
         // Act
-        val offerings = offeringsParser.createOfferings(offeringsJson, products)
+        val offerings = previewOfferingParser.createOfferings(offeringsJson, products)
 
         // Assert
         assertThat(offerings).isNotNull

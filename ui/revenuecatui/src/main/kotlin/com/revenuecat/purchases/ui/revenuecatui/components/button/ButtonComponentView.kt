@@ -90,6 +90,12 @@ internal fun ButtonComponentView(
         return
     }
 
+    // The button's own visibility, which rules can target independently of its inner stack.
+    val buttonVisibility = rememberUpdatedButtonVisibilityState(style = style, paywallState = state)
+    if (!buttonVisibility.visible) {
+        return
+    }
+
     TransitionView(transition = style.transition) {
         // Get a ButtonComponentState that calculates the stateful properties we should use.
         val buttonState = rememberButtonComponentState(
@@ -106,8 +112,15 @@ internal fun ButtonComponentView(
             derivedStateOf { if (myActionInProgress) 0f else if (anyActionInProgress) ALPHA_DISABLED else 1f }
         }
         val progressAlpha by remember { derivedStateOf { if (myActionInProgress) 1f else 0f } }
-        val animatedContentAlpha by animateFloatAsState(targetValue = contentAlpha)
+        val animatedContentAlpha = animateFloatAsState(targetValue = contentAlpha)
         val animatedProgressAlpha by animateFloatAsState(targetValue = progressAlpha)
+        // Handed down as a provider so the stack reads it while drawing instead of recomposing on every
+        // animation frame. Null while undimmed, so no graphics layer is added in the common case.
+        val contentAlphaProvider: (() -> Float)? = if (animatedContentAlpha.value == 1f) {
+            null
+        } else {
+            remember(animatedContentAlpha) { { animatedContentAlpha.value } }
+        }
 
         val layoutDirection = LocalLayoutDirection.current
         val marginTop = remember(style.stackComponentStyle.margin) {
@@ -135,18 +148,27 @@ internal fun ButtonComponentView(
                     // We're the button, so we're handling the click already.
                     clickHandler = { },
                     componentInteractionTracker = componentInteractionTracker,
-                    contentAlpha = animatedContentAlpha,
+                    contentAlpha = contentAlphaProvider,
                     enabled = !anyActionInProgress,
                     onStackClick = onStackClick@{
                         val paywallAction = buttonState.action ?: return@onStackClick
                         myActionInProgress = true
-                        state.update(actionInProgress = true)
-                        if (style.action.isPurchaseRelated()) {
+                        state.update(clickScopedActionInProgress = true)
+                        val actionForClick = if (style.action.isPurchaseRelated()) {
                             val currentPackage = packageForPurchaseButtonInteraction(style.action, state)
                             val componentUrl = resolvedWebCheckoutInteractionUrl(
                                 paywallAction = paywallAction,
                                 state = state,
                             )
+                            // Resolve the URL once and carry it on the action: PaywallViewModel reuses it instead of
+                            // resolving again, so the interaction event and the URL opened for checkout cannot differ.
+                            val resolvedAction = if (
+                                paywallAction is PaywallAction.External.LaunchWebCheckout && componentUrl != null
+                            ) {
+                                paywallAction.copy(resolvedUrl = componentUrl)
+                            } else {
+                                paywallAction
+                            }
                             componentInteractionTracker.track(
                                 paywallPurchaseButtonAction(
                                     componentName = style.componentName,
@@ -156,6 +178,7 @@ internal fun ButtonComponentView(
                                     currentProductIdentifier = currentPackage?.product?.paywallProductIdentifier(),
                                 ),
                             )
+                            resolvedAction
                         } else {
                             val urlForEvent = paywallAction.navigationUrlForComponentInteraction()
                             val interaction = style.action.componentInteraction(urlForEvent)
@@ -169,11 +192,17 @@ internal fun ButtonComponentView(
                                     ),
                                 )
                             }
+                            paywallAction
                         }
                         coroutineScope.launch {
-                            onClick(paywallAction)
-                            myActionInProgress = false
-                            state.update(actionInProgress = false)
+                            // `state` outlives this composition-scoped coroutine, so skipping the reset
+                            // on cancellation leaves every button on the paywall disabled.
+                            try {
+                                onClick(actionForClick)
+                            } finally {
+                                myActionInProgress = false
+                                state.update(clickScopedActionInProgress = false)
+                            }
                         }
                     },
                 )

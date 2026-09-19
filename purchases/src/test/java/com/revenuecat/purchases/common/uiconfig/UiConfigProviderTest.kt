@@ -4,6 +4,7 @@ import com.revenuecat.purchases.FontAlias
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.UiConfig
+import com.revenuecat.purchases.assertErrorLog
 import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.remoteconfig.ConfigTopic
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
@@ -46,7 +47,9 @@ internal class UiConfigProviderTest {
         every { manager.configGeneration } returns 0
         // Defaults for the outcome classification a failed resolve now runs; per-test stubs override them.
         every { manager.isDisabled } returns false
+        coEvery { manager.topic(RemoteConfigTopic.UiConfig) } returns uiConfigTopic()
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) } returns null
+        coEvery { manager.committedTopicAfterInFlightRefresh(RemoteConfigTopic.UiConfig) } returns null
         currentLogHandler = object : LogHandler {
             override fun v(tag: String, msg: String) {}
             override fun d(tag: String, msg: String) {}
@@ -206,23 +209,46 @@ internal class UiConfigProviderTest {
     fun `resolveUiConfig returns NotConfigured when the ui_config topic is absent`() = runTest {
         // A project with no paywalls configured publishes no ui_config topic at all. That is a valid state, not
         // a failure the caller should report as an error.
-        stubUnresolvableMergedRead()
+        coEvery { manager.topic(RemoteConfigTopic.UiConfig) } returns null
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) } returns null
 
         assertThat(provider.resolveUiConfig()).isEqualTo(UiConfigResolution.NotConfigured)
+        coVerify(exactly = 0) {
+            manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())
+        }
     }
 
     @Test
     fun `resolveUiConfig returns NotConfigured when the committed topic carries no ui_config part`() = runTest {
-        stubUnresolvableMergedRead()
+        coEvery { manager.topic(RemoteConfigTopic.UiConfig) } returns ConfigTopic(emptyMap())
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) } returns ConfigTopic(emptyMap())
 
         assertThat(provider.resolveUiConfig()).isEqualTo(UiConfigResolution.NotConfigured)
 
         // Same for a topic that only carries items the ui_config merge doesn't read.
+        coEvery { manager.topic(RemoteConfigTopic.UiConfig) } returns uiConfigTopic("something_else")
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) } returns uiConfigTopic("something_else")
 
         assertThat(provider.resolveUiConfig()).isEqualTo(UiConfigResolution.NotConfigured)
+        coVerify(exactly = 0) {
+            manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())
+        }
+    }
+
+    @Test
+    fun `resolveUiConfig uses ui_config parts committed by an in-flight refresh`() = runTest {
+        coEvery { manager.topic(RemoteConfigTopic.UiConfig) } returns ConfigTopic(emptyMap())
+        coEvery {
+            manager.committedTopicAfterInFlightRefresh(RemoteConfigTopic.UiConfig)
+        } returns uiConfigTopic()
+        stubMergedRead(minimalUiConfigJson())
+
+        assertThat(provider.resolveUiConfig()).isInstanceOf(UiConfigResolution.Found::class.java)
+        coVerifyOrder {
+            manager.topic(RemoteConfigTopic.UiConfig)
+            manager.committedTopicAfterInFlightRefresh(RemoteConfigTopic.UiConfig)
+            manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())
+        }
     }
 
     @Test
@@ -230,51 +256,72 @@ internal class UiConfigProviderTest {
         // The topic does carry ui_config parts, so failing to assemble them into a UiConfig is a real failure —
         // including a partially published topic, since the merge is all-or-nothing.
         stubUnresolvableMergedRead()
+        coEvery { manager.topic(RemoteConfigTopic.UiConfig) } returns uiConfigTopic("app")
         coEvery { manager.committedTopicOrNull(RemoteConfigTopic.UiConfig) } returns uiConfigTopic("app")
 
         assertThat(provider.resolveUiConfig()).isEqualTo(UiConfigResolution.Unavailable)
     }
 
     @Test
-    fun `resolveUiConfig returns Disabled without reading the topic when remote config is disabled`() = runTest {
+    fun `resolveUiConfig returns Unavailable without reading the topic when the manager is disabled`() {
         // committedTopicOrNull also returns null when disabled, so the disabled check has to come first or a
-        // killed session would look like a project with no ui_config.
+        // disabled manager would look like a project with no ui_config.
         stubUnresolvableMergedRead()
         every { manager.isDisabled } returns true
 
-        assertThat(provider.resolveUiConfig()).isEqualTo(UiConfigResolution.Disabled)
+        assertErrorLog(
+            "ui_config is unavailable: remote config is disabled for this SDK configuration.",
+        ) {
+            runTest {
+                assertThat(provider.resolveUiConfig()).isEqualTo(UiConfigResolution.Unavailable)
+            }
+        }
+        coVerify(exactly = 0) { manager.topic(any()) }
         coVerify(exactly = 0) { manager.committedTopicOrNull(any()) }
     }
 
     @Test
-    fun `resolveUiConfig classifies only after attempting the resolve`() = runTest {
-        // A resolve on a cold cache waits for (or triggers) a /v1/config sync, so the committed topic must only
-        // be inspected afterwards; checking first would report NotConfigured for a project that has a ui_config.
+    fun `resolveUiConfig primes the topic before attempting the resolve and classifies afterwards`() = runTest {
+        // topic() waits for (or triggers) a /v1/config sync on a cold cache. Only after it confirms that ui_config
+        // parts are published should the provider attempt the all-or-nothing merge and classify a failure.
         stubUnresolvableMergedRead()
 
         provider.resolveUiConfig()
 
         coVerifyOrder {
+            manager.topic(RemoteConfigTopic.UiConfig)
             manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())
             manager.committedTopicOrNull(RemoteConfigTopic.UiConfig)
         }
     }
 
     @Test
-    fun `resolveUiConfig returns Superseded when a newer invalidation lands mid-resolve`() = runTest {
-        // The value resolved fine but belongs to a superseded generation, so it is dropped rather than served.
-        // That is not a resolution failure, and must not be classified from the (already wiped) committed state.
-        every { manager.configGeneration } returns 0
-        val merged = minimalUiConfigJson()
-        coEvery {
+    fun `resolveUiConfig re-resolves once and serves the fresh value when the config changes mid-read`() = runTest {
+        // A commit advanced the generation while the first resolve was in flight; its value can't be trusted, so
+        // the read re-resolves once against the new state and serves (and caches) that result.
+        every { manager.configGeneration } returnsMany listOf(0, 1)
+        stubMergedRead(minimalUiConfigJson())
+
+        assertThat(provider.resolveUiConfig()).isInstanceOf(UiConfigResolution.Found::class.java)
+        assertThat(provider.isWarm()).isTrue
+        coVerify(exactly = 2) {
             manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())
-        } answers {
-            provider.onConfigInvalidated(generation = 5)
-            thirdArg<(JsonObject) -> UiConfig?>().invoke(merged)
         }
+    }
+
+    @Test
+    fun `resolveUiConfig returns Superseded when the config changes during both reads`() = runTest {
+        // Values resolved fine but each belongs to a superseded generation, so they are dropped rather than
+        // served. That is not a resolution failure, and must not be classified from the committed state (an
+        // identity change may have already wiped it).
+        every { manager.configGeneration } returnsMany listOf(0, 1, 1, 1, 2, 2)
+        stubMergedRead(minimalUiConfigJson())
 
         assertThat(provider.resolveUiConfig()).isEqualTo(UiConfigResolution.Superseded)
         assertThat(provider.isWarm()).isFalse
+        coVerify(exactly = 2) {
+            manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())
+        }
         coVerify(exactly = 0) { manager.committedTopicOrNull(any()) }
     }
 
@@ -399,9 +446,10 @@ internal class UiConfigProviderTest {
     @Test
     fun `getUiConfig does not serve a value resolved before a concurrent newer invalidation`() = runTest {
         // Cold read snapshots generation 0, then an identity-change invalidation at a newer generation lands
-        // while the merge is in flight. The just-resolved value belongs to the previous user, so it must not be
-        // returned to the in-flight caller, nor repopulate the cache.
-        every { manager.configGeneration } returns 0
+        // while the merge is in flight (and the config keeps moving during the retry). The values resolved
+        // mid-change may belong to the previous user, so they must not be returned to the in-flight caller,
+        // nor repopulate the cache.
+        every { manager.configGeneration } returnsMany listOf(0, 5, 5, 5, 6, 6)
         val merged = minimalUiConfigJson()
         coEvery {
             manager.mergeItemsBlobData(RemoteConfigTopic.UiConfig, any(), any<(JsonObject) -> UiConfig?>())

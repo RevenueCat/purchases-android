@@ -4,12 +4,12 @@ import com.google.android.gms.ads.AdError
 import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.OnPaidEventListener
 import com.google.android.gms.ads.ResponseInfo
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFormat
 import com.revenuecat.purchases.ads.events.types.AdMediatorName
 import com.revenuecat.purchases.ads.events.types.AdOpenedData
 import com.revenuecat.purchases.ads.events.types.AdRevenueData
+import com.revenuecat.purchases.ads.rewardverification.RewardedAdTrackingMetadata
 
 /**
  * A [FullScreenContentCallback] wrapper that injects RevenueCat ad-event tracking
@@ -22,7 +22,6 @@ import com.revenuecat.purchases.ads.events.types.AdRevenueData
  * Revenue is tracked separately via [OnPaidEventListener] which must be wired
  * on the ad object by the caller (see [setUpPaidEventTracking]).
  */
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal class TrackingFullScreenContentCallback(
     internal var delegate: FullScreenContentCallback?,
     private val adFormat: AdFormat,
@@ -76,6 +75,22 @@ internal class TrackingFullScreenContentCallback(
     override fun onAdImpression() {
         delegate?.onAdImpression()
     }
+
+    /**
+     * Reward-verification tracking metadata for the ad this callback is attached to, reading
+     * [placement] at call time so a show-time override is reflected.
+     */
+    fun rewardTrackingMetadata(): RewardedAdTrackingMetadata {
+        val responseInfo = responseInfoProvider()
+        return RewardedAdTrackingMetadata(
+            networkName = responseInfo.mediationAdapterClassName,
+            mediatorName = AdMediatorName.AD_MOB,
+            adFormat = adFormat,
+            placement = placement,
+            adUnitId = adUnitId,
+            impressionId = responseInfo.responseId.orEmpty(),
+        )
+    }
 }
 
 /**
@@ -84,7 +99,6 @@ internal class TrackingFullScreenContentCallback(
  * Placement is read from [placementProvider] at event time so that any show-time override is reflected.
  */
 @Suppress("LongParameterList")
-@OptIn(ExperimentalPreviewRevenueCatPurchasesAPI::class)
 internal fun setUpPaidEventTracking(
     setListener: (OnPaidEventListener) -> Unit,
     adFormat: AdFormat,

@@ -34,7 +34,10 @@ import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.InternalPaywall
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallOptions
+import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.WorkflowPaywallUiState
 import com.revenuecat.purchases.ui.revenuecatui.R
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.MockViewModel
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
@@ -118,7 +121,45 @@ class PaywallActionTests {
         assertEquals(2, viewModel.handleRestorePurchasesCallCount)
         // 2 from NavigateBack + 2 from CloseWorkflow — both route to closePaywall()
         assertEquals(4, viewModel.closePaywallCallCount)
+        // On a standalone paywall, NavigateBack is the close action.
+        assertEquals(List(4) { PaywallDismissReason.CLOSE }, viewModel.closePaywallReasons)
         assertEquals(2, viewModel.handlePackagePurchaseCount)
+    }
+
+    @Test
+    fun `NavigateBack on a workflow's first step closes the paywall as navigated back`(): Unit = with(composeTestRule) {
+        // Arrange
+        val textColor = ColorScheme(ColorInfo.Hex(Color.Black.toArgb()))
+        val defaultLocale = LocaleId("en_US")
+        val localizationKeyBack = LocalizationKey("back")
+        val localizationDataBack = LocalizationData.Text("back")
+        val localizations = nonEmptyMapOf(defaultLocale to nonEmptyMapOf(localizationKeyBack to localizationDataBack))
+        val components = listOf(
+            ButtonComponent(
+                action = ButtonComponent.Action.NavigateBack,
+                stack = StackComponent(
+                    components = listOf(TextComponent(text = localizationKeyBack, color = textColor)),
+                ),
+            ),
+        )
+        val offering = FakeOffering(components, localizations)
+        val options = PaywallOptions.Builder(dismissRequest = { }).setOffering(offering).build()
+        val viewModel = MockViewModel(offering = offering, allowsPurchases = true)
+        val stepState = viewModel.state.value as PaywallState.Loaded.Components
+        viewModel.workflowState.value = WorkflowPaywallUiState(
+            currentStepId = "step-1",
+            stepStates = mapOf("step-1" to stepState),
+        )
+
+        // Act
+        setContent { InternalPaywall(options, viewModel) }
+        val buttons = onAllNodesWithText(localizationDataBack.value).fetchSemanticsNodes().size
+        clickButtonsWithText(localizationDataBack, expectedCount = buttons)
+
+        // Assert
+        assertNotEquals(0, buttons)
+        assertEquals(buttons, viewModel.handleBackNavigationCallCount)
+        assertEquals(List(buttons) { PaywallDismissReason.NAVIGATED_BACK }, viewModel.closePaywallReasons)
     }
 
     @Test

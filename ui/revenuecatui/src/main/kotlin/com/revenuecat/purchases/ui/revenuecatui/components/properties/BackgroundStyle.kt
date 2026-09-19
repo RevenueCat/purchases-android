@@ -23,7 +23,6 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.revenuecat.purchases.ColorAlias
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.paywalls.components.common.Background
 import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
@@ -34,7 +33,6 @@ import com.revenuecat.purchases.ui.revenuecatui.components.ktx.toContentScale
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.urlsForCurrentTheme
 import com.revenuecat.purchases.ui.revenuecatui.components.modifier.background
 import com.revenuecat.purchases.ui.revenuecatui.errors.PaywallValidationError
-import com.revenuecat.purchases.ui.revenuecatui.extensions.getImageLoaderTyped
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPreviewImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.NonEmptyList
@@ -44,6 +42,7 @@ import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
 import com.revenuecat.purchases.ui.revenuecatui.helpers.map
 import com.revenuecat.purchases.ui.revenuecatui.helpers.nonEmptyListOf
 import com.revenuecat.purchases.ui.revenuecatui.helpers.orSuccessfullyNull
+import com.revenuecat.purchases.ui.revenuecatui.paywalls.PaywallImageLoader
 
 /**
  * Ready to use background properties for the current theme.
@@ -182,7 +181,7 @@ private fun rememberAsyncImagePainter(imageUrls: ImageUrls, contentScale: Conten
     val previewImageLoader = LocalPreviewImageLoader.current
     val isInPreviewMode = isInPreviewMode()
     val imageLoader = previewImageLoader.takeIf { isInPreviewMode } ?: remember(context) {
-        Purchases.getImageLoaderTyped(context.applicationContext)
+        PaywallImageLoader.get(context.applicationContext)
     }
     val imageRequest = remember(context, imageUrls.webp, cachePolicy) {
         getImageRequest(context, imageUrls.webp.toString(), cachePolicy)

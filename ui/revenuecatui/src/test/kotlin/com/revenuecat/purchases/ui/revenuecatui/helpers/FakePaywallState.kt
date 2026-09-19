@@ -2,6 +2,8 @@
 
 package com.revenuecat.purchases.ui.revenuecatui.helpers
 
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.revenuecat.purchases.Offering
@@ -22,7 +24,9 @@ import com.revenuecat.purchases.paywalls.components.properties.ColorInfo
 import com.revenuecat.purchases.paywalls.components.properties.ColorScheme
 import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
 import com.revenuecat.purchases.ui.revenuecatui.components.ktx.LocalizationDictionary
+import com.revenuecat.purchases.ui.revenuecatui.data.MockPurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
+import com.revenuecat.purchases.ui.revenuecatui.data.PurchasesType
 import com.revenuecat.purchases.ui.revenuecatui.data.testdata.TestData
 import com.revenuecat.purchases.ui.revenuecatui.extensions.toComponentsPaywallState
 import com.revenuecat.purchases.ui.revenuecatui.extensions.validatePaywallComponentsDataOrNull
@@ -61,6 +65,9 @@ internal fun FakePaywallState(
     customVariables: Map<String, CustomVariableValue> = emptyMap(),
     header: HeaderComponent? = null,
     stickyFooter: StickyFooterComponent? = null,
+    purchases: PurchasesType = MockPurchasesType(),
+    offeringWebCheckoutURL: URL? = null,
+    viewModelActionInProgress: State<Boolean> = mutableStateOf(false),
 ): PaywallState.Loaded.Components {
     val packageComponents = packages.map { pkg ->
         PackageComponent(
@@ -90,7 +97,13 @@ internal fun FakePaywallState(
         metadata = emptyMap(),
         availablePackages = packages,
         paywallComponents = Offering.PaywallComponents(UiConfig(), data),
+        webCheckoutURL = offeringWebCheckoutURL,
     )
     val validated = offering.validatePaywallComponentsDataOrNull()?.getOrThrow()!!
-    return offering.toComponentsPaywallState(validated, customVariables = customVariables)
+    return offering.toComponentsPaywallState(
+        validated,
+        purchases = purchases,
+        customVariables = customVariables,
+        viewModelActionInProgress = viewModelActionInProgress,
+    )
 }

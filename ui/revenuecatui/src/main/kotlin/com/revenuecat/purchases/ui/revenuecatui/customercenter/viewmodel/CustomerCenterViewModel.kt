@@ -20,6 +20,7 @@ import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.EntitlementInfo
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.Offering
+import com.revenuecat.purchases.OwnershipType
 import com.revenuecat.purchases.PeriodType
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
@@ -54,7 +55,9 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.CustomerCent
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.FeedbackSurveyData
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PathUtils
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PromotionalOfferData
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseHistory
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.PurchaseInformation
+import com.revenuecat.purchases.ui.revenuecatui.customercenter.data.shouldShowSeeAllPurchases
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.dialogs.RestorePurchasesState
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.extensions.getLocalizedDescription
 import com.revenuecat.purchases.ui.revenuecatui.customercenter.navigation.CustomerCenterDestination
@@ -67,6 +70,9 @@ import com.revenuecat.purchases.ui.revenuecatui.utils.DateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.DefaultDateFormatter
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpener
 import com.revenuecat.purchases.ui.revenuecatui.utils.URLOpeningMethod
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -140,6 +146,10 @@ internal interface CustomerCenterViewModel {
 
     fun showCreateSupportTicket()
 
+    fun showPurchaseHistory()
+
+    fun showPurchaseHistoryDetail(purchase: PurchaseInformation)
+
     fun dismissSupportTicketSuccessSnackbar()
 
     /**
@@ -165,6 +175,8 @@ internal sealed class TransactionDetails(
     open val store: Store,
     open val price: Price?,
     open val isSandbox: Boolean,
+    open val purchaseHistoryEntryId: String,
+    open val displayName: String?,
 ) {
 
     @Immutable
@@ -179,7 +191,18 @@ internal sealed class TransactionDetails(
         val managementURL: Uri?,
         override val price: Price?,
         override val isSandbox: Boolean,
-    ) : TransactionDetails(productIdentifier, store, price, isSandbox)
+        override val purchaseHistoryEntryId: String,
+        override val displayName: String? = null,
+        val purchaseDate: Date? = null,
+        val originalPurchaseDate: Date? = null,
+        val unsubscribeDetectedAt: Date? = null,
+        val billingIssuesDetectedAt: Date? = null,
+        val gracePeriodExpiresDate: Date? = null,
+        val periodType: PeriodType = PeriodType.NORMAL,
+        val refundedAt: Date? = null,
+        val ownershipType: OwnershipType = OwnershipType.UNKNOWN,
+        val storeTransactionId: String? = null,
+    ) : TransactionDetails(productIdentifier, store, price, isSandbox, purchaseHistoryEntryId, displayName)
 
     @Immutable
     data class NonSubscription(
@@ -187,7 +210,12 @@ internal sealed class TransactionDetails(
         override val store: Store,
         override val price: Price?,
         override val isSandbox: Boolean,
-    ) : TransactionDetails(productIdentifier, store, price, isSandbox)
+        override val purchaseHistoryEntryId: String,
+        override val displayName: String? = null,
+        val purchaseDate: Date? = null,
+        val originalPurchaseDate: Date? = null,
+        val storeTransactionId: String? = null,
+    ) : TransactionDetails(productIdentifier, store, price, isSandbox, purchaseHistoryEntryId, displayName)
 }
 
 @Suppress("TooManyFunctions", "LargeClass")
@@ -336,6 +364,49 @@ internal class CustomerCenterViewModelImpl(
                 )
                 currentState.copy(
                     navigationState = currentState.navigationState.push(virtualCurrencyBalancesDestination),
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
+                )
+            } else {
+                currentState
+            }
+        }
+    }
+
+    override fun showPurchaseHistory() {
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                val title = currentState.customerCenterConfigData.localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.SCREEN_PURCHASE_HISTORY_TITLE,
+                )
+                currentState.copy(
+                    navigationState = currentState.navigationState.push(
+                        CustomerCenterDestination.PurchaseHistory(title = title),
+                    ),
+                    navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
+                )
+            } else {
+                currentState
+            }
+        }
+    }
+
+    override fun showPurchaseHistoryDetail(purchase: PurchaseInformation) {
+        val state = _state.value
+        if (state !is CustomerCenterState.Success) return
+
+        val title = purchase.title ?: state.customerCenterConfigData.localization.commonLocalizedString(
+            CustomerCenterConfigData.Localization.CommonLocalizedString.SCREEN_PURCHASE_HISTORY_TITLE,
+        )
+
+        _state.update { currentState ->
+            if (currentState is CustomerCenterState.Success) {
+                currentState.copy(
+                    navigationState = currentState.navigationState.push(
+                        CustomerCenterDestination.PurchaseHistoryDetail(
+                            purchaseHistoryEntryId = purchase.purchaseHistoryEntryId,
+                            title = title,
+                        ),
+                    ),
                     navigationButtonType = CustomerCenterState.NavigationButtonType.BACK,
                 )
             } else {
@@ -697,12 +768,11 @@ internal class CustomerCenterViewModelImpl(
     }
 
     private suspend fun loadPurchases(
+        customerInfo: CustomerInfo,
         dateFormatter: DateFormatter,
         locale: Locale,
         localization: CustomerCenterConfigData.Localization,
     ): List<PurchaseInformation> {
-        val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
-
         val hasActiveSubscriptions = customerInfo.activeSubscriptions.isNotEmpty()
         val hasNonSubscriptionTransactions = customerInfo.nonSubscriptionTransactions.isNotEmpty()
 
@@ -751,6 +821,88 @@ internal class CustomerCenterViewModelImpl(
         }
     }
 
+    private suspend fun loadPurchaseHistory(
+        customerInfo: CustomerInfo,
+        dateFormatter: DateFormatter,
+        locale: Locale,
+        localization: CustomerCenterConfigData.Localization,
+    ): PurchaseHistory {
+        val activeSubscriptions = customerInfo.subscriptionsByProductIdentifier.values
+            .filter { it.isActive }
+            .sortedBy { it.purchaseDate }
+            .map { it.asTransactionDetails() }
+
+        val inactiveSubscriptions = customerInfo.subscriptionsByProductIdentifier.values
+            .filter { !it.isActive }
+            .sortedBy { it.purchaseDate }
+            .map { it.asTransactionDetails() }
+
+        val nonSubscriptions = customerInfo.nonSubscriptionTransactions
+            .sortedBy { it.purchaseDate }
+            .map { transaction ->
+                TransactionDetails.NonSubscription(
+                    productIdentifier = transaction.productIdentifier,
+                    store = transaction.store,
+                    price = transaction.price,
+                    isSandbox = transaction.isSandbox,
+                    purchaseHistoryEntryId = nonSubscriptionHistoryEntryId(transaction.transactionIdentifier),
+                    displayName = transaction.displayName,
+                    purchaseDate = transaction.purchaseDate,
+                    originalPurchaseDate = transaction.originalPurchaseDate,
+                    storeTransactionId = transaction.storeTransactionId,
+                )
+            }
+
+        return coroutineScope {
+            // Start every product lookup before awaiting, so they still resolve concurrently.
+            val toInfo: suspend (TransactionDetails) -> PurchaseInformation = {
+                it.toPurchaseInformation(customerInfo, dateFormatter, locale, localization)
+            }
+            val active = activeSubscriptions.map { async { toInfo(it) } }
+            val inactive = inactiveSubscriptions.map { async { toInfo(it) } }
+            val nonSubs = nonSubscriptions.map { async { toInfo(it) } }
+
+            PurchaseHistory(
+                activeSubscriptions = active.awaitAll(),
+                inactiveSubscriptions = inactive.awaitAll(),
+                nonSubscriptions = nonSubs.awaitAll(),
+            )
+        }
+    }
+
+    private suspend fun TransactionDetails.toPurchaseInformation(
+        customerInfo: CustomerInfo,
+        dateFormatter: DateFormatter,
+        locale: Locale,
+        localization: CustomerCenterConfigData.Localization,
+    ): PurchaseInformation {
+        val entitlement = customerInfo.entitlements.active.values
+            .firstOrNull { it.productIdentifier == productIdentifier }
+            ?: customerInfo.entitlements.all.values
+                .firstOrNull { it.productIdentifier == productIdentifier }
+
+        val isActivePlayStoreSubscription = store == Store.PLAY_STORE &&
+            this is TransactionDetails.Subscription &&
+            isActive
+        val product = if (isActivePlayStoreSubscription) {
+            purchases.awaitGetProduct(
+                productIdentifier,
+                (this as TransactionDetails.Subscription).productPlanIdentifier,
+            )
+        } else {
+            null
+        }
+
+        return PurchaseInformation(
+            entitlementInfo = entitlement,
+            subscribedProduct = product,
+            transaction = this,
+            dateFormatter = dateFormatter,
+            locale = locale,
+            localization = localization,
+        )
+    }
+
     private fun findActiveTransactions(customerInfo: CustomerInfo): List<TransactionDetails> {
         val activeSubscriptions = customerInfo.subscriptionsByProductIdentifier.values
             .filter { it.isActive }
@@ -773,6 +925,11 @@ internal class CustomerCenterViewModelImpl(
                     store = it.store,
                     price = it.price,
                     isSandbox = it.isSandbox,
+                    purchaseHistoryEntryId = nonSubscriptionHistoryEntryId(it.transactionIdentifier),
+                    displayName = it.displayName,
+                    purchaseDate = it.purchaseDate,
+                    originalPurchaseDate = it.originalPurchaseDate,
+                    storeTransactionId = it.storeTransactionId,
                 )
 
                 else -> null
@@ -1016,11 +1173,23 @@ internal class CustomerCenterViewModelImpl(
         }
         try {
             val customerCenterConfigData = purchases.awaitCustomerCenterConfigData()
+            val customerInfo = purchases.awaitCustomerInfo(fetchPolicy = CacheFetchPolicy.FETCH_CURRENT)
             val purchaseInformationList = loadPurchases(
+                customerInfo = customerInfo,
                 dateFormatter = dateFormatter,
                 locale = locale,
                 localization = customerCenterConfigData.localization,
             )
+            val purchaseHistory = if (customerCenterConfigData.support.displayPurchaseHistoryLink == true) {
+                loadPurchaseHistory(
+                    customerInfo = customerInfo,
+                    dateFormatter = dateFormatter,
+                    locale = locale,
+                    localization = customerCenterConfigData.localization,
+                )
+            } else {
+                PurchaseHistory()
+            }
             val virtualCurrencies = if (customerCenterConfigData.support.displayVirtualCurrencies == true) {
                 purchases.invalidateVirtualCurrenciesCache()
                 purchases.awaitGetVirtualCurrencies()
@@ -1040,11 +1209,14 @@ internal class CustomerCenterViewModelImpl(
             val successState = CustomerCenterState.Success(
                 customerCenterConfigData,
                 purchaseInformationList,
+                purchaseHistory = purchaseHistory,
                 mainScreenPaths = emptyList(), // Will be computed below
                 detailScreenPaths = emptyList(), // Will be computed when a purchase is selected
                 noActiveScreenOffering = noActiveScreenOffering,
                 virtualCurrencies = virtualCurrencies,
                 isRefreshing = false,
+                shouldShowPurchaseHistory = customerCenterConfigData.support.displayPurchaseHistoryLink == true &&
+                    customerInfo.shouldShowSeeAllPurchases(),
             )
             val mainScreenPaths = computeMainScreenPaths(successState)
 
@@ -1467,5 +1639,21 @@ internal class CustomerCenterViewModelImpl(
         managementURL = managementURL,
         price = price,
         isSandbox = isSandbox,
+        purchaseHistoryEntryId = subscriptionHistoryEntryId(productIdentifier),
+        displayName = displayName,
+        purchaseDate = purchaseDate,
+        originalPurchaseDate = originalPurchaseDate,
+        unsubscribeDetectedAt = unsubscribeDetectedAt,
+        billingIssuesDetectedAt = billingIssuesDetectedAt,
+        gracePeriodExpiresDate = gracePeriodExpiresDate,
+        periodType = periodType,
+        refundedAt = refundedAt,
+        ownershipType = ownershipType,
+        storeTransactionId = storeTransactionId,
     )
+
+    private fun subscriptionHistoryEntryId(productIdentifier: String): String = "subscription:$productIdentifier"
+
+    private fun nonSubscriptionHistoryEntryId(transactionIdentifier: String): String =
+        "non_subscription:$transactionIdentifier"
 }

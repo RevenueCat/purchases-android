@@ -1,7 +1,6 @@
 package com.revenuecat.purchases
 
 import android.annotation.SuppressLint
-import android.net.Uri
 import com.revenuecat.purchases.common.networking.Endpoint
 import com.revenuecat.purchases.utils.DefaultIsDebugBuildProvider
 import java.net.URL
@@ -19,9 +18,6 @@ public fun Purchases.Companion.configureForE2ETests(
         override fun modifyRequestURL(url: URL, endpoint: Endpoint): URL {
             return when (currentForceServerErrorStrategy()) {
                 E2EForceServerErrorStrategy.Never -> url
-                E2EForceServerErrorStrategy.RemoteConfigKillSwitch -> {
-                    if (endpoint is Endpoint.GetRemoteConfig) url.appendingRemoteConfigKillSwitch() else url
-                }
                 E2EForceServerErrorStrategy.RemoteConfigNetworkError -> {
                     if (endpoint.isRemoteConfig()) remoteConfigOfflineURL else url
                 }
@@ -42,14 +38,6 @@ public fun Purchases.Companion.configureForE2ETests(
         serviceDispatcher.initialize(it)
     }
 }
-
-private fun URL.appendingRemoteConfigKillSwitch(): URL = URL(
-    Uri.parse(toString())
-        .buildUpon()
-        .appendQueryParameter("force_killswitch", "true")
-        .build()
-        .toString(),
-)
 
 private fun Endpoint.isRemoteConfig(): Boolean =
     this is Endpoint.GetRemoteConfig || this is Endpoint.GetRemoteConfigFallback

@@ -4,6 +4,10 @@ import androidx.annotation.VisibleForTesting
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.toSize
 import androidx.window.core.layout.WindowHeightSizeClass
 import androidx.window.core.layout.WindowSizeClass
 import androidx.window.core.layout.WindowWidthSizeClass
@@ -11,6 +15,27 @@ import androidx.window.layout.WindowMetricsCalculator
 import com.revenuecat.purchases.ui.revenuecatui.PaywallMode
 import com.revenuecat.purchases.ui.revenuecatui.data.PaywallState
 import com.revenuecat.purchases.ui.revenuecatui.isFullScreen
+
+/**
+ * The window width size class, derived the same way `currentWindowAdaptiveInfo()` derives it, but without
+ * collecting folding features. Paywalls V2 components only ever read the width size class, and the folding
+ * feature flow behind `Posture` is one collector per call site.
+ *
+ * This inlines what `currentWindowSize()` does, because that function is not [ReadOnlyComposable] and so
+ * cannot be called from here.
+ *
+ * Distinct from [computeWindowWidthSizeClass], which reads the Activity density and is used by V1 paywalls.
+ */
+@Composable
+@ReadOnlyComposable
+internal fun currentWindowWidthSizeClass(): WindowWidthSizeClass {
+    // Read for its side effect, exactly as `currentWindowSize()` does: the window metrics below are not
+    // snapshot state, so this read is what invalidates callers on a configuration change.
+    LocalConfiguration.current
+    val bounds = WindowMetricsCalculator.getOrCreate().computeCurrentWindowMetrics(LocalContext.current).bounds
+    val dpSize = with(LocalDensity.current) { IntSize(bounds.width(), bounds.height()).toSize().toDpSize() }
+    return WindowSizeClass.compute(dpSize.width.value, dpSize.height.value).windowWidthSizeClass
+}
 
 @Composable
 @ReadOnlyComposable

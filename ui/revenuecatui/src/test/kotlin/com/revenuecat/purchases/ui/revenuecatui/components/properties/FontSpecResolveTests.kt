@@ -43,4 +43,25 @@ class FontSpecResolveTests {
 
         assertThat(result).isNotEqualTo(FontFamily.Default)
     }
+
+    @Test
+    fun `resolving the same downloaded family twice returns equal families`() {
+        val spec = FontSpec.Downloaded(
+            DownloadedFontFamily(
+                family = "MyFont",
+                fonts = listOf(
+                    DownloadedFont(weight = 400, style = RcFontStyle.NORMAL, file = File("regular.otf")),
+                    DownloadedFont(weight = 700, style = RcFontStyle.ITALIC, file = File("bolditalic.otf")),
+                ),
+            ),
+        )
+
+        val first = spec.resolve(weight = FontWeight.Normal, style = FontStyle.Normal)
+        val second = spec.resolve(weight = FontWeight.Normal, style = FontStyle.Normal)
+
+        // A new FontFamily that is not equal to the previous one invalidates the derived state holding it,
+        // which recomposes every text on the paywall and misses Compose's typeface caches.
+        assertThat(first).isEqualTo(second)
+        assertThat(first.hashCode()).isEqualTo(second.hashCode())
+    }
 }

@@ -1,21 +1,49 @@
 package com.revenuecat.purchases.utils
 
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.JsonTools.json
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.PackageType
+import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.common.OfferingParser
+import com.revenuecat.purchases.common.sha256
 import com.revenuecat.purchases.models.Period
 import com.revenuecat.purchases.models.Price
 import com.revenuecat.purchases.models.PricingPhase
 import com.revenuecat.purchases.models.RecurrenceMode
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.TestStoreProduct
+import com.revenuecat.purchases.paywalls.components.common.PaywallComponentsData
 import org.json.JSONObject
 
 /**
  * This is instantiated via reflection by revenuecatui, in `TemplatePreviews.kt`, to be able to show previews of entire
  * v2 Paywall templates.
  */
-@Suppress("UnusedPrivateClass", "unused", "LongMethod")
-private class PreviewOfferingParser : OfferingParser() {
+@Suppress("unused", "LongMethod")
+internal class PreviewOfferingParser : OfferingParser() {
+
+    /**
+     * The SDK's parsers never capture `paywall_components` from the offerings response (components are served
+     * from `/v1/config`), but template previews render offerings straight from local JSON fixtures, so this is
+     * the one parser that still builds them.
+     */
+    @OptIn(InternalRevenueCatAPI::class)
+    override fun createPaywallComponents(
+        paywallComponentsJson: JSONObject?,
+        uiConfig: UiConfig?,
+        hasWellShaped: Boolean,
+    ): Offering.PaywallComponents? {
+        if (paywallComponentsJson == null || uiConfig == null || !hasWellShaped) return null
+
+        // Defer the (potentially expensive) component-tree deserialization until the paywall is actually
+        // accessed/displayed, mirroring what the production parsers did when they still captured components.
+        val rawPaywallComponents = paywallComponentsJson.toString()
+        return Offering.PaywallComponents(uiConfig, componentsHash = rawPaywallComponents.sha256()) {
+            json.decodeFromString<PaywallComponentsData>(rawPaywallComponents)
+        }
+    }
+
     override fun findMatchingProduct(
         productsById: Map<String, List<StoreProduct>>,
         packageJson: JSONObject,

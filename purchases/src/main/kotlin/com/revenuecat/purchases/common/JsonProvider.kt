@@ -12,6 +12,7 @@ internal sealed class JsonProvider {
             serializersModule = SerializersModule {
                 polymorphic(BackendEvent::class) {
                     subclass(BackendEvent.CustomerCenter::class, BackendEvent.CustomerCenter.serializer())
+                    subclass(BackendEvent.Checkpoint::class, BackendEvent.Checkpoint.serializer())
                     subclass(BackendEvent.Paywalls::class, BackendEvent.Paywalls.serializer())
                     subclass(BackendEvent.Workflows::class, BackendEvent.Workflows.serializer())
                 }

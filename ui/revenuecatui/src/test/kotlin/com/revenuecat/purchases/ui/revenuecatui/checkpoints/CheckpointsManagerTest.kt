@@ -3,23 +3,33 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import android.app.Activity
-import android.content.Intent
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.EntitlementInfo
+import com.revenuecat.purchases.Offering
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.PurchasesException
 import com.revenuecat.purchases.checkpoints.CheckpointResolution
+import com.revenuecat.purchases.common.localrules.RulesDimensionValue
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.models.StoreTransaction
+import com.revenuecat.purchases.ui.revenuecatui.CustomVariableValue
+import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
+import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
+import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.runs
 import io.mockk.slot
+import io.mockk.unmockkObject
 import io.mockk.verify
-import io.mockk.verifyOrder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
@@ -43,293 +53,957 @@ class CheckpointsManagerTest {
 
     private lateinit var mockPurchases: Purchases
     private lateinit var mockActivity: Activity
-    private lateinit var mockListener: CheckpointListener
-    private val startedIntents = mutableListOf<Intent>()
+    private lateinit var mockPresenter: CheckpointWorkflowPresenter
+    private var defaultPresenter: DefaultPaywallPresenter? = null
+    private val presentedCallIds = mutableListOf<String>()
+    private val results = mutableListOf<FlowResult?>()
 
     private lateinit var manager: CheckpointsManager
 
     @Before
     fun setup() {
         Dispatchers.setMain(dispatcher)
-        startedIntents.clear()
+        mockkObject(Logger)
+        every { Logger.e(any()) } just runs
+        every { Logger.w(any()) } just runs
+        presentedCallIds.clear()
+        results.clear()
         mockActivity = mockk(relaxed = true)
-        capturesStartedIntents()
-        mockListener = mockk(relaxed = true)
+        mockPresenter = mockk(relaxed = true)
+        defaultPresenter = null
         mockPurchases = mockk {
             every { currentActivity } returns mockActivity
+            every { getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
+                secondArg<ReceiveCustomerInfoCallback>()
+                    .onError(PurchasesError(PurchasesErrorCode.CustomerInfoError, "No cache."))
+            }
         }
-        manager = CheckpointsManager()
-        manager.checkpointListener = mockListener
+        manager = CheckpointsManager(
+            presenterFactory = { callId, _ ->
+                presentedCallIds += callId
+                mockPresenter
+            },
+            defaultPresenterFactory = { purchases ->
+                DefaultPaywallPresenter(purchases) { _, _ -> mockPresenter }.also { defaultPresenter = it }
+            },
+        )
     }
 
     @After
     fun tearDown() {
+        unmockkObject(Logger)
         Dispatchers.resetMain()
     }
 
     @Test
-    fun `unmatched checkpoint resolves NoAction with the mapped reason`() = runTest(dispatcher) {
-        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.UNKNOWN_CHECKPOINT))
+    fun `valid checkpoint identifier is resolved`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
 
-        val result = checkpoint() as CheckpointResult.NoAction
+        checkpoint(identifier = "A-1_b")
 
-        assertThat(result.reason).isEqualTo(CheckpointResult.NoAction.Reason.UNKNOWN_CHECKPOINT)
-        assertThat(result.checkpoint.identifier).isEqualTo(checkpointId)
-        verifyOrder {
-            mockListener.onCheckpointHit(result.checkpoint)
-            mockListener.onCheckpointCompleted(result.checkpoint, result)
+        coVerify(exactly = 1) { mockPurchases.internalResolveCp("A-1_b", emptyMap()) }
+    }
+
+    @Test
+    fun `invalid checkpoint identifier is logged and skips resolution`() = runTest(dispatcher) {
+        val invalidIdentifier = " checkout😀"
+
+        checkpoint(identifier = invalidIdentifier)
+
+        assertThat(results).containsExactly(null)
+        coVerify(exactly = 0) { mockPurchases.internalResolveCp(any(), any()) }
+        verify(exactly = 1) {
+            Logger.e(CheckpointIdentifierValidator.invalidIdentifierLogMessage(invalidIdentifier))
         }
     }
 
     @Test
-    fun `every no-action reason maps to its result counterpart`() = runTest(dispatcher) {
-        CheckpointResolution.NoAction.Reason.values().forEach { reason ->
-            resolvesTo(CheckpointResolution.NoAction(reason))
+    fun `unmatched checkpoint passes null without a flow`() =
+        runTest(dispatcher) {
+            resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.UNKNOWN_CHECKPOINT))
 
-            val result = checkpoint() as CheckpointResult.NoAction
+            checkpoint()
 
-            assertThat(result.reason.value).isEqualTo(reason.name)
+            assertThat(results).containsExactly(null)
+        }
+
+    @Test
+    fun `offering checkpoint presents the fallback paywall through the SDK's own presenter`() = runTest(dispatcher) {
+        val offering = mockk<Offering>()
+        val customerInfo = mockk<CustomerInfo>()
+        syncedCustomerInfoIs(customerInfo)
+        resolvesTo(CheckpointResolution.MatchedOffering(offering, checkpointRuleId = null))
+
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        assertThat(run).isNull()
+        assertThat(presentedCallIds).isEmpty()
+        verify(exactly = 1) { mockPresenter.show(mockActivity) }
+        assertThat(defaultPresenter!!.paywallOptions("") {}!!.offeringSelection.offering).isEqualTo(offering)
+
+        finishDefaultPaywall()
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
+        assertThat(run!!.backedOut).isFalse
+    }
+
+    @Test
+    fun `backing out of the SDK's own paywall is backed out without syncing`() = runTest(dispatcher) {
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        finishDefaultPaywall(navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(run!!.backedOut).isTrue
+        verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+    }
+
+    @Test
+    fun `a granting restore in the SDK's own paywall followed by back is not backed out`() = runTest(dispatcher) {
+        val customerInfo = mockk<CustomerInfo>()
+        syncedCustomerInfoIs(customerInfo)
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        val restored = mockk<CustomerInfo> { every { entitlements.active } returns mapOf("pro" to mockk()) }
+
+        defaultPresenter!!.paywallOptions("") {}!!.listener!!.onRestoreCompleted(restored)
+        finishDefaultPaywall(navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
+        assertThat(run!!.backedOut).isFalse
+        verify(exactly = 1) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+    }
+
+    @Test
+    fun `the workflow window's options carry the workflow and report its outcomes`() = runTest(dispatcher) {
+        val resolution = CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null)
+        resolvesTo(resolution)
+        val customerInfo = mockk<CustomerInfo>()
+        val storeTransaction = mockk<StoreTransaction>()
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Step misconfigured")
+        val dismissals = mutableListOf<Boolean>()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        val options = manager.paywallOptions(currentCallId()) { dismissals += it }!!
+        assertThat(options.injectedWorkflow).isSameAs(resolution.workflow)
+        options.listener!!.onPurchaseCompleted(customerInfo, storeTransaction)
+        options.dismissRequestWithExitOffering!!(null, PaywallResult.Error(error), PaywallDismissReason.NAVIGATED_BACK)
+        assertThat(dismissals).containsExactly(true)
+        assertThat(manager.paywallOptions("unknown-call-id") {}).isNull()
+
+        finishPaywall(outcome = null, navigatedBack = true)
+        call.join()
+
+        // The purchase wins over the later error, and a purchase is never backed out.
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+        assertThat(run!!.backedOut).isFalse
+    }
+
+    @Test
+    fun `a workflow restore that grants nothing new is not an outcome`() = runTest(dispatcher) {
+        cachedActiveEntitlements("plus")
+        resolvesToWorkflow()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        manager.paywallOptions(currentCallId()) {}!!.listener!!.onRestoreCompleted(customerInfoWithActive("plus"))
+        finishPaywall(outcome = null, navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(run!!.backedOut).isTrue
+    }
+
+    @Test
+    fun `a workflow restore that grants a new entitlement is recorded`() = runTest(dispatcher) {
+        cachedActiveEntitlements("plus")
+        resolvesToWorkflow()
+        val restored = customerInfoWithActive("plus", "pro")
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        manager.paywallOptions(currentCallId()) {}!!.listener!!.onRestoreCompleted(restored)
+        finishPaywall(outcome = null, navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Restored(restored))
+        assertThat(run!!.backedOut).isFalse
+    }
+
+    @Test
+    fun `the SDK's own paywall without a started activity fails and presents nothing`() = runTest(dispatcher) {
+        every { mockPurchases.currentActivity } returns null
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+
+        assertThat(runCheckpoint().flowOutcome).isNull()
+
+        verify(exactly = 0) { mockPresenter.show(any()) }
+        verify {
+            Logger.e(
+                match {
+                    it.contains("Paywall presenter failed") &&
+                        it.contains("Cannot present checkpoint paywall: no started Activity found.")
+                },
+            )
         }
     }
 
     @Test
-    fun `resolution failure propagates to the caller`() = runTest(dispatcher) {
-        coEvery { mockPurchases.resolveCheckpoint(any(), any()) } throws PurchasesException(
-            PurchasesError(PurchasesErrorCode.ConfigurationError, "Simulated."),
+    fun `cancelling the caller leaves the SDK's own paywall to the user and ignores its report`() =
+        runTest(dispatcher) {
+            resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+            val call = launch { runCheckpoint() }
+
+            call.cancel()
+            call.join()
+            finishDefaultPaywall()
+
+            verify(exactly = 0) { mockPresenter.abandon() }
+            verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+        }
+
+    @Test
+    fun `offering checkpoint cannot present while a UI checkpoint is being presented`() = runTest(dispatcher) {
+        coEvery { mockPurchases.internalResolveCp(any(), any()) } returnsMany listOf(
+            CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null),
+            CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null),
         )
+        val presentedCall = launch { runCheckpoint() }
 
-        assertThat(checkpointErrorCode()).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        val run = runCheckpoint()
+
+        assertThat(run.blockedByPresentedFlow).isTrue
+        assertThat(run.flowOutcome).isNull()
+        assertThat(presentedCallIds).hasSize(1)
+        presentedCall.cancel()
     }
 
     @Test
-    fun `checkpoint errors with ConfigurationError when no activity is available`() = runTest(dispatcher) {
+    fun `resolution failure passes null without a flow`() = runTest(dispatcher) {
+        val error = PurchasesError(PurchasesErrorCode.ConfigurationError, "Simulated.")
+        coEvery { mockPurchases.internalResolveCp(any(), any()) } throws PurchasesException(error)
+
+        checkpoint()
+
+        assertThat(results).containsExactly(null)
+    }
+
+    @Test
+    fun `a presentation failure completes with null without throwing`() = runTest(dispatcher) {
         every { mockPurchases.currentActivity } returns null
         resolvesToWorkflow()
 
-        assertThat(checkpointErrorCode()).isEqualTo(PurchasesErrorCode.ConfigurationError)
-    }
+        checkpoint()
 
-    @Test
-    fun `matched checkpoint presents the workflow and resolves when the paywall finishes`() = runTest(dispatcher) {
-        resolvesToWorkflow()
-
-        var result: CheckpointResult? = null
-        val call = launch { result = checkpoint(CheckpointParams("goal" to "test")) }
-
-        assertThat(result).isNull()
-
-        finishPaywall(CheckpointPaywallOutcome.Dismissed)
-        call.join()
-
-        val presented = result as CheckpointResult.PaywallPresented
-        assertThat(presented.paywallOutcome).isEqualTo(CheckpointPaywallOutcome.Dismissed)
-        assertThat(presented.checkpoint.identifier).isEqualTo(checkpointId)
-        assertThat(presented.checkpoint.params.customProperties).isEqualTo(mapOf("goal" to "test"))
-        verifyOrder {
-            mockListener.onCheckpointHit(any())
-            mockListener.onCheckpointCompleted(presented.checkpoint, presented)
+        assertThat(results).containsExactly(null)
+        verify {
+            Logger.e(
+                PurchasesError(
+                    PurchasesErrorCode.ConfigurationError,
+                    "Cannot present checkpoint workflow: no started Activity found.",
+                ).toString(),
+            )
         }
     }
 
     @Test
-    fun `only valid custom properties are forwarded to the resolver`() = runTest(dispatcher) {
+    fun `matched checkpoint presents the workflow and completes when the paywall finishes`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+
+        checkpoint(CheckpointParams { customVariables { "goal" to "test" } })
+
+        assertThat(results).isEmpty()
+
+        finishPaywall(CheckpointFlowOutcome.Dismissed)
+
+        assertThat(results).containsExactly(FlowResult(obtainedEntitlements = emptySet()))
+    }
+
+    @Test
+    fun `custom variables reach the resolver as rule dimensions`() = runTest(dispatcher) {
         resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
 
-        checkpoint(CheckpointParams("goal" to "test", "invalid" to Any()))
+        runCheckpoint(
+            CheckpointParams {
+                customVariables {
+                    "goal" to "test"
+                    "attempt" to 2
+                    "flag" to true
+                }
+            },
+        )
 
-        val customProperties = slot<Map<String, Any>>()
-        coVerify { mockPurchases.resolveCheckpoint(checkpointId, capture(customProperties)) }
-        assertThat(customProperties.captured).isEqualTo(mapOf("goal" to "test"))
+        val customVariables = slot<Map<String, RulesDimensionValue>>()
+        coVerify { mockPurchases.internalResolveCp(checkpointId, capture(customVariables)) }
+        assertThat(customVariables.captured).isEqualTo(
+            mapOf(
+                "goal" to RulesDimensionValue.StringValue("test"),
+                "attempt" to RulesDimensionValue.DoubleValue(2.0),
+                "flag" to RulesDimensionValue.BoolValue(true),
+            ),
+        )
+    }
+
+    @Test
+    fun `custom variables are exposed to the presented paywall`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val call = launch {
+            runCheckpoint(
+                CheckpointParams {
+                    customVariables {
+                        "gate" to "hard"
+                        "attempt" to 2
+                        "ratio" to 0.5
+                        "flag" to true
+                    }
+                },
+            )
+        }
+
+        assertThat(manager.presentation(currentCallId())!!.customVariables).isEqualTo(
+            mapOf(
+                "gate" to CustomVariableValue.String("hard"),
+                "attempt" to CustomVariableValue.Number(2),
+                "ratio" to CustomVariableValue.Number(0.5),
+                "flag" to CustomVariableValue.Boolean(true),
+            ),
+        )
+
+        finishPaywall(CheckpointFlowOutcome.Dismissed)
+        call.join()
     }
 
     @Test
     fun `the recorded outcome is the one delivered`() = runTest(dispatcher) {
         resolvesToWorkflow()
         val customerInfo = mockk<CustomerInfo>()
-        var result: CheckpointResult? = null
-        val call = launch { result = checkpoint() }
+        val storeTransaction = mockk<StoreTransaction>()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
 
-        finishPaywall(CheckpointPaywallOutcome.Purchased(customerInfo))
+        finishPaywall(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
         call.join()
 
-        assertThat((result as CheckpointResult.PaywallPresented).paywallOutcome)
-            .isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo))
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
     }
 
     @Test
-    fun `concurrent checkpoint errors with OperationAlreadyInProgressError`() = runTest(dispatcher) {
+    fun `a web checkout outcome is delivered when the paywall dismisses`() = runTest(dispatcher) {
         resolvesToWorkflow()
-        val firstCall = launch { checkpoint() }
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
 
-        assertThat(checkpointErrorCode()).isEqualTo(PurchasesErrorCode.OperationAlreadyInProgressError)
+        finishPaywall(CheckpointFlowOutcome.WebCheckoutOpened)
+        call.join()
 
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.WebCheckoutOpened)
+    }
+
+    @Test
+    fun `a later outcome replaces an earlier web checkout outcome`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val customerInfo = mockk<CustomerInfo>()
+        val storeTransaction = mockk<StoreTransaction>()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        manager.recordOutcome(currentCallId(), CheckpointFlowOutcome.WebCheckoutOpened)
+
+        finishPaywall(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+    }
+
+    @Test
+    fun `a later error does not replace a recorded restore`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val customerInfo = mockk<CustomerInfo>()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        manager.recordOutcome(currentCallId(), CheckpointFlowOutcome.Restored(customerInfo))
+
+        finishPaywall(CheckpointFlowOutcome.Error(mockk()))
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Restored(customerInfo))
+    }
+
+    @Test
+    fun `a later web checkout does not replace a recorded purchase`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val customerInfo = mockk<CustomerInfo>()
+        val storeTransaction = mockk<StoreTransaction>()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        manager.recordOutcome(currentCallId(), CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+
+        finishPaywall(CheckpointFlowOutcome.WebCheckoutOpened)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+    }
+
+    @Test
+    fun `a later purchase replaces a recorded restore`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val customerInfo = mockk<CustomerInfo>()
+        val storeTransaction = mockk<StoreTransaction>()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        manager.recordOutcome(currentCallId(), CheckpointFlowOutcome.Restored(mockk()))
+
+        finishPaywall(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+    }
+
+    @Test
+    fun `a concurrent checkpoint is blocked by the presented flow`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val firstCall = launch { runCheckpoint() }
+
+        val run = runCheckpoint()
+
+        assertThat(run.blockedByPresentedFlow).isTrue
+        assertThat(run.flowOutcome).isNull()
         firstCall.cancel()
+    }
+
+    @Test
+    fun `a checkpoint blocked by the presented flow never invokes its callback`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        checkpoint()
+
+        checkpoint()
+
+        assertThat(results).isEmpty()
+        finishPaywall(CheckpointFlowOutcome.Dismissed)
+        assertThat(results).containsExactly(FlowResult(obtainedEntitlements = emptySet()))
+        assertThat(presentedCallIds).hasSize(1)
+    }
+
+    @Test
+    fun `an unmatched checkpoint still passes null while another flow is presented`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        checkpoint()
+        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
+
+        checkpoint()
+
+        assertThat(results).containsExactly(null)
     }
 
     @Test
     fun `checkpoint can present again after the previous workflow finishes`() = runTest(dispatcher) {
         resolvesToWorkflow()
 
-        val firstCall = launch { checkpoint() }
-        finishPaywall(CheckpointPaywallOutcome.Dismissed)
+        val firstCall = launch { runCheckpoint() }
+        finishPaywall(CheckpointFlowOutcome.Dismissed)
         firstCall.join()
 
-        val secondCall = launch { checkpoint() }
-        finishPaywall(CheckpointPaywallOutcome.Dismissed)
+        val secondCall = launch { runCheckpoint() }
+        finishPaywall(CheckpointFlowOutcome.Dismissed)
         secondCall.join()
 
-        verify(exactly = 2) { mockActivity.startActivity(any()) }
+        assertThat(presentedCallIds).hasSize(2)
     }
 
     @Test
-    fun `checkpoint can present again after startActivity throws`() = runTest(dispatcher) {
+    fun `checkpoint can present again after the presenter fails to show`() = runTest(dispatcher) {
         resolvesToWorkflow()
-        every { mockActivity.startActivity(any()) } throws RuntimeException("startActivity failed")
+        every { mockPresenter.show(any()) } throws RuntimeException("show failed")
 
-        assertThat(checkpointErrorCode()).isEqualTo(PurchasesErrorCode.ConfigurationError)
+        checkpointFailsWith(
+            PurchasesErrorCode.ConfigurationError,
+            "Failed to present checkpoint workflow: java.lang.RuntimeException: show failed",
+        )
 
-        capturesStartedIntents()
-        var result: CheckpointResult? = null
-        val call = launch { result = checkpoint() }
-        finishPaywall(CheckpointPaywallOutcome.Dismissed)
+        every { mockPresenter.show(any()) } just runs
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        finishPaywall(CheckpointFlowOutcome.Dismissed)
         call.join()
 
-        assertThat(result).isInstanceOf(CheckpointResult.PaywallPresented::class.java)
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
     }
 
     @Test
     fun `checkpoint can present again after being cancelled`() = runTest(dispatcher) {
         resolvesToWorkflow()
-        val firstCall = launch { checkpoint() }
+        val firstCall = launch { runCheckpoint() }
 
         firstCall.cancel()
 
-        var result: CheckpointResult? = null
-        val secondCall = launch { result = checkpoint() }
-        finishPaywall(CheckpointPaywallOutcome.Dismissed)
+        var run: CheckpointRun? = null
+        val secondCall = launch { run = runCheckpoint() }
+        finishPaywall(CheckpointFlowOutcome.Dismissed)
         secondCall.join()
 
-        assertThat(result).isInstanceOf(CheckpointResult.PaywallPresented::class.java)
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
     }
 
     @Test
-    fun `cancelling the caller finishes the presented paywall`() = runTest(dispatcher) {
+    fun `cancelling the caller abandons the presented paywall`() = runTest(dispatcher) {
         resolvesToWorkflow()
-        val presentedActivity = mockk<Activity>(relaxed = true)
-        val call = launch { checkpoint() }
-        manager.onPresentationStarted(currentCallId(), presentedActivity)
+        val call = launch { runCheckpoint() }
 
         call.cancel()
         call.join()
 
-        verify { presentedActivity.finish() }
+        verify { mockPresenter.abandon() }
     }
 
     @Test
     fun `a report from an abandoned presentation does not disturb the call that replaced it`() =
         runTest(dispatcher) {
             resolvesToWorkflow()
-            val firstCall = launch { checkpoint() }
+            val firstCall = launch { runCheckpoint() }
             val abandonedCallId = currentCallId()
             firstCall.cancel()
             firstCall.join()
 
-            var result: CheckpointResult? = null
-            val secondCall = launch { result = checkpoint() }
-            manager.recordOutcome(abandonedCallId, CheckpointPaywallOutcome.Error(mockk()))
-            manager.onActivityDestroyed(abandonedCallId, isChangingConfigurations = false)
+            var run: CheckpointRun? = null
+            val secondCall = launch { run = runCheckpoint() }
+            manager.recordOutcome(abandonedCallId, CheckpointFlowOutcome.Error(mockk()))
+            manager.onPresentationFinished(abandonedCallId)
 
-            assertThat(result).isNull()
+            assertThat(run).isNull()
 
-            finishPaywall(CheckpointPaywallOutcome.Dismissed)
+            finishPaywall(CheckpointFlowOutcome.Dismissed)
             secondCall.join()
 
-            assertThat((result as CheckpointResult.PaywallPresented).paywallOutcome)
-                .isEqualTo(CheckpointPaywallOutcome.Dismissed)
+            assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
         }
 
     @Test
-    fun `finishing an unknown callId is a no-op`() {
-        manager.onActivityDestroyed("unknown-call-id", isChangingConfigurations = false)
-        manager.recordOutcome("unknown-call-id", CheckpointPaywallOutcome.Dismissed)
-
-        assertThat(manager.resolution("unknown-call-id")).isNull()
-    }
-
-    @Test
-    fun `a destroy for a configuration change keeps the pending call alive`() = runTest(dispatcher) {
+    fun `the callback runs before the presented flow is released`() = runTest(dispatcher) {
         resolvesToWorkflow()
-        var result: CheckpointResult? = null
-        val call = launch { result = checkpoint() }
-        val callId = currentCallId()
+        val events = mutableListOf<String>()
+        manager.checkpoint(mockPurchases, checkpointId, null) { events += "callback" }
 
-        manager.onActivityDestroyed(callId, isChangingConfigurations = true)
+        manager.onPresentationFinished(currentCallId()) { events += "released" }
 
-        assertThat(result).isNull()
-        assertThat(manager.resolution(callId)).isNotNull
-
-        finishPaywall(CheckpointPaywallOutcome.Dismissed)
-        call.join()
-
-        assertThat(result).isInstanceOf(CheckpointResult.PaywallPresented::class.java)
+        assertThat(events).containsExactly("callback", "released")
     }
 
     @Test
-    fun `a destroy that is not a configuration change releases the pending call`() = runTest(dispatcher) {
+    fun `a backed-out flow is released without invoking the callback`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val events = mutableListOf<String>()
+        manager.checkpoint(mockPurchases, checkpointId, null) { events += "callback" }
+
+        manager.onPresentationFinished(currentCallId(), navigatedBack = true) { events += "released" }
+
+        assertThat(events).containsExactly("released")
+    }
+
+    @Test
+    fun `finishing an unknown callId still releases what it was given`() {
+        var released = false
+
+        manager.onPresentationFinished("unknown-call-id") { released = true }
+
+        assertThat(released).isTrue
+    }
+
+    @Test
+    fun `finishing an unknown callId is a no-op`() {
+        manager.onPresentationFinished("unknown-call-id")
+        manager.recordOutcome("unknown-call-id", CheckpointFlowOutcome.Dismissed)
+
+        assertThat(manager.presentation("unknown-call-id")).isNull()
+    }
+
+    @Test
+    fun `finishing the presentation releases the pending call`() = runTest(dispatcher) {
         resolvesToWorkflow()
         val customerInfo = mockk<CustomerInfo>()
-        var result: CheckpointResult? = null
-        val call = launch { result = checkpoint() }
+        val storeTransaction = mockk<StoreTransaction>()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
         val callId = currentCallId()
-        manager.recordOutcome(callId, CheckpointPaywallOutcome.Purchased(customerInfo))
+        manager.recordOutcome(callId, CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
 
-        manager.onActivityDestroyed(callId, isChangingConfigurations = false)
+        manager.onPresentationFinished(callId)
         call.join()
 
-        assertThat((result as CheckpointResult.PaywallPresented).paywallOutcome)
-            .isEqualTo(CheckpointPaywallOutcome.Purchased(customerInfo))
-        assertThat(manager.resolution(callId)).isNull()
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Purchased(customerInfo, storeTransaction))
+        assertThat(manager.presentation(callId)).isNull()
     }
 
     @Test
-    fun `checkpoint works without a listener`() = runTest(dispatcher) {
-        manager.checkpointListener = null
-        resolvesTo(CheckpointResolution.NoAction(CheckpointResolution.NoAction.Reason.NO_MATCH))
+    fun `backing out without a recorded outcome resolves Dismissed and backed out`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
 
-        assertThat(checkpoint()).isInstanceOf(CheckpointResult.NoAction::class.java)
+        finishPaywall(outcome = null, navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(run!!.backedOut).isTrue
+        assertThat(manager.presentation(currentCallId())).isNull()
+    }
+
+    @Test
+    fun `backing out after a recorded error keeps the error and is backed out`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        finishPaywall(CheckpointFlowOutcome.Error(error), navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Error(error))
+        assertThat(run!!.backedOut).isTrue
+    }
+
+    @Test
+    fun `backing out after a recorded restore is not backed out`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        val customerInfo = mockk<CustomerInfo>()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        finishPaywall(CheckpointFlowOutcome.Restored(customerInfo), navigatedBack = true)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Restored(customerInfo))
+        assertThat(run!!.backedOut).isFalse
+    }
+
+    @Test
+    fun `closing without backing out is not backed out`() = runTest(dispatcher) {
+        resolvesToWorkflow()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        finishPaywall(CheckpointFlowOutcome.Dismissed)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(run!!.backedOut).isFalse
+    }
+
+    @Test
+    fun `a registered presenter presents a matched offering and its continued report resolves the run`() =
+        runTest(dispatcher) {
+            val offering = mockk<Offering>()
+            val customerInfo = mockk<CustomerInfo>()
+            syncedCustomerInfoIs(customerInfo)
+            var presented: Offering? = null
+            var presentedIdentifier: String? = null
+            var completion: PaywallPresenter.Completion? = null
+            manager.paywallPresenter = PaywallPresenter { params, presentation ->
+                presented = params.offering
+                presentedIdentifier = params.checkpointIdentifier
+                completion = presentation
+            }
+            resolvesTo(CheckpointResolution.MatchedOffering(offering, checkpointRuleId = null))
+
+            var run: CheckpointRun? = null
+            val call = launch { run = runCheckpoint() }
+
+            assertThat(presented).isEqualTo(offering)
+            assertThat(presentedIdentifier).isEqualTo(checkpointId)
+            assertThat(run).isNull()
+            assertThat(presentedCallIds).isEmpty()
+            assertThat(defaultPresenter).isNull()
+            verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+
+            completion!!.complete(PaywallPresenter.Completion.Result.Continued)
+            call.join()
+
+            assertThat(run!!.flowOutcome)
+                .isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
+            assertThat(run!!.backedOut).isFalse
+        }
+
+    @Test
+    fun `a closed report resolves as finished`() = runTest(dispatcher) {
+        val customerInfo = mockk<CustomerInfo>()
+        syncedCustomerInfoIs(customerInfo)
+        val completion = presentThroughRegisteredPresenter()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
+        assertThat(run!!.backedOut).isFalse
+    }
+
+    @Test
+    fun `a navigated-back report resolves as dismissed and backed out without syncing`() = runTest(dispatcher) {
+        val completion = presentThroughRegisteredPresenter()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        completion()!!.complete(PaywallPresenter.Completion.Result.NavigatedBack)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Dismissed)
+        assertThat(run!!.backedOut).isTrue
+        verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+    }
+
+    @Test
+    fun `a continued report resolves like a closed one`() = runTest(dispatcher) {
+        val customerInfo = mockk<CustomerInfo>()
+        syncedCustomerInfoIs(customerInfo)
+        val completion = presentThroughRegisteredPresenter()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        completion()!!.complete(PaywallPresenter.Completion.Result.Continued)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
+        assertThat(run!!.backedOut).isFalse
+    }
+
+    @Test
+    fun `an unknown result is treated as closed and logged`() = runTest(dispatcher) {
+        val customerInfo = mockk<CustomerInfo>()
+        syncedCustomerInfoIs(customerInfo)
+        val completion = presentThroughRegisteredPresenter()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        completion()!!.complete(object : PaywallPresenter.Completion.Result() {})
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
+        verify(exactly = 1) { Logger.e(match { it.startsWith("Unknown paywall presenter result") }) }
+    }
+
+    @Test
+    fun `a sync failure after a closed report resolves with that error`() = runTest(dispatcher) {
+        val error = PurchasesError(PurchasesErrorCode.NetworkError, "Simulated.")
+        syncFailsWith(error)
+        val completion = presentThroughRegisteredPresenter()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Error(error))
+    }
+
+    @Test
+    fun `only the presenter's first report counts`() = runTest(dispatcher) {
+        val customerInfo = mockk<CustomerInfo>()
+        syncedCustomerInfoIs(customerInfo)
+        val completion = presentThroughRegisteredPresenter()
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+
+        completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+        completion()!!.complete(PaywallPresenter.Completion.Result.Continued)
+        completion()!!.complete(PaywallPresenter.Completion.Result.NavigatedBack)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
+        verify(exactly = 1) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+    }
+
+    @Test
+    fun `an app-owned presentation claims the one-presentation slot`() = runTest(dispatcher) {
+        manager.paywallPresenter = PaywallPresenter { _, _ -> }
+        coEvery { mockPurchases.internalResolveCp(any(), any()) } returnsMany listOf(
+            CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null),
+            CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null),
+        )
+        val presenterCall = launch { runCheckpoint() }
+
+        val run = runCheckpoint()
+
+        assertThat(run.blockedByPresentedFlow).isTrue
+        assertThat(run.flowOutcome).isNull()
+        assertThat(presentedCallIds).isEmpty()
+        presenterCall.cancel()
+    }
+
+    @Test
+    fun `a throwing presenter fails and releases the slot`() = runTest(dispatcher) {
+        manager.paywallPresenter = PaywallPresenter { _, _ -> error("Simulated.") }
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+
+        checkpointFailsWith(
+            PurchasesErrorCode.ConfigurationError,
+            "Paywall presenter failed: java.lang.IllegalStateException: Simulated.",
+        )
+
+        manager.paywallPresenter = null
+        val customerInfo = mockk<CustomerInfo>()
+        syncedCustomerInfoIs(customerInfo)
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint() }
+        finishDefaultPaywall()
+        call.join()
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
+    }
+
+    @Test
+    fun `cancelling an app-owned presentation releases the slot and ignores a late report`() = runTest(dispatcher) {
+        val completion = presentThroughRegisteredPresenter()
+        val presenterCall = launch { runCheckpoint() }
+
+        presenterCall.cancel()
+        presenterCall.join()
+        // The pending call died with the caller, so this report must be a no-op, sync included.
+        completion()!!.complete(PaywallPresenter.Completion.Result.Closed)
+        verify(exactly = 0) { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) }
+
+        manager.paywallPresenter = null
+        val customerInfo = mockk<CustomerInfo>()
+        syncedCustomerInfoIs(customerInfo)
+        var run: CheckpointRun? = null
+        val secondCall = launch { run = runCheckpoint() }
+        finishDefaultPaywall()
+        secondCall.join()
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
+    }
+
+    @Test
+    fun `a per-call presenter presents a matched offering when none is registered`() = runTest(dispatcher) {
+        val offering = mockk<Offering>()
+        val customerInfo = mockk<CustomerInfo>()
+        syncedCustomerInfoIs(customerInfo)
+        resolvesTo(CheckpointResolution.MatchedOffering(offering, checkpointRuleId = null))
+        var presented: Offering? = null
+        var completion: PaywallPresenter.Completion? = null
+        val params = CheckpointParams {
+            paywallPresenter { presenterParams, presentation ->
+                presented = presenterParams.offering
+                completion = presentation
+            }
+        }
+
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint(params) }
+
+        assertThat(presented).isEqualTo(offering)
+        assertThat(presentedCallIds).isEmpty()
+        assertThat(defaultPresenter).isNull()
+        completion!!.complete(PaywallPresenter.Completion.Result.Closed)
+        call.join()
+
+        assertThat(run!!.flowOutcome).isEqualTo(CheckpointFlowOutcome.Finished(customerInfo))
+    }
+
+    @Test
+    fun `a per-call presenter takes precedence over the registered one`() = runTest(dispatcher) {
+        val registeredCompletion = presentThroughRegisteredPresenter()
+        var completion: PaywallPresenter.Completion? = null
+        val params = CheckpointParams { paywallPresenter { _, presentation -> completion = presentation } }
+
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint(params) }
+
+        assertThat(registeredCompletion()).isNull()
+        assertThat(completion).isNotNull
+        completion!!.complete(PaywallPresenter.Completion.Result.NavigatedBack)
+        call.join()
+
+        assertThat(run!!.backedOut).isTrue
+    }
+
+    @Test
+    fun `params without a presenter fall back to the registered one`() = runTest(dispatcher) {
+        val registeredCompletion = presentThroughRegisteredPresenter()
+        val params = CheckpointParams { customVariables { "source" to "test" } }
+
+        var run: CheckpointRun? = null
+        val call = launch { run = runCheckpoint(params) }
+
+        registeredCompletion()!!.complete(PaywallPresenter.Completion.Result.NavigatedBack)
+        call.join()
+
+        assertThat(run!!.backedOut).isTrue
+    }
+
+    // Registers a presenter for a matched offering and returns an accessor for the completion it was handed.
+    private fun presentThroughRegisteredPresenter(): () -> PaywallPresenter.Completion? {
+        var completion: PaywallPresenter.Completion? = null
+        manager.paywallPresenter = PaywallPresenter { _, presentation ->
+            completion = presentation
+        }
+        resolvesTo(CheckpointResolution.MatchedOffering(mockk(), checkpointRuleId = null))
+        return { completion }
+    }
+
+    private fun cachedActiveEntitlements(vararg identifiers: String) {
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.CACHE_ONLY, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfoWithActive(*identifiers))
+        }
+    }
+
+    private fun customerInfoWithActive(vararg identifiers: String): CustomerInfo {
+        val active = identifiers.associateWith { id -> mockk<EntitlementInfo> { every { identifier } returns id } }
+        return mockk { every { entitlements.active } returns active }
+    }
+
+    private fun syncedCustomerInfoIs(customerInfo: CustomerInfo) {
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>().onReceived(customerInfo)
+        }
+    }
+
+    private fun syncFailsWith(error: PurchasesError) {
+        every { mockPurchases.getCustomerInfo(CacheFetchPolicy.FETCH_CURRENT, any()) } answers {
+            secondArg<ReceiveCustomerInfoCallback>().onError(error)
+        }
     }
 
     private fun resolvesTo(resolution: CheckpointResolution) {
-        coEvery { mockPurchases.resolveCheckpoint(any(), any()) } returns resolution
+        coEvery { mockPurchases.internalResolveCp(any(), any()) } returns resolution
     }
 
     private fun resolvesToWorkflow() {
-        resolvesTo(CheckpointResolution.Workflow(mockk(), mockk(), mockk()))
+        resolvesTo(CheckpointResolution.MatchedWorkflow(mockk(), mockk(), mockk(), checkpointRuleId = null))
     }
 
-    private fun capturesStartedIntents() {
-        every { mockActivity.startActivity(capture(startedIntents)) } just runs
-    }
+    private fun currentCallId(): String = presentedCallIds.last()
 
-    private fun currentCallId(): String =
-        startedIntents.last().getStringExtra(CheckpointWorkflowActivity.EXTRA_CALL_ID)!!
-
-    // Mirrors what CheckpointWorkflowActivity does: read the pending call from the launched Intent's callId,
+    // Mirrors what CheckpointWorkflowPresenter does for a workflow: read the pending call for the presented callId,
     // record the outcome, then report the paywall as finished.
-    private fun finishPaywall(outcome: CheckpointPaywallOutcome) {
+    private fun finishPaywall(outcome: CheckpointFlowOutcome?, navigatedBack: Boolean = false) {
         val callId = currentCallId()
-        assertThat(manager.resolution(callId)).isNotNull
-        manager.recordOutcome(callId, outcome)
-        manager.onActivityDestroyed(callId, isChangingConfigurations = false)
+        assertThat(manager.presentation(callId)).isNotNull
+        outcome?.let { manager.recordOutcome(callId, it) }
+        manager.onPresentationFinished(callId, navigatedBack)
     }
 
-    private suspend fun checkpoint(params: CheckpointParams? = null): CheckpointResult =
-        manager.checkpoint(mockPurchases, checkpointId, params)
+    // Mirrors what CheckpointWorkflowPresenter does for the SDK's own presenter: report how the window went away.
+    private fun finishDefaultPaywall(navigatedBack: Boolean = false) {
+        defaultPresenter!!.onPresentationFinished("", navigatedBack)
+    }
 
-    private suspend fun checkpointErrorCode(): PurchasesErrorCode? = try {
-        checkpoint()
-        null
-    } catch (e: PurchasesException) {
-        e.code
+    // The callback API; completes synchronously here because the manager's scope runs on the unconfined main
+    // dispatcher, except while a presented paywall is waiting to finish.
+    private fun checkpoint(params: CheckpointParams? = null, identifier: String = checkpointId) {
+        manager.checkpoint(mockPurchases, identifier, params) { results += it }
+    }
+
+    private suspend fun runCheckpoint(params: CheckpointParams? = null): CheckpointRun =
+        manager.runCheckpoint(mockPurchases, checkpointId, params)
+
+    // Presentation failures are logged rather than returned: the run just presents nothing.
+    private suspend fun checkpointFailsWith(code: PurchasesErrorCode, message: String) {
+        assertThat(runCheckpoint().flowOutcome).isNull()
+        verify { Logger.e(PurchasesError(code, message).toString()) }
     }
 }

@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.PurchasesErrorCode
+import com.revenuecat.purchases.common.Delay
 import com.revenuecat.purchases.common.SubscriberAttributeError
 import com.revenuecat.purchases.common.subscriberattributes.DeviceIdentifiersFetcher
 import com.revenuecat.purchases.common.subscriberattributes.SubscriberAttributeKey
@@ -102,10 +103,27 @@ class SubscriberAttributesManagerTests {
             mockDeviceCache.getUnsyncedSubscriberAttributes()
         } returns emptyMap()
 
-        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID)
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID, Delay.NONE)
 
         verify(exactly = 0) {
-            mockBackend.postSubscriberAttributes(any(), any(), any(), any())
+            mockBackend.postSubscriberAttributes(any(), any(), any(), any(), any())
+        }
+    }
+
+    @Test
+    fun `forwards the given delay to the backend`() {
+        val subscriberAttribute = SubscriberAttribute("key", "value", isSynced = false)
+        every {
+            mockDeviceCache.getUnsyncedSubscriberAttributes()
+        } returns mapOf(appUserID to mapOf("key" to subscriberAttribute))
+        every {
+            mockBackend.postSubscriberAttributes(any(), any(), any(), any(), any())
+        } just Runs
+
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID, Delay.LONG)
+
+        verify(exactly = 1) {
+            mockBackend.postSubscriberAttributes(any(), appUserID, Delay.LONG, any(), any())
         }
     }
 
@@ -116,7 +134,7 @@ class SubscriberAttributesManagerTests {
         } returns emptyMap()
 
         var completionCalled = false
-        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID) {
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID, Delay.NONE) {
             completionCalled = true
         }
 
@@ -146,6 +164,7 @@ class SubscriberAttributesManagerTests {
             mockBackend.postSubscriberAttributes(
                 any(),
                 appUserID,
+                any(),
                 captureLambda(),
                 any()
             )
@@ -154,7 +173,7 @@ class SubscriberAttributesManagerTests {
         }
 
         var completionCalled = false
-        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID) {
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID, Delay.NONE) {
             completionCalled = true
         }
 
@@ -175,6 +194,7 @@ class SubscriberAttributesManagerTests {
                 any(),
                 appUserID,
                 any(),
+                any(),
                 captureLambda()
             )
         } answers {
@@ -186,7 +206,7 @@ class SubscriberAttributesManagerTests {
         }
 
         var completionCalled = false
-        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID) {
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID, Delay.NONE) {
             completionCalled = true
         }
 
@@ -227,6 +247,7 @@ class SubscriberAttributesManagerTests {
                 any(),
                 appUserID,
                 any(),
+                any(),
                 captureLambda()
             )
         } answers {
@@ -238,6 +259,7 @@ class SubscriberAttributesManagerTests {
             mockBackend.postSubscriberAttributes(
                 any(),
                 userId2,
+                any(),
                 captureLambda(),
                 any()
             )
@@ -249,7 +271,7 @@ class SubscriberAttributesManagerTests {
         } just Runs
 
         var completionCalled = false
-        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID) {
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID, Delay.NONE) {
             completionCalled = true
         }
 
@@ -282,6 +304,7 @@ class SubscriberAttributesManagerTests {
             mockBackend.postSubscriberAttributes(
                 capture(slotOfPostedAttributes),
                 appUserID,
+                any(),
                 captureLambda(),
                 any()
             )
@@ -289,10 +312,10 @@ class SubscriberAttributesManagerTests {
             lambda<() -> Unit>().captured.invoke()
         }
 
-        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID)
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID, Delay.NONE)
 
         verify(exactly = 1) {
-            mockBackend.postSubscriberAttributes(any(), any(), any(), any())
+            mockBackend.postSubscriberAttributes(any(), any(), any(), any(), any())
         }
         val capturedPosted = slotOfPostedAttributes.captured
         assertThat(capturedPosted).isNotNull
@@ -529,6 +552,7 @@ class SubscriberAttributesManagerTests {
                 capture(slotOfPostedAttributes),
                 appUserID,
                 any(),
+                any(),
                 captureLambda()
             )
         } answers {
@@ -542,10 +566,10 @@ class SubscriberAttributesManagerTests {
             )
         }
 
-        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID)
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID, Delay.NONE)
 
         verify(exactly = 1) {
-            mockBackend.postSubscriberAttributes(any(), any(), any(), any())
+            mockBackend.postSubscriberAttributes(any(), any(), any(), any(), any())
         }
 
         val capturedSet = slotOfSetAttributes.captured
@@ -581,6 +605,7 @@ class SubscriberAttributesManagerTests {
                 capture(slotOfPostedAttributes),
                 appUserID,
                 any(),
+                any(),
                 captureLambda()
             )
         } answers {
@@ -594,10 +619,10 @@ class SubscriberAttributesManagerTests {
             )
         }
 
-        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID)
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID, Delay.NONE)
 
         verify(exactly = 1) {
-            mockBackend.postSubscriberAttributes(any(), any(), any(), any())
+            mockBackend.postSubscriberAttributes(any(), any(), any(), any(), any())
         }
         verify(exactly = 0) {
             mockDeviceCache.setAttributes(appUserID, any())
@@ -607,7 +632,7 @@ class SubscriberAttributesManagerTests {
     @Test
     fun `Sync unsynced attributes for all users`() {
         every {
-            mockBackend.postSubscriberAttributes(any(), any(), any(), any())
+            mockBackend.postSubscriberAttributes(any(), any(), any(), any(), any())
         } just Runs
 
         val attributes = mapOf(
@@ -620,19 +645,19 @@ class SubscriberAttributesManagerTests {
             appUserID to attributes,
             "user2" to attributes
         )
-        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID)
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID, Delay.NONE)
         verify(exactly = 1) {
-            mockBackend.postSubscriberAttributes(attributes.toBackendMap(), appUserID, any(), any())
+            mockBackend.postSubscriberAttributes(attributes.toBackendMap(), appUserID, any(), any(), any())
         }
         verify(exactly = 1) {
-            mockBackend.postSubscriberAttributes(attributes.toBackendMap(), "user2", any(), any())
+            mockBackend.postSubscriberAttributes(attributes.toBackendMap(), "user2", any(), any(), any())
         }
     }
 
     @Test
     fun `When syncing all users attributes, does not sync attributes for empty user IDs`() {
         every {
-            mockBackend.postSubscriberAttributes(any(), any(), any(), any())
+            mockBackend.postSubscriberAttributes(any(), any(), any(), any(), any())
         } just Runs
 
         val attributes = mapOf(
@@ -645,19 +670,19 @@ class SubscriberAttributesManagerTests {
             appUserID to attributes,
             "" to attributes
         )
-        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID)
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID, Delay.NONE)
         verify(exactly = 1) {
-            mockBackend.postSubscriberAttributes(attributes.toBackendMap(), appUserID, any(), any())
+            mockBackend.postSubscriberAttributes(attributes.toBackendMap(), appUserID, any(), any(), any())
         }
         verify(exactly = 0) {
-            mockBackend.postSubscriberAttributes(any(), "", any(), any())
+            mockBackend.postSubscriberAttributes(any(), "", any(), any(), any())
         }
     }
 
     @Test
     fun `When syncing all users attributes, does not sync attributes for whitespaces user IDs`() {
         every {
-            mockBackend.postSubscriberAttributes(any(), any(), any(), any())
+            mockBackend.postSubscriberAttributes(any(), any(), any(), any(), any())
         } just Runs
 
         val whitespacesUserId = "   "
@@ -672,12 +697,12 @@ class SubscriberAttributesManagerTests {
             appUserID to attributes,
             whitespacesUserId to attributes
         )
-        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID)
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID, Delay.NONE)
         verify(exactly = 1) {
-            mockBackend.postSubscriberAttributes(attributes.toBackendMap(), appUserID, any(), any())
+            mockBackend.postSubscriberAttributes(attributes.toBackendMap(), appUserID, any(), any(), any())
         }
         verify(exactly = 0) {
-            mockBackend.postSubscriberAttributes(any(), eq(whitespacesUserId), any(), any())
+            mockBackend.postSubscriberAttributes(any(), eq(whitespacesUserId), any(), any(), any())
         }
     }
 
@@ -697,7 +722,7 @@ class SubscriberAttributesManagerTests {
             mockDeviceCache.clearSubscriberAttributesIfSyncedForSubscriber("user2")
         } just Runs
 
-        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID)
+        underTest.synchronizeSubscriberAttributesForAllUsers(appUserID, Delay.NONE)
 
         verify(exactly = 1) {
             mockDeviceCache.clearSubscriberAttributesIfSyncedForSubscriber("user2")
@@ -1375,6 +1400,7 @@ class SubscriberAttributesManagerTests {
                 mockBackend.postSubscriberAttributes(
                     mapOfAttributes.toBackendMap(),
                     user,
+                    any(),
                     captureLambda(),
                     any()
                 )

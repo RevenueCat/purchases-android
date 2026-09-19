@@ -43,7 +43,7 @@ This file provides guidance to AI coding agents when working with code in this r
 # Run detekt with auto-correct
 ./gradlew detektAll --auto-correct
 
-# Create detekt baseline
+# Create detekt baseline (last resort, see Guardrails: CI fails PRs that grow it)
 ./gradlew detektAllBaseline
 
 # API compatibility check (using Metalava)
@@ -225,3 +225,4 @@ When creating a pull request, **always add one of these labels** to categorize t
 - **Never commit Claude-related files** — do not stage or commit `.claude/` directory, `settings.local.json`, or any AI tool configuration files
 - **Never commit API keys or secrets** — do not stage or commit API keys, tokens, credentials, or any sensitive data
 - **Avoid new CompositionLocals for non-UI dependencies** — for analytics, business logic, and event tracking dependencies, prefer explicit parameters/callback injection over implicit ambient state
+- **Never grow the detekt baseline** — fix the finding, or `@Suppress("RuleName")` the smallest possible scope, instead of adding to `config/detekt/detekt-baseline.xml`. CI enforces this; only a detekt upgrade or a new rule justifies the `skip-baseline-growth-check` label

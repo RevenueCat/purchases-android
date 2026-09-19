@@ -36,7 +36,7 @@ public class TimelineComponent(
     @get:JvmSynthetic
     public val visible: Boolean? = null,
     @get:JvmSynthetic
-    public val size: Size = Size(width = SizeConstraint.Fill, height = SizeConstraint.Fit()),
+    public val size: Size = Size(width = SizeConstraint.Fill(), height = SizeConstraint.Fit()),
     @get:JvmSynthetic
     public val padding: Padding = zero,
     @get:JvmSynthetic
@@ -127,6 +127,7 @@ public class PartialTimelineComponentItem(
 
 @OptIn(InternalRevenueCatAPI::class)
 internal object TimelineIconAlignmentDeserializer : EnumDeserializerWithDefault<IconAlignment>(
+    serialName = "com.revenuecat.purchases.paywalls.components.TimelineComponent.IconAlignment",
     defaultValue = TimelineComponent.IconAlignment.Title,
     typeForValue = { value ->
         when (value) {

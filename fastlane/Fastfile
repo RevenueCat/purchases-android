@@ -61,6 +61,7 @@ platform :android do
     fields = %w[
       PAYWALL_TESTER_API_KEY_A
       PURCHASE_TESTER_API_KEY
+      MAESTRO_TEST_STORE_API_KEY
       BACKEND_INTEGRATION_API_KEY
       BACKEND_INTEGRATION_LOAD_SHEDDER_API_KEY
       REVENUECAT_API_KEY
@@ -875,8 +876,8 @@ DESC
   lane :generate_baseline_profiles do
     branch_name = "actions/baseline-profiles"
     profile_files = [
-      "purchases/src/main/baseline-prof.txt",
-      "ui/revenuecatui/src/main/baseline-prof.txt",
+      "purchases/src/main/generated/baselineProfiles/baseline-prof.txt",
+      "ui/revenuecatui/src/main/generated/baselineProfiles/baseline-prof.txt",
     ]
 
     Dir.chdir("..") do

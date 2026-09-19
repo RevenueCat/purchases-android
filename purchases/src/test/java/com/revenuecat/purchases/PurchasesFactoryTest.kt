@@ -5,12 +5,17 @@ import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.revenuecat.purchases.common.BillingAbstract
+import com.revenuecat.purchases.common.PlatformInfo
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.spyk
 import io.mockk.verify
+import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.After
@@ -163,6 +168,138 @@ class PurchasesFactoryTest {
 
         // Assert
         verify(exactly = 0) { applicationMock.startActivity(any()) }
+    }
+
+    @Test
+    fun `forcing Test Store in release builds skips the check`() {
+        // Arrange
+        var isDebugBuildCalled = false
+        purchasesFactory = PurchasesFactory(
+            isDebugBuild = {
+                isDebugBuildCalled = true
+                false
+            },
+            apiKeyValidator = apiKeyValidatorMock,
+        )
+        val applicationContextMock = mockk<Application>()
+        every {
+            applicationMock.checkCallingOrSelfPermission(Manifest.permission.INTERNET)
+        } returns PackageManager.PERMISSION_GRANTED
+        every {
+            applicationMock.applicationContext
+        } returns applicationContextMock
+        every {
+            apiKeyValidatorMock.validateAndLog("fakeApiKey", Store.PLAY_STORE)
+        } returns APIKeyValidator.ValidationResult.SIMULATED_STORE
+
+        // Act
+        val dangerousSettings = DangerousSettings().apply {
+            forceAllowTestStoreInReleaseBuilds()
+        }
+        purchasesFactory.validateConfiguration(
+            createConfiguration(
+                dangerousSettings = dangerousSettings,
+            ),
+        )
+
+        // Assert
+        verify(exactly = 0) { applicationMock.startActivity(any()) }
+        assertThat(isDebugBuildCalled).isFalse
+    }
+
+    @Test
+    fun `creating purchases with remote config enabled provides audiences config to the orchestrator`() {
+        val application = spyk(ApplicationProvider.getApplicationContext<Application>())
+        every { application.applicationContext } returns application
+        every { application.checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns
+            PackageManager.PERMISSION_GRANTED
+        val configuration = PurchasesConfiguration.Builder(application, "fakeApiKey")
+            .appUserID("appUserID")
+            .store(Store.PLAY_STORE)
+            .build()
+
+        val purchases = purchasesFactory.createPurchases(
+            configuration = configuration,
+            platformInfo = PlatformInfo(flavor = "test", version = null),
+            proxyURL = null,
+            overrideBillingAbstract = mockk<BillingAbstract>(relaxed = true),
+        )
+
+        assertThat(purchases.purchasesOrchestrator.audiencesConfigProvider).isNotNull()
+        purchases.close()
+    }
+
+    @Test
+    fun `creating purchases with iamEnabled threads it into the constructed TokenManager`() {
+        val application = spyk(ApplicationProvider.getApplicationContext<Application>())
+        every { application.applicationContext } returns application
+        every { application.checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns
+            PackageManager.PERMISSION_GRANTED
+        val configuration = PurchasesConfiguration.Builder(application, "fakeApiKey")
+            .appUserID("appUserID")
+            .store(Store.PLAY_STORE)
+            .iamEnabled(true)
+            .build()
+
+        val purchases = purchasesFactory.createPurchases(
+            configuration = configuration,
+            platformInfo = PlatformInfo(flavor = "test", version = null),
+            proxyURL = null,
+            overrideBillingAbstract = mockk<BillingAbstract>(relaxed = true),
+        )
+
+        assertThat(purchases.purchasesOrchestrator.tokenManager.enabled).isTrue()
+        purchases.close()
+    }
+
+    @Test
+    fun `creating purchases without iamEnabled constructs a disabled TokenManager`() {
+        val application = spyk(ApplicationProvider.getApplicationContext<Application>())
+        every { application.applicationContext } returns application
+        every { application.checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns
+            PackageManager.PERMISSION_GRANTED
+        val configuration = PurchasesConfiguration.Builder(application, "fakeApiKey")
+            .appUserID("appUserID")
+            .store(Store.PLAY_STORE)
+            .build()
+
+        val purchases = purchasesFactory.createPurchases(
+            configuration = configuration,
+            platformInfo = PlatformInfo(flavor = "test", version = null),
+            proxyURL = null,
+            overrideBillingAbstract = mockk<BillingAbstract>(relaxed = true),
+        )
+
+        assertThat(purchases.purchasesOrchestrator.tokenManager.enabled).isFalse()
+        purchases.close()
+    }
+
+    @Test
+    fun `creating purchases with custom entitlement computation constructs the config graph disabled`() {
+        val application = spyk(ApplicationProvider.getApplicationContext<Application>())
+        every { application.applicationContext } returns application
+        every { application.checkCallingOrSelfPermission(Manifest.permission.INTERNET) } returns
+            PackageManager.PERMISSION_GRANTED
+        val configuration = PurchasesConfiguration.Builder(application, "fakeApiKey")
+            .appUserID("appUserID")
+            .store(Store.PLAY_STORE)
+            .dangerousSettings(DangerousSettings(customEntitlementComputation = true))
+            .build()
+
+        val purchases = purchasesFactory.createPurchases(
+            configuration = configuration,
+            platformInfo = PlatformInfo(flavor = "test", version = null),
+            proxyURL = null,
+            overrideBillingAbstract = mockk<BillingAbstract>(relaxed = true),
+        )
+
+        // The graph is constructed (non-null) but disabled: workflow reads refuse with ConfigurationError
+        // before touching the network.
+        assertThat(purchases.purchasesOrchestrator.audiencesConfigProvider).isNotNull()
+        assertThatExceptionOfType(PurchasesException::class.java)
+            .isThrownBy { runBlocking { purchases.purchasesOrchestrator.getWorkflow("some-workflow") } }
+            .matches { it.code == PurchasesErrorCode.ConfigurationError }
+        purchases.close()
     }
 
     // region shouldInitializeDiagnostics

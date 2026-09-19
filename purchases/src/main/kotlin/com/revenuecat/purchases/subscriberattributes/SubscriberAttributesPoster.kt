@@ -15,6 +15,7 @@ internal class SubscriberAttributesPoster(
     fun postSubscriberAttributes(
         attributes: Map<String, Map<String, Any?>>,
         appUserID: String,
+        delay: Delay,
         onSuccessHandler: () -> Unit,
         onErrorHandler: (
             PurchasesError,
@@ -26,15 +27,13 @@ internal class SubscriberAttributesPoster(
             Endpoint.PostAttributes(appUserID),
             mapOf("attributes" to attributes),
             postFieldsToSign = null,
-            delay = Delay.DEFAULT,
+            delay = delay,
             { error ->
                 onErrorHandler(error, false, emptyList())
             },
             { error, responseCode, body ->
                 error?.let {
-                    val internalServerError = RCHTTPStatusCodes.isServerError(responseCode)
-                    val notFoundError = responseCode == RCHTTPStatusCodes.NOT_FOUND
-                    val successfullySynced = !(internalServerError || notFoundError)
+                    val successfullySynced = RCHTTPStatusCodes.isSynced(responseCode)
                     var attributeErrors: List<SubscriberAttributeError> = emptyList()
                     if (error.code == PurchasesErrorCode.InvalidSubscriberAttributesError) {
                         attributeErrors = body.getAttributeErrors()

@@ -2,6 +2,8 @@ package com.revenuecat.purchases.common.events
 
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.PresentedOfferingContext
+import com.revenuecat.purchases.checkpoints.CheckpointHitResult
+import com.revenuecat.purchases.checkpoints.CheckpointType
 import com.revenuecat.purchases.common.Config
 import com.revenuecat.purchases.customercenter.CustomerCenterConfigData
 import com.revenuecat.purchases.customercenter.events.CustomerCenterDisplayMode
@@ -231,6 +233,39 @@ internal sealed class BackendEvent : Event {
     ) : BackendEvent()
 
     /**
+     * Represents a checkpoint hit and what the checkpoint resolved to.
+     *
+     * @property checkpointType Whether the checkpoint is one RevenueCat defines or one the app declares.
+     * @property result What the checkpoint resolved to. Null only for hits recorded by an SDK version that sent
+     * the event before evaluating the checkpoint.
+     * @property workflowID The workflow the checkpoint matched, when it matched one.
+     * @property offeringID The offering the checkpoint resolved to, when it resolved to one.
+     * @property checkpointRuleID The checkpoint rule that was served, when the checkpoint matched one.
+     */
+    @Serializable
+    @SerialName("checkpoint")
+    data class Checkpoint(
+        val id: String,
+        val version: Int,
+        val type: String,
+        val identifier: String,
+        @SerialName("checkpoint_type")
+        val checkpointType: CheckpointType? = null,
+        @SerialName("app_user_id")
+        val appUserID: String,
+        @SerialName("app_session_id")
+        val appSessionID: String,
+        val timestamp: Long,
+        val result: CheckpointHitResult? = null,
+        @SerialName("workflow_id")
+        val workflowID: String? = null,
+        @SerialName("offering_id")
+        val offeringID: String? = null,
+        @SerialName("checkpoint_rule_id")
+        val checkpointRuleID: String? = null,
+    ) : BackendEvent()
+
+    /**
      * Wire shape for workflow lifecycle events. Matches khepri's WorkflowsEvent schema.
      */
     @Serializable
@@ -288,8 +323,8 @@ internal sealed class BackendEvent : Event {
             val experimentId: String? = null,
             @SerialName("experiment_variant")
             val experimentVariant: String? = null,
-            @SerialName("is_last_variant_step")
-            val isLastVariantStep: Boolean? = null,
+            @SerialName("blob_ref")
+            val workflowBlobRef: String? = null,
         )
     }
 
@@ -355,6 +390,20 @@ internal sealed class BackendEvent : Event {
         // Failed to load event only fields
         @SerialName("mediator_error_code")
         val mediatorErrorCode: Int? = null,
+
+        // Reward event only fields
+        @SerialName("reward_verification_enabled")
+        val rewardVerificationEnabled: Boolean? = null,
+        @SerialName("reward_type")
+        val rewardType: String? = null,
+        @SerialName("reward_virtual_currency_code")
+        val rewardVirtualCurrencyCode: String? = null,
+        @SerialName("reward_virtual_currency_amount")
+        val rewardVirtualCurrencyAmount: Int? = null,
+        @SerialName("reward_entitlement_id")
+        val rewardEntitlementId: String? = null,
+        @SerialName("reward_failure_reason")
+        val rewardFailureReason: String? = null,
     ) : BackendEvent()
 
     /**
@@ -380,6 +429,16 @@ internal sealed class BackendEvent : Event {
          * Defines the version number of the custom paywall event schema.
          */
         const val CUSTOM_PAYWALL_EVENT_SCHEMA_VERSION = 1
+
+        /**
+         * Defines the version number of the checkpoint event schema.
+         */
+        const val CHECKPOINT_EVENT_SCHEMA_VERSION = 1
+
+        /**
+         * Defines the type identifier for checkpoint hit events.
+         */
+        const val CHECKPOINT_EVENT_TYPE = "checkpoint_hit"
 
         /**
          * Defines the version number of the workflow event schema.

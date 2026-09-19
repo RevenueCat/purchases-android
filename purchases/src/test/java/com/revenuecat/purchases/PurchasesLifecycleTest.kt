@@ -165,7 +165,7 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
         verify(exactly = 0) { mockRemoteConfigManager.refreshRemoteConfigIfStale(any(), any(), any()) }
         verify(exactly = 0) { mockOfferingsManager.onAppForeground(any()) }
         verify(exactly = 0) { mockPostPendingTransactionsHelper.syncPendingPurchaseQueue(any()) }
-        verify(exactly = 0) { mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any()) }
+        verify(exactly = 0) { mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), any()) }
         verify(exactly = 0) { mockOfflineEntitlementsManager.updateProductEntitlementMappingCacheIfStale() }
         verify(exactly = 0) { mockEventsManager.flushEvents(any()) }
         verify(exactly = 0) { mockAdEventsManager.flushEvents(any()) }
@@ -179,7 +179,7 @@ internal class PurchasesLifecycleTest: BasePurchasesTest() {
         Purchases.sharedInstance.purchasesOrchestrator.onAppBackgrounded()
         assertThat(purchases.purchasesOrchestrator.state.appInBackground).isTrue
         assertThat(appConfig.isAppBackgrounded).isTrue
-        verify(exactly = 0) { mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any()) }
+        verify(exactly = 0) { mockSubscriberAttributesManager.synchronizeSubscriberAttributesForAllUsers(any(), any(), any()) }
         verify(exactly = 0) { mockEventsManager.flushEvents(any()) }
         verify(exactly = 0) { mockAdEventsManager.flushEvents(any()) }
     }

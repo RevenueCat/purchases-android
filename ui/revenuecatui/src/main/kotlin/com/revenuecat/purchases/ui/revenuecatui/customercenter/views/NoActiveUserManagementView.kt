@@ -38,7 +38,7 @@ import com.revenuecat.purchases.ui.revenuecatui.customercenter.theme.CustomerCen
 import com.revenuecat.purchases.ui.revenuecatui.icons.Info
 import com.revenuecat.purchases.virtualcurrencies.VirtualCurrencies
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LongMethod")
 @Composable
 internal fun NoActiveUserManagementView(
     screen: CustomerCenterConfigData.Screen,
@@ -48,6 +48,7 @@ internal fun NoActiveUserManagementView(
     supportTickets: CustomerCenterConfigData.Support.SupportTickets,
     offering: Offering?,
     virtualCurrencies: VirtualCurrencies? = null,
+    shouldShowPurchaseHistory: Boolean = false,
     onAction: (CustomerCenterAction) -> Unit,
 ) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -90,6 +91,22 @@ internal fun NoActiveUserManagementView(
                     ),
                 )
             }
+        }
+
+        if (shouldShowPurchaseHistory) {
+            SettingsButton(
+                title = localization.commonLocalizedString(
+                    CustomerCenterConfigData.Localization.CommonLocalizedString.SCREEN_MANAGEMENT_SEE_ALL_PURCHASES,
+                ),
+                onClick = { onAction(CustomerCenterAction.ShowPurchaseHistory) },
+                config = SettingsButtonConfig(),
+                style = SettingsButtonStyle.OUTLINED,
+                modifier = Modifier.padding(
+                    top = ManagementViewHorizontalPadding,
+                    start = ManagementViewHorizontalPadding,
+                    end = ManagementViewHorizontalPadding,
+                ),
+            )
         }
 
         ManageSubscriptionsButtonsView(

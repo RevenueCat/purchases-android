@@ -23,13 +23,12 @@ import coil.compose.rememberAsyncImagePainter
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import coil.transform.Transformation
-import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.ui.revenuecatui.UIConstant
-import com.revenuecat.purchases.ui.revenuecatui.extensions.getImageLoaderTyped
 import com.revenuecat.purchases.ui.revenuecatui.helpers.LocalPreviewImageLoader
 import com.revenuecat.purchases.ui.revenuecatui.helpers.Logger
 import com.revenuecat.purchases.ui.revenuecatui.helpers.getPreviewPlaceholderBlocking
 import com.revenuecat.purchases.ui.revenuecatui.helpers.isInPreviewMode
+import com.revenuecat.purchases.ui.revenuecatui.paywalls.PaywallImageLoader
 
 @SuppressWarnings("LongParameterList")
 @Composable
@@ -120,7 +119,7 @@ private fun Image(
     var cachePolicy by remember { mutableStateOf(CachePolicy.ENABLED) }
     val applicationContext = LocalContext.current.applicationContext
     val imageLoader = previewImageLoader.takeIf { isInPreviewMode } ?: remember(applicationContext) {
-        Purchases.getImageLoaderTyped(applicationContext)
+        PaywallImageLoader.get(applicationContext)
     }
 
     val imageRequest = ImageRequest.Builder(LocalContext.current)

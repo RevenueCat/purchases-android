@@ -5,12 +5,14 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.JsonTools
+import com.revenuecat.purchases.LogHandler
 import com.revenuecat.purchases.PurchasesError
 import com.revenuecat.purchases.UiConfig
 import com.revenuecat.purchases.emptyUiConfig
 import com.revenuecat.purchases.VerificationResult
 import com.revenuecat.purchases.common.Backend
 import com.revenuecat.purchases.common.DateProvider
+import com.revenuecat.purchases.common.currentLogHandler
 import com.revenuecat.purchases.common.networking.RCContainer
 import com.revenuecat.purchases.common.networking.RCElement
 import com.revenuecat.purchases.common.remoteconfig.PersistedRemoteConfigurationState
@@ -378,21 +380,113 @@ class WorkflowsConfigIntegrationTest {
         }
 
     @Test
-    fun `repeated onPaywallConfigReady for a project with no paywalls issues a single config request`() =
+    fun `cold onPaywallConfigReady completes an empty config fetch without blob warnings or downloads`() =
         runTest(testDispatcher) {
             // A project with no paywalls configured still gets both paywall topics, committed with no items, so
-            // every ui_config part misses. Each of those misses used to self-prime its own sync, since a
-            // successful sync clears the attempt cooldown — one (or more) config request per getOfferings.
-            sync(NO_PAYWALLS_CONFIG)
-
+            // readiness should self-prime one config request, then treat the empty ui_config as not configured.
+            assertThat(persistedState).isNull()
             val workflowManager = workflowManagerWithRealUiConfig()
-            repeat(3) {
+            val warningLogs = mutableListOf<String>()
+            val previousLogHandler = currentLogHandler
+            try {
+                currentLogHandler = object : LogHandler {
+                    override fun v(tag: String, msg: String) = Unit
+                    override fun d(tag: String, msg: String) = Unit
+                    override fun i(tag: String, msg: String) = Unit
+                    override fun w(tag: String, msg: String) {
+                        warningLogs += msg
+                    }
+                    override fun e(tag: String, msg: String, throwable: Throwable?) = Unit
+                }
+
                 var completed = false
                 workflowManager.onPaywallConfigReady { completed = true }
+
+                assertThat(completed).isFalse()
+                verify(exactly = 1) {
+                    backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any())
+                }
+
+                onSuccess.invoke(containerWith(NO_PAYWALLS_CONFIG), Date(), VerificationResult.VERIFIED)
+
                 assertThat(completed).isTrue()
+                repeat(2) {
+                    var warmCompleted = false
+                    workflowManager.onPaywallConfigReady { warmCompleted = true }
+                    assertThat(warmCompleted).isTrue()
+                }
+            } finally {
+                currentLogHandler = previousLogHandler
             }
 
             verify(exactly = 1) { backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any()) }
+            assertThat(downloadCount).isZero()
+            assertThat(warningLogs).noneMatch { it.contains("Could not resolve remote config blob(s)") }
+        }
+
+    @Test
+    fun `onPaywallConfigReady awaits an in-flight refresh when the cached ui_config topic is empty`() =
+        runTest(testDispatcher) {
+            sync(NO_PAYWALLS_CONFIG)
+            val uiConfigProvider = UiConfigProvider(manager, scope = testScope)
+            val workflowManager = WorkflowManager(
+                workflowsConfigProvider = provider,
+                uiConfigProvider = uiConfigProvider,
+                workflowAssetPrewarmer = mockk(relaxed = true),
+                scope = testScope,
+            )
+
+            manager.refreshRemoteConfig(
+                appInBackground = false,
+                appUserID = "user-1",
+                fetchContext = RemoteConfigFetchContext.Foreground,
+            )
+            var completed = false
+            workflowManager.onPaywallConfigReady { completed = true }
+
+            assertThat(completed).isFalse()
+
+            val app = """{"colors":{},"fonts":{}}"""
+            val localizations = "{}"
+            val variableConfig = """{"variable_compatibility_map":{},"function_compatibility_map":{}}"""
+            val customVariables = "{}"
+            val appRef = refOf(app.toByteArray())
+            val localizationsRef = refOf(localizations.toByteArray())
+            val variableConfigRef = refOf(variableConfig.toByteArray())
+            val customVariablesRef = refOf(customVariables.toByteArray())
+            val config = """
+                {
+                  "domain": "app",
+                  "manifest": "v1.ui_config:etag2",
+                  "active_topics": ["workflows", "ui_config"],
+                  "topics": {
+                    "workflows": {},
+                    "ui_config": {
+                      "app": { "blob_ref": "$appRef" },
+                      "localizations": { "blob_ref": "$localizationsRef" },
+                      "variable_config": { "blob_ref": "$variableConfigRef" },
+                      "custom_variables": { "blob_ref": "$customVariablesRef" }
+                    }
+                  }
+                }
+            """.trimIndent()
+            onSuccess.invoke(
+                containerWith(
+                    config,
+                    appRef to app,
+                    localizationsRef to localizations,
+                    variableConfigRef to variableConfig,
+                    customVariablesRef to customVariables,
+                ),
+                Date(),
+                VerificationResult.VERIFIED,
+            )
+
+            assertThat(completed).isTrue()
+            assertThat(uiConfigProvider.isWarm()).isTrue()
+            verify(exactly = 2) {
+                backend.getRemoteConfig(any(), any(), any(), any(), any(), any(), any(), any(), any())
+            }
             assertThat(downloadCount).isZero()
         }
 

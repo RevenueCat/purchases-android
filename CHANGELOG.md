@@ -1,3 +1,299 @@
+## 10.22.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Do not apply a previous user's CustomerInfo after an identity change (#4257) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### 🐞 Bugfixes
+* Fix crash when launching PaywallActivity on Android 13 (#4260) via Álvaro Brey (@AlvaroBrey)
+
+### 🔄 Other Changes
+* ci: only run the release hold workflow on release branches (#4263) via Álvaro Brey (@AlvaroBrey)
+* test(remote-config): verify the fallback 304 under enforced signature verification (#4264) via Toni Rico (@tonidero)
+
+## 10.22.0
+## RevenueCat SDK
+### 🐞 Bugfixes
+* [SDK-4499] Create the signature verifier off the configure() thread (#4244) via Toni Rico (@tonidero)
+
+## RevenueCatUI SDK
+### ✨ New Features
+* feat(paywalls): add `offer_price_with_zero` variables (#4215) via Facundo Menzella (@facumenzella)
+### Paywallsv2
+#### 🐞 Bugfixes
+* Give downloaded fonts value equality (#4245) via Jaewoong Eum (@skydoves)
+
+### 🔄 Other Changes
+* other(workflows): decode the branch trigger action (#4256) via Facundo Menzella (@facumenzella)
+* Checkpoints testing in the paywall tester: app PaywallPresenter and subscriber attributes (#4247) via Toni Rico (@tonidero)
+* IAM P3.10 - Add TokenManager token refresh state machine (#4243) via Dave DeLong (@davedelong)
+* IAM P3.9: Expose IAM authorization headers (#4242) via Dave DeLong (@davedelong)
+* IAM P3.8: Current identity source (#4240) via Dave DeLong (@davedelong)
+* IAM P3.7 - TokenManager (#4238) via Dave DeLong (@davedelong)
+* ci: approve the release hold automatically when the release PR is approved (#4234) via Álvaro Brey (@AlvaroBrey)
+* Checkpoint offering presenter API (#4155) via Toni Rico (@tonidero)
+* docs: Link the paywall interaction event reference (#4249) via Álvaro Brey (@AlvaroBrey)
+* Read the window width size class without collecting folding features (#4200) via Jaewoong Eum (@skydoves)
+* Gate-focused checkpoint() API (#4151) via Toni Rico (@tonidero)
+* Tell back navigation apart from close actions in checkpoint paywalls (#4185) via Toni Rico (@tonidero)
+* Resolve a checkpoint workflow's offerings per step (#4179) via Toni Rico (@tonidero)
+* Warn when configure app user ID differs from cached ID (#4232) via Rick (@rickvdl)
+* Render the offering's own paywall when its topic workflow is an offering step (#4221) via Toni Rico (@tonidero)
+* Update baseline profiles (#4233) via RevenueCat Git Bot (@RCGitBot)
+* IAM P2.6: Add public Identity façade (#4230) via Dave DeLong (@davedelong)
+* IAM P2.5: IdentityAuthToken (#4229) via Dave DeLong (@davedelong)
+* IAM P2.4: IdentitySource (#4227) via Dave DeLong (@davedelong)
+* IAM P2.3: Simple JWT parser (#4226) via Dave DeLong (@davedelong)
+
+## 10.21.1
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* fix(paywalls): Show the video for the current appearance after the screen is recreated (#4219) via Álvaro Brey (@AlvaroBrey)
+* fix(paywalls): read visibility for Button component (#4216) via Facundo Menzella (@facumenzella)
+* fix(paywalls): custom components context packages: send only current paywall packages (#4212) via Álvaro Brey (@AlvaroBrey)
+
+### 🔄 Other Changes
+* Fade the checkpoint flow window in and out (#4208) via Toni Rico (@tonidero)
+* Part 1 of IAM support (#4211) via Dave DeLong (@davedelong)
+* other: report the workflow blob ref with the step experiment data (#4206) via Facundo Menzella (@facumenzella)
+* Pin object key identity in the predicate fixtures (#4149) via Antonio Pallares (@ajpallares)
+* Animate button content alpha in the draw phase (#4201) via Jaewoong Eum (@skydoves)
+
+## 10.21.0
+## RevenueCat SDK
+### 🐞 Bugfixes
+* fix: send X-Is-Sandbox header when using a Test Store API key (#4181) via Álvaro Brey (@AlvaroBrey)
+* fix: floating-point rounding bug in Test Store priceString (#4164) via Will Taylor (@fire-at-will)
+
+## RevenueCatUI SDK
+### ✨ New Features
+* feat(paywalls): Add onInteraction to PaywallListener (#4160) via Álvaro Brey (@AlvaroBrey)
+### Paywallsv2
+#### ✨ New Features
+* Add window size conditions for paywall component overrides (#4193) via Josh Holtz (@joshdholtz)
+* Feat(Paywalls) Support Underlined Text (#2928) via Jacob Rakidzich (@JZDesign)
+#### 🐞 Bugfixes
+* fix: Apply the video source to the view when the appearance changes (#4159) via Facundo Menzella (@facumenzella)
+### Customer Center
+#### ✨ New Features
+* feat(Customer Center): purchase history  (#3997) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* Remove the CheckpointListener API (#4204) via Toni Rico (@tonidero)
+* other: echo step experiment params on workflow events (#4197) via Facundo Menzella (@facumenzella)
+* Hoist shadow path and paint out of the draw phase (#4195) via Jaewoong Eum (@skydoves)
+* Memoize Markdown parsing and paragraph text building (#4194) via Jaewoong Eum (@skydoves)
+* build(deps): bump fastlane from 2.238.0 to 2.239.0 (#4196) via dependabot[bot] (@dependabot[bot])
+* feat: send the checkpoint outcome on checkpoint_hit (#4150) via Cesar de la Vega (@vegaro)
+* Log checkpoint rule evaluation (#4187) via Toni Rico (@tonidero)
+* Update baseline profiles (#4190) via RevenueCat Git Bot (@RCGitBot)
+* Chore(Paywalls): Constraints and allocations to support min/max sizes (#4171) via Jacob Rakidzich (@JZDesign)
+* Treat a rule on an unsupplied dimension as a non-match (#4177) via Toni Rico (@tonidero)
+* Fail rule resolution when the customer changes mid-snapshot (#4135) via Toni Rico (@tonidero)
+* Remove backend predicate results from audience evaluation (#4174) via Toni Rico (@tonidero)
+* Cache the backend's subscriber dimensions and evaluate rules against them (#4133) via Toni Rico (@tonidero)
+* Add the customer's purchases and entitlements as rule evaluation properties (#4130) via Toni Rico (@tonidero)
+* Reshape rule evaluation properties (#4126) via Toni Rico (@tonidero)
+* Read the reshaped audiences topic: static default blob + backend predicate results (#4124) via Toni Rico (@tonidero)
+* ci: bump external PR notifications workflow to v8 (#4176) via Álvaro Brey (@AlvaroBrey)
+* ci: notify external PRs feed on PRs from outside the org (#4170) via Álvaro Brey (@AlvaroBrey)
+* refactor(checkpoints): Present checkpoints in a window instead of an activity (#4087) via Toni Rico (@tonidero)
+* Chore(Paywalls): Update models to support min/max sizes (#4163) via Jacob Rakidzich (@JZDesign)
+* [EXTERNAL] Expose a new `DangerousSettings#forceAllowTestStoreInReleaseBuilds ` (#4131) via @cyrilmottier (#4169) via Toni Rico (@tonidero)
+
+## 10.20.0
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Narrow consumer R8 rules (#3557) via Toni Rico (@tonidero)
+* Surface attribute sync errors when fetching offerings (#4129) via Rick (@rickvdl)
+* Fall back to "en" when a paywall screen omits `default_locale` (#4111) via Monika Mateska (@MonikaMateska)
+* Cache web purchase redemption CustomerInfo for the initiating App User ID (#4114) via Rick (@rickvdl)
+
+## RevenueCatUI SDK
+### Paywallsv2
+#### ✨ New Features
+* feat(paywalls): send workflow and step identity to custom components (#4122) via Álvaro Brey (@AlvaroBrey)
+* feat(paywalls): send offering and package details to custom components (#4121) via Álvaro Brey (@AlvaroBrey)
+* feat(paywalls): send custom variables to custom components (#4091) via Álvaro Brey (@AlvaroBrey)
+* feat(paywalls): send device context to custom components (#4084) via Álvaro Brey (@AlvaroBrey)
+#### 🐞 Bugfixes
+* fix(paywalls): traverse headers before body content (#3948) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Centralize remote-config staleness handling in shared primitives (#4154) via Toni Rico (@tonidero)
+* Share one arity check across the strict operators (#4157) via Antonio Pallares (@ajpallares)
+* Add rc.regexReplace custom operator (#4146) via Antonio Pallares (@ajpallares)
+* Add rc.regexExtract custom operator (#4145) via Antonio Pallares (@ajpallares)
+* Add rc.regexMatch custom operator (#4144) via Antonio Pallares (@ajpallares)
+* Remove the rc.length and rc.indexOf custom operators (#4153) via Antonio Pallares (@ajpallares)
+* Add rc.indexOf custom operator (#4142) via Antonio Pallares (@ajpallares)
+* Allow editing custom variables in paywall-tester (#4143) via Álvaro Brey (@AlvaroBrey)
+* Add rc.let custom operator (#4138) via Antonio Pallares (@ajpallares)
+* Index substr by UTF-16 code unit (#4139) via Antonio Pallares (@ajpallares)
+* Match the separator by code unit in rc.split (#4141) via Antonio Pallares (@ajpallares)
+* Add rc.slice custom operator (#4089) via Antonio Pallares (@ajpallares)
+* Unify projects used by Maestro tests (#3912) via Cesar de la Vega (@vegaro)
+* Add rc.sortBy custom operator (#4088) via Antonio Pallares (@ajpallares)
+* Pin UTF-16 string comparison in the predicate fixtures (#4106) via Antonio Pallares (@ajpallares)
+* Update baseline profiles (#4137) via RevenueCat Git Bot (@RCGitBot)
+* Clear paywall web view storage when the user logs out or switches (#4075) via Álvaro Brey (@AlvaroBrey)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `7dd9ab9` to `6db1da0` (#4132) via dependabot[bot] (@dependabot[bot])
+* Exclude nested agent worktrees from detekt (#3865) via Cesar de la Vega (@vegaro)
+* Remove the remote config session kill switch (#4112) via Toni Rico (@tonidero)
+* Skip test suite on main branch pushes (#4119) via Toni Rico (@tonidero)
+
+## 10.19.1
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* fix(paywalls): add user context to custom web checkout URLs (#4107) via Cesar de la Vega (@vegaro)
+* fix(paywalls): keep the subscribe button working after a cancelled purchase (#4071) via Facundo Menzella (@facumenzella)
+
+### 🔄 Other Changes
+* fix(checkpoints): Fix checkpoint resolution config races (#4058) via Cesar de la Vega (@vegaro)
+* Improve Checkpoints APIs (#4108) via Toni Rico (@tonidero)
+* ci(danger): Clean up API notifications after move to main-only posts (#4101) via Álvaro Brey (@AlvaroBrey)
+
+## 10.19.0
+## RevenueCat SDK
+### ✨ New Features
+* feat(singular): add $singularDeviceId subscriber attribute for Singular V2 (#4072) via Guillem Corominas (@guillemcorominas)
+* Add `awaitShowManageSubscriptions` (#4040) via Cesar de la Vega (@vegaro)
+
+## RevenueCatUI SDK
+### Paywallsv2
+#### ✨ New Features
+* feat(paywalls): warm the web_views of the current offering and every placement's (#3938) via Álvaro Brey (@AlvaroBrey)
+#### 🐞 Bugfixes
+* Fix(Paywalls): Avoid POSIX localizations (#4048) via Jacob Rakidzich (@JZDesign)
+* Read `zero_decimal_place_countries` from workflow screens (#4061) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* Rework CheckpointParams into a Builder with a Kotlin DSL (#4085) via Toni Rico (@tonidero)
+* Add tolerance to flaky ImageComponentView_Preview_Margin_Padding Emerge snapshot (#4100) via Álvaro Brey (@AlvaroBrey)
+* chore: don't run danger on main (#4079) via Cesar de la Vega (@vegaro)
+* chore(ads): remove experimental flag from ads apis (#4068) via Peter Porfy (@peterporfy)
+* Add rc.entries and rc.fromEntries custom operators (#4062) via Antonio Pallares (@ajpallares)
+* Announce public API changes from main only (#4083) via Facundo Menzella (@facumenzella)
+* Add rc.semverCompare custom operator (#4077) via Antonio Pallares (@ajpallares)
+* Add rc.split custom operator (#4066) via Antonio Pallares (@ajpallares)
+* Sort placements when prewarming paywall web views (#4074) via Álvaro Brey (@AlvaroBrey)
+* Refresh the doc comments that describe an absent variable as null (#4076) via Antonio Pallares (@ajpallares)
+* Raise an error for unresolved variables instead of degrading to null (#4043) via Antonio Pallares (@ajpallares)
+* Set or unset subscriber attributes from the checkpoint tester (#4046) via Toni Rico (@tonidero)
+* perf(paywalls): warm a paywall's first page before its later ones (#3966) via Álvaro Brey (@AlvaroBrey)
+* Add rc.length operator for strings and arrays (#4050) via Antonio Pallares (@ajpallares)
+* Add rc.lower and rc.upper custom operators (#4051) via Antonio Pallares (@ajpallares)
+* Update baseline profiles (#4067) via RevenueCat Git Bot (@RCGitBot)
+* Update sdks-common-config orb to v4.6.1 (#4063) via Antonio Pallares (@ajpallares)
+* Add rc.rootVar operator for root scope access (#4049) via Antonio Pallares (@ajpallares)
+* Add Scope plumbing and custom operator extension point (#4047) via Antonio Pallares (@ajpallares)
+* refactor(paywalls): share one component-config lookup across asset pre-download (#4018) via Álvaro Brey (@AlvaroBrey)
+* paywalls: Add webview cache warming engine (#3897) via Álvaro Brey (@AlvaroBrey)
+* Validate checkpoint identifiers (#4024) via Cesar de la Vega (@vegaro)
+
+## 10.18.1
+## RevenueCat SDK
+### 🐞 Bugfixes
+* Don't jitter developer-initiated subscriber attribute posts in foreground (#4041) via Toni Rico (@tonidero)
+
+### 🔄 Other Changes
+* Rename `session_id` to `app_session_id` in checkpoint events (#4039) via Cesar de la Vega (@vegaro)
+* Evaluate checkpoint audiences before resolving workflows (#3971) via Cesar de la Vega (@vegaro)
+
+## 10.18.0
+## RevenueCat SDK
+### ✨ New Features
+* Track checkpoint hits through the analytics events pipeline (#3994) via Cesar de la Vega (@vegaro)
+* Add public Purchases.showManageSubscriptions() API (#3434) via Facundo Menzella (@facumenzella)
+* feat(ads): ad reward tracking with admob adapter (#3885) via Peter Porfy (@peterporfy)
+
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* Fix product change mode in workflow paywalls (#4016) via Cesar de la Vega (@vegaro)
+* Fix font scaling setting on workflow paywalls (#3977) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* build(deps): bump fastlane from 2.237.0 to 2.238.0 (#3979) via dependabot[bot] (@dependabot[bot])
+* build(deps): bump fastlane-plugin-revenuecat_internal from `7fbbe66` to `7dd9ab9` (#4025) via dependabot[bot] (@dependabot[bot])
+* feat(checkpoints): Add the app's subscriber attributes as a rules dimension (#3996) via Toni Rico (@tonidero)
+* Announce a public API change in the SDK API feed once per PR (#3991) via Álvaro Brey (@AlvaroBrey)
+* feat(checkpoints): Add date and record collection rules dimension values (#3978) via Toni Rico (@tonidero)
+
+## 10.17.0
+## RevenueCat SDK
+### ✨ New Features
+* feat(ads): fire reward-verification tracking events from the poll (#3884) via Peter Porfy (@peterporfy)
+### 🐞 Bugfixes
+* fix(paywalls): don't leave a hidden package selected by default (#3915) via Facundo Menzella (@facumenzella)
+### 📦 Dependency Updates
+* [RENOVATE] Update dependency revenuecat to v4.6.0 (#3973) via RevenueCat Git Bot (@RCGitBot)
+
+## RevenueCatUI SDK
+### ✨ New Features
+* Support headless offering checkpoints (#3951) via Cesar de la Vega (@vegaro)
+### 🐞 Bugfixes
+* fix(paywalls): Expose compose-foundation-layout so PaywallFooter is callable without extra setup (#3961) via Álvaro Brey (@AlvaroBrey)
+* Fix multi-page paywall state after dismissal (#3944) via Cesar de la Vega (@vegaro)
+* fix(paywalls): Prevent an invisible leftover header from blocking taps on workflow paywalls (#3947) via Álvaro Brey (@AlvaroBrey)
+### Paywallsv2
+#### ✨ New Features
+* feat(paywalls): Preboot the WebView engine when a paywall has a web_view component (#3904) via Álvaro Brey (@AlvaroBrey)
+
+### 🔄 Other Changes
+* refactor(ads): expose Outcome from the reward-verification poller (#3883) via Peter Porfy (@peterporfy)
+* ci(danger): fail PRs that grow a suppression baseline (#3982) via Álvaro Brey (@AlvaroBrey)
+* Report public API changes on PRs and in the SDK API feed (#3976) via Álvaro Brey (@AlvaroBrey)
+* feat(ads): expose AdTracker API for reward-verification events (#3892) via Peter Porfy (@peterporfy)
+* feat(ads): wire-encode reward-verification events (#3891) via Peter Porfy (@peterporfy)
+* feat(ads): add reward-verification event data types (#3890) via Peter Porfy (@peterporfy)
+* Update baseline profiles (#3974) via RevenueCat Git Bot (@RCGitBot)
+* feat(checkpoints): Add StoreDimensionProvider with store.country (#3969) via Toni Rico (@tonidero)
+* Deserialize audience rules for rules engine evaluation (#3970) via Cesar de la Vega (@vegaro)
+* refactor(checkpoints): Reuse CustomVariableValue for checkpoint custom variables (#3960) via Toni Rico (@tonidero)
+* feat(checkpoints): Evaluate checkpoint custom variables as custom.* dimensions (#3949) via Toni Rico (@tonidero)
+* build: apply the AGP 9 config migrations that already work on AGP 8 (#3963) via Álvaro Brey (@AlvaroBrey)
+* build: move baseline profiles to the plugin's default source dir (#3931) via Álvaro Brey (@AlvaroBrey)
+* refactor(checkpoints): Add DeviceDimensionProvider (#3943) via Toni Rico (@tonidero)
+
+## 10.16.2
+## RevenueCat SDK
+### 🐞 Bugfixes
+* fix: don't share a MessageDigest across coroutines in FontLoader and DefaultFileCache (#3930) via Tarek M. Ben Lechhab (@bilqisium)
+* Fix misleading ui_config warnings for projects without paywalls (#3926) via Rick (@rickvdl)
+* fix: Declare kotlinx-coroutines-android as a dependency (#3916) via Álvaro Brey (@AlvaroBrey)
+* fix(paywalls): prewarm the current offering's workflow assets on load (#3910) via Álvaro Brey (@AlvaroBrey)
+
+## RevenueCatUI SDK
+### Paywallsv2
+#### 🐞 Bugfixes
+* Default missing text localizations to empty instead of fallback paywall (#3903) via Cesar de la Vega (@vegaro)
+
+### 🔄 Other Changes
+* ci: install mise Ruby 3.3.0 so CI honors Gemfile.lock (#3952) via Álvaro Brey (@AlvaroBrey)
+* refactor(checkpoints): Local rule evaluation foundation (#3942) via Toni Rico (@tonidero)
+* refactor(paywalls): move image warming to `purchases-ui` and use a ServiceLoader to reach it (#3913) via Álvaro Brey (@AlvaroBrey)
+* build: fix api-tester customEntitlementComputation variant resolution after Kover bump (#3945) via Álvaro Brey (@AlvaroBrey)
+* feat(checkpoints): expose CheckpointParams customProperties as paywall custom variables (#3941) via Toni Rico (@tonidero)
+* Ingest audiences config topic (#3936) via Cesar de la Vega (@vegaro)
+* build: update Kover to 0.9.9 (#3932) via Álvaro Brey (@AlvaroBrey)
+* build: update Metalava to 0.5.0 (#3935) via Álvaro Brey (@AlvaroBrey)
+* refactor(checkpoints): Cleanup to offeringIdByWorkflowId map + custom checkpoint screen in checkpoint tester (#3919) via Toni Rico (@tonidero)
+* refactor(paywalls): collect web_view assets in the existing predownload walk (#3902) via Álvaro Brey (@AlvaroBrey)
+* Update baseline profiles (#3927) via RevenueCat Git Bot (@RCGitBot)
+* Fix flaky cached offerings integration test and cover the fully-offline case (#3920) via Álvaro Brey (@AlvaroBrey)
+* chore: stop persisting ProductEntitlementMapping.originalSource to disk (#3917) via Álvaro Brey (@AlvaroBrey)
+* refactor(checkpoints): Resolve a checkpoint's workflow from its rules (#3914) via Toni Rico (@tonidero)
+* Ingest checkpoint rules remote config (#3907) via Cesar de la Vega (@vegaro)
+* refactor(checkpoints): Implement checkpoint use cases in `CheckpointTester` (#3900) via Toni Rico (@tonidero)
+* refactor(checkpoints): Move the checkpoints API to the RevenueCatUI module (#3909) via Toni Rico (@tonidero)
+* build(deps): bump fastlane-plugin-revenuecat_internal from `b4e1e7f` to `7fbbe66` (#3908) via dependabot[bot] (@dependabot[bot])
+* refactor(checkpoints): Create empty `CheckpointTester` project (#3898) via Toni Rico (@tonidero)
+* refactor(checkpoints): Checkpoints wiring and sample usage in paywall tester - SDK-4423 (#3863) via Toni Rico (@tonidero)
+* refactor(checkpoints): Checkpoints workflow presenter UI - SDK-4423 (#3889) via Toni Rico (@tonidero)
+
 ## 10.16.1
 ## RevenueCat SDK
 ### 🐞 Bugfixes

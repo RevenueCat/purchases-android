@@ -2,6 +2,7 @@ package com.revenuecat.paywallstester.ui.screens.checkpoints
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,6 +24,7 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -52,9 +54,28 @@ fun CheckpointsScreen(
     ),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val paywallRequest by viewModel.paywallRequest.collectAsStateWithLifecycle()
 
+    Box(modifier = modifier) {
+        CheckpointsScaffold(
+            state = state,
+            onHit = viewModel::hit,
+            onTogglePresentWithAppPaywall = viewModel::setPresentWithAppPaywall,
+            dismissRequest = dismissRequest,
+        )
+        paywallRequest?.let { AppPaywall(request = it) }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CheckpointsScaffold(
+    state: UiState,
+    onHit: (String) -> Unit,
+    onTogglePresentWithAppPaywall: (Boolean) -> Unit,
+    dismissRequest: () -> Unit,
+) {
     Scaffold(
-        modifier = modifier,
         topBar = {
             TopAppBar(
                 title = { Text(text = "Checkpoints") },
@@ -73,9 +94,10 @@ fun CheckpointsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            HitCheckpointSection(
-                enabled = state.waitingFor == null,
-                onHit = viewModel::hit,
+            HitCheckpointSection(onHit = onHit)
+            PresenterSection(
+                presentWithAppPaywall = state.presentWithAppPaywall,
+                onToggle = onTogglePresentWithAppPaywall,
             )
             ResultCard(
                 waitingFor = state.waitingFor,
@@ -83,8 +105,7 @@ fun CheckpointsScreen(
             )
             RecentCheckpointsSection(
                 recents = state.recents,
-                enabled = state.waitingFor == null,
-                onRecentTap = viewModel::hit,
+                onRecentTap = onHit,
                 modifier = Modifier.weight(1f),
             )
         }
@@ -92,7 +113,7 @@ fun CheckpointsScreen(
 }
 
 @Composable
-private fun HitCheckpointSection(enabled: Boolean, onHit: (String) -> Unit) {
+private fun HitCheckpointSection(onHit: (String) -> Unit) {
     var identifier by rememberSaveable { mutableStateOf("") }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
@@ -104,12 +125,26 @@ private fun HitCheckpointSection(enabled: Boolean, onHit: (String) -> Unit) {
         )
         Button(
             onClick = { onHit(identifier) },
-            enabled = enabled && identifier.isNotBlank(),
+            enabled = identifier.isNotBlank(),
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(text = "Hit checkpoint")
         }
     }
+}
+
+@Composable
+private fun PresenterSection(presentWithAppPaywall: Boolean, onToggle: (Boolean) -> Unit) {
+    ListItem(
+        headlineContent = { Text(text = "Present offerings with the app's own paywall") },
+        supportingContent = {
+            Text(
+                text = "Off: RevenueCat shows the offering's paywall. " +
+                    "On: this app shows its own paywall through PaywallPresenter.",
+            )
+        },
+        trailingContent = { Switch(checked = presentWithAppPaywall, onCheckedChange = onToggle) },
+    )
 }
 
 @Composable
@@ -155,19 +190,25 @@ private fun ResultCard(waitingFor: String?, result: CheckpointResultUi?) {
 
 @Composable
 private fun WaitingRow(waitingFor: String) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-        Text(text = "Waiting for '$waitingFor'…", style = MaterialTheme.typography.bodyMedium)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+            Text(text = "Waiting for '$waitingFor'…", style = MaterialTheme.typography.bodyMedium)
+        }
+        Text(
+            text = "Backing out of a paywall never reports a result. Just hit the checkpoint again.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
 @Composable
 private fun RecentCheckpointsSection(
     recents: List<String>,
-    enabled: Boolean,
     onRecentTap: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -181,7 +222,7 @@ private fun RecentCheckpointsSection(
             items(recents) { recentIdentifier ->
                 ListItem(
                     headlineContent = { Text(text = recentIdentifier) },
-                    modifier = Modifier.clickable(enabled = enabled) { onRecentTap(recentIdentifier) },
+                    modifier = Modifier.clickable { onRecentTap(recentIdentifier) },
                 )
                 HorizontalDivider()
             }
@@ -209,7 +250,11 @@ private fun CheckpointsScreenPreview() {
                     ),
                 )
 
+            override val paywallRequest: StateFlow<AppPaywallPresenter.Request?>
+                get() = MutableStateFlow(null)
+
             override fun hit(identifier: String) {}
+            override fun setPresentWithAppPaywall(enabled: Boolean) {}
         },
     )
 }

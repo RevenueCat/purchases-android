@@ -112,29 +112,4 @@ class VideoUrlResolverTest {
         urlLowRes = lowUrl,
         checksumLowRes = lowUrl?.let { Checksum(Checksum.Algorithm.SHA256, "low") },
     )
-
-    private class FakeFileRepository(
-        private val cachedFiles: Map<URL, URI> = emptyMap(),
-        private val failingUrls: Set<URL> = emptySet(),
-    ) : FileRepository {
-
-        val getFileRequests: MutableList<URL> = mutableListOf()
-        val generateRequests: MutableList<URL> = mutableListOf()
-
-        override fun prefetch(urls: List<Pair<URL, Checksum?>>) = Unit
-
-        override fun getFile(url: URL, checksum: Checksum?): URI? {
-            getFileRequests += url
-            return cachedFiles[url]
-        }
-
-        @Suppress("TooGenericExceptionCaught")
-        override suspend fun generateOrGetCachedFileURL(url: URL, checksum: Checksum?): URI {
-            generateRequests += url
-            if (url in failingUrls) {
-                throw RuntimeException("Simulated failure for $url")
-            }
-            return cachedFiles[url] ?: throw RuntimeException("Missing fake URI for $url")
-        }
-    }
 }

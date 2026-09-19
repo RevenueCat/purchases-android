@@ -9,6 +9,7 @@ import com.revenuecat.purchases.common.remoteconfig.GenerationGuardedCache
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigCommitListener
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigManager
 import com.revenuecat.purchases.common.remoteconfig.RemoteConfigTopic
+import com.revenuecat.purchases.common.remoteconfig.readConsistent
 import com.revenuecat.purchases.common.verboseLog
 import com.revenuecat.purchases.common.warnLog
 import kotlinx.coroutines.CoroutineScope
@@ -46,12 +47,9 @@ import kotlinx.serialization.json.JsonPrimitive
 internal class WorkflowsConfigProvider(
     private val manager: RemoteConfigManager,
     private val currentOfferingIdProvider: () -> String? = { null },
-    // Called after warm() loads the current offering's workflow, so a collaborator can warm that workflow's
-    // assets at load time — mirroring the offerings path, which pre-downloads only the current offering's assets.
-    // The second argument decodes a workflow from the config layer WITHOUT populating this provider's retained
-    // decode cache, so prewarming never forces the memory-first Lazy the render path holds — the in-memory cache
-    // stays raw-bytes-only.
-    private val onCurrentWorkflowLoaded: (
+    private val prewarmOfferingIdsProvider: () -> Set<String> = { setOfNotNull(currentOfferingIdProvider()) },
+    // transientDecode must not populate the retained decode cache: the workflows cache stays raw-bytes-only.
+    private val onWorkflowLoaded: (
         suspend (workflowId: String, transientDecode: suspend (String) -> PublishedWorkflow?) -> Unit
     )? = null,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
@@ -61,6 +59,9 @@ internal class WorkflowsConfigProvider(
         // Raw body bytes per workflow, decoded lazily (on first access, on the caller's thread) and retained.
         val workflows: Map<String, Lazy<PublishedWorkflow?>>,
         val offeringToWorkflowId: Map<String, String>,
+        // Captured in the same pass as the bodies so a cached body and its ref cannot come from
+        // different generations.
+        val workflowBlobRefs: Map<String, String>,
     )
 
     private val cache = GenerationGuardedCache<Cached>()
@@ -80,75 +81,62 @@ internal class WorkflowsConfigProvider(
 
     /**
      * Resolves an offering to its workflow through the `/v1/config` workflows topic, distinguishing a genuinely
-     * workflowless offering ([WorkflowResolution.NoWorkflow]) from a topic that could not be read because the
-     * endpoint is disabled ([WorkflowResolution.Disabled]) or a sync failed transiently
+     * workflowless offering ([WorkflowResolution.NoWorkflow]) from a topic that could not be read
      * ([WorkflowResolution.Unavailable]). Memory-first: a warm cache resolves synchronously; only a miss reads the
      * topic (which may trigger a sync).
      */
     @Suppress("ReturnCount")
     suspend fun resolveWorkflow(offeringId: String): WorkflowResolution {
-        // Once the endpoint is disabled (4xx kill switch) the offering was parsed with its components skipped, so
-        // resolution must always yield Disabled (→ offerings reload) — even off a warm cache. Check the flag
-        // before the fast path: disabling sets isDisabled and invalidates this cache non-atomically, so a warm
-        // cache can briefly coexist with isDisabled, and a stale Found/NoWorkflow here would skip the reload.
-        if (manager.isDisabled) return WorkflowResolution.Disabled
+        // Workflows are never resolved with remote config off (customEntitlementComputation), so a call here is
+        // a wiring bug worth surfacing rather than a state to recover from.
+        if (manager.isDisabled) {
+            errorLog { "Workflows are unavailable: remote config is disabled for this SDK configuration." }
+            return WorkflowResolution.Unavailable
+        }
         cache.cached?.let { cached ->
             return cached.offeringToWorkflowId[offeringId]?.let { WorkflowResolution.Found(it) }
                 ?: WorkflowResolution.NoWorkflow
         }
-        val generation = manager.configGeneration
-        val topic = manager.topic(RemoteConfigTopic.Workflows)
-        verboseLog { "workflows topic ${if (topic == null) "is absent" else "has ${topic.size} item(s)"}" }
-        // A null topic means it could not be read. If the /v1/config endpoint is disabled (4xx kill switch) the
-        // offering was parsed with its components skipped, so the caller can reload offerings to recover them;
-        // any other (transient) failure should fall back to the offering's default paywall. Either way this is not
-        // the same as a genuinely workflowless offering.
-        return if (topic == null) {
-            if (manager.isDisabled) {
-                verboseLog { "Workflows topic unavailable (remote config disabled) resolving offering '$offeringId'" }
-                WorkflowResolution.Disabled
-            } else {
+        // Superseded on both attempts: an id resolved against a generation that moved may belong to the previous
+        // user, and there is nothing trustworthy to serve. Callers treat Unavailable as "fall back to the
+        // offering's default paywall".
+        return manager.readConsistent(what = { "the workflow for offering '$offeringId'" }) { _ ->
+            val topic = manager.topic(RemoteConfigTopic.Workflows)
+            verboseLog { "workflows topic ${if (topic == null) "is absent" else "has ${topic.size} item(s)"}" }
+            // A null topic means it could not be read (a failed or not-yet-run sync). The caller should fall
+            // back to the offering's default paywall; this is not the same as a genuinely workflowless offering.
+            if (topic == null) {
                 verboseLog { "Workflows topic unavailable resolving offering '$offeringId'" }
                 WorkflowResolution.Unavailable
-            }
-        } else {
-            val matches = topic.entries
-                .filter { (_, item) -> item.metadata.stringOrNull(KEY_OFFERING_IDENTIFIER) == offeringId }
-            if (matches.size > 1) {
-                warnLog { "Duplicate offering_identifier '$offeringId' in workflows topic: ${matches.map { it.key }}" }
-            }
-            // Last entry wins on duplicates.
-            val workflowId = matches.lastOrNull()?.key
-            verboseLog {
-                if (workflowId != null) {
-                    "Resolved offering '$offeringId' to workflow '$workflowId'"
-                } else {
-                    "No workflow found for offering '$offeringId'"
-                }
-            }
-            // If an identity-change invalidation advanced the generation while the topic was read, the resolved
-            // id may belong to the previous user; prefer whatever the (now newer) cache holds instead.
-            val resolvedId = if (cache.isCurrent(generation)) {
-                workflowId
             } else {
-                cache.cached?.offeringToWorkflowId?.get(offeringId)
+                val matches = topic.entries
+                    .filter { (_, item) -> item.metadata.stringOrNull(KEY_OFFERING_IDENTIFIER) == offeringId }
+                if (matches.size > 1) {
+                    warnLog {
+                        "Duplicate offering_identifier '$offeringId' in workflows topic: ${matches.map { it.key }}"
+                    }
+                }
+                // Last entry wins on duplicates.
+                val workflowId = matches.lastOrNull()?.key
+                verboseLog {
+                    if (workflowId != null) {
+                        "Resolved offering '$offeringId' to workflow '$workflowId'"
+                    } else {
+                        "No workflow found for offering '$offeringId'"
+                    }
+                }
+                workflowId?.let { WorkflowResolution.Found(it) } ?: WorkflowResolution.NoWorkflow
             }
-            resolvedId?.let { WorkflowResolution.Found(it) } ?: WorkflowResolution.NoWorkflow
-        }
+        } ?: WorkflowResolution.Unavailable
     }
 
     /** The resolved workflow id for [offeringId], or `null` when none is mapped or the topic is unavailable. */
     suspend fun workflowIdForOfferingId(offeringId: String): String? =
         (resolveWorkflow(offeringId) as? WorkflowResolution.Found)?.workflowId
 
-    /**
-     * Every workflow id in the `workflows` topic, mapped to its `offering_identifier` (or `null` when the item
-     * has none). Empty when the topic is unavailable. May trigger a `/v1/config` sync on a cold cache.
-     */
-    suspend fun offeringIdByWorkflowId(): Map<String, String?> =
-        manager.topic(RemoteConfigTopic.Workflows)
-            ?.mapValues { (_, item) -> item.metadata.stringOrNull(KEY_OFFERING_IDENTIFIER) }
-            .orEmpty()
+    suspend fun workflowBlobRef(workflowId: String): String? =
+        cache.cached?.workflowBlobRefs?.get(workflowId)
+            ?: manager.topic(RemoteConfigTopic.Workflows)?.get(workflowId)?.blobRef
 
     /**
      * Resolves [workflowId] into a [PublishedWorkflow], or `null` when the item is unknown, its body can be
@@ -158,14 +146,10 @@ internal class WorkflowsConfigProvider(
      */
     suspend fun getWorkflow(workflowId: String): PublishedWorkflow? {
         cache.cached?.workflows?.get(workflowId)?.let { return it.value }
-        val generation = manager.configGeneration
-        val workflow = resolveWorkflowBody(workflowId)
-        // If an identity-change invalidation advanced the generation while the body was resolved, it may belong
-        // to the previous user; prefer whatever the (now newer) cache holds instead of serving it.
-        return when {
-            workflow == null -> null
-            cache.isCurrent(generation) -> workflow
-            else -> cache.cached?.workflows?.get(workflowId)?.value
+        // A body resolved against a generation that moved may belong to the previous user; readConsistent
+        // re-resolves it once against the new state instead of serving it.
+        return manager.readConsistent(what = { "workflow '$workflowId'" }) { _ ->
+            resolveWorkflowBody(workflowId)
         }
     }
 
@@ -224,6 +208,7 @@ internal class WorkflowsConfigProvider(
         if (isWarmAtOrAbove(generation)) return
         val topic = manager.committedTopicOrNull(RemoteConfigTopic.Workflows) ?: return
         val offeringToWorkflowId = LinkedHashMap<String, String>()
+        val workflowBlobRefs = LinkedHashMap<String, String>()
         val currentOfferingId = currentOfferingIdProvider()
         val eligibleIds = mutableListOf<String>()
         topic.entries.forEach { (workflowId, item) ->
@@ -232,6 +217,7 @@ internal class WorkflowsConfigProvider(
                 // Last entry wins on duplicates, matching workflowIdForOfferingId.
                 offeringToWorkflowId[offeringId] = workflowId
             }
+            item.blobRef?.let { workflowBlobRefs[workflowId] = it }
             if (item.prefetch || (offeringId != null && offeringId == currentOfferingId)) {
                 eligibleIds += workflowId
             }
@@ -248,32 +234,25 @@ internal class WorkflowsConfigProvider(
             "Warmed workflows cache: ${workflows.size} eligible workflow(s), " +
                 "${offeringToWorkflowId.size} offering mapping(s)."
         }
-        cache.store(generation, Cached(workflows, offeringToWorkflowId))
+        cache.store(generation, Cached(workflows, offeringToWorkflowId, workflowBlobRefs))
 
-        announceCurrentWorkflow(offeringToWorkflowId)
+        announceWorkflowsToPrewarm(offeringToWorkflowId)
     }
 
-    /** Announces against the already-warmed cache, for callers that learn the current offering after [warm]. */
-    fun prewarmCurrentOfferingAssets() {
-        announceCurrentWorkflow(cache.cached?.offeringToWorkflowId)
+    /** For callers that learn the current offerings after [warm]. */
+    fun prewarmOfferingAssets() {
+        announceWorkflowsToPrewarm(cache.cached?.offeringToWorkflowId)
     }
 
-    // Warm the current offering's workflow assets (images + ui_config fonts) at load time — mirrors the
-    // offerings path, which pre-downloads only the current offering's assets, never other offerings'. So a
-    // prefetch-flagged workflow that isn't the current offering's has its bytes cached but not its assets: it
-    // isn't the paywall about to be shown. Fire-and-forget so it never blocks warm() or the getOfferings
-    // readiness gate. resolveWorkflowBody decodes transiently: it reads bytes + parses without touching the
-    // retained Lazy, so prewarming keeps the cache raw-bytes-only.
-    private fun announceCurrentWorkflow(offeringToWorkflowId: Map<String, String>?) {
-        val notify = onCurrentWorkflowLoaded ?: return
-        // Notify whenever the current offering maps to a workflow — do NOT gate on `workflows` (the byte-warm
-        // map), whose parallel preload can miss a body that hasn't finished its LOW-priority prefetch yet.
-        // resolveWorkflowBody fetches the body on demand, so gating here would drop the current offering's
-        // asset prewarm purely on preload timing.
-        val currentWorkflowId = currentOfferingIdProvider()
-            ?.let { offeringToWorkflowId?.get(it) }
-            ?: return
-        scope.launch { notify(currentWorkflowId, ::resolveWorkflowBody) }
+    private fun announceWorkflowsToPrewarm(offeringToWorkflowId: Map<String, String>?) {
+        val notify = onWorkflowLoaded ?: return
+        // Never gated on the byte-warm map: a body's LOW-priority prefetch may still be in flight, and
+        // resolveWorkflowBody fetches on demand anyway.
+        val workflowIds = offeringToWorkflowId?.let { mapping ->
+            prewarmOfferingIdsProvider().mapNotNullTo(linkedSetOf(), mapping::get)
+        }
+        if (workflowIds.isNullOrEmpty()) return
+        workflowIds.forEach { workflowId -> scope.launch { notify(workflowId, ::resolveWorkflowBody) } }
     }
 
     /** Warms at the current config generation; used by the offerings readiness gate. */

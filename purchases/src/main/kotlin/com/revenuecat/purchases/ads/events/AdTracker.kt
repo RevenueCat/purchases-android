@@ -1,12 +1,15 @@
 package com.revenuecat.purchases.ads.events
 
-import com.revenuecat.purchases.ExperimentalPreviewRevenueCatPurchasesAPI
 import com.revenuecat.purchases.InternalRevenueCatAPI
 import com.revenuecat.purchases.ads.events.types.AdDisplayedData
 import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
 import com.revenuecat.purchases.ads.events.types.AdLoadedData
 import com.revenuecat.purchases.ads.events.types.AdOpenedData
 import com.revenuecat.purchases.ads.events.types.AdRevenueData
+import com.revenuecat.purchases.ads.events.types.AdRewardEarnedUnverifiedData
+import com.revenuecat.purchases.ads.events.types.AdRewardFailedToVerifyData
+import com.revenuecat.purchases.ads.events.types.AdRewardGrantedData
+import com.revenuecat.purchases.ads.events.types.AdRewardVerifiedData
 import com.revenuecat.purchases.common.events.EventsManager
 
 /**
@@ -17,7 +20,7 @@ import com.revenuecat.purchases.common.events.EventsManager
  * [InternalRevenueCatAPI] overloads to stamp [AdCaptureMethod.ADAPTER] instead.
  */
 @OptIn(InternalRevenueCatAPI::class)
-@ExperimentalPreviewRevenueCatPurchasesAPI
+@Suppress("TooManyFunctions")
 public class AdTracker internal constructor(
     private val eventsManager: EventsManager,
 ) {
@@ -151,6 +154,93 @@ public class AdTracker internal constructor(
                 impressionId = null,
                 captureMethod = captureMethod,
                 mediatorErrorCode = data.mediatorErrorCode,
+            ),
+        )
+    }
+
+    /**
+     * Tracks the start of a reward-verification poll, stamping the capture method that emitted it.
+     *
+     * Unlike this class's other tracking methods, reward events have no manual-integration entry point:
+     * they're only ever emitted by the SDK's own reward-verification poll.
+     */
+    @InternalRevenueCatAPI
+    public fun trackAdRewardEarnedUnverified(data: AdRewardEarnedUnverifiedData, captureMethod: AdCaptureMethod) {
+        eventsManager.track(
+            event = AdEvent.RewardEarnedUnverified(
+                networkName = data.networkName,
+                mediatorName = data.mediatorName,
+                adFormat = data.adFormat,
+                placement = data.placement,
+                adUnitId = data.adUnitId,
+                impressionId = data.impressionId,
+                captureMethod = captureMethod,
+                rewardVerificationEnabled = data.rewardVerificationEnabled,
+            ),
+        )
+    }
+
+    /**
+     * Tracks a reward-verification poll completing successfully, stamping the capture method that emitted it.
+     *
+     * Unlike this class's other tracking methods, reward events have no manual-integration entry point:
+     * they're only ever emitted by the SDK's own reward-verification poll.
+     */
+    @InternalRevenueCatAPI
+    public fun trackAdRewardVerified(data: AdRewardVerifiedData, captureMethod: AdCaptureMethod) {
+        eventsManager.track(
+            event = AdEvent.RewardVerified(
+                networkName = data.networkName,
+                mediatorName = data.mediatorName,
+                adFormat = data.adFormat,
+                placement = data.placement,
+                adUnitId = data.adUnitId,
+                impressionId = data.impressionId,
+                captureMethod = captureMethod,
+            ),
+        )
+    }
+
+    /**
+     * Tracks a single reward grant, stamping the capture method that emitted it.
+     *
+     * Unlike this class's other tracking methods, reward events have no manual-integration entry point:
+     * they're only ever emitted by the SDK's own reward-verification poll.
+     */
+    @InternalRevenueCatAPI
+    public fun trackAdRewardGranted(data: AdRewardGrantedData, captureMethod: AdCaptureMethod) {
+        eventsManager.track(
+            event = AdEvent.RewardGranted(
+                networkName = data.networkName,
+                mediatorName = data.mediatorName,
+                adFormat = data.adFormat,
+                placement = data.placement,
+                adUnitId = data.adUnitId,
+                impressionId = data.impressionId,
+                captureMethod = captureMethod,
+                reward = data.reward,
+            ),
+        )
+    }
+
+    /**
+     * Tracks a reward-verification poll failing, stamping the capture method that emitted it.
+     *
+     * Unlike this class's other tracking methods, reward events have no manual-integration entry point:
+     * they're only ever emitted by the SDK's own reward-verification poll.
+     */
+    @InternalRevenueCatAPI
+    public fun trackAdRewardFailedToVerify(data: AdRewardFailedToVerifyData, captureMethod: AdCaptureMethod) {
+        eventsManager.track(
+            event = AdEvent.RewardFailedToVerify(
+                networkName = data.networkName,
+                mediatorName = data.mediatorName,
+                adFormat = data.adFormat,
+                placement = data.placement,
+                adUnitId = data.adUnitId,
+                impressionId = data.impressionId,
+                captureMethod = captureMethod,
+                failureReason = data.failureReason,
             ),
         )
     }
