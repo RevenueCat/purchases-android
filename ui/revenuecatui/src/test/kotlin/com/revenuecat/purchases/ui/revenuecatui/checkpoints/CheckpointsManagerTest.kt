@@ -971,16 +971,10 @@ class CheckpointsManagerTest {
             val call = launch { runCheckpoint(params) }
 
             val options = manager.paywallOptions(currentCallId()) {}!!
-            options.errorPresenter!!.present(error, ErrorPresenter.Source.PURCHASE, flowCanContinue = true) {}
+            options.errorPresenter!!.present(error, flowCanContinue = true) {}
 
             assertThat(presented).containsExactly(
-                ErrorPresenter.Params(
-                    error,
-                    checkpointId,
-                    params.customVariables,
-                    ErrorPresenter.Source.PURCHASE,
-                    flowCanContinue = true,
-                ),
+                ErrorPresenter.Params(error, checkpointId, params.customVariables, flowCanContinue = true),
             )
             finishPaywall(outcome = null)
             call.join()
@@ -1042,11 +1036,8 @@ class CheckpointsManagerTest {
         val params = CheckpointParams { errorPresenter { _, _ -> perCallAsked = true } }
         val call = launch { runCheckpoint(params) }
 
-        manager.paywallOptions(currentCallId()) {}!!.errorPresenter!!.present(
-            PurchasesError(PurchasesErrorCode.StoreProblemError),
-            ErrorPresenter.Source.RESTORE,
-            flowCanContinue = true,
-        ) {}
+        manager.paywallOptions(currentCallId()) {}!!.errorPresenter!!
+            .present(PurchasesError(PurchasesErrorCode.StoreProblemError), flowCanContinue = true) {}
 
         assertThat(perCallAsked).isTrue
         assertThat(registeredAsked).isFalse
@@ -1062,11 +1053,10 @@ class CheckpointsManagerTest {
         val error = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom")
         val call = launch { runCheckpoint() }
 
-        defaultPresenter!!.paywallOptions("") {}!!.errorPresenter!!
-            .present(error, ErrorPresenter.Source.PRESENTATION, flowCanContinue = false) {}
+        defaultPresenter!!.paywallOptions("") {}!!.errorPresenter!!.present(error, flowCanContinue = false) {}
 
         assertThat(presented).containsExactly(
-            ErrorPresenter.Params(error, checkpointId, emptyMap(), ErrorPresenter.Source.PRESENTATION, false),
+            ErrorPresenter.Params(error, checkpointId, emptyMap(), flowCanContinue = false),
         )
         finishDefaultPaywall(navigatedBack = true)
         call.join()

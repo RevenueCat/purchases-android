@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.checkpoints
 
 import android.app.Activity
+import android.os.Looper
 import android.view.View
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.revenuecat.purchases.Purchases
@@ -16,6 +17,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.android.controller.ActivityController
 import org.robolectric.shadows.ShadowDialog
 
@@ -60,10 +62,9 @@ class DefaultErrorPresenterTest {
     }
 
     @Test
-    fun `a presentation error shows the paywall's reason`() {
+    fun `an error the flow cannot recover from shows the paywall's reason`() {
         present(
             params(
-                source = ErrorPresenter.Source.PRESENTATION,
                 flowCanContinue = false,
                 error = PurchasesError(PurchasesErrorCode.UnknownError, "No packages available"),
             ),
@@ -102,6 +103,17 @@ class DefaultErrorPresenterTest {
         acknowledge!!()
 
         assertThat(results).containsExactly(Result.Continued)
+    }
+
+    @Test
+    fun `cancelling the host window acknowledges the error instead of leaving it on screen`() {
+        present(params(flowCanContinue = false))
+
+        ShadowDialog.getLatestDialog().cancel()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertThat(results).containsExactly(Result.Continued)
+        assertThat(ShadowDialog.getLatestDialog().isShowing).isFalse
     }
 
     @Test
@@ -170,8 +182,7 @@ class DefaultErrorPresenterTest {
     private fun present(params: ErrorPresenter.Params = params()) = presenter.present(params, completion)
 
     private fun params(
-        source: ErrorPresenter.Source = ErrorPresenter.Source.PURCHASE,
         flowCanContinue: Boolean = true,
         error: PurchasesError = PurchasesError(PurchasesErrorCode.StoreProblemError, "boom"),
-    ) = ErrorPresenter.Params(error, "test_checkpoint", emptyMap(), source, flowCanContinue)
+    ) = ErrorPresenter.Params(error, "test_checkpoint", emptyMap(), flowCanContinue)
 }

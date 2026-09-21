@@ -3617,7 +3617,6 @@ class PaywallViewModelTest {
         failPurchase(model, expectedError)
 
         assertThat(presenter.errors).containsExactly(expectedError)
-        assertThat(presenter.sources).containsExactly(ErrorPresenter.Source.PURCHASE)
         assertThat(presenter.flowCanContinue).containsExactly(true)
         assertThat(model.actionError.value).isNull()
         assertThat(dismissInvoked).isFalse
@@ -3634,7 +3633,6 @@ class PaywallViewModelTest {
         model.restorePurchases()
 
         assertThat(presenter.errors).containsExactly(expectedError)
-        assertThat(presenter.sources).containsExactly(ErrorPresenter.Source.RESTORE)
         assertThat(presenter.flowCanContinue).containsExactly(true)
         assertThat(model.actionError.value).isNull()
     }
@@ -3725,7 +3723,7 @@ class PaywallViewModelTest {
 
     @Test
     fun `a throwing error presenter falls back to the dialog`() {
-        val model = create(errorPresenter = { _, _, _, _ -> error("Simulated.") })
+        val model = create(errorPresenter = { _, _, _ -> error("Simulated.") })
         val expectedError = PurchasesError(PurchasesErrorCode.ProductNotAvailableForPurchaseError)
 
         failPurchase(model, expectedError)
@@ -3743,7 +3741,6 @@ class PaywallViewModelTest {
 
         val state = model.state.value as PaywallState.Error
         assertThat(presenter.errors.single().underlyingErrorMessage).isEqualTo(state.errorMessage)
-        assertThat(presenter.sources).containsExactly(ErrorPresenter.Source.PRESENTATION)
         assertThat(presenter.flowCanContinue).containsExactly(false)
         assertThat(dismissInvoked).isFalse
     }
@@ -3784,12 +3781,34 @@ class PaywallViewModelTest {
     }
 
     @Test
+    fun `an error presenter report is ignored once the paywall recovered from the error`() {
+        coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
+        val presenter = RecordingErrorPresenter()
+        val model = create(errorPresenter = presenter)
+        assertThat(model.state.value).isInstanceOf(PaywallState.Error::class.java)
+        coEvery { purchases.awaitOfferings() } returns offerings
+        model.updateOptions(
+            PaywallOptions.Builder(dismissRequest = { dismissInvoked = true })
+                .setListener(listener)
+                .setMode(PaywallMode.FOOTER)
+                .setErrorPresenter(presenter)
+                .build(),
+        )
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded::class.java)
+
+        presenter.complete(ErrorPresenter.Completion.Result.Continued)
+
+        assertThat(dismissInvoked).isFalse
+        assertThat(model.state.value).isInstanceOf(PaywallState.Loaded::class.java)
+    }
+
+    @Test
     fun `a throwing error presenter closes a paywall that failed to load`() {
         coEvery { purchases.awaitOfferings() } throws PurchasesException(PurchasesError(PurchasesErrorCode.NetworkError))
         val dismissals = mutableListOf<Pair<PaywallResult?, PaywallDismissReason>>()
 
         create(
-            errorPresenter = { _, _, _, _ -> error("Simulated.") },
+            errorPresenter = { _, _, _ -> error("Simulated.") },
             dismissRequestWithExitOffering = { _, result, reason -> dismissals += result to reason },
         )
 
@@ -3800,18 +3819,11 @@ class PaywallViewModelTest {
 
     private class RecordingErrorPresenter : PaywallErrorPresenter {
         val errors = mutableListOf<PurchasesError>()
-        val sources = mutableListOf<ErrorPresenter.Source>()
         val flowCanContinue = mutableListOf<Boolean>()
         private val completions = mutableListOf<ErrorPresenter.Completion>()
 
-        override fun present(
-            error: PurchasesError,
-            source: ErrorPresenter.Source,
-            flowCanContinue: Boolean,
-            completion: ErrorPresenter.Completion,
-        ) {
+        override fun present(error: PurchasesError, flowCanContinue: Boolean, completion: ErrorPresenter.Completion) {
             errors += error
-            sources += source
             this.flowCanContinue += flowCanContinue
             completions += completion
         }

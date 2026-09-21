@@ -1649,14 +1649,14 @@ class PaywallViewModelWorkflowTest {
     fun `a failed purchase during a workflow is handed to the error presenter`() = runTest {
         coEvery { purchases.awaitPurchase(any()) } throws
             PurchasesException(PurchasesError(PurchasesErrorCode.StoreProblemError))
-        val presented = mutableListOf<Pair<ErrorPresenter.Source, Boolean>>()
-        val vm = createVm(errorPresenter = { _, source, flowCanContinue, _ -> presented += source to flowCanContinue })
+        val presented = mutableListOf<Boolean>()
+        val vm = createVm(errorPresenter = { _, flowCanContinue, _ -> presented += flowCanContinue })
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
         advanceUntilIdle()
 
         vm.handlePackagePurchase(activity = mockk<Activity>(), pkg = TestData.Packages.monthly)
 
-        assertThat(presented).containsExactly(ErrorPresenter.Source.PURCHASE to true)
+        assertThat(presented).containsExactly(true)
         assertThat(vm.actionError.value).isNull()
     }
 
@@ -1668,7 +1668,7 @@ class PaywallViewModelWorkflowTest {
         val dismissals = mutableListOf<PaywallDismissReason>()
         val vm = createVm(
             dismissRequestWithExitOffering = { _, _, reason -> dismissals += reason },
-            errorPresenter = { _, _, _, c -> completion = c },
+            errorPresenter = { _, _, c -> completion = c },
         )
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
         vm.handleWorkflowAction("btn-next", WorkflowTriggerType.ON_PRESS)
@@ -1692,7 +1692,7 @@ class PaywallViewModelWorkflowTest {
         val dismissals = mutableListOf<PaywallDismissReason>()
         val vm = createVm(
             dismissRequestWithExitOffering = { _, _, reason -> dismissals += reason },
-            errorPresenter = { _, _, _, c -> completion = c },
+            errorPresenter = { _, _, c -> completion = c },
         )
         vm.startWorkflowPresentationFromResult(fetchResult, testOfferings, null, uiConfig)
         advanceUntilIdle()
