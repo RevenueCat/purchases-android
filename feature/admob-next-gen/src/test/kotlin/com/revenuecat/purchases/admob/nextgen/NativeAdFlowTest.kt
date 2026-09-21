@@ -1,0 +1,251 @@
+@file:OptIn(InternalRevenueCatAPI::class)
+
+package com.revenuecat.purchases.admob.nextgen
+
+import com.google.android.libraries.ads.mobile.sdk.banner.BannerAdEventCallback
+import com.google.android.libraries.ads.mobile.sdk.common.LoadAdError
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAd
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdEventCallback
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoadResult
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoader
+import com.google.android.libraries.ads.mobile.sdk.nativead.NativeAdLoaderCallback
+import com.revenuecat.purchases.InternalRevenueCatAPI
+import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdEventCallback
+import com.revenuecat.purchases.admob.nextgen.tracking.TrackingBannerAdRefreshCallback
+import com.revenuecat.purchases.admob.nextgen.tracking.TrackingNativeAdEventCallback
+import com.revenuecat.purchases.ads.events.AdCaptureMethod
+import com.revenuecat.purchases.ads.events.types.AdFailedToLoadData
+import com.revenuecat.purchases.ads.events.types.AdFormat
+import com.revenuecat.purchases.ads.events.types.AdLoadedData
+import io.mockk.coEvery
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.mockkObject
+import io.mockk.runs
+import io.mockk.slot
+import io.mockk.unmockkObject
+import io.mockk.verify
+import kotlinx.coroutines.runBlocking
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+class NativeAdFlowTest {
+    @get:Rule
+    val configuredPurchases = ConfiguredPurchasesRule()
+
+    private val adTracker get() = configuredPurchases.adTracker
+
+    @Before
+    fun setUp() {
+        mockkObject(NativeAdLoader.Companion)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkObject(NativeAdLoader.Companion)
+    }
+
+    @Test
+    fun `callback load tracks and configures every possible success before forwarding`() {
+        val adRequest = nativeAdRequest("native-unit")
+        val nativeAd = nativeAd("native-network", "native-response")
+        val customNativeAd = customNativeAd("custom-network", "custom-response")
+        val bannerAd = nativeBannerAd("banner-network", "banner-response")
+        val nativeEventCallback = mockk<NativeAdEventCallback>(relaxed = true)
+        val bannerEventCallback = mockk<BannerAdEventCallback>(relaxed = true)
+        val trackingLoadCallback = slot<NativeAdLoaderCallback>()
+        val delegate = RecordingNativeAdLoaderCallback()
+
+        every { NativeAdLoader.load(adRequest, capture(trackingLoadCallback)) } just runs
+
+        adTracker.loadAndTrackNativeAd(
+            adRequest = adRequest,
+            placement = "feed",
+            loadCallback = delegate,
+            nativeAdEventCallback = nativeEventCallback,
+            bannerAdEventCallback = bannerEventCallback,
+        )
+        trackingLoadCallback.captured.onNativeAdLoaded(nativeAd)
+        trackingLoadCallback.captured.onCustomNativeAdLoaded(customNativeAd)
+        trackingLoadCallback.captured.onBannerAdLoaded(bannerAd)
+
+        assertEquals(listOf(nativeAd), delegate.nativeAds)
+        assertEquals(listOf(customNativeAd), delegate.customNativeAds)
+        assertEquals(listOf(bannerAd), delegate.bannerAds)
+        val nativeTrackingCallback = nativeAd.adEventCallback as TrackingNativeAdEventCallback
+        val customNativeTrackingCallback = customNativeAd.adEventCallback as TrackingNativeAdEventCallback
+        val bannerTrackingCallback = bannerAd.adEventCallback as TrackingBannerAdEventCallback
+        val bannerRefreshTrackingCallback = bannerAd.bannerAdRefreshCallback as TrackingBannerAdRefreshCallback
+        assertSame(nativeEventCallback, nativeTrackingCallback.delegate)
+        assertSame(nativeEventCallback, customNativeTrackingCallback.delegate)
+        assertSame(bannerEventCallback, bannerTrackingCallback.delegate)
+        assertNull(bannerRefreshTrackingCallback.delegate)
+
+        val trackedLoads = mutableListOf<AdLoadedData>()
+        verify(exactly = 3) {
+            adTracker.trackAdLoaded(capture(trackedLoads), AdCaptureMethod.ADAPTER)
+        }
+        assertEquals(listOf(AdFormat.NATIVE, AdFormat.NATIVE, AdFormat.BANNER), trackedLoads.map { it.adFormat })
+        assertEquals(listOf("feed", "feed", "feed"), trackedLoads.map { it.placement })
+        assertEquals(listOf("native-unit", "native-unit", "native-unit"), trackedLoads.map { it.adUnitId })
+    }
+
+    @Test
+    fun `callback load tracks failure before forwarding`() {
+        val adRequest = nativeAdRequest("native-unit")
+        val error = mockk<LoadAdError> {
+            every { code } returns LoadAdError.ErrorCode.NO_FILL
+        }
+        val trackingLoadCallback = slot<NativeAdLoaderCallback>()
+        val delegate = RecordingNativeAdLoaderCallback()
+
+        every { NativeAdLoader.load(adRequest, capture(trackingLoadCallback)) } just runs
+
+        adTracker.loadAndTrackNativeAd(adRequest, "feed", delegate)
+        trackingLoadCallback.captured.onAdFailedToLoad(error)
+
+        assertSame(error, delegate.loadErrors.single())
+        val failedData = slot<AdFailedToLoadData>()
+        verify(exactly = 1) {
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
+        }
+        assertEquals(AdFormat.NATIVE, failedData.captured.adFormat)
+        assertEquals("feed", failedData.captured.placement)
+        assertEquals("native-unit", failedData.captured.adUnitId)
+    }
+
+    @Test
+    fun `callback load tracks failure as banner for banner-only request`() {
+        val adRequest = nativeAdRequest("banner-unit", listOf(NativeAd.NativeAdType.BANNER))
+        val error = mockk<LoadAdError> {
+            every { code } returns LoadAdError.ErrorCode.NO_FILL
+        }
+        val trackingLoadCallback = slot<NativeAdLoaderCallback>()
+
+        every { NativeAdLoader.load(adRequest, capture(trackingLoadCallback)) } just runs
+
+        adTracker.loadAndTrackNativeAd(adRequest, "feed", RecordingNativeAdLoaderCallback())
+        trackingLoadCallback.captured.onAdFailedToLoad(error)
+
+        val failedData = slot<AdFailedToLoadData>()
+        verify(exactly = 1) {
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
+        }
+        assertEquals(AdFormat.BANNER, failedData.captured.adFormat)
+        assertEquals("feed", failedData.captured.placement)
+        assertEquals("banner-unit", failedData.captured.adUnitId)
+    }
+
+    @Test
+    fun `suspending load returns and configures native result unchanged`() = runBlocking {
+        val adRequest = nativeAdRequest("native-unit")
+        val nativeAd = nativeAd("native-network", "native-response")
+        val sdkResult = NativeAdLoadResult.NativeAdSuccess(nativeAd)
+
+        coEvery { NativeAdLoader.load(adRequest) } returns sdkResult
+
+        val result = adTracker.loadAndTrackNativeAd(adRequest, placement = "feed")
+
+        assertSame(sdkResult, result)
+        assertTrue(nativeAd.adEventCallback is TrackingNativeAdEventCallback)
+        verify(exactly = 1) { adTracker.trackAdLoaded(any(), AdCaptureMethod.ADAPTER) }
+    }
+
+    @Test
+    fun `suspending load maps custom native banner and failure results`() = runBlocking {
+        val adRequest = nativeAdRequest("native-unit")
+        val customNativeAd = customNativeAd("custom-network", "custom-response")
+        val bannerAd = nativeBannerAd("banner-network", "banner-response")
+        val error = mockk<LoadAdError> {
+            every { code } returns LoadAdError.ErrorCode.NETWORK_ERROR
+        }
+        val results = listOf(
+            NativeAdLoadResult.CustomNativeAdSuccess(customNativeAd),
+            NativeAdLoadResult.BannerAdSuccess(bannerAd),
+            NativeAdLoadResult.Failure(error),
+        )
+        coEvery { NativeAdLoader.load(adRequest) } returns results[0] andThen results[1] andThen results[2]
+
+        val returnedResults = results.map {
+            adTracker.loadAndTrackNativeAd(adRequest, placement = "feed")
+        }
+
+        results.zip(returnedResults).forEach { (expected, actual) -> assertSame(expected, actual) }
+        assertTrue(customNativeAd.adEventCallback is TrackingNativeAdEventCallback)
+        assertTrue(bannerAd.adEventCallback is TrackingBannerAdEventCallback)
+        assertTrue(bannerAd.bannerAdRefreshCallback is TrackingBannerAdRefreshCallback)
+        val trackedLoads = mutableListOf<AdLoadedData>()
+        verify(exactly = 2) { adTracker.trackAdLoaded(capture(trackedLoads), AdCaptureMethod.ADAPTER) }
+        assertEquals(listOf(AdFormat.NATIVE, AdFormat.BANNER), trackedLoads.map { it.adFormat })
+        verify(exactly = 1) { adTracker.trackAdFailedToLoad(any(), AdCaptureMethod.ADAPTER) }
+    }
+
+    @Test
+    fun `suspending load tracks failure as banner for banner-only request`() = runBlocking {
+        val adRequest = nativeAdRequest("banner-unit", listOf(NativeAd.NativeAdType.BANNER))
+        val error = mockk<LoadAdError> {
+            every { code } returns LoadAdError.ErrorCode.NO_FILL
+        }
+        val sdkResult = NativeAdLoadResult.Failure(error)
+
+        coEvery { NativeAdLoader.load(adRequest) } returns sdkResult
+
+        val result = adTracker.loadAndTrackNativeAd(adRequest, placement = "feed")
+
+        assertSame(sdkResult, result)
+        val failedData = slot<AdFailedToLoadData>()
+        verify(exactly = 1) {
+            adTracker.trackAdFailedToLoad(capture(failedData), AdCaptureMethod.ADAPTER)
+        }
+        assertEquals(AdFormat.BANNER, failedData.captured.adFormat)
+    }
+
+    @Test
+    fun `tracking-safe setters preserve native custom native and banner wrappers`() {
+        val nativeAd = nativeAd("native-network", "native-response")
+        val customNativeAd = customNativeAd("custom-network", "custom-response")
+        val bannerAd = nativeBannerAd("banner-network", "banner-response")
+        nativeAd.installTrackingEventCallback(null, "feed", "native-unit")
+        customNativeAd.installTrackingEventCallback(null, "feed", "native-unit")
+        bannerAd.installTrackingCallbacks(null, null, "feed", "native-unit")
+        val nativeTrackingCallback = nativeAd.adEventCallback
+        val customTrackingCallback = customNativeAd.adEventCallback
+        val bannerTrackingCallback = bannerAd.adEventCallback
+
+        nativeAd.setTrackingAdEventCallback(mockk(relaxed = true))
+        customNativeAd.setTrackingAdEventCallback(mockk(relaxed = true))
+        bannerAd.setTrackingAdEventCallback(mockk(relaxed = true))
+
+        assertSame(nativeTrackingCallback, nativeAd.adEventCallback)
+        assertSame(customTrackingCallback, customNativeAd.adEventCallback)
+        assertSame(bannerTrackingCallback, bannerAd.adEventCallback)
+    }
+
+    @Test
+    fun `tracking-safe setters directly assign callbacks when tracking is not installed`() {
+        val nativeAd = nativeAd("native-network", "native-response")
+        val customNativeAd = customNativeAd("custom-network", "custom-response")
+        val bannerAd = nativeBannerAd("banner-network", "banner-response")
+        nativeAd.adEventCallback = mockk(relaxed = true)
+        customNativeAd.adEventCallback = mockk(relaxed = true)
+        bannerAd.adEventCallback = mockk(relaxed = true)
+        val nativeCallback = mockk<NativeAdEventCallback>(relaxed = true)
+        val customNativeCallback = mockk<NativeAdEventCallback>(relaxed = true)
+        val bannerCallback = mockk<BannerAdEventCallback>(relaxed = true)
+
+        nativeAd.setTrackingAdEventCallback(nativeCallback)
+        customNativeAd.setTrackingAdEventCallback(customNativeCallback)
+        bannerAd.setTrackingAdEventCallback(bannerCallback)
+
+        assertSame(nativeCallback, nativeAd.adEventCallback)
+        assertSame(customNativeCallback, customNativeAd.adEventCallback)
+        assertSame(bannerCallback, bannerAd.adEventCallback)
+    }
+
+}
