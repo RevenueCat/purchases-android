@@ -965,6 +965,8 @@ internal class PurchasesOrchestrator(
         this.workflowManager.close()
         this.uiConfigProvider.close()
         this.workflowsConfigProvider.close()
+        this.checkpointsConfigProvider.close()
+        this.audiencesConfigProvider.close()
         this.tokenManager.close()
 
         billing.close()

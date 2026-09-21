@@ -10,7 +10,9 @@ package com.revenuecat.purchases.common.remoteconfig
  *
  * On the read side, a cache **miss** resolves a value off a snapshotted generation; [isCurrent] lets the caller
  * discard that just-resolved value if an invalidation advanced past the snapshot mid-resolve, so an in-flight
- * cold read never serves the previous user's data across an identity change.
+ * cold read never serves the previous user's data across an identity change. A cache **hit** that must be
+ * current at a given generation reads through [cachedAtOrAbove], which checks the generation and returns the
+ * value under one lock hold, so a [store] cannot land between the check and the value it vouches for.
  */
 internal class GenerationGuardedCache<T : Any> {
     private val lock = Any()
@@ -33,6 +35,9 @@ internal class GenerationGuardedCache<T : Any> {
     /** Whether this cache holds a value acted on at [generation] or newer (warm and not older). */
     fun isWarmAtOrAbove(generation: Int): Boolean =
         synchronized(lock) { lastGeneration >= generation && value != null }
+
+    /** The value, only if this cache acted on [generation] or newer; read atomically with that check. */
+    fun cachedAtOrAbove(generation: Int): T? = synchronized(lock) { value.takeIf { lastGeneration >= generation } }
 
     /** True while [generation] is still the newest acted-on generation (nothing newer stored/invalidated). */
     fun isCurrent(generation: Int): Boolean = synchronized(lock) { generation >= lastGeneration }

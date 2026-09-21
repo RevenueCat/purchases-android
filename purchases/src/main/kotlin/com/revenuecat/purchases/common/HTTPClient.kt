@@ -471,6 +471,12 @@ internal class HTTPClient(
             connection.disconnect()
         }
 
+        // HttpURLConnection reports -1 when the status line can't be parsed, so the response isn't valid HTTP.
+        // Treat it like any other connection failure instead of inspecting (or verifying) its contents.
+        if (responseCode == NO_STATUS_CODE) {
+            throw IOException(NetworkStrings.HTTP_RESPONSE_NO_STATUS_CODE)
+        }
+
         debugLog { NetworkStrings.API_REQUEST_COMPLETED.format(connection.requestMethod, path, responseCode) }
         // The response arrived in full. Everything below only inspects it, so failures from here on say
         // nothing about how responsive the host is.
@@ -702,6 +708,9 @@ internal class HTTPClient(
     private fun getConnection(request: HTTPRequest, timeoutMs: Long): HttpURLConnection {
         return (request.fullURL.openConnection() as HttpURLConnection).apply {
             connectTimeout = timeoutMs.toInt()
+            // Responses are cached by ETagManager. An HttpResponseCache installed by the app
+            // would otherwise splice stale cached bodies into our 304s and break signature verification.
+            useCaches = false
             // We leave the read timeout to the default (readTimeout = 0), which means infinite.
             request.headers.forEach { (key, value) ->
                 addRequestProperty(key, value)
