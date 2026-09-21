@@ -56,9 +56,12 @@ val revenueCatVersion = "<version>"
 dependencies {
     implementation("com.revenuecat.purchases:purchases:$revenueCatVersion")
     implementation("com.revenuecat.purchases:purchases-admob-next-gen:$revenueCatVersion")
-    implementation("com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:1.3.0")
+    implementation("com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:1.4.0")
 }
 ```
+
+The adapter does not select a Google Mobile Ads Next-Gen version transitively. Your app owns this dependency, and
+the explicit version keeps builds reproducible.
 
 If you use the RevenueCat BOM, it also manages the adapter version:
 
@@ -69,7 +72,7 @@ dependencies {
     implementation(platform("com.revenuecat.purchases:purchases-bom:$revenueCatVersion"))
     implementation("com.revenuecat.purchases:purchases")
     implementation("com.revenuecat.purchases:purchases-admob-next-gen")
-    implementation("com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:1.3.0")
+    implementation("com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:1.4.0")
 }
 ```
 

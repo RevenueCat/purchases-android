@@ -3,7 +3,10 @@
   "extends": ["github>RevenueCat/renovate"],
   "packageRules": [
     {
-      "matchPackageNames": ["com.google.android.gms:play-services-ads"],
+      "matchPackageNames": [
+        "com.google.android.gms:play-services-ads",
+        "com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk"
+      ],
       "matchManagers": ["gradle"],
       "enabled": true,
       "groupName": "google-mobile-ads"
