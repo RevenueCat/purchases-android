@@ -3,10 +3,20 @@
   "extends": ["github>RevenueCat/renovate"],
   "packageRules": [
     {
-      "matchPackageNames": ["com.google.android.gms:play-services-ads"],
+      "matchPackageNames": [
+        "com.google.android.gms:play-services-ads",
+        "com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk"
+      ],
       "matchManagers": ["gradle"],
       "enabled": true,
       "groupName": "google-mobile-ads"
+    },
+    {
+      "description": "Keep the explicitly supported Next-Gen minimum version stable",
+      "matchPackageNames": ["com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk"],
+      "matchManagers": ["gradle"],
+      "matchCurrentVersion": "1.3.0",
+      "enabled": false
     },
     {
       "matchFileNames": ["test-apps/admob-legacy-compatibility/**"],
