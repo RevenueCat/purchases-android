@@ -1,6 +1,7 @@
 package com.revenuecat.purchases.ui.revenuecatui.data
 
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.PurchasesErrorCode
 import com.revenuecat.purchases.ui.revenuecatui.PaywallDismissReason
 import com.revenuecat.purchases.ui.revenuecatui.PaywallErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
@@ -53,6 +54,9 @@ internal class PaywallErrorReporter(
             host.showErrorDialog(error)
             return
         }
+        // The user's own decision, not something to present. Store purchases never report one here, but an
+        // app's purchase logic may return it as an error.
+        if (error.code == PurchasesErrorCode.PurchaseCancelledError) return
         present(presenter, error, flowCanContinue = true, onFailure = { host.showErrorDialog(error) }) {
             when {
                 it == ErrorPresenter.Completion.Result.Retry -> Unit
