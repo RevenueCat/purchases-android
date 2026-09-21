@@ -42,14 +42,28 @@ Your own Play Billing Library dependency must be version 9.0.0 or later. Play Bi
 
 ## Error codes
 
-`PurchasesErrorCode.code` now uses the same number for the same error on every RevenueCat SDK. Two values change on Android:
+`PurchasesErrorCode` now uses the same number for the same error on every RevenueCat SDK. Two values change on Android:
 
 | Error | v10 | v11 |
 |---|---|---|
 | `PurchasesErrorCode.CustomerInfoError` | 28 | 29 |
 | `PurchasesErrorCode.SignatureVerificationError` | 36 | 37 |
 
-The enum constants are unchanged, so code comparing against `PurchasesErrorCode.CustomerInfoError` keeps working. Code that compares against, logs or persists the integer must be updated; the compiler does not flag this.
+The enum constants are unchanged, so code comparing against `PurchasesErrorCode.CustomerInfoError` keeps working.
+
+To make sure the new numbers are not adopted by accident, `PurchasesErrorCode.code` is renamed to `PurchasesErrorCode.rawValue`, which is also what `ErrorCode` is called on iOS:
+
+```kotlin
+// v10
+val number = error.code.code
+
+// v11
+val number = error.code.rawValue
+```
+
+Reading `code` is a compile error in Kotlin, and the getter is not visible from Java at all. `PurchasesError.code`, which returns the enum itself, is unaffected.
+
+Check anything that stores or reports these numbers, such as analytics events and crash metadata: values recorded before the upgrade use the old numbering.
 
 ## Reporting undocumented issues:
 

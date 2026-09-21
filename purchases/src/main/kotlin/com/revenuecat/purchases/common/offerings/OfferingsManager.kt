@@ -318,7 +318,7 @@ internal class OfferingsManager(
             requestedProductIds = requestedProductIds,
             notFoundProductIds = notFoundProductIds,
             errorMessage = error?.message,
-            errorCode = error?.code?.code,
+            errorCode = error?.code?.rawValue,
             // WIP Add verification result property once we expose verification result in Offerings object
             verificationResult = null,
             cacheStatus = cacheStatus,

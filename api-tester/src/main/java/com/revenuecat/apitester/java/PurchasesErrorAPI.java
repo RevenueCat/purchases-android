@@ -12,6 +12,7 @@ final class PurchasesErrorAPI {
     }
 
     static void check(final PurchasesErrorCode code) {
+        final int rawValue = code.getRawValue();
         switch (code) {
             case UnknownError:
             case PurchaseCancelledError:

@@ -885,7 +885,7 @@ class EntitlementInfoHelperTest {
                 verificationResult = null,
                 hadUnsyncedPurchasesBefore = true,
                 errorMessage = "There was a problem with the store.",
-                errorCode = PurchasesErrorCode.StoreProblemError.code,
+                errorCode = PurchasesErrorCode.StoreProblemError.rawValue,
                 responseTime = any(),
             )
         }

@@ -134,7 +134,7 @@ internal class SyncPurchasesHelper(
         startTime: Date,
     ) {
         diagnosticsTrackerIfEnabled?.trackSyncPurchasesResult(
-            error?.code?.code,
+            error?.code?.rawValue,
             error?.message,
             Duration.between(startTime, dateProvider.now),
         )

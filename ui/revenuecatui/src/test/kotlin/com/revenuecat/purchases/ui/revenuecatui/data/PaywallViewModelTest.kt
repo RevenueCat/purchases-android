@@ -2257,7 +2257,7 @@ class PaywallViewModelTest {
                     if (paywallEvent.type == PaywallEventType.PURCHASE_ERROR) {
                         assertThat(paywallEvent.data.packageIdentifier).isEqualTo(selectedPackage.identifier)
                         assertThat(paywallEvent.data.productIdentifier).isEqualTo(selectedPackage.product.id)
-                        assertThat(paywallEvent.data.errorCode).isEqualTo(expectedError.code.code)
+                        assertThat(paywallEvent.data.errorCode).isEqualTo(expectedError.code.rawValue)
                         assertThat(paywallEvent.data.errorMessage).isEqualTo(expectedError.message)
                     }
                 },
@@ -2362,7 +2362,7 @@ class PaywallViewModelTest {
                     assertThat(paywallEvent.type).isEqualTo(PaywallEventType.PURCHASE_ERROR)
                     assertThat(paywallEvent.data.packageIdentifier).isEqualTo(state.selectedPackage.value.rcPackage.identifier)
                     assertThat(paywallEvent.data.productIdentifier).isEqualTo(state.selectedPackage.value.rcPackage.product.id)
-                    assertThat(paywallEvent.data.errorCode).isEqualTo(expectedError.code.code)
+                    assertThat(paywallEvent.data.errorCode).isEqualTo(expectedError.code.rawValue)
                     assertThat(paywallEvent.data.errorMessage).isEqualTo(expectedError.message)
                 },
             )

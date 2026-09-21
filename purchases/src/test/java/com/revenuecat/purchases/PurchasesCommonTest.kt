@@ -2422,7 +2422,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
                 requestedProductIds = productIds,
                 notFoundProductIds = productIds,
                 errorMessage = error.message,
-                errorCode = error.code.code,
+                errorCode = error.code.rawValue,
                 responseTime = 123.milliseconds
             )
         }
@@ -2530,7 +2530,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
 
         verify(exactly = 1) {
             mockDiagnosticsTracker.trackRestorePurchasesResult(
-                errorCode = PurchasesErrorCode.StoreProblemError.code,
+                errorCode = PurchasesErrorCode.StoreProblemError.rawValue,
                 errorMessage = "There was a problem with the store.",
                 responseTime = any(),
             )
@@ -2603,7 +2603,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockDiagnosticsTracker.trackPurchaseResult(
                 "productId",
                 ProductType.SUBS,
-                errorCode = error.code.code,
+                errorCode = error.code.rawValue,
                 errorMessage = error.message,
                 responseTime = any(),
                 verificationResult = null,
@@ -2685,7 +2685,7 @@ internal class PurchasesCommonTest: BasePurchasesTest() {
             mockDiagnosticsTracker.trackPurchaseResult(
                 productId,
                 ProductType.SUBS,
-                errorCode = error.code.code,
+                errorCode = error.code.rawValue,
                 errorMessage = error.message,
                 responseTime = any(),
                 verificationResult = null,

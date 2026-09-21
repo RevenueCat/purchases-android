@@ -12,6 +12,7 @@ private class PurchasesErrorAPI {
     }
 
     fun check(code: PurchasesErrorCode) {
+        val rawValue: Int = code.rawValue
         when (code) {
             PurchasesErrorCode.UnknownError,
             PurchasesErrorCode.PurchaseCancelledError,

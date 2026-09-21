@@ -842,7 +842,7 @@ internal class PurchasesOrchestrator(
 
                 override fun onError(error: PurchasesError) {
                     diagnosticsTrackerIfEnabled.trackRestorePurchasesResult(
-                        error.code.code,
+                        error.code.rawValue,
                         error.message,
                         Duration.between(startTime, dateProvider.now),
                     )
@@ -1988,7 +1988,7 @@ internal class PurchasesOrchestrator(
             requestedProductIds = requestedProductIds,
             notFoundProductIds = notFoundProductIds,
             errorMessage = error?.message,
-            errorCode = error?.code?.code,
+            errorCode = error?.code?.rawValue,
             responseTime = responseTime,
         )
     }
@@ -2009,7 +2009,7 @@ internal class PurchasesOrchestrator(
         diagnosticsTrackerIfEnabled.trackPurchaseResult(
             purchasingData.productId,
             purchasingData.productType,
-            error?.code?.code,
+            error?.code?.rawValue,
             error?.message,
             responseTime,
             verificationResult,

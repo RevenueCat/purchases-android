@@ -4,7 +4,7 @@
 
 package com.revenuecat.purchases
 
-public enum class PurchasesErrorCode(public val code: Int, public val description: String) {
+public enum class PurchasesErrorCode(public val rawValue: Int, public val description: String) {
     UnknownError(0, "Unknown error. Check the underlying error for more details."),
     PurchaseCancelledError(1, "Purchase was cancelled."),
     StoreProblemError(2, "There was a problem with the store."),
@@ -33,4 +33,13 @@ public enum class PurchasesErrorCode(public val code: Int, public val descriptio
     CustomerInfoError(29, "There was a problem related to the customer info."),
     SignatureVerificationError(37, "Request failed signature verification. Please see https://rev.cat/trusted-entitlements for more info."),
     TestStoreSimulatedPurchaseError(42, "Purchase failure simulated successfully in Test Store."),
+    ;
+
+    @Deprecated(
+        message = "Renamed to rawValue. Some numbers also changed in 11.0: CustomerInfoError is 29 and SignatureVerificationError is 37. See migrations/v11-MIGRATION.md.",
+        replaceWith = ReplaceWith("rawValue"),
+        level = DeprecationLevel.ERROR,
+    )
+    @get:JvmSynthetic
+    public val code: Int get() = rawValue
 }

@@ -160,7 +160,7 @@ internal class PurchaseHandler(
                 diagnosticsTrackerIfEnabled?.trackAmazonPurchaseAttempt(
                     productId = storeProduct.id,
                     requestStatus = response.requestStatus.name,
-                    errorCode = error?.code?.code,
+                    errorCode = error?.code?.rawValue,
                     errorMessage = error?.message,
                     responseTime = Duration.between(startTime, dateProvider.now),
                 )

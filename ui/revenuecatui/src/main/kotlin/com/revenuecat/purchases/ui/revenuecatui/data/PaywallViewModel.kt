@@ -840,7 +840,7 @@ internal class PaywallViewModelImpl(
             } catch (e: PurchasesException) {
                 updateExitOfferData(ExitOfferData.Unavailable())
                 _state.value = PaywallState.Error(
-                    "Error ${e.code.code}: ${e.code.description}",
+                    "Error ${e.code.rawValue}: ${e.code.description}",
                 )
             }
         }
@@ -1709,7 +1709,7 @@ internal class PaywallViewModelImpl(
         val purchaseErrorEventData = eventData.copy(
             packageIdentifier = rcPackage.identifier,
             productIdentifier = productId,
-            errorCode = error.code.code,
+            errorCode = error.code.rawValue,
             errorMessage = error.message,
         )
         val event = PaywallEvent(

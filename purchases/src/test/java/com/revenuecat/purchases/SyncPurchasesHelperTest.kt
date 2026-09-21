@@ -324,7 +324,7 @@ class SyncPurchasesHelperTest {
 
         verify(exactly = 1) {
             diagnosticsTracker.trackSyncPurchasesResult(
-                errorCode = PurchasesErrorCode.UnknownError.code,
+                errorCode = PurchasesErrorCode.UnknownError.rawValue,
                 errorMessage = "Unknown error. Check the underlying error for more details.",
                 any(),
             )

@@ -601,10 +601,11 @@ package com.revenuecat.purchases {
   }
 
   public enum PurchasesErrorCode {
-    method @InaccessibleFromKotlin public int getCode();
     method @InaccessibleFromKotlin public String getDescription();
-    property public int code;
+    method @InaccessibleFromKotlin public int getRawValue();
+    property @Deprecated public int code;
     property public String description;
+    property public int rawValue;
     enum_constant public static final com.revenuecat.purchases.PurchasesErrorCode ConfigurationError;
     enum_constant public static final com.revenuecat.purchases.PurchasesErrorCode CustomerInfoError;
     enum_constant public static final com.revenuecat.purchases.PurchasesErrorCode EmptySubscriberAttributesError;

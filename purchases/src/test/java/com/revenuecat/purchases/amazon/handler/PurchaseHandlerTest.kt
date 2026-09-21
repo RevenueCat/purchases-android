@@ -402,7 +402,7 @@ class PurchaseHandlerTest {
             mockDiagnosticsTracker.trackAmazonPurchaseAttempt(
                 productId = "premium",
                 requestStatus = "NOT_SUPPORTED",
-                errorCode = PurchasesErrorCode.StoreProblemError.code,
+                errorCode = PurchasesErrorCode.StoreProblemError.rawValue,
                 errorMessage = "There was a problem with the store.",
                 responseTime = any()
             )

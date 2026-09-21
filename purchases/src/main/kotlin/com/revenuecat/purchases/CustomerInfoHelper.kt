@@ -313,7 +313,7 @@ internal class CustomerInfoHelper(
             customerInfo?.entitlements?.verification,
             customerInfoDataResult.hadUnsyncedPurchasesBefore,
             errorMessage = error?.message,
-            errorCode = error?.code?.code,
+            errorCode = error?.code?.rawValue,
             responseTime = responseTime,
         )
     }
