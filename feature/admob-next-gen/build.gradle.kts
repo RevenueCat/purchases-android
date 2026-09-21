@@ -20,7 +20,7 @@ android {
 
 dependencies {
     implementation(project(":purchases"))
-    compileOnly(libs.google.mobile.ads.next.gen)
+    compileOnly(libs.google.mobile.ads.next.gen.minimum)
 
     testImplementation(libs.bundles.test)
     testImplementation(libs.google.mobile.ads.next.gen)

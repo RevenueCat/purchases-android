@@ -34,6 +34,7 @@ direct loading, preloading, placement overrides, native batch loading, and rewar
 - Android API level 24 or newer
 - Compile SDK 35 or newer
 - Kotlin 1.9 or newer
+- Google Mobile Ads Next-Gen SDK 1.3.0 or newer
 
 ## Installation
 
