@@ -7,6 +7,13 @@
       "matchManagers": ["gradle"],
       "enabled": true,
       "groupName": "google-mobile-ads"
+    },
+    {
+      "matchFileNames": ["test-apps/admob-legacy-compatibility/**"],
+      "matchPackageNames": ["com.google.android.gms:play-services-ads"],
+      "matchManagers": ["gradle"],
+      "enabled": true,
+      "groupName": "google-mobile-ads-legacy-compatibility"
     }
   ]
 }
