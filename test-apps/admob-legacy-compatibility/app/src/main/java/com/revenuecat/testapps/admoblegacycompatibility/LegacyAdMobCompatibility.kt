@@ -41,7 +41,6 @@ internal object LegacyAdMobCompatibility {
         adView: AdView,
         adRequest: AdRequest,
         adUnitId: String,
-        nativeAdOptions: NativeAdOptions,
         adListener: AdListener,
         appOpenAdLoadCallback: AppOpenAd.AppOpenAdLoadCallback,
         interstitialAdLoadCallback: InterstitialAdLoadCallback,
@@ -101,7 +100,16 @@ internal object LegacyAdMobCompatibility {
             fullScreenContentCallback = fullScreenContentCallback,
             onPaidEventListener = onPaidEventListener,
         )
+    }
 
+    fun loadNativeAd(
+        context: Context,
+        adRequest: AdRequest,
+        adUnitId: String,
+        nativeAdOptions: NativeAdOptions,
+        adListener: AdListener,
+        onPaidEventListener: OnPaidEventListener,
+    ) {
         AdLoader.Builder(context, adUnitId)
             .forNativeAdWithTracking(
                 adUnitId = adUnitId,
