@@ -11,11 +11,3 @@ package com.revenuecat.purchases.ui.debugview {
 
 }
 
-package com.revenuecat.purchases.ui.debugview.models {
-
-  public final class InternalDebugRevenueCatScreenViewModelFactory extends androidx.lifecycle.ViewModelProvider.NewInstanceFactory {
-    ctor public InternalDebugRevenueCatScreenViewModelFactory(kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.models.StoreTransaction,kotlin.Unit> onPurchaseCompleted, kotlin.jvm.functions.Function1<? super com.revenuecat.purchases.PurchasesTransactionException,kotlin.Unit> onPurchaseErrored);
-  }
-
-}
-

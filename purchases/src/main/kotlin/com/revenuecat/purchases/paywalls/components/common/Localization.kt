@@ -17,6 +17,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildSerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonDecoder
 
 /**
  * @property value The language tag of this locale, with an underscore separating the language from the region.
@@ -65,13 +66,18 @@ private object LocalizationDataSerializer : KSerializer<LocalizationData> {
     }
 
     @Suppress("SwallowedException")
-    override fun deserialize(decoder: Decoder): LocalizationData =
-        // We have no `type` descriptor field, so we resort to trial and error.
-        try {
-            decoder.decodeSerializableValue(LocalizationData.Text.serializer())
+    override fun deserialize(decoder: Decoder): LocalizationData {
+        // We have no `type` descriptor field, so we resort to trial and error. A failed attempt leaves the
+        // streaming decoder mid-token, so decode the element first and retry against that instead.
+        val jsonDecoder = decoder as? JsonDecoder
+            ?: throw SerializationException("Can only deserialize LocalizationData from JSON, got: ${decoder::class}")
+        val element = jsonDecoder.decodeJsonElement()
+        return try {
+            jsonDecoder.json.decodeFromJsonElement(LocalizationData.Text.serializer(), element)
         } catch (e: SerializationException) {
-            decoder.decodeSerializableValue(LocalizationData.Image.serializer())
+            jsonDecoder.json.decodeFromJsonElement(LocalizationData.Image.serializer(), element)
         }
+    }
 }
 
 /**
