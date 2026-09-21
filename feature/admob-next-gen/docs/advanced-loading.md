@@ -144,4 +144,6 @@ if (bannerAd != null) {
 
 If preloading was started through Google's plain `start` API, `pollAndTrackAd` still installs tracking for later
 lifecycle events. RevenueCat cannot observe the earlier preload completion, so it does not synthesize a loaded event.
-Swipeable interstitial ads are not currently supported by this integration.
+Swipeable interstitial and Picture-in-Picture ads are not currently supported by this integration. Picture-in-Picture
+ads are an open beta in Google Mobile Ads Next-Gen 1.4.0 and require a separately scoped RevenueCat loading and
+tracking API design before support can be added.

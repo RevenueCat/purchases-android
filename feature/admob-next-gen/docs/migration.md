@@ -22,7 +22,7 @@ dependencies {
     // implementation("com.google.android.gms:play-services-ads:<version>")
 
     implementation("com.revenuecat.purchases:purchases-admob-next-gen:$revenueCatVersion")
-    implementation("com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:1.3.0")
+    implementation("com.google.android.libraries.ads.mobile.sdk:ads-mobile-sdk:1.4.0")
 }
 ```
 
