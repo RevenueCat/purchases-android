@@ -71,8 +71,9 @@ internal class DefaultErrorPresenter(
         host = activity
         val dialog = ComponentDialog(activity, EDGE_TO_EDGE_WINDOW_THEME)
         dialog.window?.applyEdgeToEdge()
-        // The error dialog inside handles back and outside taps itself, both as an acknowledgement.
-        dialog.setCancelable(false)
+        // The error dialog inside handles back and outside taps itself, both as an acknowledgement. Cancelling
+        // the host window only happens if that dialog is not there, and must never leave a touch-blocking window.
+        dialog.setOnCancelListener { acknowledged(current) }
         dialog.setContentView(
             createContent(activity, current.message) { acknowledged(current) },
             ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
@@ -145,13 +146,13 @@ internal class DefaultErrorPresenter(
         override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
     }
 
-    // What the paywall's own dialog shows: a presentation error carries its detail in the underlying message (the
-    // paywall's reason), while a purchase or restore error reads best as its code's description.
+    // What the paywall's own dialog shows: a flow that cannot go on carries its reason in the underlying message,
+    // while a purchase or restore error reads best as its code's description.
     private val Presentation.message: String
-        get() = if (params.source == ErrorPresenter.Source.PRESENTATION) {
-            params.error.underlyingErrorMessage ?: params.error.message
-        } else {
+        get() = if (params.flowCanContinue) {
             params.error.message
+        } else {
+            params.error.underlyingErrorMessage ?: params.error.message
         }
 }
 

@@ -49,7 +49,6 @@ import com.revenuecat.purchases.ui.revenuecatui.PaywallPurchaseLogicParams
 import com.revenuecat.purchases.ui.revenuecatui.ProductChange
 import com.revenuecat.purchases.ui.revenuecatui.PurchaseLogicResult
 import com.revenuecat.purchases.ui.revenuecatui.activity.PaywallResult
-import com.revenuecat.purchases.ui.revenuecatui.checkpoints.ErrorPresenter
 import com.revenuecat.purchases.ui.revenuecatui.components.PaywallAction
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.TemplateConfiguration
 import com.revenuecat.purchases.ui.revenuecatui.data.processed.VariableDataProvider
@@ -632,9 +631,7 @@ internal class PaywallViewModelImpl(
                             // silently ignore
                         }
                         is PurchaseLogicResult.Error -> {
-                            result.errorDetails?.let {
-                                errorReporter.onActionError(it, ErrorPresenter.Source.RESTORE)
-                            }
+                            result.errorDetails?.let { errorReporter.onActionError(it) }
                         }
                     }
                 }
@@ -674,7 +671,7 @@ internal class PaywallViewModelImpl(
         } catch (e: PurchasesException) {
             Logger.e("Error restoring purchases: $e")
             listener?.onRestoreError(e.error)
-            errorReporter.onActionError(e.error, ErrorPresenter.Source.RESTORE)
+            errorReporter.onActionError(e.error)
         }
     }
 
@@ -785,7 +782,7 @@ internal class PaywallViewModelImpl(
                         is PurchaseLogicResult.Error -> {
                             result.errorDetails?.let {
                                 trackPaywallPurchaseError(packageToPurchase, it)
-                                errorReporter.onActionError(it, ErrorPresenter.Source.PURCHASE)
+                                errorReporter.onActionError(it)
                             }
                         }
                     }
@@ -840,7 +837,7 @@ internal class PaywallViewModelImpl(
             } else {
                 trackPaywallPurchaseError(packageToPurchase, e.error)
                 listener?.onPurchaseError(e.error)
-                errorReporter.onActionError(e.error, ErrorPresenter.Source.PURCHASE)
+                errorReporter.onActionError(e.error)
             }
         }
     }

@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal class PaywallErrorReporter(
     private val presenter: () -> PaywallErrorPresenter?,
     private val scope: CoroutineScope,
-    state: StateFlow<PaywallState>,
+    private val state: StateFlow<PaywallState>,
     private val host: Host,
 ) {
 
@@ -47,13 +47,13 @@ internal class PaywallErrorReporter(
     }
 
     // The paywall stays as it is, interactive, and the app's first report decides whether the flow goes on.
-    fun onActionError(error: PurchasesError, source: ErrorPresenter.Source) {
+    fun onActionError(error: PurchasesError) {
         val presenter = presenter()
         if (presenter == null) {
             host.showErrorDialog(error)
             return
         }
-        present(presenter, error, source, flowCanContinue = true, onFailure = { host.showErrorDialog(error) }) {
+        present(presenter, error, flowCanContinue = true, onFailure = { host.showErrorDialog(error) }) {
             when {
                 it == ErrorPresenter.Completion.Result.Retry -> Unit
                 // System back: a previous step when the flow has one, leaving the flow otherwise.
@@ -69,10 +69,13 @@ internal class PaywallErrorReporter(
         present(
             presenter,
             paywallResult.error,
-            ErrorPresenter.Source.PRESENTATION,
             flowCanContinue = false,
             onFailure = { host.closePaywall(paywallResult, PaywallDismissReason.CLOSE) },
-        ) { leaveFlow(it, paywallResult) }
+        ) {
+            // The paywall may have moved past this error meanwhile (e.g. a retried load succeeded); a report about
+            // an error that is no longer on screen must not close what replaced it.
+            if (state.value == errorState) leaveFlow(it, paywallResult)
+        }
     }
 
     // Retry lands here only when the flow cannot go on. An unknown result goes on too: the hierarchy is closed but
@@ -94,18 +97,16 @@ internal class PaywallErrorReporter(
      * Hands [error] to the app's [presenter] and runs [onResult] with its first report, on [scope]'s thread. A
      * presenter that throws is logged and [onFailure] takes over; anything it reports afterwards is ignored.
      */
-    @Suppress("LongParameterList")
     private fun present(
         presenter: PaywallErrorPresenter,
         error: PurchasesError,
-        source: ErrorPresenter.Source,
         flowCanContinue: Boolean,
         onFailure: () -> Unit,
         onResult: (ErrorPresenter.Completion.Result) -> Unit,
     ) {
         val completion = FirstReportCompletion { result -> scope.launch { onResult(result) } }
         try {
-            presenter.present(error, source, flowCanContinue, completion)
+            presenter.present(error, flowCanContinue, completion)
         } catch (@Suppress("TooGenericExceptionCaught") e: Exception) {
             Logger.e("Error presenter failed: $e")
             completion.discard()

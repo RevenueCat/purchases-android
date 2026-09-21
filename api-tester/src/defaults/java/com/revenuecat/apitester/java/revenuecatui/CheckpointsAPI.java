@@ -74,7 +74,6 @@ final class CheckpointsAPI {
             PurchasesError error = params.getError();
             String checkpointIdentifier = params.getCheckpointIdentifier();
             Map<String, CustomVariableValue> customVariables = params.getCustomVariables();
-            ErrorPresenter.Source source = params.getSource();
             boolean flowCanContinue = params.getFlowCanContinue();
             completion.complete(ErrorPresenter.Completion.Result.Retry.INSTANCE);
             completion.complete(ErrorPresenter.Completion.Result.Continued.INSTANCE);
@@ -83,14 +82,5 @@ final class CheckpointsAPI {
         CheckpointsExtensionsKt.setErrorPresenter(purchases, presenter);
         CheckpointsExtensionsKt.setErrorPresenter(purchases, null);
         ErrorPresenter current = CheckpointsExtensionsKt.getErrorPresenter(purchases);
-    }
-
-    @OptIn(markerClass = InternalRevenueCatAPI.class)
-    static void checkErrorSource(ErrorPresenter.Source source) {
-        ErrorPresenter.Source purchase = ErrorPresenter.Source.PURCHASE;
-        ErrorPresenter.Source restore = ErrorPresenter.Source.RESTORE;
-        ErrorPresenter.Source presentation = ErrorPresenter.Source.PRESENTATION;
-        String name = source.getName();
-        boolean isPurchase = source.equals(ErrorPresenter.Source.PURCHASE);
     }
 }

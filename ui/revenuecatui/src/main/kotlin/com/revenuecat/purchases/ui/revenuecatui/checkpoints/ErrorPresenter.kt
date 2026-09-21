@@ -36,39 +36,14 @@ public fun interface ErrorPresenter {
         public val checkpointIdentifier: String,
         /** The custom variables supplied to the checkpoint call. */
         public val customVariables: Map<String, CustomVariableValue>,
-        /** What failed. */
-        public val source: Source,
         /**
-         * Whether the flow can go on after this error. True for a failed purchase or restore: the paywall stays
-         * on screen for another try. False when the flow could not be presented or kept on screen: there is
-         * nothing to go back to, so [Completion.Result.Retry] ends the flow like [Completion.Result.Continued].
+         * Whether the flow can go on after this error. True when a purchase or restore started from the flow
+         * failed: the paywall stays on screen for another try. False when the flow itself could not be presented
+         * or kept on screen (e.g. it has nothing to sell): there is nothing to go back to, so
+         * [Completion.Result.Retry] ends the flow like [Completion.Result.Continued].
          */
         public val flowCanContinue: Boolean,
     )
-
-    /** What failed in the presented flow. */
-    @InternalRevenueCatAPI
-    @Poko
-    public class Source internal constructor(
-        public val name: String,
-    ) {
-
-        override fun toString(): String = name
-
-        public companion object {
-            /** A purchase started from the flow failed. The flow goes on. */
-            @JvmField
-            public val PURCHASE: Source = Source("PURCHASE")
-
-            /** A restore started from the flow failed. The flow goes on. */
-            @JvmField
-            public val RESTORE: Source = Source("RESTORE")
-
-            /** The flow could not be presented or kept on screen (e.g. it has nothing to sell). The flow ends. */
-            @JvmField
-            public val PRESENTATION: Source = Source("PRESENTATION")
-        }
-    }
 
     /**
      * How an [ErrorPresenter] reports the way the flow should go on. Only the first report counts; later reports,
@@ -117,6 +92,6 @@ public fun interface ErrorPresenter {
 internal fun ErrorPresenter.forCheckpoint(
     checkpointIdentifier: String,
     customVariables: Map<String, CustomVariableValue>,
-): PaywallErrorPresenter = PaywallErrorPresenter { error, source, flowCanContinue, completion ->
-    present(ErrorPresenter.Params(error, checkpointIdentifier, customVariables, source, flowCanContinue), completion)
+): PaywallErrorPresenter = PaywallErrorPresenter { error, flowCanContinue, completion ->
+    present(ErrorPresenter.Params(error, checkpointIdentifier, customVariables, flowCanContinue), completion)
 }

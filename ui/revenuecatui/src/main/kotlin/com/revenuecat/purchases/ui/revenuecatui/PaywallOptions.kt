@@ -304,12 +304,7 @@ internal typealias DismissRequestWithExitOffering =
  * paywall knows what failed and whether it can go on, and acts on the completion's first report.
  */
 internal fun interface PaywallErrorPresenter {
-    fun present(
-        error: PurchasesError,
-        source: ErrorPresenter.Source,
-        flowCanContinue: Boolean,
-        completion: ErrorPresenter.Completion,
-    )
+    fun present(error: PurchasesError, flowCanContinue: Boolean, completion: ErrorPresenter.Completion)
 }
 
 /** How a paywall was dismissed, reported through [DismissRequestWithExitOffering]. */

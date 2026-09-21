@@ -28,7 +28,6 @@ fun AppErrorDialog(request: ParkedErrorPresenter.Request, presenterName: String)
         title = { Text(text = "Handled by the $presenterName error presenter") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                DetailLine(label = "Source", value = params.source.name)
                 DetailLine(label = "Checkpoint", value = params.checkpointIdentifier)
                 DetailLine(
                     label = "Error",

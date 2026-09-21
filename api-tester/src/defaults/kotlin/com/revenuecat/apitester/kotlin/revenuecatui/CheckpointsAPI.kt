@@ -89,20 +89,11 @@ private class CheckpointsAPI {
             val error: PurchasesError = params.error
             val checkpointIdentifier: String = params.checkpointIdentifier
             val customVariables: Map<String, CustomVariableValue> = params.customVariables
-            val source: ErrorPresenter.Source = params.source
             val flowCanContinue: Boolean = params.flowCanContinue
             completion.complete(ErrorPresenter.Completion.Result.Retry)
             completion.complete(ErrorPresenter.Completion.Result.Continued)
             completion.complete(ErrorPresenter.Completion.Result.NavigatedBack)
         }
-    }
-
-    fun checkErrorSource(source: ErrorPresenter.Source) {
-        val purchase: ErrorPresenter.Source = ErrorPresenter.Source.PURCHASE
-        val restore: ErrorPresenter.Source = ErrorPresenter.Source.RESTORE
-        val presentation: ErrorPresenter.Source = ErrorPresenter.Source.PRESENTATION
-        val name: String = source.name
-        val isPurchase: Boolean = source == ErrorPresenter.Source.PURCHASE
     }
 
     fun checkErrorCompletionResult(result: ErrorPresenter.Completion.Result) {

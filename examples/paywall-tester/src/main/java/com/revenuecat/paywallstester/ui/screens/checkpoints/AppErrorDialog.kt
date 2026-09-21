@@ -28,7 +28,6 @@ internal fun AppErrorDialog(request: AppErrorPresenter.Request) {
         title = { Text(text = "Handled by this app's ErrorPresenter") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                DetailLine(label = "Source", value = params.source.name)
                 DetailLine(label = "Checkpoint", value = params.checkpointIdentifier)
                 DetailLine(
                     label = "Error",
